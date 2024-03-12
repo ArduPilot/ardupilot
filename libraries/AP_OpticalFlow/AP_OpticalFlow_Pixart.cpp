@@ -287,7 +287,11 @@ void AP_OpticalFlow_Pixart::timer(void)
 
     uint32_t dt_us = last_burst_us - integral.last_frame_us;
     float dt = dt_us * 1.0e-6;
+#if AP_AHRS_ENABLED
     const Vector3f &gyro = AP::ahrs().get_gyro();
+#else
+    const Vector3f &gyro = AP::ins().get_gyro();
+#endif
 
     {
         WITH_SEMAPHORE(_sem);

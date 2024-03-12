@@ -177,8 +177,8 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_A_RAT_YAW_FF",    0.2 },
     { "Q_A_RAT_YAW_I",     0.18 },
     { "Q_A_ANGLE_BOOST",   0 },
-    { "LIM_PITCH_MAX",    3000 },
-    { "LIM_PITCH_MIN",    -3000 },
+    { "PTCH_LIM_MAX_DEG",  30 },
+    { "PTCH_LIM_MIN_DEG", -30 },
     { "MIXING_GAIN",      1.0 },
     { "RUDD_DT_GAIN",      10 },
     { "Q_TRANSITION_MS",   2000 },
@@ -755,9 +755,6 @@ void Tailsitter::speed_scaling(void)
         spd_scaler /= plane.barometer.get_air_density_ratio();
     }
 
-    // record for QTUN log
-    log_spd_scaler = spd_scaler;
-
     const SRV_Channel::Aux_servo_function_t functions[] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,
@@ -778,7 +775,32 @@ void Tailsitter::speed_scaling(void)
     if (tailsitter_motors != nullptr) {
         tailsitter_motors->set_min_throttle(disk_loading_min_throttle);
     }
+
+    // Record for log
+    log_data.throttle_scaler = throttle_scaler;
+    log_data.speed_scaler = spd_scaler;
+    log_data.min_throttle = disk_loading_min_throttle;
+
 }
+
+#if HAL_LOGGING_ENABLED
+// Write tailsitter specific log
+void Tailsitter::write_log()
+{
+    if (!enabled()) {
+        return;
+    }
+
+    struct log_tailsitter pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_TSIT_MSG),
+        time_us             : AP_HAL::micros64(),
+        throttle_scaler     : log_data.throttle_scaler,
+        speed_scaler        : log_data.speed_scaler,
+        min_throttle        : log_data.min_throttle,
+    };
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif  // HAL_LOGGING_ENABLED
 
 // return true if pitch control should be relaxed
 // on vectored belly sitters the pitch control is not relaxed in order to keep motors pointing and avoid risk of props hitting the ground

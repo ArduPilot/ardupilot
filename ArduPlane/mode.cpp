@@ -135,6 +135,9 @@ bool Mode::enter()
            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "In landing sequence: mission reset");
            plane.mission.reset();
         }
+
+        // Make sure the flight stage is correct for the new mode
+        plane.update_flight_stage();
     }
 
     return enter_result;
@@ -254,4 +257,83 @@ void Mode::output_rudder_and_steering(float val)
 {
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, val);
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, val);
+}
+
+// Output pilot throttle, this is used in stabilized modes without auto throttle control
+// Direct mapping if THR_PASS_STAB is set
+// Otherwise apply curve for trim correction if configured
+void Mode::output_pilot_throttle()
+{
+    if (plane.g.throttle_passthru_stabilize) {
+        // THR_PASS_STAB set, direct mapping
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+        return;
+    }
+
+    // get throttle, but adjust center to output TRIM_THROTTLE if flight option set
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_adjusted_throttle_input(true));
+}
+
+// true if throttle min/max limits should be applied
+bool Mode::use_throttle_limits() const
+{
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        return false;
+    }
+#endif
+
+    if (this == &plane.mode_stabilize ||
+        this == &plane.mode_training ||
+        this == &plane.mode_acro ||
+        this == &plane.mode_fbwa ||
+        this == &plane.mode_autotune) {
+        // a manual throttle mode
+        return !plane.g.throttle_passthru_stabilize;
+    }
+
+    if (is_guided_mode() && plane.guided_throttle_passthru) {
+        // manual pass through of throttle while in GUIDED
+        return false;
+    }
+
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        return quadplane.allow_forward_throttle_in_vtol_mode();
+    }
+#endif
+
+    return true;
+}
+
+// true if voltage correction should be applied to throttle
+bool Mode::use_battery_compensation() const
+{
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        return false;
+    }
+#endif
+
+    if (this == &plane.mode_stabilize ||
+        this == &plane.mode_training ||
+        this == &plane.mode_acro ||
+        this == &plane.mode_fbwa ||
+        this == &plane.mode_autotune) {
+        // a manual throttle mode
+        return false;
+    }
+
+    if (is_guided_mode() && plane.guided_throttle_passthru) {
+        // manual pass through of throttle while in GUIDED
+        return false;
+    }
+
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        return false;
+    }
+#endif
+
+    return true;
 }

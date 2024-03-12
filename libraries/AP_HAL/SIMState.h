@@ -30,6 +30,7 @@
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
+#include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -42,8 +43,9 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
+#include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 #include <AP_HAL/AP_HAL_Namespace.h>
 
@@ -92,7 +94,7 @@ private:
     uint32_t _update_count;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SocketAPM _sitl_rc_in{true};
+    SocketAPM_native _sitl_rc_in{true};
 #endif
     SITL::SIM *_sitl;
     uint16_t _rcin_port;
@@ -195,6 +197,12 @@ private:
     // simulated MicroStrain Series 5 system
     SITL::MicroStrain5 *microstrain5;
 
+    // simulated MicroStrain Series 7 system
+    SITL::MicroStrain7 *microstrain7;
+
+    // simulated InertialLabs INS-U
+    SITL::InertialLabs *inertiallabs;
+    
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
@@ -213,7 +221,7 @@ private:
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // output socket for flightgear viewing
-    SocketAPM fg_socket{true};
+    SocketAPM_native fg_socket{true};
 #endif
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;

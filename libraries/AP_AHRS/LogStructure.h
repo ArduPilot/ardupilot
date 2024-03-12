@@ -195,7 +195,7 @@ struct PACKED log_ATSC {
 
 #define LOG_STRUCTURE_FROM_AHRS \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
-        "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" , true }, \
+        "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU----", "FBBB0GG----" , true }, \
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA), \
         "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" , true }, \
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
@@ -209,5 +209,5 @@ struct PACKED log_ATSC {
     { LOG_ATSC_MSG, sizeof(log_ATSC), \
         "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
-        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo????", "F000000????" },
+        "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" },
 

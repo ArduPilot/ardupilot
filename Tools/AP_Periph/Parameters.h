@@ -88,6 +88,9 @@ public:
         k_param_can_terminate0,
         k_param_can_terminate1,
         k_param_can_terminate2,
+        k_param_serial_options,
+        k_param_relay,
+        k_param_temperature_msg_rate,
     };
 
     AP_Int16 format_version;
@@ -201,7 +204,11 @@ public:
 #if HAL_PERIPH_CAN_MIRROR
     AP_Int8 can_mirror_ports;
 #endif // HAL_PERIPH_CAN_MIRROR
-    
+
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    AP_Int8 temperature_msg_rate;
+#endif
+
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
     AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # useful script to test all the different build types that we support.
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
@@ -132,7 +132,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
-        run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
         continue
     fi
     if [ "$t" == "sitltest-plane" ]; then
@@ -144,6 +144,8 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
+        sudo apt-get update || /bin/true
+        sudo apt-get install -y ppp || /bin/true
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
@@ -174,7 +176,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "examples" ]; then
-        ./waf configure --board=linux --debug
+        ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
         continue
@@ -213,18 +215,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
-        echo "Building HerePro peripheral fw"
-        $waf configure --board HerePro
-        $waf clean
-        $waf AP_Periph
         echo "Building CubeOrange-periph peripheral fw"
         $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
-        echo "Building HerePro bootloader"
-        $waf configure --board HerePro --bootloader
-        $waf clean
-        $waf bootloader
         echo "Building G4-ESC peripheral fw"
         $waf configure --board G4-ESC
         $waf clean
@@ -325,6 +319,31 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-PPP" ]; then
+        echo "Building CubeOrange-PPP"
+        $waf configure --board CubeOrange --enable-ppp
+        $waf clean
+        $waf copter
+        continue
+    fi
+
+    if [ "$t" == "CubeOrange-SOHW" ]; then
+        echo "Building CubeOrange-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
+        continue
+    fi
+
+    if [ "$t" == "Pixhawk6X-PPPGW" ]; then
+        echo "Building Pixhawk6X-PPPGW"
+        $waf configure --board Pixhawk6X-PPPGW
+        $waf clean
+        $waf AP_Periph
+        $waf configure --board Pixhawk6X-PPPGW --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+    
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
         $waf configure --board Durandal --enable-dds
@@ -447,6 +466,13 @@ for t in $CI_BUILD_TARGET; do
              --no-enable-in-turn \
              --build-targets=copter \
              --build-targets=plane
+        echo "Checking building with logging disabled works"
+        echo "define HAL_LOGGING_ENABLED 0" >/tmp/extra.hwdef
+        time ./waf configure \
+             --board=CubeOrange \
+             --extra-hwdef=/tmp/extra.hwdef
+        time ./waf plane
+        time ./waf copter
         continue
     fi
 

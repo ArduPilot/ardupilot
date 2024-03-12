@@ -11,7 +11,6 @@ CAN_P1_DRIVER 1 (First driver)
 CAN_D1_BITRATE 500000 (500 kbit/s)
 
 --]]
--- luacheck: only 0
 
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
@@ -26,6 +25,9 @@ local MAV_SEVERITY_ERROR = 3
 
 local K_THROTTLE = 70
 local K_HELIRSC = 31
+
+local MODEL_DEFAULT = 0
+local MODEL_SP_275 = 1
 
 PARAM_TABLE_KEY = 36
 PARAM_TABLE_PREFIX = "EFI_SP_"
@@ -61,10 +63,6 @@ function constrain(v, vmin, vmax)
     end
     return v
 end
-
----- GLOBAL VARIABLES
-local GKWH_TO_LBS_HP_HR = 0.0016439868
-local LITRES_TO_LBS = 1.6095 -- 6.1 lbs of fuel per gallon -> 1.6095
 
 local efi_backend = nil
 
@@ -174,6 +172,34 @@ local EFI_SP_LOG_RT     = bind_add_param('LOG_RT',    10, 10)   -- rate for logg
 --]]
 local EFI_SP_ST_DISARM  = bind_add_param('ST_DISARM', 11, 0)    -- allow start when disarmed
 
+--[[
+  // @Param: EFI_SP_MODEL
+  // @DisplayName: SkyPower EFI ECU model
+  // @Description: SkyPower EFI ECU model
+  // @Values: 0:Default,1:SP_275
+  // @User: Standard
+--]]
+local EFI_SP_MODEL  = bind_add_param('MODEL', 12, MODEL_DEFAULT)
+
+--[[
+  // @Param: EFI_SP_GEN_CTRL
+  // @DisplayName: SkyPower EFI enable generator control
+  // @Description: SkyPower EFI enable generator control
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
+local EFI_SP_GEN_CTRL  = bind_add_param('GEN_CRTL', 13, 1)
+
+--[[
+  // @Param: EFI_SP_RST_TIME
+  // @DisplayName: SkyPower EFI restart time
+  // @Description: SkyPower EFI restart time. If engine should be running and it has stopped for this amount of time then auto-restart. To disable this feature set this value to zero.
+  // @Range: 0 10
+  // @User: Standard
+  // @Units: s
+--]]
+local EFI_SP_RST_TIME  = bind_add_param('RST_TIME', 14, 2)
+
 if EFI_SP_ENABLE:get() == 0 then
    gcs:send_text(0, string.format("EFISP: disabled"))
    return
@@ -211,7 +237,7 @@ end
 --[[
    EFI Engine Object
 --]]
-local function engine_control(_driver, _idx)
+local function engine_control(_driver)
     local self = {}
 
     -- Build up the EFI_State that is passed into the EFI Scripting backend
@@ -221,21 +247,16 @@ local function engine_control(_driver, _idx)
     -- private fields as locals
     local rpm = 0
     local air_pressure = 0
-    local inj_ang = 0
     local inj_time = 0
     local target_load = 0
     local current_load = 0
     local throttle_angle = 0
     local ignition_angle = 0
-    local sfc = 0
-    local sfc_icao = 0
-    local last_sfc_t = 0
     local supply_voltage = 0
     local fuel_consumption_lph = 0
     local fuel_total_l = 0
     local last_fuel_s = 0
     local driver = _driver
-    local idx = _idx
     local last_rpm_t = get_time_sec()
     local last_state_update_t = get_time_sec()
     local last_thr_update = get_time_sec()
@@ -246,6 +267,9 @@ local function engine_control(_driver, _idx)
     local generator_started = false
     local engine_start_t = 0.0
     local last_throttle = 0.0
+    local sensor_error_flags = 0
+    local thermal_limit_flags = 0
+    local starter_rpm = 0
 
     -- frames for sending commands
     local FRM_500 = uint32_t(0x500)
@@ -264,6 +288,10 @@ local function engine_control(_driver, _idx)
     temps.cht = 0.0        -- Cylinder Head Temperature
     temps.imt = 0.0        -- intake manifold temperature
     temps.oilt = 0.0        -- oil temperature
+    temps.cht2 = 0.0
+    temps.egt2 = 0.0
+    temps.imt2 = 0.0
+    temps.oil2 = 0.0
 
     -- read telemetry packets
     function self.update_telemetry()
@@ -276,9 +304,9 @@ local function engine_control(_driver, _idx)
                 break
             end
 
-            -- All Frame IDs for this EFI Engine are extended
-            if frame:isExtended() then
-                self.handle_EFI_packet(frame, _idx)
+            -- All Frame IDs for this EFI Engine are not extended
+            if not frame:isExtended() then
+                self.handle_EFI_packet(frame)
             end
         end
         if last_rpm_t > last_state_update_t then
@@ -289,36 +317,79 @@ local function engine_control(_driver, _idx)
     end
 
     -- handle an EFI packet
-    function self.handle_EFI_packet(frame, idx)
+    function self.handle_EFI_packet(frame)
        local id = frame:id_signed()
-       if id == 0x100 then
-          rpm = get_uint16(frame, 0)
-          ignition_angle = get_uint16(frame, 2) * 0.1
-          throttle_angle = get_uint16(frame, 4) * 0.1
-          last_rpm_t = get_time_sec()
-       elseif id == 0x101 then
-          current_load = get_uint16(frame, 0) * 0.1
-          target_load = get_uint16(frame, 2) * 0.1
-          inj_time = get_uint16(frame, 4)
-          inj_ang = get_uint16(frame, 6) * 0.1
-       elseif id == 0x102 then
-          -- unused fields
-       elseif id == 0x104 then
-          supply_voltage = get_uint16(frame, 0) * 0.1
-          ecu_temp = get_uint16(frame, 2) * 0.1
-          air_pressure = get_uint16(frame, 4)
-          fuel_consumption_lph = get_uint16(frame,6)*0.001
-          if last_fuel_s > 0 then
-             local dt = now_s - last_fuel_s
-             local fuel_lps = fuel_consumption_lph / 3600.0
-             fuel_total_l = fuel_total_l + fuel_lps * dt
+       if EFI_SP_MODEL:get() == MODEL_SP_275 then
+          -- updated telemetry for SP-275 ECU
+          if id == 0x100 then
+             rpm = get_uint16(frame, 0)
+             ignition_angle = get_uint16(frame, 2) * 0.1
+             throttle_angle = get_uint16(frame, 4) * 0.1
+             last_rpm_t = get_time_sec()
+          elseif id == 0x101 then
+             air_pressure = get_uint16(frame, 4)
+          elseif id == 0x102 then
+             inj_time = get_uint16(frame, 4)
+             -- inj_ang = get_uint16(frame, 2) * 0.1
+          elseif id == 0x104 then
+             supply_voltage = get_uint16(frame, 0) * 0.1
+          elseif id == 0x105 then
+             temps.cht = get_uint16(frame, 0) * 0.1
+             temps.imt = get_uint16(frame, 2) * 0.1
+             temps.egt = get_uint16(frame, 4) * 0.1
+             temps.oilt = get_uint16(frame, 6) * 0.1
+          elseif id == 0x107 then
+             sensor_error_flags = get_uint16(frame, 0)
+             thermal_limit_flags = get_uint16(frame, 2)
+          elseif id == 0x107 then
+             target_load = get_uint16(frame, 6) * 0.1
+          elseif id == 0x10C then
+             temps.cht2 = get_uint16(frame, 4) * 0.1
+             temps.egt2 = get_uint16(frame, 6) * 0.1
+          elseif id == 0x10D then
+             current_load = get_uint16(frame, 2) * 0.1
+          elseif id == 0x113 then
+             gen.amps = get_uint16(frame, 2)
+          elseif id == 0x2E0 then
+             starter_rpm = get_uint16(frame, 4)
+          elseif id == 0x10B then
+             fuel_consumption_lph = get_uint16(frame,6)*0.001
+             if last_fuel_s > 0 then
+                local dt = now_s - last_fuel_s
+                local fuel_lps = fuel_consumption_lph / 3600.0
+                fuel_total_l = fuel_total_l + fuel_lps * dt
+             end
+             last_fuel_s = now_s
           end
-          last_fuel_s = now_s
-       elseif id == 0x105 then
-          temps.cht = get_uint16(frame, 0) * 0.1
-          temps.imt = get_uint16(frame, 2) * 0.1
-          temps.egt = get_uint16(frame, 4) * 0.1
-          temps.oilt = get_uint16(frame, 6) * 0.1
+       else
+          -- original SkyPower driver
+          if id == 0x100 then
+             rpm = get_uint16(frame, 0)
+             ignition_angle = get_uint16(frame, 2) * 0.1
+             throttle_angle = get_uint16(frame, 4) * 0.1
+             last_rpm_t = get_time_sec()
+          elseif id == 0x101 then
+             current_load = get_uint16(frame, 0) * 0.1
+             target_load = get_uint16(frame, 2) * 0.1
+             inj_time = get_uint16(frame, 4)
+             -- inj_ang = get_uint16(frame, 6) * 0.1
+          elseif id == 0x104 then
+             supply_voltage = get_uint16(frame, 0) * 0.1
+             ecu_temp = get_uint16(frame, 2) * 0.1
+             air_pressure = get_uint16(frame, 4)
+             fuel_consumption_lph = get_uint16(frame,6)*0.001
+             if last_fuel_s > 0 then
+                local dt = now_s - last_fuel_s
+                local fuel_lps = fuel_consumption_lph / 3600.0
+                fuel_total_l = fuel_total_l + fuel_lps * dt
+             end
+             last_fuel_s = now_s
+          elseif id == 0x105 then
+             temps.cht = get_uint16(frame, 0) * 0.1
+             temps.imt = get_uint16(frame, 2) * 0.1
+             temps.egt = get_uint16(frame, 4) * 0.1
+             temps.oilt = get_uint16(frame, 6) * 0.1
+          end
        end
     end
 
@@ -344,7 +415,7 @@ local function engine_control(_driver, _idx)
        -- copy cylinder_state to efi_state
        efi_state:cylinder_status(cylinder_state)
 
-       last_efi_state_time = millis()
+       local last_efi_state_time = millis()
        efi_state:last_updated_ms(last_efi_state_time)
 
 
@@ -368,6 +439,10 @@ local function engine_control(_driver, _idx)
 
     -- send an engine start command
     function self.send_engine_start()
+       if EFI_SP_MODEL:get() == MODEL_SP_275 then
+          -- the SP-275 needs a stop before a start will work
+          self.send_engine_stop()
+       end
        local msg = CANFrame()
        msg:id(FRM_505)
        msg:data(0,10)
@@ -437,7 +512,7 @@ local function engine_control(_driver, _idx)
        if min_rpm > 0 and engine_started and rpm < min_rpm and allow_run_engine() then
           local now = get_time_sec()
           local dt = now - engine_start_t
-          if dt > 2.0 then
+          if EFI_SP_RST_TIME:get() > 0 and dt > EFI_SP_RST_TIME:get() then
              gcs:send_text(0, string.format("EFISP: re-starting engine"))
              self.send_engine_start()
              engine_start_t = get_time_sec()
@@ -455,6 +530,9 @@ local function engine_control(_driver, _idx)
 
     -- update generator control
     function self.update_generator()
+       if EFI_SP_GEN_CTRL:get() == 0 then
+          return
+       end
        local gen_state = rc:get_aux_cached(EFI_SP_GEN_FN:get())
        if gen_state == 0 and generator_started then
           generator_started = false
@@ -504,6 +582,9 @@ local function engine_control(_driver, _idx)
        gcs:send_named_float('EFI_OILTMP', temps.oilt)
        gcs:send_named_float('EFI_TRLOAD', target_load)
        gcs:send_named_float('EFI_VOLTS', supply_voltage)
+       gcs:send_named_float('EFI_GEN_AMPS', gen.amps)
+       gcs:send_named_float('EFI_CHT2', temps.cht2)
+       gcs:send_named_float('EFI_STARTRPM', starter_rpm)
     end
 
     -- update custom logging
@@ -517,18 +598,18 @@ local function engine_control(_driver, _idx)
           return
        end
        last_log_t = now
-       logger.write('EFSP','Thr,CLoad,TLoad,OilT,RPM,gRPM,gAmp,gCur', 'ffffffff',
+       logger.write('EFSP','Thr,CLoad,TLoad,OilT,RPM,gRPM,gAmp,gCur,SErr,TLim,STRPM', 'ffffffffHHH',
                     last_throttle, current_load, target_load, temps.oilt, rpm,
-                    gen.rpm, gen.amps, gen.batt_current)
+                    gen.rpm, gen.amps, gen.batt_current,
+                    sensor_error_flags, thermal_limit_flags,
+                    starter_rpm)
     end
     
     -- return the instance
     return self
-end -- end function engine_control(_driver, _idx)
+end -- end function engine_control
 
-local engine1 = engine_control(driver1, 1)
-
-local last_efi_state_time = 0.0
+local engine1 = engine_control(driver1)
 
 function update()
    now_s = get_time_sec()

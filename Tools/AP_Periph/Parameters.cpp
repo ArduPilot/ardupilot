@@ -610,6 +610,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+    // @Group: UART
+    // @Path: serial_options.cpp
+    GOBJECT(serial_options, "UART",  SerialOptions),
+#endif
+    
     // NOTE: sim parameters should go last
 #if AP_SIM_ENABLED
     // @Group: SIM_
@@ -636,6 +642,23 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: RTC
     // @Path: ../libraries/AP_RTC/AP_RTC.cpp
     GOBJECT(rtc,                   "RTC",    AP_RTC),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    // @Group: RELAY
+    // @Path: ../libraries/AP_Relay/AP_Relay.cpp
+    GOBJECT(relay,                 "RELAY", AP_Relay),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    // @Param: TEMP_MSG_RATE
+    // @DisplayName: Temperature sensor message rate
+    // @Description: This is the rate Temperature sensor data is sent in Hz. Zero means no send. Each sensor with source DroneCAN is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(temperature_msg_rate, "TEMP_MSG_RATE", 0),
 #endif
 
     AP_VAREND

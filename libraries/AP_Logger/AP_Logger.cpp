@@ -5,7 +5,7 @@
 #include "AP_Logger_Backend.h"
 
 #include "AP_Logger_File.h"
-#include "AP_Logger_DataFlash.h"
+#include "AP_Logger_Flash_JEDEC.h"
 #include "AP_Logger_W25N01GV.h"
 #include "AP_Logger_MAVLink.h"
 
@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_DATAFLASH_DRIVER
-#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_DataFlash
+#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_Flash_JEDEC
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
@@ -193,8 +193,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
 #define streq(x, y) (!strcmp(x, y))
 
-AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
-    : _log_bitmask(log_bitmask)
+AP_Logger::AP_Logger()
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_singleton != nullptr) {
@@ -204,8 +203,10 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     _singleton = this;
 }
 
-void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
+void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
+    _log_bitmask = &log_bitmask;
+
     // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
@@ -289,7 +290,7 @@ static uint8_t count_commas(const char *string)
 /// return a unit name given its ID
 const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
-    for (uint8_t i=0; i<unit_id; i++) {
+    for (uint8_t i=0; i<_num_units; i++) {
         if (_units[i].ID == unit_id) {
             return _units[i].unit;
         }
@@ -300,7 +301,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 /// return a multiplier value given its ID
 double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
-    for (uint8_t i=0; i<multiplier_id; i++) {
+    for (uint8_t i=0; i<_num_multipliers; i++) {
         if (_multipliers[i].ID == multiplier_id) {
             return _multipliers[i].multiplier;
         }
@@ -629,7 +630,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
 {
     bool armed = vehicle_is_armed();
 
-    if (!(mask & _log_bitmask)) {
+    if (!(mask & *_log_bitmask)) {
         return false;
     }
     if (!armed && !log_while_disarmed()) {
@@ -1573,6 +1574,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@ROMFS/hwdef.dat",
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
+        "@ROMFS/defaults.parm",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);

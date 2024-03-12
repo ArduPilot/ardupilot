@@ -46,7 +46,6 @@
 # else
 #if HAL_NUM_CAN_IFACES
 #include "bxcan.hpp"
-#include "EventSource.h"
 
 #ifndef HAL_CAN_RX_QUEUE_SIZE
 #define HAL_CAN_RX_QUEUE_SIZE 128
@@ -69,11 +68,11 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     struct CriticalSectionLocker {
         CriticalSectionLocker()
         {
-            chSysSuspend();
+            chSysLock();
         }
         ~CriticalSectionLocker()
         {
-            chSysEnable();
+            chSysUnlock();
         }
     };
 
@@ -109,10 +108,8 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     bool irq_init_:1;
     bool initialised_:1;
     bool had_activity_:1;
-#if CH_CFG_USE_EVENTS == TRUE
-    AP_HAL::EventHandle* event_handle_;
-    static ChibiOS::EventSource evt_src_;
-#endif
+    AP_HAL::BinarySemaphore *sem_handle;
+
     const uint8_t self_index_;
 
     bool computeTimings(uint32_t target_bitrate, Timings& out_timings);
@@ -210,10 +207,9 @@ public:
                 const AP_HAL::CANFrame* const pending_tx,
                 uint64_t blocking_deadline) override;
     
-#if CH_CFG_USE_EVENTS == TRUE
     // setup event handle for waiting on events
-    bool set_event_handle(AP_HAL::EventHandle* handle) override;
-#endif
+    bool set_event_handle(AP_HAL::BinarySemaphore *handle) override;
+
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 

@@ -395,8 +395,9 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         break;
     }
     }
-    
+
     if (updated) {
+#if HAL_LOGGING_ENABLED
         // get estimated location and velocity
         Location loc_estimate{};
         Vector3f vel_estimate;
@@ -431,6 +432,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
                                                loc_estimate.lng,
                                                loc_estimate.alt
                                                );
+#endif
     }
 }
 
@@ -539,4 +541,4 @@ AP_Follow &follow()
 
 }
 
-#endif
+#endif  // AP_FOLLOW_ENABLED

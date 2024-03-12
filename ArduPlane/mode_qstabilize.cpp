@@ -87,12 +87,12 @@ void ModeQStabilize::set_tailsitter_roll_pitch(const float roll_input, const flo
 void ModeQStabilize::set_limited_roll_pitch(const float roll_input, const float pitch_input)
 {
     plane.nav_roll_cd = roll_input * MIN(plane.roll_limit_cd, plane.quadplane.aparm.angle_max);
-    // pitch is further constrained by LIM_PITCH_MIN/MAX which may impose
+    // pitch is further constrained by PTCH_LIM_MIN/MAX which may impose
     // tighter (possibly asymmetrical) limits than Q_ANGLE_MAX
     if (pitch_input > 0) {
-        plane.nav_pitch_cd = pitch_input * MIN(plane.aparm.pitch_limit_max_cd, plane.quadplane.aparm.angle_max);
+        plane.nav_pitch_cd = pitch_input * MIN(plane.aparm.pitch_limit_max*100, plane.quadplane.aparm.angle_max);
     } else {
-        plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min_cd, plane.quadplane.aparm.angle_max);
+        plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min*100, plane.quadplane.aparm.angle_max);
     }
 }
 

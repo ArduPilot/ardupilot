@@ -22,7 +22,8 @@
 //    param set GPS_TYPE 11 // GSOF
 //    param set SERIAL3_PROTOCOL 5 // GPS
 //
-
+//  Pure SITL usage
+//     param set SIM_GPS_TYPE 11 // GSOF
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_GPS.h"

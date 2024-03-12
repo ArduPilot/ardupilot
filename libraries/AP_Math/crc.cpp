@@ -481,7 +481,7 @@ uint32_t crc_crc24(const uint8_t *bytes, uint16_t len)
 }
 
 // simple 8 bit checksum used by FPort
-uint8_t crc_sum8(const uint8_t *p, uint8_t len)
+uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len)
 {
     uint16_t sum = 0;
     for (uint8_t i=0; i<len; i++) {
@@ -599,13 +599,19 @@ uint8_t parity(uint8_t byte)
     return p;
 }
 
-// sums the bytes in the supplied buffer, returns that sum mod 256
-// (i.e. shoved into a uint8_t)
-uint8_t crc_sum_of_bytes(uint8_t *data, uint16_t count)
+// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
+uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
 {
-    uint8_t ret = 0;
+    uint16_t ret = 0;
     for (uint32_t i=0; i<count; i++) {
         ret += data[i];
     }
     return ret;
+}
+
+// sums the bytes in the supplied buffer, returns that sum mod 256
+// (i.e. shoved into a uint8_t)
+uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count)
+{
+    return crc_sum_of_bytes_16(data, count) & 0xFF;
 }

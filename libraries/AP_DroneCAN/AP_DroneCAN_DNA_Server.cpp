@@ -352,12 +352,14 @@ void AP_DroneCAN_DNA_Server::verify_nodes()
         return;
     }
 
+#if HAL_LOGGING_ENABLED
     uint8_t log_count = AP::logger().get_log_start_count();
     if (log_count != last_logging_count) {
         last_logging_count = log_count;
         logged.clearall();
     }
-    
+#endif
+
     //Check if we got acknowledgement from previous request
     //except for requests using our own node_id
     if (curr_verifying_node == self_node_id) {
@@ -438,6 +440,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     /*
       if we haven't logged this node then log it now
      */
+#if HAL_LOGGING_ENABLED
     if (!logged.get(transfer.source_node_id) && AP::logger().logging_started()) {
         logged.set(transfer.source_node_id);
         uint64_t uid[2];
@@ -445,6 +448,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
         // @LoggerMessage: CAND
         // @Description: Info from GetNodeInfo request
         // @Field: TimeUS: Time since system startup
+        // @Field: Driver: Driver index
         // @Field: NodeId: Node ID
         // @Field: UID1: Hardware ID, part 1
         // @Field: UID2: Hardware ID, part 2
@@ -452,9 +456,10 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
         // @Field: Major: major revision id
         // @Field: Minor: minor revision id
         // @Field: Version: AP_Periph git hash
-        AP::logger().Write("CAND", "TimeUS,NodeId,UID1,UID2,Name,Major,Minor,Version",
-                           "s#------", "F-------", "QBQQZBBI",
+        AP::logger().Write("CAND", "TimeUS,Driver,NodeId,UID1,UID2,Name,Major,Minor,Version",
+                           "s-#------", "F--------", "QBBQQZBBI",
                            AP_HAL::micros64(),
+                           _ap_dronecan.get_driver_index(),
                            transfer.source_node_id,
                            uid[0], uid[1],
                            rsp.name.data,
@@ -462,6 +467,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
                            rsp.software_version.minor,
                            rsp.software_version.vcs_commit);
     }
+#endif
 
     if (isNodeIDOccupied(transfer.source_node_id)) {
         //if node_id already registered, just verify if Unique ID matches as well

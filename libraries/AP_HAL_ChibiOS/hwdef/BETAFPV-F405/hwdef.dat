@@ -142,3 +142,5 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 # This is a whoop AIO board, not really suitable for anything other than copter
 AUTOBUILD_TARGETS Copter
+
+include ../include/minimize_fpv_osd.inc

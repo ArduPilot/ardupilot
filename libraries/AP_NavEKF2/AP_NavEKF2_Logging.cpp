@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 
@@ -331,3 +335,5 @@ void NavEKF2_core::Log_Write_GSF(uint64_t time_us) const
     }
     yawEstimator->Log_Write(time_us, LOG_NKY0_MSG, LOG_NKY1_MSG, DAL_CORE(core_index));
 }
+
+#endif  // HAL_LOGGING_ENABLED

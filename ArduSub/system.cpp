@@ -14,21 +14,6 @@ static void failsafe_check_static()
 
 void Sub::init_ardupilot()
 {
-    BoardConfig.init();
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
-#if STATS_ENABLED == ENABLED
-    // initialise stats module
-    g2.stats.init();
-#endif
-
-    // init cargo gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
-#endif
-
     // initialise notify system
     notify.init();
 
@@ -61,10 +46,6 @@ void Sub::init_ardupilot()
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
-
-#if LOGGING_ENABLED == ENABLED
-    log_init();
-#endif
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
@@ -161,15 +142,11 @@ void Sub::init_ardupilot()
     mission.init();
 
     // initialise AP_Logger library
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
     startup_INS_ground();
-
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
 
     // enable CPU failsafe
     mainloop_failsafe_enable();
@@ -264,18 +241,16 @@ bool Sub::optflow_position_ok()
     return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Sub::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
     ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
-#else
-    return false;
-#endif
 }
+#endif
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Avoidance/AP_Avoidance.h>

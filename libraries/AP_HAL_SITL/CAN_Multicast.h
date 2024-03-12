@@ -9,6 +9,7 @@
 
 class CAN_Multicast : public CAN_Transport {
 public:
+
     bool init(uint8_t instance) override;
     bool send(const AP_HAL::CANFrame &frame) override;
     bool receive(AP_HAL::CANFrame &frame) override;
@@ -17,7 +18,7 @@ public:
     }
 
 private:
-    SocketAPM sock{true};
+    SocketAPM_native sock{true};
 };
 
 #endif // HAL_NUM_CAN_IFACES

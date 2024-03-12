@@ -80,7 +80,7 @@ void Copter::ekf_check()
                 // limit count from climbing too high
                 ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_variance = true;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
@@ -97,7 +97,7 @@ void Copter::ekf_check()
             // if variances are flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -113,15 +113,27 @@ void Copter::ekf_check()
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance
 bool Copter::ekf_over_threshold()
 {
-    // return false immediately if disabled
-    if (g.fs_ekf_thresh <= 0.0f) {
+    // use EKF to get variance
+    float position_var, vel_var, height_var, tas_variance;
+    Vector3f mag_variance;
+    variances_valid = ahrs.get_variances(vel_var, position_var, height_var, mag_variance, tas_variance);
+
+    if (!variances_valid) {
         return false;
     }
 
-    // use EKF to get variance
-    float position_variance, vel_variance, height_variance, tas_variance;
-    Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+    uint32_t now_us = AP_HAL::micros();
+    float dt = (now_us - last_ekf_check_us) * 1e-6f;
+
+    // always update filtered values as this serves the vibration check as well
+    position_var = pos_variance_filt.apply(position_var, dt);
+    vel_var = vel_variance_filt.apply(vel_var, dt);
+    height_var = hgt_variance_filt.apply(height_var, dt);
+
+    last_ekf_check_us = now_us;
+
+    // return false if disabled
+    if (g.fs_ekf_thresh <= 0.0f) {
         return false;
     }
 
@@ -137,13 +149,13 @@ bool Copter::ekf_over_threshold()
 #if AP_OPTICALFLOW_ENABLED
     optflow_healthy = optflow.healthy();
 #endif
-    if (!optflow_healthy && (vel_variance >= (2.0f * g.fs_ekf_thresh))) {
+    if (!optflow_healthy && (vel_var >= (2.0f * g.fs_ekf_thresh))) {
         over_thresh_count += 2;
-    } else if (vel_variance >= g.fs_ekf_thresh) {
+    } else if (vel_var >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
 
-    if ((position_variance >= g.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
+    if ((position_var >= g.fs_ekf_thresh && over_thresh_count >= 1) || over_thresh_count >= 2) {
         return true;
     }
 
@@ -156,7 +168,7 @@ void Copter::failsafe_ekf_event()
 {
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
     // if disarmed take no action
     if (!motors->armed()) {
@@ -207,7 +219,7 @@ void Copter::failsafe_ekf_off_event(void)
         AP_Notify::flags.failsafe_ekf = false;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe Cleared");
     }
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
 // re-check if the flight mode requires GPS but EKF failsafe is active
@@ -232,14 +244,14 @@ void Copter::check_ekf_reset()
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
-        AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
+        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
 
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
     if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
         attitude_control->inertial_frame_reset();
         ekf_primary_core = ahrs.get_primary_core_index();
-        AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }
 }
@@ -264,14 +276,12 @@ void Copter::check_vibration()
     const bool innov_velD_posD_positive = is_positive(vel_innovation.z) && is_positive(pos_innovation.z);
 
     // check if vertical velocity variance is at least 1 (NK4.SV >= 1.0)
-    float position_variance, vel_variance, height_variance, tas_variance;
-    Vector3f mag_variance;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+    // filtered variances are updated in ekf_check() which runs at the same rate (10Hz) as this check
+    if (!variances_valid) {
         innovation_checks_valid = false;
     }
-
     const bool is_vibration_affected = ahrs.is_vibration_affected();
-    const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance > 1.0f)) || is_vibration_affected;
+    const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance_filt.get() > 1.0f)) || is_vibration_affected;
     const bool do_bad_vibe_actions = (g2.fs_vibe_enabled == 1) && bad_vibe_detected && motors->armed() && !flightmode->has_manual_throttle();
 
     if (!vibration_check.high_vibes) {
@@ -285,7 +295,7 @@ void Copter::check_vibration()
             vibration_check.clear_ms = 0;
             vibration_check.high_vibes = true;
             pos_control->set_vibe_comp(true);
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
         }
     } else {
@@ -300,7 +310,7 @@ void Copter::check_vibration()
             vibration_check.high_vibes = false;
             pos_control->set_vibe_comp(false);
             vibration_check.clear_ms = 0;
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
         }
     }

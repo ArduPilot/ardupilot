@@ -29,11 +29,11 @@ public:
     }
     
     // paths for UART devices
-    const char *_uart_path[9] {
+    const char *_serial_path[9] {
         "tcp:0:wait",
-        "GPS1",
         "tcp:2",
         "tcp:3",
+        "GPS1",
         "GPS2",
         "tcp:5",
         "tcp:6",
@@ -59,7 +59,7 @@ private:
     void _set_param_default(const char *parm);
     void _usage(void);
     void _sitl_setup();
-    void _setup_fdm(void);
+    bool _setup_fdm(void);
     void _setup_timer(void);
     void _setup_adc(void);
 
@@ -85,7 +85,8 @@ private:
 
     Scheduler *_scheduler;
 
-    SocketAPM _sitl_rc_in{true};
+    SocketAPM_native _sitl_rc_in{true};
+    bool _rc_in_started;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;

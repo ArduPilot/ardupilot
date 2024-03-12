@@ -31,6 +31,9 @@ void AP_Mount_SoloGimbal::update()
         return;
     }
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // update based on mount mode
     switch(get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
@@ -122,19 +125,26 @@ void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, const mav
     _gimbal.update_target(Vector3f{mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.get_bf_yaw()});
     _gimbal.receive_feedback(chan,msg);
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return;
     }
-
-    if(!_params_saved && logger->logging_started()) {
+#endif
+    if(!_params_saved
+#if HAL_LOGGING_ENABLED
+       && logger->logging_started()
+#endif
+        ) {
         _gimbal.fetch_params();       //last parameter save might not be stored in logger so retry
         _params_saved = true;
     }
 
+#if HAL_LOGGING_ENABLED
     if (_gimbal.get_log_dt() > 1.0f/25.0f) {
         _gimbal.write_logs();
     }
+#endif
 }
 
 void AP_Mount_SoloGimbal::handle_param_value(const mavlink_message_t &msg)

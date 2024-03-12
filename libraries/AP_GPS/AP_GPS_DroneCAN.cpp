@@ -526,10 +526,12 @@ void AP_GPS_DroneCAN::handle_status_msg(const ardupilot_gnss_Status& msg)
     healthy = msg.healthy;
     status_flags = msg.status;
     if (error_code != msg.error_codes) {
+#if HAL_LOGGING_ENABLED
         AP::logger().Write_MessageF("GPS %d: error changed (0x%08x/0x%08x)",
                                     (unsigned int)(state.instance + 1),
                                     error_code,
                                     msg.error_codes);
+#endif
         error_code = msg.error_codes;
     }
 }
@@ -714,6 +716,9 @@ bool AP_GPS_DroneCAN::read(void)
         interim_state.horizontal_accuracy = MIN(interim_state.horizontal_accuracy, 1000.0);
         interim_state.vertical_accuracy = MIN(interim_state.vertical_accuracy, 1000.0);
         interim_state.speed_accuracy = MIN(interim_state.speed_accuracy, 1000.0);
+
+        // prevent announcing multiple times
+        interim_state.announced_detection = state.announced_detection;
 
         state = interim_state;
         if (interim_state.last_corrected_gps_time_us) {

@@ -118,7 +118,7 @@ void AP_SmartRTL::init()
     // check if memory allocation failed
     if (_path == nullptr || _prune.loops == nullptr || _simplify.stack == nullptr) {
         log_action(SRTL_DEACTIVATED_INIT_FAILED);
-        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL deactivated: init failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL deactivated: init failed");
         free(_path);
         free(_prune.loops);
         free(_simplify.stack);
@@ -390,7 +390,7 @@ void AP_SmartRTL::run_background_cleanup()
     // warn if buffer is about to be filled
     uint32_t now_ms = AP_HAL::millis();
     if ((path_points_count >0) && (path_points_count >= _path_points_max - 9) && (now_ms - _last_low_space_notify_ms > 10000)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL Low on space!");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL Low on space!");
        _last_low_space_notify_ms = now_ms;
     }
 
@@ -866,9 +866,10 @@ void AP_SmartRTL::deactivate(SRTL_Actions action, const char *reason)
 {
     _active = false;
     log_action(action);
-    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL deactivated: %s", reason);
 }
 
+#if HAL_LOGGING_ENABLED
 // logging
 void AP_SmartRTL::log_action(SRTL_Actions action, const Vector3f &point) const
 {
@@ -876,6 +877,7 @@ void AP_SmartRTL::log_action(SRTL_Actions action, const Vector3f &point) const
         AP::logger().Write_SRTL(_active, _path_points_count, _path_points_max, action, point);
     }
 }
+#endif
 
 // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
 bool AP_SmartRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &loop2) const

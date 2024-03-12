@@ -38,6 +38,9 @@ Mode *Sub::mode_from_mode_num(const Mode::Number mode)
     case Mode::Number::ALT_HOLD:
         ret = &mode_althold;
         break;
+    case Mode::Number::SURFTRAK:
+        ret = &mode_surftrak;
+        break;
     case Mode::Number::POSHOLD:
         ret = &mode_poshold;
         break;
@@ -86,7 +89,7 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     if (new_flightmode->requires_GPS() &&
         !sub.position_ok()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -96,13 +99,13 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
         flightmode->has_manual_throttle() &&
         !new_flightmode->has_manual_throttle()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(false)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -116,7 +119,9 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode((uint8_t)control_mode, reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
     // update notify object

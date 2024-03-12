@@ -19,7 +19,7 @@ public:
     CLASS_NO_COPY(AP_Networking_Backend);
 
     virtual bool init() = 0;
-    virtual void update() = 0;
+    virtual void update() {};
 
 protected:
     AP_Networking &frontend;

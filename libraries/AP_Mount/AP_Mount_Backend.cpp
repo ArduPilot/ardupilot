@@ -358,6 +358,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
         return MAV_RESULT_FAILED;
     }
 
+    // backup the current values so we can detect a change
+    mavlink_control_id_t prev_control_id = mavlink_control_id;
+
     // convert negative packet1 and packet2 values
     int16_t new_sysid = packet.param1;
     switch (new_sysid) {
@@ -382,6 +385,11 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
             break;
     }
 
+    // send gimbal_manager_status if control has changed
+    if (prev_control_id != mavlink_control_id) {
+        GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
+    }
+
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -401,11 +409,12 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // write mount log packet
 void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 {
     // return immediately if no yaw estimate
-    float ahrs_yaw = AP::ahrs().yaw;
+    float ahrs_yaw = AP::ahrs().get_yaw();
     if (isnan(ahrs_yaw)) {
         return;
     }
@@ -448,6 +457,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
@@ -570,6 +580,47 @@ void AP_Mount_Backend::calculate_poi()
 }
 #endif
 
+// change to RC_TARGETING mode if rc inputs have changed by more than the dead zone
+// should be called on every update
+void AP_Mount_Backend::set_rctargeting_on_rcinput_change()
+{
+    // exit immediately if no RC input
+    if (!rc().has_valid_input()) {
+        return;
+    }
+
+    const RC_Channel *roll_ch = rc().find_channel_for_option(_instance == 0 ? RC_Channel::AUX_FUNC::MOUNT1_ROLL : RC_Channel::AUX_FUNC::MOUNT2_ROLL);
+    const RC_Channel *pitch_ch = rc().find_channel_for_option(_instance == 0 ? RC_Channel::AUX_FUNC::MOUNT1_PITCH : RC_Channel::AUX_FUNC::MOUNT2_PITCH);
+    const RC_Channel *yaw_ch = rc().find_channel_for_option(_instance == 0 ? RC_Channel::AUX_FUNC::MOUNT1_YAW : RC_Channel::AUX_FUNC::MOUNT2_YAW);
+
+    // get rc input
+    const int16_t roll_in = (roll_ch == nullptr) ? 0 : roll_ch->get_radio_in();
+    const int16_t pitch_in = (pitch_ch == nullptr) ? 0 : pitch_ch->get_radio_in();
+    const int16_t yaw_in = (yaw_ch == nullptr) ? 0 : yaw_ch->get_radio_in();
+
+    // if not in RC_TARGETING or RETRACT modes then check for RC change
+    if (get_mode() != MAV_MOUNT_MODE_RC_TARGETING && get_mode() != MAV_MOUNT_MODE_RETRACT) {
+        // get dead zones
+        const int16_t roll_dz = (roll_ch == nullptr) ? 10 : MAX(roll_ch->get_dead_zone(), 10);
+        const int16_t pitch_dz = (pitch_ch == nullptr) ? 10 : MAX(pitch_ch->get_dead_zone(), 10);
+        const int16_t yaw_dz = (yaw_ch == nullptr) ? 10 : MAX(yaw_ch->get_dead_zone(), 10);
+
+        // check if RC input has changed by more than the dead zone
+        if ((abs(last_rc_input.roll_in - roll_in) > roll_dz) ||
+            (abs(last_rc_input.pitch_in - pitch_in) > pitch_dz) ||
+            (abs(last_rc_input.yaw_in - yaw_in) > yaw_dz)) {
+            set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+        }
+    }
+
+    // if in RC_TARGETING or RETRACT mode then store last RC input
+    if (get_mode() == MAV_MOUNT_MODE_RC_TARGETING || get_mode() == MAV_MOUNT_MODE_RETRACT) {
+        last_rc_input.roll_in = roll_in;
+        last_rc_input.pitch_in = pitch_in;
+        last_rc_input.yaw_in = yaw_in;
+    }
+}
+
 // get pilot input (in the range -1 to +1) received through RC
 void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const
 {
@@ -685,7 +736,7 @@ float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
     if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(yaw - AP::ahrs().yaw);
+        return wrap_PI(yaw - AP::ahrs().get_yaw());
     }
 
     // target is already body-frame
@@ -701,7 +752,7 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
     }
 
     // convert to earth-frame
-    return wrap_PI(yaw + AP::ahrs().yaw);
+    return wrap_PI(yaw + AP::ahrs().get_yaw());
 }
 
 // sets roll, pitch, yaw and yaw_is_ef

@@ -27,18 +27,18 @@
 
 #if HAL_PICCOLO_CAN_ENABLE
 
-// Piccolo message groups form part of the CAN ID of each frame
+//! Piccolo message groups form part of the CAN ID of each frame
 enum class PiccoloCAN_MessageGroup : uint8_t {
-    SIMULATOR = 0x00,       // Simulator messages
-    SENSOR = 0x04,          // External sensors
-    ACTUATOR = 0x07,        // Actuators (e.g. ESC / servo)
-    ECU_OUT = 0x08,         // Messages *from* an ECU
-    ECU_IN = 0x09,          // Message *to* an ECU
+    SIMULATOR = 0x00,       //!< Simulator messages
+    SENSOR = 0x04,          //!< External sensors
+    ACTUATOR = 0x07,        //!< Actuators (e.g. ESC / servo)
+    ECU_OUT = 0x08,         //!< Messages *from* an ECU
+    ECU_IN = 0x09,          //!< Message *to* an ECU
 
-    SYSTEM = 0x19,          // System messages (e.g. bootloader)
+    SYSTEM = 0x19,          //!< System messages (e.g. bootloader)
 };
 
-// Piccolo actuator types differentiate between actuator frames
+//! Piccolo actuator types differentiate between actuator frames
 enum class PiccoloCAN_ActuatorType : uint8_t {
     SERVO = 0x00,
     ESC = 0x20,

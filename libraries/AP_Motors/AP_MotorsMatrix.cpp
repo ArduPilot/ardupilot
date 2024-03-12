@@ -148,7 +148,7 @@ void AP_MotorsMatrix::output_to_motors()
         case SpoolState::SHUT_DOWN: {
             // no output
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                if (motor_enabled[i]) {
+                if (motor_enabled_mask(i)) {
                     _actuator[i] = 0.0f;
                 }
             }

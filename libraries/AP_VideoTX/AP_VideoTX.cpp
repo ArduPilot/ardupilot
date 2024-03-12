@@ -515,7 +515,7 @@ void AP_VideoTX::change_power(int8_t position)
     // first find out how many possible levels there are
     uint8_t num_active_levels = 0;
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
-        if (_power_levels[i].active != PowerActive::Inactive) {
+        if (_power_levels[i].active != PowerActive::Inactive && _power_levels[i].mw <= _max_power_mw) {
             num_active_levels++;
         }
     }

@@ -1,13 +1,13 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #if AP_DDS_ENABLED
-
 #include <uxr/client/util/ping.h>
 
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -32,6 +32,7 @@
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
@@ -44,6 +45,7 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
+ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
@@ -391,6 +393,8 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     if (ahrs.get_location(loc)) {
         msg.pose.position.latitude = loc.lat * 1E-7;
         msg.pose.position.longitude = loc.lng * 1E-7;
+        // TODO this is assumed to be absolute frame in WGS-84 as per the GeoPose message definition in ROS.
+        // Use loc.get_alt_frame() to convert if necessary.
         msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
     }
 
@@ -412,6 +416,42 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     }
+}
+
+void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_NED_FRAME_ID);
+
+    auto &imu = AP::ins();
+    auto &ahrs = AP::ahrs();
+
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    Quaternion orientation;
+    if (ahrs.get_quaternion(orientation)) {
+        msg.orientation.x = orientation[0];
+        msg.orientation.y = orientation[1];
+        msg.orientation.z = orientation[2];
+        msg.orientation.w = orientation[3];
+    }
+    msg.orientation_covariance[0] = -1;
+
+    uint8_t accel_index = ahrs.get_primary_accel_index();
+    uint8_t gyro_index = ahrs.get_primary_gyro_index();
+    const Vector3f accel_data = imu.get_accel(accel_index);
+    const Vector3f gyro_data = imu.get_gyro(gyro_index);
+
+    // Populate the message fields
+    msg.linear_acceleration.x = accel_data.x;
+    msg.linear_acceleration.y = accel_data.y;
+    msg.linear_acceleration.z = accel_data.z;
+
+    msg.angular_velocity.x = gyro_data.x;
+    msg.angular_velocity.y = gyro_data.y;
+    msg.angular_velocity.z = gyro_data.z;
+    msg.angular_velocity_covariance[0] = -1;
+    msg.linear_acceleration_covariance[0] = -1;
 }
 
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
@@ -501,6 +541,19 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #if AP_EXTERNAL_CONTROL_ENABLED
         if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
             // TODO #23430 handle velocity control failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
+        break;
+    }
+    case topics[to_underlying(TopicIndex::GLOBAL_POSITION_SUB)].dr_id.id: {
+        const bool success = ardupilot_msgs_msg_GlobalPosition_deserialize_topic(ub, &rx_global_position_control_topic);
+        if (success == false) {
+            break;
+        }
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::handle_global_position_control(rx_global_position_control_topic)) {
+            // TODO #23430 handle global position control failure through rosout, throttled.
         }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
@@ -942,6 +995,21 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 
+void AP_DDS_Client::write_imu_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = sensor_msgs_msg_Imu_size_of_topic(&imu_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::IMU_PUB)].dw_id, &ub, topic_size);
+        const bool success = sensor_msgs_msg_Imu_serialize_topic(&ub, &imu_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1005,6 +1073,12 @@ void AP_DDS_Client::update()
         update_topic(tx_local_velocity_topic);
         last_local_velocity_time_ms = cur_time_ms;
         write_tx_local_velocity_topic();
+    }
+
+    if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
+        update_topic(imu_topic);
+        last_imu_time_ms = cur_time_ms;
+        write_imu_topic();
     }
 
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {

@@ -31,6 +31,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Common/ExpandingString.h>
 #include <AP_HAL/SIMState.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -113,10 +114,12 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     _vehicle_tasks = tasks;
     _num_vehicle_tasks = num_tasks;
 
+#if AP_VEHICLE_ENABLED
     AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
         vehicle->get_common_scheduler_tasks(_common_tasks, _num_common_tasks);
     }
+#endif
 
     _num_tasks = _num_vehicle_tasks + _num_common_tasks;
 
@@ -357,7 +360,7 @@ void AP_Scheduler::loop()
           for testing low CPU conditions we can add an optional delay in SITL
         */
         auto *sitl = AP::sitl();
-        uint32_t loop_delay_us = sitl->loop_delay.get();
+        uint32_t loop_delay_us = sitl? sitl->loop_delay.get() : 1000U;
         hal.scheduler->delay_microseconds(loop_delay_us);
     }
 #endif
@@ -417,6 +420,7 @@ void AP_Scheduler::loop()
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_Scheduler::update_logging()
 {
     if (debug_flags()) {
@@ -459,6 +463,7 @@ void AP_Scheduler::Log_Write_Performance()
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // display task statistics as text buffer for @SYS/tasks.txt
 void AP_Scheduler::task_info(ExpandingString &str)

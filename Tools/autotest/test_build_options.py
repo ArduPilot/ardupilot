@@ -49,7 +49,7 @@ class TestBuildOptions(object):
                  do_step_disable_in_turn=True,
                  do_step_enable_in_turn=True,
                  build_targets=None,
-                 board="DevEBoxH7v2",
+                 board="CubeOrange",  # DevEBoxH7v2 also works
                  extra_hwdef=None):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
@@ -182,8 +182,6 @@ class TestBuildOptions(object):
                 # or all vehicles:
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
-                    'AC_AVOID_ENABLED',  # Rover doesn't obey this
-                    'AC_OAPATHPLANNER_ENABLED',   # Rover doesn't obey this
                     'BEACON_ENABLED',  # Rover doesn't obey this (should also be AP_BEACON_ENABLED)
                     'WINCH_ENABLED',  # Copter doesn't use this; should use AP_WINCH_ENABLED
                 ])

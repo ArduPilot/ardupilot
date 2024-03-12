@@ -240,6 +240,10 @@ protected:
     void calculate_poi();
 #endif
 
+    // change to RC_TARGETTING mode if rc inputs have changed by more than the dead zone
+    // should be called on every update
+    void set_rctargeting_on_rcinput_change();
+
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
 
@@ -308,11 +312,22 @@ protected:
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 
+    // structure holding the last RC inputs
+    struct {
+        int16_t roll_in;
+        int16_t pitch_in;
+        int16_t yaw_in;
+    } last_rc_input;
+
     // structure holding mavlink sysid and compid of controller of this gimbal
     // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
-    struct {
+    struct mavlink_control_id_t {
         uint8_t sysid;
         uint8_t compid;
+
+        // equality operators
+        bool operator==(const mavlink_control_id_t &rhs) const { return (sysid == rhs.sysid && compid == rhs.compid); }
+        bool operator!=(const mavlink_control_id_t &rhs) const { return !(*this == rhs); }
     } mavlink_control_id;
 };
 

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
+
 #include "AP_OABendyRuler.h"
 #include <AC_Avoidance/AP_OADatabase.h>
 #include <AC_Fence/AC_Fence.h>
@@ -78,8 +82,8 @@ AP_OABendyRuler::AP_OABendyRuler()
     _bearing_prev = FLT_MAX;
 }
 
-// run background task to find best path and update avoidance_results
-// returns true and updates origin_new and destination_new if a best path has been found
+// run background task to find best path
+// returns true and updates origin_new and destination_new if a best path has been found.  returns false if OA is not required
 // bendy_type is set to the type of BendyRuler used
 bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only)
 {
@@ -318,7 +322,7 @@ bool AP_OABendyRuler::search_vertical_path(const Location &current_loc, const Lo
                         destination_new = current_loc;
                         destination_new.offset_bearing_and_pitch(bearing_to_dest, pitch_delta, distance_to_dest);
                         _current_lookahead = MIN(_lookahead, _current_lookahead * 1.1f);
-                    
+
                         Write_OABendyRuler((uint8_t)OABendyType::OA_BENDY_VERTICAL, active, bearing_to_dest, pitch_delta, false, margin, destination, destination_new);
                         return active;
                     }
@@ -708,3 +712,5 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
 
     return false;
 }
+
+#endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED

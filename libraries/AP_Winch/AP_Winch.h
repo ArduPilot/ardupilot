@@ -23,6 +23,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AC_PID/AC_PID.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 class AP_Winch_Backend;
 
@@ -64,8 +65,10 @@ public:
     // send status to ground station
     void send_status(const class GCS_MAVLINK &channel);
 
+#if HAL_LOGGING_ENABLED
     // write log
     void write_log();
+#endif
 
     // returns true if pre arm checks have passed
     bool pre_arm_check(char *failmsg, uint8_t failmsg_len) const;

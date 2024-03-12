@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 
@@ -234,7 +238,8 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
     }
 
     // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
-    if (rngBcn.fuseDataReportIndex >= rngBcn.N) {
+    if (rngBcn.fuseDataReportIndex >= rngBcn.N ||
+        rngBcn.fuseDataReportIndex > rngBcn.numFusionReports) {
         rngBcn.fuseDataReportIndex = 0;
     }
 
@@ -440,3 +445,5 @@ void NavEKF3_core::Log_Write_GSF(uint64_t time_us)
     }
     yawEstimator->Log_Write(time_us, LOG_XKY0_MSG, LOG_XKY1_MSG, DAL_CORE(core_index));
 }
+
+#endif  // HAL_LOGGING_ENABLED

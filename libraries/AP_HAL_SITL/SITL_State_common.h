@@ -8,6 +8,7 @@
 #define SITL_MCAST_PORT 20721
 #define SITL_SERVO_PORT 20722
 
+#include <AP_HAL/utility/Socket_native.h>
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
@@ -34,6 +35,7 @@
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
+#include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -47,6 +49,7 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
+#include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
 
 #include "AP_HAL_SITL.h"
@@ -55,10 +58,6 @@
 #include "RCInput.h"
 
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/udp.h>
-#include <arpa/inet.h>
 #include <vector>
 
 #include <AP_Baro/AP_Baro.h>
@@ -67,7 +66,6 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <SITL/SITL.h>
 #include <SITL/SITL_Input.h>
-#include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
 
@@ -197,9 +195,15 @@ public:
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;
 
-    // simulated LORD MicroStrain system
+    // simulated MicroStrain system
     SITL::MicroStrain5 *microstrain5;
 
+    // simulated MicroStrain system
+    SITL::MicroStrain7 *microstrain7;
+
+    // simulated InertialLabs INS
+    SITL::InertialLabs *inertiallabs;
+    
 #if HAL_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
@@ -217,7 +221,7 @@ public:
     SITL::EFI_Hirth *efi_hirth;
 
     // output socket for flightgear viewing
-    SocketAPM fg_socket{true};
+    SocketAPM_native fg_socket{true};
     
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 

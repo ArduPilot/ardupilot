@@ -37,7 +37,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
-
+#include <AP_RTC/AP_RTC.h>
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
 #define ADSB_SQUAWK_OCTAL_DEFAULT       1200
@@ -365,7 +365,9 @@ void AP_ADSB::update(void)
 
     // Altitude difference between sea level pressure and current
     // pressure (in metres)
-    loc.baro_alt_press_diff_sea_level = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure());
+    if (loc.baro_is_healthy) {
+        loc.baro_alt_press_diff_sea_level = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure());
+    }
 
     update(loc);
 }
@@ -679,10 +681,9 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
     out_state.cfg.stall_speed_cm = packet.stallSpeed;
 
     // guard against string with non-null end char
-    const char c = out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1];
-    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = 0;
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
-    out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = c;
+    char tmp_callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN+1] {};
+    memcpy(tmp_callsign, out_state.cfg.callsign, MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, tmp_callsign);
 
     // send now
     out_state.last_config_ms = 0;

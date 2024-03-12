@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include "AC_AutoTune_config.h"
+
+#if AC_AUTOTUNE_ENABLED
+
 #include "AC_AutoTune.h"
 #include <AP_Math/chirp.h>
 #include <GCS_MAVLink/GCS.h>
@@ -99,6 +103,7 @@ protected:
     // reverse direction for twitch test
     bool twitch_reverse_direction() override { return positive_direction; }
 
+#if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
     void Log_AutoTune() override;
     void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
@@ -110,6 +115,7 @@ protected:
     // methods to log autotune frequency response results
     void Log_AutoTuneSweep() override;
     void Log_Write_AutoTuneSweep(float freq, float gain, float phase);
+#endif
 
     // send intermittent updates to user on status of tune
     void do_gcs_announcements() override;
@@ -296,3 +302,5 @@ private:
 
     Chirp chirp_input;
 };
+
+#endif  // AC_AUTOTUNE_ENABLED

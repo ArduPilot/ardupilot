@@ -1,3 +1,7 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_BattMonitor_Params.h"
@@ -17,7 +21,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Generic,8:DroneCAN-BatteryInfo,9:ESC,10:Sum Of Selected Monitors,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign,16:SMBus-Maxell,17:Generator-Elec,18:Generator-Fuel,19:Rotoye,20:MPPT,21:INA2XX,22:LTC2946,23:Torqeedo,24:FuelLevelAnalog,25:Synthetic Current and Analog Voltage,26:INA239_SPI,27:EFI,28:AD7091R5
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Generic,8:DroneCAN-BatteryInfo,9:ESC,10:Sum Of Selected Monitors,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign,16:SMBus-Maxell,17:Generator-Elec,18:Generator-Fuel,19:Rotoye,20:MPPT,21:INA2XX,22:LTC2946,23:Torqeedo,24:FuelLevelAnalog,25:Synthetic Current and Analog Voltage,26:INA239_SPI,27:EFI,28:AD7091R5,29:Scripting
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),
@@ -99,7 +103,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // @Param: CRT_MAH
     // @DisplayName: Battery critical capacity
-    // @Description: Battery capacity at which the critical battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@_FS_CRT_ACT parameter.
+    // @Description: Battery capacity at which the critical battery failsafe is triggered. Set to 0 to disable battery remaining failsafe. If the battery capacity drops below this level the vehicle will perform the failsafe specified by the @PREFIX@FS_CRT_ACT parameter.
     // @Units: mAh
     // @Increment: 50
     // @User: Standard
@@ -172,3 +176,5 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 AP_BattMonitor_Params::AP_BattMonitor_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#endif  // AP_BATTERY_ENABLED

@@ -19,6 +19,7 @@ bool ModeQLand::_enter()
 #if AP_FENCE_ENABLED
     plane.fence.auto_disable_fence_for_landing();
 #endif
+
     return true;
 }
 
@@ -29,6 +30,9 @@ void ModeQLand::update()
 
 void ModeQLand::run()
 {
+    /*
+      use QLOITER to do the main control
+     */
     plane.mode_qloiter.run();
 }
 

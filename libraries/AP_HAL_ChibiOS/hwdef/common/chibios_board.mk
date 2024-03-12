@@ -68,10 +68,6 @@ ifeq ($(USE_FATFS),yes)
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
-ifeq ($(USE_LWIP),yes)
-include $(CHIBIOS)/os/various/lwip_bindings/lwip.mk
-endif
-
 #
 # Build global options
 ##############################################################################
@@ -147,10 +143,6 @@ CSRC += $(HWDEF)/common/stubs.c \
 ifeq ($(USE_USB_MSD),yes)
 CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
         $(CHIBIOS)/os/hal/src/hal_usb_msd.c
-endif
-
-ifeq ($(USE_LWIP),yes)
-CSRC += $(CHIBIOS)/os/various/evtimer.c
 endif
 
 #	   $(TESTSRC) \

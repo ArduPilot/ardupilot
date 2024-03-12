@@ -20,6 +20,7 @@
 #include "SIM_Plane.h"
 
 #include <stdio.h>
+#include <AP_Filesystem/AP_Filesystem_config.h>
 
 using namespace SITL;
 
@@ -80,6 +81,7 @@ Plane::Plane(const char *frame_str) :
         thrust_scale *= 1.5;
     }
 
+#if AP_FILESYSTEM_FILE_READING_ENABLED
     if (strstr(frame_str, "-3d")) {
         aerobatic = true;
         thrust_scale *= 1.5;
@@ -87,7 +89,8 @@ Plane::Plane(const char *frame_str) :
         AP_Param::load_defaults_file("@ROMFS/models/plane.parm", false);
         AP_Param::load_defaults_file("@ROMFS/models/plane-3d.parm", false);
     }
-    
+#endif
+
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
     }

@@ -18,6 +18,7 @@
 #include "AP_Filesystem_config.h"
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/Util.h>
+#include <AP_Math/AP_Math.h>
 
 static AP_Filesystem fs;
 
@@ -62,17 +63,16 @@ static AP_Filesystem_Mission fs_mission;
 const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { nullptr, fs_local },
 #if AP_FILESYSTEM_ROMFS_ENABLED
-    { "@ROMFS/", fs_romfs },
+    { "@ROMFS", fs_romfs },
 #endif
 #if AP_FILESYSTEM_PARAM_ENABLED
-    { "@PARAM/", fs_param },
+    { "@PARAM", fs_param },
 #endif
 #if AP_FILESYSTEM_SYS_ENABLED
-    { "@SYS/", fs_sys },
     { "@SYS", fs_sys },
 #endif
 #if AP_FILESYSTEM_MISSION_ENABLED
-    { "@MISSION/", fs_mission },
+    { "@MISSION", fs_mission },
 #endif
 };
 
@@ -88,10 +88,19 @@ extern const AP_HAL::HAL& hal;
  */
 const AP_Filesystem::Backend &AP_Filesystem::backend_by_path(const char *&path) const
 {
+    // ignore leading slashes:
+    const char *path_with_no_leading_slash = path;
+    if (path_with_no_leading_slash[0] == '/') {
+        path_with_no_leading_slash = &path_with_no_leading_slash[1];
+    }
     for (uint8_t i=1; i<NUM_BACKENDS; i++) {
         const uint8_t plen = strlen(backends[i].prefix);
-        if (strncmp(path, backends[i].prefix, plen) == 0) {
+        if (strncmp(path_with_no_leading_slash, backends[i].prefix, plen) == 0) {
+            path = path_with_no_leading_slash;
             path += plen;
+            if (strlen(path) > 0 && path[0] == '/') {
+                path++;
+            }
             return backends[i];
         }
     }
@@ -186,6 +195,18 @@ int AP_Filesystem::rename(const char *oldpath, const char *newpath)
 
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
 {
+    // support reading a list of "@" filesystems (e.g. @SYS) in
+    // listing of root directory.  Note that backend_by_path modifies
+    // its parameter.
+    if (strlen(pathname) == 0 ||
+        (strlen(pathname) == 1 && pathname[0] == '/')) {
+        virtual_dirent.backend_ofs = 0;
+        virtual_dirent.d_off = 0;
+        virtual_dirent.de.d_type = DT_DIR;
+    } else {
+        virtual_dirent.backend_ofs = 255;
+    }
+
     const Backend &backend = backend_by_path(pathname);
     DirHandle *h = new DirHandle;
     if (!h) {
@@ -197,6 +218,7 @@ AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
         return nullptr;
     }
     h->fs_index = BACKEND_IDX(backend);
+
     return h;
 }
 
@@ -206,7 +228,34 @@ struct dirent *AP_Filesystem::readdir(DirHandle *dirp)
         return nullptr;
     }
     const Backend &backend = backends[dirp->fs_index];
-    return backend.fs.readdir(dirp->dir);
+    struct dirent * ret = backend.fs.readdir(dirp->dir);
+    if (ret != nullptr) {
+        return ret;
+    }
+
+    // virtual directory entries in the root directory (e.g. @SYS, @MISSION)
+    for (; ret == nullptr && virtual_dirent.backend_ofs < ARRAY_SIZE(AP_Filesystem::backends); virtual_dirent.backend_ofs++) {
+        const char *prefix = backends[virtual_dirent.backend_ofs].prefix;
+        if (prefix == nullptr) {
+            continue;
+        }
+        if (prefix[0] != '@') {
+            continue;
+        }
+
+        // only return @ entries in root if we can successfully opendir them:
+        auto *d = backends[virtual_dirent.backend_ofs].fs.opendir("");
+        if (d == nullptr) {
+            continue;
+        }
+        backends[virtual_dirent.backend_ofs].fs.closedir(d);
+
+        // found a virtual directory we haven't returned yet
+        strncpy_noterm(virtual_dirent.de.d_name, prefix, sizeof(virtual_dirent.de.d_name));
+        virtual_dirent.d_off++;
+        ret = &virtual_dirent.de;
+    }
+    return ret;
 }
 
 int AP_Filesystem::closedir(DirHandle *dirp)
@@ -286,6 +335,40 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
     return true;
 }
 
+// run crc32 over file with given name, returns true if successful
+bool AP_Filesystem::crc32(const char *fname, uint32_t& checksum)
+{
+    // Ensure value is initialized
+    checksum = 0;
+
+    // Open file in readonly mode
+    int fd = open(fname, O_RDONLY);
+    if (fd == -1) {
+        return false;
+    }
+
+    // Buffer to store data temporarily
+    const ssize_t buff_len = 64;
+    uint8_t buf[buff_len];
+
+    // Read into buffer and run crc
+    ssize_t read_size;
+    do {
+        read_size = read(fd, buf, buff_len);
+        if (read_size == -1) {
+            // Read error, note that we have changed the checksum value in this case
+            close(fd);
+            return false;
+        }
+        checksum = crc_crc32(checksum, buf, MIN(read_size, buff_len));
+    } while (read_size > 0);
+
+    close(fd);
+
+    return true;
+}
+
+
 #if AP_FILESYSTEM_FORMAT_ENABLED
 // format filesystem
 bool AP_Filesystem::format(void)
@@ -300,6 +383,30 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
     return LOCAL_BACKEND.fs.get_format_status();
 }
 #endif
+
+/*
+  stat wrapper for scripting
+ */
+bool AP_Filesystem::stat(const char *pathname, stat_t &stbuf)
+{
+    struct stat st;
+    if (fs.stat(pathname, &st) != 0) {
+        return false;
+    }
+    stbuf.size = st.st_size;
+    stbuf.mode = st.st_mode;
+    // these wrap in 2038
+    stbuf.atime = st.st_atime;
+    stbuf.ctime = st.st_ctime;
+    stbuf.mtime = st.st_mtime;
+    return true;
+}
+
+// get_singleton for scripting
+AP_Filesystem *AP_Filesystem::get_singleton(void)
+{
+    return &fs;
+}
 
 namespace AP
 {

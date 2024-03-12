@@ -41,6 +41,30 @@ extern const AP_HAL::HAL& hal;
 #pragma GCC diagnostic pop
 #endif
 
+mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
+#if HAL_GCS_ENABLED
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return nullptr;
+    }
+    return link->channel_buffer();
+#else
+    return nullptr;
+#endif
+}
+
+mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
+#if HAL_GCS_ENABLED
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return nullptr;
+    }
+    return link->channel_status();
+#else
+    return nullptr;
+#endif
+}
+
 #endif // HAL_MAVLINK_BINDINGS_ENABLED
 
 #if HAL_GCS_ENABLED
@@ -63,22 +87,6 @@ GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t c
         return nullptr;
     }
     return gcs().chan(channel);
-}
-
-mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
-    GCS_MAVLINK *link = gcs().chan(chan);
-    if (link == nullptr) {
-        return nullptr;
-    }
-    return link->channel_buffer();
-}
-
-mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
-    GCS_MAVLINK *link = gcs().chan(chan);
-    if (link == nullptr) {
-        return nullptr;
-    }
-    return link->channel_status();
 }
 
 // set a channel as private. Private channels get sent heartbeats, but
@@ -140,7 +148,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     }
     const size_t written = mavlink_comm_port[chan]->write(buf, len);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (written < len) {
+    if (written < len && !mavlink_comm_port[chan]->is_write_locked()) {
         AP_HAL::panic("Short write on UART: %lu < %u", (unsigned long)written, len);
     }
 #else

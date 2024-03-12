@@ -30,6 +30,12 @@
 #include "hal.h"
 #include <hrt.h>
 
+// we rely on systimestamp_t for 64 bit timestamps
+static_assert(sizeof(uint64_t) == sizeof(systimestamp_t), "unexpected systimestamp_t size");
+
+#define STR(x) #x
+#define XSTR(x) STR(x)
+
 #if CH_CFG_ST_RESOLUTION == 16
 static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
 #elif CH_CFG_ST_RESOLUTION == 32
@@ -39,9 +45,9 @@ static_assert(sizeof(systime_t) == sizeof(sysinterval_t), "expected systime_t sa
 
 #if defined(HAL_EXPECTED_SYSCLOCK)
 #ifdef STM32_SYS_CK
-static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value");
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
 #elif defined(STM32_HCLK)
-static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value");
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
 #else
 #error "unknown system clock"
 #endif
@@ -385,7 +391,7 @@ __FASTRAMFUNC__ uint64_t micros64()
 
 __FASTRAMFUNC__ uint64_t millis64()
 {
-    return hrt_micros64() / 1000U;
+    return hrt_millis64();
 }
 
 

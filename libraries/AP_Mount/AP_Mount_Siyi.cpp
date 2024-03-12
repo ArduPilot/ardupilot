@@ -103,6 +103,9 @@ void AP_Mount_Siyi::update()
     // run zoom control
     update_zoom_control();
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // Get the target angles or rates first depending on the current mount mode
     switch (get_mode()) {
         case MAV_MOUNT_MODE_RETRACT: {
@@ -350,11 +353,16 @@ void AP_Mount_Siyi::process_packet()
         _fw_version.camera.major = _msg_buff[_msg_buff_data_start+2];  // firmware major version
         _fw_version.camera.minor = _msg_buff[_msg_buff_data_start+1];  // firmware minor version
         _fw_version.camera.patch = _msg_buff[_msg_buff_data_start+0];  // firmware revision (aka patch)
-        
+
         _fw_version.gimbal.major = _msg_buff[_msg_buff_data_start+6];  // firmware major version
         _fw_version.gimbal.minor = _msg_buff[_msg_buff_data_start+5];  // firmware minor version
         _fw_version.gimbal.patch = _msg_buff[_msg_buff_data_start+4];  // firmware revision (aka patch)
-        
+
+        // camera firmware version may be all zero soon after startup.  giveup and try again later
+        if (_fw_version.camera.major == 0 && _fw_version.camera.minor == 0 && _fw_version.camera.patch == 0) {
+            break;
+        }
+
         _fw_version.received = true;
 
         // display camera info to user
@@ -479,6 +487,8 @@ void AP_Mount_Siyi::process_packet()
                     sev = MAV_SEVERITY_WARNING;
                     break;
             }
+            (void)msg;  // in case GCS_SEND_TEXT not available
+            (void)sev;  // in case GCS_SEND_TEXT not available
             GCS_SEND_TEXT(sev, "Siyi: recording %s", msg);
         }
 
@@ -704,7 +714,7 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);
@@ -1122,9 +1132,9 @@ void AP_Mount_Siyi::send_attitude(void)
     const uint32_t now_ms = AP_HAL::millis();
 
     attitude.time_boot_ms = now_ms;
-    attitude.roll = ahrs.roll;
-    attitude.pitch = ahrs.pitch;
-    attitude.yaw = ahrs.yaw;
+    attitude.roll = ahrs.get_roll();
+    attitude.pitch = ahrs.get_pitch();
+    attitude.yaw = ahrs.get_yaw();
     attitude.rollspeed = gyro.x;
     attitude.pitchspeed = gyro.y;
     attitude.yawspeed = gyro.z;

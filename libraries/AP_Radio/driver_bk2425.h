@@ -6,9 +6,11 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Radio_config.h"
 
-#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
+#if AP_RADIO_BK2425_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #define SUPPORT_BK_DEBUG_PINS 0 // 0=UART6 is for GPS, 1=UART6 is debug gpio
 #define TX_SPEED 250u // Default transmit speed in kilobits per second.
@@ -414,4 +416,4 @@ private:
     BkRadioMode bkMode;
 };
 
-#endif
+#endif  // AP_RADIO_BK2425_ENABLED

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ENABLED
+
 #include "AP_WindVane.h"
 #include "AP_WindVane_Backend.h"
 
@@ -27,7 +31,9 @@ AP_WindVane_Backend::AP_WindVane_Backend(AP_WindVane &frontend) :
 // calibrate WindVane
 void AP_WindVane_Backend::calibrate()
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "WindVane: No cal required");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: No cal required");
     _frontend._calibration.set_and_save(0);
     return;
 }
+
+#endif  // AP_WINDVANE_ENABLED

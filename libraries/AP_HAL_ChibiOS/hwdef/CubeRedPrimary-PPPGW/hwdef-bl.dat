@@ -1,0 +1,40 @@
+include ../CubeRedPrimary/hwdef-bl.dat
+
+# setup build for a peripheral bootloader
+env AP_PERIPH 1
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_CUBERED_PERIPH
+
+# CAN config
+PE10 GPIOCAN1_TERM OUTPUT HIGH
+PG4 GPIOCAN2_TERM OUTPUT HIGH
+
+PB8    CAN1_RX    CAN1
+PB9    CAN1_TX    CAN1
+
+PB5    CAN2_RX    CAN2
+PB6    CAN2_TX    CAN2
+
+# Ethernet
+PC1  ETH_MDC            ETH1
+PA2  ETH_MDIO           ETH1
+PC4  ETH_RMII_RXD0      ETH1
+PC5  ETH_RMII_RXD1      ETH1
+PB12 ETH_RMII_TXD0      ETH1
+PB13 ETH_RMII_TXD1      ETH1
+PB11 ETH_RMII_TX_EN     ETH1
+PA7  ETH_RMII_CRS_DV    ETH1
+PA1  ETH_RMII_REF_CLK   ETH1
+
+define BOARD_PHY_ID  MII_LAN8720_ID
+define BOARD_PHY_RMII
+
+# Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
+# Note, lower 3 bytes (ADDR3,4,5) will be replaced with the platform UUID
+define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "A8:B0:28:00:00:00"
+
+# allow load from USB too
+SERIAL_ORDER OTG1
+
+include ../include/network_bootloader.inc

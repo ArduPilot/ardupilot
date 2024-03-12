@@ -85,7 +85,10 @@ public:
 
     // check settings are valid
     bool arming_checks(size_t buflen, char *buffer) const;
-    
+
+    // Return the relay index that would be used for param conversion to relay functions
+    bool get_legacy_relay_index(int8_t &index) const;
+
     static const struct AP_Param::GroupInfo        var_info[];
 
     // get singleton instance
