@@ -1461,8 +1461,8 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             }
 
             if (msg_valid) {
-                Vector2f vel{pos_target.vx, pos_target.vy};
-                Vector2f accel{pos_target.afx, pos_target.afy};
+                const Vector2f vel{pos_target.vx, pos_target.vy};
+                const Vector2f accel{pos_target.afx, pos_target.afy};
                 Vector2f unit_vel;
 
                 float path_curvature{0.0};
