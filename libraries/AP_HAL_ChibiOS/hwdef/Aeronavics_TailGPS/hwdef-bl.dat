@@ -3,6 +3,9 @@
 # MCU class and specific type
 MCU STM32F103 STM32F103xB
 
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 23
+
 # reserve some space for params
 APP_START_OFFSET_KB 2
 
@@ -17,20 +20,13 @@ OSCILLATOR_HZ 16000000
 
 define CH_CFG_ST_FREQUENCY 1000
 
-FLASH_RESERVE_START_KB 0
-FLASH_BOOTLOADER_LOAD_KB 36
+# assume 128k flash part
 FLASH_SIZE_KB 128
-
-# reserve some space for params
-APP_START_OFFSET_KB 4
-
-
 
 define HAL_USE_UART FALSE
 define HAL_USE_SERIAL FALSE
 
 PB0 LED_BOOTLOADER OUTPUT LOW
-PB1 LED_2 OUTPUT LOW
 define HAL_LED_ON 1
 
 define HAL_NO_GPIO_IRQ
@@ -52,20 +48,12 @@ define HAL_DISABLE_LOOP_DELAY
 # enable CAN support
 PA11 CAN_RX CAN
 PA12 CAN_TX CAN
-
-CAN_ORDER 1
-#define HAL_USE_CAN TRUE
-#define STM32_CAN_USE_CAN1 TRUE
+define HAL_USE_CAN TRUE
+define STM32_CAN_USE_CAN1 TRUE
 
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
 
-# use PB6 (normally I2C1_SCL) as "hold in bootloader" pin
-# this has a hw pullup, so if we set it as input floating
-# and look for it low then we know user has pulled it down and
-# want to stay in the bootloader
-#PB6 STAY_IN_BOOTLOADER INPUT FLOATING
-
 
 # Add CS pins to ensure they are high in bootloader
-PA4 GPS_CS CS
+PA4 MAG_CS CS
