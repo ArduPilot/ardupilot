@@ -141,6 +141,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AP_LANDINGGEAR_ENABLED
     SCHED_TASK(landing_gear_update, 5, 50, 159),
 #endif
+#if AC_PRECLAND_ENABLED
+    SCHED_TASK(precland_update, 400, 50, 160),
+#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -952,5 +955,14 @@ bool Plane::flight_option_enabled(FlightOptions flight_option) const
 {
     return g2.flight_options & flight_option;
 }
+
+#if AC_PRECLAND_ENABLED
+void Plane::precland_update(void)
+{
+    // alt will be unused if we pass false through as the second parameter:
+    return g2.precland.update(rangefinder_state.height_estimate*100,
+                              rangefinder_state.in_range && rangefinder_state.in_use);
+}
+#endif
 
 AP_HAL_MAIN_CALLBACKS(&plane);
