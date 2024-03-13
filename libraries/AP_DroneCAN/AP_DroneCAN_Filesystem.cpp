@@ -236,7 +236,7 @@ void AP_DroneCAN_Filesystem_Server::handle_get_directory_entry_info_request(cons
     }
 
     // Increment to desired offset
-    struct dirent *entry;
+    struct dirent *entry = nullptr;
     for (uint32_t i = 0; i <= msg.entry_index; i++ ) {
         entry = AP::FS().readdir(dir);
         if (entry == nullptr) {
@@ -244,29 +244,27 @@ void AP_DroneCAN_Filesystem_Server::handle_get_directory_entry_info_request(cons
         }
     }
 
+    if (entry == nullptr) {
+        // No entry, fill in error
+        response.error.value = errno;
+
+    } else {
+        // Found entry, fill in details
+        response.entry_full_path.path.len = strncpy_noterm((char*)response.entry_full_path.path.data, entry->d_name, sizeof(response.entry_full_path.path.data)-1);
+
+        if (entry->d_type == DT_REG) {
+            response.entry_type.flags |= UAVCAN_PROTOCOL_FILE_ENTRYTYPE_FLAG_FILE;
+        } else if (entry->d_type == DT_DIR) {
+            response.entry_type.flags |= UAVCAN_PROTOCOL_FILE_ENTRYTYPE_FLAG_DIRECTORY;
+        } else if (entry->d_type == DT_LNK) {
+            response.entry_type.flags |= UAVCAN_PROTOCOL_FILE_ENTRYTYPE_FLAG_SYMLINK;
+        }
+    }
+
     // Close directory
     AP::FS().closedir(dir);
 
-    // See if we got anything
-    if (entry == nullptr) {
-        response.error.value = errno;
-        get_directory_entry_info_server.respond(transfer, response);
-        return;
-    }
-
-    // Found entry, fill in details
-    response.entry_full_path.path.len = strncpy_noterm((char*)response.entry_full_path.path.data, entry->d_name, sizeof(response.entry_full_path.path.data)-1);
-
-    if (entry->d_type == DT_REG) {
-        response.entry_type.flags |= UAVCAN_PROTOCOL_FILE_ENTRYTYPE_FLAG_FILE;
-    } else if (entry->d_type == DT_DIR) {
-        response.entry_type.flags |= UAVCAN_PROTOCOL_FILE_ENTRYTYPE_FLAG_DIRECTORY;
-    } else if (entry->d_type == DT_LNK) {
-        response.entry_type.flags |= UAVCAN_PROTOCOL_FILE_ENTRYTYPE_FLAG_SYMLINK;
-    }
-
     get_directory_entry_info_server.respond(transfer, response);
-
 }
 
 // Delete file
