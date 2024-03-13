@@ -133,19 +133,19 @@ bool ModeGuided::handle_guided_request(Location target_loc)
     return true;
 }
 
-bool ModeGuided::handle_guided_path_request(Location position_on_path, Vector2f unit_path_tangent, const float path_curvature, const bool direction_is_ccw)
+bool ModeGuided::handle_guided_path_request(Location location_on_path, Vector2f unit_path_tangent, const float path_curvature, const bool direction_is_ccw)
 {
     // add home alt if needed
-    if (position_on_path.relative_alt) {
-        position_on_path.alt += plane.home.alt;
-        position_on_path.relative_alt = 0;
+    if (location_on_path.relative_alt) {
+        location_on_path.alt += plane.home.alt;
+        location_on_path.relative_alt = 0;
     }
 
     // copy the current location into the OldWP slot
     plane.prev_WP_loc = plane.current_loc;
 
     // load the next_WP slot
-    plane.next_WP_loc = position_on_path;
+    plane.next_WP_loc = location_on_path;
 
     _unit_path_tangent = unit_path_tangent;
     _path_curvature = path_curvature;
