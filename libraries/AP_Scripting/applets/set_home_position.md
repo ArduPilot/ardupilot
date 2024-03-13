@@ -46,22 +46,23 @@ Desired home preset altitude, value in centimetres
 
 2) Activate the LUA script functionality in the parameters by setting SCR_ENABLE, reboot the FC and
 activate the script by setting HSW_ENABLE to 1, followed by a parameter refresh.
+If the SCR_ENABLE parameter is not present, it means that your flight control does not support LUA scripts.
 
-3) Choose and set a 2-pos or 3-pos switch on the RC and check that it works in the Radio Calibration screen
+4) Choose and set a 2-pos or 3-pos switch on the RC and check that it works in the Radio Calibration screen
 of the Mission Planner.
 
-4) For the corresponding channel chosen set RCx_OPTION to 300.
+5) For the corresponding channel chosen set RCx_OPTION to 300.
 
-5) With the GPS fix and the system armed flip the switch to the high state position and check on the Mission Planner hud
+6) With the GPS fix and the system armed flip the switch to the high state position and check on the Mission Planner hud
 if the "HSW: dynamic home activated" message appears, the new home will be set.
 In "Data->Messages" the coordinates and height (that of arming) of the dynamic home set will be shown.
 Without the GPS fix the message "HSW: home position not set, unable to set home to current position" will be shown.
 If terrain is enabled the script will set the dynamic home height to that detected by its database, showing a message of its use.
    
-6) To set a new home dynamic point you will need to flip the switch again, i.e. in the high-low-high sequence, if you use 3-pos
+7) To set a new home dynamic point you will need to flip the switch again, i.e. in the high-low-high sequence, if you use 3-pos
 switches the middle one will have no effect and the previously chosen home will be retained (arming or dynamic).
 
-7) The switch should be kept on the high position if you want to keep that home dynamic until disarming.
+8) The switch should be kept on the high position if you want to keep that home dynamic until disarming.
 Returning to the low position will activate the arming home and display the message 'HSW: arming home activated' in the hud.
 
 
