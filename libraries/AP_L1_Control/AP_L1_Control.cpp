@@ -551,7 +551,7 @@ void AP_L1_Control::update_level_flight(void)
 }
 
 // update L1 control for path following
-void AP_L1_Control::update_path(const Location &location_on_path, const Vector2f& unit_path_tangent, float path_curvature, int8_t direction) {
+void AP_L1_Control::follow_path(const Location &location_on_path, const Vector2f& unit_path_tangent, float path_curvature, int8_t direction) {
     //! @note initial implementation uses existing functions
     if (!is_zero(path_curvature)) {
         // moving along arc of circle - loiter about wp located at
