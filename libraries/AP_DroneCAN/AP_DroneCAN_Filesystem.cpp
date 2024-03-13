@@ -28,6 +28,8 @@ AP_DroneCAN_Filesystem::AP_DroneCAN_Filesystem(CanardInterface &canard_iface) :
 // Send request for info
 void AP_DroneCAN_Filesystem::request_info(const char* path, const uint8_t node_id)
 {
+    WITH_SEMAPHORE(get_info_response.sem);
+
     uavcan_protocol_file_GetInfoRequest request {};
     request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
 
@@ -38,6 +40,7 @@ void AP_DroneCAN_Filesystem::request_info(const char* path, const uint8_t node_i
 // Receive response to request
 void AP_DroneCAN_Filesystem::handle_get_info_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_GetInfoResponse &msg)
 {
+    WITH_SEMAPHORE(get_info_response.sem);
     get_info_response.valid = true;
     get_info_response.msg = msg;
 }
@@ -45,6 +48,7 @@ void AP_DroneCAN_Filesystem::handle_get_info_response(const CanardRxTransfer& tr
 // Return response
 bool AP_DroneCAN_Filesystem::request_info_response(uavcan_protocol_file_GetInfoResponse &msg)
 {
+    WITH_SEMAPHORE(get_info_response.sem);
     if (!get_info_response.valid) {
         return false;
     }
@@ -55,6 +59,8 @@ bool AP_DroneCAN_Filesystem::request_info_response(uavcan_protocol_file_GetInfoR
 // Send request for directory entry info
 void AP_DroneCAN_Filesystem::request_directory_entry_info(const char* path, const uint8_t node_id, const uint32_t entry_index)
 {
+    WITH_SEMAPHORE(get_directory_entry_info_response.sem);
+
     uavcan_protocol_file_GetDirectoryEntryInfoRequest request {};
     request.directory_path.path.len = strncpy_noterm((char*)request.directory_path.path.data, path, sizeof(request.directory_path.path.data)-1);
     request.entry_index = entry_index;
@@ -66,6 +72,7 @@ void AP_DroneCAN_Filesystem::request_directory_entry_info(const char* path, cons
 // Receive response to request
 void AP_DroneCAN_Filesystem::handle_get_directory_entry_info_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_GetDirectoryEntryInfoResponse &msg)
 {
+    WITH_SEMAPHORE(get_directory_entry_info_response.sem);
     get_directory_entry_info_response.valid = true;
     get_directory_entry_info_response.msg = msg;
 }
@@ -73,6 +80,7 @@ void AP_DroneCAN_Filesystem::handle_get_directory_entry_info_response(const Cana
 // Return response
 bool AP_DroneCAN_Filesystem::request_get_directory_entry_info_response(uavcan_protocol_file_GetDirectoryEntryInfoResponse &msg)
 {
+    WITH_SEMAPHORE(get_directory_entry_info_response.sem);
     if (!get_directory_entry_info_response.valid) {
         return false;
     }
@@ -83,6 +91,8 @@ bool AP_DroneCAN_Filesystem::request_get_directory_entry_info_response(uavcan_pr
 // Send request to delete
 void AP_DroneCAN_Filesystem::request_delete(const char* path, const uint8_t node_id)
 {
+    WITH_SEMAPHORE(delete_response.sem);
+
     uavcan_protocol_file_DeleteRequest request {};
     request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
 
@@ -93,6 +103,7 @@ void AP_DroneCAN_Filesystem::request_delete(const char* path, const uint8_t node
 // Receive response to request
 void AP_DroneCAN_Filesystem::handle_delete_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_DeleteResponse &msg)
 {
+    WITH_SEMAPHORE(delete_response.sem);
     delete_response.valid = true;
     delete_response.msg = msg;
 }
@@ -100,6 +111,7 @@ void AP_DroneCAN_Filesystem::handle_delete_response(const CanardRxTransfer& tran
 // Return response
 bool AP_DroneCAN_Filesystem::request_delete_response(uavcan_protocol_file_DeleteResponse &msg)
 {
+    WITH_SEMAPHORE(delete_response.sem);
     if (!delete_response.valid) {
         return false;
     }
@@ -110,6 +122,8 @@ bool AP_DroneCAN_Filesystem::request_delete_response(uavcan_protocol_file_Delete
 // Send request to Read
 void AP_DroneCAN_Filesystem::request_read(const char* path, const uint8_t node_id, const uint32_t offset)
 {
+    WITH_SEMAPHORE(read_response.sem);
+
     uavcan_protocol_file_ReadRequest request {};
     request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
     request.offset = offset;
@@ -121,6 +135,7 @@ void AP_DroneCAN_Filesystem::request_read(const char* path, const uint8_t node_i
 // Receive response to request
 void AP_DroneCAN_Filesystem::handle_read_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_ReadResponse &msg)
 {
+    WITH_SEMAPHORE(read_response.sem);
     read_response.valid = true;
     read_response.msg = msg;
 }
@@ -128,6 +143,7 @@ void AP_DroneCAN_Filesystem::handle_read_response(const CanardRxTransfer& transf
 // Return response
 bool AP_DroneCAN_Filesystem::request_read_response(uavcan_protocol_file_ReadResponse &msg)
 {
+    WITH_SEMAPHORE(read_response.sem);
     if (!read_response.valid) {
         return false;
     }
@@ -138,6 +154,8 @@ bool AP_DroneCAN_Filesystem::request_read_response(uavcan_protocol_file_ReadResp
 // Send request to Write
 uint32_t AP_DroneCAN_Filesystem::request_write(const char* path, const uint8_t node_id, const uint32_t offset, const void *buf, uint32_t count)
 {
+    WITH_SEMAPHORE(write_response.sem);
+
     uavcan_protocol_file_WriteRequest request {};
     request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
     request.offset = offset;
@@ -154,6 +172,7 @@ uint32_t AP_DroneCAN_Filesystem::request_write(const char* path, const uint8_t n
 // Receive response to request
 void AP_DroneCAN_Filesystem::handle_write_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_WriteResponse &msg)
 {
+    WITH_SEMAPHORE(write_response.sem);
     write_response.valid = true;
     write_response.msg = msg;
 }
@@ -161,6 +180,7 @@ void AP_DroneCAN_Filesystem::handle_write_response(const CanardRxTransfer& trans
 // Return response
 bool AP_DroneCAN_Filesystem::request_write_response(uavcan_protocol_file_WriteResponse &msg)
 {
+    WITH_SEMAPHORE(write_response.sem);
     if (!write_response.valid) {
         return false;
     }

@@ -6,6 +6,8 @@
 #include <uavcan.protocol.file.Read.h>
 #include <uavcan.protocol.file.Write.h>
 
+#include <AP_HAL/Semaphores.h>
+
 class AP_DroneCAN_Filesystem
 {
 public:
@@ -49,6 +51,7 @@ private:
     struct {
         uavcan_protocol_file_GetInfoResponse msg;
         bool valid;
+        HAL_Semaphore sem;
     } get_info_response;
 
     // Get Directory Entry Info request and response
@@ -58,6 +61,7 @@ private:
     struct {
         uavcan_protocol_file_GetDirectoryEntryInfoResponse msg;
         bool valid;
+        HAL_Semaphore sem;
     } get_directory_entry_info_response;
 
     // Delete request and response
@@ -67,6 +71,7 @@ private:
     struct {
         uavcan_protocol_file_DeleteResponse msg;
         bool valid;
+        HAL_Semaphore sem;
     } delete_response;
 
     // Read request and response
@@ -76,6 +81,7 @@ private:
     struct {
         uavcan_protocol_file_ReadResponse msg;
         bool valid;
+        HAL_Semaphore sem;
     } read_response;
 
     // Write request and response
@@ -85,6 +91,7 @@ private:
     struct {
         uavcan_protocol_file_WriteResponse msg;
         bool valid;
+        HAL_Semaphore sem;
     } write_response;
 
     /*
