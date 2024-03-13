@@ -192,7 +192,7 @@ public:
 
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
-    const class Location &get_home(void) const {
+    const Location &get_home(void) const {
         return _home;
     }
 
