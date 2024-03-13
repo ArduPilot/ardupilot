@@ -292,7 +292,7 @@ void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packe
 // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
 MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_command_int_t &packet)
 {
-    const MAV_MOUNT_MODE new_mode = (MAV_MOUNT_MODE)packet.z;
+    const MAV_MOUNT_MODE new_mode = (MAV_MOUNT_MODE)(isnan(packet.z) ? 0.0 : packet.z);
 
     // interpret message fields based on mode
     switch (new_mode) {
@@ -306,9 +306,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
 
     case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
         // set body-frame target angles (in degrees) from mavlink message
-        const float pitch_deg = packet.param1;  // param1: pitch (in degrees)
-        const float roll_deg = packet.param2;   // param2: roll in degrees
-        const float yaw_deg = packet.param3;    // param3: yaw in degrees
+        const float pitch_deg = isnan(packet.param1) ? 0.0 : packet.param1;  // param1: pitch (in degrees)
+        const float roll_deg = isnan(packet.param2) ? 0.0 : packet.param2;   // param2: roll in degrees
+        const float yaw_deg = isnan(packet.param3) ? 0.0 : packet.param3;    // param3: yaw in degrees
 
         // warn if angles are invalid to catch angles sent in centi-degrees
         if ((fabsf(pitch_deg) > 90) || (fabsf(roll_deg) > 180) || (fabsf(yaw_deg) > 360)) {
@@ -316,7 +316,7 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
             return MAV_RESULT_FAILED;
         }
 
-        set_angle_target(packet.param2, packet.param1, packet.param3, false);
+        set_angle_target(roll_deg, pitch_deg, yaw_deg, false);
         return MAV_RESULT_ACCEPTED;
     }
 
