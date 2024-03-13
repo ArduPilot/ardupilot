@@ -29,6 +29,8 @@ def build(bld):
             'AP_OSD',
             'AC_AutoTune',
             'AP_Follow',
+            'AC_PrecLand',
+            'AP_IRLock',
         ],
     )
 
