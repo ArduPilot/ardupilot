@@ -358,7 +358,7 @@ public:
     bool handle_guided_request(Location target_loc) override;
 
     // handle a guided path following request
-    bool handle_guided_path_request(Location location_on_path, Vector2f unit_path_tangent, const float path_curvature, const bool direction_is_ccw);
+    bool handle_guided_path_request(Location location_on_path, const Vector2f& unit_path_tangent, const float path_curvature, const bool direction_is_ccw);
 
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 

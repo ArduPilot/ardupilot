@@ -133,7 +133,7 @@ bool ModeGuided::handle_guided_request(Location target_loc)
     return true;
 }
 
-bool ModeGuided::handle_guided_path_request(Location location_on_path, Vector2f unit_path_tangent, const float path_curvature, const bool direction_is_ccw)
+bool ModeGuided::handle_guided_path_request(Location location_on_path, const Vector2f& unit_path_tangent, const float path_curvature, const bool direction_is_ccw)
 {
     // add home alt if needed
     if (location_on_path.relative_alt) {
