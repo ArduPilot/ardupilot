@@ -155,7 +155,11 @@ void ekf_imu_buffer::push_youngest_element(const void *element)
     memcpy(get_offset(_youngest), element, elsize);
     // set oldest data index
     _oldest = (_youngest+1) % _size;
-    if (_oldest == 0) {
+    // if (_oldest == 0) {
+    //     _filled = true;
+    // }
+    // changed as follow: why? see this bug report: https://github.com/ArduPilot/ardupilot/issues/25316
+    if (_oldest == 1 || _size == 1) {
         _filled = true;
     }
 }
