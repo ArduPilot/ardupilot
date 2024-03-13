@@ -1,5 +1,9 @@
 # hw definition file for processing by chibios_pins.py
 
+include ../include/minimal_GPS.inc
+include ../include/no_bootloader_DFU.inc
+include ../include/save_some_flash.inc
+
 # MCU class and specific type
 MCU STM32F103 STM32F103xB
 
@@ -64,7 +68,7 @@ define PORT_INT_REQUIRED_STACK 64
 
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_RCOUT_THREAD
+#define HAL_NO_RCOUT_THREAD
 define HAL_NO_RCIN_THREAD
 
 #defined to turn off undef warnings
@@ -136,5 +140,30 @@ define CH_DBG_ENABLE_STACK_CHECK FALSE
 
 
 
+# and support all external compass types
+#define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+# .... except BMM150:
+#define AP_COMPASS_BMM150_ENABLED 0
 
+# increase TX size for RTCM
+undef HAL_UART_MIN_TX_SIZE
+define HAL_UART_MIN_TX_SIZE 256
 
+# GPS
+define HAL_PERIPH_ENABLE_GPS
+# restrict backends available on f103:
+define AP_GPS_NOVA_ENABLED 0
+define AP_GPS_SBF_ENABLED 0
+define AP_GPS_GSOF_ENABLED 0
+
+# MAG
+#define HAL_PERIPH_ENABLE_MAG
+#define HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#define HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+
+define HAL_PERIPH_ENABLE_NOTIFY
+define HAL_PERIPH_ENABLE_RC_OUT
+define AP_NOTIFY_TONEALARM_ENABLED 1
+
+# tonealarm support
+PA8  TIM1_CH1 TIM1 GPIO(20) ALARM
