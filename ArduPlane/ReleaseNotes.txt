@@ -1,3 +1,42 @@
+Release 4.5.0-beta3 14th March 2024
+-----------------------------------
+
+Changes from 4.5.0-beta2
+
+1) Board specific changes
+- added PixFlamingo F7 board
+- support ICM42688 on BlitzF745AIO
+- fixed IMU orientation of CubeRedSecondary
+- enable all FPV features on SpeedyBeeF405WING
+
+2) System level changes
+
+- improved robustness of CRSF parser
+- reduced memory used by DDS/ROS2
+- added filesystem crc32 binding in lua scripting
+- support visual odometry quality metric and added autoswitching lua script
+- allow for expansion of fence storage to microSD for larger pologon fences
+- allow FTP upload of fence and rally points
+- fixed vehicle type of ship simulation for ship landing
+- make severity level depend on generator error level in IE 2400 generator
+- speed up initial GPS probe by using SERIALn_BAUD first
+- allow NanoRadar radar and proximity sensor to share the CAN bus
+- added MR72 CAN proximity sensor
+- only produce *_with_bl.hex not *.hex in builds if bootloader available
+- fixed check for GPS antenna separation in moving baseline yaw
+- added GPS_DRV_OPTIONS options for fully parsing RTCMv3 stream
+- fixed logging of RTCM fragments in GPS driver
+- fixed video recording while armed
+- robostness and logging improvements for ExternalAHRS
+- fixed RPM from bdshot on boards with IOMCU
+- fixed accel cal simple to remove unused IMUs
+
+3) Plane specific changes
+- added support for precision landing of quadplanes
+- fixed speed tuning of fixed wing aircraft without an airspeed sensor
+- improved pitch control in high speed VTOL flight
+- added TECS option for rapid descent in fixed wing aircraft
+
 Release 4.5.0-beta2 14th February 2024
 --------------------------------------
 
