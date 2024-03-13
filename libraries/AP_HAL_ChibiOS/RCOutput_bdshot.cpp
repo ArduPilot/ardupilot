@@ -757,7 +757,7 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     uint8_t normalized_chan = chan;
 #endif
 #if HAL_WITH_IO_MCU
-    if (iomcu_dshot) {
+    if (iomcu_enabled) {
         normalized_chan = chan + chan_offset;
     }
 #endif
