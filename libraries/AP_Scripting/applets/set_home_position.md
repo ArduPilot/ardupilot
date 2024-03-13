@@ -46,7 +46,8 @@ of the Mission Planner
 if the "HSW: dynamic home activated" message appears, the new home will be set.
 In "Data->Messages" the coordinates and height (that of arming) of the dynamic home set will be shown.
 Without the GPS fix the message "HSW: home position not set, unable to set home to current position" will be shown.
-If terrain is enabled the script will set the dynamic home height to that detected by its database, showing a message of its use
+If terrain is enabled the script will set the dynamic home height to that detected by its database, showing a message
+"HSW: using terrain data, altitude X", where X is the altitude in the terrain database at those coordinates
 
 6. to set a new home dynamic point you will need to flip the switch again, i.e. in the high-low-high sequence, if you use 3-pos
 switches the middle one will have no effect and the previously chosen home will be retained (arming or dynamic)
