@@ -7,10 +7,18 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 
 AP_DroneCAN_Filesystem::AP_DroneCAN_Filesystem(CanardInterface &canard_iface) :
+    // Client
     get_info_client(canard_iface, get_info_cb),
     get_directory_entry_info_client(canard_iface, get_directory_entry_info_cb),
+    delete_client(canard_iface, delete_cb),
+    read_client(canard_iface, read_cb),
+    write_client(canard_iface, write_cb),
+    // Server
     get_info_server(canard_iface, get_info_req_cb),
-    get_directory_entry_info_server(canard_iface, get_directory_entry_info_req_cb)
+    get_directory_entry_info_server(canard_iface, get_directory_entry_info_req_cb),
+    delete_server(canard_iface, delete_req_cb),
+    read_server(canard_iface, read_req_cb),
+    write_server(canard_iface, write_req_cb)
 {}
 
 /*
@@ -24,7 +32,6 @@ void AP_DroneCAN_Filesystem::request_info(const char* path, const uint8_t node_i
     request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
 
     get_info_client.request(node_id, request);
-
     get_info_response.valid = false;
 }
 
@@ -53,7 +60,6 @@ void AP_DroneCAN_Filesystem::request_directory_entry_info(const char* path, cons
     request.entry_index = entry_index;
 
     get_directory_entry_info_client.request(node_id, request);
-
     get_directory_entry_info_response.valid = false;
 }
 
@@ -73,6 +79,95 @@ bool AP_DroneCAN_Filesystem::request_get_directory_entry_info_response(uavcan_pr
     msg = get_directory_entry_info_response.msg;
     return true;
 }
+
+// Send request to delete
+void AP_DroneCAN_Filesystem::request_delete(const char* path, const uint8_t node_id)
+{
+    uavcan_protocol_file_DeleteRequest request {};
+    request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
+
+    delete_client.request(node_id, request);
+    delete_response.valid = false;
+}
+
+// Receive response to request
+void AP_DroneCAN_Filesystem::handle_delete_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_DeleteResponse &msg)
+{
+    delete_response.valid = true;
+    delete_response.msg = msg;
+}
+
+// Return response
+bool AP_DroneCAN_Filesystem::request_delete_response(uavcan_protocol_file_DeleteResponse &msg)
+{
+    if (!delete_response.valid) {
+        return false;
+    }
+    msg = delete_response.msg;
+    return true;
+}
+
+// Send request to Read
+void AP_DroneCAN_Filesystem::request_read(const char* path, const uint8_t node_id, const uint32_t offset)
+{
+    uavcan_protocol_file_ReadRequest request {};
+    request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
+    request.offset = offset;
+
+    read_client.request(node_id, request);
+    read_response.valid = false;
+}
+
+// Receive response to request
+void AP_DroneCAN_Filesystem::handle_read_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_ReadResponse &msg)
+{
+    read_response.valid = true;
+    read_response.msg = msg;
+}
+
+// Return response
+bool AP_DroneCAN_Filesystem::request_read_response(uavcan_protocol_file_ReadResponse &msg)
+{
+    if (!read_response.valid) {
+        return false;
+    }
+    msg = read_response.msg;
+    return true;
+}
+
+// Send request to Write
+uint32_t AP_DroneCAN_Filesystem::request_write(const char* path, const uint8_t node_id, const uint32_t offset, const void *buf, uint32_t count)
+{
+    uavcan_protocol_file_WriteRequest request {};
+    request.path.path.len = strncpy_noterm((char*)request.path.path.data, path, sizeof(request.path.path.data)-1);
+    request.offset = offset;
+
+    request.data.len = MIN(count, sizeof(request.data.data));
+    memcpy(request.data.data, buf, request.data.len);
+
+    write_client.request(node_id, request);
+    write_response.valid = false;
+
+    return request.data.len;
+}
+
+// Receive response to request
+void AP_DroneCAN_Filesystem::handle_write_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_WriteResponse &msg)
+{
+    write_response.valid = true;
+    write_response.msg = msg;
+}
+
+// Return response
+bool AP_DroneCAN_Filesystem::request_write_response(uavcan_protocol_file_WriteResponse &msg)
+{
+    if (!write_response.valid) {
+        return false;
+    }
+    msg = write_response.msg;
+    return true;
+}
+
 
 /*
     Server
@@ -158,6 +253,103 @@ void AP_DroneCAN_Filesystem::handle_get_directory_entry_info_request(const Canar
 
     get_directory_entry_info_server.respond(transfer, response);
 
+}
+
+// Delete file
+void AP_DroneCAN_Filesystem::handle_delete_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_DeleteRequest &msg)
+{
+    uavcan_protocol_file_DeleteResponse response {};
+
+    if (AP::FS().unlink((char*)msg.path.path.data) != 0) {
+        response.error.value = errno;
+        if (response.error.value == 0) {
+            // Make sure error is none zero if unlink failed
+            response.error.value = ENOENT;
+        }
+    }
+
+    delete_server.respond(transfer, response);
+}
+
+// Read file
+void AP_DroneCAN_Filesystem::handle_read_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_ReadRequest &msg)
+{
+    uavcan_protocol_file_ReadResponse response {};
+
+    const int file = AP::FS().open((char*)msg.path.path.data, O_RDONLY);
+    if ((file == -1) || (AP::FS().lseek(file, msg.offset, SEEK_SET) == -1)) {
+        response.error.value = errno;
+        if (response.error.value == 0) {
+            // Make sure error is none zero if open or seek fail
+            response.error.value = ENOENT;
+        }
+        read_server.respond(transfer, response);
+        AP::FS().close(file);
+        return;
+    }
+
+    // Try reading
+    const ssize_t read_bytes = AP::FS().read(file, response.data.data, sizeof(response.data.data));
+
+    // Close file
+    AP::FS().close(file);
+
+    // If read failed set error, else set read length
+    if (read_bytes < 0) {
+        response.error.value = errno;
+        if (response.error.value == 0) {
+            // Make sure error is none zero if read fails
+            response.error.value = ENOENT;
+        }
+    } else {
+        response.data.len = read_bytes;
+    }
+
+    read_server.respond(transfer, response);
+}
+
+// Write file
+void AP_DroneCAN_Filesystem::handle_write_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_WriteRequest &msg)
+{
+    uavcan_protocol_file_WriteResponse response {};
+
+    int flags = O_WRONLY;
+    if (msg.offset == 0) {
+        // If file does not exist and offset is 0 then create it
+        struct stat st;
+        if (AP::FS().stat((char*)msg.path.path.data, &st) != 0) {
+            flags |= O_CREAT;
+        }
+    }
+
+    const int file = AP::FS().open((char*)msg.path.path.data, flags);
+    if ((file == -1) || (AP::FS().lseek(file, msg.offset, SEEK_SET) == -1)) {
+        response.error.value = errno;
+        if (response.error.value == 0) {
+            // Make sure error is none zero if open or seek fail
+            response.error.value = ENOENT;
+        }
+        write_server.respond(transfer, response);
+        AP::FS().close(file);
+        return;
+    }
+
+    // Try writing
+    const ssize_t write_bytes = AP::FS().write(file, msg.data.data, msg.data.len);
+
+    // Close file
+    AP::FS().close(file);
+
+    // If did not write full length then set error
+    if (write_bytes != msg.data.len) {
+        response.error.value = errno;
+        if (response.error.value == 0) {
+            // Make sure error is none zero if write fails
+            response.error.value = EIO;
+        }
+    }
+
+    write_server.respond(transfer, response);
 }
 
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
