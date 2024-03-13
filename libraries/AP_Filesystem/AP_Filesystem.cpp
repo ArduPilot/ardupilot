@@ -57,6 +57,11 @@ static AP_Filesystem_Sys fs_sys;
 static AP_Filesystem_Mission fs_mission;
 #endif
 
+#if AP_FILESYSTEM_DRONECAN_ENABLED
+#include "AP_Filesystem_DroneCAN.h"
+static AP_Filesystem_DroneCAN fs_drone_can;
+#endif
+
 /*
   mapping from filesystem prefix to backend
  */
@@ -73,6 +78,9 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #endif
 #if AP_FILESYSTEM_MISSION_ENABLED
     { "@MISSION", fs_mission },
+#endif
+#if AP_FILESYSTEM_DRONECAN_ENABLED
+    { "@DRONECAN", fs_drone_can },
 #endif
 };
 
