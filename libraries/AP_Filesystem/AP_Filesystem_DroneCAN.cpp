@@ -48,7 +48,7 @@ int AP_Filesystem_DroneCAN::open(const char *fname, int flags, bool allow_absolu
     // Find free file object
     uint8_t idx;
     for (idx=0; idx<max_open_file; idx++) {
-        if (file[idx].data == nullptr) {
+        if (file[idx].path == nullptr) {
             break;
         }
     }
@@ -56,7 +56,7 @@ int AP_Filesystem_DroneCAN::open(const char *fname, int flags, bool allow_absolu
         errno = ENFILE;
         return -1;
     }
-    if (file[idx].data != nullptr) {
+    if (file[idx].path != nullptr) {
         errno = EBUSY;
         return -1;
     }
@@ -70,7 +70,17 @@ int AP_Filesystem_DroneCAN::open(const char *fname, int flags, bool allow_absolu
 
     // Get stats and check its a file not a directory
     struct stat st;
-    if ((node_stat(file[idx].driver, file[idx].node_id, node_path, &st) != 0) || ((st.st_mode & S_IFMT) == S_IFDIR)) {
+    uint32_t size = 0;
+    if (node_stat(file[idx].driver, file[idx].node_id, node_path, &st) == 0) {
+        // Got a stat result
+        if ((st.st_mode & S_IFMT) == S_IFDIR) {
+            // Can't open directory as file
+            errno = ENOENT;
+            return -1;
+        }
+        size = st.st_size;
+    } else if ((flags & O_CREAT) == 0) {
+        // No stat result and not trying to create a file
         errno = ENOENT;
         return -1;
     }
@@ -83,39 +93,122 @@ int AP_Filesystem_DroneCAN::open(const char *fname, int flags, bool allow_absolu
         return -1;
     }
 
-    file[idx].ofs = 0;
-    file[idx].size = st.st_size;
+    // Set offset to size if appending
+    file[idx].ofs = (flags & O_APPEND) ? size : 0;
+    file[idx].size = size;
     return idx;
 }
 
 int AP_Filesystem_DroneCAN::close(int fd)
 {
-    if (fd < 0 || fd >= max_open_file || file[fd].data == nullptr) {
+    // Check valid file
+    if ((fd < 0) || (fd >= max_open_file) || (file[fd].path == nullptr)) {
         errno = EBADF;
         return -1;
     }
 
     // DroneCAN does not support telling the remote to close
-    file[fd].data = nullptr;
+    free(file[fd].path);
+    file[fd].path = nullptr;
     return 0;
 }
 
 int32_t AP_Filesystem_DroneCAN::read(int fd, void *buf, uint32_t count)
 {
-    // Ask Node
+    // Check valid file
+    if ((fd < 0 ) || (fd >= max_open_file)) {
+        errno = EBADF;
+        return -1;
+    }
+
+    // Check valid driver and node
+    if ((file[fd].path == nullptr) || (file[fd].driver == nullptr) || !file[fd].driver->seen_node_id(file[fd].node_id)) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Request from node
+    file[fd].driver->filesystem.request_read(file[fd].path, file[fd].node_id, file[fd].ofs);
+
+    uavcan_protocol_file_ReadResponse msg {};
+
+    // Wait for response
+    const uint32_t wait_start = AP_HAL::millis();
+    do {
+        if (!file[fd].driver->filesystem.request_read_response(msg)) {
+            hal.scheduler->delay(1);
+            continue;
+        }
+
+        // Got response
+        if (msg.error.value != 0) {
+            // DroneCAN follows same error convention
+            errno = msg.error.value;
+            return -1;
+        }
+
+        // Copy and return data
+        count = MIN(count, msg.data.len);
+        memcpy(buf, &msg.data.data, count);
+        file[fd].ofs += count;
+        return count;
+
+    } while ((AP_HAL::millis() - wait_start) < TIMEOUT_MS);
+
+    // Time out
+    errno = EBUSY;
     return -1;
 }
 
 int32_t AP_Filesystem_DroneCAN::write(int fd, const void *buf, uint32_t count)
 {
-    // Ask Node
-    errno = EROFS;
+    // Check valid file
+    if ((fd < 0 ) || (fd >= max_open_file)) {
+        errno = EBADF;
+        return -1;
+    }
+
+    // Check valid driver and node
+    if ((file[fd].path == nullptr) || (file[fd].driver == nullptr) || !file[fd].driver->seen_node_id(file[fd].node_id)) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Request from node
+    count = file[fd].driver->filesystem.request_write(file[fd].path, file[fd].node_id, file[fd].ofs, buf, count);
+
+    uavcan_protocol_file_WriteResponse msg {};
+
+    // Wait for response
+    const uint32_t wait_start = AP_HAL::millis();
+    do {
+        if (!file[fd].driver->filesystem.request_write_response(msg)) {
+            hal.scheduler->delay(1);
+            continue;
+        }
+
+        // Got response
+        if (msg.error.value != 0) {
+            // DroneCAN follows same error convention
+            errno = msg.error.value;
+            return -1;
+        }
+
+        // Return length written
+        file[fd].ofs += count;
+        file[fd].size = MAX(file[fd].size, file[fd].ofs);
+        return count;
+
+    } while ((AP_HAL::millis() - wait_start) < TIMEOUT_MS);
+
+    // Time out
+    errno = EBUSY;
     return -1;
 }
 
 int32_t AP_Filesystem_DroneCAN::lseek(int fd, int32_t offset, int seek_from)
 {
-    if (fd < 0 || fd >= max_open_file || file[fd].data == nullptr) {
+    if ((fd < 0) || (fd >= max_open_file) || (file[fd].path == nullptr)) {
         // Invalid file
         errno = EBADF;
         return -1;
@@ -163,12 +256,7 @@ int AP_Filesystem_DroneCAN::stat(const char *name, struct stat *stbuf)
 // Get file stat from remote node
 int AP_Filesystem_DroneCAN::node_stat(AP_DroneCAN* driver, uint8_t node_id, const char *node_path, struct stat *stbuf)
 {
-    if (driver == nullptr) {
-        errno = ENOENT;
-        return -1;
-    }
-
-    if (!driver->seen_node_id(node_id)) {
+    if ((driver == nullptr) || !driver->seen_node_id(node_id)) {
         errno = ENOENT;
         return -1;
     }
@@ -181,8 +269,8 @@ int AP_Filesystem_DroneCAN::node_stat(AP_DroneCAN* driver, uint8_t node_id, cons
     // Wait for response
     const uint32_t wait_start = AP_HAL::millis();
     do {
-        hal.scheduler->delay(10);
         if (!driver->filesystem.request_info_response(msg)) {
+            hal.scheduler->delay(1);
             continue;
         }
 
@@ -235,8 +323,31 @@ int AP_Filesystem_DroneCAN::unlink(const char *pathname)
         return -1;
     }
 
-    // Ask Node
-    errno = EROFS;
+    // Request from node
+    driver->filesystem.request_delete(node_path, node_id);
+
+    uavcan_protocol_file_DeleteResponse msg {};
+
+    // Wait for response
+    const uint32_t wait_start = AP_HAL::millis();
+    do {
+        if (!driver->filesystem.request_delete_response(msg)) {
+            hal.scheduler->delay(1);
+            continue;
+        }
+
+        // Got response
+        if (msg.error.value != 0) {
+            // DroneCAN follows same error convention
+            errno = msg.error.value;
+            return -1;
+        }
+        return 0;
+
+    } while ((AP_HAL::millis() - wait_start) < TIMEOUT_MS);
+
+    // Time out
+    errno = EBUSY;
     return -1;
 }
 

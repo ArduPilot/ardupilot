@@ -62,7 +62,6 @@ private:
         char *path;
         AP_DroneCAN *driver;
         uint8_t node_id;
-        const uint8_t *data;
         uint32_t size;
         uint32_t ofs;
     } file[max_open_file];
