@@ -55,9 +55,8 @@ class AP_DroneCAN_DNA_Server
     uint8_t rcvd_unique_id_offset;
     uint32_t last_alloc_msg_ms;
 
-    //Methods to handle and report Node IDs seen on the bus
+    // Add given node ID to seen mask
     void addToSeenNodeMask(uint8_t node_id);
-    bool isNodeSeen(uint8_t node_id);
 
     //Generates 6Byte long hash from the specified unique_id
     void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
@@ -121,6 +120,9 @@ public:
     verify if the node is healthy and has static node_id against 
     hwid in the records */
     bool isNodeIDVerified(uint8_t node_id) const;
+
+    // Return true is given node ID has been seen
+    bool isNodeSeen(uint8_t node_id) const;
 
     /* Subscribe to the messages to be handled for maintaining and allocating
     Node ID list */
