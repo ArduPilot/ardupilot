@@ -68,6 +68,8 @@
 #include "AP_DroneCAN_serial.h"
 #endif
 
+#include "AP_DroneCAN_Filesystem.h"
+
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
 class CANSensor;
@@ -174,6 +176,8 @@ public:
     // Needs to be public so relay can edge trigger as well as streaming
     Canard::Publisher<uavcan_equipment_hardpoint_Command> relay_hardpoint{canard_iface};
 #endif
+
+    AP_DroneCAN_Filesystem filesystem{canard_iface};
 
 private:
     void loop(void);
