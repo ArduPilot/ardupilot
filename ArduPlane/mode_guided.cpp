@@ -108,7 +108,7 @@ void ModeGuided::navigate()
         plane.update_loiter(active_radius_m);
         break;
     case SubMode::Path:
-        plane.nav_controller->update_path(plane.next_WP_loc,
+        plane.nav_controller->follow_path(plane.next_WP_loc,
             _unit_path_tangent, _path_curvature, plane.loiter.direction);
         break;
     default:
