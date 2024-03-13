@@ -3040,6 +3040,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     self.baro_list = []
                 if u == 'AIRSPEED':
                     self.airspeed_list = []
+                if u == 'ROMFS':
+                    self.romfs = {}
         elif a[0] == 'env':
             self.progress("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
