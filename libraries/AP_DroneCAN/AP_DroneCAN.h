@@ -95,6 +95,9 @@ public:
     
     uint8_t get_driver_index() const { return _driver_index; }
 
+    // Ask DNA Server if given node ID had been seen
+    bool seen_node_id(uint8_t node_id) const;
+
     // define string with length structure
     struct string { uint8_t len; uint8_t data[128]; };
 
