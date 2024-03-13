@@ -8,15 +8,12 @@
 
 #include <AP_HAL/Semaphores.h>
 
-class AP_DroneCAN_Filesystem
+#if AP_FILESYSTEM_DRONECAN_ENABLED
+class AP_DroneCAN_Filesystem_Client
 {
 public:
-    AP_DroneCAN_Filesystem(CanardInterface &canard_iface);
-    CLASS_NO_COPY(AP_DroneCAN_Filesystem);
-
-    /*
-        Client
-    */
+    AP_DroneCAN_Filesystem_Client(CanardInterface &canard_iface);
+    CLASS_NO_COPY(AP_DroneCAN_Filesystem_Client);
 
     // Get info request and response
     void request_info(const char* path, const uint8_t node_id);
@@ -40,13 +37,9 @@ public:
 
 private:
 
-    /*
-        Client
-    */
-
     // Get info request and response
     Canard::Client<uavcan_protocol_file_GetInfoResponse> get_info_client;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_GetInfoResponse> get_info_cb{this, &AP_DroneCAN_Filesystem::handle_get_info_response};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Client, uavcan_protocol_file_GetInfoResponse> get_info_cb{this, &AP_DroneCAN_Filesystem_Client::handle_get_info_response};
     void handle_get_info_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_GetInfoResponse &msg);
     struct {
         uavcan_protocol_file_GetInfoResponse msg;
@@ -56,7 +49,7 @@ private:
 
     // Get Directory Entry Info request and response
     Canard::Client<uavcan_protocol_file_GetDirectoryEntryInfoResponse> get_directory_entry_info_client;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_GetDirectoryEntryInfoResponse> get_directory_entry_info_cb{this, &AP_DroneCAN_Filesystem::handle_get_directory_entry_info_response};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Client, uavcan_protocol_file_GetDirectoryEntryInfoResponse> get_directory_entry_info_cb{this, &AP_DroneCAN_Filesystem_Client::handle_get_directory_entry_info_response};
     void handle_get_directory_entry_info_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_GetDirectoryEntryInfoResponse &msg);
     struct {
         uavcan_protocol_file_GetDirectoryEntryInfoResponse msg;
@@ -66,7 +59,7 @@ private:
 
     // Delete request and response
     Canard::Client<uavcan_protocol_file_DeleteResponse> delete_client;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_DeleteResponse> delete_cb{this, &AP_DroneCAN_Filesystem::handle_delete_response};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Client, uavcan_protocol_file_DeleteResponse> delete_cb{this, &AP_DroneCAN_Filesystem_Client::handle_delete_response};
     void handle_delete_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_DeleteResponse &msg);
     struct {
         uavcan_protocol_file_DeleteResponse msg;
@@ -76,7 +69,7 @@ private:
 
     // Read request and response
     Canard::Client<uavcan_protocol_file_ReadResponse> read_client;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_ReadResponse> read_cb{this, &AP_DroneCAN_Filesystem::handle_read_response};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Client, uavcan_protocol_file_ReadResponse> read_cb{this, &AP_DroneCAN_Filesystem_Client::handle_read_response};
     void handle_read_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_ReadResponse &msg);
     struct {
         uavcan_protocol_file_ReadResponse msg;
@@ -86,7 +79,7 @@ private:
 
     // Write request and response
     Canard::Client<uavcan_protocol_file_WriteResponse> write_client;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_WriteResponse> write_cb{this, &AP_DroneCAN_Filesystem::handle_write_response};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Client, uavcan_protocol_file_WriteResponse> write_cb{this, &AP_DroneCAN_Filesystem_Client::handle_write_response};
     void handle_write_response(const CanardRxTransfer& transfer, const uavcan_protocol_file_WriteResponse &msg);
     struct {
         uavcan_protocol_file_WriteResponse msg;
@@ -94,32 +87,39 @@ private:
         HAL_Semaphore sem;
     } write_response;
 
-    /*
-        Server
-    */
+};
+#endif // AP_FILESYSTEM_DRONECAN_ENABLED
+
+class AP_DroneCAN_Filesystem_Server
+{
+public:
+    AP_DroneCAN_Filesystem_Server(CanardInterface &canard_iface);
+    CLASS_NO_COPY(AP_DroneCAN_Filesystem_Server);
+
+private:
 
     // Get info
     Canard::Server<uavcan_protocol_file_GetInfoRequest> get_info_server;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_GetInfoRequest> get_info_req_cb{this, &AP_DroneCAN_Filesystem::handle_get_info_request};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Server, uavcan_protocol_file_GetInfoRequest> get_info_req_cb{this, &AP_DroneCAN_Filesystem_Server::handle_get_info_request};
     void handle_get_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_GetInfoRequest &msg);
 
     // Get Directory Entry Info
     Canard::Server<uavcan_protocol_file_GetDirectoryEntryInfoRequest> get_directory_entry_info_server;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_GetDirectoryEntryInfoRequest> get_directory_entry_info_req_cb{this, &AP_DroneCAN_Filesystem::handle_get_directory_entry_info_request};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Server, uavcan_protocol_file_GetDirectoryEntryInfoRequest> get_directory_entry_info_req_cb{this, &AP_DroneCAN_Filesystem_Server::handle_get_directory_entry_info_request};
     void handle_get_directory_entry_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_GetDirectoryEntryInfoRequest &msg);
 
     // Delete
     Canard::Server<uavcan_protocol_file_DeleteRequest> delete_server;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_DeleteRequest> delete_req_cb{this, &AP_DroneCAN_Filesystem::handle_delete_request};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Server, uavcan_protocol_file_DeleteRequest> delete_req_cb{this, &AP_DroneCAN_Filesystem_Server::handle_delete_request};
     void handle_delete_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_DeleteRequest &msg);
 
     // Read
     Canard::Server<uavcan_protocol_file_ReadRequest> read_server;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_ReadRequest> read_req_cb{this, &AP_DroneCAN_Filesystem::handle_read_request};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Server, uavcan_protocol_file_ReadRequest> read_req_cb{this, &AP_DroneCAN_Filesystem_Server::handle_read_request};
     void handle_read_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_ReadRequest &msg);
 
     // Write
     Canard::Server<uavcan_protocol_file_WriteRequest> write_server;
-    Canard::ObjCallback<AP_DroneCAN_Filesystem, uavcan_protocol_file_WriteRequest> write_req_cb{this, &AP_DroneCAN_Filesystem::handle_write_request};
+    Canard::ObjCallback<AP_DroneCAN_Filesystem_Server, uavcan_protocol_file_WriteRequest> write_req_cb{this, &AP_DroneCAN_Filesystem_Server::handle_write_request};
     void handle_write_request(const CanardRxTransfer& transfer, const uavcan_protocol_file_WriteRequest &msg);
 };
