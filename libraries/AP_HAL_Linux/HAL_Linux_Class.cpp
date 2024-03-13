@@ -304,17 +304,6 @@ void _usage(void)
     printf("\tserial (0 through 9 available):\n");
     printf("\t                  --serial0 /dev/ttyO4\n");
     printf("\t                  --serial3 /dev/ttyS1\n");
-    printf("\tlegacy UART options are deprecated, their mappings are:\n");
-    printf("\t                  -A/--uartA is SERIAL0\n");
-    printf("\t                  -C/--uartC is SERIAL1\n"); // ordering captures the historical use of uartB as SERIAL3
-    printf("\t                  -D/--uartD is SERIAL2\n");
-    printf("\t                  -B/--uartB is SERIAL3\n");
-    printf("\t                  -E/--uartE is SERIAL4\n");
-    printf("\t                  -F/--uartF is SERIAL5\n");
-    printf("\t                  -G/--uartG is SERIAL6\n");
-    printf("\t                  -H/--uartH is SERIAL7\n");
-    printf("\t                  -I/--uartI is SERIAL8\n");
-    printf("\t                  -J/--uartJ is SERIAL9\n");
     printf("\tnetworking tcp:\n");
     printf("\t                  --serial1 tcp:192.168.2.15:1243:wait\n");
     printf("\t                  --serial0 tcp:11.0.0.2:5678\n");
@@ -415,11 +404,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
             // ordering captures the historical use of uartB as SERIAL3
             static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
             int serial_idx = mapping[uart_idx];
-            printf("WARNING: deprecated option --uart%c/-%c will be removed in "
-                "a future release. Use --serial%d instead.\n",
-                (char)opt, (char)opt, serial_idx);
-            serialDrivers[serial_idx]->set_device_path(gopt.optarg);
-            break;
+            printf("ERROR: Removed option --uart%c/-%c supplied. "
+                "Use --serial%d instead.\n",(char)opt, (char)opt, serial_idx);
+            exit(1);
         }
         case CMDLINE_SERIAL0:
         case CMDLINE_SERIAL1:

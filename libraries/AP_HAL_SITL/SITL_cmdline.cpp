@@ -93,16 +93,6 @@ void SITL_State::_usage(void)
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
-           "\t--uartA device           (deprecated) set device string for SERIAL0\n"
-           "\t--uartC device           (deprecated) set device string for SERIAL1\n" // ordering captures the historical use of uartB as SERIAL3
-           "\t--uartD device           (deprecated) set device string for SERIAL2\n"
-           "\t--uartB device           (deprecated) set device string for SERIAL3\n"
-           "\t--uartE device           (deprecated) set device string for SERIAL4\n"
-           "\t--uartF device           (deprecated) set device string for SERIAL5\n"
-           "\t--uartG device           (deprecated) set device string for SERIAL6\n"
-           "\t--uartH device           (deprecated) set device string for SERIAL7\n"
-           "\t--uartI device           (deprecated) set device string for SERIAL8\n"
-           "\t--uartJ device           (deprecated) set device string for SERIAL9\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -466,11 +456,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
             int serial_idx = mapping[uart_idx];
             char uart_letter = (char)(uart_idx)+'A';
-            printf("WARNING: deprecated option --uart%c will be removed in a "
-                "future release. Use --serial%d instead.\n",
-                uart_letter, serial_idx);
-            _serial_path[serial_idx] = gopt.optarg;
-            break;
+            printf("ERROR: Removed option --uart%c supplied. "
+                "Use --serial%d instead.\n", uart_letter, serial_idx);
+            exit(1);
         }
         case CMDLINE_SERIAL0:
         case CMDLINE_SERIAL1:
