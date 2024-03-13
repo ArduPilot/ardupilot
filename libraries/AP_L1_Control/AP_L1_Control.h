@@ -53,7 +53,7 @@ public:
     void update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) override;
     void update_heading_hold(int32_t navigation_heading_cd) override;
     void update_level_flight(void) override;
-    void update_path(const Location &location_on_path, Vector2f unit_path_tangent, float path_curvature, int8_t direction) override;
+    void update_path(const Location &location_on_path, const Vector2f& unit_path_tangent, float path_curvature, int8_t direction) override;
     bool reached_loiter_target(void) override;
 
     // set the default NAVL1_PERIOD
