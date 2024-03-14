@@ -36,6 +36,7 @@
 #include "AP_RCProtocol_GHST.h"
 #include "AP_RCProtocol_MAVLinkRadio.h"
 #include "AP_RCProtocol_Joystick_SFML.h"
+#include "AP_RCProtocol_UDP.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -95,6 +96,9 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
     backend[AP_RCProtocol::JOYSTICK_SFML] = new AP_RCProtocol_Joystick_SFML(*this);
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+    backend[AP_RCProtocol::UDP] = new AP_RCProtocol_UDP(*this);
 #endif
 }
 
@@ -445,6 +449,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
         AP_RCProtocol::JOYSTICK_SFML,
 #endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+        AP_RCProtocol::UDP,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -584,6 +591,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
     case JOYSTICK_SFML:
         return "SFML";
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+    case UDP:
+        return "UDP";
 #endif
     case NONE:
         break;
