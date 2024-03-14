@@ -1,5 +1,50 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 4.5.0 beta3 14-Mar-2024
+Changes from 4.5.0 beta1
+
+Board specific changes
+- added PixFlamingo F7 board
+- support ICM42688 on BlitzF745AIO
+- fixed IMU orientation of CubeRedSecondary
+- enable all FPV features on SpeedyBeeF405WING
+
+System level changes
+
+- improved robustness of CRSF parser
+- reduced memory used by DDS/ROS2
+- added filesystem crc32 binding in lua scripting
+- support visual odometry quality metric and added autoswitching lua script
+- allow for expansion of fence storage to microSD for larger pologon fences
+- allow FTP upload of fence and rally points
+- fixed vehicle type of ship simulation for ship landing
+- make severity level depend on generator error level in IE 2400 generator
+- speed up initial GPS probe by using SERIALn_BAUD first
+- allow NanoRadar radar and proximity sensor to share the CAN bus
+- added MR72 CAN proximity sensor
+- only produce *_with_bl.hex not *.hex in builds if bootloader available
+- fixed check for GPS antenna separation in moving baseline yaw
+- added GPS_DRV_OPTIONS options for fully parsing RTCMv3 stream
+- fixed logging of RTCM fragments in GPS driver
+- fixed video recording while armed
+- robostness and logging improvements for ExternalAHRS
+- fixed RPM from bdshot on boards with IOMCU
+- fixed accel cal simple to remove unused IMUs
+- fixed float rounding issue in HAL_Linux millis and micros functions
+- fixed loading of defaults.parm parameters for dynamic parameter subtrees
+- fixed discrimination between GHST and CRSF protocols
+- fixed bug in DroneCAN packet parsing for corrupt packets that could cause a crash
+- fixed handling of network sockets in scripting when used after close
+- fixed bit timing of CANFD buses
+
+New Autopilots supported
+ - YJUAV_A6Ultra
+ - AnyLeaf H7
+
+- do relay parameter conversion for parachute parameters if ever has been used
+- broaden acceptance criteria for GPS yaw measurement for moving baseline yaw
+
+------------------------------------------------------------------
 AntennaTracker 4.5.0 beta1 22-Feb-2024
 Changes from 4.2.0
 1) Innumerable system-level improvements; see Copter and Plane release notes
