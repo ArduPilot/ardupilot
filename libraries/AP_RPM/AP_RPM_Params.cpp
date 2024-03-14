@@ -78,6 +78,16 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     AP_GROUPINFO("ESC_INDEX", 8, AP_RPM_Params, esc_telem_outbound_index, 0),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    // @Param: DC_SEND_ID
+    // @DisplayName: DroneCAN Sensor ID
+    // @Description: DroneCAN sensor ID to send as on AP-Periph -1 disables
+    // @Range: -1 10
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("DC_SEND_ID", 9, AP_RPM_Params, dronecan_sensor_id, -1),
+#endif
+
     AP_GROUPEND
 };
 
