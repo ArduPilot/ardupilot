@@ -125,12 +125,6 @@ void SIMState::fdm_input_local(void)
     }
     if (_sitl) {
         sitl_model->fill_fdm(_sitl->state);
-
-        if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_None) {
-            for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-                pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
-            }
-        }
     }
 
     // output JSON state to ride along flight controllers
