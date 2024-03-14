@@ -318,7 +318,7 @@ private:
     AP_Arming_Copter arming;
 
     bool is_outdoors_ready();
-    bool outdoors_ready = true;
+    bool outdoors_ready = false;
 
     // Optical flow sensor
 #if AP_OPTICALFLOW_ENABLED

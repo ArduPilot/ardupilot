@@ -119,7 +119,8 @@ void ModeRCCar::run()
     // get pilot desired climb rate (for alt-hold mode and take-off)
     float target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), g.pilot_speed_up);
-
+    rccar_flow_hold = false;
+    gcs().send_text(MAV_SEVERITY_INFO, "throttle: %d", channel_throttle->get_control_in());
     if (rccar_flow_hold) {
         AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);
 
@@ -235,7 +236,14 @@ void ModeRCCar::run()
         }
 
         // Pos Hold State Machine Determination
+        float takeoff_climb_rate = 0;
+        // channel_throttle->get_control_in() goes from 0 to 1000
         AltHoldModeState poshold_state = get_alt_hold_state(target_climb_rate);
+        if (poshold_state == AltHold_Takeoff || poshold_state == AltHold_Landed_Pre_Takeoff || poshold_state == AltHold_Landed_Ground_Idle) {
+            takeoff_climb_rate = channel_throttle->get_control_in() * 0.1; //Tanner's takeo0000000000000ff climb rate
+            target_climb_rate = takeoff_climb_rate;
+            poshold_state = get_alt_hold_state(target_climb_rate);
+        }
 
         // state machine
         switch (poshold_state) {
@@ -278,10 +286,10 @@ void ModeRCCar::run()
             }
 
             // get avoidance adjusted climb rate
-            target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+            // target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
             // set position controller targets adjusted for pilot input
-            takeoff.do_pilot_takeoff(target_climb_rate);
+            takeoff.do_pilot_takeoff(takeoff_climb_rate);
 
             // init and update loiter although pilot is controlling lean angles
             loiter_nav->clear_pilot_desired_acceleration();
