@@ -416,6 +416,7 @@ public:
     } opos;
 
     uint16_t irlock_port;
+    uint16_t rcin_port;
 
     time_t start_time_UTC;
 
