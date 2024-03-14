@@ -26,8 +26,9 @@ local MAV_SEVERITY_ERROR = 3
 local K_THROTTLE = 70
 local K_HELIRSC = 31
 
-local MODEL_DEFAULT = 0
+local MODEL_SRE_180 = 0
 local MODEL_SP_275 = 1
+local MODEL_DEFAULT = MODEL_SRE_180
 
 PARAM_TABLE_KEY = 36
 PARAM_TABLE_PREFIX = "EFI_SP_"
@@ -176,7 +177,7 @@ local EFI_SP_ST_DISARM  = bind_add_param('ST_DISARM', 11, 0)    -- allow start w
   // @Param: EFI_SP_MODEL
   // @DisplayName: SkyPower EFI ECU model
   // @Description: SkyPower EFI ECU model
-  // @Values: 0:Default,1:SP_275
+  // @Values: 0:SRE_180,1:SP_275
   // @User: Standard
 --]]
 local EFI_SP_MODEL  = bind_add_param('MODEL', 12, MODEL_DEFAULT)
@@ -220,7 +221,6 @@ if not driver1 then
     return
 end
 
-
 local now_s = get_time_sec()
 
 function C_TO_KELVIN(temp)
@@ -253,6 +253,7 @@ local function engine_control(_driver)
     local throttle_angle = 0
     local ignition_angle = 0
     local supply_voltage = 0
+    local supply_voltage2 = 0
     local fuel_consumption_lph = 0
     local fuel_total_l = 0
     local last_fuel_s = 0
@@ -304,10 +305,11 @@ local function engine_control(_driver)
                 break
             end
 
-            -- All Frame IDs for this EFI Engine are not extended
-            if not frame:isExtended() then
-                self.handle_EFI_packet(frame)
-            end
+            --[[
+               note that some SkyPower setups use extended and some
+               11-bit CAN frames
+            --]]
+            self.handle_EFI_packet(frame)
         end
         if last_rpm_t > last_state_update_t then
            -- update state if we have an updated RPM
@@ -350,6 +352,8 @@ local function engine_control(_driver)
              current_load = get_uint16(frame, 2) * 0.1
           elseif id == 0x113 then
              gen.amps = get_uint16(frame, 2)
+          elseif id == 0x114 then
+             supply_voltage2 = get_uint16(frame, 4) * 0.01
           elseif id == 0x2E0 then
              starter_rpm = get_uint16(frame, 4)
           elseif id == 0x10B then
@@ -362,7 +366,8 @@ local function engine_control(_driver)
              last_fuel_s = now_s
           end
        else
-          -- original SkyPower driver
+          assert(EFI_SP_MODEL:get() == MODEL_SRE_180, string.format('%s Invalid EFI_SP_MODEL', SCRIPT_NAME))
+          -- original SkyPower driver, SRE_180
           if id == 0x100 then
              rpm = get_uint16(frame, 0)
              ignition_angle = get_uint16(frame, 2) * 0.1
@@ -389,6 +394,8 @@ local function engine_control(_driver)
              temps.imt = get_uint16(frame, 2) * 0.1
              temps.egt = get_uint16(frame, 4) * 0.1
              temps.oilt = get_uint16(frame, 6) * 0.1
+          elseif id == 0x178 then
+             supply_voltage2 = get_uint16(frame, 4) * 0.01
           end
        end
     end
@@ -582,6 +589,7 @@ local function engine_control(_driver)
        gcs:send_named_float('EFI_OILTMP', temps.oilt)
        gcs:send_named_float('EFI_TRLOAD', target_load)
        gcs:send_named_float('EFI_VOLTS', supply_voltage)
+       gcs:send_named_float('EFI_VOLTS2', supply_voltage2)
        gcs:send_named_float('EFI_GEN_AMPS', gen.amps)
        gcs:send_named_float('EFI_CHT2', temps.cht2)
        gcs:send_named_float('EFI_STARTRPM', starter_rpm)
