@@ -24,6 +24,7 @@
 #include "RPM_Generator.h"
 #include "RPM_HarmonicNotch.h"
 #include "RPM_ESC_Telem.h"
+#include "RPM_DroneCAN.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -99,6 +100,11 @@ void AP_RPM::init(void)
             drivers[i] = new AP_RPM_HarmonicNotch(*this, i, state[i]);
             break;
 #endif  // AP_RPM_HARMONICNOTCH_ENABLED
+#if AP_RPM_DRONECAN_ENABLED
+        case RPM_TYPE_DRONECAN:
+            drivers[i] = new AP_RPM_DroneCAN(*this, i, state[i]);
+            break;
+#endif // AP_RPM_DRONECAN_ENABLED
 #if AP_RPM_SIM_ENABLED
         case RPM_TYPE_SITL:
             drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
