@@ -692,6 +692,17 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Standard
     GSCALAR(options, "OPTIONS", AP_PERIPH_PROBE_CONTINUOUS),
 
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    // @Param: RPM_MSG_RATE
+    // @DisplayName: RPM sensor message rate
+    // @Description: This is the rate RPM sensor data is sent in Hz. Zero means no send. Each sensor with a set ID is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rpm_msg_rate, "RPM_MSG_RATE", 0),
+#endif
+
     AP_VAREND
 };
 
