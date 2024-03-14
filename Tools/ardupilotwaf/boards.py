@@ -915,6 +915,7 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_BATTERY = 1,
             HAL_PERIPH_ENABLE_EFI = 1,
             HAL_PERIPH_ENABLE_RPM = 1,
+            HAL_PERIPH_ENABLE_RPM_STREAM = 1,
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             HAL_PERIPH_ENABLE_ADSB = 1,
             HAL_PERIPH_ENABLE_SERIAL_OPTIONS = 1,
