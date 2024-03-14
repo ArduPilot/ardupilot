@@ -91,6 +91,10 @@
     #endif
 #endif
 
+#if defined(HAL_PERIPH_ENABLE_RPM_STREAM) && !defined(HAL_PERIPH_ENABLE_RPM)
+    #error "HAL_PERIPH_ENABLE_RPM_STREAM requires HAL_PERIPH_ENABLE_RPM"
+#endif
+
 #ifndef AP_PERIPH_SAFETY_SWITCH_ENABLED
 #define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
 #endif
@@ -229,7 +233,12 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RPM
     AP_RPM rpm_sensor;
     uint32_t rpm_last_update_ms;
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    void rpm_sensor_send();
+    uint32_t rpm_last_send_ms;
+    uint8_t rpm_last_sent_index;
 #endif
+#endif // HAL_PERIPH_ENABLE_RPM
 
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     void handle_battery_failsafe(const char* type_str, const int8_t action) { }

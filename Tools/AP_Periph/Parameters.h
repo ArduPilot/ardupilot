@@ -94,6 +94,7 @@ public:
         k_param_rangefinder_baud1,
         k_param_rangefinder_port1,
         k_param_options,
+        k_param_rpm_msg_rate,
     };
 
     AP_Int16 format_version;
@@ -210,6 +211,10 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
     AP_Int8 temperature_msg_rate;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    AP_Int16 rpm_msg_rate;
 #endif
 
 #if HAL_CANFD_SUPPORTED
