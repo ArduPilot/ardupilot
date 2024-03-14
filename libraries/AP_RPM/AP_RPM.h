@@ -54,6 +54,9 @@ public:
 #if AP_RPM_GENERATOR_ENABLED
         RPM_TYPE_GENERATOR  = 6,
 #endif
+#if AP_RPM_DRONECAN_ENABLED
+        RPM_TYPE_DRONECAN = 7,
+#endif
 #if AP_RPM_SIM_ENABLED
         RPM_TYPE_SITL   = 10,
 #endif
