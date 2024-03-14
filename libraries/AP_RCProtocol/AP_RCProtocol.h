@@ -87,6 +87,9 @@ public:
 #if AP_RCPROTOCOL_UDP_ENABLED
         UDP = 17,
 #endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+        FDM = 18,
+#endif
         NONE    //last enum always is None
     };
 
@@ -179,6 +182,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_UDP_ENABLED
         case UDP:
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+        case FDM:
 #endif
         case NONE:
             return false;

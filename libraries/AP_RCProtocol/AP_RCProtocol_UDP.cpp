@@ -8,6 +8,10 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <SITL/SITL.h>
 
+#if AP_RCPROTOCOL_FDM_ENABLED
+#include "AP_RCProtocol_FDM.h"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol_UDP::set_default_pwm_input_values()
@@ -59,6 +63,13 @@ bool AP_RCProtocol_UDP::init()
 
 void AP_RCProtocol_UDP::update()
 {
+#if AP_RCPROTOCOL_FDM_ENABLED
+    // yield to the FDM backend if it is getting data
+    if (fdm_backend->active()) {
+        return;
+    }
+#endif
+
     if (!init_done) {
         if (!init()) {
             return;

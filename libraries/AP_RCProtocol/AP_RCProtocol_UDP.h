@@ -21,6 +21,12 @@ public:
 
     void update() override;
 
+#if AP_RCPROTOCOL_FDM_ENABLED
+    void set_fdm_backend(class AP_RCProtocol_FDM *_fdm_backend) {
+        fdm_backend = _fdm_backend;
+    }
+#endif
+
 private:
 
     bool init();
@@ -38,6 +44,10 @@ private:
     uint8_t num_channels;
 
     void set_default_pwm_input_values();
+
+#if AP_RCPROTOCOL_FDM_ENABLED
+    AP_RCProtocol_FDM *fdm_backend;
+#endif
 };
 
 
