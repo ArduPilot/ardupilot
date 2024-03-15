@@ -898,6 +898,16 @@ bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) con
     return backend->get_rangefinder_distance(distance_m);
 }
 
+// enable/disable rangefinder.  Returns true on success
+bool AP_Mount::set_rangefinder_enable(uint8_t instance, bool enable)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_rangefinder_enable(enable);
+}
+
 AP_Mount_Backend *AP_Mount::get_primary() const
 {
     return get_instance(_primary);
