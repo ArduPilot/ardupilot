@@ -22,6 +22,8 @@ public:
     // update state
     void update(void) override;
 
+    uint32_t read_timeout_ms() const override { return 300; }
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {

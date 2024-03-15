@@ -58,7 +58,7 @@ private:
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(float &temp) const override;
 
-    uint16_t read_timeout_ms() const override { return 3000; }
+    uint32_t read_timeout_ms() const override { return 3000; }
 
     // add a single character to the buffer and attempt to decode
     // returns true if a distance was successfully decoded

@@ -97,13 +97,7 @@ void AP_RangeFinder_HC_SR04::update(void)
     const uint32_t value_us = pwm_source.get_pwm_us();
 
     const uint32_t now = AP_HAL::millis();
-    if (value_us == 0) {
-        // no reading; check for timeout:
-        if (now - last_reading_ms > 1000) {
-            // no reading for a second - something is broken
-            state.distance_m = 0.0f;
-        }
-    } else {
+    if (value_us != 0) {
         // gcs().send_text(MAV_SEVERITY_WARNING, "Pong!");
         // a new reading - convert time to distance
         state.distance_m = (value_us * (1.0/58.0f)) * 0.01f;  // 58 is from datasheet, mult for performance
@@ -126,10 +120,10 @@ void AP_RangeFinder_HC_SR04::update(void)
         }
 
         last_reading_ms = now;
-    }
 
-    // update range_valid state based on distance measured
-    update_status();
+        // update range_valid state based on distance measured
+        update_status();
+    }
 
     // consider sending new ping
     if (now - last_ping_ms > 67) { // read ~@15Hz - recommended 60ms delay from datasheet

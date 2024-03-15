@@ -57,7 +57,5 @@ void AP_RangeFinder_Backend_Serial::update(void)
         // update range_valid state based on distance measured
         state.last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > read_timeout_ms()) {
-        set_status(RangeFinder::Status::NoData);
     }
 }

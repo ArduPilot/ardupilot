@@ -32,9 +32,6 @@ protected:
     // it is essential that anyone relying on the base-class update to implement this
     virtual bool handle_frame(AP_HAL::CANFrame &frame) = 0;
 
-    // maximum time between readings before we change state to NoData:
-    virtual uint32_t read_timeout_ms() const { return 200; }
-
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_RADAR;
     }

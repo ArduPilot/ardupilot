@@ -96,8 +96,6 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             state.distance_m = filter.apply(_distance_cm*0.01);
             state.last_reading_ms = AP_HAL::millis();
             update_status();
-        } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-            set_status(RangeFinder::Status::NoData);
         }
         if (!v2_hardware) {
             // for v2 hw we use continuous mode

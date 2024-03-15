@@ -36,7 +36,7 @@ protected:
     bool get_reading(float &reading_m) override;
 
     // maximum time between readings before we change state to NoData:
-    uint16_t read_timeout_ms() const override { return 500; }
+    uint32_t read_timeout_ms() const override { return 500; }
 
 private:
 
