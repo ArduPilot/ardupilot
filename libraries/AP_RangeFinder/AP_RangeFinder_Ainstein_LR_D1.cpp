@@ -17,6 +17,10 @@
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_ENABLED
 
+#ifndef AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
+#define AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS 1
+#endif
+
 #include "AP_RangeFinder_Ainstein_LR_D1.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -69,10 +73,14 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 
         has_data = true;
 
-        if (malfunction_alert_prev != malfunction_alert) {
+#if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
+        const uint32_t now_ms = AP_HAL::millis();
+        if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
             malfunction_alert_prev = malfunction_alert;
+            malfunction_alert_last_send_ms = now_ms;
             report_malfunction(malfunction_alert);
         }
+#endif
 
         /* From datasheet:
             Altitude measurements associated with a SNR value 
@@ -101,6 +109,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
     return has_data;
 }
 
+#if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
 void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunction_alert_) {
     if (_malfunction_alert_ & static_cast<uint8_t>(MalfunctionAlert::Temperature)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Temperature alert");
@@ -115,5 +124,6 @@ void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunctio
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Altitude reading overflow alert");
     }
 }
+#endif // AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
 
-#endif
+#endif // AP_RANGEFINDER_AINSTEIN_LR_D1_ENABLED
