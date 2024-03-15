@@ -95,6 +95,9 @@ public:
     // get rangefinder distance.  Returns true on success
     bool get_rangefinder_distance(float& distance_m) const override;
 
+    // enable/disable rangefinder.  Returns true on success
+    bool set_rangefinder_enable(bool enable) override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success
@@ -159,6 +162,15 @@ private:
         STOP_RECORD = 0x15,
         AUTO_FOCUS = 0x19,
         MANUAL_FOCUS = 0x1A
+    };
+
+    // C1 rangefinder commands
+    enum class LRFCommand : uint8_t {
+        NO_ACTION = 0x00,
+        SINGLE_RANGING = 0x01,
+        CONTINUOUS_RANGING_START = 0x02,
+        LPCL_CONTINUOUS_RANGING_START = 0x03,
+        STOP_RANGING = 0x05
     };
 
     // C2 camera commands
@@ -351,7 +363,7 @@ private:
     bool send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
 
     // send camera command, affected image sensor and value (e.g. zoom speed)
-    bool send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value);
+    bool send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value, LRFCommand lrf_cmd = LRFCommand::NO_ACTION);
 
     // send camera command2 and corresponding value (e.g. zoom as absolute value)
     bool send_camera_command2(CameraCommand2 cmd, uint16_t value);
