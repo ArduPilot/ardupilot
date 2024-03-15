@@ -44,7 +44,7 @@ generate_sitl_parameters() {
     VEHICLE="ArduCopter"
 
     # generate Parameters.html, Parameters.rst etc etc:
-    ./Tools/autotest/param_metadata/param_parse.py --sitl --vehicle $VEHICLE
+    ./Tools/autotest/param_metadata/param_parse.py --vehicle $VEHICLE
 
     # stash some of the results away:
     VEHICLE_PARAMS_DIR="$PARAMS_DIR/SITL"
