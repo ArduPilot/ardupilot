@@ -48,6 +48,7 @@ const struct UnitStructure log_Units[] = {
     { 'a', "Ah" },            // Ampere hours
     { 'd', "deg" },           // of the angular variety, -180 to 180
     { 'b', "B" },             // bytes
+    { 'B', "B/s" },           // bytes per second
     { 'k', "deg/s" },         // degrees per second. Degrees are NOT SI, but is some situations more user-friendly than radians
     { 'D', "deglatitude" },   // degrees of latitude
     { 'e', "deg/s/s" },       // degrees per second per second. Degrees are NOT SI, but is some situations more user-friendly than radians
