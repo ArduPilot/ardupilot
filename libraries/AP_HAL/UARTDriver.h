@@ -167,6 +167,10 @@ public:
 
     // request information on uart I/O for this uart, for @SYS/uarts.txt
     virtual void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) {}
+
+    // Getters for cumulative tx and rx counts
+    virtual uint32_t get_tx_bytes() const { return 0; }
+    virtual uint32_t get_rx_bytes() const { return 0; }
 #endif
 
     /*
