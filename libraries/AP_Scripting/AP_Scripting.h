@@ -159,6 +159,7 @@ public:
         LOG_RUNTIME = 1U << 3,
         DISABLE_PRE_ARM = 1U << 4,
         SAVE_CHECKSUM = 1U << 5,
+        DISABLE_HEAP_EXPANSION = 1U << 6,
     };
 
 private:

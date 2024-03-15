@@ -44,7 +44,8 @@ lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP
     : _vm_steps(vm_steps),
       _debug_options(debug_options)
 {
-    _heap.create(heap_size, 4);
+    const bool allow_heap_expansion = !option_is_set(AP_Scripting::DebugOption::DISABLE_HEAP_EXPANSION);
+    _heap.create(heap_size, 10, allow_heap_expansion, 20*1024);
 }
 
 lua_scripts::~lua_scripts() {
