@@ -14,6 +14,7 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     plane.prev_WP_loc = plane.current_loc;
 
+    bool jump_to_pos1 = false;
     int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
@@ -57,13 +58,17 @@ bool ModeQRTL::_enter()
 
             // we're close to destination and already running VTOL motors, don't transition and don't climb
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
-            poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+            jump_to_pos1 = true;
         }
     }
 
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(RTL_alt_abs_cm);
     quadplane.poscontrol_init_approach();
+
+    if (jump_to_pos1) {
+        poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+    }
 
     int32_t from_alt;
     int32_t to_alt;
@@ -134,18 +139,24 @@ void ModeQRTL::run()
                 Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
                 const float dist = plane.current_loc.get_distance(destination);
                 const float radius = get_VTOL_return_radius();
-                if (dist < radius) {
-                    // if close to home return at current target altitude
+
+                // if close to home enter pos1 and return at current target altitude
+                const bool jump_to_pos1 = dist < radius;
+                if (jump_to_pos1) {
                     int32_t target_alt_abs_cm;
                     if (plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, target_alt_abs_cm)) {
                         RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, target_alt_abs_cm);
                     }
                     gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
-                    poscontrol.set_state(QuadPlane::QPOS_POSITION1);
                 }
 
                 plane.do_RTL(RTL_alt_abs_cm);
                 quadplane.poscontrol_init_approach();
+
+                if (jump_to_pos1) {
+                    poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                }
+
                 if (plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff)) {
                     poscontrol.slow_descent = is_positive(alt_diff);
                 } else {
