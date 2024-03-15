@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <AP_Common/ExpandingString.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -191,3 +192,27 @@ bool HALSITL::Util::get_random_vals(uint8_t* data, size_t size)
     close(dev_random);
     return true;
 }
+
+#if HAL_UART_STATS_ENABLED
+// request information on uart I/O
+void HALSITL::Util::uart_info(ExpandingString &str)
+{
+    // Calculate time since last call
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - uart_stats.last_ms;
+    uart_stats.last_ms = now_ms;
+
+    // a header to allow for machine parsers to determine format
+    str.printf("UARTV1\n");
+    for (uint8_t i = 0; i < hal.num_serial; i++) {
+        if (i >= ARRAY_SIZE(sitlState->_serial_path)) {
+            continue;
+        }
+        auto *uart = hal.serial(i);
+        if (uart) {
+            str.printf("SERIAL%u ", i);
+            uart->uart_info(str, uart_stats.serial[i], dt_ms);
+        }
+    }
+}
+#endif
