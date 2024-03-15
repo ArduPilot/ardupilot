@@ -642,9 +642,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
 #if HAL_TORQEEDO_ENABLED
-    // @Group: TRQD_
+    // @Group: TRQ
     // @Path: ../libraries/AP_Torqeedo/AP_Torqeedo.cpp
-    AP_SUBGROUPINFO(torqeedo, "TRQD_", 49, ParametersG2, AP_Torqeedo),
+    AP_SUBGROUPINFO(torqeedo, "TRQ", 49, ParametersG2, AP_Torqeedo),
 #endif
 
     // @Group: PSC
@@ -808,6 +808,13 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
     { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
     { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
+    { Parameters::k_param_g2,               113,     AP_PARAM_INT8, "TRQ1_TYPE" },
+    { Parameters::k_param_g2,               177,     AP_PARAM_INT8, "TRQ1_ONOFF_PIN" },
+    { Parameters::k_param_g2,               241,     AP_PARAM_INT8, "TRQ1_DE_PIN" },
+    { Parameters::k_param_g2,               305,     AP_PARAM_INT16, "TRQ1_OPTIONS" },
+    { Parameters::k_param_g2,               369,     AP_PARAM_INT8, "TRQ1_POWER" },
+    { Parameters::k_param_g2,               433,     AP_PARAM_FLOAT, "TRQ1_SLEW_TIME" },
+    { Parameters::k_param_g2,               497,     AP_PARAM_FLOAT, "TRQ1_DIR_DELAY" },
 };
 
 
