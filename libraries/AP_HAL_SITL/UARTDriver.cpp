@@ -1015,8 +1015,13 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 
 uint32_t UARTDriver::bw_in_bytes_per_second() const
 {
-    // if connected, assume at least a 10/100Mbps connection
-    const uint32_t bitrate = _connected ? 10E6 : _uart_baudrate;
+    // if connected, assume at least a 10/100Mbps connection if not limited
+    bool baud_limit = false;
+#if !defined(HAL_BUILD_AP_PERIPH)
+    SITL::SIM *_sitl = AP::sitl();
+    baud_limit = (_sitl != nullptr) && _sitl->telem_baudlimit_enable;
+#endif
+    const uint32_t bitrate = (_connected && !baud_limit) ? 10E6 : _uart_baudrate;
     return bitrate/10; // convert bits to bytes minus overhead
 };
 
