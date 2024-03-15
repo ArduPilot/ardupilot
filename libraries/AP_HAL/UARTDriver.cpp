@@ -163,3 +163,13 @@ uint64_t AP_HAL::UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     return AP_HAL::micros64();
 }
+
+#if HAL_UART_STATS_ENABLED
+// Take cumulative bytes and return the change since last call
+uint32_t AP_HAL::UARTDriver::StatsTracker::ByteTracker::update(uint32_t bytes)
+{
+    const uint32_t change = bytes - last_bytes;
+    last_bytes = bytes;
+    return change;
+}
+#endif
