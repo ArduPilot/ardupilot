@@ -209,6 +209,9 @@ public:
     // get rangefinder distance.  Returns true on success
     virtual bool get_rangefinder_distance(float& distance_m) const { return false; }
 
+    // enable/disable rangefinder.  Returns true on success
+    virtual bool set_rangefinder_enable(bool enable) { return false; }
+
 protected:
 
     enum class MountTargetType {
