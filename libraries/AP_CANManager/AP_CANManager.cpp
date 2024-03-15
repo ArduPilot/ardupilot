@@ -208,7 +208,6 @@ void AP_CANManager::init()
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
         } else
 #endif
 #if HAL_PICCOLO_CAN_ENABLE
@@ -220,7 +219,6 @@ void AP_CANManager::init()
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
         } else
 #endif
         {
@@ -273,7 +271,6 @@ void AP_CANManager::init()
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[i], AP_DroneCAN::var_info);
             _drivers[i]->init(i, true);
             _driver_type_cache[i] = (AP_CAN::Protocol) _drv_param[i]._driver_type.get();
         }

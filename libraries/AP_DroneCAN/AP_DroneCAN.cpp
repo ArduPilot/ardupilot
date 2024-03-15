@@ -289,6 +289,7 @@ _dna_server(*this, canard_iface, driver_index)
         _SRV_conf[i].servo_pending = false;
     }
 
+    AP_Param::load_object_from_eeprom(this, var_info);
     debug_dronecan(AP_CANManager::LOG_INFO, "AP_DroneCAN constructed\n\r");
 }
 
