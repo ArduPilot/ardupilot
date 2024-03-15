@@ -383,7 +383,6 @@ private:
     bool register_compass(int32_t dev_id, uint8_t& instance);
 
     // load backend drivers
-    bool _add_backend(AP_Compass_Backend *backend);
     void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
     void probe_i2c_spi_compasses(void);
@@ -489,6 +488,8 @@ private:
         DRIVER_QMC5883P =20,
 #endif
 };
+
+    bool _add_backend(DriverType driver_type, AP_Compass_Backend *backend);
 
     bool _driver_enabled(enum DriverType driver_type);
     

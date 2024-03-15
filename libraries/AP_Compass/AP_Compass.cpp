@@ -1030,11 +1030,25 @@ Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
 #endif
 }
 
-bool Compass::_add_backend(AP_Compass_Backend *backend)
+#if COMPASS_MAX_UNREG_DEV > 0
+#define CHECK_UNREG_LIMIT_RETURN  if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) return false
+#define CHECK_UNREG_LIMIT_RETURN_VOID  if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) return
+#else
+#define CHECK_UNREG_LIMIT_RETURN
+#define CHECK_UNREG_LIMIT_RETURN_VOID
+#endif
+
+bool Compass::_add_backend(DriverType driver_type, AP_Compass_Backend *backend)
 {
     if (!backend) {
         return false;
     }
+
+    if (!_driver_enabled(driver_type)) {
+        return false;
+    }
+
+    CHECK_UNREG_LIMIT_RETURN;
 
     if (_backend_count == COMPASS_MAX_BACKEND) {
         return false;
@@ -1072,20 +1086,10 @@ bool Compass::_have_i2c_driver(uint8_t bus, uint8_t address) const
     return false;
 }
 
-#if COMPASS_MAX_UNREG_DEV > 0
-#define CHECK_UNREG_LIMIT_RETURN  if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV) return
-#else
-#define CHECK_UNREG_LIMIT_RETURN
-#endif
-
 /*
-  macro to add a backend with check for too many backends or compass
-  instances. We don't try to start more than the maximum allowed
+  macro to add a backend; should be removed / content folded into "callers"
  */
-#define ADD_BACKEND(driver_type, backend)   \
-    do { if (_driver_enabled(driver_type)) { _add_backend(backend); } \
-        CHECK_UNREG_LIMIT_RETURN; \
-    } while (0)
+#define ADD_BACKEND(driver_type, backend) _add_backend(driver_type, backend)
 
 #define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
 
@@ -1323,7 +1327,11 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (serial_port >= 0) {
-        ADD_BACKEND(DRIVER_EXTERNALAHRS, new AP_Compass_ExternalAHRS(serial_port));
+        auto *backend = new AP_Compass_ExternalAHRS(serial_port);
+        if (!ADD_BACKEND(DRIVER_EXTERNALAHRS, backend)) {
+            delete backend;
+            backend = nullptr;
+        }
     }
 #endif
     
@@ -1344,13 +1352,13 @@ void Compass::_detect_backends(void)
     // probe DroneCAN before I2C and SPI so that DroneCAN compasses
     // default to first in the list for a new board
     probe_dronecan_compasses();
-    CHECK_UNREG_LIMIT_RETURN;
+    CHECK_UNREG_LIMIT_RETURN_VOID;
 #endif
 
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
     // allow boards to ask for external probing of all i2c compass types in hwdef.dat
     _probe_external_i2c_compasses();
-    CHECK_UNREG_LIMIT_RETURN;
+    CHECK_UNREG_LIMIT_RETURN_VOID;
 #endif
 
 #if AP_COMPASS_MSP_ENABLED
@@ -1362,7 +1370,7 @@ void Compass::_detect_backends(void)
 #endif
 
     // finally look for i2c and spi compasses not found yet
-    CHECK_UNREG_LIMIT_RETURN;
+    CHECK_UNREG_LIMIT_RETURN_VOID;
     probe_i2c_spi_compasses();
 
     if (_backend_count == 0 ||
@@ -1393,7 +1401,7 @@ void Compass::probe_i2c_spi_compasses(void)
     case AP_BoardConfig::PX4_BOARD_PIXHAWK_PRO:
     case AP_BoardConfig::PX4_BOARD_AEROFC:
         _probe_external_i2c_compasses();
-        CHECK_UNREG_LIMIT_RETURN;
+        CHECK_UNREG_LIMIT_RETURN_VOID;
         break;
 
     case AP_BoardConfig::PX4_BOARD_PCNC1:
@@ -1532,9 +1540,7 @@ void Compass::probe_dronecan_compasses(void)
     }
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
-        if (_uavcan_backend) {
-            _add_backend(_uavcan_backend);
-        }
+        _add_backend(DriverType::DRIVER_UAVCAN, _uavcan_backend);
 #if COMPASS_MAX_UNREG_DEV > 0
         if (_unreg_compass_count == COMPASS_MAX_UNREG_DEV)  {
             break;
@@ -1567,9 +1573,10 @@ void Compass::probe_dronecan_compasses(void)
 
                 AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
                 if (_uavcan_backend) {
-                    _add_backend(_uavcan_backend);
-                    // we also need to remove the id from unreg list
-                    remove_unreg_dev_id(detected_devid);
+                    if (_add_backend(DriverType::DRIVER_UAVCAN, _uavcan_backend)) {
+                        // we also need to remove the id from unreg list
+                        remove_unreg_dev_id(detected_devid);
+                    }
                 } else {
                     // the mag has already been allocated,
                     // let's begin the replacement
@@ -1702,10 +1709,8 @@ Compass::_detect_runtime(void)
     if (_driver_enabled(DRIVER_UAVCAN)) {
         for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
             AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
-            if (_uavcan_backend) {
-                _add_backend(_uavcan_backend);
-            }
-            CHECK_UNREG_LIMIT_RETURN;
+            _add_backend(DriverType::DRIVER_UAVCAN, _uavcan_backend);
+            CHECK_UNREG_LIMIT_RETURN_VOID;
         }
     }
 #endif  // AP_COMPASS_DRONECAN_ENABLED
