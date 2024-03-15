@@ -318,7 +318,7 @@ bool AP_GPS::needs_uart(GPS_Type type) const
 void AP_GPS::init()
 {
     // set the default for the first GPS according to define:
-    params[0].type.set_default(HAL_GPS_TYPE_DEFAULT);
+    params[0].type.set_default(HAL_GPS1_TYPE_DEFAULT);
 
     convert_parameters();
 

@@ -676,7 +676,10 @@ bool AP_GPS_DroneCAN::do_config()
     
     switch(cfg_step) {
         case STEP_SET_TYPE:
+            // GPS_TYPE was renamed GPS1_TYPE.  Request both and
+            // handle whichever we receive.
             ap_dronecan->get_parameter_on_node(node_id, "GPS_TYPE", &param_int_cb);
+            ap_dronecan->get_parameter_on_node(node_id, "GPS1_TYPE", &param_int_cb);
             break;
         case STEP_SET_MB_CAN_TX:
             if (role != AP_GPS::GPS_Role::GPS_ROLE_NORMAL) {
@@ -836,7 +839,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 bool AP_GPS_DroneCAN::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, uint8_t node_id, const char* name, int32_t &value)
 {
     Debug("AP_GPS_DroneCAN: param set/get response from %d %s %ld\n", node_id, name, value);
-    if (strcmp(name, "GPS_TYPE") == 0 && cfg_step == STEP_SET_TYPE) {
+    if (((strcmp(name, "GPS_TYPE") == 0) || (strcmp(name, "GPS1_TYPE") == 0)) && (cfg_step == STEP_SET_TYPE)) {
         if (role == AP_GPS::GPS_ROLE_MB_BASE && value != AP_GPS::GPS_TYPE_UBLOX_RTK_BASE) {
             value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_BASE;
             requires_save_and_reboot = true;

@@ -268,6 +268,11 @@ public:
     /// Startup initialisation.
     void init();
 
+    // ethod for APPPeriph to set the default type for the first GPS instance:
+    void set_default_type_for_gps1(uint8_t default_type) {
+        params[0].type.set_default(default_type);
+    }
+
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
     /// more) to process incoming data.
