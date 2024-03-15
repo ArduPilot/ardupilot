@@ -1200,7 +1200,8 @@ private:
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
     ftype tiltErrorVariance;        // variance of the angular uncertainty measured perpendicular to the vertical (rad^2)
-
+    int32_t gps_time_delta_ms; // time delta between GPS time measurements (msec)
+    uint32_t last_gpsdata_time_ms; // time of last GPS time measurement (msec)
     // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
     struct {
         ftype pos;

@@ -596,6 +596,13 @@ uint64_t AP_GPS::last_message_epoch_usec(uint8_t instance) const
     return istate_time_to_epoch_ms(istate.time_week, drivers[instance]->get_last_itow_ms()) * 1000ULL;
 }
 
+uint64_t AP_GPS::last_pps_time_usec(uint8_t instance) const
+{
+    if (drivers[instance] == nullptr) {
+        return 0;
+    }
+    return  drivers[instance]->get_last_pps_time_us();
+}
 /*
   send some more initialisation string bytes if there is room in the
   UART transmit buffer
@@ -2380,11 +2387,16 @@ void AP_GPS::Write_GPS(uint8_t i)
 
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
-    float undulation = 0;
+    float undulation = 0, lag = 0;
+    int64_t clock_drift = 0;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
     get_undulation(i, undulation);
+    get_lag(i, lag);
+    if (drivers[i] != nullptr) {
+        clock_drift = drivers[i]->get_clock_drift();
+    }
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
@@ -2399,7 +2411,9 @@ void AP_GPS::Write_GPS(uint8_t i)
         delta_ms      : last_message_delta_time_ms(i),
         undulation    : undulation,
         rtcm_fragments_used: rtcm_stats.fragments_used,
-        rtcm_fragments_discarded: rtcm_stats.fragments_discarded
+        rtcm_fragments_discarded: rtcm_stats.fragments_discarded,
+        lag           : lag,
+        clock_drift   : clock_drift
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }

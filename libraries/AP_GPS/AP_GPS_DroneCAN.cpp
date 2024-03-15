@@ -54,11 +54,6 @@ extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "GPS"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
-#else
-#define NATIVE_TIME_OFFSET 0
-#endif
 AP_GPS_DroneCAN::DetectedModules AP_GPS_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_GPS_DroneCAN::_sem_registry;
 
@@ -116,6 +111,10 @@ void AP_GPS_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
         AP_BoardConfig::allocation_error("relposheading_sub");
     }
 #endif
+
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_timesync_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("timesync_sub");
+    }
 }
 
 AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
@@ -336,6 +335,18 @@ void AP_GPS_DroneCAN::handle_velocity(const float vx, const float vy, const floa
     }
 }
 
+bool AP_GPS_DroneCAN::get_fix_lag(float &lag) const
+{
+    if (_fix_lag_us) {
+        // we have gps message time synchronized using the timesync message
+        // which is driven by PPS. So we have accurate timestamp of 
+        // which timeslice the solution was calculated for
+        lag = _fix_lag_us/1000000.0f;
+        return true;
+    }
+    return AP_GPS_Backend::get_lag(lag);
+}
+
 void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uint64_t timestamp_usec)
 {
     bool process = false;
@@ -428,25 +439,34 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         // hdop from pdop. Some GPS modules don't provide the Aux message
         interim_state.hdop = interim_state.vdop = msg.pdop * 100.0;
     }
-
-    if ((msg.timestamp.usec > msg.gnss_timestamp.usec) && (msg.gnss_timestamp.usec > 0)) {
-        // we have a valid timestamp based on gnss_timestamp timescale, we can use that to correct our gps message time
-        interim_state.last_corrected_gps_time_us = jitter_correction.correct_offboard_timestamp_usec(msg.timestamp.usec, (timestamp_usec + NATIVE_TIME_OFFSET));
+    uint64_t gps_message_timestamp_usec = msg.timestamp.usec;
+    if (timesync_correction && msg.gnss_timestamp.usec) {
+        interim_state.last_corrected_gps_time_us = AP_HAL::micros64();
         interim_state.last_gps_time_ms = interim_state.last_corrected_gps_time_us/1000U;
-        interim_state.last_corrected_gps_time_us -= msg.timestamp.usec - msg.gnss_timestamp.usec;
+        int32_t fix_lag_us = interim_state.last_corrected_gps_time_us - (msg.gnss_timestamp.usec - timesync_correction_us);
+        Debug("fix_lag[%d]: %ld\n",  _detected_modules[_detected_module].node_id, fix_lag_us);
+        interim_state.corrected_timestamp_updated = true;
+        if (fix_lag_us > 5000 && fix_lag_us < 250000 ) {
+            _fix_lag_us = fix_lag_us;
+        }
+        last_gnss_timestamp_usec = msg.gnss_timestamp.usec; // for use by update_relposned_lag
+    } else if ((gps_message_timestamp_usec > msg.gnss_timestamp.usec) && (msg.gnss_timestamp.usec > 0)) {
+        // we have a valid timestamp based on gnss_timestamp timescale, we can use that to correct our gps message time
+        interim_state.last_corrected_gps_time_us = jitter_correction.correct_offboard_timestamp_usec(gps_message_timestamp_usec, timestamp_usec);
+        interim_state.last_gps_time_ms = interim_state.last_corrected_gps_time_us/1000U;
+        interim_state.last_corrected_gps_time_us -= gps_message_timestamp_usec - msg.gnss_timestamp.usec;
         // this is also the time the message was received on the UART on other end.
         interim_state.corrected_timestamp_updated = true;
     } else {
-        interim_state.last_gps_time_ms = jitter_correction.correct_offboard_timestamp_usec(msg.timestamp.usec, timestamp_usec + NATIVE_TIME_OFFSET)/1000U;
+        interim_state.last_gps_time_ms = jitter_correction.correct_offboard_timestamp_usec(gps_message_timestamp_usec, timestamp_usec)/1000U;
     }
 
 #if GPS_PPS_EMULATION
     // Emulates a PPS signal, can be used to check how close are we to real GPS time
     static virtual_timer_t timeout_vt;
-    hal.gpio->pinMode(51, 1);
-    auto handle_timeout = [](void *arg)
+    hal.gpio->pinMode(51, HAL_GPIO_OUTPUT);
+    auto handle_timeout = [](virtual_timer_t*,void *)
     {
-        (void)arg;
         //we are called from ISR context
         chSysLockFromISR();
         hal.gpio->toggle(51);
@@ -455,7 +475,7 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
 
     static uint64_t next_toggle, last_toggle;
     
-    next_toggle = (msg.timestamp.usec) + (1000000ULL - ((msg.timestamp.usec) % 1000000ULL));
+    next_toggle = (gps_message_timestamp_usec) + (1000000ULL - ((gps_message_timestamp_usec) % 1000000ULL));
 
     next_toggle += jitter_correction.get_link_offset_usec();
     if (next_toggle != last_toggle) {
@@ -660,6 +680,50 @@ void AP_GPS_DroneCAN::handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronec
     }
 }
 #endif
+
+// precise time synchronisation
+void AP_GPS_DroneCAN::handle_timesync_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_protocol_GlobalTimeSync& msg)
+{
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
+    if (driver == nullptr) {
+        return;
+    }
+    bool packet_dropped = false;
+    // check that we didn't drop a packet,
+    // if we dropped the packet we can't calculate the timesync correction
+    // using this packet
+    if (transfer.transfer_id != ((driver->last_transfer_id+1)%32)) {
+        packet_dropped = true;
+    }
+    if (!packet_dropped && (driver->last_timesync_timestamp_us != 0) && (msg.previous_transmission_timestamp_usec != 0)) {
+        // It is expected that previous_transmission_timestamp_usec is set using
+        // gnss timestamp timescale on GPS module. For AP_Periph, that would be calculated
+        // using: Ublox Message Timestamp[GPS Time Domain] + DroneCAN transmit timestamp[Periph Time Domain] - Ublox Message Timestamp[Periph Time Domain]
+        // Also it is expected that Ublox Message Timestamp[Periph Time Domain] is kept using PPS signal synced with GPS NAV messages.
+        int64_t last_timesync_correction_us = driver->timesync_correction_us;
+        driver->timesync_correction_us = msg.previous_transmission_timestamp_usec - driver->last_timesync_timestamp_us;
+        int64_t clock_drift = driver->timesync_correction_us - last_timesync_correction_us;
+        if (abs(clock_drift) > 10000 && last_timesync_correction_us) {
+            // if the clock drift is more than 10ms, we might have a correction dropped
+#if HAL_LOGGING_ENABLED
+            AP::logger().Write_MessageF("GPS %d: timesync drop, o:%lld n:%lld", (unsigned int)(driver->state.instance + 1), driver->timesync_correction_us, last_timesync_correction_us);
+#endif
+            driver->timesync_correction_us = last_timesync_correction_us;
+        } else if (last_timesync_correction_us) {
+            // add to the clock drift to keep track of drift over time
+            driver->clock_drift += clock_drift;
+        }
+        driver->timesync_correction = true;
+        Debug("[%u]: correction: %lld/%lld\n",
+                      transfer.source_node_id,
+                      driver->timesync_correction_us,
+                      driver->clock_drift);
+    }
+    driver->last_timesync_timestamp_us = transfer.timestamp_usec;
+    driver->last_transfer_id = transfer.transfer_id;
+}
 
 bool AP_GPS_DroneCAN::do_config()
 {

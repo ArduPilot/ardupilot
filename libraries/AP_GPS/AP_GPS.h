@@ -525,6 +525,11 @@ public:
         return last_message_epoch_usec(primary_instance);
     }
 
+    uint64_t last_pps_time_usec(uint8_t instance) const;
+    uint64_t last_pps_time_usec() const {
+        return last_pps_time_usec(primary_instance);
+    }
+
     // convert GPS week and millis to unix epoch in ms
     static uint64_t istate_time_to_epoch_ms(uint16_t gps_week, uint32_t gps_ms);
 

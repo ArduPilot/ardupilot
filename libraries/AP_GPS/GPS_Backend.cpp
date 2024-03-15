@@ -245,11 +245,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
-        if (_last_pps_time_us != 0 && (state.status >= AP_GPS::GPS_OK_FIX_2D)) {
-            // pps is only reliable when we have some sort of GPS fix
-            uart_us = _last_pps_time_us;
-            _last_pps_time_us = 0;
-        } else if (port) {
+        if (port) {
             uart_us = port->receive_time_constraint_us(msg_length);
         } else {
             uart_us = AP_HAL::micros64();
@@ -326,6 +322,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(float reported_heading_deg, const
 bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state, const float reported_heading_deg, const float reported_distance, const float reported_D) {
     constexpr float minimum_antenna_seperation = 0.05; // meters
     constexpr float permitted_error_length_pct = 0.2;  // percentage
+
 #if HAL_LOGGING_ENABLED || AP_AHRS_ENABLED
     float min_D = 0.0f;
     float max_D = 0.0f;
@@ -402,6 +399,8 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
                 goto bad_yaw;
             }
         }
+#else
+    (void)lag;
 #endif // AP_AHRS_ENABLED
 
         {

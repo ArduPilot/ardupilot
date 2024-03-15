@@ -53,6 +53,9 @@
 // debug VALGET/VALSET configuration
 #define UBLOX_CFG_DEBUGGING 0
 
+// debug Lag calculation
+#define UBLOX_LAG_DEBUGGING 0
+
 extern const AP_HAL::HAL& hal;
 
 #if UBLOX_DEBUGGING
@@ -92,6 +95,19 @@ extern const AP_HAL::HAL& hal;
 #endif
 #else
  # define CFG_Debug(fmt, args ...)
+#endif
+
+#if UBLOX_LAG_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define Lag_Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
+    # define Lag_Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
+#else
+ # define Lag_Debug(fmt, args ...)
 #endif
 
 AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role _role) :
@@ -1578,6 +1594,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_PVT");
 
         havePvtMsg = true;
+#ifdef HAL_GPIO_PPS
+        update_lag();
+#endif
         // position
         _check_new_itow(_buffer.pvt.itow);
         _last_pvt_itow = _buffer.pvt.itow;
@@ -2074,6 +2093,12 @@ AP_GPS_UBLOX::broadcast_configuration_failure_reason(void) const {
  */
 bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
 {
+#ifdef HAL_GPIO_PPS
+    if (_lag_us) {
+        lag_sec = _lag_us * 1.0e-6f;
+        return true;
+    }
+#endif
     switch (_hardware_generation) {
     case UBLOX_UNKNOWN_HARDWARE_GENERATION:
         lag_sec = 0.22f;
@@ -2128,8 +2153,37 @@ void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 // uBlox specific check_new_itow(), handling message length
 void AP_GPS_UBLOX::_check_new_itow(uint32_t itow)
 {
+#ifdef HAL_GPIO_PPS
+    if (_lag_us) {
+        // we have calculated exact lag so no need to
+        // jitter correct gps message arrival
+        return;
+    }
+#endif
     check_new_itow(itow, _payload_length + sizeof(ubx_header) + 2);
 }
+
+#ifdef HAL_GPIO_PPS
+void AP_GPS_UBLOX::update_lag()
+{
+    // calculate lag
+    if (_last_pps_time_us != 0 &&
+        (state.status > AP_GPS::GPS_OK_FIX_3D) &&
+        !(_unconfigured_messages & CONFIG_TP5)) {
+        uint64_t last_message_rx_time = port->receive_time_constraint_us(_payload_length + sizeof(ubx_header) + 2);
+        _lag_us = uint32_t(last_message_rx_time & 0xFFFFFFFF) - _last_pps_time_us;
+        Lag_Debug("trx lag: %lu", AP_HAL::micros64() - last_message_rx_time);
+        Lag_Debug("lag:%lu", _lag_us);
+        _lag_us = constrain_uint32(_lag_us, 5000, 250000); // [5ms, 250ms]
+        _last_pps_time_us = 0;
+        // since we have an accurate lag measurement,
+        // we can set last_corrected_gps_time_us without
+        // jitter correction
+        state.last_corrected_gps_time_us = last_message_rx_time;
+        state.corrected_timestamp_updated = true;
+    }
+}
+#endif
 
 // support for retrieving RTCMv3 data from a moving baseline base
 bool AP_GPS_UBLOX::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)

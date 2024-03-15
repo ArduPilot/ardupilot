@@ -427,6 +427,9 @@ public:
 #ifdef HAL_PERIPH_ENABLE_GPS
     uint32_t last_gps_update_ms;
     uint32_t last_gps_yaw_ms;
+#ifdef HAL_PERIPH_ENABLE_GLOBALTIMESYNC
+    uint64_t get_tracked_tx_timestamp(uint8_t i);
+#endif
 #endif
     uint32_t last_relposheading_ms;
 #ifdef HAL_PERIPH_ENABLE_BARO

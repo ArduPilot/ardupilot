@@ -838,6 +838,9 @@ void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
                     stats.fdf_tx_success++;
                 }
                 pending_tx_[i].pushed = true;
+                if ((pending_tx_[i].frame.id & tracked_tx_ts_mask) == tracked_tx_ts_value) {
+                    tracked_tx_timestamp_us = timestamp_us;
+                }
             } else {
                 continue;
             }

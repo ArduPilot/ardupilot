@@ -105,6 +105,8 @@ public:
 
     virtual bool get_error_codes(uint32_t &error_codes) const { return false; }
 
+    virtual int64_t get_clock_drift() { return 0; }
+
     // return iTOW of last message, or zero if not supported
     uint32_t get_last_itow_ms(void) const;
 
@@ -112,6 +114,8 @@ public:
     bool option_set(const AP_GPS::DriverOptions option) const {
         return gps.option_set(option);
     }
+
+    uint64_t get_last_pps_time_us() const { return _last_pps_time_us; }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to

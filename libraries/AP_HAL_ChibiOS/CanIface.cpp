@@ -500,6 +500,9 @@ void CANIface::handleTxMailboxInterrupt(uint8_t mailbox_index, bool txok, const 
 #if !defined(HAL_BOOTLOADER_BUILD)
         stats.last_transmit_us = timestamp_us;
 #endif
+        if ((txi.frame.id & tracked_tx_ts_mask) == tracked_tx_ts_value) {
+            tracked_tx_timestamp_us = timestamp_us;
+        }
     }
 }
 
