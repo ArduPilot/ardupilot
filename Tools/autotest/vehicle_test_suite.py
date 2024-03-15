@@ -13633,7 +13633,7 @@ switch value'''
             self.set_parameter("SERIAL3_PROTOCOL", serial_protocol)
             if gps_type is None:
                 gps_type = 1  # auto-detect
-            self.set_parameter("GPS_TYPE", gps_type)
+            self.set_parameter("GPS1_TYPE", gps_type)
             self.context_clear_collection('STATUSTEXT')
             self.reboot_sitl()
             if detect_prefix == "probing":

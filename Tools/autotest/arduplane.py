@@ -3176,7 +3176,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "EAHRS_TYPE": eahrs_type,
             "SERIAL4_PROTOCOL": 36,
             "SERIAL4_BAUD": 230400,
-            "GPS_TYPE": 21,
+            "GPS1_TYPE": 21,
             "AHRS_EKF_TYPE": 11,
             "INS_GYR_CAL": 1,
         })
