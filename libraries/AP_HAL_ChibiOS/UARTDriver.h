@@ -123,7 +123,7 @@ public:
 
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O for one uart
-    void uart_info(ExpandingString &str) override;
+    void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
 #endif
 
     /*
@@ -209,7 +209,6 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
-    uint32_t _last_stats_ms;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
