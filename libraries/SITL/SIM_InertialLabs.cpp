@@ -42,7 +42,7 @@ void InertialLabs::send_packet(void)
     float sigma, delta, theta;
     AP_Baro::SimpleAtmosphere((fdm.altitude+rand_float()*0.25) * 0.001, sigma, delta, theta);
     pkt.baro_data.pressure_pa2 = SSL_AIR_PRESSURE * delta * 0.5;
-    pkt.baro_data.baro_alt = fdm.altitude;
+    pkt.baro_data.baro_alt = fdm.altitude+rand_float()*0.25;
     pkt.temperature = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
 
     pkt.mag_data.x = (fdm.bodyMagField.y / NTESLA_TO_MGAUSS)*0.1;

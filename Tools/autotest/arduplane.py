@@ -3168,10 +3168,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Returning home")
         self.fly_home_land_and_disarm(240)
 
-    def fly_external_AHRS(self, sim, eahrs_type, mission):
+    def fly_external_AHRS(self, sim, eahrs_type, mission, extra_params=None, script=None):
         """Fly with external AHRS (VectorNav)"""
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
+        self.context_push()
         self.set_parameters({
             "EAHRS_TYPE": eahrs_type,
             "SERIAL4_PROTOCOL": 36,
@@ -3180,7 +3181,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "AHRS_EKF_TYPE": 11,
             "INS_GYR_CAL": 1,
         })
+        if script is not None:
+            # optionally install a driver script
+            self.install_driver_script_context(script)
+            self.set_parameters({
+                "SCR_ENABLE" : 1,
+                "SCR_VM_I_COUNT" : 1000000,
+            })
         self.reboot_sitl()
+        if extra_params is not None:
+            # optional extra parameters
+            self.set_parameters(extra_params)
+            self.reboot_sitl()
+            # set again for ones that need to be after reboot
+            self.set_parameters(extra_params)
         self.delay_sim_time(5)
         self.progress("Running accelcal")
         self.run_cmd(
@@ -3192,6 +3206,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.fly_mission(mission)
+        self.context_pop()
 
     def wait_and_maintain_wind_estimate(
             self,
@@ -3291,7 +3306,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def InertialLabsEAHRS(self):
         '''Test InertialLabs EAHRS support'''
-        self.fly_external_AHRS("ILabs", 5, "ap1.txt")
+        self.fly_external_AHRS("ILabs", 5, "ap1.txt",
+                               extra_params={'SIM_SPEEDUP': 10})
+
+    def InertialLabsEAHRSScripting(self):
+        '''Test InertialLabs EAHRS support with scripting'''
+        self.fly_external_AHRS("ILabs", 10, "ap1.txt",
+                               extra_params={"ILABS_ENABLE": 1,
+                                             'SERIAL4_PROTOCOL': 28,
+                                             'SIM_SPEEDUP': 1,
+                                             'EAHRS_SENSORS': 13,
+                                             'ARSPD_TYPE': 16},
+                               script="EAHRS_InertialLabs.lua")
 
     def get_accelvec(self, m):
         return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
@@ -5408,6 +5434,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.InertialLabsEAHRSScripting,
             self.Deadreckoning,
             self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,

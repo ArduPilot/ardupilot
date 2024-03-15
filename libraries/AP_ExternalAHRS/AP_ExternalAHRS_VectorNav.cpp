@@ -715,10 +715,12 @@ bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure
  */
 void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) const
 {
+    WITH_SEMAPHORE(state.sem);
+
     memset(&status, 0, sizeof(status));
     if (type == TYPE::VN_300) {
         if (last_pkt1 && last_pkt2) {
-            status.flags.initalized = true;
+            status.flags.initialized = true;
         }
         if (healthy() && last_pkt2) {
             status.flags.attitude = true;
@@ -736,66 +738,23 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
             }
         }
     } else {
-        status.flags.initalized = initialised();
+        status.flags.initialized = initialised();
         if (healthy()) {
             status.flags.attitude = true;
         }
     }
-}
 
-// send an EKF_STATUS message to GCS
-void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
-{
-    if (!last_pkt1) {
-        return;
+    if (last_pkt1) {
+        const struct VN_packet1 &pkt1 = *(struct VN_packet1 *)last_pkt1;
+        const float vel_gate = 5;
+        const float pos_gate = 5;
+        const float hgt_gate = 5;
+        const float mag_var = 0;
+        state.velocity_variance = pkt1.velU/vel_gate;
+        state.pos_horiz_variance = pkt1.posU/pos_gate;
+        state.pos_vert_variance = pkt1.posU/hgt_gate;
+        state.compass_variance = mag_var;
     }
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // send message
-    const struct VN_packet1 &pkt1 = *(struct VN_packet1 *)last_pkt1;
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       pkt1.velU/vel_gate, pkt1.posU/pos_gate, pkt1.posU/hgt_gate,
-                                       mag_var, 0, 0);
 }
 
 #endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED

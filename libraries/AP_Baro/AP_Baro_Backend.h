@@ -80,4 +80,9 @@ protected:
     void set_bus_id(uint8_t instance, uint32_t id) {
         _frontend.sensors[instance].bus_id.set(int32_t(id));
     }
+
+    /*
+      set an instance as calibrated
+    */
+    void set_calibrated(uint8_t instance, float pressure);
 };

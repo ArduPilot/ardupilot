@@ -26,8 +26,10 @@
 // the caller is consuming the new data;
 bool AP_GPS_ExternalAHRS::read(void)
 {
+    WITH_SEMAPHORE(sem);
     if (new_data) {
         new_data = false;
+        state = interim_state;
         return true;
     }
     return false;
@@ -37,43 +39,45 @@ bool AP_GPS_ExternalAHRS::read(void)
 // corresponding gps data appropriately;
 void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt)
 {
+    WITH_SEMAPHORE(sem);
+
     check_new_itow(pkt.ms_tow, sizeof(pkt));
 
-    state.time_week = pkt.gps_week;
-    state.time_week_ms = pkt.ms_tow;
+    interim_state.time_week = pkt.gps_week;
+    interim_state.time_week_ms = pkt.ms_tow;
     if (pkt.fix_type == 0) {
-        state.status = AP_GPS::NO_FIX;
+        interim_state.status = AP_GPS::NO_FIX;
     } else {
-        state.status = (AP_GPS::GPS_Status)pkt.fix_type;
+        interim_state.status = (AP_GPS::GPS_Status)pkt.fix_type;
     }
-    state.num_sats = pkt.satellites_in_view;
+    interim_state.num_sats = pkt.satellites_in_view;
 
     Location loc = {};
     loc.lat = pkt.latitude;
     loc.lng = pkt.longitude;
     loc.alt = pkt.msl_altitude;
 
-    state.location = loc;
-    state.hdop = pkt.hdop;
-    state.vdop = pkt.vdop;
+    interim_state.location = loc;
+    interim_state.hdop = pkt.hdop;
+    interim_state.vdop = pkt.vdop;
 
-    state.have_vertical_velocity = true;
-    state.velocity.x = pkt.ned_vel_north;
-    state.velocity.y = pkt.ned_vel_east;
-    state.velocity.z = pkt.ned_vel_down;
+    interim_state.have_vertical_velocity = true;
+    interim_state.velocity.x = pkt.ned_vel_north;
+    interim_state.velocity.y = pkt.ned_vel_east;
+    interim_state.velocity.z = pkt.ned_vel_down;
 
     velocity_to_speed_course(state);
 
-    state.have_speed_accuracy = true;
-    state.have_horizontal_accuracy = true;
-    state.have_vertical_accuracy = true;
-    state.have_vertical_velocity = true;
+    interim_state.have_speed_accuracy = true;
+    interim_state.have_horizontal_accuracy = true;
+    interim_state.have_vertical_accuracy = true;
+    interim_state.have_vertical_velocity = true;
 
-    state.horizontal_accuracy = pkt.horizontal_pos_accuracy;
-    state.vertical_accuracy = pkt.vertical_pos_accuracy;
-    state.speed_accuracy = pkt.horizontal_vel_accuracy;
+    interim_state.horizontal_accuracy = pkt.horizontal_pos_accuracy;
+    interim_state.vertical_accuracy = pkt.vertical_pos_accuracy;
+    interim_state.speed_accuracy = pkt.horizontal_vel_accuracy;
 
-    state.last_gps_time_ms = AP_HAL::millis();
+    interim_state.last_gps_time_ms = AP_HAL::millis();
 
     new_data = true;
 }

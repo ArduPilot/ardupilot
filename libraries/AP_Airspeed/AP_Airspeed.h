@@ -225,8 +225,14 @@ public:
     // get aggregate calibration state for the Airspeed library:
     CalibrationState get_calibration_state() const;
 
+    // allow threads to lock against update
+    HAL_Semaphore &get_semaphore(void) {
+        return sem;
+    }
+
 private:
     static AP_Airspeed *_singleton;
+    HAL_Semaphore sem;
 
     AP_Int8 _enable;
     bool lib_enabled() const;

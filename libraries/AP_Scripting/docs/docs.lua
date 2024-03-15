@@ -340,6 +340,307 @@ function efi:get_state() end
 ---@return AP_EFI_Backend_ud
 function efi:get_backend(instance) end
 
+-- desc
+---@class airspeed
+airspeed = {}
+
+-- pass in external airspeed data
+---@param param1 airspeed_data_message_t_ud
+function airspeed:handle_external(param1) end
+
+
+-- desc
+---@class ExternalAHRS
+ExternalAHRS = {}
+
+-- desc
+---@param param1 EAHRS_State_ud
+---@param param2 nav_filter_status_flags_t_ud
+---@return boolean
+function ExternalAHRS:handle_scripting(param1, param2) end
+
+-- desc
+---@class mag_data_message_t_ud
+local mag_data_message_t_ud = {}
+
+---@return mag_data_message_t_ud
+function mag_data_message_t() end
+
+-- set field
+---@param value Vector3f_ud
+function mag_data_message_t_ud:field(value) end
+
+-- desc
+---@class baro_data_message_t_ud
+local baro_data_message_t_ud = {}
+
+---@return baro_data_message_t_ud
+function baro_data_message_t() end
+
+-- set field
+---@param value number
+function baro_data_message_t_ud:temperature(value) end
+
+-- set field
+---@param value number
+function baro_data_message_t_ud:pressure_pa(value) end
+
+-- set field
+---@param value integer
+function baro_data_message_t_ud:instance(value) end
+
+-- desc
+---@class airspeed_data_message_t_ud
+local airspeed_data_message_t_ud = {}
+
+---@return airspeed_data_message_t_ud
+function airspeed_data_message_t() end
+
+-- set field
+---@param value number
+function airspeed_data_message_t_ud:temperature(value) end
+
+-- set field
+---@param value number
+function airspeed_data_message_t_ud:differential_pressure(value) end
+
+-- desc
+---@class gps_data_message_t_ud
+local gps_data_message_t_ud = {}
+
+---@return gps_data_message_t_ud
+function gps_data_message_t() end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:ned_vel_down(value) end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:ned_vel_east(value) end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:ned_vel_north(value) end
+
+-- set field
+---@param value integer
+function gps_data_message_t_ud:msl_altitude(value) end
+
+-- set field
+---@param value integer
+function gps_data_message_t_ud:latitude(value) end
+
+-- set field
+---@param value integer
+function gps_data_message_t_ud:longitude(value) end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:vdop(value) end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:hdop(value) end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:vertical_pos_accuracy(value) end
+
+-- set field
+---@param value number
+function gps_data_message_t_ud:horizontal_pos_accuracy(value) end
+
+-- set field
+---@param value integer
+function gps_data_message_t_ud:satellites_in_view(value) end
+
+-- set field
+---@param value integer
+function gps_data_message_t_ud:fix_type(value) end
+
+-- set field
+---@param value uint32_t_ud
+function gps_data_message_t_ud:ms_tow(value) end
+
+-- set field
+---@param value integer
+function gps_data_message_t_ud:gps_week(value) end
+
+-- desc
+---@class ins_data_message_t_ud
+local ins_data_message_t_ud = {}
+
+---@return ins_data_message_t_ud
+function ins_data_message_t() end
+
+-- set field
+---@param value number
+function ins_data_message_t_ud:temperature(value) end
+
+-- set field
+---@param value Vector3f_ud
+function ins_data_message_t_ud:gyro(value) end
+
+-- set field
+---@param value Vector3f_ud
+function ins_data_message_t_ud:accel(value) end
+
+-- desc
+---@class nav_filter_status_flags_t_ud
+local nav_filter_status_flags_t_ud = {}
+
+---@return nav_filter_status_flags_t_ud
+function nav_filter_status_flags_t() end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:dead_reckoning(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:rejecting_airspeed(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:initialized(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:gps_quality_good(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:gps_glitching(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:using_gps(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:touchdown(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:takeoff(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:takeoff_detected(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:pred_horiz_pos_abs(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:pred_horiz_pos_rel(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:const_pos_mode(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:terrain_alt(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:vert_pos(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:horiz_pos_abs(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:horiz_pos_rel(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:vert_vel(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:horiz_vel(value) end
+
+-- set field
+---@param value boolean
+function nav_filter_status_flags_t_ud:attitude(value) end
+
+
+-- desc
+---@class EAHRS_State_ud
+local EAHRS_State_ud = {}
+
+---@return EAHRS_State_ud
+function EAHRS_State() end
+
+-- set field
+---@param value boolean
+function EAHRS_State_ud:have_velocity(value) end
+
+-- set field
+---@param value boolean
+function EAHRS_State_ud:have_location(value) end
+
+-- set field
+---@param value boolean
+function EAHRS_State_ud:have_origin(value) end
+
+-- set field
+---@param value boolean
+function EAHRS_State_ud:have_quaternion(value) end
+
+-- set field
+---@param value Location_ud
+function EAHRS_State_ud:origin(value) end
+
+-- set field
+---@param value Vector3f_ud
+function EAHRS_State_ud:velocity(value) end
+
+-- set field
+---@param value Location_ud
+function EAHRS_State_ud:location(value) end
+
+-- set field
+---@param value Quaternion_ud
+function EAHRS_State_ud:quat(value) end
+
+-- set field
+---@param value Vector3f_ud
+function EAHRS_State_ud:gyro(value) end
+
+-- set field
+---@param value Vector3f_ud
+function EAHRS_State_ud:accel(value) end
+
+-- set field
+---@param value float
+function EAHRS_State_ud:velocity_variance(value) end
+
+-- set field
+---@param value float
+function EAHRS_State_ud:pos_horiz_variance(value) end
+
+-- set field
+---@param value float
+function EAHRS_State_ud:pos_vert_variance(value) end
+
+-- set field
+---@param value float
+function EAHRS_State_ud:compass_variance(value) end
+
+-- set field
+---@param value float
+function EAHRS_State_ud:terrain_alt_variance(value) end
+
+-- set field
+---@param value float
+function EAHRS_State_ud:airspeed_variance(value) end
+
 -- CAN bus interaction
 ---@class CAN
 CAN = {}
@@ -1221,6 +1522,10 @@ compass = {}
 ---@return boolean
 function compass:healthy(instance) end
 
+-- add external compass data
+---@param param1 mag_data_message_t_ud
+function compass:handle_external(param1) end
+
 -- desc
 ---@class camera
 camera = {}
@@ -1515,6 +1820,7 @@ function ins:accels_consistent(threshold) end
 ---@return boolean
 function ins:get_accel_health(instance) end
 
+<<<<<<< HEAD
 -- Get if the INS is currently calibrating
 ---@return boolean
 function ins:calibrating() end
@@ -1528,6 +1834,11 @@ function ins:get_gyro(instance) end
 ---@param instance integer -- the 0-based index of the accelerometer instance to return.
 ---@return Vector3f_ud
 function ins:get_accel(instance) end
+=======
+-- pass in external INS data
+---@param param1 ins_data_message_t_ud
+function ins:handle_external(param1) end
+>>>>>>> 317165a736 (AP_Scripting: added docs for external ahrs)
 
 -- desc
 ---@class Motors_dynamic
@@ -2015,6 +2326,9 @@ function baro:get_altitude() end
 ---@return boolean
 function baro:healthy(instance) end
 
+-- pass in external baro data
+---@param param1 baro_data_message_t_ud
+function baro:handle_external(param1) end
 
 -- desc
 ---@class serial
@@ -2820,6 +3134,15 @@ function notify:release_text(row) end
 ---@field NO_FIX number
 ---@field NO_GPS number
 gps = {}
+
+-- pass in external gps data
+---@param param1 gps_data_message_t_ud
+---@param param2 integer
+function gps:handle_external(param1, param2) end
+
+-- get first external GPS instance
+---@return integer|nil
+function gps:get_first_external_instance() end
 
 -- desc
 ---@return integer|nil

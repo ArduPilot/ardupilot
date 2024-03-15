@@ -52,6 +52,9 @@ public:
 #if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
         InertialLabs = 5,
 #endif
+#if AP_EXTERNAL_AHRS_SCRIPTING_ENABLED
+        Scripting = 10,
+#endif
         // 3 reserved for AdNav
         // 4 reserved for CINS
         // 6 reserved for Trimble
@@ -100,6 +103,14 @@ public:
         bool have_location;
         bool have_velocity;
 
+        // variances for EKF_STATUS_REPORT
+        float velocity_variance;
+        float pos_horiz_variance;
+        float pos_vert_variance;
+        float compass_variance;
+        float terrain_alt_variance;
+        float airspeed_variance;
+        
         uint32_t last_location_update_us;
     } state;
 
@@ -121,6 +132,9 @@ public:
 
     // update backend
     void update();
+
+    // handle input from scripting backend
+    bool handle_scripting(const state_t &state, nav_filter_status_flags_t &filter_status);
 
     /*
       structures passed to other subsystems

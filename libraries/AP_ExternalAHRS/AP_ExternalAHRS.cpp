@@ -26,6 +26,7 @@
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
+#include "AP_ExternalAHRS_Scripting.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -126,6 +127,12 @@ void AP_ExternalAHRS::init(void)
 #if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
     case DevType::InertialLabs:
         backend = new AP_ExternalAHRS_InertialLabs(this, state);
+        return;
+#endif
+
+#if AP_EXTERNAL_AHRS_SCRIPTING_ENABLED
+    case DevType::Scripting:
+        backend = new AP_ExternalAHRS_Scripting(this, state);
         return;
 #endif
 
@@ -278,7 +285,7 @@ bool AP_ExternalAHRS::get_accel(Vector3f &accel)
 void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
     if (backend) {
-        backend->send_status_report(link);
+        backend->send_EKF_status_report(link);
     }
 }
 
@@ -319,21 +326,26 @@ void AP_ExternalAHRS::update(void)
         // @Field: Lon: longitude
         // @Field: Alt: altitude AMSL
         // @Field: Flg: nav status flags
+        // @Field: VVar: velocity variance
+        // @Field: PVar: position variance
+        // @Field: HVar: height variance
 
         float roll, pitch, yaw;
         state.quat.to_euler(roll, pitch, yaw);
         nav_filter_status filterStatus {};
         get_filter_status(filterStatus);
 
-        AP::logger().WriteStreaming("EAHR", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,Flg",
-                                    "sdddnnnDUm-",
-                                    "F000000GG0-",
-                                    "QffffffLLfI",
+        AP::logger().WriteStreaming("EAHR", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,Flg,VVar,PVar,HVar",
+                                    "sdddnnnDUm-nmm",
+                                    "F000000GG0-000",
+                                    "QffffffLLfIfff",
                                     AP_HAL::micros64(),
                                     degrees(roll), degrees(pitch), degrees(yaw),
                                     state.velocity.x, state.velocity.y, state.velocity.z,
                                     state.location.lat, state.location.lng, state.location.alt*0.01,
-                                    filterStatus.value);
+                                    filterStatus.value,
+                                    state.velocity_variance, state.pos_horiz_variance,
+                                    state.pos_vert_variance);
     }
 #endif  // HAL_LOGGING_ENABLED
 }
@@ -345,6 +357,12 @@ const char* AP_ExternalAHRS::get_name() const
         return backend->get_name();
     }
     return nullptr;
+}
+
+// handle input from scripting backend
+bool AP_ExternalAHRS::handle_scripting(const state_t &_state, nav_filter_status_flags_t &_filter_status)
+{
+    return backend->handle_scripting(_state, _filter_status);
 }
 
 namespace AP {

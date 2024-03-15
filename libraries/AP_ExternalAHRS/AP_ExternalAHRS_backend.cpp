@@ -21,6 +21,8 @@
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 
+#include <GCS_MAVLink/GCS.h>
+
 AP_ExternalAHRS_backend::AP_ExternalAHRS_backend(AP_ExternalAHRS *_frontend,
                                                  AP_ExternalAHRS::state_t &_state) :
     frontend(*_frontend),
@@ -41,6 +43,55 @@ bool AP_ExternalAHRS_backend::option_is_set(AP_ExternalAHRS::OPTIONS option) con
 bool AP_ExternalAHRS_backend::in_fly_forward(void) const
 {
     return AP::ahrs().get_fly_forward();
+}
+
+// send an EKF_STATUS message to GCS
+void AP_ExternalAHRS_backend::send_EKF_status_report(class GCS_MAVLINK &link)
+{
+    // prepare flags
+    uint16_t flags = 0;
+    nav_filter_status filterStatus {};
+    get_filter_status(filterStatus);
+    if (filterStatus.flags.attitude) {
+        flags |= EKF_ATTITUDE;
+    }
+    if (filterStatus.flags.horiz_vel) {
+        flags |= EKF_VELOCITY_HORIZ;
+    }
+    if (filterStatus.flags.vert_vel) {
+        flags |= EKF_VELOCITY_VERT;
+    }
+    if (filterStatus.flags.horiz_pos_rel) {
+        flags |= EKF_POS_HORIZ_REL;
+    }
+    if (filterStatus.flags.horiz_pos_abs) {
+        flags |= EKF_POS_HORIZ_ABS;
+    }
+    if (filterStatus.flags.vert_pos) {
+        flags |= EKF_POS_VERT_ABS;
+    }
+    if (filterStatus.flags.terrain_alt) {
+        flags |= EKF_POS_VERT_AGL;
+    }
+    if (filterStatus.flags.const_pos_mode) {
+        flags |= EKF_CONST_POS_MODE;
+    }
+    if (filterStatus.flags.pred_horiz_pos_rel) {
+        flags |= EKF_PRED_POS_HORIZ_REL;
+    }
+    if (filterStatus.flags.pred_horiz_pos_abs) {
+        flags |= EKF_PRED_POS_HORIZ_ABS;
+    }
+    if (!filterStatus.flags.initialized) {
+        flags |= EKF_UNINITIALIZED;
+    }
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
+                                       state.velocity_variance,
+                                       state.pos_horiz_variance,
+                                       state.pos_vert_variance,
+                                       state.compass_variance,
+                                       state.terrain_alt_variance,
+                                       state.airspeed_variance);
 }
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED

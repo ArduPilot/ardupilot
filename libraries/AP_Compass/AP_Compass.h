@@ -365,8 +365,14 @@ public:
     // get the first compass marked for use by COMPASSx_USE
     uint8_t get_first_usable(void) const { return _first_usable; }
 
+    // allow threads to lock against update
+    HAL_Semaphore &get_semaphore(void) {
+        return sem;
+    }
+    
 private:
     static Compass *_singleton;
+    HAL_Semaphore sem;
 
     // Use Priority and StateIndex typesafe index types
     // to distinguish between two different type of indexing

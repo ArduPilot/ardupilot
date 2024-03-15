@@ -296,7 +296,7 @@ void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) 
 {
     memset(&status, 0, sizeof(status));
     if (last_imu_pkt != 0 && last_gps_pkt != 0) {
-        status.flags.initalized = true;
+        status.flags.initialized = true;
     }
     if (healthy() && last_imu_pkt != 0) {
         status.flags.attitude = true;
@@ -313,60 +313,17 @@ void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) 
             status.flags.using_gps = true;
         }
     }
-}
 
-void AP_ExternalAHRS_MicroStrain7::send_status_report(GCS_MAVLINK &link) const
-{
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // send message
+    // TODO fix to use NED filter speed accuracy instead of first gnss
+    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_ned_vel_uncertainty.htm
     const float vel_gate = 4; // represents hz value data is posted at
     const float pos_gate = 4; // represents hz value data is posted at
     const float hgt_gate = 4; // represents hz value data is posted at
     const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
-
-    // TODO fix to use NED filter speed accuracy instead of first gnss
-    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_ned_vel_uncertainty.htm
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       gnss_data[0].speed_accuracy/vel_gate, gnss_data[0].horizontal_position_accuracy/pos_gate, gnss_data[0].vertical_position_accuracy/hgt_gate,
-                                       mag_var, 0, 0);
-
+    state.velocity_variance = gnss_data[0].speed_accuracy/vel_gate;
+    state.pos_horiz_variance = gnss_data[0].horizontal_position_accuracy/pos_gate;
+    state.pos_vert_variance = gnss_data[0].vertical_position_accuracy/hgt_gate;
+    state.compass_variance = mag_var;
 }
 
 bool AP_ExternalAHRS_MicroStrain7::filter_state_healthy(FilterState state)

@@ -1717,6 +1717,7 @@ Compass::read(void)
     if (!available()) {
         return false;
     }
+    WITH_SEMAPHORE(sem);
 
 #if HAL_LOGGING_ENABLED
     const bool old_healthy = healthy();

@@ -4591,6 +4591,12 @@ class TestSuite(ABC):
         self.install_applet_script(scriptname)
         self.context_get().installed_scripts.append(scriptname)
 
+    def install_driver_script_context(self, scriptname):
+        '''installs a driver script which will be removed when the context goes
+        away'''
+        self.install_driver_script(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
+
     def rootdir(self):
         this_dir = os.path.dirname(__file__)
         return os.path.realpath(os.path.join(this_dir, "../.."))
@@ -8137,6 +8143,9 @@ Also, ignores heartbeats not from our target system'''
     def script_applet_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "applets", scriptname)
 
+    def script_drivers_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "drivers", scriptname)
+
     def installed_script_path(self, scriptname):
         return os.path.join("scripts", os.path.basename(scriptname))
 
@@ -8175,6 +8184,10 @@ Also, ignores heartbeats not from our target system'''
 
     def install_applet_script(self, scriptname, install_name=None):
         source = self.script_applet_source_path(scriptname)
+        self.install_script(source, scriptname, install_name=install_name)
+
+    def install_driver_script(self, scriptname, install_name=None):
+        source = self.script_drivers_source_path(scriptname)
         self.install_script(source, scriptname, install_name=install_name)
 
     def remove_installed_script(self, scriptname):

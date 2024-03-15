@@ -112,6 +112,7 @@ singleton AP_BattMonitor method handle_scripting depends AP_BATTERY_SCRIPTING_EN
 include AP_GPS/AP_GPS.h
 
 singleton AP_GPS depends (AP_GPS_ENABLED && (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)))
+singleton AP_GPS semaphore
 singleton AP_GPS rename gps
 singleton AP_GPS enum NO_GPS NO_FIX GPS_OK_FIX_2D GPS_OK_FIX_3D GPS_OK_FIX_3D_DGPS GPS_OK_FIX_3D_RTK_FLOAT GPS_OK_FIX_3D_RTK_FIXED
 singleton AP_GPS method num_sensors uint8_t
@@ -405,6 +406,7 @@ singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManage
 
 include AP_Baro/AP_Baro.h
 singleton AP_Baro depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BARO))
+singleton AP_Baro semaphore
 singleton AP_Baro rename baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
@@ -790,6 +792,7 @@ singleton AP_IOMCU method healthy boolean
 include AP_Compass/AP_Compass.h
 singleton Compass rename compass
 singleton Compass depends AP_COMPASS_ENABLED
+singleton Compass semaphore
 singleton Compass method healthy boolean uint8_t'skip_check
 
 -- ----EFI Library----
@@ -838,6 +841,114 @@ singleton AP_EFI method get_backend AP_EFI_Backend uint8_t'skip_check
 singleton AP_EFI method get_state void EFI_State'Ref
 
 -- ----END EFI Library----
+
+-- ----ExternalAHRS Library----
+include AP_ExternalAHRS/AP_ExternalAHRS.h depends HAL_EXTERNAL_AHRS_ENABLED
+include AP_ExternalAHRS/AP_ExternalAHRS_config.h
+include AP_ExternalAHRS/AP_ExternalAHRS_Scripting.h depends AP_EXTERNAL_AHRS_SCRIPTING_ENABLED
+include AP_NavEKF/AP_Nav_Common.h
+singleton AP_ExternalAHRS rename ExternalAHRS
+singleton AP_ExternalAHRS depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+
+userdata AP_ExternalAHRS::state_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+userdata AP_ExternalAHRS::state_t rename EAHRS_State
+
+userdata AP_ExternalAHRS::state_t field accel Vector3f write
+userdata AP_ExternalAHRS::state_t field gyro Vector3f write
+userdata AP_ExternalAHRS::state_t field quat Quaternion write
+userdata AP_ExternalAHRS::state_t field location Location write
+userdata AP_ExternalAHRS::state_t field velocity Vector3f write
+userdata AP_ExternalAHRS::state_t field origin Location write
+userdata AP_ExternalAHRS::state_t field have_quaternion boolean write
+userdata AP_ExternalAHRS::state_t field have_origin boolean write
+userdata AP_ExternalAHRS::state_t field have_location boolean write
+userdata AP_ExternalAHRS::state_t field have_velocity boolean write
+userdata AP_ExternalAHRS::state_t field velocity_variance float'skip_check write
+userdata AP_ExternalAHRS::state_t field pos_horiz_variance float'skip_check write
+userdata AP_ExternalAHRS::state_t field pos_vert_variance float'skip_check write
+userdata AP_ExternalAHRS::state_t field compass_variance float'skip_check write
+userdata AP_ExternalAHRS::state_t field terrain_alt_variance float'skip_check write
+userdata AP_ExternalAHRS::state_t field airspeed_variance float'skip_check write
+
+userdata nav_filter_status_flags_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+userdata nav_filter_status_flags_t field attitude boolean write
+userdata nav_filter_status_flags_t field horiz_vel boolean write
+userdata nav_filter_status_flags_t field vert_vel boolean write
+userdata nav_filter_status_flags_t field horiz_pos_rel boolean write
+userdata nav_filter_status_flags_t field horiz_pos_abs boolean write
+userdata nav_filter_status_flags_t field vert_pos boolean write
+userdata nav_filter_status_flags_t field terrain_alt boolean write
+userdata nav_filter_status_flags_t field const_pos_mode boolean write
+userdata nav_filter_status_flags_t field pred_horiz_pos_rel boolean write
+userdata nav_filter_status_flags_t field pred_horiz_pos_abs boolean write
+userdata nav_filter_status_flags_t field takeoff_detected boolean write
+userdata nav_filter_status_flags_t field takeoff boolean write
+userdata nav_filter_status_flags_t field touchdown boolean write
+userdata nav_filter_status_flags_t field using_gps boolean write
+userdata nav_filter_status_flags_t field gps_glitching boolean write
+userdata nav_filter_status_flags_t field gps_quality_good boolean write
+userdata nav_filter_status_flags_t field initialized boolean write
+userdata nav_filter_status_flags_t field rejecting_airspeed boolean write
+userdata nav_filter_status_flags_t field dead_reckoning boolean write
+
+userdata AP_ExternalAHRS::baro_data_message_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+userdata AP_ExternalAHRS::baro_data_message_t rename baro_data_message_t
+userdata AP_ExternalAHRS::baro_data_message_t field instance uint8_t'skip_check write
+userdata AP_ExternalAHRS::baro_data_message_t field pressure_pa float'skip_check write
+userdata AP_ExternalAHRS::baro_data_message_t field temperature float'skip_check write
+
+userdata AP_ExternalAHRS::mag_data_message_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1) && (!defined(HAL_BUILD_AP_PERIPH))
+userdata AP_ExternalAHRS::mag_data_message_t rename mag_data_message_t
+userdata AP_ExternalAHRS::mag_data_message_t field field Vector3f write
+
+userdata AP_ExternalAHRS::gps_data_message_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+userdata AP_ExternalAHRS::gps_data_message_t rename gps_data_message_t
+userdata AP_ExternalAHRS::gps_data_message_t field gps_week uint16_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field ms_tow uint32_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field fix_type uint8_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field satellites_in_view uint8_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field horizontal_pos_accuracy float'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field vertical_pos_accuracy float'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field hdop float'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field vdop float'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field longitude int32_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field latitude int32_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field msl_altitude int32_t'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field ned_vel_north float'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field ned_vel_east float'skip_check write
+userdata AP_ExternalAHRS::gps_data_message_t field ned_vel_down float'skip_check write
+
+userdata AP_ExternalAHRS::ins_data_message_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+userdata AP_ExternalAHRS::ins_data_message_t rename ins_data_message_t
+userdata AP_ExternalAHRS::ins_data_message_t field accel Vector3f write
+userdata AP_ExternalAHRS::ins_data_message_t field gyro Vector3f write
+userdata AP_ExternalAHRS::ins_data_message_t field temperature float'skip_check write
+
+userdata AP_ExternalAHRS::airspeed_data_message_t depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+userdata AP_ExternalAHRS::airspeed_data_message_t rename airspeed_data_message_t
+userdata AP_ExternalAHRS::airspeed_data_message_t field differential_pressure float'skip_check write
+userdata AP_ExternalAHRS::airspeed_data_message_t field temperature float'skip_check write
+
+singleton AP_ExternalAHRS method handle_scripting boolean AP_ExternalAHRS::state_t nav_filter_status_flags_t
+singleton AP_InertialSensor method handle_external void AP_ExternalAHRS::ins_data_message_t
+singleton AP_InertialSensor method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+singleton AP_Baro method handle_external void AP_ExternalAHRS::baro_data_message_t
+singleton AP_Baro method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+singleton AP_GPS method get_first_external_instance boolean uint8_t'Null
+singleton AP_GPS method get_first_external_instance depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+singleton AP_GPS method handle_external void AP_ExternalAHRS::gps_data_message_t uint8_t'skip_check
+singleton AP_GPS method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+singleton Compass method handle_external void AP_ExternalAHRS::mag_data_message_t
+singleton Compass method handle_external depends (AP_EXTERNAL_AHRS_SCRIPTING_ENABLED == 1)
+
+include AP_Airspeed/AP_Airspeed.h
+singleton AP_Airspeed depends (AP_AIRSPEED_EXTERNAL_ENABLED == 1) && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
+singleton AP_Airspeed semaphore
+singleton AP_Airspeed rename airspeed
+singleton AP_Airspeed method handle_external void AP_ExternalAHRS::airspeed_data_message_t
+
+-- ----END ExternalAHRS Library---
+
 
 include AP_Logger/AP_Logger.h
 singleton AP_Logger depends HAL_LOGGING_ENABLED
