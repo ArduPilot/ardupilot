@@ -1714,6 +1714,17 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
                unsigned((tx_bytes * 1000) / dt_ms),
                unsigned((rx_bytes * 1000) / dt_ms));
 }
+
+// Getters for cumulative tx and rx counts
+uint32_t UARTDriver::get_tx_bytes() const
+{
+    return _tx_stats_bytes;
+}
+
+uint32_t UARTDriver::get_rx_bytes() const
+{
+    return _rx_stats_bytes;
+}
 #endif
 
 /*
