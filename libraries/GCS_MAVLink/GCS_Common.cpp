@@ -1869,12 +1869,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 
 #if HAL_LOGGING_ENABLED
     // consider logging mavlink stats:
-    if (is_active() || is_streaming()) {
-        if (tnow - last_mavlink_stats_logged > 1000) {
-            log_mavlink_stats();
-            last_mavlink_stats_logged = tnow;
-        }
-    }
+    log_mavlink_stats();
 #endif
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
@@ -1958,6 +1953,20 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 */
 void GCS_MAVLINK::log_mavlink_stats()
 {
+    // consider logging mavlink stats:
+    if (!is_active() && !is_streaming()) {
+        // Don't log inactive channels
+        return;
+    }
+
+    // Log at 1Hz
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - last_mavlink_stats_logged;
+    if (dt_ms < 1000) {
+        return;
+    }
+    last_mavlink_stats_logged = now_ms;
+
     uint8_t flags = 0;
     if (signing_enabled()) {
         flags |= (uint8_t)Flags::USING_SIGNING;
@@ -1975,6 +1984,15 @@ void GCS_MAVLINK::log_mavlink_stats()
         flags |= (uint8_t)Flags::LOCKED;
     }
 
+    // If avalable get data rates
+#if HAL_UART_STATS_ENABLED
+    const float tx_rate = (serial_stats.tx.update(_port->get_tx_bytes()) * 1000) / dt_ms;
+    const float rx_rate = (serial_stats.rx.update(_port->get_rx_bytes()) * 1000) / dt_ms;
+#else
+    const float tx_rate = AP::logger().quiet_nanf();
+    const float rx_rate = AP::logger().quiet_nanf();
+#endif
+
     const struct log_MAV pkt{
     LOG_PACKET_HEADER_INIT(LOG_MAV_MSG),
     time_us                : AP_HAL::micros64(),
@@ -1985,6 +2003,8 @@ void GCS_MAVLINK::log_mavlink_stats()
     flags                  : flags,
     stream_slowdown_ms     : stream_slowdown_ms,
     times_full             : out_of_space_to_send_count,
+    tx_rate                : tx_rate,
+    rx_rate                : rx_rate,
     };
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));

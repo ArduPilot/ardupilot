@@ -775,6 +775,9 @@ private:
         LOCKED = (1<<4),
     };
     void log_mavlink_stats();
+#if HAL_UART_STATS_ENABLED
+    AP_HAL::UARTDriver::StatsTracker serial_stats;
+#endif
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
