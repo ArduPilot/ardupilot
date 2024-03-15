@@ -272,6 +272,9 @@ public:
     // get rangefinder distance.  Returns true on success
     bool get_rangefinder_distance(uint8_t instance, float& distance_m) const;
 
+    // enable/disable rangefinder.  Returns true on success
+    bool set_rangefinder_enable(uint8_t instance, bool enable);
+
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
