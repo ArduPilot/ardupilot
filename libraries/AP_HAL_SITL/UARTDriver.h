@@ -70,6 +70,10 @@ public:
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
+
+    // Getters for cumulative tx and rx counts
+    uint32_t get_tx_bytes() const override;
+    uint32_t get_rx_bytes() const override;
 #endif
 
 private:
