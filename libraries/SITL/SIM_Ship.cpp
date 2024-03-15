@@ -185,8 +185,13 @@ void ShipSim::send_report(void)
         last_heartbeat_ms = now;
 
         const mavlink_heartbeat_t heartbeat{
+        custom_mode: 0,
         type : MAV_TYPE_SURFACE_BOAT,
-        autopilot : MAV_AUTOPILOT_INVALID};
+        autopilot : MAV_AUTOPILOT_INVALID,
+        base_mode: 0,
+        system_status: 0,
+        mavlink_version: 0,
+        };
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
