@@ -152,8 +152,21 @@ public:
     virtual bool is_dma_enabled() const { return false; }
 
 #if HAL_UART_STATS_ENABLED
+    // Helper to keep track of data usage since last call
+    struct StatsTracker {
+        class ByteTracker {
+        public:
+            // Take cumulative bytes and return the change since last call
+            uint32_t update(uint32_t bytes);
+        private:
+            uint32_t last_bytes;
+        };
+        ByteTracker tx;
+        ByteTracker rx;
+    };
+
     // request information on uart I/O for this uart, for @SYS/uarts.txt
-    virtual void uart_info(ExpandingString &str) {}
+    virtual void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) {}
 #endif
 
     /*
