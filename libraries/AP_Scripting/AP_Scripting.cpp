@@ -94,6 +94,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Bitmask: 3: log runtime memory usage and execution time
     // @Bitmask: 4: Disable pre-arm check
     // @Bitmask: 5: Save CRC of current scripts to loaded and running checksum parameters enabling pre-arm
+    // @Bitmask: 6: Disable heap expansion on allocation failure
     // @User: Advanced
     AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
