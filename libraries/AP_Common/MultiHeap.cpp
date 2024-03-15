@@ -7,24 +7,18 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "MultiHeap.h"
+#include <stdio.h>
 
 #ifndef HAL_BOOTLOADER_BUILD
 
 /*
-  on ChibiOS allow up to 4 heaps. On other HALs only allow a single
-  heap. This is needed as hal.util->heap_realloc() needs to have the
-  property that heap_realloc(heap, ptr, 0) must not care if ptr comes
-  from the given heap. This is true on ChibiOS, but is not true on
-  other HALs
+  allow up to 10 heaps
  */
 #ifndef MAX_HEAPS
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#define MAX_HEAPS 4
-#else
-#define MAX_HEAPS 1
-#endif
+#define MAX_HEAPS 10
 #endif
 
 extern const AP_HAL::HAL &hal;
@@ -33,14 +27,14 @@ extern const AP_HAL::HAL &hal;
   create heaps with a total memory size, splitting over at most
   max_heaps
  */
-bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps)
+bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps, bool _allow_expansion, uint32_t _reserve_size)
 {
     max_heaps = MIN(MAX_HEAPS, max_heaps);
     if (heaps != nullptr) {
         // don't allow double allocation
         return false;
     }
-    heaps = NEW_NOTHROW void*[max_heaps];
+    heaps = NEW_NOTHROW Heap[max_heaps];
     if (heaps == nullptr) {
         return false;
     }
@@ -48,9 +42,10 @@ bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps)
     for (uint8_t i=0; i<max_heaps; i++) {
         uint32_t alloc_size = total_size;
         while (alloc_size > 0) {
-            heaps[i] = hal.util->allocate_heap_memory(alloc_size);
-            if (heaps[i] != nullptr) {
+            heaps[i].hp = hal.util->heap_create(alloc_size);
+            if (heaps[i].hp != nullptr) {
                 total_size -= alloc_size;
+                sum_size += alloc_size;
                 break;
             }
             alloc_size *= 0.9;
@@ -63,6 +58,10 @@ bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps)
         destroy();
         return false;
     }
+
+    allow_expansion = _allow_expansion;
+    reserve_size = _reserve_size;
+
     return true;
 }
 
@@ -73,20 +72,21 @@ void MultiHeap::destroy(void)
         return;
     }
     for (uint8_t i=0; i<num_heaps; i++) {
-        if (heaps[i] != nullptr) {
-            free(heaps[i]);
-            heaps[i] = nullptr;
+        if (heaps[i].hp != nullptr) {
+            hal.util->heap_destroy(heaps[i].hp);
+            heaps[i].hp = nullptr;
         }
     }
     delete[] heaps;
     heaps = nullptr;
     num_heaps = 0;
+    sum_size = 0;
 }
 
 // return true if heap is available for operations
 bool MultiHeap::available(void) const
 {
-    return heaps != nullptr && heaps[0] != nullptr;
+    return heaps != nullptr && heaps[0].hp != nullptr;
 }
 
 /*
@@ -94,16 +94,56 @@ bool MultiHeap::available(void) const
  */
 void *MultiHeap::allocate(uint32_t size)
 {
-    if (!available()) {
+    if (!available() || size == 0) {
         return nullptr;
     }
     for (uint8_t i=0; i<num_heaps; i++) {
-        if (heaps[i] == nullptr) {
+        if (heaps[i].hp == nullptr) {
             break;
         }
-        void *newptr = hal.util->heap_realloc(heaps[i], nullptr, 0, size);
+        void *newptr = hal.util->heap_allocate(heaps[i].hp, size);
         if (newptr != nullptr) {
             return newptr;
+        }
+    }
+    if (!allow_expansion) {
+        return nullptr;
+    }
+
+    if (!hal.util->get_soft_armed()) {
+        // only expand the available heaps when armed. When disarmed
+        // user should fix their SCR_HEAP_SIZE parameter
+        return nullptr;
+    }
+
+    /*
+      vehicle is armed and MultiHeap (for scripting) is out of
+      memory. We will see if we can add a new heap from available
+      memory if we have at least reserve_size bytes free
+     */
+    const uint32_t available = hal.util->available_memory();
+    const uint32_t heap_overhead = 128; // conservative value, varies with HAL
+    const uint32_t min_size = size + heap_overhead;
+    if (available < reserve_size+min_size) {
+        return nullptr;
+    }
+
+    // round up to a minimum of 30k to allocate, and allow for heap overhead
+    const uint32_t round_to = 30*1024U;
+    const uint32_t alloc_size = MIN(available - reserve_size, MAX(size+heap_overhead, round_to));
+    if (alloc_size < min_size) {
+        return nullptr;
+    }
+    for (uint8_t i=0; i<num_heaps; i++) {
+        if (heaps[i].hp == nullptr) {
+            heaps[i].hp = hal.util->heap_create(alloc_size);
+            if (heaps[i].hp == nullptr) {
+                return nullptr;
+            }
+            sum_size += alloc_size;
+            expanded_to = sum_size;
+            void *p = hal.util->heap_allocate(heaps[i].hp, size);
+            return p;
         }
     }
     return nullptr;
@@ -114,16 +154,15 @@ void *MultiHeap::allocate(uint32_t size)
  */
 void MultiHeap::deallocate(void *ptr)
 {
-    if (!available()) {
+    if (!available() || ptr == nullptr) {
         return;
     }
-    // NOTE! this relies on either there being a single heap or heap_realloc()
-    // not using the first argument when size is zero.
-    hal.util->heap_realloc(heaps[0], ptr, 0, 0);
+    hal.util->heap_free(ptr);
 }
 
 /*
-  change size of an allocation
+  change size of an allocation, operates like realloc(), but requires
+  the old_size when ptr is not NULL
  */
 void *MultiHeap::change_size(void *ptr, uint32_t old_size, uint32_t new_size)
 {
@@ -131,17 +170,22 @@ void *MultiHeap::change_size(void *ptr, uint32_t old_size, uint32_t new_size)
         deallocate(ptr);
         return nullptr;
     }
-    if (old_size == 0 || ptr == nullptr) {
-        return allocate(new_size);
-    }
     /*
-      we cannot know which heap this came from, so we rely on the fact
-      that on ChibiOS the underlying call doesn't use the heap
-      argument and on other HALs we only have one heap. We pass
-      through old_size and new_size so that we can validate the lua
-      old_size value
-    */
-    return hal.util->heap_realloc(heaps[0], ptr, old_size, new_size);
+      we don't want to require the underlying allocation system to
+      support realloc() and we also want to be able to handle the case
+      of having to move the allocation to a new heap, so we do a
+      simple alloc/copy/deallocate for reallocation
+     */
+    void *newp = allocate(new_size);
+    if (ptr == nullptr) {
+        return newp;
+    }
+    if (newp == nullptr) {
+        return nullptr;
+    }
+    memcpy(newp, ptr, MIN(old_size, new_size));
+    deallocate(ptr);
+    return newp;
 }
 
 #endif // HAL_BOOTLOADER_BUILD
