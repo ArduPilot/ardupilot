@@ -50,8 +50,12 @@ void Vicon::maybe_send_heartbeat()
     last_heartbeat_ms = now;
 
     const mavlink_heartbeat_t heartbeat{
-    type : MAV_TYPE_GCS,
-    autopilot : MAV_AUTOPILOT_INVALID,
+        custom_mode: 0,
+        type : MAV_TYPE_GCS,
+        autopilot : MAV_AUTOPILOT_INVALID,
+        base_mode: 0,
+        system_status: 0,
+        mavlink_version: 0,
     };
 
     mavlink_msg_heartbeat_encode_status(

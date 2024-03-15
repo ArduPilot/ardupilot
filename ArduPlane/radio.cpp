@@ -438,11 +438,15 @@ float Plane::rudder_in_expo(bool use_dz) const
 
 bool Plane::throttle_at_zero(void) const
 {
-/* true if throttle stick is at idle position...if throttle trim has been moved
-   to center stick area in conjunction with sprung throttle, cannot use in_trim, must use rc_min
-*/
-    if (((!(flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM) && channel_throttle->in_trim_dz())) ||
-        (flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)&& channel_throttle->in_min_dz()))) {
+    /*
+      true if throttle stick is at idle position...if throttle trim has been moved
+       to center stick area in conjunction with sprung throttle, cannot use in_trim, must use rc_min
+    */
+    const bool center_trim = flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM);
+    if (center_trim && channel_throttle->in_trim_dz()) {
+        return true;
+    }
+    if (!center_trim && channel_throttle->in_min_dz()) {
         return true;
     }
     return false;
