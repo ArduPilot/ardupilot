@@ -11,12 +11,14 @@
 #endif
 
 #include "mavlink_sha256.h"
-
-#define MAVLINK_NO_ENCRYPTION
+// Define this to remove encryption
+// Also is in ./mavlink_chacha20.h
+// #define MAVLINK_NO_ENCRYPTION
 
 #ifndef MAVLINK_NO_ENCRYPTION
 #include "mavlink_chacha20.h"
 
+// Helpers so we can put the data into the correct format for chacha20
 #define _MAV_PAYLOAD_UCHAR(msg) ((const u_char *)(&((msg)->payload64[0])))
 #define _MAV_PAYLOAD_UCHAR_NON_CONST(msg) ((u_char *)(&((msg)->payload64[0])))
 #endif
@@ -218,16 +220,19 @@ MAVLINK_HELPER bool mavlink_signature_check(mavlink_signing_t *signing,
 
 #ifndef MAVLINK_NO_ENCRYPTION
 /**
- * @brief Encrypt the mavlink payload being sent
+ * @brief Encrypt a mavlink message payload
+ *
+ * This function will encrypt the mavlink message payload
+ *
+ * @param msg Message to encrypt
  */
-
 MAVLINK_HELPER bool mavlink_encrypt_message(mavlink_message_t* msg) {
 
 	uint8_t cipher_text_len = 0;
 	bool status = false;
 
+	// If there is an issue:
 	// Make a buffer here incase we can't use src and destination as the same buffer
-	// IF THERE IS AN ISSUE
 	status = mavlink_chacha20_256_encrypt(_MAV_PAYLOAD_UCHAR(msg), msg->len, 
 		_MAV_PAYLOAD_UCHAR_NON_CONST(msg), cipher_text_len);
 
@@ -238,7 +243,13 @@ MAVLINK_HELPER bool mavlink_encrypt_message(mavlink_message_t* msg) {
 
 	return status;
 }
-
+/**
+ * @brief Decrypt a mavlink message payload
+ *
+ * This function will decrypt the mavlink message payload
+ *
+ * @param msg Message to decrypt
+ */
 MAVLINK_HELPER bool mavlink_decrypt_message (mavlink_message_t* msg) {
 	
 	uint8_t plain_text_len = 0;

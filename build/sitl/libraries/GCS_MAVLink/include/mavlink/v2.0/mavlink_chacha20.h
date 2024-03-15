@@ -24,8 +24,9 @@
  * SOFTWARE.
  */
 
-
-#define MAVLINK_NO_ENCRYPTION
+// Remove this to disable the file
+// Also in mavlink_helpers.h
+// #define MAVLINK_NO_ENCRYPTION
 #ifndef MAVLINK_NO_ENCRYPTION
 #include <openssl/evp.h>
 #include <openssl/rand.h>
@@ -36,6 +37,7 @@ namespace mavlink {
 
 #ifndef MAVLINK_NO_ENCRYPTION
 
+// Random key for testing, use an actual secure key in practice
 static const uint32_t mavlink_chacha20_256_uint32_arr_key[8] = {
     0x80f346ad, 0x0b700f24, 0xb53fbc01, 0x09166e1a,
     0xd88a544e, 0xaa36c51a, 0x597436b3, 0x043c084c
@@ -45,11 +47,25 @@ static const uint32_t mavlink_chacha20_256_uint32_arr_key[8] = {
 #define MAVLINK_CHACHA20_SUCCESS true
 #define EVP_SUCCESS 1
 
+// Convert to the type that is expected for the key.
 static const u_char * mavlink_chacha20_256_key = (const u_char *) mavlink_chacha20_256_uint32_arr_key;
-static u_char  mavlink_chacha20_256_iv[12] = {
-    0x0a,  0xf1,  0xda,  0x2b,  0x21,  0x71,
-    0x24,  0x22,  0xcd,  0x2d,  0x61,  0x23 };
 
+// Chacha 20 uses a 128 bit IV or 16 btes
+// Random u_chars for IV
+static u_char  mavlink_chacha20_256_iv[16] = {
+    0x0a, 0xf1, 0xda, 0x2b,  
+    0x21, 0x71, 0x24, 0x22, 
+    0xcd, 0x2d, 0x61, 0x23,
+    0xde, 0xad, 0xbe, 0xef}; // Except this line
+
+/**
+ * Encrypt the mavlink payload
+ *
+ * @param plain_text plain text to be encrypted
+ * @param plain_text_len Size of plain text
+ * @param cipher_text Encrypted payload returned
+ * @param cipher_text_len Size of encrypted payload
+ */
 static inline bool mavlink_chacha20_256_encrypt(const u_char * plain_text, const uint8_t &plain_text_len, 
     u_char * cipher_text, uint8_t &cipher_text_len) {
 
@@ -79,7 +95,6 @@ static inline bool mavlink_chacha20_256_encrypt(const u_char * plain_text, const
     _cipher_text_len += final_len;
 
     // update out variables
-
     cipher_text_len = _cipher_text_len;
 
     // free context
@@ -88,6 +103,15 @@ static inline bool mavlink_chacha20_256_encrypt(const u_char * plain_text, const
     return MAVLINK_CHACHA20_SUCCESS;
 }
 
+
+/**
+ * Decrypt an encrypted chacha20 payload
+ *
+ * @param cipher_text Encrypted payload data
+ * @param cipher_text_len Size of encrypted data
+ * @param plain_text Returned plain text
+ * @param plain_text_len Size of returned plain text
+ */
 static inline bool mavlink_chacha20_256_decrypt(const u_char * cipher_text, const uint8_t &cipher_text_len, 
     u_char * plain_text, uint8_t &plain_text_len) {
     
