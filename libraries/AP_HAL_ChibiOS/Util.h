@@ -98,7 +98,7 @@ public:
 #endif
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
-    virtual void uart_info(ExpandingString &str) override;
+    void uart_info(ExpandingString &str) override;
 #endif
 #if HAL_USE_PWM == TRUE
     void timer_info(ExpandingString &str) override;
@@ -160,5 +160,15 @@ private:
 
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
+#endif
+
+#if HAL_UART_STATS_ENABLED
+    struct {
+        AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
+#if HAL_WITH_IO_MCU
+        AP_HAL::UARTDriver::StatsTracker io;
+#endif
+        uint32_t last_ms;
+    } uart_stats;
 #endif
 };
