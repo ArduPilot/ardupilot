@@ -268,9 +268,9 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // 31 was GPS2_CAN_OVRIDE
 
-    // @Group: _
+    // @Group: 1_
     // @Path: AP_GPS_Params.cpp
-    AP_SUBGROUPINFO(params[0], "_", 32, AP_GPS, AP_GPS::Params),
+    AP_SUBGROUPINFO(params[0], "1_", 32, AP_GPS, AP_GPS::Params),
 
 #if GPS_MAX_RECEIVERS > 1
     // @Group: 2_
@@ -364,25 +364,25 @@ void AP_GPS::convert_parameters()
     // table parameters to convert without scaling
     static const AP_Param::ConversionInfo conversion_info[] {
         // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
-        { k_param_gps_key, 0, AP_PARAM_INT8, "GPS_TYPE" },
+        { k_param_gps_key, 0, AP_PARAM_INT8, "GPS1_TYPE" },
         { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
-        { k_param_gps_key, 10, AP_PARAM_INT8, "GPS_GNSS_MODE" },
+        { k_param_gps_key, 10, AP_PARAM_INT8, "GPS1_GNSS_MODE" },
         { k_param_gps_key, 12, AP_PARAM_INT8, "GPS2_GNSS_MODE" },
-        { k_param_gps_key, 14, AP_PARAM_INT16, "GPS_RATE_MS" },
+        { k_param_gps_key, 14, AP_PARAM_INT16, "GPS1_RATE_MS" },
         { k_param_gps_key, 15, AP_PARAM_INT16, "GPS2_RATE_MS" },
-        { k_param_gps_key, 16, AP_PARAM_VECTOR3F, "GPS_POS" },
+        { k_param_gps_key, 16, AP_PARAM_VECTOR3F, "GPS1_POS" },
         { k_param_gps_key, 17, AP_PARAM_VECTOR3F, "GPS2_POS" },
-        { k_param_gps_key, 18, AP_PARAM_INT16, "GPS_DELAY_MS" },
+        { k_param_gps_key, 18, AP_PARAM_INT16, "GPS1_DELAY_MS" },
         { k_param_gps_key, 19, AP_PARAM_INT16, "GPS2_DELAY_MS" },
 #if AP_GPS_SBF_ENABLED
-        { k_param_gps_key, 23, AP_PARAM_INT8, "GPS_COM_PORT" },
+        { k_param_gps_key, 23, AP_PARAM_INT8, "GPS1_COM_PORT" },
         { k_param_gps_key, 24, AP_PARAM_INT8, "GPS2_COM_PORT" },
 #endif
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
-        { k_param_gps_key, 28, AP_PARAM_INT32, "GPS_CAN_NODEID" },
+        { k_param_gps_key, 28, AP_PARAM_INT32, "GPS1_CAN_NODEID" },
         { k_param_gps_key, 29, AP_PARAM_INT32, "GPS2_CAN_NODEID" },
-        { k_param_gps_key, 30, AP_PARAM_INT32, "GPS_CAN_OVRIDE" },
+        { k_param_gps_key, 30, AP_PARAM_INT32, "GPS1_CAN_OVRIDE" },
         { k_param_gps_key, 31, AP_PARAM_INT32, "GPS2_CAN_OVRIDE" },
 #endif
     };
