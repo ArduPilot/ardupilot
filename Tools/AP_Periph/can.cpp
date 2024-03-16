@@ -194,10 +194,12 @@ void AP_Periph_FW::handle_get_node_info(CanardInstance* canard_instance,
     pkt.software_version.major = AP::fwversion().major;
     pkt.software_version.minor = AP::fwversion().minor;
     pkt.software_version.optional_field_flags = UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_VCS_COMMIT | UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_IMAGE_CRC;
+#if AP_CHECK_FIRMWARE_ENABLED
     pkt.software_version.vcs_commit = app_descriptor.git_hash;
     uint32_t *crc = (uint32_t *)&pkt.software_version.image_crc;
     crc[0] = app_descriptor.image_crc1;
     crc[1] = app_descriptor.image_crc2;
+#endif
 
     readUniqueID(pkt.hardware_version.unique_id);
 

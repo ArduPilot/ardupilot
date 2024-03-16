@@ -113,10 +113,13 @@
 void stm32_watchdog_init();
 void stm32_watchdog_pat();
 #endif
+
+#if AP_CHECK_FIRMWARE_ENABLED
 /*
   app descriptor for firmware checking
  */
 extern const app_descriptor_t app_descriptor;
+#endif
 
 extern "C" {
     void can_vprintf(uint8_t severity, const char *fmt, va_list arg);

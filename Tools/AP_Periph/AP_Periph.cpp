@@ -127,7 +127,9 @@ void AP_Periph_FW::init()
     logger.init(g.log_bitmask, log_structure, ARRAY_SIZE(log_structure));
 #endif
 
+#if AP_CHECK_FIRMWARE_ENABLED
     check_firmware_print();
+#endif
 
     if (hal.util->was_watchdog_reset()) {
         printf("Reboot after watchdog reset\n");
