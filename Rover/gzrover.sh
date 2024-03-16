@@ -1,0 +1,1 @@
+sim_vehicle.py  -D -L SEParnaiba --mcast -f rover-skid --model gazebo-rover --console --map --add-param-file nrover.param
