@@ -271,6 +271,157 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.context_pop()
 
+    def prepare_synthetic_seafloor_test(self, sea_floor_depth):
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN_CM": 10,
+            "RNGFND1_MAX_CM": 3000,
+            "SCR_USER1": 2,                 # Configuration bundle
+            "SCR_USER2": sea_floor_depth,   # Depth in meters
+            "SCR_USER3": 101,               # Output log records
+        })
+
+        self.install_example_script_context("sub_test_synthetic_seafloor.lua")
+
+        # Reboot to enable scripting.
+        self.reboot_sitl()
+        self.set_rc_default()
+        self.wait_ready_to_arm()
+
+    def watch_true_distance_maintained(self, match_distance, delta=0.3, timeout=5.0, final_waypoint=0):
+        """Watch and wait for the rangefinder reading to be maintained"""
+
+        def get_true_distance():
+            """Return the True distance from the simulated range finder"""
+            m_true = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=3.0)
+            if m_true is None:
+                return m_true
+            idx_tr = m_true.text.find('#TR#')
+            if idx_tr < 0:
+                return None
+            return float(m_true.text[(idx_tr+4):(idx_tr+12)])
+
+        tstart = self.get_sim_time_cached()
+        self.progress('Distance to be watched: %.2f (+/- %.2f)' % (match_distance, delta))
+        max_delta = 0.0
+
+        while True:
+            timed_out = self.get_sim_time_cached() - tstart > timeout
+            # If final_waypoint>0 then timeout is failure, otherwise success
+            if timed_out and final_waypoint > 0:
+                raise NotAchievedException(
+                    "Mission not complete: want waypoint %i, only made it to waypoint %i" %
+                    (final_waypoint, self.mav.waypoint_current()))
+            if timed_out:
+                self.progress('Distance hold done. Max delta:%.2fm' % max_delta)
+                return
+
+            true_distance = get_true_distance()
+            if true_distance is None:
+                continue
+            match_delta = abs(true_distance - match_distance)
+            if match_delta > max_delta:
+                max_delta = match_delta
+            if match_delta > delta:
+                raise NotAchievedException(
+                    "Distance not maintained: want %.2f (+/- %.2f) got=%.2f (%.2f)" %
+                    (match_distance, delta, true_distance, match_delta))
+            if final_waypoint > 0:
+                if self.mav.waypoint_current() >= final_waypoint:
+                    self.progress('Distance hold during mission done. Max delta:%.2fm' % max_delta)
+                    return
+
+    def SimTerrainSurftrak(self):
+        """Move at a constant height above synthetic sea floor"""
+
+        sea_floor_depth = 50    # Depth of sea floor at location of test
+        match_distance = 15     # Desired sub distance from sea floor
+        start_altitude = -sea_floor_depth+match_distance
+        end_altitude = start_altitude - 10
+        validation_delta = 1.5  # Largest allowed distance between sub height and desired height
+
+        self.context_push()
+        self.prepare_synthetic_seafloor_test(sea_floor_depth)
+        self.change_mode('MANUAL')
+        self.arm_vehicle()
+
+        # Dive to match_distance off the bottom in preparation for the mission
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(1)
+
+        # Turn on surftrak and move around
+        self.change_mode(21)
+
+        # Go south over the ridge.
+        self.reach_heading_manual(180)
+        self.set_rc(Joystick.Forward, 1650)
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=60)
+        self.set_rc(Joystick.Forward, 1500)
+
+        # Shift west a bit
+        self.reach_heading_manual(270)
+        self.set_rc(Joystick.Forward, 1650)
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=5)
+        self.set_rc(Joystick.Forward, 1500)
+
+        # Go south over the plateau
+        self.reach_heading_manual(180)
+        self.set_rc(Joystick.Forward, 1650)
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=60)
+
+        # The mission ends at end_altitude. Do a check to insure that the sub is at this altitude
+        self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
+                           relative=False, timeout=1)
+
+        self.set_rc(Joystick.Forward, 1500)
+
+        self.disarm_vehicle()
+        self.context_pop()
+
+    def SimTerrainMission(self):
+        """Mission at a constant height above synthetic sea floor"""
+
+        sea_floor_depth = 50    # Depth of sea floor at location of test
+        match_distance = 15     # Desired sub distance from sea floor
+        start_altitude = -sea_floor_depth+match_distance
+        end_altitude = start_altitude - 10
+        validation_delta = 1.5  # Largest allowed distance between sub height and desired height
+
+        self.context_push()
+        self.prepare_synthetic_seafloor_test(sea_floor_depth)
+
+        # The synthetic seafloor has an east-west ridge south of the sub.
+        # The mission contained in terrain_mission.txt instructs the sub
+        # to remain at 15m above the seafloor and travel south over the
+        # ridge. Then the sub moves west and travels north over the ridge.
+        filename = "terrain_mission.txt"
+        self.load_mission(filename)
+
+        self.change_mode('MANUAL')
+        self.arm_vehicle()
+
+        # Dive to match_distance off the bottom in preparation for the mission
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(1)
+
+        self.change_mode('AUTO')
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=500.0, final_waypoint=4)
+
+        # The mission ends at end_altitude. Do a check to insure that the sub is at this altitude.
+        self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
+                           relative=False, timeout=1)
+
+        self.disarm_vehicle()
+        self.context_pop()
+
     def ModeChanges(self, delta=0.2):
         """Check if alternating between ALTHOLD, STABILIZE, POSHOLD and SURFTRAK (mode 21) affects altitude"""
         self.wait_ready_to_arm()
@@ -676,6 +827,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.DiveManual,
             self.AltitudeHold,
             self.Surftrak,
+            self.SimTerrainSurftrak,
+            self.SimTerrainMission,
             self.RngfndQuality,
             self.PositionHold,
             self.ModeChanges,
