@@ -17,7 +17,7 @@ if that is your desired home.
 Therefore a different status always cancels the previous one, only if the home preset has not been set via parameters
 the intermediate position of the switch will have no effect and the previously chosen home will be retained.
 
-## Parmeter Descriptions
+## Parameters Descriptions
 
 The script adds 4 parameters to control it's behaviour. The parameters
 are:
