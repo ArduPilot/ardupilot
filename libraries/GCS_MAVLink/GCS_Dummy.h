@@ -3,14 +3,6 @@
 #if HAL_GCS_ENABLED
 
 #include "GCS.h"
-#include <AP_Common/AP_FWVersion.h>
-
-#define THISFIRMWARE "GCSDummy V3.1.4-dev"
-
-#define FW_MAJOR 3
-#define FW_MINOR 1
-#define FW_PATCH 4
-#define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
 
 /*
  *  GCS backend used for many examples and tools
