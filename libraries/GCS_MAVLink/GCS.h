@@ -25,6 +25,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Arming/AP_Arming_config.h>
 
 #include "ap_message.h"
@@ -710,7 +711,9 @@ protected:
     virtual float vfr_hud_climbrate() const;
     virtual float vfr_hud_airspeed() const;
     virtual int16_t vfr_hud_throttle() const { return 0; }
+#if AP_AHRS_ENABLED
     virtual float vfr_hud_alt() const;
+#endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     virtual int16_t high_latency_target_altitude() const { return 0; }
