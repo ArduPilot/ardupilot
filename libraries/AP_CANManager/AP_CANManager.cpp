@@ -377,26 +377,29 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
         _log_pos = 0;
     }
     //Tag Log Message
+    const char *log_level_tag = "";
     switch (loglevel) {
     case AP_CANManager::LOG_DEBUG :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s DEBUG :", tag);
+        log_level_tag = "DEBUG";
         break;
 
     case AP_CANManager::LOG_INFO :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s INFO :", tag);
+        log_level_tag = "INFO";
         break;
 
     case AP_CANManager::LOG_WARNING :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s WARN :", tag);
+        log_level_tag = "WARN";
         break;
 
     case AP_CANManager::LOG_ERROR :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s ERROR :", tag);
+        log_level_tag = "ERROR";
         break;
 
-    default :
+    case AP_CANManager::LOG_NONE:
         return;
     }
+
+    _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s %s :", log_level_tag, tag);
 
     va_list arg_list;
     va_start(arg_list, fmt);
