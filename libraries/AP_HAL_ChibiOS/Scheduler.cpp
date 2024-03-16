@@ -42,6 +42,7 @@
 #if CH_CFG_USE_DYNAMIC == TRUE
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
