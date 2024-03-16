@@ -117,8 +117,17 @@ private:
     uint16_t _mc_myport;
 
     // for baud-rate limiting:
-    uint32_t last_read_tick_us;
-    uint32_t last_write_tick_us;
+    class ApplyBaudLimit {
+    public:
+        uint32_t max_bytes(const uint32_t baudrate);
+    private:
+        uint32_t last_us;
+        float remainder;
+    };
+    struct {
+        ApplyBaudLimit write;
+        ApplyBaudLimit read;
+    } baud_limits;
 
     HAL_Semaphore write_mtx;
 

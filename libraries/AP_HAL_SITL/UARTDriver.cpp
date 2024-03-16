@@ -810,20 +810,10 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
         return;
     }
     ssize_t nwritten;
-    uint32_t max_bytes = 10000;
-#if !defined(HAL_BUILD_AP_PERIPH)
-    SITL::SIM *_sitl = AP::sitl();
-    if (_sitl && _sitl->telem_baudlimit_enable) {
-        // limit byte rate to configured baudrate
-        uint32_t now = AP_HAL::micros();
-        float dt = 1.0e-6 * (now - last_write_tick_us);
-        max_bytes = _uart_baudrate * dt / 10;
-        if (max_bytes == 0) {
-            return;
-        }
-        last_write_tick_us = now;
+    const uint32_t max_bytes = baud_limits.write.max_bytes(_uart_baudrate);
+    if (max_bytes == 0) {
+        return;
     }
-#endif
     if (_packetise) {
         uint16_t n = _writebuffer.available();
         n = MIN(n, max_bytes);
@@ -879,20 +869,10 @@ void UARTDriver::handle_reading_from_device_to_readbuffer()
         return;
     }
 
-    uint32_t max_bytes = 10000;
-#if !defined(HAL_BUILD_AP_PERIPH)
-    SITL::SIM *_sitl = AP::sitl();
-    if (_sitl && _sitl->telem_baudlimit_enable) {
-        // limit byte rate to configured baudrate
-        uint32_t now = AP_HAL::micros();
-        float dt = 1.0e-6 * (now - last_read_tick_us);
-        max_bytes = _uart_baudrate * dt / 10;
-        if (max_bytes == 0) {
-            return;
-        }
-        last_read_tick_us = now;
+    const uint32_t max_bytes = baud_limits.read.max_bytes(_uart_baudrate);
+    if (max_bytes == 0) {
+        return;
     }
-#endif
 
     space = MIN(space, max_bytes);
 
@@ -1052,6 +1032,40 @@ uint32_t UARTDriver::get_rx_bytes() const
     return _rx_stats_bytes;
 }
 #endif
+
+// Return the maximum number of bytes that can be sent since the last call given the configured baud rate
+uint32_t UARTDriver::ApplyBaudLimit::max_bytes(const uint32_t baudrate)
+{
+    uint32_t ret = 10000;
+#if defined(HAL_BUILD_AP_PERIPH)
+    return ret;
+#else
+    SITL::SIM *_sitl = AP::sitl();
+    if ((_sitl == nullptr) || !_sitl->telem_baudlimit_enable) {
+        // Baud limiting disabled
+        return ret;
+    }
+
+    // Time since last call
+    const uint32_t now_us = AP_HAL::micros();
+    const float dt = (now_us - last_us) * 1.0e-6;
+    last_us = now_us;
+
+    // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
+    float max_bytes = float(baudrate) * dt * 0.1;
+
+    // Add on the remainder from the last call, this prevents cumulative rounding errors
+    max_bytes += remainder;
+
+    // Get integer number of bytes and store the remainder
+    float max_bytes_int;
+    remainder = modf(max_bytes, &max_bytes_int);
+
+    // Add 0.5 to make sure the float rounds to the nearest int
+    return uint32_t(max_bytes_int + 0.5);
+#endif // defined(HAL_BUILD_AP_PERIPH)
+}
+
 
 #endif // CONFIG_HAL_BOARD
 
