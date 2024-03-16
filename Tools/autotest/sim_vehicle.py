@@ -833,6 +833,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.append("--start-time=%d" % start_time_UTC)
 
     cmd.append("--sim-address=%s" % cmd_opts.sim_address)
+    cmd.append("--enable-fgview")
 
     old_dir = os.getcwd()
     for i, i_dir in zip(instances, instance_dir):
