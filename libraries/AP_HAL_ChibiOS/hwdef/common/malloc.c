@@ -635,7 +635,7 @@ bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op)
         // use bouncebuffer for all non FS ops on H7
         return false;
     }
-    if (((uint32_t)addr) & 0x1F) {
+    if ((((uint32_t)addr) & 0x1F) != 0 || (size & 0x1F) != 0) {
         return false;
     }
     if (filesystem_op) {
