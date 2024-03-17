@@ -9,7 +9,7 @@
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
-AP_BoardConfig BoardConfig;
+AP_BoardConfig boardconfig;
 #endif
 
 void setup();
@@ -26,7 +26,7 @@ void setup(void)
 {
     hal.console->printf("Starting RCInput test\n");
 #if HAL_WITH_IO_MCU
-    BoardConfig.init();
+    boardconfig.init();
 #endif
 }
 

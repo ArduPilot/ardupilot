@@ -11,7 +11,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
-AP_BoardConfig BoardConfig;
+AP_BoardConfig boardconfig;
 #endif
 
 void setup();
@@ -23,7 +23,7 @@ void setup (void)
 {
     hal.console->printf("Starting AP_HAL::RCOutput test\n");
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    BoardConfig.init();
+    boardconfig.init();
 #endif
     for (uint8_t i = 0; i< 14; i++) {
         hal.rcout->enable_ch(i);
