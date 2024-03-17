@@ -61,7 +61,7 @@ public:
         k_param_scheduler,
 
         // BoardConfig object
-        k_param_BoardConfig,
+        k_param_BoardConfig_old,
 
         // GPS object
         k_param_gps,
