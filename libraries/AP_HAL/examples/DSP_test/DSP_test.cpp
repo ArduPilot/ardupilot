@@ -2,10 +2,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_Common/ExampleFirmwareVersion.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include "GyroFrame.h"
+
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 #if HAL_WITH_DSP
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
