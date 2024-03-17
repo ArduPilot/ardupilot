@@ -50,14 +50,20 @@ Then reload your PATH by using the “dot” command in a terminal
 to run the mig6 boat
 
 ````
-cd AeroBoat
+cd Rover
 ./gzboat.sh
 ````
 
 to run the rover
 ````
-cd rover
+cd Rover
 ./gzrover.sh
+````
+
+Now, both rover and boat are running the Rover code. The associate parameter to switch between vechicles is the SCR_USER5 where.
+````
+SCR_USER5 = 1 -- boat
+SCR_USER5 = 2 -- rover
 ````
 
 ## Top Contributors ##
