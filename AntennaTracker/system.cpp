@@ -30,7 +30,7 @@ void Tracker::init_ardupilot()
 
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     ahrs.init();
     ahrs.set_fly_forward(false);
