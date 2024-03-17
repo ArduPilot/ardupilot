@@ -912,9 +912,9 @@ AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
     return AP_GPS::GPS_OK_FIX_3D;
 }
 
+#if HAL_LOGGING_ENABLED
 bool AP_GPS::should_log() const
 {
-#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return false;
@@ -926,10 +926,8 @@ bool AP_GPS::should_log() const
         return false;
     }
     return true;
-#else
-    return false;
-#endif
 }
+#endif
 
 
 /*
@@ -1775,6 +1773,7 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
 }
 #endif // AP_GPS_RTCM_DECODE_ENABLED
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 {
     for (uint8_t instance=0; instance<num_instances; instance++) {
@@ -1784,6 +1783,7 @@ void AP_GPS::Write_AP_Logger_Log_Startup_messages()
         drivers[instance]->Write_AP_Logger_Log_Startup_messages();
     }
 }
+#endif
 
 /*
   return the expected lag (in seconds) in the position and velocity readings from the gps

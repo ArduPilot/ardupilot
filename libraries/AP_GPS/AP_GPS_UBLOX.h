@@ -152,7 +152,9 @@ public:
     };
 
     void broadcast_configuration_failure_reason(void) const override;
+#if HAL_LOGGING_ENABLED
     void Write_AP_Logger_Log_Startup_messages() const override;
+#endif
 
     // get the velocity lag, returns true if the driver is confident in the returned value
     bool get_lag(float &lag_sec) const override;

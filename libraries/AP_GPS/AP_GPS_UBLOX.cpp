@@ -2111,9 +2111,9 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 {
-#if HAL_LOGGING_ENABLED
     AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 
     if (_have_version) {
@@ -2122,8 +2122,8 @@ void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
                                            _version.hwVersion,
                                            _version.swVersion);
     }
-#endif
 }
+#endif
 
 // uBlox specific check_new_itow(), handling message length
 void AP_GPS_UBLOX::_check_new_itow(uint32_t itow)

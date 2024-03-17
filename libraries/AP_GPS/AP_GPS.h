@@ -530,7 +530,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if HAL_LOGGING_ENABLED
     void Write_AP_Logger_Log_Startup_messages();
+#endif
 
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
