@@ -26,6 +26,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_AHRS/AP_AHRS.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 // create barometer object
