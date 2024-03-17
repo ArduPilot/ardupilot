@@ -99,7 +99,7 @@ public:
         k_param_hil_err_limit_unused,  // unused
         k_param_sonar_old, // unused
         k_param_log_bitmask,
-        k_param_BoardConfig,
+        k_param_BoardConfig_old,
         k_param_rssi_range,     // unused, replaced by rssi_ library parameters
         k_param_flapin_channel_old,  // unused, moved to RC_OPTION
         k_param_flaperon_output, // unused
