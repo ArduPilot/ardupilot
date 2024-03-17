@@ -7,6 +7,8 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 #include <stdio.h>
 
 void setup();
