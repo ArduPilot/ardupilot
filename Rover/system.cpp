@@ -67,7 +67,7 @@ void Rover::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
