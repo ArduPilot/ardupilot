@@ -221,6 +221,7 @@ local DYNAMIC_PAGES = {
          <tr><td>IP</td><td><?lstr networking:address_to_str(networking:get_ip_active()) ?></td></tr>
          <tr><td>Netmask</td><td><?lstr networking:address_to_str(networking:get_netmask_active()) ?></td></tr>
          <tr><td>Gateway</td><td><?lstr networking:address_to_str(networking:get_gateway_active()) ?></td></tr>
+         <tr><td>MCU Temperature</td><td><?lstr string.format("%.1fC", analog:mcu_temperature()) ?></td></tr>
          </table>
 ]]
 }
