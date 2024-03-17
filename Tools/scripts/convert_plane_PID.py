@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 convert fixed wing PIDs in a parameter file from old system to ACPID system
 '''

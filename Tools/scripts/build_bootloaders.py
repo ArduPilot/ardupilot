@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 script to build all of our bootloaders using AP_Bootloader and put the resulting binaries in Tools/bootloaders

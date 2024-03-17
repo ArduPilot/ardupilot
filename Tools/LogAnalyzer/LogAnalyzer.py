@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # A module to analyze and identify any common problems which can be determined from log files
 #

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 script to create ap_romfs_embedded.h from a set of static files

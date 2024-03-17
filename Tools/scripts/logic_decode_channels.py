@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 decode a Saleae logic CSV export file as PWM values. Used for
 testing output values on PWM channels

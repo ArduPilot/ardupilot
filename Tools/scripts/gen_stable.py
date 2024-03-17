@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 create stable-x.y.z directories so we keep all past stable releases for users to download
 '''
