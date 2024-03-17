@@ -69,6 +69,9 @@ class TestBuildOptions(object):
         self.emit_disable_all_defines = emit_disable_all_defines
         self.results = {}
 
+        self.enable_in_turn_results = {}
+        self.sizes_everything_disabled = None
+
     def must_have_defines_for_board(self, board):
         '''return a set of defines which must always be enabled'''
         must_have_defines = {
@@ -333,6 +336,21 @@ class TestBuildOptions(object):
             count += 1
             self.disable_in_turn_check_sizes(feature, self.sizes_nothing_disabled)
 
+    def enable_in_turn_check_sizes(self, feature, sizes_everything_disabled):
+        if not self.do_step_disable_all:
+            self.progress("disable-none skipped, size comparison not available")
+            return
+        current_sizes = self.find_build_sizes()
+        for (build, new_size) in current_sizes.items():
+            old_size = sizes_everything_disabled[build]
+            self.progress("Enabling %s(%s) on %s costs %u bytes" %
+                          (feature.label, feature.define, build, old_size - new_size))
+            if feature.define not in self.enable_in_turn_results:
+                self.enable_in_turn_results[feature.define] = {}
+            self.enable_in_turn_results[feature.define][build] = TestBuildOptionsResult(feature.define, build, old_size - new_size)  # noqa
+            with open("/tmp/enable-in-turn.csv", "w") as f:
+                f.write(self.csv_for_results(self.enable_in_turn_results))
+
     def run_enable_in_turn(self):
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
@@ -346,6 +364,7 @@ class TestBuildOptions(object):
                 f.write(f"{count}/{len(options)} {feature.define}\n")
             self.test_enable_feature(feature, options)
             count += 1
+            self.enable_in_turn_check_sizes(feature, self.sizes_everything_disabled)
 
     def get_option_by_label(self, label, options):
         for x in options:
@@ -370,6 +389,7 @@ class TestBuildOptions(object):
     def run_disable_all(self):
         defines = self.get_disable_all_defines()
         self.test_compile_with_defines(defines)
+        self.sizes_everything_disabled = self.find_build_sizes()
 
     def run_disable_none(self):
         self.test_compile_with_defines({})
