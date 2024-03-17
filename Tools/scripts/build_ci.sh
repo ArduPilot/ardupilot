@@ -327,9 +327,11 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ "$t" == "CubeOrange-SOHW" ]; then
+    if [ "$t" == "SOHW" ]; then
         echo "Building CubeOrange-SOHW"
-        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter
+        echo "Building 6X-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board Pixhawk6X --vehicle plane --simclass Plane --frame plane-3d
         continue
     fi
 
