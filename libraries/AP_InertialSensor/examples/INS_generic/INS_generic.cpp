@@ -9,6 +9,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 static AP_InertialSensor ins;
