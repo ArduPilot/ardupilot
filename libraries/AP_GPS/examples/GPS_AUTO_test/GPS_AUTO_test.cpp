@@ -66,7 +66,7 @@ void setup()
 
     // Initialize the UART for GPS system
     serial_manager.init();
-    gps.init(serial_manager);
+    gps.init();
 }
 
 
