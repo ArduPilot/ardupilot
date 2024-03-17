@@ -1856,7 +1856,7 @@ INCLUDE common.ld
             if 'io_firmware.bin' not in self.romfs:
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
-            f.write('#define HAL_WITH_IO_MCU 1\n')
+            self.write_defaulting_define(f, 'HAL_WITH_IO_MCU', 1)
             f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
             f.write(
                 '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
@@ -2524,6 +2524,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
         f.close()
         if not self.is_periph_fw():
             self.romfs["hwdef.dat"] = hwdat
+
+    def write_defaulting_define(self, f, name, value):
+        f.write(f"#ifndef {name}\n")
+        f.write(f"#define {name} {value}\n")
+        f.write("#endif\n")
 
     def write_define(self, f, name, value):
         f.write(f"#define {name} {value}\n")
