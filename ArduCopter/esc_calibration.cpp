@@ -162,7 +162,7 @@ void Copter::esc_calibration_setup()
     }
 
     // disable safety if requested
-    BoardConfig.init_safety();
+    boardconfig.init_safety();
 
     // wait for safety switch to be pressed
     uint32_t tstart = 0;
