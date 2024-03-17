@@ -23,7 +23,7 @@ void Sub::init_ardupilot()
     barometer.init();
 
 #if AP_FEATURE_BOARD_DETECT
-    // Detection won't work until after BoardConfig.init()
+    // Detection won't work until after boardconfig.init()
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
         AP_Param::set_default_by_name("BARO_EXT_BUS", 0);
