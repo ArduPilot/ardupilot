@@ -13,6 +13,8 @@
 #include <AP_Arming/AP_Arming.h>
 #include <SITL/SITL.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
