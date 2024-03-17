@@ -464,7 +464,7 @@ bool AP_GPS::needs_uart(GPS_Type type) const
 }
 
 /// Startup initialisation.
-void AP_GPS::init(const AP_SerialManager& serial_manager)
+void AP_GPS::init()
 {
     // Set new primary param based on old auto_switch use second option
     if ((_auto_switch.get() == 3) && !_primary.configured()) {
@@ -473,6 +473,7 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
     }
 
     // search for serial ports with gps protocol
+    const auto &serial_manager = AP::serialmanager();
     uint8_t uart_idx = 0;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (needs_uart((GPS_Type)_type[i].get())) {
