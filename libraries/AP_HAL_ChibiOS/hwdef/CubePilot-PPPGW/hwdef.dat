@@ -12,4 +12,13 @@ PC11 UART8_CTS_GPIO UART8
 
 SERIAL_ORDER OTG1 UART8
 
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+undef HAL_USE_ADC
+define HAL_USE_ADC TRUE
+define HAL_WITH_MCU_MONITORING 1
+
+# can optionally run at half clock
+# MCU_CLOCKRATE_MHZ 200
+
 include ../include/network_PPPGW.inc
