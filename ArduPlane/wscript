@@ -26,7 +26,6 @@ def build(bld):
             'AP_Soaring',
             'AP_LTM_Telem',
             'AP_Devo_Telem',
-            'AP_OSD',
             'AC_AutoTune',
             'AP_Follow',
             'AC_PrecLand',
