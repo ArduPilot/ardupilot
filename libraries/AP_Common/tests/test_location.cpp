@@ -5,6 +5,8 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 class DummyVehicle {
