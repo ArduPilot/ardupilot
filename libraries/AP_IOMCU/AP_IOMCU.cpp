@@ -118,12 +118,14 @@ void AP_IOMCU::thread_main(void)
     uart.begin(1500*1000, 128, 128);
     uart.set_unbuffered_writes(true);
 
-#if HAVE_AP_BLHELI_SUPPORT && HAL_WITH_IO_MCU_BIDIR_DSHOT
-    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
     uint16_t erpm_period_ms = 10; // default 100Hz
+#if HAVE_AP_BLHELI_SUPPORT
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
     if (blh && blh->get_telemetry_rate() > 0) {
         erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
     }
+#endif
 #endif
     trigger_event(IOEVENT_INIT);
 
@@ -319,7 +321,7 @@ void AP_IOMCU::thread_main(void)
             read_servo();
             last_servo_read_ms = AP_HAL::millis();
         }
-#if HAVE_AP_BLHELI_SUPPORT && HAL_WITH_IO_MCU_BIDIR_DSHOT
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
         if (AP_BoardConfig::io_dshot() && now - last_erpm_read_ms > erpm_period_ms) {
             // read erpm at configured rate. A more efficient scheme might be to 
             // send erpm info back with the response from a PWM send, but that would
@@ -399,7 +401,7 @@ void AP_IOMCU::read_rc_input()
     }
 }
 
-#if HAVE_AP_BLHELI_SUPPORT && HAL_WITH_IO_MCU_BIDIR_DSHOT
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
 /*
   read dshot erpm
  */
@@ -410,10 +412,12 @@ void AP_IOMCU::read_erpm()
         return;
     }
     uint8_t motor_poles = 14;
+#if HAVE_AP_BLHELI_SUPPORT
     AP_BLHeli* blh = AP_BLHeli::get_singleton();
     if (blh) {
         motor_poles = blh->get_motor_poles();
     }
+#endif
     for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
