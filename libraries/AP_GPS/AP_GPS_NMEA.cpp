@@ -957,9 +957,9 @@ bool AP_GPS_NMEA::get_lag(float &lag_sec) const
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
 {
-#if HAL_LOGGING_ENABLED
     AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 #if AP_GPS_NMEA_UNICORE_ENABLED
     if (_have_unicore_versiona) {
@@ -970,7 +970,7 @@ void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
                                     _versiona.build_date);
     }
 #endif
-#endif
 }
+#endif
 
 #endif // AP_GPS_NMEA_ENABLED

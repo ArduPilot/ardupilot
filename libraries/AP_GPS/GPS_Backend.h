@@ -95,7 +95,9 @@ public:
     virtual const char *name() const = 0;
 
     void broadcast_gps_type() const;
+#if HAL_LOGGING_ENABLED
     virtual void Write_AP_Logger_Log_Startup_messages() const;
+#endif
 
     virtual bool prepare_for_arming(void) { return true; }
 

@@ -156,19 +156,19 @@ void AP_GPS_Backend::broadcast_gps_type() const
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", buffer);
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
 {
-#if HAL_LOGGING_ENABLED
     char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
     AP::logger().Write_Message(buffer);
-#endif
 }
 
 bool AP_GPS_Backend::should_log() const
 {
     return gps.should_log();
 }
+#endif
 
 
 #if HAL_GCS_ENABLED
