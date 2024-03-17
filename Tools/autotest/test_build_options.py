@@ -23,6 +23,7 @@ from __future__ import print_function
 import fnmatch
 import optparse
 import os
+import pathlib
 import sys
 
 from pysim import util
@@ -50,7 +51,9 @@ class TestBuildOptions(object):
                  do_step_enable_in_turn=True,
                  build_targets=None,
                  board="CubeOrange",  # DevEBoxH7v2 also works
-                 extra_hwdef=None):
+                 extra_hwdef=None,
+                 emit_disable_all_defines=None,
+                 ):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
         self.match_glob = match_glob
@@ -63,6 +66,7 @@ class TestBuildOptions(object):
         if self.build_targets is None:
             self.build_targets = self.all_targets()
         self._board = board
+        self.emit_disable_all_defines = emit_disable_all_defines
         self.results = {}
 
     def must_have_defines_for_board(self, board):
@@ -82,15 +86,22 @@ class TestBuildOptions(object):
                 'AP_COMPASS_AK09916_ENABLED',
                 'AP_COMPASS_ICM20948_ENABLED',
             ]),
+            "Pixhawk6X-GenericVehicle": frozenset([
+                "AP_BARO_BMP388_ENABLED",
+                "AP_BARO_ICP201XX_ENABLED",
+            ]),
         }
         return must_have_defines.get(board, frozenset([]))
+
+    def must_have_defines(self):
+        return self.must_have_defines_for_board(self._board)
 
     @staticmethod
     def all_targets():
         return ['copter', 'plane', 'rover', 'antennatracker', 'sub', 'blimp']
 
     def progress(self, message):
-        print("###### %s" % message)
+        print("###### %s" % message, file=sys.stderr)
 
     # swiped from app.py:
     def get_build_options_from_ardupilot_tree(self):
@@ -105,12 +116,14 @@ class TestBuildOptions(object):
         return mod.BUILD_OPTIONS
 
     def write_defines_to_file(self, defines, filepath):
+        self.write_defines_to_Path(defines, pathlib.Path(filepath))
+
+    def write_defines_to_Path(self, defines, Path):
         lines = []
         lines.extend(["undef %s\n" % (a, ) for (a, b) in defines.items()])
         lines.extend(["define %s %s\n" % (a, b) for (a, b) in defines.items()])
         content = "".join(lines)
-        with open(filepath, "w") as f:
-            f.write(content)
+        Path.write_text(content)
 
     def get_disable_defines(self, feature, options):
         '''returns a hash of (name, value) defines to turn feature off -
@@ -131,7 +144,7 @@ class TestBuildOptions(object):
                     if f.define not in ret:
                         continue
 
-                    print("%s requires %s" % (option.define, f.define))
+                    print("%s requires %s" % (option.define, f.define), file=sys.stderr)
                     added_one = True
                     ret[option.define] = 0
                     break
@@ -384,9 +397,21 @@ class TestBuildOptions(object):
                 raise ValueError("Duplicate entries found for label '%s'" % feature.label)
             seen_labels[feature.label] = True
 
+    def do_emit_disable_all_defines(self):
+        defines = tbo.get_disable_all_defines()
+        for f in self.must_have_defines():
+            defines[f] = 1
+        tbo.write_defines_to_Path(defines, pathlib.Path("/dev/stdout"))
+        sys.exit(0)
+
     def run(self):
         self.check_deps_consistency()
         self.check_duplicate_labels()
+
+        if self.emit_disable_all_defines:
+            self.do_emit_disable_all_defines()
+            sys.exit(0)
+
         if self.do_step_run_with_defaults:
             self.progress("Running run-with-defaults step")
             self.run_with_defaults()
@@ -439,6 +464,9 @@ if __name__ == '__main__':
                       type='string',
                       default="DevEBoxH7v2",
                       help='board to build for')
+    parser.add_option("--emit-disable-all-defines",
+                      action='store_true',
+                      help='emit defines used for disabling all features then exit')
 
     opts, args = parser.parse_args()
 
@@ -452,5 +480,7 @@ if __name__ == '__main__':
         build_targets=opts.build_targets,
         board=opts.board,
         extra_hwdef=opts.extra_hwdef,
+        emit_disable_all_defines=opts.emit_disable_all_defines,
     )
+
     tbo.run()
