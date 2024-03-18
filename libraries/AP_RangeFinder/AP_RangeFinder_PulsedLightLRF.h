@@ -8,6 +8,7 @@
 #include "AP_RangeFinder_Backend.h"
 
 #include <AP_HAL/I2CDevice.h>
+#include <Filter/ModeFilter.h>
 
 /* Connection diagram
  *
@@ -57,8 +58,9 @@ private:
     uint8_t check_reg_counter;
     bool v2_hardware;
     bool v3hp_hardware;
-    uint16_t last_distance_cm;
     RangeFinder::Type rftype;
+
+    ModeFilterFloat_Size3 filter;
     
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
