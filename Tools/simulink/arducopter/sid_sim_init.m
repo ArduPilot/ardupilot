@@ -119,10 +119,10 @@ simIn.param.AHRS.BF2FC = simIn.param.AHRS.FC2BF';
 
 clear trim_x trim_y
 %% RCIN - Radio Input and parameters for Attitude Control
-rollCh = getParamVal(sid, 'RCMAP_ROLL');
-pitchCh = getParamVal(sid, 'RCMAP_PITCH');
-yawCh = getParamVal(sid, 'RCMAP_YAW');
-thrCh = getParamVal(sid, 'RCMAP_THROTTLE');
+rollCh = findRCChannelNumberForAuxFunction(sid, 201);
+pitchCh = findRCChannelNumberForAuxFunction(sid, 202);
+yawCh = findRCChannelNumberForAuxFunction(sid, 204);
+thrCh = findRCChannelNumberForAuxFunction(sid, 203);
 
 simIn.param.RCIN.DZ_RLL = getParamVal(sid, ['RC' num2str(rollCh) '_DZ']);
 simIn.param.RCIN.MIN_RLL = getParamVal(sid, ['RC' num2str(rollCh) '_MIN']);
