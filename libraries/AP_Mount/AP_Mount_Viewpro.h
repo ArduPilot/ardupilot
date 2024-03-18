@@ -291,8 +291,8 @@ private:
             FrameId frame_id;           // always 0xB1
             uint8_t data_type;          // should be 0x07.  Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             uint8_t unused2to8[7];      // unused
-            be16_t pitch_be;            // vehicle pitch angle.  1bit=360deg/65536
             be16_t roll_be;             // vehicle roll angle.  1bit=360deg/65536
+            be16_t pitch_be;            // vehicle pitch angle.  1bit=360deg/65536
             be16_t yaw_be;              // vehicle yaw angle.  1bit=360deg/65536
             be16_t date_be;             // bit0~6:year, bit7~10:month, bit11~15:day
             uint8_t seconds_utc[3];     // seconds.  1bit = 0.01sec
