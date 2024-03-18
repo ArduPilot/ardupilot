@@ -60,7 +60,7 @@ void AirSim::set_interface_ports(const char* address, const int port_in, const i
 				 port_in, strerror(errno));
 		return;
 	}
-	printf("Bind SITL sensor input at %s:%u\n", "127.0.0.1", port_in);
+	printf("Bind SITL sensor input at %s:%u\n", "0.0.0.0", port_in);
 	sock.set_blocking(false);
 	sock.reuseaddress();
 
