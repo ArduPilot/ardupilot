@@ -73,7 +73,6 @@ SHIP_LAND_ANGLE = bind_add_param('LAND_ANGLE', 2, 0)
 SHIP_AUTO_OFS   = bind_add_param('AUTO_OFS', 3, 0)
 
 -- other parameters
-RCMAP_THROTTLE  = bind_param("RCMAP_THROTTLE")
 RTL_ALTITUDE    = bind_param("RTL_ALTITUDE")
 Q_RTL_ALT       = bind_param("Q_RTL_ALT")
 AIRSPEED_CRUISE = bind_param("AIRSPEED_CRUISE")
@@ -84,6 +83,8 @@ RTL_RADIUS      = bind_param("RTL_RADIUS")
 FOLL_OFS_X      = bind_param("FOLL_OFS_X")
 FOLL_OFS_Y      = bind_param("FOLL_OFS_Y")
 FOLL_OFS_Z      = bind_param("FOLL_OFS_Z")
+
+RC_CHANNEL_AUXFUNC_THROTTLE = 203  -- see RC_Channel.h
 
 -- an auth ID to disallow arming when we don't have the beacon
 local auth_id = arming:get_aux_auth_id()
@@ -140,7 +141,7 @@ function update_throttle_pos()
    if not rc:has_valid_input() then
       tpos = THROTTLE_LOW
    else
-      local tchan = rc:get_channel(RCMAP_THROTTLE:get())
+      local tchan = rc:find_channel_for_option(RC_CHANNEL_AUXFUNC_THROTTLE)
       local tval = (tchan:norm_input_ignore_trim()+1.0)*0.5
       if tval >= 0.40 then
          tpos = THROTTLE_HIGH
