@@ -61,9 +61,7 @@ local USER_MODES = {
 }
 
 local MODE_CH  = param:get('MODE_CH')
-local THR_CH   = param:get('RCMAP_THROTTLE')
-local THR_TRIM = param:get(string.format('RC%d_TRIM', THR_CH))
-local THR_DZ   = param:get(string.format('RC%d_DZ', THR_CH))
+local THR_CH   = rc:find_channel_for_option(203)  -- see RC_Channel.h
 
 -- wrapper for gcs:send_text()
 local function gcs_msg(msg_type, severity, txt)
@@ -92,7 +90,7 @@ local function get_user_mode()
 end
 
 local function get_pause_mode()
-    if math.abs(rc:get_pwm(THR_CH) - THR_TRIM) > THR_DZ then
+    if not THR_CH:in_trim_dz() then
         return THR_SAFEGUARD_MODE
     end
     return MSN_PAUSE_MODE
