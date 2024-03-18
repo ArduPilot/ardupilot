@@ -119,12 +119,10 @@ int32_t AP_Filesystem_ROMFS::lseek(int fd, int32_t offset, int seek_from)
 int AP_Filesystem_ROMFS::stat(const char *name, struct stat *stbuf)
 {
     uint32_t size;
-    const uint8_t *data = AP_ROMFS::find_decompress(name, size);
-    if (data == nullptr) {
+    if (!AP_ROMFS::find_size(name, size)) {
         errno = ENOENT;
         return -1;
     }
-    AP_ROMFS::free(data);
     memset(stbuf, 0, sizeof(*stbuf));
     stbuf->st_size = size;
     return 0;
