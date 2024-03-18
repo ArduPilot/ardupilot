@@ -147,8 +147,6 @@ class SizeCompareBranches(object):
         # some boards we don't have a -bl.dat for, so skip them.
         # TODO: find a way to get this information from board_list:
         self.bootloader_blacklist = set([
-            'CubeOrange-SimOnHardWare',
-            'CubeOrangePlus-SimOnHardWare',
             'fmuv2',
             'fmuv3-bdshot',
             'iomcu',
