@@ -1377,6 +1377,10 @@ function RC_Channel_ud:set_override(PWM) end
 ---@return integer
 function RC_Channel_ud:get_aux_switch_pos() end
 
+-- return true if the channel's input is within the deadzone of its trim value
+---@return boolean
+function RC_Channel_ud:in_trim_dz() end
+
 -- desc return input on a channel from -1 to 1, centered on the trim. Ignores the deadzone
 ---@return number
 function RC_Channel_ud:norm_input() end
