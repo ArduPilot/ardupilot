@@ -16,6 +16,9 @@ public:
     // free returned data
     static void free(const uint8_t *data);
 
+    // get the size of a file without decompressing
+    static bool find_size(const char *name, uint32_t &size);
+
     /*
       directory listing interface. Start with ofs=0. Returns pathnames
       that match dirname prefix. Ends with nullptr return when no more
