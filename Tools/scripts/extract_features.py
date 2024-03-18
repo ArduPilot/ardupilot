@@ -55,6 +55,7 @@ class ExtractFeatures(object):
 
             ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::read\b',),
             ('AP_COMPASS_ICM20948_ENABLED', r'AP_Compass_AK09916::probe_ICM20948',),
+            ('AP_COMPASS_DRONECAN_HIRES_ENABLED', r'AP_Compass_DroneCAN::handle_magnetic_field_hires',),
 
             ('AP_AIS_ENABLED', 'AP_AIS::AP_AIS',),
 
