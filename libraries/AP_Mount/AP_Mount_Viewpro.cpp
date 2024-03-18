@@ -702,8 +702,8 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             unused2to8 : {0, 0, 0, 0, 0, 0, 0},
-            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             roll_be: htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
