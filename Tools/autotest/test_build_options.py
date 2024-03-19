@@ -57,6 +57,8 @@ class TestBuildOptions(object):
                  ):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
+        if match_glob is None:
+            match_glob = []
         self.match_glob = match_glob
         self.do_step_disable_all = do_step_disable_all
         self.do_step_disable_none = do_step_disable_none
@@ -562,6 +564,12 @@ class TestBuildOptions(object):
             with open("/tmp/some.csv", "w") as f:
                 f.write(self.csv_for_results(self.results))
 
+    def define_matches_glob(self, define):
+        '''true if define should be tested; no globs matches everything'''
+        if len(self.match_glob) == 0:
+            return True
+        return any(fnmatch.fnmatch(define, g) for g in self.match_glob)
+
     def run_disable_in_turn(self):
         progress_file = pathlib.Path("/tmp/run-disable-in-turn-progress")
         resume_number = self.resume_number_from_progress_Path(progress_file)
@@ -572,10 +580,10 @@ class TestBuildOptions(object):
                 if count < resume_number:
                     count += 1
                     continue
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
             if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
+            if not self.define_matches_glob(feature.define):
+                count += 1
                 continue
             with open(progress_file, "w") as f:
                 f.write(f"{count}/{len(options)} {feature.define}\n")
@@ -640,9 +648,9 @@ class TestBuildOptions(object):
                 continue
             if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
                 continue
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
+            if not self.define_matches_glob(feature.define):
+                count += 1
+                continue
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
             with open(progress_file, "w") as f:
@@ -662,10 +670,9 @@ class TestBuildOptions(object):
         options = self.get_build_options_from_ardupilot_tree()
         defines = {}
         for feature in options:
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
             if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
+            if not self.define_matches_glob(feature.define):
                 continue
             defines[feature.define] = 0
         for define in self.must_have_defines_for_board(self._board):
@@ -742,9 +749,9 @@ if __name__ == '__main__':
 
     parser = optparse.OptionParser()
     parser.add_option("--define-match-glob",
-                      type='string',
                       default=None,
-                      help='feature define must match this glob to be tested')
+                      action='append',
+                      help='feature define must match any of these globs to be tested')
     parser.add_option("--no-run-with-defaults",
                       action='store_true',
                       help='Do not run the run-with-defaults step')
