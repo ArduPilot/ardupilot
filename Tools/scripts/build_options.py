@@ -31,8 +31,8 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3', 'HAL_NAVEKF3_AVAILABLE', 'Enable EKF3', 1, None),
     Feature('AHRS', 'EKF2', 'HAL_NAVEKF2_AVAILABLE', 'Enable EKF2', 0, None),
     Feature('AHRS', 'AHRS_EXT', 'HAL_EXTERNAL_AHRS_ENABLED', 'Enable External AHRS', 0, None),
-    Feature('AHRS', 'AHRS_EXT_MICROSTRAIN5', 'AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED', 'Enable MICROSTRAIN 5-series External AHRS', 0, "AHRS_EXT"),  # noqa: E501
-    Feature('AHRS', 'AHRS_EXT_MICROSTRAIN7', 'AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED', 'Enable MICROSTRAIN 7-series External AHRS', 0, "AHRS_EXT"),  # noqa: E501
+    Feature('AHRS', 'MicroStrain5', 'AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED', 'Enable MICROSTRAIN 5-series External AHRS', 0, "AHRS_EXT"),  # noqa: E501
+    Feature('AHRS', 'MicroStrain7', 'AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED', 'Enable MICROSTRAIN 7-series External AHRS', 0, "AHRS_EXT"),  # noqa: E501
     Feature('AHRS', 'AHRS_EXT_VECTORNAV', 'AP_EXTERNAL_AHRS_VECTORNAV_ENABLED', 'Enable VectorNav External AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'TEMPCAL', 'HAL_INS_TEMPERATURE_CAL_ENABLE', 'Enable IMU Temperature Calibration', 0, None),
     Feature('AHRS', 'VISUALODOM', 'HAL_VISUALODOM_ENABLED', 'Enable Visual Odometry', 0, 'EKF3_EXTNAV'),
@@ -51,7 +51,7 @@ BUILD_OPTIONS = [
     Feature('Battery', 'BATTERY_SMBUS', 'AP_BATTERY_SMBUS_ENABLED', 'Enable SMBUS BatteryMonitor', 0, None),
     Feature('Battery', 'BATTERY_INA2XX', 'AP_BATTERY_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
     Feature('Battery', 'BATTERY_SYNTHETIC_CURRENT', 'AP_BATTERY_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current Monitor', 0, None), # noqa: E501
-    Feature('Battery', 'BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'Enable ability to put battery monitor data in ESC telem stream', 0, None), # noqa: E501
+    Feature('Battery', 'BATTERY_ESC_TELEM_OUT', 'AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'Enable ability to put battery monitor data in ESC telem stream', 0, None), # noqa: E501
     Feature('Battery', 'BATTERY_WATT_MAX', 'AP_BATTERY_WATT_MAX_ENABLED', 'Enable param BATT_WATT_MAX', 0, None), # noqa: E501
 
     Feature('Ident', 'ADSB', 'HAL_ADSB_ENABLED', 'Enable ADSB', 0, None),
@@ -141,8 +141,8 @@ BUILD_OPTIONS = [
     Feature('Copter', 'MODE_FLIP', 'MODE_FLIP_ENABLED', 'Enable Mode Flip', 0, None),
     Feature('Copter', 'MODE_BRAKE', 'MODE_BRAKE_ENABLED', 'Enable Mode Brake', 0, None),
 
-    Feature('Mission', 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', 'Enable handling of NAV_PAYLOAD_PLACE mission items', 0, None),  # noqa
-    Feature('Copter', 'AC_PAYLOAD_PLACE_ENABLED', 'AC_PAYLOAD_PLACE_ENABLED', 'Enable Payload Place flight behaviour', 0, 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED'),  # noqa
+    Feature('Mission', 'MISSION_NAV_PAYLOAD_PLACE', 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', 'Enable handling of NAV_PAYLOAD_PLACE mission items', 0, None),  # noqa
+    Feature('Copter', 'AC_PAYLOAD_PLACE_ENABLED', 'AC_PAYLOAD_PLACE_ENABLED', 'Enable Payload Place flight behaviour', 0, 'MISSION_NAV_PAYLOAD_PLACE'),  # noqa
 
     Feature('Compass', 'AK09916', 'AP_COMPASS_AK09916_ENABLED', 'Enable AK09916 compasses', 1, None),
     Feature('Compass', 'AK8963', 'AP_COMPASS_AK8963_ENABLED', 'Enable AK8963 compasses', 1, None),
@@ -217,8 +217,8 @@ BUILD_OPTIONS = [
     Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_CAN', 'AP_RANGEFINDER_BENEWAKE_CAN_ENABLED', "Enable Rangefinder - Benewake (CAN)", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_TF02', 'AP_RANGEFINDER_BENEWAKE_TF02_ENABLED', "Enable Rangefinder - Benewake -TF02", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_TF03', 'AP_RANGEFINDER_BENEWAKE_TF03_ENABLED', "Enable Rangefinder - Benewake - TF03", 0, "RANGEFINDER"),   # NOQA: E501
-    Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_TFMINI', 'AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED', "Enable Rangefinder - Benewake - TFMini", 0, "RANGEFINDER"),   # NOQA: E501
-    Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_TFMINIPLUS', 'AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED', "Enable Rangefinder - Benewake - TFMiniPlus", 0, "RANGEFINDER"),   # NOQA: E501
+    Feature('Rangefinder', 'RFND_BENEWAKE_TFMINI', 'AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED', "Enable Rangefinder - Benewake - TFMini", 0, "RANGEFINDER"),   # NOQA: E501
+    Feature('Rangefinder', 'RFND_BENEWAKE_TFMINIPLUS', 'AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED', "Enable Rangefinder - Benewake - TFMiniPlus", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_BLPING', 'AP_RANGEFINDER_BLPING_ENABLED', "Enable Rangefinder - BLPing", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_GYUS42V2', 'AP_RANGEFINDER_GYUS42V2_ENABLED', "Enable Rangefinder - GYUS42V2", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_HC_SR04', 'AP_RANGEFINDER_HC_SR04_ENABLED', "Enable Rangefinder - HC_SR04", 0, "RANGEFINDER"),   # NOQA: E501
@@ -325,16 +325,16 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'HIGHLAT2', 'HAL_HIGH_LATENCY2_ENABLED', 'Enable HighLatency2 Support', 0, None),
     Feature('MAVLink', 'FENCEPOINT_PROTOCOL', 'AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'Enable old MAVLink FencePoint protocol', 0, "FENCE"),  # noqa
     Feature('MAVLink', 'RALLYPOINT_PROTOCOL', 'AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'Enable old MAVLink RallyPoint protocol', 0, "RALLY"),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'Enable old AUTOPILOT_VERSION_REQUEST mesage', 0, None),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'Enable old REQUEST_AUTOPILOT_CAPABILITIES command', 0, None),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'Enable sending of RELAY_STATUS message', 0, 'RELAY'),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'Enable handling of deprecated MOUNT_CONTROL message', 0, None),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'Enable handling of deprecated MOUNT_CONFIGURE message', 0, None),  # noqa
+    Feature('MAVLink', 'MAVLINK_VERSION_REQUEST', 'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED', 'Enable old AUTOPILOT_VERSION_REQUEST mesage', 0, None),  # noqa
+    Feature('MAVLink', 'REQUEST_AUTOPILOT_CAPA', 'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED', 'Enable old REQUEST_AUTOPILOT_CAPABILITIES command', 0, None),  # noqa
+    Feature('MAVLink', 'MAV_MSG_RELAY_STATUS', 'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED', 'Enable sending of RELAY_STATUS message', 0, 'RELAY'),  # noqa
+    Feature('MAVLink', 'MAV_MSG_MOUNT_CONTROL', 'AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED', 'Enable handling of deprecated MOUNT_CONTROL message', 0, None),  # noqa
+    Feature('MAVLink', 'MAV_MSG_MOUNT_CONFIGURE', 'AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED', 'Enable handling of deprecated MOUNT_CONFIGURE message', 0, None),  # noqa
     Feature('MAVLink', 'AP_MAVLINK_BATTERY2_ENABLED', 'AP_MAVLINK_BATTERY2_ENABLED', 'Enable sending of old BATTERY2 message', 0, None),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'Enable handling of DeviceOp mavlink messages', 0, None),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_SERVO_RELAY_ENABLED', 'AP_MAVLINK_SERVO_RELAY_ENABLED', 'Enable handling of ServoRelay mavlink messages', 0, 'SERVORELAY_EVENTS'),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'Enable handling of Serial Control mavlink messages', 0, None),  # noqa
-    Feature('MAVLink', 'AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', 'AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', 'Enable handling of MISSION_REQUEST mavlink messages', 0, None),  # noqa
+    Feature('MAVLink', 'MAV_DEVICE_OP', 'AP_MAVLINK_MSG_DEVICE_OP_ENABLED', 'Enable handling of DeviceOp mavlink messages', 0, None),  # noqa
+    Feature('MAVLink', 'MAV_SERVO_RELAY', 'AP_MAVLINK_SERVO_RELAY_ENABLED', 'Enable handling of ServoRelay mavlink messages', 0, 'SERVORELAY_EVENTS'),  # noqa
+    Feature('MAVLink', 'MAV_MSG_SERIAL_CONTROL', 'AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED', 'Enable handling of Serial Control mavlink messages', 0, None),  # noqa
+    Feature('MAVLink', 'MAVLINK_MSG_MISSION_REQUEST', 'AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED', 'Enable handling of MISSION_REQUEST mavlink messages', 0, None),  # noqa
     Feature('MAVLink', 'AP_MAVLINK_FTP_ENABLED', 'AP_MAVLINK_FTP_ENABLED', 'Enable MAVLink FTP Protocol', 0, None),  # noqa
 
     Feature('Developer', 'KILL_IMU', 'AP_INERTIALSENSOR_KILL_IMU_ENABLED', 'Allow IMUs to be disabled at runtime', 0, None),
@@ -390,3 +390,16 @@ BUILD_OPTIONS = [
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
+
+# sanity check the list to ensure names don't get too long.  These are
+# used in various displays, so a good English "name" for the feature
+# makes sense:
+sanity_check_failed = False
+for x in BUILD_OPTIONS:
+    if len(x.label) > 30:
+        sanity_check_failed = True
+        print(f"{x.label} is too long")
+        sanity_check_failed = True
+
+if sanity_check_failed:
+    raise ValueError("Bad labels in Feature list")
