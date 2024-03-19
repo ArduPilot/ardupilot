@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
-    // @Param: ENABLED
+    // @Param: ENABLE
     // @DisplayName: Networking Enable
     // @Description: Networking Enable
     // @Values: 0:Disable,1:Enable
