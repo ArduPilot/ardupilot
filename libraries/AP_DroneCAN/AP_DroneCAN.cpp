@@ -159,6 +159,12 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_RV", 9, AP_DroneCAN, _esc_rv, 0),
 
+    // @Param: ESC_SC
+    // @DisplayName: scale esc for DroneCAN
+    // @Description: send 4095 as 0 ESC command over DroneCAN
+    // @User: Advanced
+    AP_GROUPINFO("ESC_SC", 24, AP_DroneCAN, _esc_sc, 0),
+
 #if AP_RELAY_DRONECAN_ENABLED
     // @Param: RLY_RT
     // @DisplayName: DroneCAN relay output rate
@@ -707,6 +713,10 @@ int16_t AP_DroneCAN::scale_esc_output(uint8_t idx){
     } else {
         scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse) + 1.0) / 2.0;
         scaled = constrain_float(scaled, 0, cmd_max);
+
+        if (_esc_sc){
+            scaled = scaled - 4095;
+        }
     }
 
     return static_cast<int16_t>(scaled);
