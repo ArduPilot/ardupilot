@@ -63,7 +63,7 @@ The PWM is in 5 groups:
 
  - PWM 1 in group1
  - PWM 2,4 in group2
- - PWM 5-7 in group3
+ - PWM 3,4 in group3
  - PWM 8-10 in group4
 
 ## Battery Monitoring
