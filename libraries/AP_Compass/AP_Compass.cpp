@@ -990,6 +990,10 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 #if COMPASS_MAX_UNREG_DEV
     // Set extra dev id
     if (_unreg_compass_count >= COMPASS_MAX_UNREG_DEV) {
+#if AP_SIM_ENABLED
+        // just ignore extra compassed under SITL
+        return false;
+#endif
         AP_HAL::panic("Too many compass instances");
     }
 
@@ -1006,7 +1010,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
             return false;
         }
     }
-#else
+#elif !AP_SIM_ENABLED
     AP_HAL::panic("Too many compass instances");
 #endif
 
