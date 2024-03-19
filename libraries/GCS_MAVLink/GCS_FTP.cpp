@@ -600,7 +600,12 @@ int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const
 #endif
         const size_t full_path_len = strlen(path) + strnlen(entry->d_name, max_name_len);
         char full_path[full_path_len + 2];
-        hal.util->snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        if (strcmp(path, "/") == 0) {
+            hal.util->snprintf(full_path, sizeof(full_path), "%s", entry->d_name);
+        } else {
+            hal.util->snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        }
+
         struct stat st;
         if (AP::FS().stat(full_path, &st)) {
             return -1;
