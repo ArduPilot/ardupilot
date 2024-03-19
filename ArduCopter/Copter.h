@@ -155,10 +155,6 @@
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
 #endif
 
-#if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
-  #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
-#endif
-
 #if AP_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
 #endif
