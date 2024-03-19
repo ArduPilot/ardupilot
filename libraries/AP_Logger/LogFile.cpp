@@ -471,6 +471,36 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+/*
+  write servo voltage status from CAN servo
+ */
+void AP_Logger::Write_PowerCktStatus(uint64_t time_us, uint8_t id, float voltage, float current, uint8_t error_flags)
+{
+    const struct log_CSVI pkt {
+        LOG_PACKET_HEADER_INIT(LOG_CSVI_MSG),
+        time_us     : time_us,
+        id          : id,
+        voltage     : voltage,
+        current     : current,
+        error_flags : error_flags
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+/*
+  write servo Temperature datafrom CAN servo
+ */
+void AP_Logger::Write_DeviceTemperature(uint64_t time_us, uint8_t id, float temperature, uint8_t error_flags)
+{
+    const struct log_TEMP pkt {
+        LOG_PACKET_HEADER_INIT(LOG_TEMP_MSG),
+        time_us     : time_us,
+        device_id   : id,
+        temperature : temperature,
+        error_flags : error_flags
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
 
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)

@@ -1371,6 +1371,31 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
 #endif
 }
 
+/*
+  handle voltage and current message 
+ */
+void AP_DroneCAN::handle_power_circuitstatus(const CanardRxTransfer& transfer, const uavcan_equipment_power_CircuitStatus& msg)
+{
+    // log as CSVI message
+    AP::logger().Write_PowerCktStatus(AP_HAL::micros64(),
+                                   msg.circuit_id,
+                                   msg.voltage,
+                                   msg.current,
+                                   msg.error_flags);
+}
+
+/*
+  handle temperature message
+ */
+void AP_DroneCAN::handle_device_temperature(const CanardRxTransfer& transfer, const uavcan_equipment_device_Temperature& msg)
+{
+    // log as TEMP message
+    AP::logger().Write_DeviceTemperature(AP_HAL::micros64(),
+                                   msg.device_id,
+                                   msg.temperature,
+                                   msg.error_flags);
+}
+
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT
 /*
   handle himark ServoInfo message
