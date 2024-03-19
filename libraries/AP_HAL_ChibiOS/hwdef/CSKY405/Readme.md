@@ -61,7 +61,7 @@ The CSKY405 supports up to 10 PWM outputs. S1-S4 outputs support DShot.
 
 The PWM is in 5 groups:
 
- - PWM 1,2 in group1
+ - PWM 1 in group1
  - PWM 2,4 in group2
  - PWM 5-7 in group3
  - PWM 8-10 in group4
