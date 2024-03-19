@@ -449,3 +449,9 @@
 #ifndef AP_CUSTOMROTATIONS_ENABLED
 #define AP_CUSTOMROTATIONS_ENABLED 0
 #endif
+
+// it is important to enable this on peripherals, or it is too easy to
+// brick AP_Periphs with a bad flash.
+#ifndef AP_CHECK_FIRMWARE_ENABLED
+#define AP_CHECK_FIRMWARE_ENABLED 1
+#endif
