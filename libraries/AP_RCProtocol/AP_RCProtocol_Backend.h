@@ -47,6 +47,7 @@ public:
     // update from mavlink messages
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
     virtual void update_radio_rc_channels(const mavlink_radio_rc_channels_t* packet) {}
+    virtual void update_radio_link_stats(const mavlink_radio_link_stats_t* packet) {}
 #endif
 
     // get number of frames, ignoring failsafe
@@ -133,6 +134,9 @@ protected:
     // decode channels from the standard 11bit format (used by CRSF and SBUS)
     static void decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset);
 
+    int16_t rssi = -1;
+    int16_t rx_link_quality = -1;
+
 private:
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
@@ -140,8 +144,6 @@ private:
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
-    int16_t rssi = -1;
-    int16_t rx_link_quality = -1;
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED
