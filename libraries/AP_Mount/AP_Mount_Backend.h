@@ -228,6 +228,12 @@ protected:
         void set(const Vector3f& rpy, bool yaw_is_ef_in);
     };
 
+    // options parameter bitmask handling
+    enum class Options : uint8_t {
+        RCTARGETING_LOCK_FROM_PREVMODE = (1U << 0), // RC_TARGETING mode's lock/follow state maintained from previous mode
+    };
+    bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
+
     // returns true if user has configured a valid yaw angle range
     // allows user to disable yaw even on 3-axis gimbal
     bool yaw_range_valid() const { return (_params.yaw_angle_min < _params.yaw_angle_max); }

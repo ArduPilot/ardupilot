@@ -91,6 +91,11 @@ void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float y
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(yaw_is_earth_frame);
+    }
 }
 
 // sets rate target in deg/s
@@ -106,6 +111,11 @@ void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float 
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(yaw_is_earth_frame);
+    }
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
@@ -117,6 +127,11 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(true);
+    }
 }
 
 // clear_roi_target - clears target location that mount should attempt to point towards
@@ -139,6 +154,11 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 
     // set the mode to sysid tracking mode
     set_mode(MAV_MOUNT_MODE_SYSID_TARGET);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(true);
+    }
 }
 
 #if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
