@@ -103,6 +103,7 @@ public:
         USD1_CAN = 33,
         Benewake_CAN = 34,
         TeraRanger_Serial = 35,
+        Ainstein_LRD1_Pro = 42,
         SIM = 100,
     };
 
