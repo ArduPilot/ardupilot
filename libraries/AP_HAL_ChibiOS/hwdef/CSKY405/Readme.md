@@ -40,7 +40,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL1 -> UART4  (MAVLink2 telem)
  - SERIAL2 -> USART1 (Serial RC input) (DMA capable)
  - SERIAL3 -> UART5  (GPS)
- - SERIAL4 -> USART3 (User) (DMA capable)
+ - SERIAL4 -> USART3 (User) (TX DMA capable)
  - SERIAL5 -> USART6 (User) (TX DMA capable)
  - SERIAL6 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1) 
 
