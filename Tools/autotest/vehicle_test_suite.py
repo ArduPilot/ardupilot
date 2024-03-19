@@ -4371,7 +4371,7 @@ class TestSuite(ABC):
         """Download latest log over network port"""
         self.context_push()
         self.set_parameters({
-            "NET_ENABLED": 1,
+            "NET_ENABLE": 1,
             "LOG_DISARMED": 0,
             "LOG_DARM_RATEMAX": 1, # make small logs
             # UDP client
