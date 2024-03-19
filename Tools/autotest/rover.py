@@ -6653,7 +6653,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "SCR_ENABLE": 1,
             "SCR_VM_I_COUNT": 1000000,
             "SIM_SPEEDUP": 20,
-            "NET_ENABLED": 1,
+            "NET_ENABLE": 1,
         })
 
         self.reboot_sitl()
@@ -6687,7 +6687,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "SCR_ENABLE": 1,
             "SCR_VM_I_COUNT": 1000000,
             "SIM_SPEEDUP": 20,
-            "NET_ENABLED": 1,
+            "NET_ENABLE": 1,
             "SERIAL5_PROTOCOL": 48,
         })
 
