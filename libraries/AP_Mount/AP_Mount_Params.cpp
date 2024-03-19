@@ -165,6 +165,13 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_DEVID", 15, AP_Mount_Params, dev_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Mount options
+    // @Description: Mount options bitmask
+    // @Bitmask: 0:RC lock state from previous mode
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
+
     AP_GROUPEND
 };
 
