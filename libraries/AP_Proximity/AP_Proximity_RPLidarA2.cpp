@@ -33,7 +33,6 @@
 #include "AP_Proximity_RPLidarA2.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity_RPLidarA2.h"
 #include <AP_InternalError/AP_InternalError.h>
 
 #include <ctype.h>
@@ -113,6 +112,8 @@ float AP_Proximity_RPLidarA2::distance_max_m() const
         return 12.0f;
     case Model::S1:
         return 40.0f;
+    case Model::S2:
+        return 50.0f;
     }
     return 0.0f;
 }
@@ -129,6 +130,8 @@ float AP_Proximity_RPLidarA2::distance_min_m() const
     case Model::C1:
     case Model::S1:
         return 0.2f;
+    case Model::S2:
+        return 0.05f;
     }
     return 0.0f;
 }
@@ -349,6 +352,10 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
     case 0x61:
         model = Model::S1;
         device_type = "S1";
+        break;
+    case 0x71:
+        model = Model::S2;
+        device_type = "S2";
         break;
     default:
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
