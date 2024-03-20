@@ -35,6 +35,13 @@
 #define HAL_PERIPH_HWESC_SERIAL_PORT 3
 #endif
 
+// not only will the code not compile without features this enables,
+// but it forms part of a series of measures to give a robust recovery
+// mechanism on AP_Periph if a bad flash occurs.
+#ifndef AP_CHECK_FIRMWARE_ENABLED
+#error AP_CHECK_FIRMWARE_ENABLED must be enabled
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 AP_Periph_FW periph;
