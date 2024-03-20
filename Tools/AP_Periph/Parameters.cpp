@@ -464,6 +464,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Description: Allows setting an individual system id for this vehicle to distinguish it from others on the same network
     // @Range: 1 255
     // @User: Advanced
+    // @RebootRequired: True
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
 #endif
 
