@@ -649,12 +649,6 @@ bool AP_Arming::gps_checks(bool report)
                          (double)distance_m);
             return false;
         }
-#if AP_GPS_BLENDED_ENABLED
-        if (!gps.blend_health_check()) {
-            check_failed(ARMING_CHECK_GPS, report, "GPS blending unhealthy");
-            return false;
-        }
-#endif
 
         // check AHRS and GPS are within 10m of each other
         if (gps.num_sensors() > 0) {
