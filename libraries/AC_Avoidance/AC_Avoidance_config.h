@@ -4,7 +4,7 @@
 #include <AC_Fence/AC_Fence_config.h>
 
 #ifndef AP_AVOIDANCE_ENABLED
-#define AP_AVOIDANCE_ENABLED AP_FENCE_ENABLED
+#define AP_AVOIDANCE_ENABLED 1
 #endif
 
 #ifndef AP_OAPATHPLANNER_ENABLED
