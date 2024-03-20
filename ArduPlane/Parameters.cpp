@@ -27,6 +27,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: 1 255
     // @Increment: 1
     // @User: Advanced
+    // @RebootRequired: True
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
     // AP_SerialManager was here
