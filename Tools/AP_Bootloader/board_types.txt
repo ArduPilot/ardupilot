@@ -305,6 +305,12 @@ AP_HW_Sierra-TrueFlow                5307
 AP_HW_Sierra-TrueNavIC-Pro           5308
 AP_HW_Sierra-F1-Pro                  5309
 
+#IDs 5401-5499 reserved for holybro
+AP_HW_Holybro-PMU-F4                 5401
+AP_HW_Holybro-UM982-G4               5402
+AP_HW_Holybro-UM960-H7               5403
+AP_HW_Holybro-PERIPH-H7              5404
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
