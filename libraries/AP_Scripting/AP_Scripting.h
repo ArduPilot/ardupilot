@@ -144,6 +144,16 @@ public:
     command_block_list *mavlink_command_block_list;
     HAL_Semaphore mavlink_command_block_list_sem;
 
+    enum class DebugOption : uint8_t {
+        NO_SCRIPTS_TO_RUN = 1U << 0,
+        RUNTIME_MSG = 1U << 1,
+        SUPPRESS_SCRIPT_LOG = 1U << 2,
+        LOG_RUNTIME = 1U << 3,
+        DISABLE_PRE_ARM = 1U << 4,
+        SAVE_CHECKSUM = 1U << 5,
+        DISABLE_HEAP_EXPANSION = 1U << 6,
+    };
+
 private:
 
     bool repl_start(void);
@@ -179,6 +189,14 @@ private:
     AP_Int32 _required_running_checksum;
 
     AP_Enum<ThreadPriority> _thd_priority;
+
+    bool option_is_set(DebugOption option) const {
+        return (uint8_t(_debug_options.get()) & uint8_t(option)) != 0;
+    }
+
+    void option_clear(DebugOption option) {
+        _debug_options.set_and_save(_debug_options.get() & ~uint8_t(option));
+    }
 
     bool _thread_failed; // thread allocation failed
     bool _init_failed;  // true if memory allocation failed
