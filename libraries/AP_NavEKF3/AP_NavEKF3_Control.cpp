@@ -659,6 +659,23 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, EKF_origin.lat);
     validOrigin = true;
+
+    // this section is similar to what is in AP_NavEKF3_Measurements.cpp's NavEKF3_core::readGpsData()
+    Vector3f magNED;
+    getMagNED(magNED);
+    if (!stateStruct.quat.is_zero()) {
+        alignMagStateDeclination();
+        const auto &compass = dal.compass();
+        if (compass.have_scale_factor(magSelectIndex) &&
+            compass.auto_declination_enabled()) {
+            getEarthFieldTable(EKF_origin);
+            if (frontend->_mag_ef_limit > 0) {
+                // initialise earth field from tables
+                stateStruct.earth_magfield = table_earth_field_ga;
+            }
+        }
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
 
     if (!frontend->common_origin_valid) {
