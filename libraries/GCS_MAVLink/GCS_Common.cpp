@@ -74,6 +74,11 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_config.h>
 
+#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS_InertialLabs_command.h>
+#endif
+
 #include <stdio.h>
 
 #if HAL_RCINPUT_WITH_AP_RADIO
@@ -2994,18 +2999,26 @@ MAV_RESULT GCS_MAVLINK::handle_inertiallabs_message(const mavlink_command_int_t 
     switch ((uint32_t)packet.param1) {
         case INERTIALLABS_AHRS_COMMAND_TYPE::DISABLE_GNSS:
             send_text(MAV_SEVERITY_INFO, "DISABLE_GNSS command sent to the Inertial Labs AHRS");
+            AP::externalAHRS().write_bytes(InertialLabs::Command::DISABLE_GNSS,
+                                            sizeof(InertialLabs::Command::DISABLE_GNSS) - 1);
             return MAV_RESULT_ACCEPTED;
 
         case INERTIALLABS_AHRS_COMMAND_TYPE::ENABLE_GNSS:
             send_text(MAV_SEVERITY_INFO, "ENABLE_GNSS command sent to the Inertial Labs AHRS");
+            AP::externalAHRS().write_bytes(InertialLabs::Command::ENABLE_GNSS,
+                                            sizeof(InertialLabs::Command::ENABLE_GNSS) - 1);
             return MAV_RESULT_ACCEPTED;
 
         case INERTIALLABS_AHRS_COMMAND_TYPE::START_VG3D_CALIBRATION_IN_FLIGHT:
             send_text(MAV_SEVERITY_INFO, "START_VG3DCLB_FLIGHT command sent to the Inertial Labs AHRS");
+            AP::externalAHRS().write_bytes(InertialLabs::Command::START_VG3DCLB_FLIGHT,
+                                            sizeof(InertialLabs::Command::START_VG3DCLB_FLIGHT) - 1);
             return MAV_RESULT_ACCEPTED;
 
         case INERTIALLABS_AHRS_COMMAND_TYPE::STOP_VG3D_CALIBRATION_IN_FLIGHT:
             send_text(MAV_SEVERITY_INFO, "STOP_VG3DCLB_FLIGHT command sent to the Inertial Labs AHRS");
+            AP::externalAHRS().write_bytes(InertialLabs::Command::STOP_VG3DCLB_FLIGHT,
+                                            sizeof(InertialLabs::Command::STOP_VG3DCLB_FLIGHT) - 1);
             return MAV_RESULT_ACCEPTED;
         default:
             return MAV_RESULT_FAILED;
