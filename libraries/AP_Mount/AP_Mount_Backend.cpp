@@ -817,10 +817,44 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
 // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
 uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 {
+    // get yaw lock state by mode
+    bool yaw_lock_state = false;
+    switch (_mode) {
+    case MAV_MOUNT_MODE_RETRACT:
+    case MAV_MOUNT_MODE_NEUTRAL:
+        // these modes always use body-frame yaw (aka follow)
+        yaw_lock_state = false;
+        break;
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        switch (mnt_target.target_type) {
+        case MountTargetType::RATE:
+            yaw_lock_state = mnt_target.rate_rads.yaw_is_ef;
+            break;
+        case MountTargetType::ANGLE:
+            yaw_lock_state = mnt_target.angle_rad.yaw_is_ef;
+            break;
+        }
+        break;
+    case MAV_MOUNT_MODE_RC_TARGETING:
+        yaw_lock_state = _yaw_lock;
+        break;
+    case MAV_MOUNT_MODE_GPS_POINT:
+    case MAV_MOUNT_MODE_SYSID_TARGET:
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+        // these modes always use earth-frame yaw (aka lock)
+        yaw_lock_state = true;
+        break;
+    case MAV_MOUNT_MODE_ENUM_END:
+        // unsupported
+        yaw_lock_state = false;
+        break;
+    }
+
     const uint16_t flags = (get_mode() == MAV_MOUNT_MODE_RETRACT ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
                            (get_mode() == MAV_MOUNT_MODE_NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
                            GIMBAL_DEVICE_FLAGS_ROLL_LOCK | // roll angle is always earth-frame
-                           GIMBAL_DEVICE_FLAGS_PITCH_LOCK; // pitch angle is always earth-frame, yaw_angle is always body-frame
+                           GIMBAL_DEVICE_FLAGS_PITCH_LOCK| // pitch angle is always earth-frame, yaw_angle is always body-frame
+                           (yaw_lock_state ? GIMBAL_DEVICE_FLAGS_YAW_LOCK : 0);
     return flags;
 }
 
