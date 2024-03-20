@@ -38,6 +38,7 @@ public:
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
     void get_filter_status(nav_filter_status &status) const override;
     void send_status_report(class GCS_MAVLINK &link) const override;
+    void write_bytes(const char *bytes, uint8_t len) override;
 
     // check for new data
     void update() override {

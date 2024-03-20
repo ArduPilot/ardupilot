@@ -118,6 +118,7 @@ public:
     Vector3f get_gyro(void);
     Vector3f get_accel(void);
     void send_status_report(class GCS_MAVLINK &link) const;
+    void write_bytes(const char *bytes, uint8_t len);
 
     // update backend
     void update();

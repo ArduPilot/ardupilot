@@ -262,6 +262,13 @@ void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
     }
 }
 
+void AP_ExternalAHRS::write_bytes(const char *bytes, uint8_t len)
+{
+    if (backend) {
+        backend->write_bytes(bytes, len);
+    }
+}
+
 void AP_ExternalAHRS::update(void)
 {
     if (backend) {

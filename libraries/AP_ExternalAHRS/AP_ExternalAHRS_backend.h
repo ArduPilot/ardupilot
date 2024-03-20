@@ -42,6 +42,7 @@ public:
     virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const = 0;
     virtual void get_filter_status(nav_filter_status &status) const {}
     virtual void send_status_report(class GCS_MAVLINK &link) const {}
+    virtual void write_bytes(const char *bytes, uint8_t len) {};
 
     // Check for new data.
     // This is used when there's not a separate thread for EAHRS.
