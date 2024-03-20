@@ -2,9 +2,11 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AC_Fence/AC_Fence_config.h>
+#include <AP_Beacon/AP_Beacon_config.h>
+#include <AP_Proximity/AP_Proximity_config.h>
 
 #ifndef AP_AVOIDANCE_ENABLED
-#define AP_AVOIDANCE_ENABLED AP_FENCE_ENABLED
+#define AP_AVOIDANCE_ENABLED (AP_FENCE_ENABLED || HAL_PROXIMITY_ENABLED || AP_BEACON_ENABLED)
 #endif
 
 #ifndef AP_OAPATHPLANNER_ENABLED
