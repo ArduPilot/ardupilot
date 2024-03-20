@@ -35,6 +35,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network
     // @Range: 1 255
     // @User: Advanced
+    // @RebootRequired: True
     GSCALAR(sysid_this_mav, "SYSID_THISMAV",   MAV_SYSTEM_ID),
 
     // @Param: SYSID_MYGCS
