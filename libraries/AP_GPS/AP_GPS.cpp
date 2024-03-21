@@ -214,7 +214,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // 19 was GPS_DELAY_MS2
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     // @Param: _BLEND_MASK
     // @DisplayName: Multi GPS Blending Mask
     // @Description: Determines which of the accuracy measures Horizontal position, Vertical Position and Speed are used to calculate the weighting on each GPS receiver when soft switching has been selected by setting GPS_AUTO_SWITCH to 2(Blend)
@@ -400,7 +400,7 @@ void AP_GPS::convert_parameters()
 // GPS solution is treated as an additional sensor.
 uint8_t AP_GPS::num_sensors(void) const
 {
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     if (_output_is_blended) {
         return num_instances+1;
     }
@@ -1072,7 +1072,7 @@ void AP_GPS::update(void)
 #if GPS_MAX_RECEIVERS > 1
 void AP_GPS::update_primary(void)
 {
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     /*
       if blending is requested, attempt to calculate weighting for
       each GPS
@@ -1105,7 +1105,7 @@ void AP_GPS::update_primary(void)
         primary_instance = GPS_BLENDED_INSTANCE;
         return;
     }
-#endif // defined (GPS_BLENDED_INSTANCE)
+#endif //   AP_GPS_BLENDED_ENABLED
 
     // check the primary param is set to possible GPS
     int8_t primary_param = _primary.get();
@@ -1145,7 +1145,7 @@ void AP_GPS::update_primary(void)
         }
     }
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     // handling switching away from blended GPS
     if (primary_instance == GPS_BLENDED_INSTANCE) {
         primary_instance = 0;
@@ -1180,7 +1180,7 @@ void AP_GPS::update_primary(void)
         _last_instance_swap_ms = now;
         return;
     }
-#endif  // defined(GPS_BLENDED_INSTANCE)
+#endif  // AP_GPS_BLENDED_ENABLED
 
     // Use primary if 3D fix or better
     if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= GPS_OK_FIX_3D)) {
@@ -1690,7 +1690,7 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         return false;
     }
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     // return lag of blended GPS
     if (instance == GPS_BLENDED_INSTANCE) {
         lag_sec = _blended_lag_sec;
@@ -1727,7 +1727,7 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
         return params[0].antenna_offset;
     }
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     if (instance == GPS_BLENDED_INSTANCE) {
         // return an offset for the blended GPS solution
         return _blended_antenna_offset;
@@ -1786,7 +1786,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     }
 #endif // HAL_BUILD_AP_PERIPH
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     if (instance == GPS_BLENDED_INSTANCE) {
         return blend_health_check();
     }

@@ -30,28 +30,6 @@
 #include <SITL/SIM_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-/**
-   maximum number of GPS instances available on this platform. If more
-   than 1 then redundant sensors may be available
- */
-#ifndef GPS_MAX_RECEIVERS
-#define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
-#endif
-#if !defined(GPS_MAX_INSTANCES)
-#if GPS_MAX_RECEIVERS > 1
-#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
-#else
-#define GPS_MAX_INSTANCES 1
-#endif // GPS_MAX_RECEIVERS > 1
-#endif // GPS_MAX_INSTANCES
-
-#if GPS_MAX_RECEIVERS <= 1 && GPS_MAX_INSTANCES > 1
-#error "GPS_MAX_INSTANCES should be 1 for GPS_MAX_RECEIVERS <= 1"
-#endif
-
-#if GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
-#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
-#endif
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 
 // the number of GPS leap seconds - copied into SIM_GPS.cpp
@@ -761,7 +739,7 @@ private:
     void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
