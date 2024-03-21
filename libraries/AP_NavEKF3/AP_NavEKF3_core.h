@@ -427,6 +427,13 @@ public:
         // 6 was EXTERNAL_YAW_FALLBACK (do not use)
     };
 
+    // magnetometer fusion selections
+    enum class MagFuseSel {
+        NOT_FUSING = 0,
+        FUSE_YAW = 1,
+        FUSE_MAG = 2
+    };
+
     // are we using (aka fusing) a non-compass yaw?
     bool using_noncompass_for_yaw(void) const;
 
@@ -1426,6 +1433,7 @@ private:
     ftype posDownAtLastMagReset;    // vertical position last time the mag states were reset (m)
     ftype yawInnovAtLastMagReset;   // magnetic yaw innovation last time the yaw and mag field states were reset (rad)
     QuaternionF quatAtLastMagReset;  // quaternion states last time the mag states were reset
+    MagFuseSel magFusionSel;        // magnetometer fusion selection
 
     // Used by on ground movement check required when operating on ground without a yaw reference
     ftype gyro_diff;                    // filtered gyro difference (rad/s)
