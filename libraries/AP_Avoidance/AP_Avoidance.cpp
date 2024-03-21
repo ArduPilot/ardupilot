@@ -124,6 +124,29 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_minimum, 0),
 
+    // @Param: F_USE_BRK_ALT
+    // @DisplayName: Use BRAKE Altitude
+    // @Description:  Opt to descend to the altitude specified by F_BRAKE_ALT prior to switching to BRAKE mode.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("USE_BRK_ALT",    13, AP_Avoidance, _use_brake_alt, 0),    
+
+    // @Param: F_BRAKE_ALT
+    // @DisplayName: Altitude Brake Fail
+    // @Description:  Altitude (relative to home) to descend to prior to switching to BRAKE. Default is 10 m.
+    // @Units: m
+    // @Range: 10 100
+    // @User: Advanced
+    AP_GROUPINFO("F_BRAKE_ALT",    14, AP_Avoidance, _brake_altitude, 10),
+
+    // @Param: F_VEL_Z
+    // @DisplayName: Descend Velocity Fail
+    // @Description: Vertical velocity used to descend to the BRAKE altitude.
+    // @Units: cm/s
+    // @Range: 0 500
+    // @User: Advanced
+    AP_GROUPINFO("F_VEL_Z",    15, AP_Avoidance, _descend_speed, 0),
+
     AP_GROUPEND
 };
 
@@ -160,6 +183,13 @@ void AP_Avoidance::init(void)
     _threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
     _gcs_cleared_messages_first_sent = std::numeric_limits<uint32_t>::max();
     _current_most_serious_threat = -1;
+    _override_threat_level = false;
+
+    if (_fail_action == MAV_COLLISION_ACTION_BRAKE && _use_brake_alt > 0) {
+        if (_fail_altitude_minimum > 0 and _fail_altitude_minimum > _brake_altitude) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Incompatible brake altitude for ADSB avoid. Brake altitude is below minimum avoidance altitude.");
+        }
+    }
 }
 
 /*
@@ -538,23 +568,34 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
 {
     MAV_COLLISION_THREAT_LEVEL new_threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
     MAV_COLLISION_ACTION action = MAV_COLLISION_ACTION_NONE;
+    uint32_t now = AP_HAL::millis();
+    
+    if (_override_threat_level) {
+        new_threat_level = _threat_level;
 
-    if (threat != nullptr) {
+        // We cannot take an avoidance action which requires us 
+        // to move away from the threat if we don't know the location.
+        if (action == MAV_COLLISION_ACTION_ASCEND_OR_DESCEND ||
+            action == MAV_COLLISION_ACTION_MOVE_HORIZONTALLY ||
+            action == MAV_COLLISION_ACTION_MOVE_PERPENDICULAR) {
+            action = MAV_COLLISION_ACTION_REPORT;
+        }
+    }
+    else if (threat != nullptr) {
         new_threat_level = threat->threat_level;
-        if (new_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
-            action = (MAV_COLLISION_ACTION)_fail_action.get();
-            Location my_loc;
-            if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
-                AP::ahrs().get_location(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
-                // disable avoidance when close to ground, report only
-                action = MAV_COLLISION_ACTION_REPORT;
-			}
-		}
+    }
+    
+    if (new_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
+        action = (MAV_COLLISION_ACTION)_fail_action.get();
+        Location my_loc;
+        if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
+            AP::ahrs().get_location(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+            // disable avoidance when close to ground, report only
+            action = MAV_COLLISION_ACTION_REPORT;
+        }
     }
 
-    uint32_t now = AP_HAL::millis();
-
-    if (new_threat_level != _threat_level) {
+    if (threat != nullptr && new_threat_level != _threat_level) {
         // transition to higher states immediately, recovery to lower states more slowly
         if (((now - _last_state_change_ms) > AP_AVOIDANCE_STATE_RECOVERY_TIME_MS) || (new_threat_level > _threat_level)) {
             // handle recovery from high threat level
@@ -570,7 +611,7 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
     }
 
     // handle ongoing threat by calling vehicle specific handler
-    if ((threat != nullptr) && (_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) && (action > MAV_COLLISION_ACTION_REPORT)) {
+    if ((threat != nullptr || _override_threat_level) && (_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) && (action > MAV_COLLISION_ACTION_REPORT)) {
         _latest_action = handle_avoidance(threat, action);
     }
 }
@@ -583,13 +624,18 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
         return;
     }
 
-    if (msg.msgid != MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
-        // we only take position from GLOBAL_POSITION_INT
+    if (msg.sysid == mavlink_system.sysid) {
+        // we do not obstruct ourselves....
         return;
     }
 
-    if (msg.sysid == mavlink_system.sysid) {
-        // we do not obstruct ourselves....
+    if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
+        handle_msg_global_position_int(msg);
+    }
+    else if (msg.msgid == MAVLINK_MSG_ID_COLLISION) {
+        handle_msg_collision(msg);
+    }
+    else {
         return;
     }
 
@@ -612,6 +658,67 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                  msg.sysid,
                  loc,
                  vel);
+}
+
+void AP_Avoidance::handle_msg_global_position_int(const mavlink_message_t &msg)
+{
+    // inform AP_Avoidance we have a new player
+    mavlink_global_position_int_t packet;
+    mavlink_msg_global_position_int_decode(&msg, &packet);
+    Location loc;
+    loc.lat = packet.lat;
+    loc.lng = packet.lon;
+    loc.alt = packet.alt / 10; // mm -> cm
+    loc.relative_alt = false;
+    Vector3f vel = Vector3f(packet.vx/100.0f, // cm to m
+                            packet.vy/100.0f,
+                            packet.vz/100.0f);
+    add_obstacle(AP_HAL::millis(),
+                 MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
+                 msg.sysid,
+                 loc,
+                 vel);
+}
+
+void AP_Avoidance::handle_msg_collision(const mavlink_message_t &msg)
+{    
+    // We are being alerted of an imminent collision and must take an avoidance action
+    mavlink_collision_t packet;
+    mavlink_msg_collision_decode(&msg, &packet);
+    if (packet.threat_level != _threat_level) {
+        if (packet.threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
+            MAV_COLLISION_ACTION action = (MAV_COLLISION_ACTION)_fail_action.get();
+            
+            // disable avoidance when close to ground, report only
+            Location my_loc;
+            if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
+                AP::ahrs().get_location(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Received collision alert but below min avoidance altitude.");
+                return;
+            }
+
+            // We cannot take an avoidance action which requires us 
+            // to move away from the threat if we don't know the location.
+            if (action == MAV_COLLISION_ACTION_ASCEND_OR_DESCEND ||
+                action == MAV_COLLISION_ACTION_MOVE_HORIZONTALLY ||
+                action == MAV_COLLISION_ACTION_MOVE_PERPENDICULAR) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Received collision alert but cannot take avoidance action to unknown threat location.");
+                return;
+            }
+
+            if (action > MAV_COLLISION_ACTION_REPORT) {
+                _override_threat_level = true;
+                _last_state_change_ms = AP_HAL::millis();
+                _threat_level = (MAV_COLLISION_THREAT_LEVEL)packet.threat_level;
+                gcs().send_text(MAV_SEVERITY_WARNING, "Received collision alert!");
+            }
+        }
+        else if (packet.threat_level == MAV_COLLISION_THREAT_LEVEL_NONE) {
+            _override_threat_level = false;
+            _last_state_change_ms = AP_HAL::millis();
+            gcs().send_text(MAV_SEVERITY_INFO, "Received message to clear the collision alert.");
+        }
+    }
 }
 
 // get unit vector away from the nearest obstacle
