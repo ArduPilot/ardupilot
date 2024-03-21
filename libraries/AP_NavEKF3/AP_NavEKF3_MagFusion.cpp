@@ -4,6 +4,7 @@
 #include "AP_NavEKF3_core.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
 
 // minimum GPS horizontal speed required to use GPS ground course for yaw alignment (m/s)
@@ -425,12 +426,24 @@ void NavEKF3_core::SelectMagFusion()
     if (dataReady) {
         // use the simple method of declination to maintain heading if we cannot use the magnetic field states
         if(inhibitMagStates || magStateResetRequest || !magStateInitComplete) {
+#if HAL_LOGGING_ENABLED
+            if (magFusionSel != MagFuseSel::FUSE_YAW) {
+                magFusionSel = MagFuseSel::FUSE_YAW;
+                WriteMagFusionSelection();
+            }
+#endif
             fuseEulerYaw(yawFusionMethod::MAGNETOMETER);
 
             // zero the test ratio output from the inactive 3-axis magnetometer fusion
             magTestRatio.zero();
 
         } else {
+#if HAL_LOGGING_ENABLED
+            if (magFusionSel != MagFuseSel::FUSE_MAG) {
+                magFusionSel = MagFuseSel::FUSE_MAG;
+                WriteMagFusionSelection();
+            }
+#endif
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
             // maintained by fusing declination as a synthesised observation
             // We also fuse declination if we are using the WMM tables
@@ -461,6 +474,20 @@ void NavEKF3_core::SelectMagFusion()
         bodyMagFieldVar.z = P[21][21];
     }
 }
+
+#if HAL_LOGGING_ENABLED
+// log changes to magnetometer fusion selection
+void NavEKF3_core::WriteMagFusionSelection()
+{
+    const struct log_XKMF pkt{
+            LOG_PACKET_HEADER_INIT(LOG_XKMF_MSG),
+            time_us     : AP_HAL::micros64(),
+            core        : core_index,
+            fuse_sel    : static_cast<uint8_t>(magFusionSel)
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+#endif
 
 /*
  * Fuse magnetometer measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
