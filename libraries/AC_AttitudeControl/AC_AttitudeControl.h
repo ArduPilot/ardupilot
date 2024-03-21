@@ -200,11 +200,11 @@ public:
     virtual void rate_controller_run() = 0;
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-    void euler_rate_to_ang_vel(const Vector3f& euler_rad, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
+    void euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
 
     // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
     // Returns false if the vehicle is pitched 90 degrees up or down
-    bool ang_vel_to_euler_rate(const Vector3f& euler_rad, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
+    bool ang_vel_to_euler_rate(const Quaternion& att, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
 
     // Specifies whether the attitude controller should use the square root controller in the attitude correction.
     // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
@@ -326,7 +326,7 @@ public:
     void ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max, float ang_vel_pitch_max, float ang_vel_yaw_max) const;
 
     // translates body frame acceleration limits to the euler axis
-    Vector3f euler_accel_limit(const Vector3f &euler_rad, const Vector3f &euler_accel);
+    Vector3f euler_accel_limit(const Quaternion &att, const Vector3f &euler_accel);
 
     // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
