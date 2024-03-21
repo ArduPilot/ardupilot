@@ -1,6 +1,6 @@
 #include "AP_GPS.h"
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
 
 // defines used to specify the mask position for use of different accuracy metrics in the blending algorithm
 #define BLEND_MASK_USE_HPOS_ACC     1
@@ -377,4 +377,4 @@ void AP_GPS::calc_blended_state(void)
     }
 #endif
 }
-#endif // GPS_BLENDED_INSTANCE
+#endif  // AP_GPS_BLENDED_ENABLED
