@@ -12,7 +12,7 @@
 */
 void NavEKF3_core::calcGpsGoodToAlign(void)
 {
-    if (inFlight && assume_zero_sideslip() && !use_compass()) {
+    if (inFlight && !finalInflightYawInit && assume_zero_sideslip() && !use_compass()) {
         // this is a special case where a plane has launched without magnetometer
         // is now in the air and needs to align yaw to the GPS and start navigating as soon as possible
         gpsGoodToAlign = true;
@@ -229,6 +229,10 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
         gpsGoodToAlign = true;
     } else if (gpsGoodToAlign && imuSampleTime_ms - lastGpsVelPass_ms > 5000) {
         gpsGoodToAlign = false;
+    }
+
+    if (gpsGoodToAlign && waitingForGpsChecks) {
+        waitingForGpsChecks = false;
     }
 }
 

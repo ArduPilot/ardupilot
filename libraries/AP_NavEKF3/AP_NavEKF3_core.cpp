@@ -258,6 +258,8 @@ void NavEKF3_core::InitialiseVariables()
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
     velTimeout = true;
+    velAiding = false;
+    waitingForGpsChecks = false;
     memset(&faultStatus, 0, sizeof(faultStatus));
     hgtRate = 0.0f;
     onGround = true;
@@ -266,6 +268,9 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
+    windStateIsObservable = false;
+    treatWindStatesAsTruth = false;
+    lastAspdEstIsValid = false;
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
@@ -1080,10 +1085,18 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
 
     if (!inhibitWindStates) {
         const bool isDragFusionDeadReckoning = filterStatus.flags.dead_reckoning && !dragTimeout;
-        if (isDragFusionDeadReckoning) {
-            // when dead reckoning using drag fusion stop learning wind states to provide a more stable velocity estimate
+        const bool newTreatWindStatesAsTruth = isDragFusionDeadReckoning || !windStateIsObservable;
+        if (newTreatWindStatesAsTruth) {
+            treatWindStatesAsTruth = true;
             P[23][23] = P[22][22] = 0.0f;
         } else {
+            if (treatWindStatesAsTruth) {
+                treatWindStatesAsTruth = false;
+                if (windStateIsObservable) {
+                    // allow EKF to relearn wind states rapidly
+                    P[23][23] = P[22][22] = sq(WIND_VEL_VARIANCE_MAX);
+                }
+            }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
 	        if (!tasDataDelayed.allowFusion) {
 	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
@@ -1941,7 +1954,11 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitWindStates) {
-        for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
+        if (treatWindStatesAsTruth) {
+            P[23][23] = P[22][22] = 0.0f;
+        } else {
+            for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
+        }
     } else {
         zeroCols(P,22,23);
         zeroRows(P,22,23);

@@ -957,8 +957,8 @@ private:
     // zero attitude state covariances, but preserve variances
     void zeroAttCovOnly();
 
-    // record a yaw reset event
-    void recordYawReset();
+    // record all requested yaw resets completed
+    void recordYawResetsCompleted();
 
     // record a magnetic field state reset event
     void recordMagReset();
@@ -1037,6 +1037,8 @@ private:
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
     bool dragTimeout;               // boolean true if drag measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
+    bool velAiding;                 // boolean true if the velocity drift is constrained by observations
+    bool waitingForGpsChecks;       // boolean true if the EKF should write GPS data to the buffer until quality checks have passed
     uint32_t badIMUdata_ms;         // time stamp bad IMU data was last detected
     uint32_t goodIMUdata_ms;        // time stamp good IMU data was last detected
     uint32_t vertVelVarClipCounter; // counter used to control reset of vertical velocity variance following collapse against the lower limit
@@ -1107,7 +1109,11 @@ private:
     ftype hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
     Vector3F magTestRatio;          // sum of squares of magnetometer innovations divided by fail threshold
     ftype tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
-    bool inhibitWindStates;         // true when wind states and covariances are to remain constant
+    bool inhibitWindStates;         // true when wind states and covariances should not be used
+    ftype lastAirspeedEstimate;     // last true airspeed estimate (m/s)
+    bool lastAspdEstIsValid;        // true when the last true airspeed estimate is valid (m/s)
+    bool windStateIsObservable;     // true when wind states are observable from measurements.
+    bool treatWindStatesAsTruth;    // true when wind states should be used as a truth reference
     bool windStatesAligned;         // true when wind states have been aligned
     bool inhibitMagStates;          // true when magnetic field states are inactive
     bool lastInhibitMagStates;      // previous inhibitMagStates
@@ -1143,7 +1149,6 @@ private:
     range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
     tas_elements tasDataNew;        // TAS data at the current time horizon
     tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
-    bool usingDefaultAirspeed;      // true when a default airspeed is being used instead of a measured value
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
