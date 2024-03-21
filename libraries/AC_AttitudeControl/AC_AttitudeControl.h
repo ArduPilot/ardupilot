@@ -477,6 +477,9 @@ protected:
     // attitude used in the attitude controller.
     Quaternion          _attitude_target;
 
+    // Setter for _attitude_target that ensures _euler_angle_target is kept in sync
+    void set_attitude_target(const Quaternion &q);
+
     // This represents the angular velocity of the target (setpoint) attitude used in
     // the attitude controller as an angular velocity vector, in radians per second in
     // the target attitude frame.

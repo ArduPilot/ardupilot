@@ -37,7 +37,7 @@ void AC_AttitudeControl_TS::relax_attitude_controllers(bool exclude_pitch)
         pitch_rotation.from_axis_angle(Vector3f(0, -1, 0), current_eulers.y);
         _attitude_target = current_attitude * pitch_rotation;
         _attitude_target.normalize();
-        _attitude_target.to_euler(_euler_angle_target.x, _euler_angle_target.y, _euler_angle_target.z);
+        _attitude_target.to_euler(_euler_angle_target);
         _attitude_ang_error = current_attitude.inverse() * _attitude_target;
 
         // Initialize the roll and yaw angular rate variables to the current rate
@@ -105,6 +105,7 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool 
         bf_yaw_Q.from_axis_angle(Vector3f(-cpitch * body_roll, 0, 0));
     }
     _attitude_target = _attitude_target * bf_roll_Q * bf_yaw_Q;
+    _attitude_target.to_euler(_euler_angle_target);
 
     // _euler_angle_target roll and pitch: Note: roll/yaw will be indeterminate when pitch is near +/-90
     // These should be used only for logging target eulers, with the caveat noted above.
