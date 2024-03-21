@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @Range: 1 65535
     // @RebootRequired: True
     // @User: Standard
-    AP_GROUPINFO("_PORT", 2, AP_DDS_Client, udp.port, 2019),
+    AP_GROUPINFO("_UDP_PORT", 2, AP_DDS_Client, udp.port, 2019),
 
     // @Group: _IP
     // @Path: ../AP_Networking/AP_Networking_address.cpp
