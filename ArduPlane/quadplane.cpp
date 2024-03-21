@@ -33,7 +33,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @DisplayName: Transition time
     // @Description: Transition time in milliseconds after minimum airspeed is reached
     // @Units: ms
-    // @Range: 2000 30000
+    // @Range: 500 30000
     // @User: Advanced
     AP_GROUPINFO("TRANSITION_MS", 11, QuadPlane, transition_time_ms, 5000),
 
@@ -1714,7 +1714,7 @@ void SLT_Transition::update()
         // after airspeed is reached we degrade throttle over the
         // transition time, but continue to stabilize
         const uint32_t transition_timer_ms = now - transition_low_airspeed_ms;
-        const float trans_time_ms = constrain_float(quadplane.transition_time_ms,2000,30000);
+        const float trans_time_ms = constrain_float(quadplane.transition_time_ms,500,30000);
         if (transition_timer_ms > unsigned(trans_time_ms)) {
             transition_state = TRANSITION_DONE;
             in_forced_transition = false;
