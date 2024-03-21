@@ -61,5 +61,3 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # save some flash
 include ../include/minimize_fpv_osd.inc
-
-define DEFAULT_NTF_LED_TYPES 257
