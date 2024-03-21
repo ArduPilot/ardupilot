@@ -276,7 +276,8 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if MODE_AUTO_ENABLED == ENABLED
     if (mode == Mode::Number::AUTO_RTL) {
         // Special case for AUTO RTL, not a true mode, just AUTO in disguise
-        return mode_auto.jump_to_landing_sequence_auto_RTL(reason);
+        // Attempt to rejoin, fallback to do-land-start
+        return mode_auto.rejoin_or_jump_to_landing_sequence_auto_RTL(reason);
     }
 #endif
 
@@ -1061,4 +1062,13 @@ GCS_Copter &Mode::gcs()
 uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
+}
+
+// Return stopping point as a location with above origin alt frame
+Location Mode::get_stopping_point() const
+{
+    Vector3p stopping_point_NEU;
+    copter.pos_control->get_stopping_point_xy_cm(stopping_point_NEU.xy());
+    copter.pos_control->get_stopping_point_z_cm(stopping_point_NEU.z);
+    return Location { stopping_point_NEU.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
 }

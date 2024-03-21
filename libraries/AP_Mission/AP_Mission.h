@@ -656,14 +656,22 @@ public:
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
     uint16_t get_landing_sequence_start();
+    uint16_t get_landing_sequence_start(Location start_loc);
 
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // switch to that mission item.  Returns false if no DO_LAND_START
     // available.
     bool jump_to_landing_sequence(void);
+    bool jump_to_landing_sequence(Location start_loc);
 
     // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
     bool jump_to_abort_landing_sequence(void);
+    bool jump_to_abort_landing_sequence(Location start_loc);
+
+
+    // find the closest point on the mission after a DO_LAND_REJOIN and before DO_LAND_START or landing
+    bool jump_to_closest_mission_leg(void);
+    bool jump_to_closest_mission_leg(Location start_loc);
 
     // check which is the shortest route to landing an RTL via a DO_LAND_START or continuing on the current mission plan
     bool is_best_land_sequence(void);
@@ -677,6 +685,17 @@ public:
     // get in_landing_sequence flag
     bool get_in_landing_sequence_flag() const {
         return _flags.in_landing_sequence;
+    }
+
+    // set in_rejoin_sequence flag
+    void set_in_rejoin_sequence_flag(bool flag)
+    {
+        _flags.in_rejoin_sequence = flag;
+    }
+    
+    // get in_rejoin_sequence flag
+    bool get_in_rejoin_sequence_flag() const {
+        return _flags.in_rejoin_sequence;
     }
 
     // force mission to resume when start_or_resume() is called
@@ -764,6 +783,7 @@ private:
         bool do_cmd_all_done;        // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
         bool in_landing_sequence;   // true if the mission has jumped to a landing
         bool resuming_mission;      // true if the mission is resuming and set false once the aircraft attains the interrupted WP
+        bool in_rejoin_sequence;    // true if the mission has passed a DO_LAND_REJOIN waypoint either in the course of the mission or via a `jump_to_closest_mission_leg` call
     } _flags;
 
     // mission WP resume history
@@ -828,6 +848,10 @@ private:
 
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
+
+    // Approximate the distance traveled to return to the mission path. DO_JUMP commands are observed in look forward.
+    // Stop searching once reaching a landing or do-land-start
+    bool distance_to_mission_leg(uint16_t index, float &rejoin_distance, uint16_t &rejoin_index, Location current_loc);
 
     // calculate the location of a resume cmd wp
     bool calc_rewind_pos(Mission_Command& rewind_cmd);

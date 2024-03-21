@@ -189,6 +189,9 @@ public:
     virtual bool allows_weathervaning() const { return false; }
 #endif
 
+    // Return stopping point as a location with above origin alt frame
+    Location get_stopping_point() const;
+
 protected:
 
     // helper functions
@@ -548,6 +551,12 @@ public:
     // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
     bool jump_to_landing_sequence_auto_RTL(ModeReason reason);
 
+    // Rejoin mission after DO_LAND_REJOIN waypoint, if succeeds pretend to be Auto RTL mode
+    bool rejoin_landing_sequence_auto_RTL(ModeReason reason);
+
+    // Try rejoin else do land start
+    bool rejoin_or_jump_to_landing_sequence_auto_RTL(ModeReason reason);
+
     // lua accessors for nav script time support
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
@@ -583,6 +592,9 @@ private:
         IgnorePilotYaw                     = (1 << 2U),
         AllowWeatherVaning                 = (1 << 7U),
     };
+
+    // Enter auto rtl pseudo mode
+    bool enter_auto_rtl(ModeReason reason);
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
