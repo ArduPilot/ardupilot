@@ -15,6 +15,7 @@
     LOG_XKQ_MSG,  \
     LOG_XKT_MSG,  \
     LOG_XKTV_MSG, \
+    LOG_XKMF_MSG, \
     LOG_XKV1_MSG, \
     LOG_XKV2_MSG, \
     LOG_XKY0_MSG, \
@@ -373,6 +374,18 @@ struct PACKED log_XKTV {
     float tvd;
 };
 
+// @LoggerMessage: XKMF
+// @Description: EKF3 Magnetometer Fusion Selection
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: S: Magnetometer fusion selection: 0 not fusing, 1 fuse yaw, 2 fuse mag
+struct PACKED log_XKMF {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    uint8_t fuse_sel;
+};
+
 // @LoggerMessage: XKV1
 // @Description: EKF3 State variances (primary core)
 // @Field: TimeUS: Time since system startup
@@ -449,6 +462,8 @@ struct PACKED log_XKV {
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \
     { LOG_XKTV_MSG, sizeof(log_XKTV),                         \
       "XKTV", "QBff", "TimeUS,C,TVS,TVD", "s#rr", "F-00", true }, \
+    { LOG_XKMF_MSG, sizeof(log_XKMF), \
+      "XKMF", "QBB", "TimeUS,C,S", "s#-", "F--", true }, \
     { LOG_XKV1_MSG, sizeof(log_XKV), \
       "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" , true }, \
     { LOG_XKV2_MSG, sizeof(log_XKV), \
