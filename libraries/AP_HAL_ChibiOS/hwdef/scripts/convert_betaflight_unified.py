@@ -379,7 +379,6 @@ define HAL_BATT_CURR_SCALE %.1f
 %s LED%u OUTPUT LOW GPIO(%u)
 define HAL_GPIO_%s_LED_PIN %u
 ''' % (led[1], ledn-1, 89+ledn, chr(ledn+64), 89+ledn))
-    f.write("define HAL_GPIO_LED_OFF 1\n")
 
     # write out devices
     if settings['blackbox_device'] == 'SPIFLASH':
