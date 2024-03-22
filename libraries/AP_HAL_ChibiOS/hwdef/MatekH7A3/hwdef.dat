@@ -80,7 +80,6 @@ PA14 LED0 OUTPUT LOW GPIO(90) # blue
 PA13 LED1 OUTPUT LOW GPIO(91) # green
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 
 # --------------------- UARTs ---------------------------

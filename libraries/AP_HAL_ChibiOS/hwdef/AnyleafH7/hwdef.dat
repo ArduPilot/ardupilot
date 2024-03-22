@@ -52,8 +52,6 @@ PC13 LED0 OUTPUT LOW GPIO(90) # Amber; System status.
 PC0 LED1 OUTPUT LOW GPIO(91) # Not connected; GPS Status. (Required, or the system status LED won't work.)
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 91
-define HAL_GPIO_LED_ON 0
-define HAL_GPIO_LED_OFF 1
 
 # order of UARTs (and USB) OTG2 may be required for SLCAN.
 SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART7 UART8 #OTG2
