@@ -65,11 +65,11 @@ Reserved "NXP ucans32k146"             34
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
 
-# NOTE: the full range from 1000 to 1999 (inclusive) is reserved for
+# NOTE: the full range from 1000 to 19999 (inclusive) is reserved for
 # use by the ArduPilot bootloader. Do not allocate IDs in this range
 # except via changes to the ArduPilot code
 
-# Do not allocate IDs in the range 1000 to 1999 except via a PR
+# Do not allocate IDs in the range 1000 to 19999 except via a PR
 # against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
 
 # values starting with AP_ are implemented in the ArduPilot bootloader
