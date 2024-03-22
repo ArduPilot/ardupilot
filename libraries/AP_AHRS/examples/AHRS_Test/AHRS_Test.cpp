@@ -13,6 +13,8 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 void setup();
 void loop();
 

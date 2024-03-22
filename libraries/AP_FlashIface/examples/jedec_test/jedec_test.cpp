@@ -21,6 +21,8 @@ void loop()
 #include <AP_FlashIface/AP_FlashIface.h>
 #include <stdio.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 AP_FlashIface_JEDEC jedec_dev;
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 

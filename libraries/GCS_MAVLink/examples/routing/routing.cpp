@@ -9,6 +9,8 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 void setup();
 void loop();
 

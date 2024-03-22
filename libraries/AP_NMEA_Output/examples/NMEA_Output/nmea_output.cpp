@@ -14,6 +14,8 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 void setup();
 void loop();
 

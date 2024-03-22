@@ -6,6 +6,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include "GyroFrame.h"
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 #if HAL_WITH_DSP
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 

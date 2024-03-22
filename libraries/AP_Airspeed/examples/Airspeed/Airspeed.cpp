@@ -24,6 +24,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 void setup();
 void loop();
 
