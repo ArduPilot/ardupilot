@@ -68,6 +68,7 @@ STORAGE_FLASH_PAGE 22
 env BUILD_ABIN True
 
 # Disable un-needed hardware drivers
+include ../include/skyviper.inc
 define AP_AIRSPEED_ENABLED 0
 define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0

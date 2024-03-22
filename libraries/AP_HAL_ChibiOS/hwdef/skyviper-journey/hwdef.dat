@@ -134,6 +134,7 @@ env BUILD_ABIN True
 define AP_PARAM_MAX_EMBEDDED_PARAM 8192
 
 # Disable un-needed hardware drivers
+include ../include/skyviper.inc
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
 
