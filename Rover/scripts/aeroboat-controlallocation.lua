@@ -46,36 +46,36 @@ local function CtrlAlocacaonovo(t, s)
   local nalocEsq = math.floor(nft - nfs)
 
 
-local PWM0_MIN_VALUE = param:get('SERVO1_MIN')
-local PWM1_MIN_VALUE = param:get('SERVO2_MIN')
-local PWM2_MIN_VALUE = param:get('SERVO3_MIN')
-local PWM3_MIN_VALUE = param:get('SERVO4_MIN')
-local PWM4_MIN_VALUE = param:get('SERVO5_MIN')
-local PWM5_MIN_VALUE = param:get('SERVO6_MIN')
+local PWM0_TRIM_VALUE = param:get('SERVO1_TRIM')
+local PWM1_TRIM_VALUE = param:get('SERVO2_TRIM')
+local PWM2_TRIM_VALUE = param:get('SERVO3_TRIM')
+local PWM3_TRIM_VALUE = param:get('SERVO4_TRIM')
+local PWM4_TRIM_VALUE = param:get('SERVO5_TRIM')
+local PWM5_TRIM_VALUE = param:get('SERVO6_TRIM')
 
 
 if nalocDir >= 0 then
-  SRV_Channels:set_output_pwm_chan_timeout(1, 2*nalocDir+PWM1_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(2, 2*nalocDir+PWM2_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(4, PWM4_MIN_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(1, 2*nalocDir+PWM1_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(2, 2*nalocDir+PWM2_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(4, PWM4_TRIM_VALUE, 300)
 end
 
 if nalocDir < 0 then
-  SRV_Channels:set_output_pwm_chan_timeout(1, PWM1_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(2, PWM2_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(4, PWM4_MIN_VALUE - 2*nalocDir, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(1, PWM1_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(2, PWM2_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(4, PWM4_TRIM_VALUE - 2*nalocDir, 300)
 end
 
 if nalocEsq >= 0 then
-  SRV_Channels:set_output_pwm_chan_timeout(0, 2*nalocEsq+PWM0_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(3, 2*nalocEsq+PWM3_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(5, PWM5_MIN_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(0, 2*nalocEsq+PWM0_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(3, 2*nalocEsq+PWM3_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(5, PWM5_TRIM_VALUE, 300)
 end
 
 if nalocEsq < 0 then
-  SRV_Channels:set_output_pwm_chan_timeout(0, PWM0_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(3, PWM3_MIN_VALUE, 300)
-  SRV_Channels:set_output_pwm_chan_timeout(5, PWM5_MIN_VALUE - 2*nalocEsq, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(0, PWM0_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(3, PWM3_TRIM_VALUE, 300)
+  SRV_Channels:set_output_pwm_chan_timeout(5, PWM5_TRIM_VALUE - 2*nalocEsq, 300)
 end
   
 end
@@ -99,31 +99,28 @@ function update() -- this is the loop which periodically runs
     trim1 = param:get('RC1_TRIM')
 
     --vehicle:set_mode(15)
-    gcs:send_text(4, string.format("ROVER - desarmado "))
+    gcs:send_text(4, string.format("BOAT - desarmado "))
 
 
-    local PWM0_MIN_VALUE = param:get('SERVO1_MIN')
-    local PWM1_MIN_VALUE = param:get('SERVO2_MIN')
-    local PWM2_MIN_VALUE = param:get('SERVO3_MIN')
-    local PWM3_MIN_VALUE = param:get('SERVO4_MIN')
-    local PWM4_MIN_VALUE = param:get('SERVO5_MIN')
-    local PWM5_MIN_VALUE = param:get('SERVO6_MIN')
+    local PWM0_TRIM_VALUE = param:get('SERVO1_TRIM')
+    local PWM1_TRIM_VALUE = param:get('SERVO2_TRIM')
+    local PWM2_TRIM_VALUE = param:get('SERVO3_TRIM')
+    local PWM3_TRIM_VALUE = param:get('SERVO4_TRIM')
+    local PWM4_TRIM_VALUE = param:get('SERVO5_TRIM')
+    local PWM5_TRIM_VALUE = param:get('SERVO6_TRIM')
 
  
-    SRV_Channels:set_output_pwm_chan_timeout(0,PWM0_MIN_VALUE,3000) 
-    SRV_Channels:set_output_pwm_chan_timeout(1,PWM1_MIN_VALUE,3000)
-    SRV_Channels:set_output_pwm_chan_timeout(2,PWM2_MIN_VALUE,3000) 
-    SRV_Channels:set_output_pwm_chan_timeout(3,PWM3_MIN_VALUE,3000)
-    SRV_Channels:set_output_pwm_chan_timeout(4,PWM4_MIN_VALUE,3000)
-    SRV_Channels:set_output_pwm_chan_timeout(5,PWM5_MIN_VALUE,3000)
+    SRV_Channels:set_output_pwm_chan_timeout(0,PWM0_TRIM_VALUE,3000) 
+    SRV_Channels:set_output_pwm_chan_timeout(1,PWM1_TRIM_VALUE,3000)
+    SRV_Channels:set_output_pwm_chan_timeout(2,PWM2_TRIM_VALUE,3000) 
+    SRV_Channels:set_output_pwm_chan_timeout(3,PWM3_TRIM_VALUE,3000)
+    SRV_Channels:set_output_pwm_chan_timeout(4,PWM4_TRIM_VALUE,3000)
+    SRV_Channels:set_output_pwm_chan_timeout(5,PWM5_TRIM_VALUE,3000)
 
     return update, 2000
   end
 
 
-
-
-function vehicle:get_control_output(control_output) end
     steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
     throttle = vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)
 
@@ -146,9 +143,10 @@ function vehicle:get_control_output(control_output) end
 
     else
 
-      if (vehicle:get_mode()<10) then
-        vehicle:set_mode(10)
+      if vehicle:get_mode()< 10 then
+        vechicle:set_mode(10)
       end
+
 
       steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
       throttle = vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)
