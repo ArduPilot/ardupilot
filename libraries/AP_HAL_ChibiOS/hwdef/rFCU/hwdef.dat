@@ -285,7 +285,6 @@ define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
 define HAL_GPIO_LED_ON  1
-define HAL_GPIO_LED_OFF 0
 
 # use pixracer style 3-LED indicators
 define HAL_HAVE_PIXRACER_LED

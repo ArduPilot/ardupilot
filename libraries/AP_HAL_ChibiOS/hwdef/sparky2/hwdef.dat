@@ -28,9 +28,6 @@ define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
-
 # ---------I2C-------------
 # only one I2C bus
 I2C_ORDER I2C1

@@ -102,7 +102,6 @@ PE3 LED0 OUTPUT LOW GPIO(90) # blue
 PE4 LED1 OUTPUT LOW GPIO(91) # orange
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 # The normal usage of this ordering is:
 # 1) SERIAL0: console (primary mavlink, usually USB)

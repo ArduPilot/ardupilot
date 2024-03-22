@@ -27,8 +27,6 @@ PC15 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
-define HAL_GPIO_LED_OFF 1
-
 
 # --------------------- PWM -----------------------
 
