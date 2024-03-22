@@ -458,6 +458,10 @@ void AP_OpenDroneID::send_location_message()
     if (!got_bad_gps_fix) {
         uint32_t time_week_ms = gps.time_week_ms();
         timestamp = float(time_week_ms % (3600 * 1000)) * 0.001;
+        timestamp -= GPS_LEAPSECONDS_MILLIS/1000U;
+        if (timestamp < 0) {
+            timestamp += 60.0;
+        }
         timestamp = create_location_timestamp(timestamp);   //make sure timestamp is within Remote ID limit
     }
 
