@@ -740,6 +740,8 @@ private:
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override;
+
+    Location takeoff_loc;  // location of takeoff command
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
