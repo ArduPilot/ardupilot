@@ -22,9 +22,11 @@
 #define HAL_GPIO_LED_ON 0
 #endif
 
-#ifndef HAL_GPIO_LED_OFF
-#define HAL_GPIO_LED_OFF 1
+#ifdef HAL_GPIO_LED_OFF
+#error "HAL_GPIO_LED_OFF must not be defined, it is implicitly !HAL_GPIO_LED_ON"
 #endif
+
+#define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)
 
 /*
   pin types for alternative configuration
