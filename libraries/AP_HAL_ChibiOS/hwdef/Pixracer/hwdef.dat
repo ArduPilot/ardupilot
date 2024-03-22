@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py for the
 # mRo Pixracer board. This is a fmuv4 board
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
-
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
