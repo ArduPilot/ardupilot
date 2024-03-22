@@ -6,6 +6,16 @@ using namespace AP_HAL;
 
 extern const AP_HAL::HAL& hal;
 
+
+void Scheduler::late_reboot() {
+    hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Scheduler::do_late_reboot, void) , "scheduler", 2048, AP_HAL::Scheduler::PRIORITY_MAIN, 0);
+}
+
+void Scheduler::do_late_reboot() {
+    hal.scheduler->delay(1000);
+    hal.scheduler->reboot();
+}
+
 void Scheduler::register_delay_callback(AP_HAL::Proc proc,
                                         uint16_t min_time_ms)
 {

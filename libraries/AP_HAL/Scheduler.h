@@ -71,6 +71,8 @@ public:
     virtual bool     is_system_initialized() = 0;
 
     virtual void     reboot(bool hold_in_bootloader = false) = 0;
+    void             late_reboot();
+    void             do_late_reboot();
 
     /**
        optional function to stop clock at a given time, used by log replay
