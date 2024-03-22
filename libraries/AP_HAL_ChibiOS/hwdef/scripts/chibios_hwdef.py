@@ -3072,7 +3072,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.env_vars[name] = value
         elif a[0] == 'define':
             # extract numerical defines for processing by other parts of the script
-            result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', line)
+            result = re.match(r'define\s*([A-Z_0-9]+)\s*([0-9]+)', line)
             if result:
                 self.intdefines[result.group(1)] = int(result.group(2))
 
