@@ -114,7 +114,7 @@ public:
         return mag_bf;
     }
 
-    float gross_mass() const { return mass + external_payload_mass; }
+    float gross_mass() const { return mass + external_payload_mass + sitl->payload; }
 
     virtual void set_config(const char* config) {
         config_ = config;
