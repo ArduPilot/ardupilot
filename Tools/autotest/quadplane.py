@@ -808,7 +808,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QAssist(self):
         '''QuadPlane Assist tests'''
-        # find a motor peak
         self.takeoff(10, mode="QHOVER")
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
@@ -841,6 +840,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       comparator=operator.eq)
         self.set_rc(3, 1300)
 
+        # Test angle assist
         self.context_push()
         self.progress("Rolling over to %.0f degrees" % -lim_roll_deg)
         self.set_rc(1, 1000)
@@ -856,9 +856,31 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
         self.set_rc(1, 1500)
-        self.set_parameter("Q_RTL_MODE", 1)
-        self.change_mode("RTL")
-        self.wait_disarmed(timeout=300)
+
+        # Test alt assist, climb to 60m and set assist alt to 50m
+        self.context_push()
+        guided_loc = self.home_relative_loc_ne(0, 0)
+        guided_loc.alt = 60
+        self.change_mode("GUIDED")
+        self.do_reposition(guided_loc)
+        self.wait_altitude(58, 62, relative=True)
+        self.set_parameter("Q_ASSIST_ALT", 50)
+
+        # Try and descent to 40m
+        guided_loc.alt = 40
+        self.do_reposition(guided_loc)
+
+        # Expect alt assist to kick in, eg "Alt assist 48.9m"
+        self.wait_statustext(r"Alt assist \d*.\d*m", regex=True, timeout=100)
+
+        # Test transition timeout, should switch to QRTL
+        self.set_parameter("Q_TRANS_FAIL_ACT", 1)
+        self.set_parameter("Q_TRANS_FAIL", 10)
+        self.wait_mode("QRTL")
+
+        self.context_pop()
+
+        self.wait_disarmed(timeout=200)
 
     def LoiterAltQLand(self):
         '''test loitering and qland with terrain involved'''

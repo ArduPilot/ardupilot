@@ -233,7 +233,7 @@ void Tailsitter::setup()
 
     // Setup for control surface less operation
     if (enable == 2) {
-        quadplane.q_assist_state = QuadPlane::Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+        quadplane.assist.set_state(VTOL_Assist::STATE::FORCE_ENABLED);
         quadplane.air_mode = AirMode::ASSISTED_FLIGHT_ONLY;
 
         // Do not allow arming in forward flight modes
@@ -819,7 +819,7 @@ void Tailsitter_Transition::update()
 
     float aspeed;
     bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
-    quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+    quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
 
     if (transition_state < TRANSITION_DONE) {
         // during transition we ask TECS to use a synthetic
@@ -885,7 +885,7 @@ void Tailsitter_Transition::VTOL_update()
         float aspeed;
         bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
         // provide assistance in forward flight portion of tailsitter transition
-        quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+        quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
         }
@@ -894,6 +894,9 @@ void Tailsitter_Transition::VTOL_update()
             vtol_limit_start_ms = now;
             vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
         }
+    } else {
+        // Keep assistance reset while not checking
+        quadplane.assist.reset();
     }
     restart();
 }
@@ -1006,6 +1009,8 @@ void Tailsitter_Transition::force_transition_complete()
     vtol_transition_start_ms = AP_HAL::millis();
     vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
     fw_limit_start_ms = 0;
+
+    quadplane.assist.reset();
 }
 
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const

@@ -26,6 +26,7 @@
 #include "tailsitter.h"
 #include "tiltrotor.h"
 #include "transition.h"
+#include "VTOL_Assist.h"
 
 /*
   QuadPlane specific functionality
@@ -45,6 +46,7 @@ public:
     friend class Tiltrotor;
     friend class SLT_Transition;
     friend class Tailsitter_Transition;
+    friend class VTOL_Assist;
 
     friend class Mode;
     friend class ModeManual;
@@ -162,13 +164,6 @@ public:
 
     MAV_TYPE get_mav_type(void) const;
 
-    enum Q_ASSIST_STATE_ENUM {
-        Q_ASSIST_DISABLED,
-        Q_ASSIST_ENABLED,
-        Q_ASSIST_FORCE,
-    };
-    void set_q_assist_state(Q_ASSIST_STATE_ENUM state) {q_assist_state = state;};
-
     // called when we change mode (for any mode, not just Q modes)
     void mode_enter(void);
 
@@ -231,9 +226,6 @@ private:
 
     // return true if airmode should be active
     bool air_mode_active() const;
-
-    // check for quadplane assistance needed
-    bool should_assist(float aspeed, bool have_airspeed);
 
     // check for an EKF yaw reset
     void check_yaw_reset(void);
@@ -336,18 +328,8 @@ private:
 
     AP_Int16 rc_speed;
 
-    // speed below which quad assistance is given
-    AP_Float assist_speed;
-
-    // angular error at which quad assistance is given
-    AP_Int8 assist_angle;
-    uint32_t angle_error_start_ms;
-    AP_Float assist_delay;
-
-    // altitude to trigger assistance
-    AP_Int16 assist_alt;
-    uint32_t alt_error_start_ms;
-    bool in_alt_assist;
+    // VTOL assistance in a forward flight mode
+    VTOL_Assist assist {*this};
 
     // landing speed in m/s
     AP_Float land_final_speed;
@@ -458,9 +440,6 @@ private:
 
     // true when quad is assisting a fixed wing mode
     bool assisted_flight:1;
-
-    // true when in angle assist
-    bool in_angle_assist:1;
 
     // are we in a guided takeoff?
     bool guided_takeoff:1;
@@ -684,9 +663,6 @@ private:
 
     // returns true if the vehicle should currently be doing a spiral landing
     bool landing_with_fixed_wing_spiral_approach(void) const;
-
-    // Q assist state, can be enabled, disabled or force. Default to enabled
-    Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
 
     /*
       return true if we should use the fixed wing attitude control loop
