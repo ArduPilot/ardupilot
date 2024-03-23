@@ -167,8 +167,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 #VTX power control
 PC13 PINIO1 OUTPUT GPIO(81) LOW
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # minimal drivers to reduce flash usage
 include ../include/minimize_fpv_osd.inc
 
