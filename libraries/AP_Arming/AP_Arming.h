@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_GPS/AP_GPS_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -309,6 +310,10 @@ private:
     bool report_immediately; // set to true when check goes from true to false, to trigger immediate report
 
     void update_arm_gpio();
+
+#if !AP_GPS_BLENDED_ENABLED
+    bool blending_auto_switch_checks(bool report);
+#endif
 };
 
 namespace AP {
