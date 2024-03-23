@@ -11,6 +11,3 @@ PA2 TIM2_CH3  TIM2 PWM(4) GPIO(53)
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
-
-# save some flash
-include ../include/save_some_flash.inc

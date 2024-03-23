@@ -21,6 +21,3 @@ define HAL_OS_FATFS_IO 1
 define HAL_PARACHUTE_ENABLED 0
 
 define HAL_GYROFFT_ENABLED 0
-
-# save some flash
-include ../include/save_some_flash.inc

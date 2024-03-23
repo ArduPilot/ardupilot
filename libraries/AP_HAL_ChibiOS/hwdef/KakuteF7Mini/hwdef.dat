@@ -157,5 +157,4 @@ define HAL_SPRAYER_ENABLED 0
 define HAL_MOUNT_ENABLED 0
 
 # save some flash
-include ../include/save_some_flash.inc
 include ../include/minimize_fpv_osd.inc

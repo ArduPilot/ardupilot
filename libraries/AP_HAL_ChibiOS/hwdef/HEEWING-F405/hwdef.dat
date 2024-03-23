@@ -159,6 +159,5 @@ define HAL_WITH_DSP FALSE
 define HAL_GYROFFT_ENABLED 0
 
 include ../include/minimize_fpv_osd.inc
-include ../include/save_some_flash.inc
 
 AUTOBUILD_TARGETS Plane
