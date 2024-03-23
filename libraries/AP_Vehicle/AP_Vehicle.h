@@ -172,6 +172,9 @@ public:
 #if AP_EXTERNAL_CONTROL_ENABLED
     // Method to control vehicle position for use by external control
     virtual bool set_target_location(const Location& target_loc) { return false; }
+    // Method to control vehicle yaw rate for use by external control
+    // Yaw is in earth frame, NED [rad/s]
+    virtual bool set_target_yaw_rate(const float yaw_rate_rads) { return false; }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
     /*
