@@ -170,8 +170,6 @@ define HAL_I2C_INTERNAL_MASK 0
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 define HAL_STORAGE_SIZE 16384
 
 # DMA
