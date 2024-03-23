@@ -3512,6 +3512,24 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
+#if AP_FRSKY_TELEM_ENABLED
+    if (gcs().frsky != nullptr) {
+        gcs().frsky->queue_message((MAV_SEVERITY)packet.severity, packet.text);
+    }
+#endif
+#if HAL_SPEKTRUM_TELEM_ENABLED
+    AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
+    if (spektrum != nullptr) {
+        spektrum->queue_message((MAV_SEVERITY)packet.severity, packet.text);
+    }
+#endif
+#if HAL_CRSF_TELEM_ENABLED
+    AP_CRSF_Telem* crsf = AP::crsf_telem();
+    if (crsf != nullptr) {
+        crsf->queue_message((MAV_SEVERITY)packet.severity, packet.text);
+    }
+#endif
+
     logger->Write_Message(text);
 #endif
 }
