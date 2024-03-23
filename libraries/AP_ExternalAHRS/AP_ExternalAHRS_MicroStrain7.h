@@ -74,6 +74,7 @@ private:
     void post_filter() const;
 
     void update_thread();
+    void check_initialise_state();
 
     // Only some of the fix types satisfy a healthy filter.
     // GQ7_VERT_GYRO is NOT considered healthy for now.
@@ -82,6 +83,9 @@ private:
 
     AP_HAL::UARTDriver *uart;
     HAL_Semaphore sem;
+
+    // Used to monitor initialization state.
+    bool last_init_state = false;
 
 };
 
