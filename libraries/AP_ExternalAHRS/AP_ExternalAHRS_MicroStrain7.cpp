@@ -71,7 +71,7 @@ AP_ExternalAHRS_MicroStrain7::AP_ExternalAHRS_MicroStrain7(AP_ExternalAHRS *_fro
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
 
     hal.scheduler->delay(5000);
-    if(!initialised()) {
+    if (!initialised()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MicroStrain7 ExternalAHRS failed to initialise.");
     }
 }
@@ -93,10 +93,11 @@ void AP_ExternalAHRS_MicroStrain7::update_thread(void)
 void AP_ExternalAHRS_MicroStrain7::check_initialise_state(void)
 {
     const auto new_init_state = initialised();
-    if (!last_init_state && new_init_state) {
+    // Only send the message after fully booted up, otherwise it gets dropped.
+    if (!last_init_state && new_init_state && AP_HAL::millis() > 5000) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MicroStrain7 ExternalAHRS initialised.");
+        last_init_state = new_init_state;
     }
-    last_init_state = new_init_state;
 }
 
 
