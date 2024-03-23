@@ -417,7 +417,7 @@ protected:
     void lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_cmss) const;
 
     // calculate_yaw_and_rate_yaw - calculate the vehicle yaw and rate of yaw.
-    bool calculate_yaw_and_rate_yaw();
+    void calculate_yaw_and_rate_yaw();
 
     // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
     float calculate_overspeed_gain();
