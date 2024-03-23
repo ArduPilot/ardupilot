@@ -1231,7 +1231,7 @@ void AC_PosControl::lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_
 }
 
 // calculate_yaw_and_rate_yaw - update the calculated the vehicle yaw and rate of yaw.
-bool AC_PosControl::calculate_yaw_and_rate_yaw()
+void AC_PosControl::calculate_yaw_and_rate_yaw()
 {
     // Calculate the turn rate
     float turn_rate = 0.0f;
@@ -1250,9 +1250,12 @@ bool AC_PosControl::calculate_yaw_and_rate_yaw()
     if (vel_desired_xy_len > _vel_max_xy_cms * 0.05f) {
         _yaw_target = degrees(_vel_desired.xy().angle()) * 100.0f;
         _yaw_rate_target = turn_rate * degrees(100.0f);
-        return true;
+        return;
     }
-    return false;
+
+    // use the current attitude controller yaw target
+    _yaw_target = _attitude_control.get_att_target_euler_cd().z;
+    _yaw_rate_target = 0;
 }
 
 // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
