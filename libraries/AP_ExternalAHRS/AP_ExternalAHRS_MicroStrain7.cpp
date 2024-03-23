@@ -71,9 +71,7 @@ AP_ExternalAHRS_MicroStrain7::AP_ExternalAHRS_MicroStrain7(AP_ExternalAHRS *_fro
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
 
     hal.scheduler->delay(5000);
-    if(initialised()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MicroStrain7 ExternalAHRS initialised.");
-    } else {
+    if(!initialised()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MicroStrain7 ExternalAHRS failed to initialise.");
     }
 }
@@ -88,9 +86,18 @@ void AP_ExternalAHRS_MicroStrain7::update_thread(void)
     while (true) {
         build_packet();
         hal.scheduler->delay_microseconds(100);
+        check_initialise_state();
     }
 }
 
+void AP_ExternalAHRS_MicroStrain7::check_initialise_state(void)
+{
+    const auto new_init_state = initialised();
+    if (!last_init_state && new_init_state) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MicroStrain7 ExternalAHRS initialised.");
+    }
+    last_init_state = new_init_state;
+}
 
 
 // Builds packets by looking at each individual byte, once a full packet has been read in it checks the checksum then handles the packet.
@@ -272,9 +279,7 @@ bool AP_ExternalAHRS_MicroStrain7::healthy(void) const
 bool AP_ExternalAHRS_MicroStrain7::initialised(void) const
 {
     const bool got_packets = last_imu_pkt != 0 && last_gps_pkt != 0 && last_filter_pkt != 0;
-    const auto filter_state = static_cast<FilterState>(filter_status.state);
-    const bool filter_healthy = filter_state_healthy(filter_state);
-    return got_packets && filter_healthy;
+    return got_packets;
 }
 
 bool AP_ExternalAHRS_MicroStrain7::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
