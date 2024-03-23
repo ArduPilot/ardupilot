@@ -164,9 +164,10 @@ define HAL_BATT_CURR_PIN -1
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
-# save some flash
-include ../include/save_some_flash.inc
-define HAL_SPEKTRUM_TELEM_ENABLED 0
-
 # minimal drivers to reduce flash usage
 include ../include/minimize_features.inc
+
+# save some flash
+define AC_PRECLAND_ENABLED 0
+define AP_ICENGINE_ENABLED 0
+define AP_OPTICALFLOW_ENABLED 0

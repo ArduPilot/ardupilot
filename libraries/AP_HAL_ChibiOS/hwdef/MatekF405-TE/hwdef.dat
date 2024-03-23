@@ -173,7 +173,6 @@ define HAL_GYROFFT_ENABLED 0
 # --------------------- save flash ----------------------
 # save some flash
 include ../include/minimize_fpv_osd.inc
-include ../include/save_some_flash.inc
 include ../include/no_bootloader_DFU.inc
 
 define HAL_PARACHUTE_ENABLED 0

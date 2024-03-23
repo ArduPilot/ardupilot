@@ -158,7 +158,6 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 256
 
 # save some flash
 include ../include/minimize_fpv_osd.inc
-include ../include/save_some_flash.inc
 
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
