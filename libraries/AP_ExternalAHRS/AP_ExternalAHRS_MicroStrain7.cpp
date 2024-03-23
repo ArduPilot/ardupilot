@@ -361,11 +361,16 @@ void AP_ExternalAHRS_MicroStrain7::send_status_report(GCS_MAVLINK &link) const
     const float hgt_gate = 4; // represents hz value data is posted at
     const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
 
-    // TODO fix to use NED filter speed accuracy instead of first gnss
-    // https://s3.amazonaws.com/files.microstrain.com/GQ7+User+Manual/external_content/dcp/Data/filter_data/data/mip_field_filter_ned_vel_uncertainty.htm
+    const float velocity_variance {filter_data.ned_velocity_uncertainty.length() / vel_gate};
+    const float pos_horiz_variance {filter_data.ned_position_uncertainty.xy().length() / pos_gate};
+    const float pos_vert_variance {filter_data.ned_position_uncertainty.z / hgt_gate};
+    // No terrain alt sensor on MicroStrain7.
+    const float terrain_alt_variance {0};
+    // No airspeed sensor on MicroStrain7.
+    const float airspeed_variance {0};
     mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       gnss_data[0].speed_accuracy/vel_gate, gnss_data[0].horizontal_position_accuracy/pos_gate, gnss_data[0].vertical_position_accuracy/hgt_gate,
-                                       mag_var, 0, 0);
+                                       velocity_variance, pos_horiz_variance, pos_vert_variance,
+                                       mag_var, terrain_alt_variance, airspeed_variance);
 
 }
 
