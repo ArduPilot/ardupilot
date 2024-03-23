@@ -599,6 +599,10 @@ public:
     void clear_RTCMV3();
 #endif // GPS_MOVING_BASELINE
 
+#if !AP_GPS_BLENDED_ENABLED
+    uint8_t get_auto_switch_type() const { return _auto_switch; }
+#endif
+
 protected:
 
     // configuration parameters
