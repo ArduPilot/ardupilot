@@ -1002,14 +1002,18 @@ bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_fla
 
 bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 {
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return false;
     }
     // Low selects lens 0 (default), Mediums selects lens1, High selects lens2
     return camera->set_lens((uint8_t)ch_flag);
+#else
+    return false;
+#endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 }
-#endif
+#endif // AP_CAMERA_ENABLED
 
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
@@ -1517,9 +1521,11 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
         return do_aux_function_camera_image_tracking(ch_flag);
 
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     case AUX_FUNC::CAMERA_LENS:
         return do_aux_function_camera_lens(ch_flag);
-#endif
+#endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
+#endif // AP_CAMERA_ENABLED
 
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1: {
