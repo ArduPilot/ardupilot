@@ -781,7 +781,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // don't run multiple filters for 1 IMU
         uint8_t mask = (1U<<ins.get_accel_count())-1;
-        _imuMask.set(_imuMask.get() & mask);
+        _imuMask.set_and_default(_imuMask.get() & mask);
         
         // initialise the setup variables
         for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
