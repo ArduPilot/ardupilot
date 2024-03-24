@@ -76,6 +76,12 @@ private:
     void update_thread();
     void check_initialise_state();
 
+    // Returns true when data is not stale.
+    bool times_healthy() const;
+
+    // Returns true when the filter is currently healthy.
+    bool filter_healthy() const;
+
     // Only some of the fix types satisfy a healthy filter.
     // GQ7_VERT_GYRO is NOT considered healthy for now.
     // This may be vehicle-dependent in the future.
