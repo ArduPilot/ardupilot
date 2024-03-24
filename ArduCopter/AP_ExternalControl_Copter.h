@@ -15,6 +15,11 @@ public:
       Yaw is in earth frame, NED [rad/s].
      */
     bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads) override WARN_IF_UNUSED;
+
+    /*
+      Sets the target global position for a loiter point.
+    */
+   bool set_global_position(const Location& loc) override WARN_IF_UNUSED;
 private:
     /*
       Return true if Copter is ready to handle external control data.
