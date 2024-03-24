@@ -31,7 +31,7 @@
 #define DISPLAYPORT_MSP_ATTR_BLINK   1U<<6 // Device local blink
 #define DISPLAYPORT_MSP_ATTR_MASK    (~(DISPLAYPORT_MSP_ATTR_VERSION|DISPLAYPORT_MSP_ATTR_BLINK))
 // betaflight/src/main/io/displayport_msp.c
-#define OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH 30
+#define OSD_MSP_DISPLAYPORT_MAX_STRING_LENGTH 50
 
 class AP_MSP_Telem_Backend;
 
