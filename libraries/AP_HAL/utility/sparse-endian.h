@@ -102,8 +102,8 @@ static inline uint64_t be64toh_ptr(const uint8_t *p) { return (uint64_t) p[7] | 
 static inline float be32tofloat_ptr(const uint8_t *p) { return int32_to_float_le(be32toh_ptr(p)); }
 static inline float be32tofloat_ptr(const uint8_t *p, const uint8_t offset) { return be32tofloat_ptr(&p[offset]); }
 #ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
-static inline float be64todouble_ptr(const uint8_t *p) { return uint64_to_double_le(be64toh_ptr(p)); }
-static inline float be64todouble_ptr(const uint8_t *p, const uint8_t offset) { return be64todouble_ptr(&p[offset]); }
+static inline double be64todouble_ptr(const uint8_t *p) { return uint64_to_double_le(be64toh_ptr(p)); }
+static inline double be64todouble_ptr(const uint8_t *p, const uint8_t offset) { return be64todouble_ptr(&p[offset]); }
 #endif
 
 static inline void put_le16_ptr(uint8_t *p, uint16_t v) { p[0] = (v&0xFF); p[1] = (v>>8); }
