@@ -538,6 +538,11 @@ public:
     AP_Int8 gyro_file_rw;
     AP_Int8 accel_file_rw;
 #endif
+
+#ifdef WITH_SITL_OSD
+    AP_Int16 osd_rows;
+    AP_Int16 osd_columns;
+#endif
 };
 
 } // namespace SITL
