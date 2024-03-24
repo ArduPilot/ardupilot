@@ -27,6 +27,7 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <SITL/SITL.h>
 #include <utility>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -100,7 +101,7 @@ void AP_OSD_SITL::write(uint8_t x, uint8_t y, const char* text)
     WITH_SEMAPHORE(mutex);
 
     while ((x < video_cols) && (*text != 0)) {
-        buffer[y][x] = *text;
+        getbuffer(buffer, y, x) = *text;
         ++text;
         ++x;
     }
@@ -110,7 +111,7 @@ void AP_OSD_SITL::clear(void)
 {
     AP_OSD_Backend::clear();
     WITH_SEMAPHORE(mutex);
-    memset(buffer, 0, sizeof(buffer));
+    memset(buffer, 0, video_cols*video_lines);
 }
 
 void AP_OSD_SITL::flush(void)
@@ -207,6 +208,10 @@ AP_OSD_Backend *AP_OSD_SITL::probe(AP_OSD &osd)
 AP_OSD_SITL::AP_OSD_SITL(AP_OSD &osd):
     AP_OSD_Backend(osd)
 {
+    const auto *_sitl = AP::sitl();
+    video_lines = _sitl->osd_rows;
+    video_cols = _sitl->osd_columns;
+    buffer = (uint8_t *)malloc(video_lines*video_cols);
 }
 
 #endif // WITH_SITL_OSD
