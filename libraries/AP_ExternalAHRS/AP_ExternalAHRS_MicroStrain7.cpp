@@ -219,20 +219,20 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
             hdop: gnss_data[instance].hdop,
             vdop: gnss_data[instance].vdop,
 
-            longitude: filter_data.lon,
-            latitude: filter_data.lat,
+            longitude: gnss_data[instance].lon,
+            latitude: gnss_data[instance].lat,
             msl_altitude: gnss_data[instance].msl_altitude,
 
-            ned_vel_north: filter_data.ned_velocity_north,
-            ned_vel_east: filter_data.ned_velocity_east,
-            ned_vel_down: filter_data.ned_velocity_down,
+            ned_vel_north: gnss_data[instance].ned_velocity_north,
+            ned_vel_east: gnss_data[instance].ned_velocity_east,
+            ned_vel_down: gnss_data[instance].ned_velocity_down,
         };
         // *INDENT-ON*
 
         if (gps.fix_type >= 3 && !state.have_origin) {
             WITH_SEMAPHORE(state.sem);
-            state.origin = Location{int32_t(filter_data.lat),
-                                    int32_t(filter_data.lon),
+            state.origin = Location{int32_t(gnss_data[instance].lat),
+                                    int32_t(gnss_data[instance].lon),
                                     int32_t(gnss_data[instance].msl_altitude),
                                     Location::AltFrame::ABSOLUTE};
             state.have_origin = true;
