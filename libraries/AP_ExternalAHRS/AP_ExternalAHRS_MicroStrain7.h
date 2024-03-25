@@ -50,6 +50,13 @@ public:
         build_packet();
     };
 
+protected:
+
+    uint8_t num_gps_sensors(void) const override
+    {
+        return AP_MicroStrain::NUM_GNSS_INSTANCES;
+    }
+
 private:
 
     // GQ7 Filter States
