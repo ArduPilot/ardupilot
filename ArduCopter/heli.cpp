@@ -104,8 +104,9 @@ void Copter::update_heli_control_dynamics(void)
 bool Copter::should_use_landing_swash() const
 {
     if (flightmode->has_manual_throttle() ||
-        flightmode->mode_number() == Mode::Number::DRIFT) {
-        // manual modes always uses full swash range
+        flightmode->mode_number() == Mode::Number::DRIFT ||
+        attitude_control->get_inverted_flight()) {
+        // manual modes or modes using inverted flight uses full swash range
         return false;
     }
     if (flightmode->is_landing()) {
