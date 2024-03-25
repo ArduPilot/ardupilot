@@ -2734,8 +2734,16 @@ void QuadPlane::vtol_position_controller(void)
             pos_control->set_accel_desired_xy_cmss(target_accel_cms);
         }
         
-        // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll_cd();
+        // smooth nav roll from fixed wing to mutlicopter as airspeed reduces
+        float airspeed_ms;
+        if (!plane.ahrs.airspeed_estimate(airspeed_ms)) {
+            airspeed_ms = rel_groundspeed_vector.length();
+        }
+        plane.calc_nav_roll();
+        plane.nav_roll_cd = linear_interpolate(plane.nav_controller->nav_roll_cd(), pos_control->get_roll_cd(),
+                                                airspeed_ms,
+                                                plane.aparm.airspeed_cruise_cm/100.0, MAX(plane.aparm.airspeed_min, assist_speed));
+        //  nav pitch is controlled by position controller
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
         assign_tilt_to_fwd_thr();
