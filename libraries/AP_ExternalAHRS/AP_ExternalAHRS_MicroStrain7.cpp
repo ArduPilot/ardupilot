@@ -18,6 +18,7 @@
     param set AHRS_EKF_TYPE 11
     param set EAHRS_TYPE 7
     param set GPS1_TYPE 21
+    param set GPS2_TYPE 21
     param set SERIAL3_BAUD 115
     param set SERIAL3_PROTOCOL 36
   UDEV rules for repeatable USB connection:
@@ -269,28 +270,28 @@ bool AP_ExternalAHRS_MicroStrain7::initialised(void) const
 bool AP_ExternalAHRS_MicroStrain7::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
     if (!initialised()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, get_name(), "not initialised");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "not initialised");
         return false;
     }
     if (!times_healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, get_name(), "data is stale");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "data is stale");
         return false;
     }
     if (!filter_healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, get_name(), "filter is unhealthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "filter is unhealthy");
         return false;
     }
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, get_name(), "unhealthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "unhealthy");
         return false;
     }
     static_assert(NUM_GNSS_INSTANCES == 2, "This check only works if there are two GPS types.");
     if (gnss_data[0].fix_type < GPS_FIX_TYPE_3D_FIX && gnss_data[1].fix_type < GPS_FIX_TYPE_3D_FIX) {
-        hal.util->snprintf(failure_msg, failure_msg_len, get_name(), "missing 3D GPS fix on either GPS");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "missing 3D GPS fix on either GPS");
         return false;
     }
     if (!filter_state_healthy(FilterState(filter_status.state))) {
-        hal.util->snprintf(failure_msg, failure_msg_len, get_name(), "filter not healthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "filter not healthy");
         return false;
     }
 
