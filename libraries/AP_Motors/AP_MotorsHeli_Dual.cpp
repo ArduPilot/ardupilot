@@ -316,6 +316,10 @@ void AP_MotorsHeli_Dual::mix_tandem(float pitch_input, float roll_input, float y
     const float swash1_coll =  0.45 * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective1_input;
     const float swash2_coll = -0.45 * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective2_input;
 
+    // Log blade pitch angle contributions
+    log_swashplate(0, swash1_roll, swash_pitch, swash1_coll, 1.0);
+    log_swashplate(1, swash2_roll, swash_pitch, swash2_coll, 1.0);
+
     // Calculate servo positions in swashplate library
     _swashplate1.calculate(swash1_roll, swash_pitch, swash1_coll);
     _swashplate2.calculate(swash2_roll, swash_pitch, swash2_coll);
@@ -335,6 +339,10 @@ void AP_MotorsHeli_Dual::mix_transverse(float pitch_input, float roll_input, flo
     const float swash1_coll =  0.45 * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective1_input;
     const float swash2_coll = -0.45 * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2, 0.2)) + collective2_input;
 
+    // Log blade pitch angle contributions
+    log_swashplate(0, swash_roll, swash1_pitch, swash1_coll, 1.0);
+    log_swashplate(1, swash_roll, swash2_pitch, swash2_coll, 1.0);
+
     // Calculate servo positions in swashplate library
     _swashplate1.calculate(swash_roll, swash1_pitch, swash1_coll);
     _swashplate2.calculate(swash_roll, swash2_pitch, swash2_coll);
@@ -353,6 +361,10 @@ void AP_MotorsHeli_Dual::mix_intermeshing(float pitch_input, float roll_input, f
     // Differential collective for yaw and combined for thrust
     const float swash1_coll =   0.45 * _dcp_scaler * yaw_input + collective1_input;
     const float swash2_coll =  -0.45 * _dcp_scaler * yaw_input + collective2_input;
+
+    // Log blade pitch angle contributions
+    log_swashplate(0, swash_roll, swash1_pitch, swash1_coll, 1.0);
+    log_swashplate(1, swash_roll, swash2_pitch, swash2_coll, 1.0);
 
     // Calculate servo positions in swashplate library
     _swashplate1.calculate(swash_roll, swash1_pitch, swash1_coll);

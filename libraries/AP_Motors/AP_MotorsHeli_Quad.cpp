@@ -254,6 +254,10 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         // scale output to 0 to 1
         _out[i] += _collective_zero_thrust_pct;
+
+        // Log blade pitch angle contributions
+        log_swashplate(i, 0.0, 0.0, _out[i], 1.0);
+
         // scale output to -1 to 1 for servo output
         _out[i] = _out[i] * 2.0f - 1.0f;
     }

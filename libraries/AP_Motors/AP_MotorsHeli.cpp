@@ -612,3 +612,56 @@ void AP_MotorsHeli::set_rotor_runup_complete(bool new_value)
 #endif
     _heliflags.rotor_runup_complete = new_value;
 }
+
+// Helper to calculate the blade pitch angle contribution of the collective
+float AP_MotorsHeli::calculate_collective_blade_angle(float output) const
+{
+    return (_collective_max_deg.get() - _collective_min_deg.get()) * output + _collective_min_deg.get();
+}
+
+// Helper to get blade pitch angle contributions from swashplate inputs
+bool AP_MotorsHeli::get_swash_angles(uint8_t i, float& col, float& tcyc, float& pcyc, float& rcyc) const
+{
+    if (i > MAX_SWASHPLATES) {
+        return false;
+    }
+
+    if (!swashplate_log[i].used) {
+        return false;
+    }
+
+    col = swashplate_log[i].coll_ang_deg;
+    tcyc = swashplate_log[i].total_cyclic_ang_deg;
+    pcyc = swashplate_log[i].pitch_cyclic_ang_deg;
+    rcyc = swashplate_log[i].roll_cyclic_ang_deg;
+    return true;
+}
+
+// Calculate and log the blade pitch angle collective and cyclic contributions
+void AP_MotorsHeli::log_swashplate(uint8_t i, float sw_roll, float sw_pitch, float collective, float swash_range_scaler)
+{
+    if (i > MAX_SWASHPLATES) {
+        return;
+    }
+
+    // We have received data for this instance of swashplate sp set used to true to ensure we log this instance
+    swashplate_log[i].used = true;
+
+    // We want to use the collective min-max to angle relationship to calculate the cyclic output to angle relationship
+    // First we scale the collective angle range by it's min-max output.  Recall that we assume that the maximum possible 
+    // collective range is 1000, hence the *1e-3.
+    float blade_pitch_angle_scaler = ((float)(_collective_max-_collective_min))*1e-3 * (_collective_max_deg.get() - _collective_min_deg.get());
+
+    // Determine the magnitude of the cyclic input by calculating the length of the roll and pitch outputs
+    float cyclic_mag = norm(sw_roll, sw_pitch);
+
+    // Calculate the cyclic blade angle contribution. The factor 2.0 accounts for the fact that we scale the servo outputs from 0~1 to -1~1
+    // The swash_range_scaler allows us to account for the differences in definition of when cyclic_max is achieved, between single and dual frame types
+    float cyclic_scalar = 2.0 * blade_pitch_angle_scaler * swash_range_scaler;
+    swashplate_log[i].total_cyclic_ang_deg = cyclic_mag * cyclic_scalar;
+    swashplate_log[i].pitch_cyclic_ang_deg = sw_roll * cyclic_scalar;
+    swashplate_log[i].roll_cyclic_ang_deg = sw_pitch * cyclic_scalar;
+
+    // Calculate the collective contribution
+    swashplate_log[i].coll_ang_deg = calculate_collective_blade_angle(collective);
+}

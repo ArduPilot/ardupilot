@@ -436,7 +436,10 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     float collective_scalar = ((float)(_collective_max-_collective_min))*0.001f;
     float collective_out_scaled = collective_out * collective_scalar + (_collective_min - 1000)*0.001f;
 
-    // Caculate servo positions from swashplate library
+    // log the blade pitch contributions
+    log_swashplate(0, roll_out, pitch_out, collective_out, sqrtf(2.0));
+
+    // Calculate servo positions from swashplate library
     _swashplate.calculate(roll_out, pitch_out, collective_out_scaled);
 
     // update the yaw rate using the tail rotor/servo
