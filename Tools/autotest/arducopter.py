@@ -10670,6 +10670,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()  # unlock home position
 
+    def Ch6TuningWPSpeed(self):
+        '''test waypoint speed can be changed via Ch6 tuning knob'''
+        self.set_parameters({
+            "TUNE": 10,  # 10 is waypoint speed
+            "TUNE_MIN": 0.02,  # 20cm/s
+            "TUNE_MAX": 1000,  # 10m/s
+            "AUTO_OPTIONS": 3,
+        })
+        self.set_rc(6, 2000)
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1500)
+        self.wait_groundspeed(4.5, 5.5, minimum_duration=5)
+
+        self.set_rc(6, 2000)
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1300)
+        self.wait_groundspeed(2.5, 3.5, minimum_duration=5)
+
+        self.do_RTL()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10743,6 +10777,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
+            self.Ch6TuningWPSpeed,
         ])
         return ret
 
