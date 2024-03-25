@@ -44,10 +44,6 @@
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
-#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD 1000    // minimum target angle during TESTING_RATE step that will cause us to move to next step
-#define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
-#define AUTOTUNE_TARGET_ANGLE_YAW_CD        3000    // target angle during TESTING_RATE step that will cause us to move to next step
-
 class AC_AutoTune
 {
 public:
@@ -210,8 +206,8 @@ protected:
         RD_DOWN = 1,              // rate D is being tuned down
         RP_UP = 2,                // rate P is being tuned up
         RFF_UP = 3,               // rate FF is being tuned up
-        SP_UP = 4,                // angle P is being tuned up
-        SP_DOWN = 5,              // angle P is being tuned down
+        SP_DOWN = 4,              // angle P is being tuned down
+        SP_UP = 5,                // angle P is being tuned up
         MAX_GAINS = 6,            // max allowable stable gains are determined
         TUNE_CHECK = 7,           // frequency sweep with tuned gains
         TUNE_COMPLETE = 8         // Reached end of tuning
@@ -272,6 +268,7 @@ protected:
     float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step-multi only
     uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
     uint32_t step_time_limit_ms;                    // time limit of current autotune process
+    uint32_t level_start_time_ms;                   // start time of waiting for level
     int8_t   counter;                               // counter for tuning gains
     float    target_rate;                           // target rate-multi only
     float    target_angle;                          // target angle-multi only
@@ -280,7 +277,7 @@ protected:
     float    rate_max;                              // maximum rate variable - parent and multi
     float    test_accel_max;                        // maximum acceleration variable
     float    step_scaler;                           // scaler to reduce maximum target step - parent and multi
-    float    abort_angle;                           // Angle that test is aborted- parent and multi
+    float    angle_finish;                           // Angle that test is aborted- parent and multi
     float    desired_yaw_cd;                        // yaw heading during tune - parent and Tradheli
 
     LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
@@ -312,6 +309,24 @@ private:
     // return true if we have a good position estimate
     virtual bool position_ok();
 
+    // methods subclasses must implement to specify max/min test angles:
+    virtual float target_angle_max_rp_cd() const = 0;
+
+    // methods subclasses must implement to specify max/min test angles:
+    virtual float target_angle_max_y_cd() const = 0;
+
+    // methods subclasses must implement to specify max/min test angles:
+    virtual float target_angle_min_rp_cd() const = 0;
+
+    // methods subclasses must implement to specify max/min test angles:
+    virtual float target_angle_min_y_cd() const = 0;
+
+    // methods subclasses must implement to specify max/min test angles:
+    virtual float angle_lim_max_rp_cd() const = 0;
+
+    // methods subclasses must implement to specify max/min test angles:
+    virtual float angle_lim_neg_rpy_cd() const = 0;
+
     // initialise position controller
     bool init_position_controller();
 
@@ -329,8 +344,6 @@ private:
 
     // variables
     uint32_t override_time;                         // the last time the pilot overrode the controls
-    uint32_t level_start_time_ms;                   // start time of waiting for level
-    uint32_t level_fail_warning_time_ms;            // last time level failure warning message was sent to GCS
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
