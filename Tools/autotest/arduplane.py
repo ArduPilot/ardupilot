@@ -4926,6 +4926,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.generic_mission_filepath_for_filename("flaps.txt"),
         ])
         self.start_SITL()
+        self.set_speedup_parameter(self.speedup)
 
     def MAV_CMD_GUIDED_CHANGE_ALTITUDE(self):
         '''test handling of MAV_CMD_GUIDED_CHANGE_ALTITUDE'''

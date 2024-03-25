@@ -3031,6 +3031,7 @@ class TestSuite(ABC):
         self.drain_mav()
         self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
+        self.set_speedup_parameter(self.speedup)
         self.progress("Reboot complete")
 
     def customise_SITL_commandline(self,
@@ -3069,6 +3070,7 @@ class TestSuite(ABC):
         m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=15)
         if m is None:
             raise NotAchievedException("No RC_CHANNELS message after restarting SITL")
+        self.set_speedup_parameter(self.speedup)
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
@@ -3110,6 +3112,7 @@ class TestSuite(ABC):
             pass
         self.start_SITL(wipe=True)
         self.set_streamrate(self.sitl_streamrate())
+        self.set_speedup_parameter(self.speedup)
         self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
 
@@ -8603,7 +8606,6 @@ Also, ignores heartbeats not from our target system'''
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
             "home": sitl_home,
-            "speedup": self.speedup,
             "valgrind": self.valgrind,
             "callgrind": self.callgrind,
             "wipe": True,
@@ -8693,6 +8695,11 @@ Also, ignores heartbeats not from our target system'''
     def autostart_mavproxy(self):
         return self.use_map
 
+    def set_speedup_parameter(self, speedup):
+        self.set_parameters({
+            "SIM_SPEEDUP": speedup,
+        })
+
     def init(self):
         """Initilialize autotest feature."""
         self.mavproxy_logfile = self.open_mavproxy_logfile()
@@ -8710,6 +8717,8 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Starting MAVLink connection")
         self.get_mavlink_connection_going()
+
+        self.set_speedup_parameter(self.speedup)
 
         if self.autostart_mavproxy():
             self.mavproxy = self.start_mavproxy()
