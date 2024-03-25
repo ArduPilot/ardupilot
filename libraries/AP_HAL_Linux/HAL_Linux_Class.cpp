@@ -467,7 +467,11 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         }
     }
 
-    setup_signal_handlers();
+    // NOTE: signal handlers are only set before the main loop, so
+    // that if anything before the loops hangs, the default signals
+    // can still stop the process proprely, although without proper
+    // teardown.
+    // This isn't perfect, but still prevents an unkillable process.
 
     scheduler->init();
     gpio->init();
@@ -496,6 +500,8 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
 #if AP_MODULE_SUPPORTED
     AP_Module::call_hook_setup_complete();
 #endif
+
+    setup_signal_handlers();
 
     while (!_should_exit) {
         callbacks->loop();
