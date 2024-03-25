@@ -102,6 +102,18 @@ private:
     std::atomic<uint32_t> tail{0}; // where to write data
 
     bool external_buf;
+
+    // struct Stats {
+    //     void clear(uint32_t _available) {
+    //         written = 0;
+    //         read = 0;
+    //         size_min = size_max = _available;
+    //     }
+    //     uint32_t size_min;
+    //     uint32_t size_max;
+    //     uint32_t written;
+    //     uint32_t read;
+    // } stats;
 };
 
 /*

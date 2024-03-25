@@ -4,6 +4,14 @@
 
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Macros.h>
+#include <AP_HAL/Semaphores.h>
+
+#ifndef HAL_LOG_UART_STATS
+// #define HAL_LOG_UART_STATS !HAL_MINIMIZE_FEATURES
+#define HAL_LOG_UART_STATS 1
+#endif
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
@@ -20,6 +28,7 @@ class ByteBuffer;
 class AP_HAL::UARTDriver : public AP_HAL::BetterStream {
 public:
     UARTDriver() {}
+    UARTDriver(uint8_t instance) : _instance(instance) {}
     /* Do not allow copies */
     CLASS_NO_COPY(UARTDriver);
 
@@ -185,6 +194,10 @@ public:
         return lock_write_key != 0;
     }
 
+#if HAL_LOG_UART_STATS
+    static void update_logging_all();
+#endif
+
 protected:
     // key for a locked port
     uint32_t lock_write_key;
@@ -220,8 +233,34 @@ protected:
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
-    
+
+#if HAL_LOG_UART_STATS
+    /*
+     * should be called @10Hz to log UART information to dataflash
+     */
+    void update_logging();
+
+    // logging-related variables
+    struct Stats {
+        HAL_Semaphore sem;
+        uint32_t rx_bytes; // number of bytes read out of AP ringbuffer
+        uint16_t rx_buffer_min;  // minimum free space in AP ringbuffer
+        uint16_t rx_buffer_max;  // maximum free space in AP ringbuffer
+        uint32_t rx_buffer_bytes_available_sum;   // sum of number of bytes in AP ringbuffer at each sample point
+        uint16_t rx_buffer_bytes_available_count;       // number of sample points for rx_bytes_sum
+
+        uint32_t tx_bytes;       // number of bytes pushed into AP ringbuffer
+        uint16_t tx_buffer_min;  // minimum free space in AP ringbuffer
+        uint16_t tx_buffer_max;  // maximum free space in AP ringbuffer
+        uint32_t tx_buffer_bytes_space_sum; // sum of number of bytes in buffer at each sample point
+        uint16_t tx_buffer_bytes_space_count; // number of sample points for rx_bytes_sum
+    } _stats;
+#endif
+
 private:
+
+    uint8_t _instance;
+
     // option bits for port
     uint16_t _last_options;
 

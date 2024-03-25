@@ -16,7 +16,7 @@ class HALSITL::UARTDriver : public AP_HAL::UARTDriver {
 public:
     friend class HALSITL::SITL_State;
 
-    UARTDriver(const uint8_t portNumber, SITL_State *sitlState) {
+    UARTDriver(const uint8_t portNumber, SITL_State *sitlState) : AP_HAL::UARTDriver(portNumber) {
         _portNumber = portNumber;
         _sitlState = sitlState;
 
