@@ -1857,4 +1857,14 @@ bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t ti
     return canard_iface.write_aux_frame(out_frame, timeout_us);
 }
 
+// Ask DNA Server if given node ID had been seen
+bool AP_DroneCAN::seen_node_id(uint8_t node_id) const
+{
+    if ((node_id == 0) || (node_id == _dronecan_node.get())) {
+        // Special case for self and 0
+        return false;
+    }
+    return _dna_server.isNodeSeen(node_id);
+}
+
 #endif // HAL_NUM_CAN_IFACES
