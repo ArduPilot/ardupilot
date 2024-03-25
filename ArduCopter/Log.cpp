@@ -311,6 +311,17 @@ struct PACKED log_Heli {
     float    control_output;
 };
 
+    // Write a helicopter swashplate packet
+    struct PACKED log_Heli_Swash {
+        LOG_PACKET_HEADER;
+        uint64_t time_us;
+        uint8_t  instance;
+        float    collective_angle;
+        float    total_cyclic_angle;
+        float    pitch_cyclic_angle;
+        float    roll_cyclic_angle;
+    };
+
 // Write an helicopter packet
 void Copter::Log_Write_Heli()
 {
@@ -323,6 +334,24 @@ void Copter::Log_Write_Heli()
         control_output          : motors->get_control_output(),
     };
     logger.WriteBlock(&pkt_heli, sizeof(pkt_heli));
+
+    // Write a log message per swashplate instance
+    for (uint8_t i=0; i<motors->MAX_SWASHPLATES; i++) {
+        // If we have written data to that instance of swashplate we log it
+        float col = 0.0, tcyc = 0.0, pcyc = 0.0, rcyc = 0.0;
+        if (motors->get_swash_angles(i, col, tcyc, pcyc, rcyc)) {
+            struct log_Heli_Swash pkt_heli_swash = {
+                LOG_PACKET_HEADER_INIT(LOG_HELI_SWASH_MSG),
+                time_us                 : AP_HAL::micros64(),
+                instance                : i,
+                collective_angle        : col,
+                total_cyclic_angle      : tcyc,
+                pitch_cyclic_angle      : pcyc,
+                roll_cyclic_angle       : rcyc,
+            };
+            logger.WriteBlock(&pkt_heli_swash, sizeof(pkt_heli_swash));
+        }
+    }
 }
 #endif
 
@@ -492,6 +521,17 @@ const struct LogStructure Copter::log_structure[] = {
 #if FRAME_CONFIG == HELI_FRAME
     { LOG_HELI_MSG, sizeof(log_Heli),
       "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" , true },
+
+// @LoggerMessage: SWSH
+// @Description: Helicopter swashplate logging
+// @Field: TimeUS: Time since system startup
+// @Field: I: Swashplate instance
+// @Field: Col: Blade pitch angle contribution from collective
+// @Field: TCyc: Total blade pitch angle contribution from cyclic
+// @Field: PCyc: Blade pitch angle contribution from pitch cyclic
+// @Field: RCyc: Blade pitch angle contribution from roll cyclic
+    { LOG_HELI_SWASH_MSG, sizeof(log_Heli_Swash),
+      "SWSH",  "QBffff",        "TimeUS,I,Col,TCyc,PCyc,RCyc", "s#dddd", "F-0000" , true },
 #endif
 
 // @LoggerMessage: SIDD
