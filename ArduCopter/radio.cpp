@@ -72,7 +72,7 @@ void Copter::init_rc_out()
       setup a default safety ignore mask, so that servo gimbals can be active while safety is on
      */
     uint16_t safety_ignore_mask = (~copter.motors->get_motor_mask()) & 0x3FFF;
-    BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
+    boardconfig.set_default_safety_ignore_mask(safety_ignore_mask);
 #endif
 }
 
