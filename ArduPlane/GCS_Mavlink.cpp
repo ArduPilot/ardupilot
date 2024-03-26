@@ -1369,15 +1369,28 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
 
         mavlink_set_position_target_global_int_t pos_target;
         mavlink_msg_set_position_target_global_int_decode(&msg, &pos_target);
+
+        const uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
+
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
-        const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-            
+        const uint16_t alt_mask = (
+            POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE | POSITION_TARGET_TYPEMASK_Z_IGNORE |
+            POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+            POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+            POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE |
+            POSITION_TARGET_TYPEMASK_LAST_BYTE) ^ 0xFFFF;
+
+        // bit mask for path following
+        const uint16_t path_mask = (
+            POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE |
+            POSITION_TARGET_TYPEMASK_LAST_BYTE) ^ 0xFFFF;
+
         bool msg_valid = true;
         AP_Mission::Mission_Command cmd = {0};
-        
-        if (pos_target.type_mask & alt_mask)
+
+        if (((pos_target.type_mask | POSITION_TARGET_TYPEMASK_LAST_BYTE) ^ 0xFFFF) == alt_mask)
         {
             cmd.content.location.alt = pos_target.alt * 100;
             cmd.content.location.relative_alt = false;
@@ -1405,7 +1418,63 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             if (msg_valid) {
                 handle_change_alt_request(cmd);
             }
-        } // end if alt_mask       
+        } // end if alt_mask
+
+        // guided path following
+        if (((pos_target.type_mask | POSITION_TARGET_TYPEMASK_LAST_BYTE) ^ 0xFFFF) == path_mask) {
+            cmd.content.location.lat = pos_target.lat_int;
+            cmd.content.location.lng = pos_target.lon_int;
+
+            cmd.content.location.alt = pos_target.alt * 100;
+            cmd.content.location.relative_alt = false;
+            cmd.content.location.terrain_alt = false;
+            switch (pos_target.coordinate_frame) 
+            {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+                    cmd.content.location.relative_alt = true;
+                    break;
+                default:
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+                    msg_valid = false;
+                    break;
+            }
+
+            if (msg_valid) {
+                Vector2f vel(pos_target.vx, pos_target.vy);
+                Vector2f accel(pos_target.afx, pos_target.afy);
+                Vector2f unit_vel;
+
+                float path_curvature{0.0};
+                bool dir_is_ccw{false};
+
+                if (!vel.is_zero()) {
+                    unit_vel = vel.normalized();
+
+                    if (!accel.is_zero()) {
+                        // curvature is determined from the acceleration normal
+                        // to the planar velocity and the equation for uniform
+                        // circular motion: a = v^2 / r.
+                        float accel_proj = accel.dot(unit_vel);
+                        Vector2f accel_lat = accel - unit_vel * accel_proj;
+                        Vector2f accel_lat_unit = accel_lat.normalized();
+
+                        path_curvature = accel_lat.length() / vel.length_squared();
+
+                        // % is cross product, direction: cw:= 1, ccw:= -1
+                        float dir = accel_lat_unit % unit_vel;
+                        dir_is_ccw = dir < 0.0;
+                    }
+                }
+            
+                // update path guidance
+                plane.mode_guided.handle_guided_path_request(
+                    cmd.content.location, unit_vel, path_curvature, dir_is_ccw);
+
+                // update adjust_altitude_target immediately rather than wait
+                // for the scheduler.
+                plane.adjust_altitude_target();
+            }
+        }
     }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
