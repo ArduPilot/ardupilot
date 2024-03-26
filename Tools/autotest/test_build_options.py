@@ -43,7 +43,7 @@ class TestBuildOptionsResult(object):
 
 class TestBuildOptions(object):
     def __init__(self,
-                 match_glob=None,
+                 match_glob=[],
                  do_step_disable_all=True,
                  do_step_disable_none=False,
                  do_step_disable_defaults=True,
@@ -317,9 +317,13 @@ class TestBuildOptions(object):
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
         for feature in sorted(options, key=lambda x : x.define):
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
+            match = False
+            for match_glob in self.match_glob:
+                if fnmatch.fnmatch(feature.define, match_glob):
+                    match = True
+                    break
+            if not match:
+                continue
             with open("/tmp/run-disable-in-turn-progress", "w") as f:
                 f.write(f"{count}/{len(options)} {feature.define}\n")
                 #            if feature.define < "WINCH_ENABLED":
@@ -355,9 +359,13 @@ class TestBuildOptions(object):
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
         for feature in options:
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
+            match = False
+            for match_glob in self.match_glob:
+                if fnmatch.fnmatch(feature.define, match_glob):
+                    match = True
+                    break
+            if not match:
+                continue
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
             with open("/tmp/run-enable-in-turn-progress", "w") as f:
@@ -377,9 +385,13 @@ class TestBuildOptions(object):
         options = self.get_build_options_from_ardupilot_tree()
         defines = {}
         for feature in options:
-            if self.match_glob is not None:
-                if not fnmatch.fnmatch(feature.define, self.match_glob):
-                    continue
+            match = False
+            for match_glob in self.match_glob:
+                if fnmatch.fnmatch(feature.define, match_glob):
+                    match = True
+                    break
+            if not match:
+                continue
             defines[feature.define] = 0
         for define in self.must_have_defines_for_board(self._board):
             defines[define] = 1
@@ -453,9 +465,9 @@ if __name__ == '__main__':
 
     parser = optparse.OptionParser()
     parser.add_option("--define-match-glob",
-                      type='string',
-                      default=None,
-                      help='feature define must match this glob to be tested')
+                      default=[],
+                      action='append',
+                      help='feature define must match any of these globs to be tested')
     parser.add_option("--no-run-with-defaults",
                       action='store_true',
                       help='Do not run the run-with-defaults step')
