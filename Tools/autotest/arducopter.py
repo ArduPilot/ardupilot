@@ -10806,7 +10806,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
-            "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
         }
 
 
