@@ -1,3 +1,27 @@
+Release 4.5.0-beta4 22nd March 2024
+-----------------------------------
+
+Changes from 4.5.0-beta3
+
+1) system changes
+
+- fixed a cache corruption issue with microSD card data on H7 based boards
+- rename parameter NET_ENABLED to NET_ENABLE
+- fixed FDCAN labels for adding new H7 boards
+- avoid logging dma.txt to save CPU
+- fixed roll/pitch in viewpro driver
+- added band X in VideoTX
+- fixed quaternion attitude reporting for Microstrain external AHRS
+-  add RPLidarC1 proximity support
+
+2) new boards
+- added MicoAir405v2
+- add Orqa F405 Pro
+
+3) plane specific changes
+- fixed flare on TVBS quadplanes with throttle stick input
+
+
 Release 4.5.0-beta3 14th March 2024
 -----------------------------------
 

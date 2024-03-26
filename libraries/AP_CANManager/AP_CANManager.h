@@ -77,7 +77,7 @@ public:
     // return driver for index i
     AP_CANDriver* get_driver(uint8_t i) const
     {
-        if (i < HAL_NUM_CAN_IFACES) {
+        if (i < ARRAY_SIZE(_drivers)) {
             return _drivers[i];
         }
         return nullptr;
@@ -97,7 +97,7 @@ public:
     // return driver type index i
     AP_CAN::Protocol get_driver_type(uint8_t i) const
     {
-        if (i < HAL_NUM_CAN_IFACES) {
+        if (i < ARRAY_SIZE(_driver_type_cache)) {
             return _driver_type_cache[i];
         }
         return AP_CAN::Protocol::None;

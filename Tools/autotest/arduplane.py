@@ -3176,7 +3176,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "EAHRS_TYPE": eahrs_type,
             "SERIAL4_PROTOCOL": 36,
             "SERIAL4_BAUD": 230400,
-            "GPS_TYPE": 21,
+            "GPS1_TYPE": 21,
             "AHRS_EKF_TYPE": 11,
             "INS_GYR_CAL": 1,
         })
@@ -3486,7 +3486,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "AHRS_EKF_TYPE": 3,
             "EK3_AFFINITY": 15, # enable affinity for all sensors
             "EK3_IMU_MASK": 3, # use only 2 IMUs
-            "GPS_TYPE2": 1,
+            "GPS2_TYPE": 1,
             "SIM_GPS2_DISABLE": 0,
             "SIM_BARO_COUNT": 2,
             "SIM_BAR2_DISABLE": 0,

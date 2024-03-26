@@ -595,7 +595,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
+#endif
 #if AP_VIDEOTX_ENABLED
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
 #endif
@@ -745,6 +747,7 @@ bool AP_Vehicle::is_crashed() const
 #endif
 }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 // update the harmonic notch filter for throttle based notch
 void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
 {
@@ -862,6 +865,7 @@ void AP_Vehicle::update_dynamic_notch_at_specified_rate()
         }
     }
 }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
 {
@@ -1028,9 +1032,14 @@ void AP_Vehicle::one_Hz_update(void)
 void AP_Vehicle::check_motor_noise()
 {
 #if HAL_GYROFFT_ENABLED && HAL_WITH_ESC_TELEM
-    if (!hal.util->get_soft_armed() || !gyro_fft.check_esc_noise() || !gyro_fft.using_post_filter_samples() || ins.has_fft_notch()) {
+    if (!hal.util->get_soft_armed() || !gyro_fft.check_esc_noise() || !gyro_fft.using_post_filter_samples()) {
         return;
     }
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+    if (ins.has_fft_notch()) {
+        return;
+    }
+#endif
 
     float esc_data[ESC_TELEM_MAX_ESCS];
     const uint8_t numf = AP::esc_telem().get_motor_frequencies_hz(ESC_TELEM_MAX_ESCS, esc_data);

@@ -387,6 +387,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_SET_CAMERA_SOURCE:
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return true;
@@ -434,6 +435,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_SET_CAMERA_SOURCE:
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return start_command_camera(cmd);
@@ -1357,6 +1359,12 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.set_camera_focus.focus_value = packet.param2;
         break;
 
+    case MAV_CMD_SET_CAMERA_SOURCE:
+        cmd.content.set_camera_source.instance = packet.param1;
+        cmd.content.set_camera_source.primary_source = packet.param2;
+        cmd.content.set_camera_source.secondary_source = packet.param3;
+        break;
+
     case MAV_CMD_VIDEO_START_CAPTURE:
         cmd.content.video_start_capture.video_stream_id = packet.param1;
         break;
@@ -1863,6 +1871,12 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_SET_CAMERA_FOCUS:
         packet.param1 = cmd.content.set_camera_focus.focus_type;
         packet.param2 = cmd.content.set_camera_focus.focus_value;
+        break;
+
+    case MAV_CMD_SET_CAMERA_SOURCE:
+        packet.param1 = cmd.content.set_camera_source.instance;
+        packet.param2 = cmd.content.set_camera_source.primary_source;
+        packet.param3 = cmd.content.set_camera_source.secondary_source;
         break;
 
     case MAV_CMD_VIDEO_START_CAPTURE:
@@ -2686,6 +2700,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "SetCameraZoom";
     case MAV_CMD_SET_CAMERA_FOCUS:
         return "SetCameraFocus";
+    case MAV_CMD_SET_CAMERA_SOURCE:
+        return "SetCameraSource";
     case MAV_CMD_VIDEO_START_CAPTURE:
         return "VideoStartCapture";
     case MAV_CMD_VIDEO_STOP_CAPTURE:

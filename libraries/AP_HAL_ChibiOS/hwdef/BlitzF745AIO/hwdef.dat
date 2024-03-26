@@ -150,8 +150,6 @@ define ALLOW_ARM_NO_COMPASS
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # save some flash
 include ../include/minimize_fpv_osd.inc
 

@@ -41,10 +41,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
+AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
     port(_port),
     gps(_gps),
-    state(_state)
+    state(_state),
+    params(_params)
 {
     state.have_speed_accuracy = false;
     state.have_horizontal_accuracy = false;
@@ -156,19 +157,19 @@ void AP_GPS_Backend::broadcast_gps_type() const
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", buffer);
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
 {
-#if HAL_LOGGING_ENABLED
     char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
     AP::logger().Write_Message(buffer);
-#endif
 }
 
 bool AP_GPS_Backend::should_log() const
 {
     return gps.should_log();
 }
+#endif
 
 
 #if HAL_GCS_ENABLED
@@ -332,13 +333,13 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 #endif
     bool selectedOffset = false;
     Vector3f offset;
-    switch (MovingBase::Type(gps.mb_params[interim_state.instance].type.get())) {
+    switch (MovingBase::Type(gps.params[interim_state.instance].mb_params.type)) {
         case MovingBase::Type::RelativeToAlternateInstance:
-            offset = gps._antenna_offset[interim_state.instance^1].get() - gps._antenna_offset[interim_state.instance].get();
+            offset = gps.params[interim_state.instance^1].antenna_offset.get() - gps.params[interim_state.instance].antenna_offset.get();
             selectedOffset = true;
             break;
         case MovingBase::Type::RelativeToCustomBase:
-            offset = gps.mb_params[interim_state.instance].base_offset.get();
+            offset = gps.params[interim_state.instance].mb_params.base_offset.get();
             selectedOffset = true;
             break;
     }

@@ -138,8 +138,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 
 define HAL_OS_FATFS_IO 1
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # disable parachute to save flash
 define HAL_PARACHUTE_ENABLED 0
 

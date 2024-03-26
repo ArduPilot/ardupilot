@@ -39,10 +39,10 @@
 -- Test on a real vehicle:
 --   A. set DR_FLY_TIMEOUT to a low value (e.g. 5 seconds)
 --   B. fly the vehicle at least DR_DIST_MIN meters from home and confirm the "DR: activated!" message is displayed
---   C. set GPS_TYPE = 0 to disable GPS and confirm the vehicle begins deadreckoning after a few seconds
---   D. restore GPS_TYPE to its original value (normally 1) and confirm the vehicle switches to DR_NEXT_MODE
+--   C. set GPS1_TYPE = 0 to disable GPS and confirm the vehicle begins deadreckoning after a few seconds
+--   D. restore GPS1_TYPE to its original value (normally 1) and confirm the vehicle switches to DR_NEXT_MODE
 --   E. restore DR_FLY_TIMEOUT to a higher value for real-world use
--- Note: Instaed of setting GPS_TYPE, an auxiliary function switch can be setup to disable the GPS (e.g. RC9_OPTION = 65/"Disable GPS")
+-- Note: Instaed of setting GPS1_TYPE, an auxiliary function switch can be setup to disable the GPS (e.g. RC9_OPTION = 65/"Disable GPS")
 --
 -- Testing that it does not require RC (in SITL):
 --   a. set FS_OPTIONS's "Continue if in Guided on RC failsafe" bit

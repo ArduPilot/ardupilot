@@ -71,7 +71,6 @@ void SITL_State::_sitl_setup()
     _parent_pid = getppid();
 #endif
 
-    _setup_fdm();
     fprintf(stdout, "Starting SITL input\n");
 
     // find the barometer object if it exists
@@ -101,6 +100,8 @@ void SITL_State::_sitl_setup()
 
         fprintf(stdout, "Using Irlock at port : %d\n", _irlock_port);
         _sitl->irlock_port = _irlock_port;
+
+        _sitl->rcin_port = _rcin_port;
     }
 
     if (_synthetic_clock_mode) {
@@ -111,37 +112,10 @@ void SITL_State::_sitl_setup()
 
 
 /*
-  setup a SITL FDM listening UDP port
- */
-bool SITL_State::_setup_fdm(void)
-{
-    if (_rc_in_started) {
-        return true;
-    }
-    if (!_sitl_rc_in.reuseaddress()) {
-        return false;
-    }
-    if (!_sitl_rc_in.bind("0.0.0.0", _rcin_port)) {
-        return false;
-    }
-    if (!_sitl_rc_in.set_blocking(false)) {
-        return false;
-    }
-    if (!_sitl_rc_in.set_cloexec()) {
-        return false;
-    }
-    _rc_in_started = true;
-    return true;
-}
-
-
-/*
   step the FDM by one time step
  */
 void SITL_State::_fdm_input_step(void)
 {
-    static uint32_t last_pwm_input = 0;
-
     _fdm_input_local();
 
     /* make sure we die if our parent dies */
@@ -151,12 +125,6 @@ void SITL_State::_fdm_input_step(void)
 
     if (_scheduler->interrupts_are_blocked() || _sitl == nullptr) {
         return;
-    }
-
-    // simulate RC input at 50Hz
-    if (AP_HAL::millis() - last_pwm_input >= 20 && _sitl != nullptr && _sitl->rc_fail != SITL::SIM::SITL_RCFail_NoPulses) {
-        last_pwm_input = AP_HAL::millis();
-        new_rc_input = true;
     }
 
     _scheduler->sitl_begin_atomic();
@@ -226,72 +194,6 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 }
 
 /*
-  check for a SITL RC input packet
- */
-void SITL_State::_check_rc_input(void)
-{
-    uint32_t count = 0;
-    while (_read_rc_sitl_input()) {
-        count++;
-    }
-
-    if (count > 100) {
-        ::fprintf(stderr, "Read %u rc inputs\n", count);
-    }
-}
-
-bool SITL_State::_read_rc_sitl_input()
-{
-    struct pwm_packet {
-        uint16_t pwm[16];
-    } pwm_pkt;
-
-    if (!_setup_fdm()) {
-        return false;
-    }
-    const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
-
-    // if we are simulating no pulses RC failure, do not update pwm_input
-    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_NoPulses) {
-        return size != -1; // we must continue to drain _sitl_rc
-    }
-
-    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
-        // discard anything we just read from the "receiver" and set
-        // values to bind values:
-        for (uint8_t i=0; i<ARRAY_SIZE(pwm_input); i++) {
-            pwm_input[0] = 1500;  // centre all inputs
-        }
-        pwm_input[2] = 950;  // reset throttle (assumed to be on channel 3...)
-        return size != -1;  // we must continue to drain _sitl_rc
-    }
-
-    switch (size) {
-    case -1:
-        return false;
-    case 8*2:
-    case 16*2: {
-        // a packet giving the receiver PWM inputs
-        for (uint8_t i=0; i<size/2; i++) {
-            // setup the pwm input for the RC channel inputs
-            if (i < _sitl->state.rcin_chan_count) {
-                // we're using rc from simulator
-                continue;
-            }
-            uint16_t pwm = pwm_pkt.pwm[i];
-            if (pwm != 0) {
-                pwm_input[i] = pwm;
-            }
-        }
-        return true;
-    }
-    default:
-        fprintf(stderr, "Malformed SITL RC input (%ld)", (long)size);
-    }
-    return false;
-}
-
-/*
   output current state to flightgear
  */
 void SITL_State::_output_to_flightgear(void)
@@ -337,9 +239,6 @@ void SITL_State::_fdm_input_local(void)
     }
     struct sitl_input input;
 
-    // check for direct RC input
-    _check_rc_input();
-
     // construct servos structure for FDM
     _simulator_servos(input);
 
@@ -363,12 +262,6 @@ void SITL_State::_fdm_input_local(void)
         multicast_state_send();
     }
 #endif
-
-    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_None) {
-        for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-            pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
-        }
-    }
 
 #if HAL_SIM_JSON_MASTER_ENABLED
     // output JSON state to ride along flight controllers
@@ -560,10 +453,6 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 
 void SITL_State::init(int argc, char * const argv[])
 {
-    pwm_input[0] = pwm_input[1] = pwm_input[3] = 1500;
-    pwm_input[4] = pwm_input[7] = 1800;
-    pwm_input[2] = pwm_input[5] = pwm_input[6] = 1000;
-
     _scheduler = Scheduler::from(hal.scheduler);
     _parse_command_line(argc, argv);
 }

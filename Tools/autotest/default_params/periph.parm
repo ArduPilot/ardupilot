@@ -1,6 +1,6 @@
 # parameters for SITL peripheral
 
-GPS_TYPE 1
+GPS1_TYPE 1
 COMPASS_ENABLE 1
 BARO_ENABLE 1
 ARSPD_TYPE 100

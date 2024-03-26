@@ -1,4 +1,4 @@
-NET_ENABLED 1
+NET_ENABLE 1
 NET_OPTIONS 1
 
 # enable hw flow control

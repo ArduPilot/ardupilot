@@ -120,7 +120,7 @@ public:
         SBP2  =  9,
 #endif
 #if AP_SIM_GPS_TRIMBLE_ENABLED
-        TRIMBLE  = 11, // matches GPS_TYPE
+        TRIMBLE  = 11, // matches GPS1_TYPE
 #endif
 #if AP_SIM_GPS_MSP_ENABLED
         MSP   = 19,

@@ -74,7 +74,7 @@ void setup(void)
     if(!AP::compass().read()) {
         hal.console->printf("No compass detected\n");
     }
-    AP::gps().init(serial_manager);
+    AP::gps().init();
     AP::rtc().set_utc_usec(1546300800000, AP_RTC::source_type::SOURCE_GPS);
 }
 

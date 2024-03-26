@@ -223,6 +223,11 @@ void AP_Periph_FW::handle_get_node_info(CanardInstance* canard_instance,
                    total_size);
 }
 
+// compatability code added Mar 2024 for 4.6:
+#ifndef AP_PERIPH_GPS_TYPE_COMPATABILITY_ENABLED
+#define AP_PERIPH_GPS_TYPE_COMPATABILITY_ENABLED 1
+#endif
+
 /*
   handle parameter GetSet request
  */
@@ -245,7 +250,18 @@ void AP_Periph_FW::handle_param_getset(CanardInstance* canard_instance, CanardRx
         vp = nullptr;
     } else if (req.name.len != 0 && req.name.len <= AP_MAX_NAME_SIZE) {
         memcpy((char *)pkt.name.data, (char *)req.name.data, req.name.len);
+#if AP_PERIPH_GPS_TYPE_COMPATABILITY_ENABLED
+        // cope with older versions of ArduPilot attempting to
+        // auto-configure AP_Periph using "GPS_TYPE" by
+        // auto-converting to "GPS1_TYPE":
+        if (strncmp((char*)req.name.data, "GPS_TYPE", req.name.len) == 0) {
+            vp = AP_Param::find("GPS1_TYPE", &ptype);
+        } else {
+            vp = AP_Param::find((char *)pkt.name.data, &ptype);
+        }
+#else
         vp = AP_Param::find((char *)pkt.name.data, &ptype);
+#endif
     } else {
         AP_Param::ParamToken token {};
         vp = AP_Param::find_by_index(req.index, &ptype, &token);
