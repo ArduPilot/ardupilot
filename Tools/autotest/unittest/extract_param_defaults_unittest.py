@@ -10,7 +10,7 @@ Amilcar do Carmo Lucas, IAV GmbH
 
 import unittest
 from unittest.mock import patch, MagicMock
-from extract_param_defaults import extract_parameter_default_values, missionplanner_sort, \
+from extract_param_defaults import extract_parameter_values, missionplanner_sort, \
                                    mavproxy_sort, sort_params, output_params, parse_arguments, \
                                    NO_DEFAULT_VALUES_MESSAGE, MAVLINK_SYSID_MAX, MAVLINK_COMPID_MAX
 
@@ -71,7 +71,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
 
         # Call the function with a dummy logfile path
         with self.assertRaises(SystemExit) as cm:
-            extract_parameter_default_values('dummy.bin')
+            extract_parameter_values('dummy.bin')
 
         # Check the error message
         self.assertEqual(str(cm.exception), "Error opening the dummy.bin logfile: Test exception")
@@ -88,7 +88,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
         ]
 
         # Call the function with a dummy logfile path
-        defaults = extract_parameter_default_values('dummy.bin')
+        defaults = extract_parameter_values('dummy.bin')
 
         # Check if the defaults dictionary contains the correct parameters and values
         self.assertEqual(defaults, {'PARAM1': 1.1, 'PARAM2': 2.0})
@@ -102,7 +102,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
 
         # Call the function with a dummy logfile path and assert SystemExit is raised with the correct message
         with self.assertRaises(SystemExit) as cm:
-            extract_parameter_default_values('dummy.bin')
+            extract_parameter_values('dummy.bin')
         self.assertEqual(str(cm.exception), NO_DEFAULT_VALUES_MESSAGE)
 
     @patch('extract_param_defaults.mavutil.mavlink_connection')
@@ -114,7 +114,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
 
         # Call the function with a dummy logfile path and assert SystemExit is raised with the correct message
         with self.assertRaises(SystemExit) as cm:
-            extract_parameter_default_values('dummy.bin')
+            extract_parameter_values('dummy.bin')
         self.assertEqual(str(cm.exception), NO_DEFAULT_VALUES_MESSAGE)
 
     @patch('extract_param_defaults.mavutil.mavlink_connection')
@@ -126,7 +126,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
 
         # Call the function with a dummy logfile path
         with self.assertRaises(SystemExit):
-            extract_parameter_default_values('dummy.bin')
+            extract_parameter_values('dummy.bin')
 
     @patch('extract_param_defaults.mavutil.mavlink_connection')
     def test_long_parameter_name(self, mock_mavlink_connection):
@@ -137,7 +137,7 @@ class TestExtractParameterDefaultValues(unittest.TestCase):
 
         # Call the function with a dummy logfile path
         with self.assertRaises(SystemExit):
-            extract_parameter_default_values('dummy.bin')
+            extract_parameter_values('dummy.bin')
 
 
 class TestSortFunctions(unittest.TestCase):
