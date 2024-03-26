@@ -19,9 +19,14 @@
 
 #pragma once
 
-#include "AP_ExternalAHRS_backend.h"
+#include "AP_ExternalAHRS_config.h"
 
 #if AP_EXTERNAL_AHRS_ADNAV_ENABLED
+
+#include "AP_ExternalAHRS_backend.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_DAL/AP_DAL.h>
 
 #define AN_PACKET_HEADER_SIZE 5
 #define AN_MAXIMUM_PACKET_SIZE 255
@@ -29,9 +34,6 @@
 #define AN_START_SYSTEM_PACKETS 0
 #define AN_START_STATE_PACKETS 20
 #define AN_START_CONFIGURATION_PACKETS 180
-
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_Math/AP_Math.h>
 
 
 class AP_ExternalAHRS_AdvancedNavigation_Decoder
@@ -107,6 +109,7 @@ public:
 
 private:
     AP_ExternalAHRS_AdvancedNavigation_Decoder _decoder;
+    AP_DAL &dal;
 
     typedef enum {
         packet_id_acknowledge,
@@ -246,7 +249,7 @@ private:
         device_id_air_data_unit,
         device_id_spatial_fog_dual = 16,
         device_id_motus,
-        device_id_gnss_compass,
+        device_id_gnss_compass = 19,
         device_id_certus = 26,
         device_id_aries,
         device_id_boreas_d90,
@@ -274,7 +277,7 @@ private:
         vehicle_type_race_car
     } vehicle_type_e;
 
-    struct PACKED AN_ACKNOWLEGE {
+    struct PACKED AN_ACKNOWLEDGE {
         uint8_t id_acknowledged;
         uint16_t crc_acknowledged;
         uint8_t result;
@@ -391,6 +394,23 @@ private:
         uint8_t sbas_satellites;
     } *_last_satellites;
 
+    struct PACKED AN_EXTERNAL_AIR_DATA {
+        float baro_delay;
+        float airspeed_delay;
+        float barometric_altitude;
+        float true_airspeed;
+        float barometric_standard_deviation;
+        float airspeed_standard_deviation;
+        union {
+            uint8_t r;
+            struct{
+                uint8_t barometric_altitude_set_valid :1;
+                uint8_t airspeed_set_valid :1;
+                uint8_t barometric_altitude_reference_reset :1;
+            }b;
+        } flags;
+    };
+
     struct PACKED AN_PERIOD {
         uint8_t id;
         uint32_t packet_period;
@@ -432,6 +452,7 @@ private:
             AN_RAW_SENSORS raw_sensors;
             AN_RAW_GNSS raw_gnss;
             AN_SATELLITES satellites;
+            AN_EXTERNAL_AIR_DATA ext_air_data;
             AN_PACKET_PERIODS packet_periods;
             AN_FILTER_OPTIONS filter_options;
         } payload;
@@ -492,6 +513,7 @@ private:
     uint32_t _last_state_pkt_ms;
     uint32_t _last_device_info_pkt_ms;
     uint32_t _last_raw_gnss_pkt_ms;
+    uint32_t _last_ext_air_data_sent_ms;
     uint32_t _device_id;
     uint32_t _hardware_rev;
 
@@ -506,6 +528,9 @@ private:
     bool get_baro_capability(void) const;
     bool set_filter_options(bool gnss_en, vehicle_type_e vehicle_type, bool permanent = false);
     bool set_filter_options(AN_FILTER_OPTIONS options_packet);
+    bool send_airspeed_aiding(void);
+    float get_airspeed_error(float airspeed);
+    float get_pressure_error(void);
     void handle_packet();
 };
 

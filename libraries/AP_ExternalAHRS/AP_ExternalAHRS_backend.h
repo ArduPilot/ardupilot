@@ -59,6 +59,13 @@ protected:
     }
 
     /*
+      return the airspeed error at 20ms
+     */
+    float airspeed_err_20ms(void) const {
+        return frontend.arsp_err_20ms;
+    }
+
+    /*
       return true if the GNSS is disabled
      */
     bool gnss_is_disabled(void) const {
