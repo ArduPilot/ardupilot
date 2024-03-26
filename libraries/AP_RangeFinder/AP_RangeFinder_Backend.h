@@ -79,6 +79,12 @@ public:
     // parameter value which may be changed at runtime.
     RangeFinder::Type allocated_type() const { return _backend_type; }
 
+    // maximum time between readings before we change state to NoData:
+    virtual uint32_t read_timeout_ms() const { return 200; }
+
+    // get reference to driver semaphore
+    HAL_Semaphore &get_semaphore(void) { return _sem; }
+
 protected:
 
     // update status based on distance measurement

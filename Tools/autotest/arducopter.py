@@ -2706,6 +2706,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
 
         self.reboot_sitl()
+
+        self.set_parameter("SIM_SPEEDUP", 2)
+
         # Test UAVCAN GPS ordering working
         gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
         gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
@@ -2735,6 +2738,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.drain_mav()
             self.context_collect('STATUSTEXT')
             self.reboot_sitl()
+            self.set_parameter("SIM_SPEEDUP", 2)
             gps1_det_text = None
             gps2_det_text = None
             try:
@@ -2804,7 +2808,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # flying on DroneCAN ESCs
             "SIM_CAN_SRV_MSK" : 0xFF,
             # we can do the flight faster
-            "SIM_SPEEDUP" : 5,
+            "SIM_SPEEDUP" : 2,
         })
 
         self.CopterMission()
