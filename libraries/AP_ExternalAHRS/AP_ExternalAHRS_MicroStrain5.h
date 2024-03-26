@@ -49,6 +49,12 @@ public:
         build_packet();
     };
 
+protected:
+
+    uint8_t num_gps_sensors(void) const override {
+        return 1;
+    }
+
 private:
 
     uint32_t baudrate;

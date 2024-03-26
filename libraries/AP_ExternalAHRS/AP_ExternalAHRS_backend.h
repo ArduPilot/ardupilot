@@ -48,6 +48,9 @@ public:
     // This can also copy interim state protected by locking.
     virtual void update() = 0;
 
+    // Return the number of GPS sensors sharing data to AP_GPS.
+    virtual uint8_t num_gps_sensors(void) const = 0;
+
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;

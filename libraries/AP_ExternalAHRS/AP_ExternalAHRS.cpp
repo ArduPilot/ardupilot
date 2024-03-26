@@ -29,6 +29,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
@@ -238,6 +239,27 @@ bool AP_ExternalAHRS::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) 
     if (!backend->pre_arm_check(failure_msg, failure_msg_len)) {
         return false;
     }
+    // Verify the user has configured the GPS to accept EAHRS data.
+    if (has_sensor(AvailableSensor::GPS)) {
+        const auto eahrs_gps_sensors = backend->num_gps_sensors();
+
+        const auto &gps = AP::gps();
+        uint8_t n_configured_eahrs_gps = 0;
+        for (uint8_t i = 0; i < GPS_MAX_INSTANCES; ++i) {
+            const auto gps_type = gps.get_type(i);
+            if (gps_type == AP_GPS::GPS_TYPE_EXTERNAL_AHRS) {
+                n_configured_eahrs_gps++;
+            }
+        }
+
+        // Once AP supports at least 3 GPS's, change to == and remove the second condition.
+        // At that point, enforce that all GPS's in EAHRS can report to AP_GPS.
+        if (n_configured_eahrs_gps < 1 && eahrs_gps_sensors >= 1) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: Incorrect number of GPS sensors configured for EAHRS");
+            return false;
+        }
+    }
+
     if (!state.have_origin) {
         hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: No origin");
 	    return false;

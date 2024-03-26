@@ -181,6 +181,12 @@ public:
     uint16_t buffer_ofs;
     uint8_t buffer[256]; // max for normal message set is 167+8
 
+protected:
+
+    uint8_t num_gps_sensors(void) const override {
+        return 1;
+    }
+
 private:
     AP_HAL::UARTDriver *uart;
     int8_t port_num;
