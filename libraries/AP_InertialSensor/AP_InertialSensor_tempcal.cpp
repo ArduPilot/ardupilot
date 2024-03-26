@@ -517,7 +517,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
         }
 #if INS_AUX_INSTANCES
         for (uint8_t i=0; i<INS_AUX_INSTANCES; i++) {
-            const uint8_t imu = i+(INS_MAX_INSTANCES-INS_AUX_INSTANCES);
+            const uint8_t imu = i+(INS_MAX_INSTANCES-INS_AUX_INSTANCES)+1;
             const Vector3f &aoff = params[i]._accel_offset.get();
             const Vector3f &ascl = params[i]._accel_scale.get();
             str.printf("INS%u_ACC_ID=%u\n", imu, unsigned(params[i]._accel_id.get()));
