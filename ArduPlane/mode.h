@@ -54,6 +54,7 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+        TERRAIN_NAVIGATION   = 26,
     };
 
     // Constructor
@@ -142,6 +143,8 @@ public:
     virtual bool use_battery_compensation() const;
 
 protected:
+    // Destructor
+    virtual ~Mode();
 
     // subclasses override this to perform checks before entering the mode
     virtual bool _enter() { return true; }
@@ -307,6 +310,39 @@ protected:
 
 private:
     float active_radius_m;
+};
+
+class ModeTerrainNavigation : public ModeGuided
+{
+public:
+
+    Number mode_number() const override { return Number::TERRAIN_NAVIGATION; }
+    const char *name() const override { return "TERRAIN_NAVIGATION"; }
+    const char *name4() const override { return "GUID"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    // handle a guided target request from GCS
+    bool handle_guided_request(Location target_loc) override;
+
+    void set_radius_and_direction(const float radius, const bool direction_is_ccw);
+
+    void set_path_tangent(Vector2f unit_path_tangent);
+
+    void update_target_altitude() override;
+
+protected:
+
+    bool _enter() override;
+
+    void _exit() override;
+
+private:
+    float _curvature;
+    Vector2f _unit_path_tangent;
 };
 
 class ModeCircle: public Mode

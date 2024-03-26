@@ -52,6 +52,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::GUIDED:
         ret = &mode_guided;
         break;
+    case Mode::Number::TERRAIN_NAVIGATION:
+        ret = &mode_terrain_navigation;
+        break;
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;

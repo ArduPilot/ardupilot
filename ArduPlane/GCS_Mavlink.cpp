@@ -56,6 +56,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
     case Mode::Number::AVOID_ADSB:
+    case Mode::Number::TERRAIN_NAVIGATION:
     case Mode::Number::GUIDED:
     case Mode::Number::CIRCLE:
     case Mode::Number::TAKEOFF:
@@ -1362,7 +1363,8 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         // in modes such as RTL, CIRCLE, etc.  Specifying ONLY one mode
         // for companion computer control is more safe (provided
         // one uses the FENCE_ACTION = 4 (RTL) for geofence failures).
-        if (plane.control_mode != &plane.mode_guided) {
+        if (!(plane.control_mode == &plane.mode_guided ||
+              plane.control_mode == &plane.mode_terrain_navigation)) {
             //don't screw up failsafes
             return;
         }
@@ -1372,11 +1374,14 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
-        const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-            
+        const uint16_t alt_mask  = 0b1111111111111011; // (z mask at bit 3)
+
+        // bit mask for path following: ignore force_set, yaw, yaw_rate
+        const uint16_t path_mask = 0b1111111000000000;
+
         bool msg_valid = true;
         AP_Mission::Mission_Command cmd = {0};
-        
+
         if (pos_target.type_mask & alt_mask)
         {
             cmd.content.location.alt = pos_target.alt * 100;
@@ -1405,7 +1410,99 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
             if (msg_valid) {
                 handle_change_alt_request(cmd);
             }
-        } // end if alt_mask       
+        } // end if alt_mask
+
+        // terrain_navigation / path following
+        if (pos_target.type_mask & path_mask) {
+            // switch mode to TERRAIN_NAVIGATION
+            plane.set_mode(plane.mode_terrain_navigation, ModeReason::GCS_COMMAND);
+
+            cmd.content.location.lat = pos_target.lat_int;
+            cmd.content.location.lng = pos_target.lon_int;
+
+            cmd.content.location.alt = pos_target.alt * 100;
+            cmd.content.location.relative_alt = false;
+            cmd.content.location.terrain_alt = false;
+            switch (pos_target.coordinate_frame) 
+            {
+                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+                    cmd.content.location.relative_alt = true;
+                    break;
+                default:
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+                    msg_valid = false;
+                    break;
+            }    
+            if (msg_valid) {
+                //! @todo(srmainwaring) remove - used for debugging
+                if (0) {
+                    float act_lat = plane.current_loc.lat * 1.0E-7;
+                    float act_lng = plane.current_loc.lng * 1.0E-7;
+                    int32_t act_alt_cm;
+                    bool alt_valid = plane.current_loc.get_alt_cm(
+                        Location::AltFrame::ABOVE_HOME, act_alt_cm);
+
+                    float tgt_lat = cmd.content.location.lat * 1.0E-7;
+                    float tgt_lng = cmd.content.location.lng * 1.0E-7;
+                    int32_t tgt_alt_cm;
+                    bool tgt_valid = cmd.content.location.get_alt_cm(
+                        Location::AltFrame::ABOVE_HOME, tgt_alt_cm);
+
+                    if (alt_valid && tgt_valid) {
+                        gcs().send_text(MAV_SEVERITY_DEBUG,
+                            "err: lat: %f, lng: %f, alt: %f",
+                            tgt_lat - act_lat, tgt_lng - act_lng,
+                            (tgt_alt_cm - act_alt_cm) * 1.0E-2);
+                    }
+                }
+
+                {
+                    //! @todo(srmainwaring) add checks that velocity and accel
+                    //! are present and valid.
+
+                    // if the setpoint includes velocity and acceleration,
+                    // calculate a loiter radius and direction. 
+                    float vx = pos_target.vx;
+                    float vy = pos_target.vy;
+                    float ax = pos_target.afx;
+                    float ay = pos_target.afy;
+
+                    // loiter radius is determined from the acceleration normal
+                    // to the planar velocity and the equation for uniform
+                    // circular motion: a = v^2 / r.
+                    Vector2f vel(vx, vy);
+                    Vector2f accel(ax, ay);
+                    if (!vel.is_zero()) {
+                        Vector2f vel_unit = vel.normalized();
+                        plane.mode_terrain_navigation.set_path_tangent(vel_unit);
+
+                        if (!accel.is_zero()) {
+                            //! @note this should be zero for terrain planning,
+                            // as we expect the acceleration to be normal to the
+                            // velocity vector (unit_tangent). 
+                            float accel_proj = accel.dot(vel_unit);
+                            Vector2f accel_lat = accel - vel_unit * accel_proj;
+                            Vector2f accel_lat_unit = accel_lat.normalized();
+                            // % is cross product, direction: cw:= 1, ccw:= -1
+                            float dir = accel_lat_unit % vel_unit;
+                            float radius = vel.length_squared() / accel_lat.length();
+                            // float curvature = accel_lat.length();
+                            // float radius = 1.0 / curvature;
+                            bool dir_is_ccw = dir < 0.0;
+                            plane.mode_terrain_navigation.set_radius_and_direction(radius, dir_is_ccw);
+                        }  else {
+                            plane.mode_terrain_navigation.set_radius_and_direction(0.0, true);
+                        }
+                    }
+                }
+
+                handle_guided_request(cmd);
+
+                // update adjust_altitude_target immediately rather than wait
+                // for the scheduler. See also: Plane::set_next_WP
+                plane.adjust_altitude_target();
+            }
+        }
     }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)

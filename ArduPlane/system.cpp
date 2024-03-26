@@ -223,9 +223,10 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::QLOITER,
         (uint8_t)Mode::Number::QACRO,
 #if QAUTOTUNE_ENABLED
-        (uint8_t)Mode::Number::QAUTOTUNE
+        (uint8_t)Mode::Number::QAUTOTUNE,
 #endif
 #endif
+        (uint8_t)Mode::Number::TERRAIN_NAVIGATION
     };
 
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));

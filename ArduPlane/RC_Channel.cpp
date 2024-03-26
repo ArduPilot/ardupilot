@@ -245,6 +245,10 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
         break;        
 
+    case AUX_FUNC::TERRAIN_NAVIGATION:
+        do_aux_function_change_mode(Mode::Number::TERRAIN_NAVIGATION, ch_flag);
+        break;
+
     case AUX_FUNC::GUIDED:
         do_aux_function_change_mode(Mode::Number::GUIDED, ch_flag);
         break;
