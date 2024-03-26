@@ -76,9 +76,9 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
         const uint32_t now_ms = AP_HAL::millis();
         if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
+            report_malfunction(malfunction_alert, malfunction_alert_prev);
             malfunction_alert_prev = malfunction_alert;
             malfunction_alert_last_send_ms = now_ms;
-            report_malfunction(malfunction_alert);
         }
 #endif
 
@@ -110,17 +110,24 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
 }
 
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
-void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunction_alert_) {
-    if (_malfunction_alert_ & static_cast<uint8_t>(MalfunctionAlert::Temperature)) {
+void AP_RangeFinder_Ainstein_LR_D1::report_malfunction(const uint8_t _malfunction_alert_, const uint8_t _malfunction_alert_prev_)
+{
+    // _malfunction_alert_ _malfunction_alert_prev_
+    // 0 0 : not message
+    // 1 0 : message
+    // 0 1 : not message
+    // 1 1 : not message
+    const uint8_t alert = _malfunction_alert_ & (_malfunction_alert_ ^ _malfunction_alert_prev_);
+    if (alert & static_cast<uint8_t>(MalfunctionAlert::Temperature)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Temperature alert");
     }
-    if (_malfunction_alert_ & static_cast<uint8_t>(MalfunctionAlert::Voltage)) {
+    if (alert & static_cast<uint8_t>(MalfunctionAlert::Voltage)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Voltage alert");
     }    
-    if (_malfunction_alert_ & static_cast<uint8_t>(MalfunctionAlert::IFSignalSaturation)) {
+    if (alert & static_cast<uint8_t>(MalfunctionAlert::IFSignalSaturation)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: IF signal saturation alert");
     }
-    if (_malfunction_alert_ & static_cast<uint8_t>(MalfunctionAlert::AltitudeReading)) {
+    if (alert & static_cast<uint8_t>(MalfunctionAlert::AltitudeReading)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RangeFinder: Altitude reading overflow alert");
     }
 }
