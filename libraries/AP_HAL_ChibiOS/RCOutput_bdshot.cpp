@@ -796,9 +796,27 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
             break;
         case 0b100:  // Debug 1
         case 0b101:  // Debug 2
-        case 0b110:  // Stress level
-        case 0b111:  // Status
             return false;
+            break;
+        case 0b110: { // Stress level
+    #if HAL_WITH_ESC_TELEM && HAL_WANTS_EDTV2
+            TelemetryData t {
+                .edt2_stress = value
+            };
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::EDT2_STRESS);
+    #endif
+            return false;
+            }
+            break;
+        case 0b111: { // Status
+    #if HAL_WITH_ESC_TELEM && HAL_WANTS_EDTV2
+            TelemetryData t {
+                .edt2_status = value
+            };
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::EDT2_STATUS);
+    #endif
+            return false;
+            }
             break;
         default:     // eRPM
             break;
