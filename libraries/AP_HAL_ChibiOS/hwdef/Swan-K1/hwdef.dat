@@ -32,7 +32,6 @@ define HAL_BATT_CURR_SCALE 36.364
 # this board has a 16k RAMTROM
 undef HAL_STORAGE_SIZE
 define HAL_STORAGE_SIZE 16384
-define HAL_WITH_RAMTRON 1
 
 # use a longer frame gap detector for more robust SBUS with H12 controller
 define HAL_SBUS_FRAME_GAP 5000U

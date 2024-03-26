@@ -249,7 +249,7 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     backend->set_mode(mode);
 }
 
-// set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+// set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
 // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
 void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 {
@@ -355,6 +355,12 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if (isnan(pitch_angle_deg) && isnan(yaw_angle_deg) && isnan(pitch_rate_degs) && isnan(yaw_rate_degs)) {
+        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -496,6 +502,12 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
         const float pitch_rate_degs = degrees(packet.pitch_rate);
         const float yaw_rate_degs = degrees(packet.yaw_rate);
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if (isnan(packet.pitch) && isnan(packet.yaw) && isnan(packet.pitch_rate) && isnan(packet.yaw_rate)) {
+        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }

@@ -36,6 +36,8 @@
 #include "AP_RCProtocol_GHST.h"
 #include "AP_RCProtocol_MAVLinkRadio.h"
 #include "AP_RCProtocol_Joystick_SFML.h"
+#include "AP_RCProtocol_UDP.h"
+#include "AP_RCProtocol_FDM.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -96,6 +98,19 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
     backend[AP_RCProtocol::JOYSTICK_SFML] = new AP_RCProtocol_Joystick_SFML(*this);
 #endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+    const auto UDP_backend = new AP_RCProtocol_UDP(*this);
+    backend[AP_RCProtocol::UDP] = UDP_backend;
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+    const auto FDM_backend = new AP_RCProtocol_FDM(*this);;
+    backend[AP_RCProtocol::FDM] = FDM_backend;
+#if AP_RCPROTOCOL_UDP_ENABLED
+    // the UDP-Packed16Bit backend gives way to the FDM backend:
+    UDP_backend->set_fdm_backend(FDM_backend);
+#endif  // AP_RCPROTOCOL_UDP_ENABLED
+#endif  // AP_RCPROTOCOL_FDM_ENABLED
+
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -110,6 +125,13 @@ AP_RCProtocol::~AP_RCProtocol()
 
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
+#if AP_RCPROTOCOL_FDM_ENABLED && AP_RCPROTOCOL_UDP_ENABLED
+    // force re-detection when FDM is active and active backend is UDP values
+    if (_detected_protocol == AP_RCProtocol::UDP &&
+        ((AP_RCProtocol_FDM*)backend[AP_RCProtocol::FDM])->active()) {
+        return true;
+    }
+#endif  // AP_RCPROTOCOL_FDM_ENABLED && AP_RCPROTOCOL_UDP_ENABLED
 #if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_detected_protocol != AP_RCProtocol::NONE && !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
         return false;
@@ -445,6 +467,12 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
         AP_RCProtocol::JOYSTICK_SFML,
 #endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+        AP_RCProtocol::UDP,
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+        AP_RCProtocol::FDM,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -584,6 +612,14 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
     case JOYSTICK_SFML:
         return "SFML";
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+    case UDP:
+        return "UDP";
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+    case FDM:
+        return "FDM";
 #endif
     case NONE:
         break;
