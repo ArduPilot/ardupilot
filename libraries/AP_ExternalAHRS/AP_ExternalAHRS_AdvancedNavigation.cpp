@@ -18,10 +18,10 @@
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
-#include "AP_ExternalAHRS_AdvancedNavigation.h"
+#include "AP_ExternalAHRS_config.h"
 
 #if AP_EXTERNAL_AHRS_ADNAV_ENABLED
-
+#include "AP_ExternalAHRS_AdvancedNavigation.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
@@ -36,6 +36,7 @@
 #define AN_TIMEOUT 5000 //ms
 #define AN_MAXIMUM_PACKET_PERIODS 50
 #define AN_GNSS_PACKET_RATE 5
+#define AN_AIRSPEED_AIDING_FREQUENCY 20
 
 #define an_packet_pointer(packet) packet->header
 #define an_packet_size(packet) (packet->length + AN_PACKET_HEADER_SIZE)*sizeof(uint8_t)
@@ -136,7 +137,8 @@ int AP_ExternalAHRS_AdvancedNavigation_Decoder::decode_packet(uint8_t* out_buffe
 // constructor
 AP_ExternalAHRS_AdvancedNavigation::AP_ExternalAHRS_AdvancedNavigation(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state) :
-    AP_ExternalAHRS_backend(_frontend, _state)
+    AP_ExternalAHRS_backend(_frontend, _state),
+    dal (AP::dal())
 {
     auto &sm = AP::serialmanager();
     _uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
@@ -161,7 +163,20 @@ AP_ExternalAHRS_AdvancedNavigation::AP_ExternalAHRS_AdvancedNavigation(AP_Extern
         AP_HAL::panic("Failed to start ExternalAHRS update thread");
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised");
+    uint32_t tstart = AP_HAL::millis();
+
+    while (!_last_device_info_pkt_ms)
+    {
+        const uint32_t tnow = AP_HAL::millis();
+        if (tnow - tstart >= AN_TIMEOUT)
+        {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ExternalAHRS: Advanced Navigation Device Unresponsive");
+            tstart = tnow;
+        }
+        hal.scheduler->delay(50);
+    }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised: %s", get_name());
 }
 
 void AP_ExternalAHRS_AdvancedNavigation::update()
@@ -181,6 +196,13 @@ void AP_ExternalAHRS_AdvancedNavigation::update_thread(void)
 
         // Sleep the scheduler
         hal.scheduler->delay_microseconds(1000);
+
+        // Send Aiding data to the device
+        if (option_is_set(AP_ExternalAHRS::OPTIONS::AN_ARSP_AID)) {
+            if (!send_airspeed_aiding()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ExternalAHRS: Unable to send airspeed aiding.");
+            }
+        }
 
         // Collect the requested packets from the UART manager
         if (!get_packets()) {
@@ -413,6 +435,7 @@ void AP_ExternalAHRS_AdvancedNavigation::get_filter_status(nav_filter_status &st
 
     status.flags.vert_pos = true;
     status.flags.attitude = true;
+    status.flags.vert_vel = true;
 
     if (_device_status.filter.b.gnss_fix_type > gnss_fix_none) {
         status.flags.horiz_vel = true;
@@ -425,8 +448,6 @@ void AP_ExternalAHRS_AdvancedNavigation::get_filter_status(nav_filter_status &st
 
     if (_device_status.filter.b.gnss_fix_type > gnss_fix_2d) {
         status.flags.gps_quality_good = true;
-        status.flags.vert_pos = true;
-        status.flags.vert_vel = true;
     }
 
 }
@@ -621,6 +642,59 @@ bool AP_ExternalAHRS_AdvancedNavigation::set_filter_options(const AN_FILTER_OPTI
     _uart->write(packet.raw_pointer(), packet.packet_size());
 
     return true;
+}
+
+// Returns true on successful transmit of packet or if called prior to requirement of sending packet.
+bool AP_ExternalAHRS_AdvancedNavigation::send_airspeed_aiding(){
+
+    uint32_t now = AP_HAL::millis();
+    const AP_DAL_Airspeed *arsp = dal.airspeed();
+    const AP_DAL_Baro &bar = dal.baro();
+    uint32_t period_airspeed_aiding_ms = 1000/AN_AIRSPEED_AIDING_FREQUENCY;
+    if (now < _last_ext_air_data_sent_ms + period_airspeed_aiding_ms) {
+        return true;
+    }
+
+    if (arsp == nullptr || !arsp->healthy() || !bar.healthy(bar.get_primary())) {
+        return false;
+    }
+
+    AN_PACKET packet;
+    float airspeed = arsp->get_airspeed();
+
+    _last_ext_air_data_sent_ms = now;
+
+    packet.payload.ext_air_data.true_airspeed = airspeed * dal.get_EAS2TAS();
+    packet.payload.ext_air_data.airspeed_delay = (AP_HAL::millis() - arsp->last_update_ms()) / 1000;
+    packet.payload.ext_air_data.airspeed_standard_deviation = get_airspeed_error(airspeed);
+    packet.payload.ext_air_data.barometric_altitude =  bar.get_altitude();
+    packet.payload.ext_air_data.baro_delay = (AP_HAL::millis() - bar.get_last_update()) / 1000;
+    packet.payload.ext_air_data.barometric_standard_deviation = get_pressure_error();
+    packet.payload.ext_air_data.flags.b.airspeed_set_valid = true;
+    packet.payload.ext_air_data.flags.b.barometric_altitude_set_valid = true;
+    packet.update_checks(packet_id_external_air_data, sizeof(packet.payload.ext_air_data));
+
+    // Check for space in the tx buffer
+    if (_uart->txspace() < packet.packet_size()) {
+        return false;
+    }
+    _uart->write(packet.raw_pointer(), packet.packet_size());
+
+    return true;
+}
+
+// Method to return estimate of airspeed error based upon the current airspeed given error at 20m/s.
+float AP_ExternalAHRS_AdvancedNavigation::get_airspeed_error(float airspeed)
+{
+    float nominal_pressure = 0.5 * sq(airspeed);
+    float adj_airspeed = sqrt(2 * nominal_pressure + get_pressure_error());
+    return adj_airspeed - airspeed;
+}
+
+// Method to give an estimate of the pressure error from the parameter for airspeed error at 20m/s
+float AP_ExternalAHRS_AdvancedNavigation::get_pressure_error(void)
+{
+    return (0.5*(sq(20+airspeed_err_20ms()))) - (0.5*sq(20));
 }
 
 void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
