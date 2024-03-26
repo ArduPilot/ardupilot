@@ -93,6 +93,13 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
+
+    // @Param: PAYLOAD
+    // @DisplayName: additional payload
+    // @Description: This adds additional mass to the vehicle for simulated vehicles based on the multicopter vehicle type (or quadplane)
+    // @Units: kg
+    AP_GROUPINFO("PAYLOAD",  21, SIM,  payload, 0),
+
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
     // @Param: RC_FAIL

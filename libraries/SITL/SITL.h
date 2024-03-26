@@ -225,6 +225,8 @@ public:
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int32 can_servo_mask; // mask of servos/escs coming from CAN
 
+    AP_Float payload; // additional payload mass
+
 #if HAL_NUM_CAN_IFACES
     enum class CANTransport : uint8_t {
       MulticastUDP = 0,

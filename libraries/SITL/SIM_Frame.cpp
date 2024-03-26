@@ -512,13 +512,6 @@ void Frame::init(const char *frame_str, Battery *_battery)
                                model.mdrag_coef);
     }
 
-    if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
-        // if no inertia provided, assume 50% of mass on ring around center
-        model.moment_of_inertia.x = model.mass * 0.25 * sq(model.diagonal_size*0.5);
-        model.moment_of_inertia.y = model.moment_of_inertia.x;
-        model.moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
-    }
-
     // setup reasonable defaults for battery
     AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
     AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
@@ -569,10 +562,19 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         }
     }
 
+    Vector3f moi{model.moment_of_inertia.x, model.moment_of_inertia.y, model.moment_of_inertia.z};
+    if (moi.is_zero()) {
+        const float total_mass = model.mass + _sitl->payload;
+        // if no inertia provided, assume 50% of mass on ring around center
+        moi.x = total_mass * 0.25 * sq(model.diagonal_size*0.5);
+        moi.y = moi.x;
+        moi.z = total_mass * 0.5 * sq(model.diagonal_size*0.5);
+    }
+
     // calculate total rotational acceleration
-    rot_accel.x = torque.x / model.moment_of_inertia.x;
-    rot_accel.y = torque.y / model.moment_of_inertia.y;
-    rot_accel.z = torque.z / model.moment_of_inertia.z;
+    rot_accel.x = torque.x / moi.x;
+    rot_accel.y = torque.y / moi.y;
+    rot_accel.z = torque.z / moi.z;
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance
