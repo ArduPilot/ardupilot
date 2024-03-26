@@ -184,6 +184,14 @@ public:
         KNOWN = 3, ///< The full covariance array is reported by the GPS
     };
 
+    // GPS receiver log level which determines what data is logged
+    enum GPS_Logging_Level {
+        LITE = 0,
+        BASIC = 1,
+        DEFAULT = 2,
+        FULL = 3,
+    };
+
     /*
       The GPS_State structure is filled in by the backend driver as it
       parses each message from the GPS.
@@ -620,6 +628,16 @@ protected:
     AP_Int8 _blend_mask;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
+#if HAL_ENABLE_DRONECAN_DRIVERS
+    AP_Int32 _node_id[GPS_MAX_RECEIVERS];
+    AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
+#endif
+    AP_Float _logging_frequency;        // frequency at which the receiver should log messages
+    AP_Int8 _logging_level;             // amount of details the receiver should log
+    AP_Int8 _logging_overwrite;          // whether to override existing logging on the receiver or add to it
+#if GPS_MOVING_BASELINE
+    MovingBase mb_params[GPS_MAX_RECEIVERS];
+#endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
 
