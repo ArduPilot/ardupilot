@@ -103,7 +103,18 @@ void ModeGuided::update()
 
 void ModeGuided::navigate()
 {
-    plane.update_loiter(active_radius_m);
+    switch (_guided_mode) {
+    case SubMode::WP:
+        plane.update_loiter(active_radius_m);
+        break;
+    case SubMode::Path:
+        plane.nav_controller->follow_path(plane.next_WP_loc,
+            _unit_path_tangent, _path_curvature, plane.loiter.direction);
+        break;
+    default:
+        gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+        break;
+    }
 }
 
 bool ModeGuided::handle_guided_request(Location target_loc)
@@ -115,6 +126,35 @@ bool ModeGuided::handle_guided_request(Location target_loc)
     }
 
     plane.set_guided_WP(target_loc);
+
+    // use waypoint navigation sub-mode
+    _guided_mode = SubMode::WP;
+
+    return true;
+}
+
+bool ModeGuided::handle_guided_path_request(const Location& location_on_path, const Vector2f& unit_path_tangent, const float path_curvature, const bool direction_is_ccw)
+{
+    Location location_on_path_abs_alt = location_on_path;
+
+    // add home alt if needed
+    if (location_on_path_abs_alt.relative_alt) {
+        location_on_path_abs_alt.alt += plane.home.alt;
+        location_on_path_abs_alt.relative_alt = 0;
+    }
+
+    // copy the current location into the OldWP slot
+    plane.prev_WP_loc = plane.current_loc;
+
+    // load the next_WP slot
+    plane.next_WP_loc = location_on_path_abs_alt;
+
+    _unit_path_tangent = unit_path_tangent;
+    _path_curvature = path_curvature;
+    plane.loiter.direction = direction_is_ccw ? -1 : 1;
+
+    // use path navigation sub-mode
+    _guided_mode = SubMode::Path;
 
     return true;
 }

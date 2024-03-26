@@ -147,6 +147,10 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
 
 float AP_L1_Control::loiter_radius(const float radius) const
 {
+    if (_disable_loiter_radius_scaling) {
+        return radius;
+    }
+
     // prevent an insane loiter bank limit
     float sanitized_bank_limit = constrain_float(_loiter_bank_limit, 0.0f, 89.0f);
     float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
@@ -514,4 +518,35 @@ void AP_L1_Control::update_level_flight(void)
     _latAccDem = 0;
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
+}
+
+// update L1 control for path following
+void AP_L1_Control::follow_path(const Location &location_on_path, const Vector2f& unit_path_tangent, float path_curvature, int8_t direction) {
+    //! @note initial implementation uses existing functions
+    if (!is_zero(path_curvature)) {
+        // moving along arc of circle - loiter about wp located at
+        // centre of curvature.
+        float radius_m = 1.0 / path_curvature;
+        auto center_wp = location_on_path;
+        Vector3p tangent_ned(unit_path_tangent.x, unit_path_tangent.y, 0.0);
+        Vector3p dn_ned(0.0, 0.0, 1.0); 
+        auto ofs_ned = dn_ned.cross(tangent_ned) * radius_m * direction;
+        center_wp.offset(ofs_ned);
+
+        // disable loiter radius scaling while updating loiter
+        _disable_loiter_radius_scaling = true;
+        update_loiter(center_wp, radius_m, direction);
+        _disable_loiter_radius_scaling = false;
+    } else {
+        // moving along a line segment - navigate to wp ahead of closest point
+        // in direction of path tangent 
+        float ofs_m = 100.0;
+        Vector3p ofs_ned(ofs_m * unit_path_tangent.x,
+            ofs_m * unit_path_tangent.y, 0.0);
+        auto prev_wp = location_on_path;
+        auto next_wp = location_on_path;
+        next_wp.offset(ofs_ned);
+
+        update_waypoint(prev_wp, next_wp);
+    }
 }
