@@ -474,7 +474,11 @@ bool AP_Landing::restart_landing_sequence()
         return false;
     }
 
-    uint16_t do_land_start_index = mission.get_landing_sequence_start();
+    uint16_t do_land_start_index = 0;
+    Location loc;
+    if (ahrs.get_location(loc)) {
+        do_land_start_index = mission.get_landing_sequence_start(loc);
+    }
     uint16_t prev_cmd_with_wp_index = mission.get_prev_nav_cmd_with_wp_index();
     bool success = false;
     uint16_t current_index = mission.get_current_nav_index();
