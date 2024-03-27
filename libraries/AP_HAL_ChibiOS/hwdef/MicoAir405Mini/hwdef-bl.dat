@@ -5,7 +5,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1156
+APJ_BOARD_ID 1160
 
 # crystal frequency & PPL, working at 168M
 OSCILLATOR_HZ 8000000
