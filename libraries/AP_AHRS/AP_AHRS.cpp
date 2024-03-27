@@ -1412,6 +1412,9 @@ bool AP_AHRS::set_origin(const Location &loc)
     const bool ret3 = EKF3.setOriginLLH(loc);
 #endif
 
+    // update state so that Log_Write_Home_And_Origin can succeed
+    state.origin_ok = _get_origin(state.origin);
+
     // return success if active EKF's origin was set
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
