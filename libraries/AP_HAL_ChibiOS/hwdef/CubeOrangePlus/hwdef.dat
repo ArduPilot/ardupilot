@@ -99,3 +99,13 @@ BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHEC
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True
 define HAL_INS_HIGHRES_SAMPLE 6
+
+// ROMFS filesystem only
+define AP_FILESYSTEM_ROMFS_ENABLED 1
+
+// allow scripts to add parameters
+define AP_PARAM_DYNAMIC_ENABLED 1
+
+define AP_NETWORKING_BACKEND_PPP 1
+
+ROMFS_DIRECTORY libraries/AP_Networking/Web

@@ -299,6 +299,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         _rx_initialised = false;
         _readbuf.set_size_best(rxS);
     }
+    _rts_threshold = _readbuf.get_size() / 16U;
 
     bool clear_buffers = false;
     if (b != 0) {
@@ -1374,10 +1375,10 @@ __RAMFUNC__ void UARTDriver::update_rts_line(void)
         return;
     }
     uint16_t space = _readbuf.space();
-    if (_rts_is_active && space < 16) {
+    if (_rts_is_active && space < _rts_threshold) {
         _rts_is_active = false;
         palSetLine(arts_line);
-    } else if (!_rts_is_active && space > 32) {
+    } else if (!_rts_is_active && space > _rts_threshold+16) {
         _rts_is_active = true;
         palClearLine(arts_line);
     }

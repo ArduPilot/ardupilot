@@ -33,6 +33,11 @@ void AP_Networking::start_tests(void)
                                      "TCP_discard",
                                      8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
     }
+    if (param.tests & TEST_TCP_REFLECT) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_TCP_reflect, void),
+                                     "TCP_reflect",
+                                     8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
+    }
 }
 
 /*
@@ -135,6 +140,61 @@ void AP_Networking::test_TCP_discard(void)
             float dt = (now - last_report_ms)*0.001;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Discard throughput %.3f kbyte/sec", (total_sent/dt)*1.0e-3);
             total_sent = 0;
+            last_report_ms = now;
+        }
+    }
+}
+
+/*
+  start TCP reflect (TCP echo throughput) test
+ */
+void AP_Networking::test_TCP_reflect(void)
+{
+    startup_wait();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_reflect: starting");
+    const char *dest = param.test_ipaddr.get_str();
+    auto *sock = new SocketAPM(false);
+    if (sock == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_reflect: failed to create socket");
+        return;
+    }
+    // connect to the echo service, which is port 7
+    while (!sock->connect(dest, 7)) {
+        hal.scheduler->delay(10);
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_reflect: connected");
+    const uint32_t bufsize = 4096;
+    uint8_t *buf = (uint8_t*)malloc(bufsize);
+    for (uint32_t i=0; i<bufsize; i++) {
+        buf[i] = i & 0xFF;
+    }
+    uint32_t last_report_ms = AP_HAL::millis();
+    uint32_t total_sent = 0;
+    uint32_t total_recv = 0;
+    uint32_t last_recv = 0;
+    const uint32_t max_disparity = 100*1024;
+    while (true) {
+        if ((param.tests & TEST_TCP_REFLECT) == 0) {
+            hal.scheduler->delay(1);
+            continue;
+        }
+        const bool will_send = total_sent < total_recv + max_disparity;
+        if (will_send) {
+            total_sent += sock->send(buf, bufsize);
+        }
+        if (sock->pollin(0)) {
+            uint32_t n = sock->recv(buf, bufsize, 0);
+            if (n == 0 && !will_send) {
+                hal.scheduler->delay_microseconds(100);
+            }
+            total_recv += n;
+        }
+        const uint32_t now = AP_HAL::millis();
+
+        if (now - last_report_ms >= 1000) {
+            float dt = (now - last_report_ms)*0.001;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reflect throughput %.3f kbyte/sec (disparity %u)", ((total_recv-last_recv)/dt)*1.0e-3, unsigned(total_sent-total_recv));
+            last_recv = total_recv;
             last_report_ms = now;
         }
     }

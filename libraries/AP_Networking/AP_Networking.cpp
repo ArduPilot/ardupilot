@@ -76,7 +76,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: TESTS
     // @DisplayName: Test enable flags
     // @Description: Enable/Disable networking tests
-    // @Bitmask: 0:UDP echo test,1:TCP echo test, 2:TCP discard test
+    // @Bitmask: 0:UDP echo test,1:TCP echo test, 2:TCP discard test, 3:TCP reflect test
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),

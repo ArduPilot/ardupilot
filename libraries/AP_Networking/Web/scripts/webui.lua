@@ -70,11 +70,11 @@ local WEB_TIMEOUT = bind_add_param('TIMEOUT', 5, 2.0)
 local WEB_SENDFILE_MIN = bind_add_param('SENDFILE_MIN', 6, 100000)
 
 if WEB_ENABLE:get() ~= 1 then
-   periph:can_printf("WebServer: disabled")
+   gcs:send_text(6, "WebServer: disabled")
    return
 end
 
-periph:can_printf(string.format("WebServer: starting on port %u", WEB_BIND_PORT:get()))
+gcs:send_text(6, string.format("WebServer: starting on port %u", WEB_BIND_PORT:get()))
 
 local sock_listen = Socket(0)
 local clients = {}
@@ -216,7 +216,6 @@ local DYNAMIC_PAGES = {
          <tr><td>IP</td><td><?lstr networking:address_to_str(networking:get_ip_active()) ?></td></tr>
          <tr><td>Netmask</td><td><?lstr networking:address_to_str(networking:get_netmask_active()) ?></td></tr>
          <tr><td>Gateway</td><td><?lstr networking:address_to_str(networking:get_gateway_active()) ?></td></tr>
-         <tr><td>MCU Temperature</td><td><?lstr string.format("%.1fC", analog:mcu_temperature()) ?></td></tr>
          </table>
 ]]
 }
@@ -225,7 +224,7 @@ reboot_counter = 0
 
 local ACTION_PAGES = {
    ["/?FWUPDATE"] = function()
-      periph:can_printf("Rebooting for firmware update")
+      gcs:send_text(6, "Rebooting for firmware update")
       reboot_counter = 50
    end
 }
@@ -260,12 +259,12 @@ JS_LIBRARY = {
 }
 
 if not sock_listen:bind("0.0.0.0", WEB_BIND_PORT:get()) then
-   periph:can_printf(string.format("WebServer: failed to bind to TCP %u", WEB_BIND_PORT:get()))
+   gcs:send_text(6, string.format("WebServer: failed to bind to TCP %u", WEB_BIND_PORT:get()))
    return
 end
 
 if not sock_listen:listen(20) then
-   periph:can_printf("WebServer: failed to listen")
+   gcs:send_text(6, "WebServer: failed to listen")
    return
 end
 
@@ -307,7 +306,7 @@ local debug_count=0
 
 function DEBUG(txt)
    if WEB_DEBUG:get() ~= 0 then
-      periph:can_printf(txt .. string.format(" [%u]", debug_count))
+      gcs:send_text(7, txt .. string.format(" [%u]", debug_count))
       debug_count = debug_count + 1
    end
 end
@@ -988,8 +987,8 @@ local function update()
    if reboot_counter then
       reboot_counter = reboot_counter - 1
       if reboot_counter == 0 then
-         periph:can_printf("Rebooting")
-         periph:reboot(true)
+         gcs:send_text(6, "Rebooting")
+         vehicle:reboot(true)
       end
    end
    return update,5

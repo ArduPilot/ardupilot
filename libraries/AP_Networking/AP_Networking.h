@@ -281,11 +281,13 @@ private:
         TEST_UDP_CLIENT = (1U<<0),
         TEST_TCP_CLIENT = (1U<<1),
         TEST_TCP_DISCARD = (1U<<2),
+        TEST_TCP_REFLECT = (1U<<3),
     };
     void start_tests(void);
     void test_UDP_client(void);
     void test_TCP_client(void);
     void test_TCP_discard(void);
+    void test_TCP_reflect(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
 
 #if AP_NETWORKING_REGISTER_PORT_ENABLED
