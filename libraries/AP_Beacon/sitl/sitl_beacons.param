@@ -10,7 +10,7 @@ BCN_LONGITUDE,149.165230
 # tell the beacon library we are using simulated beacons
 BCN_TYPE,10
 # tell the autopilot to ignore the GPS
-GPS_TYPE,0
+GPS1_TYPE,0
 # log data before arming to asist with diasnostics
 LOG_DISARMED,1
 # Make sure the normal EKF aiding mode is selected (beacon fusion not tested in other modes)

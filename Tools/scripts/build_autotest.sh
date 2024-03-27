@@ -8,7 +8,7 @@ cd $HOME/APM || exit 1
 test -n "$FORCEBUILD" || {
 (cd APM && git fetch > /dev/null 2>&1)
 
-newtags=$(cd APM && git fetch --tags | wc -l)
+newtags=$(cd APM && git fetch --tags --force | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
 

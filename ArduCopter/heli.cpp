@@ -154,9 +154,6 @@ float Copter::get_pilot_desired_rotor_speed() const
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
 void Copter::heli_update_rotor_speed_targets()
 {
-
-    static bool rotor_runup_complete_last = false;
-
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
 
@@ -182,13 +179,6 @@ void Copter::heli_update_rotor_speed_targets()
         break;
     }
 
-    // when rotor_runup_complete changes to true, log event
-    if (!rotor_runup_complete_last && motors->rotor_runup_complete()) {
-        LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
-    } else if (rotor_runup_complete_last && !motors->rotor_runup_complete() && !heli_flags.in_autorotation) {
-        LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
-    }
-    rotor_runup_complete_last = motors->rotor_runup_complete();
 }
 
 
@@ -205,20 +195,17 @@ void Copter::heli_update_autorotation()
                 set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
             }
             // set flag to facilitate both auto and manual autorotations
-            heli_flags.in_autorotation = true;
-            motors->set_in_autorotation(heli_flags.in_autorotation);
+            motors->set_in_autorotation(true);
             motors->set_enable_bailout(true);
         }
 #endif
         if (flightmode->has_manual_throttle() && motors->arot_man_enabled()) {
             // set flag to facilitate both auto and manual autorotations
-            heli_flags.in_autorotation = true;
-            motors->set_in_autorotation(heli_flags.in_autorotation);
+            motors->set_in_autorotation(true);
             motors->set_enable_bailout(true);
         }
     } else {
-        heli_flags.in_autorotation = false;
-        motors->set_in_autorotation(heli_flags.in_autorotation);
+        motors->set_in_autorotation(false);
         motors->set_enable_bailout(false);
     }
 

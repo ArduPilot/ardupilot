@@ -158,8 +158,6 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # FFT option (disabled by default)
 # define HAL_GYROFFT_ENABLED 1
 # define AP_OAPATHPLANNER_ENABLED 0
@@ -169,7 +167,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 # define HAL_NAVEKF3_AVAILABLE 0
 
 # save some flash
-include ../include/save_some_flash.inc
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
 

@@ -4371,7 +4371,7 @@ class TestSuite(ABC):
         """Download latest log over network port"""
         self.context_push()
         self.set_parameters({
-            "NET_ENABLED": 1,
+            "NET_ENABLE": 1,
             "LOG_DISARMED": 0,
             "LOG_DARM_RATEMAX": 1, # make small logs
             # UDP client
@@ -12062,7 +12062,7 @@ switch value'''
     def NMEAOutput(self):
         '''Test AHRS NMEA Output can be read by out NMEA GPS'''
         self.set_parameter("SERIAL5_PROTOCOL", 20) # serial5 is NMEA output
-        self.set_parameter("GPS_TYPE2", 5) # GPS2 is NMEA
+        self.set_parameter("GPS2_TYPE", 5) # GPS2 is NMEA
         port = self.spare_network_port()
         self.customise_SITL_commandline([
             "--serial4=tcp:%u" % port, # GPS2 is NMEA....
@@ -13633,7 +13633,7 @@ switch value'''
             self.set_parameter("SERIAL3_PROTOCOL", serial_protocol)
             if gps_type is None:
                 gps_type = 1  # auto-detect
-            self.set_parameter("GPS_TYPE", gps_type)
+            self.set_parameter("GPS1_TYPE", gps_type)
             self.context_clear_collection('STATUSTEXT')
             self.reboot_sitl()
             if detect_prefix == "probing":
@@ -13656,10 +13656,10 @@ switch value'''
         '''check ArduPilot behaviour across multiple GPS units'''
         self.assert_message_rate_hz('GPS2_RAW', 0)
 
-        # we start sending GPS_TYPE2 - but it will never actually be
+        # we start sending GPS2_TYPE - but it will never actually be
         # filled in as _port[1] is only filled in in AP_GPS::init()
         self.start_subtest("Get GPS2_RAW as soon as we're configured for a second GPS")
-        self.set_parameter("GPS_TYPE2", 1)
+        self.set_parameter("GPS2_TYPE", 1)
         self.assert_message_rate_hz('GPS2_RAW', 5)
 
         self.start_subtest("Ensure correct fix type when no connected GPS")
@@ -13671,7 +13671,7 @@ switch value'''
         self.start_subtest("Ensure detection when sim gps connected")
         self.set_parameter("SIM_GPS2_TYPE", 1)
         self.set_parameter("SIM_GPS2_DISABLE", 0)
-        # a reboot is required after setting GPS_TYPE2.  We start
+        # a reboot is required after setting GPS2_TYPE.  We start
         # sending GPS2_RAW out, once the parameter is set, but a
         # reboot is required because _port[1] is only set in
         # AP_GPS::init() at boot time, so it will never be detected.

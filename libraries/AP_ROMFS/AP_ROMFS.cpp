@@ -53,7 +53,7 @@ const AP_ROMFS::embedded_file *AP_ROMFS::find_file(const char *name)
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
     const struct embedded_file *f = find_file(name);
-    if (!f) {
+    if (f == nullptr) {
         return nullptr;
     }
 
@@ -146,3 +146,17 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
     }
     return nullptr;
 }
+
+/*
+  find a compressed file and return its size
+*/
+bool AP_ROMFS::find_size(const char *name, uint32_t &size)
+{
+    const struct embedded_file *f = find_file(name);
+    if (f == nullptr) {
+        return false;
+    }
+    size = f->decompressed_size;
+    return true;
+}
+

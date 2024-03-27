@@ -576,7 +576,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         for (uint8_t i = 0; i < gps.num_sensors(); i++) {
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
             if ((i != GPS_BLENDED_INSTANCE) &&
 #else
             if (
@@ -614,7 +614,7 @@ bool AP_Arming::gps_checks(bool report)
                          (double)distance_m);
             return false;
         }
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
         if (!gps.blend_health_check()) {
             check_failed(ARMING_CHECK_GPS, report, "GPS blending unhealthy");
             return false;
@@ -1054,6 +1054,11 @@ bool AP_Arming::system_checks(bool report)
     }
 
     if (check_enabled(ARMING_CHECK_PARAMETERS)) {
+#if !AP_GPS_BLENDED_ENABLED
+        if (!blending_auto_switch_checks(report)) {
+            return false;
+        }
+#endif
 #if AP_RPM_ENABLED
         auto *rpm = AP::rpm();
         if (rpm && !rpm->arming_checks(sizeof(buffer), buffer)) {
@@ -1644,6 +1649,19 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
 
     return true;
 }
+
+#if !AP_GPS_BLENDED_ENABLED
+bool AP_Arming::blending_auto_switch_checks(bool report)
+{
+    if (AP::gps().get_auto_switch_type() == 2) {
+        if (report) {
+            check_failed(ARMING_CHECK_GPS, true, "GPS_AUTO_SWITCH==2 but no blending");
+        }
+        return false;
+    }
+    return true;
+}
+#endif
 
 bool AP_Arming::mandatory_checks(bool report)
 {

@@ -43,8 +43,6 @@ PB14 TIM1_CH2N  TIM1   PWM(8)   GPIO(57)
 PA8 TIM1_CH1    TIM1   PWM(9)   GPIO(58) BIDIR
 PA15 TIM2_CH1   TIM2   PWM(10)  GPIO(59) NODMA  # no output
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # Beeper
 #PA7 TIM3_CH2 TIM3 GPIO(32) ALARM
 
@@ -161,6 +159,5 @@ define HAL_WITH_DSP FALSE
 define HAL_GYROFFT_ENABLED 0
 
 include ../include/minimize_fpv_osd.inc
-include ../include/save_some_flash.inc
 
 AUTOBUILD_TARGETS Plane

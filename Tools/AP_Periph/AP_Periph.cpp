@@ -35,6 +35,13 @@
 #define HAL_PERIPH_HWESC_SERIAL_PORT 3
 #endif
 
+// not only will the code not compile without features this enables,
+// but it forms part of a series of measures to give a robust recovery
+// mechanism on AP_Periph if a bad flash occurs.
+#ifndef AP_CHECK_FIRMWARE_ENABLED
+#error AP_CHECK_FIRMWARE_ENABLED must be enabled
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 AP_Periph_FW periph;
@@ -142,13 +149,14 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
+    gps.set_default_type_for_gps1(HAL_GPS1_TYPE_DEFAULT);
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE && g.gps_port >= 0) {
         serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
 #if HAL_LOGGING_ENABLED
         #define MASK_LOG_GPS (1<<2)
         gps.set_log_gps_bit(MASK_LOG_GPS);
 #endif
-        gps.init(serial_manager);
+        gps.init();
     }
 #endif
 

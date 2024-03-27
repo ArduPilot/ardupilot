@@ -1856,7 +1856,7 @@ INCLUDE common.ld
             if 'io_firmware.bin' not in self.romfs:
                 self.error("Need io_firmware.bin in ROMFS for IOMCU")
 
-            f.write('#define HAL_WITH_IO_MCU 1\n')
+            self.write_defaulting_define(f, 'HAL_WITH_IO_MCU', 1)
             f.write('#define HAL_UART_IOMCU_IDX %u\n' % len(serial_list))
             f.write(
                 '#define HAL_UART_IO_DRIVER ChibiOS::UARTDriver uart_io(HAL_UART_IOMCU_IDX)\n'
@@ -2525,6 +2525,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if not self.is_periph_fw():
             self.romfs["hwdef.dat"] = hwdat
 
+    def write_defaulting_define(self, f, name, value):
+        f.write(f"#ifndef {name}\n")
+        f.write(f"#define {name} {value}\n")
+        f.write("#endif\n")
+
     def write_define(self, f, name, value):
         f.write(f"#define {name} {value}\n")
 
@@ -2930,7 +2935,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             return False
         return True
 
-    def process_line(self, line):
+    def process_line(self, line, depth):
         '''process one line of pin definition file'''
         self.all_lines.append(line)
         a = shlex.split(line, posix=False)
@@ -3067,16 +3072,23 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.env_vars[name] = value
         elif a[0] == 'define':
             # extract numerical defines for processing by other parts of the script
-            result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', line)
+            result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
             if result:
-                self.intdefines[result.group(1)] = int(result.group(2))
+                (name, intvalue) = (result.group(1), int(result.group(2)))
+                if name in self.intdefines and self.intdefines[name] == intvalue:
+                    msg = f"{name} already in defines with same value"
+                    if depth == 0:
+                        print(msg)
+                        # raise ValueError(msg)
+
+                self.intdefines[name] = intvalue
 
     def progress(self, message):
         if self.quiet:
             return
         print(message)
 
-    def process_file(self, filename):
+    def process_file(self, filename, depth=0):
         '''process a hwdef.dat file'''
         try:
             f = open(filename, "r")
@@ -3095,9 +3107,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     include_file = os.path.normpath(
                         os.path.join(dir, include_file))
                 self.progress("Including %s" % include_file)
-                self.process_file(include_file)
+                self.process_file(include_file, depth+1)
             else:
-                self.process_line(line)
+                self.process_line(line, depth)
 
     def add_apperiph_defaults(self, f):
         '''add default defines for peripherals'''

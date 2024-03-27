@@ -236,6 +236,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
     // @Values{Copter, Rover, Plane, Blimp}: 175:Camera Lens
     // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
+    // @Values{Copter, Rover, Plane, Blimp}: 177:Mount LRF enable
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -665,6 +666,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::LOWEHEISER_STARTER:
     case AUX_FUNC::MAG_CAL:
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
+    case AUX_FUNC::MOUNT_LRF_ENABLE:
         break;
 
     // not really aux functions:
@@ -770,6 +772,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
     { AUX_FUNC::CAMERA_LENS, "Camera Lens"},
+    { AUX_FUNC::MOUNT_LRF_ENABLE, "Mount LRF Enable"},
 };
 
 /* lookup the announcement for switch change */
@@ -1001,14 +1004,18 @@ bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_fla
 
 bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 {
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return false;
     }
     // Low selects lens 0 (default), Mediums selects lens1, High selects lens2
     return camera->set_lens((uint8_t)ch_flag);
+#else
+    return false;
+#endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 }
-#endif
+#endif // AP_CAMERA_ENABLED
 
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
@@ -1523,9 +1530,11 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
         return do_aux_function_camera_image_tracking(ch_flag);
 
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     case AUX_FUNC::CAMERA_LENS:
         return do_aux_function_camera_lens(ch_flag);
-#endif
+#endif // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
+#endif // AP_CAMERA_ENABLED
 
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1: {
@@ -1553,6 +1562,15 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
             break;
         }
         mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
+        break;
+    }
+
+    case AUX_FUNC::MOUNT_LRF_ENABLE: {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            break;
+        }
+        mount->set_rangefinder_enable(0, ch_flag == AuxSwitchPos::HIGH);
         break;
     }
 #endif

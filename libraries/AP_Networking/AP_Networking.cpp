@@ -32,13 +32,13 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 const AP_Param::GroupInfo AP_Networking::var_info[] = {
-    // @Param: ENABLED
+    // @Param: ENABLE
     // @DisplayName: Networking Enable
     // @Description: Networking Enable
     // @Values: 0:Disable,1:Enable
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLED",  1, AP_Networking, param.enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE",  1, AP_Networking, param.enabled, 0, AP_PARAM_FLAG_ENABLE),
 
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
     // @Group: IPADDR

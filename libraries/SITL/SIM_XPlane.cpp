@@ -105,7 +105,7 @@ XPlane::XPlane(const char *frame_str) :
 
     // XPlane sensor data is not good enough for EKF. Use fake EKF by default
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
-    AP_Param::set_default_by_name("GPS_TYPE", 100);
+    AP_Param::set_default_by_name("GPS1_TYPE", 100);
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)

@@ -374,7 +374,8 @@ void AP_MotorsHeli_Dual::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+
     // Check if rotors are spooled down
     _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }

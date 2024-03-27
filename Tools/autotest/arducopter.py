@@ -2680,8 +2680,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''fly mission which tests normal operation alongside CAN GPS'''
         self.set_parameters({
             "CAN_P1_DRIVER": 1,
-            "GPS_TYPE": 9,
-            "GPS_TYPE2": 9,
+            "GPS1_TYPE": 9,
+            "GPS2_TYPE": 9,
             # disable simulated GPS, so only via DroneCAN
             "SIM_GPS_DISABLE": 1,
             "SIM_GPS2_DISABLE": 1,
@@ -2860,7 +2860,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "EK3_SRC1_POSZ": 3,
             "EK3_AFFINITY" : 1,
-            "GPS_TYPE2" : 1,
+            "GPS2_TYPE" : 1,
             "SIM_GPS2_DISABLE" : 0,
             "SIM_GPS2_GLTCH_Z" : -30
             })
@@ -3137,7 +3137,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "EK3_SRC1_VELZ": 6,
                 })
             self.set_parameters({
-                "GPS_TYPE": 0,
+                "GPS1_TYPE": 0,
                 "VISO_TYPE": 1,
                 "SERIAL5_PROTOCOL": 1,
             })
@@ -3233,7 +3233,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK3_SRC1_VELXY": 6,
             "EK3_SRC1_POSZ": 6,
             "EK3_SRC1_VELZ": 6,
-            "GPS_TYPE": 0,
+            "GPS1_TYPE": 0,
             "VISO_TYPE": 1,
             "SERIAL5_PROTOCOL": 1,
             "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
@@ -3410,7 +3410,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             # switch to vicon, disable GPS and wait 10sec to ensure vehicle remains in Loiter
             self.set_rc(8, 1500)
-            self.set_parameter("GPS_TYPE", 0)
+            self.set_parameter("GPS1_TYPE", 0)
 
             # ensure vehicle remain in Loiter for 15 seconds
             tstart = self.get_sim_time()
@@ -6935,7 +6935,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Ensure we can't enter LOITER without position")
         self.context_push()
         self.set_parameters({
-            "GPS_TYPE": 2,
+            "GPS1_TYPE": 2,
             "SIM_GPS_DISABLE": 1,
         })
         # if there is no GPS at all then we must direct EK3 to not use
@@ -7469,7 +7469,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "BCN_ALT": SITL_START_LOCATION.alt,
                 "BCN_ORIENT_YAW": 0,
                 "AVOID_ENABLE": 4,
-                "GPS_TYPE": 0,
+                "GPS1_TYPE": 0,
                 "EK3_ENABLE": 1,
                 "EK3_SRC1_POSXY": 4, # Beacon
                 "EK3_SRC1_POSZ": 1,  # Baro
@@ -8395,6 +8395,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ("gyus42v2", 31),
             ("teraranger_serial", 35),
             ("nooploop_tofsense", 37),
+            ("ainsteinlrd1", 42),
         ]
         while len(drivers):
             do_drivers = drivers[0:3]
@@ -8639,13 +8640,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK2_ENABLE": 1,
             "AHRS_TRIM_X": 0.01,
             "AHRS_TRIM_Y": -0.03,
-            "GPS_TYPE2": 1,
-            "GPS_POS1_X": 0.1,
-            "GPS_POS1_Y": 0.2,
-            "GPS_POS1_Z": 0.3,
-            "GPS_POS2_X": -0.1,
-            "GPS_POS2_Y": -0.02,
-            "GPS_POS2_Z": -0.31,
+            "GPS2_TYPE": 1,
+            "GPS1_POS_X": 0.1,
+            "GPS1_POS_Y": 0.2,
+            "GPS1_POS_Z": 0.3,
+            "GPS2_POS_X": -0.1,
+            "GPS2_POS_Y": -0.02,
+            "GPS2_POS_Z": -0.31,
             "INS_POS1_X": 0.12,
             "INS_POS1_Y": 0.14,
             "INS_POS1_Z": -0.02,
@@ -8716,7 +8717,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         try:
             # configure:
             self.set_parameters({
-                "GPS_TYPE2": 1,
+                "GPS2_TYPE": 1,
                 "SIM_GPS2_TYPE": 1,
                 "SIM_GPS2_DISABLE": 0,
                 "GPS_AUTO_SWITCH": 2,
@@ -9009,7 +9010,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("fly 50m North (or whatever)")
         old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         self.fly_guided_move_global_relative_alt(50, 0, 20)
-        self.set_parameter('GPS_TYPE', 0)
+        self.set_parameter('GPS1_TYPE', 0)
         self.drain_mav()
         tstart = self.get_sim_time()
         while True:
@@ -9288,7 +9289,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("fly 50m North (or whatever)")
         old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
         self.fly_guided_move_global_relative_alt(50, 0, 50)
-        self.set_parameter('GPS_TYPE', 0)
+        self.set_parameter('GPS1_TYPE', 0)
         self.drain_mav()
         tstart = self.get_sim_time()
         while True:
@@ -9300,7 +9301,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Distance: %f" % pos_delta)
             if pos_delta < 5:
                 raise NotAchievedException("Bug reproduced - returned to near origin")
-        self.set_parameter('GPS_TYPE', 1)
+        self.set_parameter('GPS1_TYPE', 1)
         self.do_RTL()
 
     def GPSForYaw(self):
@@ -10669,6 +10670,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()  # unlock home position
 
+    def Ch6TuningWPSpeed(self):
+        '''test waypoint speed can be changed via Ch6 tuning knob'''
+        self.set_parameters({
+            "TUNE": 10,  # 10 is waypoint speed
+            "TUNE_MIN": 0.02,  # 20cm/s
+            "TUNE_MAX": 1000,  # 10m/s
+            "AUTO_OPTIONS": 3,
+        })
+        self.set_rc(6, 2000)
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1500)
+        self.wait_groundspeed(4.5, 5.5, minimum_duration=5)
+
+        self.set_rc(6, 2000)
+        self.wait_groundspeed(9.5, 10.5, minimum_duration=5)
+
+        self.set_rc(6, 1300)
+        self.wait_groundspeed(2.5, 3.5, minimum_duration=5)
+
+        self.do_RTL()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10742,6 +10777,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
+            self.Ch6TuningWPSpeed,
         ])
         return ret
 

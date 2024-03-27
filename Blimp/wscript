@@ -14,7 +14,6 @@ def build(bld):
             'AP_Arming',
             'AP_LTM_Telem',
             'AP_Devo_Telem',
-            'AP_OSD',
             'AP_KDECAN',
             'AP_Beacon',
             'AP_AdvancedFailsafe', # TODO for some reason compiling GCS_Common.cpp (in libraries) fails if this isn't included.

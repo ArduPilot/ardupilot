@@ -271,6 +271,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
         return;
     }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // check for harmonics across all harmonic notch filters
     // note that we only allow one harmonic notch filter linked to the FFT code
     uint32_t harmonics = 0;
@@ -308,6 +309,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
             _harmonic_multiplier = 2.0f;
         }
     }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
     // initialise the HAL DSP subsystem
     _state = hal.dsp->fft_init(_window_size, _fft_sampling_rate_hz, _num_frames);
@@ -527,10 +529,16 @@ bool AP_GyroFFT::start_analysis() {
 // update calculated values of dynamic parameters - runs at 1Hz
 void AP_GyroFFT::update_parameters(bool force)
 {
-    // lock contention is very costly, so don't allow configuration updates while flying
-    if ((!_initialized || AP::arming().is_armed()) && !force) {
+    if (!_initialized && !force) {
         return;
     }
+#if AP_ARMING_ENABLED
+    // lock contention is very costly, so don't allow configuration
+    // updates while flying
+    if (AP::arming().is_armed() && !force) {
+        return;
+    }
+#endif
 
     WITH_SEMAPHORE(_sem);
 
@@ -764,6 +772,7 @@ void AP_GyroFFT::stop_notch_tune()
         return;
     }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     if (!_ins->setup_throttle_gyro_harmonic_notch(harmonic, (float)_fft_min_hz.get(), _avg_throttle_out, harmonics)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FFT: Unable to set throttle notch with %.1fHz/%.2f",
             harmonic, _avg_throttle_out);
@@ -775,6 +784,7 @@ void AP_GyroFFT::stop_notch_tune()
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", harmonic, _avg_throttle_out);
         AP_Notify::events.autotune_complete = true;
     }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 }
 
 // return the noise peak that is being tracked

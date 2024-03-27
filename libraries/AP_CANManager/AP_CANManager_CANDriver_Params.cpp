@@ -17,12 +17,9 @@
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
 #include "AP_CANManager.h"
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
-#include <AP_KDECAN/AP_KDECAN.h>
-
 
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {

@@ -1065,8 +1065,8 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 #if HAL_WITH_MSP_DISPLAYPORT
     // @Param: TXT_RES
     // @DisplayName: Sets the overlay text resolution (MSP DisplayPort only)
-    // @Description: Sets the overlay text resolution for this screen to either LD 30x16 or HD 50x18 (MSP DisplayPort only)
-    // @Values: 0:30x16,1:50x18
+    // @Description: Sets the overlay text resolution for this screen to either SD 30x16 or HD 50x18/60x22 (MSP DisplayPort only)
+    // @Values: 0:30x16,1:50x18,2:60x22
     // @User: Standard
     AP_GROUPINFO("TXT_RES", 3, AP_OSD_Screen, txt_resolution, 0),
 

@@ -157,7 +157,7 @@ jobs:
             build-options-defaults-test,
             signing,
             CubeOrange-PPP,
-            CubeOrange-SOHW,
+            SOHW,
             Pixhawk6X-PPPGW,
         ]
         toolchain: [

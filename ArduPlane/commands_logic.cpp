@@ -360,10 +360,6 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
 
     setup_glide_slope();
     setup_turn_angle();
-
-#if HAL_LOGGING_ENABLED
-    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
-#endif
 }
 
 Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, float rtl_home_alt_amsl_cm) const

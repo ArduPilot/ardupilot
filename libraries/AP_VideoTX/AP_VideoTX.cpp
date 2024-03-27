@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @DisplayName: Video Transmitter Band
     // @Description: Video Transmitter Band
     // @User: Standard
-    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B
+    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B,8:Band X
     AP_GROUPINFO("BAND",  4, AP_VideoTX, _band, 0),
 
     // @Param: FREQ
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
-const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L"};
+const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L","1G3_A","1G3_B","X"};
 
 const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
 {
@@ -98,7 +98,8 @@ const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNEL
     { 5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917}, /* Race */
     { 5621, 5584, 5547, 5510, 5473, 5436, 5399, 5362}, /* LO Race */
     { 1080, 1120, 1160, 1200, 1240, 1280, 1320, 1360}, /* Band 1G3_A */
-    { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}  /* Band 1G3_B */
+    { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}, /* Band 1G3_B */
+    { 4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200}  /* Band X */
 };
 
 // mapping of power level to milliwatt to dbm

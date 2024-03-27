@@ -524,6 +524,20 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Bitmask: 0:MAVLink,3:SageTechMXS
     AP_GROUPINFO("ADSB_TYPES",    52, SIM,  adsb_types, 1),
 
+#ifdef WITH_SITL_OSD
+    // @Param: OSD_COLUMNS
+    // @DisplayName: Simulated OSD number of text columns
+    // @Description: Simulated OSD number of text columns
+    // @Range: 10 100
+    AP_GROUPINFO("OSD_COLUMNS",   53, SIM,  osd_columns, 30),
+
+    // @Param: OSD_ROWS
+    // @DisplayName: Simulated OSD number of text rows
+    // @Description: Simulated OSD number of text rows
+    // @Range: 10 100
+    AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
+#endif
+    
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK

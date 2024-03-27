@@ -65,9 +65,11 @@ void Plane::Log_Write_FullRate(void)
     if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     if (should_log(MASK_LOG_NOTCH_FULLRATE)) {
         AP::ins().write_notch_log_messages();
     }
+#endif
 }
 
 

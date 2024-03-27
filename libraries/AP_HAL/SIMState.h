@@ -93,9 +93,6 @@ private:
     pid_t _parent_pid;
     uint32_t _update_count;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SocketAPM_native _sitl_rc_in{true};
-#endif
     SITL::SIM *_sitl;
     uint16_t _rcin_port;
     uint16_t _fg_view_port;

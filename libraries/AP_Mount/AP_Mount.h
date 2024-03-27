@@ -151,7 +151,7 @@ public:
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
-    // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+    // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
     void set_yaw_lock(uint8_t instance, bool yaw_lock);
@@ -250,6 +250,12 @@ public:
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t instance, uint8_t lens);
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+    bool set_camera_source(uint8_t instance, uint8_t primary_source, uint8_t secondary_source);
+#endif
+
     // send camera information message to GCS
     void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
 
@@ -265,6 +271,9 @@ public:
 
     // get rangefinder distance.  Returns true on success
     bool get_rangefinder_distance(uint8_t instance, float& distance_m) const;
+
+    // enable/disable rangefinder.  Returns true on success
+    bool set_rangefinder_enable(uint8_t instance, bool enable);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
