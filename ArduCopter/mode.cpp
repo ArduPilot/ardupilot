@@ -1062,3 +1062,12 @@ uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
 }
+
+// Return stopping point as a location with above origin alt frame
+Location Mode::get_stopping_point() const
+{
+    Vector3p stopping_point_NEU;
+    copter.pos_control->get_stopping_point_xy_cm(stopping_point_NEU.xy());
+    copter.pos_control->get_stopping_point_z_cm(stopping_point_NEU.z);
+    return Location { stopping_point_NEU.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
+}
