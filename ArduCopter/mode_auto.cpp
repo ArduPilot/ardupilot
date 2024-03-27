@@ -216,7 +216,7 @@ bool ModeAuto::allows_weathervaning() const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
-    if (mission.jump_to_landing_sequence()) {
+    if (mission.jump_to_landing_sequence(get_stopping_point())) {
         mission.set_force_resume(true);
         // if not already in auto switch to auto
         if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {

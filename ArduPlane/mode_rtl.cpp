@@ -102,7 +102,7 @@ void ModeRTL::navigate()
             labs(plane.altitude_error_cm) < 1000))
             {
                 // we've reached the RTL point, see if we have a landing sequence
-                if (plane.mission.jump_to_landing_sequence()) {
+                if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
                     // switch from RTL -> AUTO
                     plane.mission.set_force_resume(true);
                     if (plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {

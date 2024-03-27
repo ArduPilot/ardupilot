@@ -701,7 +701,7 @@ bool Plane::trigger_land_abort(const float climb_to_alt_m)
         plane.is_land_command(mission_id);
     if (is_in_landing) {
         // fly a user planned abort pattern if available
-        if (plane.mission.jump_to_abort_landing_sequence()) {
+        if (plane.have_position && plane.mission.jump_to_abort_landing_sequence(plane.current_loc)) {
             return true;
         }
 
