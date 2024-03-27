@@ -1818,6 +1818,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
 
         self.takeoff(alt=50, alt_max=300)
+
+        # Set throttle stick to neutral
+        self.set_rc(3, 1500)
+
         # Trigger fence breach, fly to rally location
         self.set_parameters({
             "FENCE_RET_RALLY": 1,
@@ -3513,6 +3517,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # get flying
         self.takeoff(alt=50)
+
+        # Set throttle stick to neutral
+        self.set_rc(3, 1500)
+
         self.change_mode('CIRCLE')
 
         try:
@@ -3805,6 +3813,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
         self.wait_mode("GUIDED", timeout=120) # We should RTL because of fence breach
+
+        # Set throttle stick to neutral
+        self.set_rc(3, 1500)
+
         self.delay_sim_time(60)
 
         items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
@@ -3841,6 +3853,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Wait for guided return to vehicle calculated fence return location
         self.wait_distance_to_location(ret_loc, 90, 110)
+
         self.wait_circling_point_with_radius(ret_loc, 92)
 
         self.progress("Test complete, disable fence and come home")
@@ -3874,6 +3887,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
         self.wait_mode("GUIDED") # We should RTL because of fence breach
+
+        # Set throttle stick to neutral
+        self.set_rc(3, 1500)
+
         self.delay_sim_time(30)
 
         items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
@@ -4931,6 +4948,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''test handling of MAV_CMD_GUIDED_CHANGE_ALTITUDE'''
         self.takeoff(30, relative=True)
         self.change_mode('GUIDED')
+
+        # Set throttle stick to neutral
+        self.set_rc(3, 1500)
+
         for alt in 50, 70:
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
