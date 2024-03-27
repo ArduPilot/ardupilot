@@ -190,6 +190,12 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm", "default_params/quad-can.parm"],
                 "periph_params_filename": ["default_params/periph.parm", "default_params/quad-periph.parm"],
             },
+            "freestyle": {
+                "model": "X:@ROMFS/models/freestyle.json",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "models/freestyle.param"],
+            },
         },
     },
     "Helicopter": {
