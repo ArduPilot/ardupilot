@@ -61,11 +61,9 @@ void MD5Init(struct MD5Context *ctx)
  */
 void MD5Update(struct MD5Context *ctx, unsigned char const *buf, unsigned len)
 {
-    register uint32 t;
-
     /* Update bitcount */
 
-    t = ctx->bits[0];
+    uint32_t t = ctx->bits[0];
     if ((ctx->bits[0] = t + ((uint32) len << 3)) < t)
 	ctx->bits[1]++;		/* Carry from low to high */
     ctx->bits[1] += len >> 29;
@@ -167,12 +165,10 @@ void MD5Final(unsigned char digest[16], struct MD5Context *ctx)
  */
 static void MD5Transform(uint32 buf[4], uint32 const in[16])
 {
-    register uint32 a, b, c, d;
-
-    a = buf[0];
-    b = buf[1];
-    c = buf[2];
-    d = buf[3];
+    uint32_t a = buf[0];
+    uint32_t b = buf[1];
+    uint32_t c = buf[2];
+    uint32_t d = buf[3];
 
     MD5STEP(F1, a, b, c, d, in[0] + 0xd76aa478, 7);
     MD5STEP(F1, d, a, b, c, in[1] + 0xe8c7b756, 12);

@@ -1466,7 +1466,7 @@ void Copter::convert_pid_parameters(void)
 
     // attitude and position control filter parameter changes (from _FILT to FLTD, FLTE, FLTT) for Copter-4.0
     // magic numbers shown below are discovered by setting AP_PARAM_KEY_DUMP = 1
-    const AP_Param::ConversionInfo ff_and_filt_conversion_info[] = {
+    static constexpr AP_Param::ConversionInfo ff_and_filt_conversion_info[] = {
 #if FRAME_CONFIG == HELI_FRAME
         // tradheli moves ATC_RAT_RLL/PIT_FILT to FLTE, ATC_RAT_YAW_FILT to FLTE
         // PARAMETER_CONVERSION - Added: Jul-2019
@@ -1491,7 +1491,9 @@ void Copter::convert_pid_parameters(void)
         // PARAMETER_CONVERSION - Added: Oct-2019
         { Parameters::k_param_pos_control, 388, AP_PARAM_FLOAT, "PSC_ACCZ_FLTE" },
     };
-    AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
+    // AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
+    const std::span<AP_Param::ConversionInfo, ARRAY_SIZE(ff_and_filt_conversion_info)> fred{ff_and_filt_conversion_info};
+    AP_Param::convert_old_parameters(fred);
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1

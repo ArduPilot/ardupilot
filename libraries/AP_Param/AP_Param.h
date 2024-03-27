@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <cmath>
+#include <span>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -489,6 +490,9 @@ public:
         uint16_t old_index;  // Old parameter index in g
     };
     static void         convert_toplevel_objects(const TopLevelObjectConversion g2_conversions[], uint8_t num_conversions);
+
+    static void         convert_old_parameters(const std::span<ConversionInfo> &conversion_table, uint8_t flags=0);
+    static void         convert_old_parameters_scaled(const std::span<ConversionInfo> &conversion_table, float scaler, uint8_t flags);
 
     /*
       convert width of a parameter, allowing update to wider scalar

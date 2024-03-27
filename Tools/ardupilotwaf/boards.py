@@ -325,7 +325,8 @@ class Board:
             env.PRIVATE_KEY = cfg.options.private_key
             
         env.CXXFLAGS += [
-            '-std=gnu++11',
+            '-std=gnu++20',
+            '-Wno-psabi',  # disable ABI-change-warnings
 
             '-fdata-sections',
             '-ffunction-sections',
