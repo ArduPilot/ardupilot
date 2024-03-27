@@ -250,6 +250,7 @@ class ExtractFeatures(object):
             ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'AP_Compass::mag_cal_fixed_yaw'),
             ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
             ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotation::init'),
+            ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
         ]
 
     def progress(self, msg):
