@@ -190,7 +190,7 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
 //  target and error are filtered
 //  the derivative is then calculated and filtered
 //  the integral is then updated based on the setting of the limit flag
-float AC_PID::update_all(float target, float measurement, float dt, bool limit, float boost)
+float AC_PID::update_all(float target, float measurement, float dt, bool limit, float scale)
 {
     // don't process inf or NaN
     if (!isfinite(target) || !isfinite(measurement)) {
@@ -252,9 +252,9 @@ float AC_PID::update_all(float target, float measurement, float dt, bool limit, 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
 
-    // boost output if required
-    P_out *= boost;
-    D_out *= boost;
+    // scale output if required
+    P_out *= scale;
+    D_out *= scale;
 
     _pid_info.PD_limit = false;
     // Apply PD sum limit if enabled
@@ -318,6 +318,7 @@ void AC_PID::update_i(float dt, bool limit)
     } else {
         _integrator = 0.0f;
     }
+
     _pid_info.I = _integrator;
     _pid_info.limit = limit;
 

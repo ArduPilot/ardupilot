@@ -149,4 +149,7 @@ protected:
 
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
+    AP_Float              _pd_scale_roll; // PD roll default scale factor
+    AP_Float              _pd_scale_pitch; // PD pitch default scale factor
+    AP_Float              _pd_scale_yaw; // PD yaw default scale factor
 };
