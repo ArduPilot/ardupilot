@@ -47,6 +47,7 @@ class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
 class AP_Mount_Viewpro;
+class AP_Mount_Topotek;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -67,6 +68,7 @@ class AP_Mount
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
     friend class AP_Mount_Viewpro;
+    friend class AP_Mount_Topotek;
 
 public:
     AP_Mount();
@@ -114,6 +116,9 @@ public:
 #endif
 #if HAL_MOUNT_VIEWPRO_ENABLED
         Viewpro = 11,        /// Viewpro gimbal using a custom serial protocol
+#endif
+#if HAL_MOUNT_TOPOTEK_ENABLED
+        Topotek = 12,        /// Topotek gimbal using a custom serial protocol
 #endif
     };
 
