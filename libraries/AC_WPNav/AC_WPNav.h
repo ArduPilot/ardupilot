@@ -290,4 +290,12 @@ protected:
     AP_Int8     _rangefinder_use;       // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;   // true if rangefinder distance is healthy (i.e. between min and maximum)
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
+
+#if AP_AVOIDANCE_ENABLED
+    // simple avoidance variables
+    struct {
+        float vel_xy_max;               // maximum horizontal velocity possible while avoiding obstacles
+        bool vel_xy_max_set;            // true if _avoid_vel_max has been set
+    } _simple_avoidance;
+#endif
 };

@@ -187,8 +187,9 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
 * before the fence/object.
 * kP, accel_cmss are for the horizontal axis
 * kP_z, accel_cmss_z are for vertical axis
+* proximity_only should be true if only proximity sensor should be used (e.g. fences should not be used)
 */
-void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt)
+void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt, bool proximity_only)
 {
     // exit immediately if disabled
     if (_enabled == AC_AVOID_DISABLED) {
@@ -214,10 +215,12 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         find_max_quadrant_velocity_3D(backup_vel_proximity, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, back_vel_up, back_vel_down);
     }
     
-    // Avoidance in response to various fences 
-    Vector3f backup_vel_fence;
-    adjust_velocity_fence(kP, accel_cmss, desired_vel_cms, backup_vel_fence, kP_z, accel_cmss_z, dt);
-    find_max_quadrant_velocity_3D(backup_vel_fence , quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, back_vel_up, back_vel_down);
+    // Avoidance in response to various fences
+    if (!proximity_only) {
+        Vector3f backup_vel_fence;
+        adjust_velocity_fence(kP, accel_cmss, desired_vel_cms, backup_vel_fence, kP_z, accel_cmss_z, dt);
+        find_max_quadrant_velocity_3D(backup_vel_fence , quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, back_vel_up, back_vel_down);
+    }
     
     // Desired backup velocity is sum of maximum velocity component in each quadrant
     const Vector2f desired_backup_vel_xy = quad_1_back_vel + quad_2_back_vel + quad_3_back_vel + quad_4_back_vel;
@@ -331,7 +334,7 @@ void AC_Avoid::adjust_speed(float kP, float accel, float heading, float &speed, 
     };
 
     bool backing_up  = false;
-    adjust_velocity(vel, backing_up, kP, accel * 100.0f, 0, 0, dt);
+    adjust_velocity(vel, backing_up, kP, accel * 100.0f, 0, 0, dt, false);
     const Vector2f vel_xy{vel.x, vel.y};
 
     if (backing_up) {

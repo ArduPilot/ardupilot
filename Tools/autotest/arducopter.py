@@ -7112,7 +7112,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reach_heading_manual(225)
         self.wait_location(west_loc, accuracy=6, timeout=200)
         self.set_rc(2, 1500)
-        self.do_RTL()
 
     def OBSTACLE_DISTANCE_3D_test_angle(self, angle):
         now = self.get_sim_time_cached()
@@ -7202,6 +7201,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Enabling proximity")
             self.set_rc(10, 2000)
             self.check_avoidance_corners()
+            self.set_rc(10, 1000)
+            self.do_RTL()
 
             self.assert_current_onboard_log_contains_message("PRX")
             self.assert_current_onboard_log_contains_message("PRXR")
@@ -7374,6 +7375,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.load_fence("copter-avoidance-fence.txt")
         self.set_parameter("FENCE_ENABLE", 1)
         self.check_avoidance_corners()
+        self.do_RTL()
 
     def global_position_int_for_location(self, loc, time_boot, heading=0):
         return self.mav.mav.global_position_int_encode(
