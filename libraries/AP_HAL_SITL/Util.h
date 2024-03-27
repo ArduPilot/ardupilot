@@ -106,4 +106,18 @@ private:
 
     int saved_argc;
     char *const *saved_argv;
+
+#if HAL_UART_STATS_ENABLED
+    // request information on uart I/O
+    void uart_info(ExpandingString &str) override;
+#endif
+
+private:
+#if HAL_UART_STATS_ENABLED
+    // UART stats tracking helper
+    struct {
+        AP_HAL::UARTDriver::StatsTracker serial[AP_HAL::HAL::num_serial];
+        uint32_t last_ms;
+    } uart_stats;
+#endif
 };

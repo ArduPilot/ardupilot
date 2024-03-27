@@ -48,6 +48,7 @@ const struct UnitStructure log_Units[] = {
     { 'a', "Ah" },            // Ampere hours
     { 'd', "deg" },           // of the angular variety, -180 to 180
     { 'b', "B" },             // bytes
+    { 'B', "B/s" },           // bytes per second
     { 'k', "deg/s" },         // degrees per second. Degrees are NOT SI, but is some situations more user-friendly than radians
     { 'D', "deglatitude" },   // degrees of latitude
     { 'e', "deg/s/s" },       // degrees per second per second. Degrees are NOT SI, but is some situations more user-friendly than radians
@@ -310,6 +311,8 @@ struct PACKED log_MAV {
     uint8_t flags;
     uint16_t stream_slowdown_ms;
     uint16_t times_full;
+    float tx_rate;
+    float rx_rate;
 };
 
 struct PACKED log_RSSI {
@@ -831,6 +834,8 @@ struct PACKED log_VER {
 // @FieldBitmaskEnum: flags: GCS_MAVLINK::Flags
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
+// @Field: tx: transmitted data rate bytes per second
+// @Field: rx: received data rate bytes per second
 
 // @LoggerMessage: MAVC
 // @Description: MAVLink command we have just executed
@@ -1277,7 +1282,7 @@ LOG_STRUCTURE_FROM_FENCE \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GGB-" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
-      "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
+      "MAV", "QBHHHBHHff",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf,tx,rx", "s#----s-BB", "F-000-C---" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" , true }, \
