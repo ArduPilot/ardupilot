@@ -455,9 +455,8 @@ AP_GPS_SBF::process_message(void)
             set_alt_amsl_cm(state, ((float)temp.Height - temp.Undulation) * 1e2f);
         }
 
-        if (temp.NrSV != 255) {
-            state.num_sats = temp.NrSV;
-        }
+        // Important to reset count if DNU to use IMU instead
+        state.num_sats = temp.NrSV != 255 ? temp.NrSV : 0;
 
         Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
         switch (temp.Mode & 15) {
