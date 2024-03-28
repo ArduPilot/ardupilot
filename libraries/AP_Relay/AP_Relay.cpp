@@ -408,6 +408,10 @@ void AP_Relay::set_pin_by_instance(uint8_t instance, bool value)
 
     const bool initial_value = get_pin(pin);
 
+    if (_params[instance].inverted > 0) {
+        value = !value;
+    }
+
     if (initial_value != value) {
         set_pin(pin, value);
 #if HAL_LOGGING_ENABLED
@@ -494,6 +498,10 @@ bool AP_Relay::get(uint8_t instance) const
     if (instance >= ARRAY_SIZE(_params)) {
         // invalid instance
         return false;
+    }
+
+    if (_params[instance].inverted > 0) {
+        return !get_pin(_params[instance].pin.get());
     }
 
     return get_pin(_params[instance].pin.get());
