@@ -142,6 +142,12 @@ public:
 	//return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
+    // Helper to calculate the blade pitch angle contribution of the collective
+    float calculate_collective_blade_angle(float output) const;
+
+    // Helper to get blade pitch angle contributions from swashplate inputs
+    bool get_swash_angles(uint8_t i, float& col, float& tcyc, float& pcyc, float& rcyc) const;
+
     // enum for heli optional features
     enum class HeliOption {
         USE_LEAKY_I                     = (1<<0),   // 1
@@ -164,6 +170,9 @@ public:
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+
+    // The maximum number of swashplates we can currently expect any heli to have
+    static const uint8_t MAX_SWASHPLATES = 4;
 
 protected:
 
@@ -236,6 +245,9 @@ protected:
     // Update _heliflags.rotor_runup_complete value writing log event on state change
     void set_rotor_runup_complete(bool new_value);
 
+    // Calculate and store blade pitch angle contributions in the swashplate log
+    void log_swashplate(uint8_t i, float sw_roll, float sw_pitch, float collective, float swash_range_scaler);
+
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
         HOVER_LEARN_DISABLED = 0,
@@ -258,6 +270,14 @@ protected:
         uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
         uint8_t start_engine            : 1;    // true if turbine start RC option is initiated
     } _heliflags;
+
+    struct AP_MotorsHeli_Swash_Log {
+        bool used;                   // flag to denote if we are using this instance of swashplate for a given frame type
+        float coll_ang_deg;          // collective blade pitch angle contributions for swashplate after mixing
+        float total_cyclic_ang_deg;  // total cyclic blade pitch angle contributions for each swashplate after mixing
+        float pitch_cyclic_ang_deg;  // pitch cyclic blade pitch angle contributions for each swashplate after mixing
+        float roll_cyclic_ang_deg;   // roll cyclic blade pitch angle contributions for each swashplate after mixing
+    } swashplate_log[MAX_SWASHPLATES];
 
     // parameters
     AP_Int16        _cyclic_max;                // Maximum cyclic angle of the swash plate in centi-degrees
