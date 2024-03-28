@@ -221,4 +221,8 @@ struct page_dshot_telem {
     uint16_t  current_camps[4];
     uint16_t  temperature_cdeg[4];
     uint16_t  types[4];
+#if HAL_WANTS_EDTV2
+    uint8_t   edt2_status[4];
+    uint8_t   edt2_stress[4];
+#endif
 };

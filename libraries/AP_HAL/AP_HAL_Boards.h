@@ -179,6 +179,14 @@
 #define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
 #endif
 
+#ifndef HAL_REQUIRES_BDSHOT_SUPPORT
+#define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
+#endif
+
+#ifndef HAL_WANTS_EDTV2
+#define HAL_WANTS_EDTV2 HAL_REQUIRES_BDSHOT_SUPPORT
+#endif
+
 // this is used as a general mechanism to make a 'small' build by
 // dropping little used features. We use this to allow us to keep
 // FMUv2 going for as long as possible
