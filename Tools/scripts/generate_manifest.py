@@ -105,6 +105,7 @@ brand_map = {
     "SkystarsH7HD" : ("Skystars", "H743 HD"),
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
     "MicoAir405v2" : ("MicoAir F405 v2.1", "MicoAir"),
+    "NxtPX4v2" : ("HKUST UAV-Group", "MicoAir"),
 }
 
 class Firmware():
