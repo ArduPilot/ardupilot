@@ -50,7 +50,7 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
 #endif
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     if (uart_num == -1) {
-        uart_num = g.rangefinder_port;
+        uart_num = g.rangefinder_port[0];
     }
 #endif
 #ifdef HAL_PERIPH_ENABLE_ADSB
