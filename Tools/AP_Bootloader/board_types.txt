@@ -266,6 +266,7 @@ AP_HW_MicoAir405v2                   1150
 AP_HW_ORAQF405PRO                    1155
 AP_HW_CBU_StampH743                  1156
 AP_HW_FOXEERF405_V2                  1157
+AP_HW_CSKY405                        1158
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
