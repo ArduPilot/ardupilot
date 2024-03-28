@@ -147,10 +147,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
 #if AP_FENCE_ENABLED
         if (cmd.p1 == 0) { // disable fence
-            plane.fence.enable(false);
+            plane.fence.enable_configured(false);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence disabled");
         } else if (cmd.p1 == 1) { // enable fence
-            plane.fence.enable(true);
+            plane.fence.enable_configured(true);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence enabled");
         } else if (cmd.p1 == 2) { // disable fence floor only
             plane.fence.disable_floor();

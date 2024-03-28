@@ -1575,6 +1575,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 0,
             "FENCE_TYPE": 1,
+            "FENCE_ENABLE" : 1,
         })
 
         self.change_alt(10)
@@ -1610,6 +1611,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # enable fence, disable avoidance
         self.set_parameters({
             "AVOID_ENABLE": 0,
+            "FENCE_ENABLE" : 1,
             "FENCE_TYPE": 8,
             "FENCE_ALT_MIN": 20,
         })
@@ -1655,6 +1657,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Test Landing while fence floor enabled")
         self.set_parameters({
             "AVOID_ENABLE": 0,
+            "FENCE_ENABLE" : 1,
             "FENCE_TYPE": 15,
             "FENCE_ALT_MIN": 10,
             "FENCE_ALT_MAX": 20,
@@ -1675,14 +1678,98 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1800)
 
         self.wait_mode('RTL', timeout=120)
+
         self.wait_landed_and_disarmed()
         self.assert_fence_enabled()
 
-        # Assert fence is not healthy
+        # Assert fence is not healthy since it was enabled manually
         self.assert_sensor_state(fence_bit, healthy=False)
 
         # Disable the fence using mavlink command to ensure cleaned up SITL state
         self.do_fence_disable()
+        self.assert_fence_disabled()
+
+    def FenceFloorAutoDisableLanding(self):
+        """Ensures we can initiate and complete an RTL while the fence is enabled"""
+
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+
+        self.progress("Test Landing while fence floor enabled")
+        self.set_parameters({
+            "AVOID_ENABLE": 0,
+            "FENCE_TYPE": 11,
+            "FENCE_ALT_MIN": 10,
+            "FENCE_ALT_MAX": 20,
+            "FENCE_AUTOENABLE" : 1,
+        })
+
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoff(alt_min=15, mode="GUIDED")
+
+        # Check fence is enabled
+        self.assert_fence_enabled()
+
+        # Change to RC controlled mode
+        self.change_mode('LOITER')
+
+        self.set_rc(3, 1800)
+
+        self.wait_mode('RTL', timeout=120)
+        # Assert fence is not healthy now that we are in RTL
+        self.assert_sensor_state(fence_bit, healthy=False)
+
+        self.wait_landed_and_disarmed(0)
+        # the breach should have cleared since we auto-disable the
+        # fence on landing
+        self.assert_fence_disabled()
+
+        # Assert fences have gone now that we have landed and disarmed
+        self.assert_sensor_state(fence_bit, present=True, enabled=False)
+
+    def FenceFloorAutoEnableOnArming(self):
+        """Ensures we can auto-enable fences on arming and still takeoff and land"""
+
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+
+        self.set_parameters({
+            "AVOID_ENABLE": 0,
+            "FENCE_TYPE": 11,
+            "FENCE_ALT_MIN": 10,
+            "FENCE_ALT_MAX": 20,
+            "FENCE_AUTOENABLE" : 3,
+        })
+
+        self.change_mode("GUIDED")
+        # Check fence is not enabled
+        self.assert_fence_disabled()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoff(alt_min=15, mode="GUIDED")
+
+        # Check fence is enabled
+        self.assert_fence_enabled()
+
+        # Change to RC controlled mode
+        self.change_mode('LOITER')
+
+        self.set_rc(3, 1800)
+
+        self.wait_mode('RTL', timeout=120)
+        # Assert fence is not healthy now that we are in RTL
+        self.assert_sensor_state(fence_bit, healthy=False)
+
+        self.wait_landed_and_disarmed(0)
+        # the breach should have cleared since we auto-disable the
+        # fence on landing
+        self.assert_fence_disabled()
+
+        # Assert fences have gone now that we have landed and disarmed
+        self.assert_sensor_state(fence_bit, present=True, enabled=False)
+
+        # Disable the fence using mavlink command to ensure cleaned up SITL state
         self.assert_fence_disabled()
 
     def GPSGlitchLoiter(self, timeout=30, max_distance=20):
@@ -7375,6 +7462,54 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("FENCE_ENABLE", 1)
         self.check_avoidance_corners()
 
+    def AvoidanceAltFence(self):
+        '''Test fence avoidance at minimum and maximum altitude'''
+        ex = None
+        try:
+            self.set_parameters({
+                "FENCE_ENABLE": 1,
+                "FENCE_TYPE": 9,   # min and max alt fence
+                "FENCE_ALT_MIN": 10,
+                "FENCE_ALT_MAX": 30,
+            })
+
+            self.change_mode('LOITER')
+            self.wait_ekf_happy()
+
+            tstart = self.get_sim_time()
+            self.takeoff(15, mode='LOITER')
+            self.progress("Increasing throttle, vehicle should stay below 30m")
+            self.set_rc(3, 1920)
+
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 20:
+                    break
+                alt = self.get_altitude(relative=True)
+                self.progress("Altitude %s" % alt)
+                if alt > 30:
+                    raise NotAchievedException("Breached maximum altitude (%s)" % (str(alt),))
+
+            self.progress("Decreasing, vehicle should stay above 10m")
+            self.set_rc(3, 1080)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 20:
+                    break
+                alt = self.get_altitude(relative=True)
+                self.progress("Altitude %s" % alt)
+                if alt < 10:
+                    raise NotAchievedException("Breached minimum altitude (%s)" % (str(alt),))
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.land_and_disarm()
+        self.disarm_vehicle(force=True)
+        if ex is not None:
+            raise ex
+
     def global_position_int_for_location(self, loc, time_boot, heading=0):
         return self.mav.mav.global_position_int_encode(
             int(time_boot * 1000), # time_boot_ms
@@ -10096,6 +10231,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
              self.AC_Avoidance_Fence,
              self.AC_Avoidance_Beacon,
+             self.AvoidanceAltFence,
              self.BaroWindCorrection,
              self.SetpointGlobalPos,
              self.ThrowDoubleDrop,
@@ -10114,6 +10250,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MaxAltFence,
              self.MinAltFence,
              self.FenceFloorEnabledLanding,
+             self.FenceFloorAutoDisableLanding,
+             self.FenceFloorAutoEnableOnArming,
              self.AutoTuneSwitch,
              self.GPSGlitchLoiter,
              self.GPSGlitchLoiter2,

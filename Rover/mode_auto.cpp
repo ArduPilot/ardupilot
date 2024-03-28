@@ -596,10 +596,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
 #if AP_FENCE_ENABLED
         if (cmd.p1 == 0) {  //disable
-            rover.fence.enable(false);
+            rover.fence.enable_configured(false);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
         } else {  //enable fence
-            rover.fence.enable(true);
+            rover.fence.enable_configured(true);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
         }
 #endif

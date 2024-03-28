@@ -63,6 +63,7 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_mode_setup = false;
+    plane.have_autoenabled_fences = false;
 
     return true;
 }
@@ -154,7 +155,10 @@ void ModeTakeoff::update()
     } else {
         if ((altitude_cm >= alt * 100 - 200)) { //within 2m of TKOFF_ALT ,or above and loitering
 #if AP_FENCE_ENABLED
-            plane.fence.auto_enable_fence_after_takeoff();
+            if (!plane.have_autoenabled_fences) {
+                plane.fence.auto_enable_fence_after_takeoff();
+                plane.have_autoenabled_fences = true;
+            }
 #endif
             plane.calc_nav_roll();
             plane.calc_nav_pitch();

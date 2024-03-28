@@ -233,6 +233,9 @@ private:
 
     // are we currently in long failsafe but have postponed it in MODE TAKEOFF until min level alt is reached
     bool long_failsafe_pending;
+    
+    //flag that we have already called autoenable fences once in MODE TAKEOFF
+    bool have_autoenabled_fences;
 
     // GCS selection
     GCS_Plane _gcs; // avoid using this; use gcs()

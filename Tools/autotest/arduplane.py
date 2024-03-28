@@ -3711,6 +3711,176 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm(timeout=150)
 
+    def FenceMinAltAutoEnable(self):
+        '''Tests autoenablement of the alt min fence and fences on arming'''
+        self.set_parameters({
+            "FENCE_TYPE": 9,     # Set fence type to min alt and max alt
+            "FENCE_ACTION": 1,   # Set action to RTL
+            "FENCE_ALT_MIN": 25,
+            "FENCE_ALT_MAX": 100,
+            "FENCE_AUTOENABLE": 3,
+            "FENCE_ENABLE" : 0,
+            "RTL_AUTOLAND" : 2,
+        })
+
+        # check we can takeoff again
+        for i in [1, 2]:
+            # Grab Home Position
+            self.mav.recv_match(type='HOME_POSITION', blocking=True)
+            self.homeloc = self.mav.location()
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            # max alt fence should now be enabled
+            if i == 1:
+                self.assert_fence_enabled()
+
+            self.takeoff(alt=50, mode='TAKEOFF')
+            self.change_mode("FBWA")
+            self.set_rc(3, 1100)    # lower throttle
+
+            self.progress("Waiting for RTL")
+            tstart = self.get_sim_time()
+            mode = "RTL"
+            while not self.mode_is(mode, drain_mav=False):
+                self.mav.messages['HEARTBEAT'].custom_mode
+                self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
+                    self.mav.flightmode, mode, self.get_altitude(relative=True)))
+                if (self.get_sim_time_cached() > tstart + 120):
+                    raise WaitModeTimeout("Did not change mode")
+            self.progress("Got mode %s" % mode)
+            self.fly_home_land_and_disarm()
+            self.change_mode("FBWA")
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+            self.set_current_waypoint(0, check_afterwards=False)
+            self.set_rc(3, 1000)    # lower throttle
+
+    def FenceAutoEnableDisableSwitch(self):
+        '''Tests autoenablement of regular fences and manual disablement'''
+        self.set_parameters({
+            "FENCE_TYPE": 11,     # Set fence type to min alt
+            "FENCE_ACTION": 1,   # Set action to RTL
+            "FENCE_ALT_MIN": 50,
+            "FENCE_ALT_MAX": 100,
+            "FENCE_AUTOENABLE": 2,
+            "FENCE_OPTIONS" : 1,
+            "FENCE_ENABLE" : 1,
+            "FENCE_RADIUS" : 300,
+            "FENCE_RET_ALT" : 0,
+            "FENCE_RET_RALLY" : 0,
+            "FENCE_TOTAL" : 0,
+            "TKOFF_ALT" : 75,
+            "RC7_OPTION" : 11,   # AC_Fence uses Aux switch functionality
+        })
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+        # Grab Home Position
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.homeloc = self.mav.location()
+        self.set_rc_from_map({7: 1000}) # Turn fence off with aux function
+
+        self.wait_ready_to_arm()
+        cruise_alt = 75
+        self.takeoff(cruise_alt, mode='TAKEOFF')
+
+        self.progress("Fly above ceiling and check there is no breach")
+        self.set_rc(3, 2000)
+        self.change_altitude(self.homeloc.alt + cruise_alt + 80)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Got (%s)" % str(m))
+        if (not (m.onboard_control_sensors_health & fence_bit)):
+            raise NotAchievedException("Fence Ceiling breached")
+
+        self.progress("Return to cruise alt")
+        self.set_rc(3, 1500)
+        self.change_altitude(self.homeloc.alt + cruise_alt)
+
+        self.progress("Fly below floor and check for no breach")
+        self.change_altitude(self.homeloc.alt + 25)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Got (%s)" % str(m))
+        if (not (m.onboard_control_sensors_health & fence_bit)):
+            raise NotAchievedException("Fence Ceiling breached")
+
+        self.progress("Fly above floor and check fence is not re-enabled")
+        self.set_rc(3, 2000)
+        self.change_altitude(self.homeloc.alt + 75)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Got (%s)" % str(m))
+        if (m.onboard_control_sensors_enabled & fence_bit):
+            raise NotAchievedException("Fence Ceiling re-enabled")
+
+        self.progress("Return to cruise alt")
+        self.set_rc(3, 1500)
+        self.change_altitude(self.homeloc.alt + cruise_alt)
+        self.fly_home_land_and_disarm(timeout=250)
+
+    def FenceEnableDisableSwitch(self):
+        '''Tests enablement and disablement of fences on a switch'''
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+
+        self.set_parameters({
+            "FENCE_TYPE": 4,     # Set fence type to polyfence
+            "FENCE_ACTION": 6,   # Set action to GUIDED
+            "FENCE_ALT_MIN": 10,
+            "FENCE_ENABLE" : 0,
+            "RC7_OPTION" : 11,   # AC_Fence uses Aux switch functionality
+        })
+
+        self.progress("Checking fence is not present before being configured")
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.progress("Got (%s)" % str(m))
+        if (m.onboard_control_sensors_enabled & fence_bit):
+            raise NotAchievedException("Fence enabled before being configured")
+
+        self.wait_ready_to_arm()
+        # takeoff at a lower altitude to avoid immediately breaching polyfence
+        self.takeoff(alt=25)
+        self.change_mode("FBWA")
+
+        self.load_fence("CMAC-fence.txt")
+
+        self.set_rc_from_map({
+            3: 1500,
+            7: 2000,
+        }) # Turn fence on with aux function
+
+        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
+        self.progress("Got (%s)" % str(m))
+        if m is None:
+            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
+
+        self.progress("Checking fence is initially OK")
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                               present=True,
+                               enabled=True,
+                               healthy=True,
+                               verbose=False,
+                               timeout=30)
+
+        self.progress("Waiting for GUIDED")
+        tstart = self.get_sim_time()
+        mode = "GUIDED"
+        while not self.mode_is(mode, drain_mav=False):
+            self.mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
+                self.mav.flightmode, mode, self.get_altitude(relative=True)))
+            if (self.get_sim_time_cached() > tstart + 120):
+                raise WaitModeTimeout("Did not change mode")
+        self.progress("Got mode %s" % mode)
+        # check we are in breach
+        self.assert_fence_enabled()
+
+        self.set_rc_from_map({
+            7: 1000,
+        }) # Turn fence off with aux function
+
+        # wait to no longer be in breach
+        self.delay_sim_time(5)
+        self.assert_fence_disabled()
+
+        self.fly_home_land_and_disarm(timeout=250)
+        self.do_fence_disable() # Ensure the fence is disabled after test
+
     def FenceBreachedChangeMode(self):
         '''Tests manual mode change after fence breach, as set with FENCE_OPTIONS'''
         """ Attempts to change mode while a fence is breached.
@@ -5380,6 +5550,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.FenceRTLRally,
             self.FenceRetRally,
             self.FenceAltCeilFloor,
+            self.FenceMinAltAutoEnable,
+            self.FenceAutoEnableDisableSwitch,
+            self.FenceEnableDisableSwitch,
             self.FenceBreachedChangeMode,
             self.FenceNoFenceReturnPoint,
             self.FenceNoFenceReturnPointInclusion,

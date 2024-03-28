@@ -1969,6 +1969,8 @@ class TestSuite(ABC):
 
     def load_fence(self, filename):
         filepath = os.path.join(testdir, self.current_test_name_directory, filename)
+        if not os.path.exists(filepath):
+            filepath = self.generic_mission_filepath_for_filename(filename)
         self.progress("Loading fence from (%s)" % str(filepath))
         locs = []
         for line in open(filepath, 'rb'):
@@ -6727,22 +6729,17 @@ class TestSuite(ABC):
         self.mavproxy.expect("Loaded module relay")
         self.mavproxy.send("relay set %d %d\n" % (relay_num, on_off))
 
-    def do_fence_en_or_dis_able(self, value, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        if value:
-            p1 = 1
-        else:
-            p1 = 0
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE,
-            p1=p1, # param1
-            want_result=want_result,
-        )
-
     def do_fence_enable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        self.do_fence_en_or_dis_able(True, want_result=want_result)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=1, want_result=want_result)
 
     def do_fence_disable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        self.do_fence_en_or_dis_able(False, want_result=want_result)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0, want_result=want_result)
+
+    def do_fence_disable_floor(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0, p2=8, want_result=want_result)
+
+    def do_fence_enable_except_floor(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=1, p2=7, want_result=want_result)
 
     #################################################
     # WAIT UTILITIES

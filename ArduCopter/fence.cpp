@@ -24,7 +24,7 @@ void Copter::fence_check()
     if (new_breaches) {
 
         if (!copter.ap.land_complete) {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+            fence.print_fence_message("breached", new_breaches);
         }
 
         // if the user wants some kind of response and motors are armed
@@ -81,7 +81,8 @@ void Copter::fence_check()
 
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
 
-    } else if (orig_breaches) {
+    } else if (orig_breaches && fence.get_breaches() == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence breach cleared");
         // record clearing of breach
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
     }
