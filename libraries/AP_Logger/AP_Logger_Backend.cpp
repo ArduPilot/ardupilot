@@ -575,7 +575,6 @@ bool AP_Logger_Backend::Write_VER()
         patch: fwver.patch,
         fw_type: fwver.fw_type,
         git_hash: fwver.fw_hash,
-        filter_version: AP_FILTER_VERSION,
     };
     strncpy(pkt.fw_string, fwver.fw_string, ARRAY_SIZE(pkt.fw_string)-1);
 
@@ -583,6 +582,8 @@ bool AP_Logger_Backend::Write_VER()
     pkt._APJ_BOARD_ID = APJ_BOARD_ID;
 #endif
     pkt.build_type = fwver.vehicle_type;
+    pkt.filter_version = AP_FILTER_VERSION;
+
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
