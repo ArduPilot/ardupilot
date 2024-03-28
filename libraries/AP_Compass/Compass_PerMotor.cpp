@@ -3,10 +3,12 @@
  */
 
 #include "AP_Compass.h"
+#include "LogStructure.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Motors/AP_Motors_Class.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -167,7 +169,7 @@ Compass_PerMotor::Compass_PerMotor()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-float Compass_PerMotor::scaled_output(uint8_t motor)
+float Compass_PerMotor::scaled_output(uint8_t motor) const
 {
 #if APM_BUILD_COPTER_OR_HELI
     AP_Motors* motors = AP::motors();
@@ -209,4 +211,42 @@ void Compass_PerMotor::copy_from(const Compass_PerMotor per_motor)
     for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
         compensation[i].set_and_save_ifchanged(per_motor.compensation[i]);
     }
+}
+
+void Compass_PerMotor::log_offsets(const uint64_t time_us, const uint8_t mag_instance) const
+{
+    Vector3f offsets[AP_COMPASS_PMOT_MAX_NUM_MOTORS];
+    float current;
+    // battery current is only updated at 10Hz so the motor compensation
+    // is unlikely to change for long periods
+    if (!enable || !AP::battery().current_amps(current)) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
+        float output = scaled_output(i);
+
+        const Vector3f &c = compensation[i].get();
+
+        offsets[i] = c * output * current;
+    }
+
+    const struct log_MAG_PerMotor pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_PMOT_MSG),
+        time_us         : time_us,
+        instance        : mag_instance,
+        motor1_offset_x  : offsets[0].x,
+        motor1_offset_y  : offsets[0].y,
+        motor1_offset_z  : offsets[0].z,
+        motor2_offset_x  : offsets[1].x,
+        motor2_offset_y  : offsets[1].y,
+        motor2_offset_z  : offsets[1].z,
+        motor3_offset_x  : offsets[2].x,
+        motor3_offset_y  : offsets[2].y,
+        motor3_offset_z  : offsets[2].z,
+        motor4_offset_x  : offsets[3].x,
+        motor4_offset_y  : offsets[3].y,
+        motor4_offset_z  : offsets[3].z,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

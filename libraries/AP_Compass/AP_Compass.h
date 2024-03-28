@@ -177,6 +177,9 @@ public:
     void per_motor_set_compensation(uint8_t i, uint8_t motor, const Vector3f& offset) {
         _state[_get_state_id(Priority(i))].per_motor.set_compensation(motor, offset);
     }
+    void log_per_motor(uint64_t time_us, uint8_t i) const {
+        _get_state(Priority(i)).per_motor.log_offsets(time_us, i);
+    }
 #endif
 
     // start_calibration_all will only return false if there are no

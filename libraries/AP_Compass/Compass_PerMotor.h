@@ -28,12 +28,14 @@ public:
     }
 
     void copy_from(const Compass_PerMotor per_motor);
+
+    void log_offsets(const uint64_t time_us, const uint8_t mag_instance) const;
     
 private:
     AP_Int8 enable;
     AP_Vector3f compensation[AP_COMPASS_PMOT_MAX_NUM_MOTORS];
 
     // get scaled motor ouput
-    float scaled_output(uint8_t motor);
+    float scaled_output(uint8_t motor) const;
 };
 
