@@ -533,7 +533,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: PTCH_LIM_MIN_DEG
     // @DisplayName: Minimum Pitch Angle
     // @Description: Maximum pitch down angle commanded in modes with stabilized limits
-    // @Units: cdeg
+    // @Units: deg
     // @Range: -90 0
     // @Increment: 10
     // @User: Standard
