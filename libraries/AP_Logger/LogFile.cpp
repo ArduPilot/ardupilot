@@ -430,6 +430,9 @@ void AP_Logger::Write_Compass()
     const Compass &compass = AP::compass();
     for (uint8_t i=0; i<compass.get_count(); i++) {
         Write_Compass_instance(time_us, i);
+#if AP_COMPASS_PMOT_ENABLED
+        AP::compass().log_per_motor(time_us, i);
+#endif
     }
 }
 
