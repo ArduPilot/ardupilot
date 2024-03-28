@@ -223,6 +223,8 @@ void Compass_PerMotor::log_offsets(const uint64_t time_us, const uint8_t mag_ins
         return;
     }
 
+    const Vector3f &mot = AP::compass().get_motor_compensation(mag_instance);
+
     for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
         float output = scaled_output(i);
 
@@ -231,8 +233,8 @@ void Compass_PerMotor::log_offsets(const uint64_t time_us, const uint8_t mag_ins
         offsets[i] = c * output * current;
     }
 
-    const struct log_MAG_PerMotor pkt{
-        LOG_PACKET_HEADER_INIT(LOG_MAG_PMOT_MSG),
+    const struct log_MAG_PerMotor1 pkt1{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_PMOT_MSG1),
         time_us         : time_us,
         instance        : mag_instance,
         motor1_offset_x  : offsets[0].x,
@@ -248,5 +250,19 @@ void Compass_PerMotor::log_offsets(const uint64_t time_us, const uint8_t mag_ins
         motor4_offset_y  : offsets[3].y,
         motor4_offset_z  : offsets[3].z,
     };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    AP::logger().WriteBlock(&pkt1, sizeof(pkt1));
+
+    const struct log_MAG_PerMotor2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_PMOT_MSG2),
+        time_us         : time_us,
+        instance        : mag_instance,
+        cmot_total_x  : mot.x * current,
+        cmot_total_y  : mot.y * current,
+        cmot_total_z  : mot.z * current,
+        pmot_total_x  : offsets[0].x + offsets[1].x + offsets[2].x + offsets[3].x,
+        pmot_total_y  : offsets[0].y + offsets[1].y + offsets[2].y + offsets[3].y,
+        pmot_total_z  : offsets[0].z + offsets[1].z + offsets[2].z + offsets[3].z,
+    };
+    AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+
 }

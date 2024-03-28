@@ -1,7 +1,8 @@
 #pragma once
 
 #define LOG_IDS_FROM_MAG_PMOT                  \
-    LOG_MAG_PMOT_MSG
+    LOG_MAG_PMOT_MSG1,                         \
+    LOG_MAG_PMOT_MSG2
 
 #include <AP_Logger/LogStructure.h>
 
@@ -17,7 +18,7 @@
 // @Field: CTot: current consumed total mAh
 // @Field: MotTemp: measured motor temperature in centi-degrees C
 // @Field: Err: error rate
-struct PACKED log_MAG_PerMotor {
+struct PACKED log_MAG_PerMotor1 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t instance;
@@ -33,11 +34,22 @@ struct PACKED log_MAG_PerMotor {
     float motor4_offset_x;
     float motor4_offset_y;
     float motor4_offset_z;
-    float motor_tot_offset_x;
-    float motor_tot_offset_y;
-    float motor_tot_offset_z;
+};
+
+struct PACKED log_MAG_PerMotor2 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    float cmot_total_x;
+    float cmot_total_y;
+    float cmot_total_z;
+    float pmot_total_x;
+    float pmot_total_y;
+    float pmot_total_z;
 };
 
 #define LOG_STRUCTURE_FROM_MAG_PMOT \
-    { LOG_MAG_PMOT_MSG, sizeof(log_MAG_PerMotor), \
-      "PMOT",  "QBffffffffffff", "TimeUS,Instance,M1X,M1Y,M1Z,M2X,M2Y,M2Z,M3X,M3Y,M3Z,M4X,M4Y,M4Z", "s#------------", "F-------------" , true },
+    { LOG_MAG_PMOT_MSG1, sizeof(log_MAG_PerMotor1), \
+      "PMT1",  "QBffffffffffff", "TimeUS,Instance,M1X,M1Y,M1Z,M2X,M2Y,M2Z,M3X,M3Y,M3Z,M4X,M4Y,M4Z", "s#GGGGGGGGGGGG", "F-CCCCCCCCCCCC" , true },\
+    { LOG_MAG_PMOT_MSG2, sizeof(log_MAG_PerMotor2), \
+      "PMT2",  "QBffffff", "TimeUS,Instance,CMOTotX,CMOTotY,CMOTotZ,PMOTotX,PMOTotY,PMOTotZ", "s#GGGGGG", "F-CCCCCC" , true },
