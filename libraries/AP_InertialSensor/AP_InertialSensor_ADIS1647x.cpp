@@ -237,7 +237,7 @@ bool AP_InertialSensor_ADIS1647x::init()
         }
     }
 
-    if (!write_reg16(REG_FILT_CTRL, 0, true)) {
+    if (!write_reg16(REG_FILT_CTRL, 1, true)) { // N=2 filter
         return false;
     }
     
