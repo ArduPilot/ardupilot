@@ -19,7 +19,8 @@
 
 #define AP_PARACHUTE_ALT_MIN_DEFAULT            10     // default min altitude the vehicle should have before parachute is released
 
-#define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
+#define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0      // default critical sink speed in m/s to trigger emergency parachute
+#define AP_PARACHUTE_OPTIONS_DEFAULT            0      // default parachute options: enabled disarm after parachute release
 
 #ifndef HAL_PARACHUTE_ENABLED
 // default to parachute enabled to match previous configs
@@ -115,6 +116,7 @@ private:
 
     enum class Options : uint8_t {
         HoldOpen = (1U<<0),
+        SkipDisarmBeforeParachuteRelease = (1U<<1),
     };
 
     AP_Int32    _options;
