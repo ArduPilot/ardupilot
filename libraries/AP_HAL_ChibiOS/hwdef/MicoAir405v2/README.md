@@ -26,11 +26,11 @@ The MicoAir405v2 is a flight controller produced by [MicoAir](http://micoair.com
 
  - SERIAL0 -> USB
  - SERIAL1 -> UART1 (DMA-enabled)
- - SERIAL2 -> UART2 (DJI - VTX, DMA-enabled) 
+ - SERIAL2 -> UART2 (DJI - VTX, TX only is DMA Enabled)
  - SERIAL3 -> UART3 (GPS)
- - SERIAL4 -> UART4 (DMA-enabled)
+ - SERIAL4 -> UART4 (TX only is DMA Enabled)
  - SERIAL5 -> UART5 (ESC Telemetry)
- - SERIAL6 -> UART6 (RX6 is inverted from SBUS pin, no DMA on TX6)
+ - SERIAL6 -> UART6 (RX6 is inverted from SBUS pin, RX only is DMA Enabled)
 
 ## RC Input
 
