@@ -48,8 +48,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the SBUS pin (inverted and sent to UART2_RX). It supports all RC
-protocols except serial protocols such as CRSF, ELRS, etc. Those devices can be connected to USART1 TX and RX, instead.
-Fport can be connected to USART1 TX also, but will require an external bi-directional inverter and the ref:`SERIAL1_OPTION<SERIAL1_OPTION>' = 4 (HalfDuplex) set.
+protocols except serial protocols such as CRSF, ELRS, etc. Instead, these devices can be connected to UART4 (SERIAL1).
    
 ## OSD Support
 
