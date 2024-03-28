@@ -144,6 +144,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_Fence/LogStructure.h>
 #include <AP_Landing/LogStructure.h>
 #include <AC_AttitudeControl/LogStructure.h>
+#include <AP_Compass/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -1228,6 +1229,7 @@ LOG_STRUCTURE_FROM_MOUNT \
     LOG_STRUCTURE_FROM_BATTMONITOR \
     { LOG_MAG_MSG, sizeof(log_MAG), \
       "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
+LOG_STRUCTURE_FROM_MAG_PMOT \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
@@ -1336,6 +1338,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_HAL_CHIBIOS,
 
     LOG_IDS_FROM_GPS,
+    LOG_IDS_FROM_MAG_PMOT,
 
     LOG_PIDR_MSG,
     LOG_PIDP_MSG,

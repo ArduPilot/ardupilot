@@ -3,18 +3,22 @@
  */
 
 #include "AP_Compass.h"
+#include "LogStructure.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Motors/AP_Motors_Class.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
 const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
-    // @Param: _EN
+    // @Param: EN
     // @DisplayName: per-motor compass correction enable
     // @Description: This enables per-motor compass corrections
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("_EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _EXP
     // @DisplayName: per-motor exponential correction
@@ -22,7 +26,7 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Range: 0 2
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("_EXP", 2, Compass_PerMotor, expo, 0.65),
+    // index 2
 
     // @Param: 1_X
     // @DisplayName: Compass per-motor1 X
@@ -87,145 +91,178 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Description: Compensation for Z axis of motor4
     // @User: Advanced
     AP_GROUPINFO("4",  6, Compass_PerMotor, compensation[3], 0),
-    
+
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 4
+    // @Param: 5_X
+    // @DisplayName: Compass per-motor5 X
+    // @Description: Compensation for X axis of motor5
+    // @User: Advanced
+
+    // @Param: 5_Y
+    // @DisplayName: Compass per-motor4 Y
+    // @Description: Compensation for Y axis of motor5
+    // @User: Advanced
+
+    // @Param: 5_Z
+    // @DisplayName: Compass per-motor5 Z
+    // @Description: Compensation for Z axis of motor5
+    // @User: Advanced
+    AP_GROUPINFO("5",  7, Compass_PerMotor, compensation[4], 0),
+#endif
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 5
+    // @Param: 6_X
+    // @DisplayName: Compass per-motor6 X
+    // @Description: Compensation for X axis of motor6
+    // @User: Advanced
+
+    // @Param: 6_Y
+    // @DisplayName: Compass per-motor6 Y
+    // @Description: Compensation for Y axis of motor6
+    // @User: Advanced
+
+    // @Param: 6_Z
+    // @DisplayName: Compass per-motor4 6
+    // @Description: Compensation for Z axis of motor6
+    // @User: Advanced
+    AP_GROUPINFO("6",  8, Compass_PerMotor, compensation[5], 0),
+#endif
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 6
+    // @Param: 7_X
+    // @DisplayName: Compass per-motor7 X
+    // @Description: Compensation for X axis of motor7
+    // @User: Advanced
+
+    // @Param: 7_Y
+    // @DisplayName: Compass per-motor7 Y
+    // @Description: Compensation for Y axis of motor7
+    // @User: Advanced
+
+    // @Param: 7_Z
+    // @DisplayName: Compass per-motor74 Z
+    // @Description: Compensation for Z axis of motor7
+    // @User: Advanced
+    AP_GROUPINFO("7",  9, Compass_PerMotor, compensation[6], 0),
+#endif
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 7
+    // @Param: 8_X
+    // @DisplayName: Compass per-motor8 X
+    // @Description: Compensation for X axis of motor8
+    // @User: Advanced
+
+    // @Param: 8_Y
+    // @DisplayName: Compass per-motor8 Y
+    // @Description: Compensation for Y axis of motor8
+    // @User: Advanced
+
+    // @Param: 8_Z
+    // @DisplayName: Compass per-motor8 Z
+    // @Description: Compensation for Z axis of motor8
+    // @User: Advanced
+    AP_GROUPINFO("8",  10, Compass_PerMotor, compensation[7], 0),
+#endif
     AP_GROUPEND
 };
 
 // constructor
-Compass_PerMotor::Compass_PerMotor(Compass &_compass) :
-    compass(_compass)
+Compass_PerMotor::Compass_PerMotor()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// return current scaled motor output
-float Compass_PerMotor::scaled_output(uint8_t motor)
+float Compass_PerMotor::scaled_output(uint8_t motor) const
 {
-    if (!have_motor_map) {
-        if (SRV_Channels::find_channel(SRV_Channel::k_motor1, motor_map[0]) &&
-            SRV_Channels::find_channel(SRV_Channel::k_motor2, motor_map[1]) &&
-            SRV_Channels::find_channel(SRV_Channel::k_motor3, motor_map[2]) &&
-            SRV_Channels::find_channel(SRV_Channel::k_motor4, motor_map[3])) {
-            have_motor_map = true;
-        }
-    }
-    if (!have_motor_map) {
-        return 0;
-    }
-    
-    // this currently assumes first 4 channels. 
-    uint16_t pwm = hal.rcout->read_last_sent(motor_map[motor]);
+#if APM_BUILD_COPTER_OR_HELI
+    AP_Motors* motors = AP::motors();
 
-    // get 0 to 1 motor demand
-    float output = (hal.rcout->scale_esc_to_unity(pwm)+1) * 0.5f;
-
-    if (output <= 0) {
-        return 0;
-    }
-    
-    // scale for voltage
-    output *= voltage;
-
-    // apply expo correction
-    output = powf(output, expo);
-    return output;
-}
-
-// per-motor calibration update
-void Compass_PerMotor::calibration_start(void)
-{
-    for (uint8_t i=0; i<4; i++) {
-        field_sum[i].zero();
-        output_sum[i] = 0;
-        count[i] = 0;
-        start_ms[i] = 0;
+    if (motors == nullptr || !motors->is_motor_enabled(motor)) {
+        return 0.0f;
     }
 
-    // we need to ensure we get current data by throwing away several
-    // samples. The offsets may have just changed from an offset
-    // calibration
-    for (uint8_t i=0; i<4; i++) {
-        compass.read();
-        hal.scheduler->delay(50);
-    }
-    
-    base_field = compass.get_field(0);
-    running = true;
-}
-
-// per-motor calibration update
-void Compass_PerMotor::calibration_update(void)
-{
-    uint32_t now = AP_HAL::millis();
-    
-    // accumulate per-motor sums
-    for (uint8_t i=0; i<4; i++) {
-        float output = scaled_output(i);
-
-        if (output <= 0) {
-            // motor is off
-            start_ms[i] = 0;
-            continue;
-        }
-        if (start_ms[i] == 0) {
-            start_ms[i] = now;
-        }
-        if (now - start_ms[i] < 500) {
-            // motor must run for 0.5s to settle
-            continue;
-        }
-
-        // accumulate a sample
-        field_sum[i] += compass.get_field(0);
-        output_sum[i] += output;
-        count[i]++;
-    }
-}
-
-// calculate per-motor calibration values
-void Compass_PerMotor::calibration_end(void)
-{
-    for (uint8_t i=0; i<4; i++) {
-        if (count[i] == 0) {
-            continue;
-        }
-
-        // calculate effective output
-        float output = output_sum[i] / count[i];
-
-        // calculate amount that field changed from base field
-        Vector3f field_change = base_field - (field_sum[i] / count[i]);
-        if (output <= 0) {
-            continue;
-        }
-        
-        Vector3f c = field_change / output;
-        compensation[i].set_and_save(c);
-    }
-
-    // enable per-motor compensation
-    enable.set_and_save(1);
-    
-    running = false;
+    return motors->get_power_out(motor);
+#else
+    return 0.0f;
+#endif
 }
 
 /*
   calculate total offset for per-motor compensation
  */
-void Compass_PerMotor::compensate(Vector3f &offset)
+Vector3f Compass_PerMotor::compensate(float current)
 {
-    offset.zero();
-
-    if (running) {
+    Vector3f offset;
+    if (!enable) {
         // don't compensate while calibrating
-        return;
+        return offset;
     }
 
-    for (uint8_t i=0; i<4; i++) {
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
         float output = scaled_output(i);
 
         const Vector3f &c = compensation[i].get();
 
-        offset += c * output;
+        offset += c * output * current;
     }
+
+    return offset;
+}
+
+void Compass_PerMotor::copy_from(const Compass_PerMotor per_motor)
+{
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
+        compensation[i].set_and_save_ifchanged(per_motor.compensation[i]);
+    }
+}
+
+void Compass_PerMotor::log_offsets(const uint64_t time_us, const uint8_t mag_instance) const
+{
+    Vector3f offsets[AP_COMPASS_PMOT_MAX_NUM_MOTORS];
+    float current;
+    // battery current is only updated at 10Hz so the motor compensation
+    // is unlikely to change for long periods
+    if (!enable || !AP::battery().current_amps(current)) {
+        return;
+    }
+
+    const Vector3f &mot = AP::compass().get_motor_compensation(mag_instance);
+
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
+        float output = scaled_output(i);
+
+        const Vector3f &c = compensation[i].get();
+
+        offsets[i] = c * output * current;
+    }
+
+    const struct log_MAG_PerMotor1 pkt1{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_PMOT_MSG1),
+        time_us         : time_us,
+        instance        : mag_instance,
+        motor1_offset_x  : offsets[0].x,
+        motor1_offset_y  : offsets[0].y,
+        motor1_offset_z  : offsets[0].z,
+        motor2_offset_x  : offsets[1].x,
+        motor2_offset_y  : offsets[1].y,
+        motor2_offset_z  : offsets[1].z,
+        motor3_offset_x  : offsets[2].x,
+        motor3_offset_y  : offsets[2].y,
+        motor3_offset_z  : offsets[2].z,
+        motor4_offset_x  : offsets[3].x,
+        motor4_offset_y  : offsets[3].y,
+        motor4_offset_z  : offsets[3].z,
+    };
+    AP::logger().WriteBlock(&pkt1, sizeof(pkt1));
+
+    const struct log_MAG_PerMotor2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_PMOT_MSG2),
+        time_us         : time_us,
+        instance        : mag_instance,
+        cmot_total_x  : mot.x * current,
+        cmot_total_y  : mot.y * current,
+        cmot_total_z  : mot.z * current,
+        pmot_total_x  : offsets[0].x + offsets[1].x + offsets[2].x + offsets[3].x,
+        pmot_total_y  : offsets[0].y + offsets[1].y + offsets[2].y + offsets[3].y,
+        pmot_total_z  : offsets[0].z + offsets[1].z + offsets[2].z + offsets[3].z,
+    };
+    AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+
 }

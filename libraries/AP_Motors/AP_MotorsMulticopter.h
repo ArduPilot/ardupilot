@@ -50,6 +50,8 @@ public:
     // passes throttle directly to all motors for ESC calibration.
     //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
     void                set_throttle_passthrough_for_esc_calibration(float throttle_input);
+    // per-motor version
+    void                set_throttle_passthrough_per_motor(float throttle_input, uint16_t motor);
 
     // returns maximum thrust in the range 0 to 1
     float               get_throttle_thrust_max() const { return _throttle_thrust_max; }

@@ -158,3 +158,4 @@ define HAL_MOUNT_ENABLED 0
 
 # save some flash
 include ../include/minimize_fpv_osd.inc
+define AP_COMPASS_PMOT_ENABLED 1

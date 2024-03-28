@@ -2,8 +2,11 @@
   per-motor compass compensation
  */
 
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Math/AP_Math.h>
 
+#define AP_COMPASS_PMOT_MAX_NUM_MOTORS 4
 
 class Compass;
 
@@ -13,54 +16,26 @@ class Compass_PerMotor {
 public:
     static const struct AP_Param::GroupInfo var_info[];
 
-    Compass_PerMotor(Compass &_compass);
+    Compass_PerMotor();
 
     bool enabled(void) const {
         return enable.get() != 0;
     }
     
-    void set_voltage(float _voltage) {
-        // simple low-pass on voltage
-        voltage = 0.9f * voltage + 0.1f * _voltage;
+    Vector3f compensate(float current);
+    void set_compensation(uint8_t motor, const Vector3f& offset) {
+        compensation[motor].set_and_save(offset);
     }
 
-    void calibration_start(void);
-    void calibration_update(void);
-    void calibration_end(void);
-    void compensate(Vector3f &offset);
+    void copy_from(const Compass_PerMotor per_motor);
+
+    void log_offsets(const uint64_t time_us, const uint8_t mag_instance) const;
     
 private:
-    Compass &compass;
     AP_Int8 enable;
-    AP_Float expo;
-    AP_Vector3f compensation[4];
-
-    // base field on test start
-    Vector3f base_field;
-        
-    // sum of calibration field samples
-    Vector3f field_sum[4];
-
-    // sum of output (voltage*scaledpwm) in calibration
-    float output_sum[4];
-        
-    // count of calibration accumulation
-    uint16_t count[4];
-
-    // time a motor started in milliseconds
-    uint32_t start_ms[4];
-        
-    // battery voltage
-    float voltage;
-
-    // is calibration running?
-    bool running;
+    AP_Vector3f compensation[AP_COMPASS_PMOT_MAX_NUM_MOTORS];
 
     // get scaled motor ouput
-    float scaled_output(uint8_t motor);
-
-    // map of motors
-    bool have_motor_map;
-    uint8_t motor_map[4];
+    float scaled_output(uint8_t motor) const;
 };
 

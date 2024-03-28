@@ -48,6 +48,10 @@
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(60.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 200.0f
 
+#ifndef AP_COMPASS_PMOT_ENABLED
+#define AP_COMPASS_PMOT_ENABLED (BOARD_FLASH_SIZE>1024) && COMPASS_MOT_ENABLED
+#endif
+
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundant sensors may be available
@@ -165,16 +169,16 @@ public:
     // compass calibrator interface
     void cal_update();
 
-#if COMPASS_MOT_ENABLED
+#if AP_COMPASS_PMOT_ENABLED
+    bool per_motor_compensation_enabled(uint8_t i=0) {
+        return _get_state(Priority(i)).per_motor.enabled();
+    }
     // per-motor calibration access
-    void per_motor_calibration_start(void) {
-        _per_motor.calibration_start();
+    void per_motor_set_compensation(uint8_t i, uint8_t motor, const Vector3f& offset) {
+        _state[_get_state_id(Priority(i))].per_motor.set_compensation(motor, offset);
     }
-    void per_motor_calibration_update(void) {
-        _per_motor.calibration_update();
-    }
-    void per_motor_calibration_end(void) {
-        _per_motor.calibration_end();
+    void log_per_motor(uint64_t time_us, uint8_t i) const {
+        _get_state(Priority(i)).per_motor.log_offsets(time_us, i);
     }
 #endif
 
@@ -290,13 +294,6 @@ public:
             _thr = thr_pct;
         }
     }
-
-#if COMPASS_MOT_ENABLED
-    /// Set the battery voltage for per-motor compensation
-    void set_voltage(float voltage) {
-        _per_motor.set_voltage(voltage);
-    }
-#endif
     
     /// Returns True if the compasses have been configured (i.e. offsets saved)
     ///
@@ -571,6 +568,11 @@ private:
         // accumulated samples, protected by _sem, used by AP_Compass_Backend
         Vector3f accum;
         uint32_t accum_count;
+
+#if AP_COMPASS_PMOT_ENABLED
+        // per-motor compass compensation
+        Compass_PerMotor per_motor;
+#endif
         // We only copy persistent params
         void copy_from(const mag_state& state);
     };
@@ -622,11 +624,6 @@ private:
 
 #if COMPASS_CAL_ENABLED
     RestrictIDTypeArray<CompassCalibrator*, COMPASS_MAX_INSTANCES, Priority> _calibrator;
-#endif
-
-#if COMPASS_MOT_ENABLED
-    // per-motor compass compensation
-    Compass_PerMotor _per_motor{*this};
 #endif
     
     AP_Float _calibration_threshold;

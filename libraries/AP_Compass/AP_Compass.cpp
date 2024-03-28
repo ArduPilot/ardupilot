@@ -506,10 +506,10 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
 #endif
 
-#if COMPASS_MOT_ENABLED
-    // @Group: PMOT
+#if AP_COMPASS_PMOT_ENABLED
+    // @Group: PMOT_
     // @Path: Compass_PerMotor.cpp
-    AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
+    AP_SUBGROUPINFO(_state._priv_instance[0].per_motor, "PMOT_", 32, Compass, Compass_PerMotor),
 #endif
 
     // @Param: DISBLMSK
@@ -682,6 +682,18 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
 
     // index 51
+
+#if AP_COMPASS_PMOT_ENABLED && COMPASS_MAX_INSTANCES > 1
+    // @Group: PMT2_
+    // @Path: Compass_PerMotor.cpp
+    AP_SUBGROUPINFO(_state._priv_instance[1].per_motor, "PMT2_", 52, Compass, Compass_PerMotor),
+#endif
+
+#if AP_COMPASS_PMOT_ENABLED && COMPASS_MAX_INSTANCES > 2
+    // @Group: PMT3_
+    // @Path: Compass_PerMotor.cpp
+    AP_SUBGROUPINFO(_state._priv_instance[2].per_motor, "PMT3_", 53, Compass, Compass_PerMotor),
+#endif
 
     AP_GROUPEND
 };
@@ -930,6 +942,9 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
     scale_factor.set_and_save_ifchanged(state.scale_factor);
     dev_id.set_and_save_ifchanged(state.dev_id);
     motor_compensation.set_and_save_ifchanged(state.motor_compensation);
+#if AP_COMPASS_PMOT_ENABLED
+    per_motor.copy_from(state.per_motor);
+#endif
     expected_dev_id = state.expected_dev_id;
     detected_dev_id = state.detected_dev_id;
 }
@@ -2118,7 +2133,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
  */
 void Compass::motor_compensation_type(const uint8_t comp_type)
 {
-    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_PER_MOTOR && _motor_comp_type != (int8_t)comp_type) {
         _motor_comp_type.set((int8_t)comp_type);
         _thr = 0; // set current  throttle to zero
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {

@@ -105,6 +105,8 @@ public:
     float get_thrust_rpyt_out(uint8_t i) const;
     bool get_factors(uint8_t i, float &roll, float &pitch, float &yaw, float &throttle, uint8_t &testing_order) const;
 
+    virtual float       get_power_out(uint8_t motor) const override { return _power_out[motor]; }
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -147,6 +149,7 @@ protected:
 
     // motor failure handling
     float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant
+    float               _power_out[AP_MOTORS_MAX_NUM_MOTORS];
     uint8_t             _motor_lost_index;  // index number of the lost motor
 
     motor_frame_class   _active_frame_class; // active frame class (i.e. quad, hexa, octa, etc)

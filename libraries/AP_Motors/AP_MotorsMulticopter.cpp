@@ -722,6 +722,18 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
     }
 }
 
+// passes throttle directly to a motors for motor compensation.
+//   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
+void AP_MotorsMulticopter::set_throttle_passthrough_per_motor(float throttle_input, uint16_t motor)
+{
+    if (!armed() || !motor_enabled[motor]) {
+        return;
+    }
+
+    uint16_t pwm_out = get_pwm_output_min() + constrain_float(throttle_input, 0.0f, 1.0f) * (get_pwm_output_max() - get_pwm_output_min());
+    rc_write(motor, pwm_out);
+}
+
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
