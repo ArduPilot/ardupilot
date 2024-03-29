@@ -662,7 +662,71 @@ struct PACKED log_VER {
     uint8_t build_type;
 };
 
+struct PACKED log_quad_pos_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  x;
+    float  y;
+    float  z;
+};
 
+struct PACKED log_quad_pos_des_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  xd;
+    float  yd;
+    float  zd;
+    float  psid;
+};
+
+struct PACKED log_quad_vel_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  xdot;
+    float  ydot;
+    float  zdot;
+};
+
+struct PACKED log_quad_RPY_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  ph;
+    float  th;
+    float  psi;
+};
+
+struct PACKED log_quad_ANG_VEL_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  phdot;
+    float  thdot;
+    float  psidot;
+};
+
+struct PACKED log_Cab1_ATT_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  qc1_log;
+    float  qc2_log;
+    float  qc3_log;
+};
+
+struct PACKED log_Cab1_ATT_dot_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  qc1dot_log;
+    float  qc2dot_log;
+    float  qc3dot_log;
+};
+
+struct PACKED log_Human_CMD_ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float  xddot;
+    float  yddot;
+    float  zddot;
+    float  psiddot;
+};
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1295,7 +1359,23 @@ LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_STAK_MSG, sizeof(log_STAK), \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
     { LOG_FILE_MSG, sizeof(log_File), \
-      "FILE",   "NIBZ",       "FileName,Offset,Length,Data", "----", "----" }, \
+      "FILE",   "NIBZ", "FileName,Offset,Length,Data", "----", "----" }, \
+    { LOG_QUAD_POS_MSG, sizeof(log_quad_pos_), \
+      "QPOS",   "Qfff", "TimeUS,x,y,z", "s---", "F---", true }, \
+    { LOG_QUAD_POD_MSG, sizeof(log_quad_pos_des_), \
+      "QPOD",   "Qffff", "TimeUS,xd,yd,zd,psid", "s----", "F----", true }, \
+    { LOG_QUAD_VEL_MSG, sizeof(log_quad_vel_), \
+      "QVEL",   "Qfff",  "TimeUS,xdot,ydot,zdot", "s---", "F---", true }, \
+    { LOG_QUAD_RPY_MSG, sizeof(log_quad_RPY_), \
+      "QRPY",   "Qfff", "TimeUS,ph,th,psi", "s---", "F---", true }, \
+    { LOG_QUAD_AVG_MSG, sizeof(log_quad_ANG_VEL_), \
+      "QAVG",   "Qfff", "TimeUS,phdot,thdot,psidot", "s---", "F---", true }, \
+    { LOG_CABL_ATT_MSG, sizeof(log_Cab1_ATT_), \
+      "CATT",   "Qfff", "TimeUS,qc1_log,qc1_log,qc1_log", "s---", "F---", true }, \
+    { LOG_CABL_DOT_MSG, sizeof(log_Cab1_ATT_dot_), \
+      "CDOT",   "Qfff", "TimeUS,qc1dot_log,qc2dot_log,qc3dot_log", "s---", "F----", true }, \
+    { LOG_HUMN_CMD_MSG, sizeof(log_Human_CMD_), \
+      "HCMD",   "Qffff", "TimeUS,xddot,yddot,zddot, psiddot", "s----", "F----", true }, \
 LOG_STRUCTURE_FROM_AIS \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
       "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s#sbb", "F-F--", true }, \
@@ -1388,7 +1468,14 @@ enum LogMessages : uint8_t {
     LOG_RCOUT2_MSG,
     LOG_RCOUT3_MSG,
     LOG_IDS_FROM_FENCE,
-
+    LOG_QUAD_POS_MSG,
+    LOG_QUAD_POD_MSG,
+    LOG_QUAD_VEL_MSG,
+    LOG_QUAD_RPY_MSG,
+    LOG_QUAD_AVG_MSG,
+    LOG_CABL_ATT_MSG,
+    LOG_CABL_DOT_MSG,
+    LOG_HUMN_CMD_MSG,
     _LOG_LAST_MSG_
 };
 

@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include "mycontroller_usercode.h"
 
 #if MODE_LOITER_ENABLED == ENABLED
 
@@ -92,6 +93,12 @@ void ModeLoiter::run()
 
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
+
+        quad_pos_des[0] =  inertial_nav.get_position_neu_cm().x / 100.0;
+        quad_pos_des[1] =  -inertial_nav.get_position_neu_cm().y / 100.0;
+        quad_pos_des[2] =  inertial_nav.get_position_neu_cm().z / 100.0;
+        human_des_yaw_command       = 360.0-(ahrs.yaw_sensor)   / 100.0;     // degrees ;    // degrees [0 360]
+
         // apply SIMPLE mode transform to pilot inputs
         update_simple_mode();
 

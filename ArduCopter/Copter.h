@@ -1004,7 +1004,14 @@ private:
     void cable_states();
     Vector3f sat_q(Vector3f vec);
     Vector3f sat_q_dot(Vector3f vec);
-
+    void Log_quad_pos_data();
+    void Log_quad_vel_data();
+    void Log_quad_RPY_data();
+    void Log_quad_angular_velocity_data();
+    void Log_cable_1_attitude_data();
+    void Log_cable_1_attitude_dot_data();
+    void Log_Human_command_data_data();
+    void Log_quad_pos_des_data();
 
 
 #if MODE_ACRO_ENABLED == ENABLED

@@ -7,7 +7,6 @@
 #define PI 3.14159265359
 // #include <sstream>    // header file for stringstream
 
-
 float CAM_roll     = 0.0;
 float CAM_pitch    = 0.0;
 
@@ -25,24 +24,9 @@ char PAMD_roll_char[]       = "500000";
 char PAMD_pitch_char[]      = "500000";
 char PAMD_yaw_char[]        = "500000";
 
-float quad_roll             = 0.0;
-float quad_pitch            = 0.0;
-float quad_yaw              = 0.0;
-
-Vector3f qc_2(0.0,0.0,-1.0);
-Vector3f qp(1.0,0.0,0.0);
-
 int CAM_device_port     = 4;
 int PAMD_device_port    = 2;
 int QuadCam1qpd_port    = 1;
-
-float u1_POS_1          = 0.0;
-float u1_POS_2          = 0.0;
-float u1_POS_3          = 0.0;
-
-float u1_CAC_1          = 0.0;
-float u1_CAC_2          = 0.0;
-float u1_CAC_3          = 0.0;
 
 float u1_PAC_1          = 0.0;
 float u1_PAC_2          = 0.0;
@@ -51,6 +35,8 @@ float u1_PAC_3          = 0.0;
 char u1_data[]          = "12345_67890_12345";
 char CAC1_data[]        = "67890_12345_67890";
 char PAC_data[]         = "59345_56098_59345";
+
+
 
 int u1_POS_1_array[6];
 int u1_POS_2_array[6];
@@ -63,7 +49,6 @@ int u1_CAC_3_array[6];
 int u1_PAC_1_array[6];
 int u1_PAC_2_array[6];
 int u1_PAC_3_array[6];
-
 
 //           parameter prefix 
 // UART4  -  SERIAL3_           - GPS      - GPS1       
@@ -98,6 +83,19 @@ void Copter::userhook_FastLoop()
     get_PAMD_device_Data();
     send_Quad1_CAM1_qpd_Data();
     // hal.console->printf("Hi Pratik from Ardupilot \n");
+
+    //////////////////// Log the data
+    ////////////////////////////////////////
+
+    Log_quad_pos_data();                // log_quad_pos_        | LOG_QUAD_POS_MSG  |   QPOS
+    Log_quad_pos_des_data();            // log_quad_pos_des_    | LOG_QUAD_POD_MSG  |   QPOD
+    Log_quad_vel_data();                // log_quad_vel_        | LOG_QUAD_VEL_MSG  |   QVEL
+    Log_quad_RPY_data();                // log_quad_RPY_        | LOG_QUAD_RPY_MSG  |   QRPY
+    Log_quad_angular_velocity_data();   // log_quad_ANG_VEL_    | LOG_QUAD_AVG_MSG  |   QAVG
+    Log_cable_1_attitude_data();        // log_Cab1_ATT_        | LOG_CABL_ATT_MSG  |   CATT
+    Log_cable_1_attitude_dot_data();    // log_Cab1_ATT_dot_    | LOG_CABL_DOT_MSG  |   CDOT
+    Log_Human_command_data_data();      // log_Human_CMD_       | LOG_HUMN_CMD_MSG  |   HCMD
+
 
 }
 #endif
@@ -287,33 +285,19 @@ void Copter::get_PAMD_device_Data()
 void Copter::send_Quad1_CAM1_qpd_Data()
 {
 
-        u1_POS_1 = quad_roll;
-        u1_POS_2 = quad_pitch;
-        u1_POS_3 = quad_yaw;
-
-        u1_CAC_1 = quad_roll    + 1.0;
-        u1_CAC_2 = quad_pitch   + 1.0;
-        u1_CAC_3 = quad_yaw     + 1.0;
-
-        u1_PAC_1 = quad_roll    + 2.0;
-        u1_PAC_2 = quad_pitch   + 2.0;
-        u1_PAC_3 = quad_yaw     + 2.0;
-
-        // hal.console->printf("%2.2f, %2.2f, %2.2f \n", u1_POS_1, u1_POS_2, u1_POS_3);
-
-        int u1_pos_1_scaled         = 5000 + (limit_on_forces_from_quad1(u1_POS_1) * 100);
-        int u1_pos_2_scaled         = 5000 + (limit_on_forces_from_quad1(u1_POS_2) * 100);
-        int u1_pos_3_scaled         = 5000 + (limit_on_forces_from_quad1(u1_POS_3) * 100);
+        int u1_pos_1_scaled         = 5000 + (limit_on_forces_from_quad1(u1_POS[0]) * 100);
+        int u1_pos_2_scaled         = 5000 + (limit_on_forces_from_quad1(u1_POS[1]) * 100);
+        int u1_pos_3_scaled         = 5000 + (limit_on_forces_from_quad1(u1_POS[2]) * 100);
         // hal.console->printf("%d --> ", u1_pos_1_scaled);
         // hal.console->printf("\n");
 
-        int u1_CAC_1_scaled         = 5000 + (limit_on_forces_from_quad1(u1_CAC_1) * 100);
-        int u1_CAC_2_scaled         = 5000 + (limit_on_forces_from_quad1(u1_CAC_2) * 100);
-        int u1_CAC_3_scaled         = 5000 + (limit_on_forces_from_quad1(u1_CAC_3) * 100);
+        int u1_CAC_1_scaled         = 5000 + (limit_on_forces_from_quad1(u1_CAC1[0]) * 100);
+        int u1_CAC_2_scaled         = 5000 + (limit_on_forces_from_quad1(u1_CAC1[1]) * 100);
+        int u1_CAC_3_scaled         = 5000 + (limit_on_forces_from_quad1(u1_CAC1[2]) * 100);
 
-        int u1_PAC_1_scaled         = 5000 + (limit_on_forces_from_quad1(u1_PAC_1) * 100);
-        int u1_PAC_2_scaled         = 5000 + (limit_on_forces_from_quad1(u1_PAC_2) * 100);
-        int u1_PAC_3_scaled         = 5000 + (limit_on_forces_from_quad1(u1_PAC_3) * 100);
+        int u1_PAC_1_scaled         = 5000 + (limit_on_forces_from_quad1(u1_PAC[0]) * 100);
+        int u1_PAC_2_scaled         = 5000 + (limit_on_forces_from_quad1(u1_PAC[1]) * 100);
+        int u1_PAC_3_scaled         = 5000 + (limit_on_forces_from_quad1(u1_PAC[2]) * 100);
 
         for (int i = 3; i >= 0; i--) {
             u1_POS_1_array[i] = u1_pos_1_scaled % 10;
@@ -355,7 +339,7 @@ void Copter::send_Quad1_CAM1_qpd_Data()
             // hal.console->printf(convert_Dec_to_Char(u1_POS_1_array[j]));
         }
             // hal.console->printf("\n");
-
+    
             hal.serial(QuadCam1qpd_port)->write("_");
 
         for (int j = 0; j < 4; j++) {
@@ -583,3 +567,103 @@ Vector3f Copter::sat_q_dot(Vector3f vec){
     }
     return vec;
 }
+
+void Copter::Log_quad_pos_data()
+{
+    struct log_quad_pos_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_QUAD_POS_MSG),
+    time_us  : AP_HAL::micros64(),
+    x        : quad_pos[0],
+    y        : quad_pos[1],
+    z        : quad_pos[2],
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_quad_pos_des_data()
+{
+    struct log_quad_pos_des_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_QUAD_POD_MSG),
+    time_us  : AP_HAL::micros64(),
+    xd       : quad_pos_des[0],
+    yd       : quad_pos_des[1],
+    zd       : quad_pos_des[2],
+    psid     : quad_yaw_des,
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_quad_vel_data()
+{
+    struct log_quad_vel_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_QUAD_VEL_MSG),
+    time_us  : AP_HAL::micros64(),
+    xdot    : quad_vel[0],
+    ydot    : quad_vel[1],
+    zdot    : quad_vel[2],
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_quad_RPY_data()
+{
+    struct log_quad_RPY_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_QUAD_RPY_MSG),
+    time_us  : AP_HAL::micros64(),
+    ph  :quad_roll,
+    th  :quad_pitch,
+    psi  :quad_yaw,
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_quad_angular_velocity_data()
+{
+    struct log_quad_ANG_VEL_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_QUAD_AVG_MSG),
+    time_us  : AP_HAL::micros64(),
+    phdot   : quad_roll_dot,
+    thdot   : quad_pitch_dot,
+    psidot   : quad_yaw_dot,
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_cable_1_attitude_data()
+{
+    struct log_Cab1_ATT_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_CABL_ATT_MSG),
+    time_us  : AP_HAL::micros64(),
+    qc1_log  : qc_1[0],
+    qc2_log  : qc_1[1],
+    qc3_log  : qc_1[2],
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_cable_1_attitude_dot_data()
+{
+    struct log_Cab1_ATT_dot_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_CABL_DOT_MSG),
+    time_us  : AP_HAL::micros64(),
+    qc1dot_log : qc_1_dot[0],
+    qc2dot_log : qc_1_dot[1],
+    qc3dot_log : qc_1_dot[2],
+
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_Human_command_data_data()
+{
+    struct log_Human_CMD_ pkt = {
+    LOG_PACKET_HEADER_INIT(LOG_HUMN_CMD_MSG),
+    time_us  : AP_HAL::micros64(),
+    xddot    : human_xd_dot,
+    yddot    : human_yd_dot,
+    zddot    : human_zd_dot,
+    psiddot    : human_psid_dot,
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
