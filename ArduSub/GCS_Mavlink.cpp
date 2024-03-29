@@ -93,6 +93,11 @@ int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
     return (int16_t)(sub.motors.get_throttle() * 100);
 }
 
+float GCS_MAVLINK_Sub::vfr_hud_alt() const
+{
+    return sub.get_alt_msl();
+}
+
 // Work around to get temperature sensor data out
 void GCS_MAVLINK_Sub::send_scaled_pressure3()
 {
@@ -842,7 +847,8 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
         );
 }
 
-MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_t &packet) {
+MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_t &packet)
+{
     if (packet.param1 > 0.5f) {
         sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;
@@ -850,17 +856,14 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_
     return MAV_RESULT_FAILED;
 }
 
-int32_t GCS_MAVLINK_Sub::global_position_int_alt() const {
-    if (!sub.ap.depth_sensor_present) {
-        return 0;
-    }
-    return GCS_MAVLINK::global_position_int_alt();
+int32_t GCS_MAVLINK_Sub::global_position_int_alt() const
+{
+    return static_cast<int32_t>(sub.get_alt_msl() * 1000.0f);
 }
-int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
-    if (!sub.ap.depth_sensor_present) {
-        return 0;
-    }
-    return GCS_MAVLINK::global_position_int_relative_alt();
+
+int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const
+{
+    return static_cast<int32_t>(sub.get_alt_rel() * 1000.0f);
 }
 
 #if HAL_HIGH_LATENCY2_ENABLED

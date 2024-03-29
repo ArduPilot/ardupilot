@@ -380,4 +380,54 @@ void Sub::stats_update(void)
 }
 #endif
 
+// get the altitude relative to the home position or the ekf origin
+float Sub::get_alt_rel() const
+{
+    if (!ap.depth_sensor_present) {
+        return 0;
+    }
+
+    // get relative position
+    float posD;
+    if (ahrs.get_relative_position_D_origin(posD)) {
+        if (ahrs.home_is_set()) {
+            // adjust to the home position
+            auto home = ahrs.get_home();
+            posD -= static_cast<float>(home.alt) * 0.01f;
+        }
+    } else {
+        // fall back to the barometer reading
+        posD = -AP::baro().get_altitude();
+    }
+
+    // convert down to up
+    return -posD;
+}
+
+// get the altitude above mean sea level
+float Sub::get_alt_msl() const
+{
+    if (!ap.depth_sensor_present) {
+        return 0;
+    }
+
+    Location origin;
+    if (!ahrs.get_origin(origin)) {
+        return 0;
+    }
+
+    // get relative position
+    float posD;
+    if (!ahrs.get_relative_position_D_origin(posD)) {
+        // fall back to the barometer reading
+        posD = -AP::baro().get_altitude();
+    }
+
+    // add in the ekf origin altitude
+    posD -= static_cast<float>(origin.alt) * 0.01f;
+
+    // convert down to up
+    return -posD;
+}
+
 AP_HAL_MAIN_CALLBACKS(&sub);
