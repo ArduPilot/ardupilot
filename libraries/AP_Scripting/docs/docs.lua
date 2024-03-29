@@ -2108,8 +2108,8 @@ function baro:get_altitude() end
 function baro:healthy(instance) end
 
 -- get altitude difference from a base pressure and current pressure
----@param base_pressure -- first reference pressure in Pa
----@param pressure -- 2nd pressure in Pa
+---@param base_pressure number -- first reference pressure in Pa
+---@param pressure number -- 2nd pressure in Pa
 ---@return number -- altitude difference in meters
 function baro:get_altitude_difference(base_pressure,pressure) end
 
