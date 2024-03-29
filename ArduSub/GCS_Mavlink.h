@@ -51,6 +51,7 @@ private:
     MAV_STATE vehicle_system_status() const override;
 
     int16_t vfr_hud_throttle() const override;
+    float vfr_hud_alt() const override;
 
     MAV_RESULT handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet);
