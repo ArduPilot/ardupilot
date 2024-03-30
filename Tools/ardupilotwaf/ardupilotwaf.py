@@ -591,15 +591,15 @@ arducopter and upload it to my board".
         help='''Override board type check and continue loading. Same as using uploader.py --force.
 ''')
 
+    g.add_option('--define',
+        action='append',
+        help='Add C++ define to build.')
+
     g = opt.ap_groups['check']
 
     g.add_option('--check-verbose',
         action='store_true',
         help='Output all test programs.')
-
-    g.add_option('--define',
-        action='append',
-        help='Add C++ define to build.')
 
     g = opt.ap_groups['clean']
 
