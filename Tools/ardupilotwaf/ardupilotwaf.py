@@ -601,6 +601,10 @@ arducopter and upload it to my board".
         action='append',
         help='Add C++ define to build.')
 
+    g.add_option('--redefine',
+        action='append',
+        help='Undefine, then add C++ define to build.')
+
     g = opt.ap_groups['clean']
 
     g.add_option('--clean-all-sigs',

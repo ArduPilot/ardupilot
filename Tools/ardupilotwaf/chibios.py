@@ -15,6 +15,7 @@ import pickle
 import struct
 import base64
 import subprocess
+import pathlib
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -646,7 +647,23 @@ def generate_hwdef_h(env):
     except Exception as e:
         return False
 
-    return ret == 0
+    if ret != 0:
+        return False
+
+    # force any redefines the user wants to make with command-line --redefine:
+    # this splitting code is the same as that for cfg.options.define
+    if env.REDEFINE is not None:
+        hwdef_h = os.path.join(env.BUILDROOT, 'hwdef.h')
+        more_text = "\n"
+        more_text = "// redefines from command-line:\n"
+        for (n, v) in [d.split("=") for d in env.REDEFINE]:
+            # cfg.msg("Redefining: %s" % (n, ), v)
+            more_text += f'#undef {n}\n'
+            more_text += f'#define {n} {v}\n'
+        p = pathlib.Path(hwdef_h)
+        p.write_text(p.read_text() + more_text)
+
+    return True
 
 def pre_build(bld):
     '''pre-build hook to change dynamic sources'''

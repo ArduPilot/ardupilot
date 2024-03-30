@@ -502,6 +502,8 @@ def configure(cfg):
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
+    cfg.env.REDEFINE = cfg.options.redefine
+
     # Allow to differentiate our build from the make build
     cfg.define('WAF_BUILD', 1)
 
