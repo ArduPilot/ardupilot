@@ -866,6 +866,10 @@ void AP_GPS::update_instance(uint8_t instance)
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
     uint32_t tnow = AP_HAL::millis();
+    
+    if ((state[instance].num_sats < 10) && (state[instance].hdop > 120)) {
+        state[instance].status = NO_FIX;
+    }
 
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
