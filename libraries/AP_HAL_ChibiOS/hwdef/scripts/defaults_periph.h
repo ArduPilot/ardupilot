@@ -317,6 +317,10 @@
 #define AP_SCRIPTING_ENABLED 0
 #endif
 
+#ifndef HAL_SERIAL_ESC_COMM_ENABLED
+#define HAL_SERIAL_ESC_COMM_ENABLED 0
+#endif
+
 #ifndef HAL_WITH_ESC_TELEM
 #define HAL_WITH_ESC_TELEM 0
 #endif
