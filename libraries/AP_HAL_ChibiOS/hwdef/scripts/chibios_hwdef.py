@@ -1207,25 +1207,7 @@ class ChibiOSHWDef(object):
 
         # setup for bootloader build
         if self.is_bootloader_fw():
-            if self.get_config('FULL_CHIBIOS_BOOTLOADER', required=False, default=False):
-                # we got enough space to fit everything so we enable almost everything
-                f.write('''
-#define HAL_BOOTLOADER_BUILD TRUE
-#define HAL_USE_ADC FALSE
-#define HAL_USE_EXT FALSE
-#define HAL_USE_I2C FALSE
-#define HAL_USE_PWM FALSE
-#define HAL_NO_UARTDRIVER
-#ifndef CH_CFG_USE_DYNAMIC
-#define CH_CFG_USE_DYNAMIC FALSE
-#endif
-#define HAL_USE_EMPTY_STORAGE 1
-#ifndef HAL_STORAGE_SIZE
-#define HAL_STORAGE_SIZE 16384
-#endif
-''')
-            else:
-                f.write('''
+            f.write('''
 #define HAL_BOOTLOADER_BUILD TRUE
 #define HAL_USE_ADC FALSE
 #define HAL_USE_EXT FALSE
