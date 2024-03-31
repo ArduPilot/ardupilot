@@ -38,6 +38,7 @@ public:
     int32_t get_pitch(void) const { return _pitch_target; }  // Get pitch target
     float calc_speed_forward(void);  // Calculates the forward speed in the horizontal plane
     void set_dt(float delta_sec);
+    bool use_autorotation_config(void) const { return int32_t(_options.get()) & int32_t(OPTION::TEST_RANGEFINDER_TIMEOUT); }
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -84,12 +85,17 @@ private:
     AP_Float _param_bail_time;
     AP_Int8  _param_rpm_instance;
     AP_Float _param_fwd_k_ff;
+    AP_Int32 _options;
 
     //--------Internal Flags--------
     struct controller_flags {
             bool bad_rpm             : 1;
             bool bad_rpm_warning     : 1;
     } _flags;
+
+    enum class OPTION {
+        TEST_RANGEFINDER_TIMEOUT = (1<<0)
+    };
 
     //--------Internal Functions--------
     void set_collective(float _collective_filter_cutoff) const;

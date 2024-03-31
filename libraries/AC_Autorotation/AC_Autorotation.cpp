@@ -115,6 +115,12 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FW_V_FF", 11, AC_Autorotation, _param_fwd_k_ff, AP_FW_VEL_FF),
 
+    // @Param: OPTIONS
+    // @DisplayName: Autorotation options
+    // @Description: Bitmask for autorotation options.
+    // @Bitmask: 0: Test rangefinder config
+    AP_GROUPINFO("OPTIONS", 12, AC_Autorotation, _options, 0),
+
     AP_GROUPEND
 };
 
