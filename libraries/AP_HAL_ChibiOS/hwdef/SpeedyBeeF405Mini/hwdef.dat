@@ -152,4 +152,4 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 define HAL_FRAME_TYPE_DEFAULT 12
 
 include ../include/minimize_fpv_osd.inc
-AUTOBUILD_TARGETS Copter
+

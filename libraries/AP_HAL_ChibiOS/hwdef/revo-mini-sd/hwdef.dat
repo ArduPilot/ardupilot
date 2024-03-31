@@ -1,6 +1,6 @@
 # Revo-mini target with I2C and SD card support
 
-AUTOBUILD_TARGETS
+
 
 include ../revo-mini-i2c/hwdef.dat
 

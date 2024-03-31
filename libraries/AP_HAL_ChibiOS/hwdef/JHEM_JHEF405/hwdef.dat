@@ -149,4 +149,3 @@ define HAL_FRAME_TYPE_DEFAULT 12
 include ../include/minimize_common.inc
 # define AP_GPS_NMEA_ENABLED 1
 
-AUTOBUILD_TARGETS Copter

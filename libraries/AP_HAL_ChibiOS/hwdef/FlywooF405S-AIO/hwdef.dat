@@ -153,4 +153,4 @@ define DEFAULT_NTF_LED_TYPES 257
 # save some flash space
 include ../include/minimize_fpv_osd.inc
 
-AUTOBUILD_TARGETS Copter
+
