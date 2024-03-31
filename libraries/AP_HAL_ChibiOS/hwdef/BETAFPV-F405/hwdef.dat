@@ -140,7 +140,5 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
-# This is a whoop AIO board, not really suitable for anything other than copter
-AUTOBUILD_TARGETS Copter
 
 include ../include/minimize_fpv_osd.inc

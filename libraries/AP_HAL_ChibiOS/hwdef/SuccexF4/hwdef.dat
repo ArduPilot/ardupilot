@@ -132,4 +132,3 @@ define HAL_SPRAYER_ENABLED 0
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
 
-AUTOBUILD_TARGETS Copter
