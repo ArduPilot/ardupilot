@@ -58,6 +58,9 @@ bool ModeAutorotate::init(bool ignore_checks)
     _flags.bail_out_initial = true;
     _msg_flags.bad_rpm = true;
 
+    // Extend rangefinder time out for use in the autorotation
+    copter.set_rangefinder_timeout(10000);
+
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
 
@@ -318,6 +321,10 @@ void ModeAutorotate::warning_message(uint8_t message_n)
             break;
         }
     }
+}
+
+void ModeAutorotate::exit(void) {
+    copter.reset_rangefinder_timeout();
 }
 
 #endif

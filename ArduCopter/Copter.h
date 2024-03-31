@@ -264,6 +264,12 @@ private:
         float terrain_offset_cm;    // filtered terrain offset (e.g. terrain's height above EKF origin)
     } rangefinder_state, rangefinder_up_state;
 
+    uint32_t rangefinder_timeout_ms;
+
+    void set_rangefinder_timeout(uint32_t timeout) { rangefinder_timeout_ms = timeout; }
+
+    void reset_rangefinder_timeout(void) { set_rangefinder_timeout(0); }
+
     // return rangefinder height interpolated using inertial altitude
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
 
@@ -815,6 +821,8 @@ private:
     void heli_update_rotor_speed_targets();
     void heli_update_autorotation();
     void update_collective_low_flag(int16_t throttle_control);
+
+    bool arot_rng_finder_set_on;   // Switch to prevent spamming the rangefinder setting required for autorotaion
 
     // inertia.cpp
     void read_inertia();

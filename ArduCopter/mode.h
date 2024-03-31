@@ -1918,7 +1918,8 @@ public:
     Number mode_number() const override { return Number::AUTOROTATE; }
 
     bool init(bool ignore_checks) override;
-    void run() override;
+    void run(void) override;
+    void exit(void) override;
 
     bool is_autopilot() const override { return true; }
     bool requires_GPS() const override { return false; }

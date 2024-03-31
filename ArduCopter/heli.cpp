@@ -209,6 +209,19 @@ void Copter::heli_update_autorotation()
         motors->set_enable_bailout(false);
     }
 
+    // See if we need to use autorotation config for preliminary tests
+    if (g2.arot.is_enable()) {
+        if (g2.arot.use_autorotation_config() && !arot_rng_finder_set_on) {
+            gcs().send_text(MAV_SEVERITY_INFO, "arot rngfnd test on");
+            set_rangefinder_timeout(10000);
+            arot_rng_finder_set_on = true;
+        } else if (!g2.arot.use_autorotation_config() && arot_rng_finder_set_on) {
+            gcs().send_text(MAV_SEVERITY_INFO, "arot rngfnd test off");
+            reset_rangefinder_timeout();
+            arot_rng_finder_set_on = false;
+        }
+    }
+
 }
 
 // update collective low flag.  Use a debounce time of 400 milliseconds.
