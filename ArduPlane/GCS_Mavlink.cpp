@@ -1410,13 +1410,13 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
 {
+    plane.auto_state.next_wp_crosstrack = false;
     const MAV_RESULT result = GCS_MAVLINK::handle_command_do_set_mission_current(packet);
     if (result != MAV_RESULT_ACCEPTED) {
         return result;
     }
 
     // if you change this you must change handle_mission_set_current
-    plane.auto_state.next_wp_crosstrack = false;
     if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
