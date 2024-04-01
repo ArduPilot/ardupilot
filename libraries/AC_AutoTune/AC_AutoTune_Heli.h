@@ -261,7 +261,6 @@ private:
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
     uint32_t phase_out_time;                        // time in ms to phase out response
-    float    trim_pff_out;                          // trim output of the PID rate controller for P, I and FF terms
     float    trim_meas_rate;                        // trim measured gyro rate
 
     //variables from rate FF test
@@ -271,8 +270,6 @@ private:
     LowPassFilterFloat angle_request_cd;
 
     // variables from dwell test
-    LowPassFilterVector2f filt_pit_roll_cd;         // filtered pitch and roll attitude for dwell rate method
-    LowPassFilterFloat filt_heading_error_cd;       // filtered heading error for dwell rate method
     LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;
     LowPassFilterFloat filt_command_reading;        // filtered command reading to keep oscillation centered
     LowPassFilterFloat filt_gyro_reading;           // filtered gyro reading to keep oscillation centered
@@ -308,6 +305,8 @@ private:
     AP_Float max_sweep_freq;    // maximum sweep frequency
     AP_Float max_resp_gain;     // maximum response gain
     AP_Float vel_hold_gain;     // gain for velocity hold
+    AP_Float accel_max;         // maximum autotune angular acceleration
+    AP_Float rate_max;          // maximum autotune angular rate
 
     // freqresp object for the frequency response tests
     AC_AutoTune_FreqResp freqresp;
