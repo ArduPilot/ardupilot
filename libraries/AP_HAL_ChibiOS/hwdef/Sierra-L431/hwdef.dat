@@ -105,3 +105,5 @@ define HAL_AIRSPEED_TYPE_DEFAULT 1
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
+
+define HAL_RCIN_THREAD_ENABLED 1
