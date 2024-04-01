@@ -90,10 +90,10 @@ public:
     void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds) override;
 
     // enable/disable inverted flight
-    void set_inverted_flight(bool inverted) override { _inverted_flight = inverted;}
+    void set_inverted_flight(bool inverted) override { _inverted_flight = inverted; }
 
     // accessor for inverted flight flag
-    bool get_inverted_flight() override { return _inverted_flight;}
+    bool get_inverted_flight() override { return _inverted_flight; }
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
@@ -136,7 +136,7 @@ private:
     float _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() override { return constrain_float(radians(get_roll_trim_cd() * 0.01f), -radians(10.0f),radians(10.0f));}
+    float get_roll_trim_rad() override { return radians(get_roll_trim_cd() * 0.01); }
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

@@ -569,7 +569,8 @@ float AC_AttitudeControl_Heli::get_throttle_boosted(float throttle_in)
     float boost_factor = 1.0f / constrain_float(cos_tilt_target, 0.1f, 1.0f);
 
     // angle boost and inverted factor applied about the zero thrust collective
-    float throttle_out = (throttle_in - ((AP_MotorsHeli&)_motors).get_coll_mid()) * inverted_factor * boost_factor + ((AP_MotorsHeli&)_motors).get_coll_mid();
+    const float coll_mid = ((AP_MotorsHeli&)_motors).get_coll_mid();
+    float throttle_out = ((throttle_in - coll_mid)  * inverted_factor * boost_factor) + coll_mid;
     _angle_boost = constrain_float(throttle_out - throttle_in, -1.0f, 1.0f);
     return throttle_out;
 }
