@@ -20,8 +20,6 @@ FLASH_SIZE_KB 2048
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-define HAL_BUILD_AP_PERIPH
-
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 128
 FLASH_BOOTLOADER_LOAD_KB 128
