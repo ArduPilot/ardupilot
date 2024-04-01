@@ -815,13 +815,11 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
     SITL::SIM *_sitl = AP::sitl();
     if (_sitl && _sitl->telem_baudlimit_enable) {
         // limit byte rate to configured baudrate
-        uint32_t now = AP_HAL::micros();
-        float dt = 1.0e-6 * (now - last_write_tick_us);
-        max_bytes = _uart_baudrate * dt / 10;
+        // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
+        max_bytes = baud_limits.write.max_bytes(float(_uart_baudrate) * 0.1);
         if (max_bytes == 0) {
             return;
         }
-        last_write_tick_us = now;
     }
 #endif
     if (_packetise) {
@@ -884,13 +882,11 @@ void UARTDriver::handle_reading_from_device_to_readbuffer()
     SITL::SIM *_sitl = AP::sitl();
     if (_sitl && _sitl->telem_baudlimit_enable) {
         // limit byte rate to configured baudrate
-        uint32_t now = AP_HAL::micros();
-        float dt = 1.0e-6 * (now - last_read_tick_us);
-        max_bytes = _uart_baudrate * dt / 10;
+        // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
+        max_bytes = baud_limits.read.max_bytes(float(_uart_baudrate) * 0.1);
         if (max_bytes == 0) {
             return;
         }
-        last_read_tick_us = now;
     }
 #endif
 
