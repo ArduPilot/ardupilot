@@ -151,3 +151,5 @@ env ROMFS_UNCOMPRESSED True
 
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1
