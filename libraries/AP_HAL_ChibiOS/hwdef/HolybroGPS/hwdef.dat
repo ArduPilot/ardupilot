@@ -116,9 +116,6 @@ define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
 
-
-define HAL_DISABLE_LOOP_DELAY
-
 # enable CAN support
 
 PA11 CAN1_RX CAN1

@@ -44,6 +44,10 @@
 #define SERIAL0_BAUD DEFAULT_SERIAL0_BAUD
 #endif
 
+#ifndef HAL_SCHEDULER_LOOP_DELAY_ENABLED
+#define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1
+#endif
+
 #ifndef HAL_NO_UARTDRIVER
 static HAL_SERIAL0_DRIVER;
 static HAL_SERIAL1_DRIVER;
@@ -296,6 +300,7 @@ static void main_loop()
     while (true) {
         g_callbacks->loop();
 
+#if HAL_SCHEDULER_LOOP_DELAY_ENABLED && !APM_BUILD_TYPE(APM_BUILD_Replay)
         /*
           give up 50 microseconds of time if the INS loop hasn't
           called delay_microseconds_boost(), to ensure low priority
@@ -304,7 +309,6 @@ static void main_loop()
           time from the main loop, so we don't need to do it again
           here
          */
-#if !defined(HAL_DISABLE_LOOP_DELAY) && !APM_BUILD_TYPE(APM_BUILD_Replay)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(50);
         }
