@@ -77,11 +77,11 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "");
+        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "", _portNumber);
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "");
+        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "", _portNumber);
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -109,7 +109,7 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             // add sanity check here that we're doing mavlink on this port?
             ::printf("SIM-ADSB connection on SERIAL%u\n", _portNumber);
             _connected = true;
-            _sim_serial_device = _sitlState->create_serial_sim("adsb", nullptr);
+            _sim_serial_device = _sitlState->create_serial_sim("adsb", nullptr, _portNumber);
         } else
 #endif
         if (strcmp(devtype, "tcp") == 0) {
@@ -132,7 +132,7 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             if (!_connected) {
                 ::printf("SIM connection %s:%s on SERIAL%u\n", args1, args2, _portNumber);
                 _connected = true;
-                _sim_serial_device = _sitlState->create_serial_sim(args1, args2);
+                _sim_serial_device = _sitlState->create_serial_sim(args1, args2, _portNumber);
             }
         } else if (strcmp(devtype, "udpclient") == 0) {
             // udp client connection

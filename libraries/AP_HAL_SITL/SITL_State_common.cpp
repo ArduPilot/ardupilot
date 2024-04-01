@@ -25,7 +25,7 @@ extern const AP_HAL::HAL& hal;
 using namespace HALSITL;
 
 #define streq(a, b) (!strcmp(a, b))
-SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const char *arg)
+SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const char *arg, const uint8_t portNumber)
 {
     if (streq(name, "benewake_tf02")) {
         if (benewake_tf02 != nullptr) {
@@ -314,6 +314,13 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         gps[x-1] = new SITL::GPS(x-1);
         return gps[x-1];
+    } else if (streq(name, "ELRS")) {
+        // Only allocate if not done already
+        // MAVLink serial ports have begin called several times
+        if (elrs == nullptr) {
+            elrs = new SITL::ELRS(portNumber, this);
+        }
+        return elrs;
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -480,6 +487,10 @@ void SITL_State_Common::sim_update(void)
         if (gps[i] != nullptr) {
             gps[i]->update();
         }
+    }
+
+    if (elrs != nullptr) {
+        elrs->update();
     }
 }
 

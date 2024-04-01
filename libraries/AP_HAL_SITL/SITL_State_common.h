@@ -53,6 +53,8 @@
 #include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
 
+#include <SITL/SIM_ELRS.h>
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -88,7 +90,7 @@ public:
 
     // create a simulated serial device; type of device is given by
     // name parameter
-    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg);
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
 
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
@@ -230,6 +232,9 @@ public:
 
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
+
+    // Simulated ELRS radio
+    SITL::ELRS *elrs;
 
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor
