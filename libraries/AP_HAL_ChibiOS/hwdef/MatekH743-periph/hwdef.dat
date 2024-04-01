@@ -62,3 +62,5 @@ define HAL_MSP_ENABLED 1
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1

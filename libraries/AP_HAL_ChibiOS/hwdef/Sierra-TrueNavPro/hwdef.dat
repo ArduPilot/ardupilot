@@ -114,3 +114,5 @@ define CAN_APP_NODE_NAME "in.sierraaerospace.TrueNavPro"
 
 # Enable GPS LDO
 PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1
