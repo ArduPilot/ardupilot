@@ -92,3 +92,5 @@ env ROMFS_UNCOMPRESSED True
 
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *
+
+define HAL_RCIN_THREAD_ENABLED 1
