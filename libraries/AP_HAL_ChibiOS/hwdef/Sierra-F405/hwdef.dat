@@ -30,9 +30,6 @@ STDOUT_BAUDRATE 57600
 
 define HAL_NO_GPIO_IRQ
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0

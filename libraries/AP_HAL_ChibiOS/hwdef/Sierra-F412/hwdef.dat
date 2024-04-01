@@ -85,7 +85,6 @@ PA0 VSENSE ADC1 SCALE(2)
 define HAL_NO_GPIO_IRQ
 
 # avoid RCIN thread to save memory
-define HAL_NO_RCIN_THREAD
 define HAL_USE_RTC FALSE
 define DMA_RESERVE_SIZE 0
 define PERIPH_FW TRUE

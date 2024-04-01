@@ -64,7 +64,6 @@ define STM32_SERIAL_USE_USART3 FALSE
 
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_RCIN_THREAD
 
 define DMA_RESERVE_SIZE 0
 

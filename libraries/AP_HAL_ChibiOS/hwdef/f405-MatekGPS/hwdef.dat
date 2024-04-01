@@ -39,9 +39,6 @@ define PORT_INT_REQUIRED_STACK 64
 #PA13 JTMS-SWDIO SWD
 #PA14 JTCK-SWCLK SWD
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
