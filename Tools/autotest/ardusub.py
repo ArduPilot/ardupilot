@@ -204,6 +204,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.context_pop()
 
+        # restart SITL RF driver
+        self.reboot_sitl()
+
         if ex:
             raise ex
 
@@ -604,6 +607,67 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.progress("Mission OK")
 
+    def wait_ekf_happy_const_pos(self, timeout=45):
+        # All of these must be set for arming to happen in constant position mode:
+        required_value = (mavutil.mavlink.EKF_ATTITUDE |
+                          mavutil.mavlink.EKF_VELOCITY_HORIZ |
+                          mavutil.mavlink.EKF_VELOCITY_VERT |
+                          mavutil.mavlink.EKF_POS_VERT_ABS |
+                          mavutil.mavlink.EKF_CONST_POS_MODE)
+
+        # None of these bits must be set for arming to happen:
+        error_bits = mavutil.mavlink.EKF_UNINITIALIZED
+
+        self.wait_ekf_flags(required_value, error_bits, timeout=timeout)
+
+    def wait_ready_to_arm_const_pos(self, timeout=120):
+        self.progress("Waiting for ready to arm (constant position mode)")
+        start = self.get_sim_time()
+        self.wait_ekf_happy_const_pos(timeout=timeout)
+        armable_time = self.get_sim_time() - start
+        self.progress("Took %u seconds to become armable" % armable_time)
+        self.total_waiting_to_arm_time += armable_time
+        self.waiting_to_arm_count += 1
+
+    def collected_msgs(self, msg_type):
+        c = self.context_get()
+        if msg_type not in c.collections:
+            raise NotAchievedException("Not collecting (%s)" % str(msg_type))
+        return c.collections[msg_type]
+
+    def SetGlobalOrigin(self):
+        """Test SET_GPS_GLOBAL_ORIGIN mav msg"""
+        self.context_push()
+        self.set_parameters({
+            'GPS1_TYPE': 0,             # Disable the GPS
+            'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to a GPS
+        })
+        self.reboot_sitl()
+
+        # Wait for the EKF to be happy in constant position mode
+        self.wait_ready_to_arm_const_pos()
+
+        if self.current_onboard_log_contains_message('ORGN'):
+            raise NotAchievedException("Found unexpected ORGN message")
+
+        self.context_collect('GPS_GLOBAL_ORIGIN')
+
+        # This should set the EKF origin, write an ORGN msg to df and a GPS_GLOBAL_ORIGIN msg to MAVLink
+        self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
+        self.delay_sim_time(1)
+
+        if not self.current_onboard_log_contains_message('ORGN'):
+            raise NotAchievedException("Did not find expected ORGN message")
+
+        num_mavlink_origin_msgs = len(self.collected_msgs('GPS_GLOBAL_ORIGIN'))
+        if num_mavlink_origin_msgs != 1:
+            raise NotAchievedException("Expected 1 GPS_GLOBAL_ORIGIN message, found %d" % num_mavlink_origin_msgs)
+
+        self.context_pop()
+
+        # restart GPS driver
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -628,6 +692,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
             self.TerrainMission,
+            self.SetGlobalOrigin,
         ])
 
         return ret
