@@ -136,7 +136,7 @@ public:
     // get_in_autorotation - allows main code to determine when aircraft is in autorotation.
     bool get_in_autorotation() { return _heliflags.in_autorotation; }
 
-// set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
+    // set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
     void set_enable_bailout(bool bailout) { _heliflags.enable_bailout = bailout; }
 
     // set land complete flag
