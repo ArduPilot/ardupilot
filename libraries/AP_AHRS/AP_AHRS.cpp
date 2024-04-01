@@ -1413,36 +1413,45 @@ bool AP_AHRS::set_origin(const Location &loc)
 #endif
 
     // return success if active EKF's origin was set
+    bool success = false;
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return false;
+        break;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        return ret2;
+        success = ret2;
+        break;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return ret3;
+        success = ret3;
+        break;
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         // never allow origin set in SITL. The origin is set by the
         // simulation backend
-        return false;
+        break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         // don't allow origin set with external AHRS
-        return false;
+        break;
 #endif
     }
-    // since there is no default case above, this is unreachable
-    return false;
+
+    if (success) {
+        state.origin_ok = _get_origin(state.origin);
+#if HAL_LOGGING_ENABLED
+        Log_Write_Home_And_Origin();
+#endif
+    }
+    return success;
 }
 
 #if AP_AHRS_POSITION_RESET_ENABLED
