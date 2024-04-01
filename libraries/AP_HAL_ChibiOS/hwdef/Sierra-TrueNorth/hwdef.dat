@@ -39,7 +39,6 @@ PROCESS_STACK 0xA00
 define HAL_DISABLE_LOOP_DELAY
 define HAL_NO_MONITOR_THREAD
 define HAL_USE_ADC FALSE
-define HAL_NO_RCIN_THREAD
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 256

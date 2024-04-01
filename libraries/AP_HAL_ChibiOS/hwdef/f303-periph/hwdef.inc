@@ -65,8 +65,6 @@ define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
 define HAL_NO_RCOUT_THREAD
 
 define HAL_USE_RTC FALSE

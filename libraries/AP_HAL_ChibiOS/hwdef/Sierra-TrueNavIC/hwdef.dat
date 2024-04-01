@@ -41,7 +41,6 @@ define HAL_GCS_ENABLED 0
 define HAL_NO_MONITOR_THREAD
 define HAL_NO_LOGGING
 define HAL_USE_ADC FALSE
-define HAL_NO_RCIN_THREAD
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 256

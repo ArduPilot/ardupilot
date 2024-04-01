@@ -321,6 +321,10 @@
 #define HAL_SERIAL_ESC_COMM_ENABLED 0
 #endif
 
+#ifndef HAL_RCIN_THREAD_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 0
+#endif
+
 #ifndef HAL_WITH_ESC_TELEM
 #define HAL_WITH_ESC_TELEM 0
 #endif

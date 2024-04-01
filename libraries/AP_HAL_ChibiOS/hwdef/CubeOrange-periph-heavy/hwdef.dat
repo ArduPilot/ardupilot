@@ -40,8 +40,6 @@ define HAL_USE_RTC FALSE
 
 define HAL_GCS_ENABLED 1
 
-define HAL_NO_RCIN_THREAD
-
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 

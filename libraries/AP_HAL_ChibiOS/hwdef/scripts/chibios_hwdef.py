@@ -1220,7 +1220,9 @@ class ChibiOSHWDef(object):
 // avoid timer and RCIN threads to save memory
 #define HAL_NO_TIMER_THREAD
 #define HAL_NO_RCOUT_THREAD
-#define HAL_NO_RCIN_THREAD
+#ifndef HAL_RCIN_THREAD_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 0
+#endif
 #ifndef AP_HAL_SHARED_DMA_ENABLED
 #define AP_HAL_SHARED_DMA_ENABLED 0
 #endif

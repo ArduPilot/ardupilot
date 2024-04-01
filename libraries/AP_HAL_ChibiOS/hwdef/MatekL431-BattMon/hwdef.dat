@@ -14,7 +14,6 @@ define HAL_USE_ADC FALSE
 
 # disable unnecessary threads
 define HAL_NO_MONITOR_THREAD
-define HAL_NO_RCIN_THREAD
 define HAL_NO_RCOUT_THREAD
 define HAL_NO_TIMER_THREAD
 
