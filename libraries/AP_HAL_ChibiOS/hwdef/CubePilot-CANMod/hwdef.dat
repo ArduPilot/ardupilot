@@ -8,8 +8,6 @@ MCU STM32H7xx STM32H757xx
 define CORE_CM7
 define SMPS_PWR
 
-define HAL_BUILD_AP_PERIPH
-
 # board ID for firmware load
 APJ_BOARD_ID 1079
 
