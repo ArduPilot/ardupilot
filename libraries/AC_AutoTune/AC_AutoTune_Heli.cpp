@@ -112,6 +112,20 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VELXY_P", 6, AC_AutoTune_Heli, vel_hold_gain,  0.1f),
 
+    // @Param: ACC_MAX
+    // @DisplayName: AutoTune maximum allowable angular acceleration
+    // @Description: maximum angular acceleration in deg/s/s allowed during autotune maneuvers
+    // @Range: 1 4000
+    // @User: Standard
+    AP_GROUPINFO("ACC_MAX", 7, AC_AutoTune_Heli, accel_max,  5000.0f),
+
+    // @Param: RAT_MAX
+    // @DisplayName: Autotune maximum allowable angular rate
+    // @Description: maximum angular rate in deg/s allowed during autotune maneuvers
+    // @Range: 0 500
+    // @User: Standard
+    AP_GROUPINFO("RAT_MAX", 8, AC_AutoTune_Heli, rate_max,  50.0f),
+
     AP_GROUPEND
 };
 
@@ -169,6 +183,9 @@ void AC_AutoTune_Heli::test_init()
                 }
             }
         }
+        attitude_control->bf_feedforward(false);
+        attitude_control->use_sqrt_controller(false);
+
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine_gain function whenever test is initialized
             freqresp.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::RATE);
@@ -199,6 +216,7 @@ void AC_AutoTune_Heli::test_init()
             }
         }
         attitude_control->bf_feedforward(false);
+        attitude_control->use_sqrt_controller(false);
 
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
@@ -917,34 +935,6 @@ void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float fi
     filt_tgt_rate_reading.set_cutoff_frequency(0.2f * start_frq);
     filt_att_fdbk_from_velxy_cd.set_cutoff_frequency(0.2f * start_frq);
 
-    if (dwell_type == RATE) {
-        filt_pit_roll_cd.set_cutoff_frequency(0.2f * start_frq);
-        filt_heading_error_cd.set_cutoff_frequency(0.2f * start_frq);
-
-        // save the trim output from PID controller
-        float ff_term = 0.0f;
-        float p_term = 0.0f;
-        switch (axis) {
-        case ROLL:
-            trim_meas_rate = ahrs_view->get_gyro().x;
-            ff_term = attitude_control->get_rate_roll_pid().get_ff();
-            p_term = attitude_control->get_rate_roll_pid().get_p();
-            break;
-        case PITCH:
-            trim_meas_rate = ahrs_view->get_gyro().y;
-            ff_term = attitude_control->get_rate_pitch_pid().get_ff();
-            p_term = attitude_control->get_rate_pitch_pid().get_p();
-            break;
-        case YAW:
-        case YAW_D:
-            trim_meas_rate = ahrs_view->get_gyro().z;
-            ff_term = attitude_control->get_rate_yaw_pid().get_ff();
-            p_term = attitude_control->get_rate_yaw_pid().get_p();
-            break;
-        }
-        trim_pff_out = ff_term + p_term;
-    }
-
     if (!is_equal(start_frq, stop_frq)) {
         reset_sweep_variables();
         curr_test.gain = 0.0f;
@@ -963,30 +953,15 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
     float tgt_attitude;
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd = 0.0f;
-    float target_rate_cds = 0.0f;
     float dwell_freq = start_frq;
-    float target_rate_mag_cds;
-    const float att_hold_gain = 4.5f;
 
     float cycle_time_ms = 0;
     if (!is_zero(dwell_freq)) {
         cycle_time_ms = 1000.0f * M_2PI / dwell_freq;
     }
 
-    if (dwell_type == RATE) {
-        // keep controller from requesting too high of a rate
-        tgt_attitude = 2.5f * 0.01745f;
-        target_rate_mag_cds = dwell_freq * tgt_attitude * 5730.0f;
-        if (target_rate_mag_cds > 5000.0f) {
-            target_rate_mag_cds = 5000.0f;
-        }
-    } else {
-        tgt_attitude = 5.0f * 0.01745f;
-        // adjust target attitude based on input_tc so amplitude decrease with increased frequency is minimized
-        const float freq_co = 1.0f / attitude_control->get_input_tc();
-        const float added_ampl = (safe_sqrt(powf(dwell_freq,2.0) + powf(freq_co,2.0)) / freq_co) - 1.0f;
-        tgt_attitude = constrain_float(0.08725f * (1.0f + 0.2f * added_ampl), 0.08725f, 0.5235f);
-    }
+    //Determine target attitude magnitude limiting acceleration and rate
+    tgt_attitude = 5.0f * 0.01745f;
 
     // body frame calculation of velocity
     Vector3f velocity_ned, velocity_bf;
@@ -995,149 +970,72 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
         velocity_bf.y = -velocity_ned.x * ahrs_view->sin_yaw() + velocity_ned.y * ahrs_view->cos_yaw();
     }
 
-    Vector3f attitude_cd = Vector3f((float)ahrs_view->roll_sensor, (float)ahrs_view->pitch_sensor, (float)ahrs_view->yaw_sensor);
     if (settle_time == 0) {
-        if (dwell_type == RATE) {
-            target_rate_cds = -chirp_input.update((now - dwell_start_time_ms) * 0.001, target_rate_mag_cds);
-            filt_pit_roll_cd.apply(Vector2f(attitude_cd.x,attitude_cd.y), AP::scheduler().get_loop_period_s());
-            filt_heading_error_cd.apply(wrap_180_cd(trim_attitude_cd.z - attitude_cd.z), AP::scheduler().get_loop_period_s());
-        } else {
-            target_angle_cd = -chirp_input.update((now - dwell_start_time_ms) * 0.001, tgt_attitude * 5730.0f);
-        }
+        target_angle_cd = -chirp_input.update((now - dwell_start_time_ms) * 0.001, tgt_attitude * 5730.0f);
+        dwell_freq = chirp_input.get_frequency_rads();
         const Vector2f att_fdbk {
             -5730.0f * vel_hold_gain * velocity_bf.y,
             5730.0f * vel_hold_gain * velocity_bf.x
         };
         filt_att_fdbk_from_velxy_cd.apply(att_fdbk, AP::scheduler().get_loop_period_s());
-        dwell_freq = chirp_input.get_frequency_rads();
     } else {
-        if (dwell_type == RATE) {
-            target_rate_cds = 0.0f;
-            trim_command = command_out;
-            trim_attitude_cd = attitude_cd;
-            filt_pit_roll_cd.reset(Vector2f(attitude_cd.x,attitude_cd.y));
-            filt_heading_error_cd.reset(0.0f);
-        } else {
-            target_angle_cd = 0.0f;
-            trim_yaw_tgt_reading = (float)attitude_control->get_att_target_euler_cd().z;
-            trim_yaw_heading_reading = (float)ahrs_view->yaw_sensor;
-        }
+        target_angle_cd = 0.0f;
+        trim_yaw_tgt_reading = (float)attitude_control->get_att_target_euler_cd().z;
+        trim_yaw_heading_reading = (float)ahrs_view->yaw_sensor;
         dwell_start_time_ms = now;
         filt_att_fdbk_from_velxy_cd.reset(Vector2f(0.0f,0.0f));
         settle_time--;
     }
 
-    if (dwell_type == RATE) {
-        // limit rate correction for position hold
-        Vector3f trim_rate_cds {
-            constrain_float(att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.get().x) - filt_pit_roll_cd.get().x), -15000.0f, 15000.0f),
-            constrain_float(att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.get().y) - filt_pit_roll_cd.get().y), -15000.0f, 15000.0f),
-            constrain_float(att_hold_gain * filt_heading_error_cd.get(), -15000.0f, 15000.0f)
-        };
-        switch (axis) {
-        case ROLL:
-            gyro_reading = ahrs_view->get_gyro().x;
-            command_reading = motors->get_roll();
+    const Vector2f trim_angle_cd {
+        constrain_float(filt_att_fdbk_from_velxy_cd.get().x, -2000.0f, 2000.0f),
+        constrain_float(filt_att_fdbk_from_velxy_cd.get().y, -2000.0f, 2000.0f)
+    };
+
+    switch (axis) {
+    case ROLL:
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
+        command_reading = motors->get_roll();
+        if (dwell_type == DRB) {
+            tgt_rate_reading = (target_angle_cd) / 5730.0f;
+            gyro_reading = ((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) / 5730.0f;
+        } else if (dwell_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().x;
-            if (settle_time == 0) {
-                float ff_rate_contr = 0.0f;
-                if (tune_roll_rff > 0.0f) {
-                    ff_rate_contr = 5730.0f * trim_command / tune_roll_rff;
-                }
-                trim_rate_cds.x += ff_rate_contr;
-                attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, trim_rate_cds.y, 0.0f);
-                attitude_control->rate_bf_roll_target(target_rate_cds + trim_rate_cds.x);
-            } else {
-                attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-                if (!is_zero(attitude_control->get_rate_roll_pid().ff() + attitude_control->get_rate_roll_pid().kP())) {
-                    float trim_tgt_rate_cds = 5730.0f * (trim_pff_out + trim_meas_rate * attitude_control->get_rate_roll_pid().kP()) / (attitude_control->get_rate_roll_pid().ff() + attitude_control->get_rate_roll_pid().kP());
-                    attitude_control->rate_bf_roll_target(trim_tgt_rate_cds);
-                }
-            }
-            break;
-        case PITCH:
-            gyro_reading = ahrs_view->get_gyro().y;
-            command_reading = motors->get_pitch();
+            gyro_reading = ahrs_view->get_gyro().x;
+        } else {
+            tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
+            gyro_reading = ((float)ahrs_view->roll_sensor) / 5730.0f;
+        }
+        break;
+    case PITCH:
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
+        command_reading = motors->get_pitch();
+        if (dwell_type == DRB) {
+            tgt_rate_reading = (target_angle_cd) / 5730.0f;
+            gyro_reading = ((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) / 5730.0f;
+        } else if (dwell_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().y;
-            if (settle_time == 0) {
-                float ff_rate_contr = 0.0f;
-                if (tune_pitch_rff > 0.0f) {
-                    ff_rate_contr = 5730.0f * trim_command / tune_pitch_rff;
-                }
-                trim_rate_cds.y += ff_rate_contr;
-                attitude_control->input_rate_bf_roll_pitch_yaw(trim_rate_cds.x, 0.0f, 0.0f);
-                attitude_control->rate_bf_pitch_target(target_rate_cds + trim_rate_cds.y);
-            } else {
-                attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-                if (!is_zero(attitude_control->get_rate_pitch_pid().ff() + attitude_control->get_rate_pitch_pid().kP())) {
-                    float trim_tgt_rate_cds = 5730.0f * (trim_pff_out + trim_meas_rate * attitude_control->get_rate_pitch_pid().kP()) / (attitude_control->get_rate_pitch_pid().ff() + attitude_control->get_rate_pitch_pid().kP());
-                    attitude_control->rate_bf_pitch_target(trim_tgt_rate_cds);
-                }
-            }
-            break;
-        case YAW:
-        case YAW_D:
-            gyro_reading = ahrs_view->get_gyro().z;
-            command_reading = motors->get_yaw();
+            gyro_reading = ahrs_view->get_gyro().y;
+        } else {
+            tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
+            gyro_reading = ((float)ahrs_view->pitch_sensor) / 5730.0f;
+        }
+        break;
+    case YAW:
+    case YAW_D:
+        attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
+        command_reading = motors->get_yaw();
+        if (dwell_type == DRB) {
+            tgt_rate_reading = (target_angle_cd) / 5730.0f;
+            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading - target_angle_cd)) / 5730.0f;
+        } else if (dwell_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().z;
-            if (settle_time == 0) {
-                float rp_rate_contr = 0.0f;
-                if (tune_yaw_rp > 0.0f) {
-                    rp_rate_contr = 5730.0f * trim_command / tune_yaw_rp;
-                }
-                trim_rate_cds.z += rp_rate_contr;
-                attitude_control->input_rate_bf_roll_pitch_yaw(trim_rate_cds.x, trim_rate_cds.y, 0.0f);
-                attitude_control->rate_bf_yaw_target(target_rate_cds + trim_rate_cds.z);
-            } else {
-                attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-                if (!is_zero(attitude_control->get_rate_yaw_pid().ff() + attitude_control->get_rate_yaw_pid().kP())) {
-                    float trim_tgt_rate_cds = 5730.0f * (trim_pff_out + trim_meas_rate * attitude_control->get_rate_yaw_pid().kP()) / (attitude_control->get_rate_yaw_pid().ff() + attitude_control->get_rate_yaw_pid().kP());
-                    attitude_control->rate_bf_yaw_target(trim_tgt_rate_cds);
-                }
-            }
-            break;
+            gyro_reading = ahrs_view->get_gyro().z;
+        } else {
+            tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) / 5730.0f;
+            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) / 5730.0f;
         }
-    } else {
-        const Vector2f trim_angle_cd {
-            constrain_float(filt_att_fdbk_from_velxy_cd.get().x, -2000.0f, 2000.0f),
-            constrain_float(filt_att_fdbk_from_velxy_cd.get().y, -2000.0f, 2000.0f)
-        };
-        switch (axis) {
-        case ROLL:
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
-            command_reading = motors->get_roll();
-            if (dwell_type == DRB) {
-                tgt_rate_reading = (target_angle_cd) / 5730.0f;
-                gyro_reading = ((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) / 5730.0f;
-            } else {
-                tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
-                gyro_reading = ((float)ahrs_view->roll_sensor) / 5730.0f;
-            }
-            break;
-        case PITCH:
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
-            command_reading = motors->get_pitch();
-            if (dwell_type == DRB) {
-                tgt_rate_reading = (target_angle_cd) / 5730.0f;
-                gyro_reading = ((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) / 5730.0f;
-            } else {
-                tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
-                gyro_reading = ((float)ahrs_view->pitch_sensor) / 5730.0f;
-            }
-            break;
-        case YAW:
-        case YAW_D:
-            command_reading = motors->get_yaw();
-            if (dwell_type == DRB) {
-                tgt_rate_reading = (target_angle_cd) / 5730.0f;
-                gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading - target_angle_cd)) / 5730.0f;
-            } else {
-                tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) / 5730.0f;
-                gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) / 5730.0f;
-            }
-            attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
-            break;
-        }
+        break;
     }
 
     if (settle_time == 0) {
