@@ -319,6 +319,7 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         // MAVLink serial ports have begin called several times
         if (elrs == nullptr) {
             elrs = new SITL::ELRS(portNumber, this);
+            _sitl->set_stop_MAVLink_sim_state();
         }
         return elrs;
     }
