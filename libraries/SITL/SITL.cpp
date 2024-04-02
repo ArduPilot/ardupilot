@@ -1195,6 +1195,11 @@ const Location post_origin {
 /* report SITL state via MAVLink SIMSTATE*/
 void SIM::simstate_send(mavlink_channel_t chan) const
 {
+    if (stop_MAVLink_sim_state) {
+        // Sim only MAVLink messages disabled to give more relaistic data rates
+        return;
+    }
+
     float yaw;
 
     // convert to same conventions as DCM
@@ -1220,6 +1225,11 @@ void SIM::simstate_send(mavlink_channel_t chan) const
 /* report SITL state via MAVLink SIM_STATE */
 void SIM::sim_state_send(mavlink_channel_t chan) const
 {
+    if (stop_MAVLink_sim_state) {
+        // Sim only MAVLink messages disabled to give more relaistic data rates
+        return;
+    }
+
     // convert to same conventions as DCM
     float yaw = state.yawDeg;
     if (yaw > 180) {
