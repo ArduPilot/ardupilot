@@ -298,7 +298,7 @@ function setup_filters(axis)
    adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
    if axis == "YAW" then
       local FLTE = params[flte]
-      if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
+      if FLTE:get() < 0.0 or FLTE:get() > YAW_FLTE_MAX then
          adjust_gain(flte, YAW_FLTE_MAX)
       end
    end
