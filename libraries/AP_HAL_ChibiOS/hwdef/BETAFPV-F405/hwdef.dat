@@ -141,3 +141,4 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 
 include ../include/minimize_fpv_osd.inc
+AUTOBUILD_TARGETS Copter
