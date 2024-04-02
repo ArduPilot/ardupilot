@@ -664,6 +664,15 @@ void AP_RCProtocol::handle_radio_rc_channels(const mavlink_radio_rc_channels_t* 
 
     backend[AP_RCProtocol::MAVLINK_RADIO]->update_radio_rc_channels(packet);
 };
+
+void AP_RCProtocol::handle_radio_link_stats(const mavlink_radio_link_stats_t* packet)
+{
+    if (_detected_protocol != AP_RCProtocol::MAVLINK_RADIO) {
+        return;
+    }
+
+    backend[AP_RCProtocol::MAVLINK_RADIO]->update_radio_link_stats(packet);
+}
 #endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
 
 namespace AP {

@@ -4206,6 +4206,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_RADIO_RC_CHANNELS:
         handle_radio_rc_channels(msg);
         break;
+    case MAVLINK_MSG_ID_RADIO_LINK_STATS:
+        handle_radio_link_stats(msg);
+        break;
 #endif
 #endif
 
@@ -7008,6 +7011,20 @@ void GCS_MAVLINK::handle_radio_rc_channels(const mavlink_message_t &msg)
     mavlink_msg_radio_rc_channels_decode(&msg, &packet);
 
     AP::RC().handle_radio_rc_channels(&packet);
+}
+
+void GCS_MAVLINK::handle_radio_link_stats(const mavlink_message_t &msg)
+{
+    mavlink_radio_link_stats_t packet;
+    mavlink_msg_radio_link_stats_decode(&msg, &packet);
+
+    AP::RC().handle_radio_link_stats(&packet);
+
+#if HAL_LOGGING_ENABLED
+    if (AP::logger().should_log(log_radio_bit())) {
+        AP::logger().Write_RadioLinkStats(packet);
+    }
+#endif
 }
 #endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
 
