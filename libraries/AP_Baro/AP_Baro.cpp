@@ -74,6 +74,10 @@
 #define HAL_BARO_ALLOW_INIT_NO_BARO
 #endif
 
+#ifndef AP_FIELD_ELEVATION_ENABLED
+#define AP_FIELD_ELEVATION_ENABLED !defined(HAL_BUILD_AP_PERIPH) && !APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -219,7 +223,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
 #endif
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_FIELD_ELEVATION_ENABLED
     // @Param: _FIELD_ELV
     // @DisplayName: field elevation
     // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. Changes to this parameter will only be used when disarmed. A value of 0 means the EKF origin height is used for takeoff height above sea level.
@@ -958,7 +962,7 @@ void AP_Baro::update(void)
             }
         }
     }
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_FIELD_ELEVATION_ENABLED
     update_field_elevation();
 #endif
 
@@ -1004,6 +1008,7 @@ bool AP_Baro::healthy(uint8_t instance) const {
  */
 void AP_Baro::update_field_elevation(void)
 {
+#if AP_FIELD_ELEVATION_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     bool new_field_elev = false;
     const bool armed = hal.util->get_soft_armed();
@@ -1035,6 +1040,7 @@ void AP_Baro::update_field_elevation(void)
         update_calibration();
         BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Field Elevation Set: %.0fm", _field_elevation_active);
     }
+#endif
 }
 
 /*
