@@ -243,6 +243,10 @@ Release 4.5.0 2nd April 2024
 
 No changes from 4.5.0-beta4
 ------------------------------------------------------------------
+Release 4.5.0 2nd April 2024
+
+No changes from 4.5.0-beta4
+------------------------------------------------------------------
 Release 4.5.0-beta4 22nd March 2024
 Changes from 4.5.0-beta3
 1) system changes
