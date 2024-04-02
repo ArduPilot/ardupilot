@@ -19,3 +19,4 @@ define HAL_OS_FATFS_IO 1
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
+AUTOBUILD_TARGETS None
