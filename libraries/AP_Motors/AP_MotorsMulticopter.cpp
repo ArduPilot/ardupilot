@@ -457,6 +457,21 @@ float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
     return constrain_float(_spin_up_ratio, 0.0f, 1.0f) * thr_lin.get_spin_min();
 }
 
+// return throttle out for motor motor_num, returns true if value is valid false otherwise
+bool AP_MotorsMulticopter::get_thrust(uint8_t motor_num, float& thr_out) const
+{
+    if (motor_num >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[motor_num]) {
+        return false;
+    }
+
+    // Constrain to linearization range.
+    const float actuator = constrain_float(_actuator[motor_num], thr_lin.get_spin_min(), thr_lin.get_spin_max());
+
+    // Remove linearization and compensation gain
+    thr_out = thr_lin.actuator_to_thrust(actuator) / thr_lin.get_compensation_gain();
+    return true;
+}
+
 // parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
 bool AP_MotorsMulticopter::check_mot_pwm_params() const
 {
