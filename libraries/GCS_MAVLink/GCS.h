@@ -526,8 +526,8 @@ protected:
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
 
-    virtual bool set_home_to_current_location(bool lock) = 0;
-    virtual bool set_home(const Location& loc, bool lock) = 0;
+    bool set_home_to_current_location(bool lock);
+    bool set_home(const Location& loc, bool lock);
 
 #if AP_ARMING_ENABLED
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_int_t &packet);
