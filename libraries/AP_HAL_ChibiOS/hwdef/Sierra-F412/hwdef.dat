@@ -95,7 +95,6 @@ PA12 CAN1_TX CAN1
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
 
-define HAL_NO_MONITOR_THREAD
 define HAL_DEVICE_THREAD_STACK 768
 
 # disable dual GPS and GPS blending to save flash space
