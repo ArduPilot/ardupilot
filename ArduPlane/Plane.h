@@ -986,6 +986,8 @@ private:
 
     // set home location and store it persistently:
     bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
     // control_modes.cpp
     void read_control_switch();
