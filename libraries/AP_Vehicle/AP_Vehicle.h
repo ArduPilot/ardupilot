@@ -289,6 +289,11 @@ public:
      */
     virtual bool get_rate_ef_targets(Vector3f& rate_ef_targets) const { return false; }
 
+#if AP_AHRS_ENABLED
+    virtual bool set_home_to_current_location(bool lock) WARN_IF_UNUSED = 0;
+    virtual bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED = 0;
+#endif
+
 protected:
 
     virtual void init_ardupilot() = 0;
