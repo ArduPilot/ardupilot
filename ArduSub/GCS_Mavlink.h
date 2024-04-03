@@ -29,9 +29,6 @@ protected:
     int32_t global_position_int_alt() const override;
     int32_t global_position_int_relative_alt() const override;
 
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
-
     void send_banner() override;
 
     void send_nav_controller_output() const override;
