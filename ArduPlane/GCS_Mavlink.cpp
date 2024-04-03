@@ -781,25 +781,25 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 }
 
 
-bool GCS_MAVLINK_Plane::set_home_to_current_location(bool _lock)
+bool Plane::set_home_to_current_location(bool _lock)
 {
-    if (!plane.set_home_persistently(AP::gps().location())) {
+    if (!set_home_persistently(AP::gps().location())) {
         return false;
     }
     if (_lock) {
         AP::ahrs().lock_home();
     }
-    if ((plane.control_mode == &plane.mode_rtl)
+    if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
-            || (plane.control_mode == &plane.mode_qrtl)
+            || (control_mode == &mode_qrtl)
 #endif
                                                         ) {
         // if in RTL head to the updated home location
-        plane.control_mode->enter();
+        control_mode->enter();
     }
     return true;
 }
-bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
+bool Plane::set_home(const Location& loc, bool _lock)
 {
     if (!AP::ahrs().set_home(loc)) {
         return false;
@@ -807,13 +807,13 @@ bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
     if (_lock) {
         AP::ahrs().lock_home();
     }
-    if ((plane.control_mode == &plane.mode_rtl)
+    if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
-            || (plane.control_mode == &plane.mode_qrtl)
+            || (control_mode == &mode_qrtl)
 #endif
                                                         ) {
         // if in RTL head to the updated home location
-        plane.control_mode->enter();
+        control_mode->enter();
     }
     return true;
 }
