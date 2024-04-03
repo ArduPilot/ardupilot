@@ -22,3 +22,5 @@ define HAL_WITH_MCU_MONITORING 1
 # MCU_CLOCKRATE_MHZ 200
 
 include ../include/network_PPPGW.inc
+
+define HAL_MONITOR_THREAD_ENABLED 1

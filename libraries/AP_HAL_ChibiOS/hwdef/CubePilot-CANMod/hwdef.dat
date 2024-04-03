@@ -86,3 +86,5 @@ define AP_FILESYSTEM_ROMFS_ENABLED 1
 # undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 #################################
+
+define HAL_MONITOR_THREAD_ENABLED 1
