@@ -131,14 +131,8 @@ void AP_Volz_Protocol::send_command(CMD &cmd)
 
 void AP_Volz_Protocol::update_volz_bitmask(uint32_t new_bitmask)
 {
-    uint8_t count = 0;
+    const uint8_t count = __builtin_popcount(new_bitmask);
     last_used_bitmask = new_bitmask;
-
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (new_bitmask & (1U<<i)) {
-            count++;
-        }
-    }
 
     // have a safety margin of 20% to allow for not having full uart
     // utilisation. We really don't want to start filling the uart
