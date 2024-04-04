@@ -44,18 +44,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
-#define VOLZ_SCALE_VALUE 					(uint16_t)(VOLZ_EXTENDED_POSITION_MAX - VOLZ_EXTENDED_POSITION_MIN)	// Extended Position Data Format defines 100 as 0x0F80, which results in 1920 steps for +100 deg and 1920 steps for -100 degs meaning if you take movement a scaled between -1 ... 1 and multiply by 1920 you get the travel from center
-#define VOLZ_SET_EXTENDED_POSITION_CMD 		0xDC
-#define VOLZ_SET_EXTENDED_POSITION_RSP 		0x2C
-#define VOLZ_DATA_FRAME_SIZE		 		6
-
-#define VOLZ_EXTENDED_POSITION_MIN 			0x0080	// Extended Position Data Format defines -100 as 0x0080 decimal 128
-#define VOLZ_EXTENDED_POSITION_CENTER 		0x0800	// Extended Position Data Format defines 0 as 0x0800 - decimal 2048
-#define VOLZ_EXTENDED_POSITION_MAX 			0x0F80	// Extended Position Data Format defines +100 as 0x0F80 decimal 3968 -> full range decimal 3840
-
-#define VOLZ_PWM_POSITION_MIN				1000
-#define VOLZ_PWM_POSITION_MAX				2000
-
 class AP_Volz_Protocol {
 public:
     AP_Volz_Protocol();
@@ -93,6 +81,7 @@ private:
     uint32_t last_used_bitmask;
 
     AP_Int32 bitmask;
+    AP_Int16 range;
     bool initialised;
 };
 
