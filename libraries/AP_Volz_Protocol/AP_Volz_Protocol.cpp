@@ -13,6 +13,18 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
 
+#define SET_EXTENDED_POSITION_CMD      0xDC
+
+// Extended Position Data Format defines -100 as 0x0080 decimal 128, we map this to a PWM of 1000 (if range is default)
+#define PWM_POSITION_MIN               1000
+#define ANGLE_POSITION_MIN            -100.0
+#define EXTENDED_POSITION_MIN          0x0080
+
+// Extended Position Data Format defines +100 as 0x0F80 decimal 3968, we map this to a PWM of 2000 (if range is default)
+#define PWM_POSITION_MAX               2000
+#define ANGLE_POSITION_MAX             100.0
+#define EXTENDED_POSITION_MAX          0x0F80
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
@@ -22,6 +34,12 @@ const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16,16:Channel17,17:Channel18,18:Channel19,19:Channel20,20:Channel21,21:Channel22,22:Channel23,23:Channel24,24:Channel25,25:Channel26,26:Channel27,28:Channel29,29:Channel30,30:Channel31,31:Channel32
     // @User: Standard
     AP_GROUPINFO("MASK",  1, AP_Volz_Protocol, bitmask, 0),
+
+    // @Param: RANGE
+    // @DisplayName: Range of travel
+    // @Description: Range to map between 1000 and 2000 PWM. Default value of 200 gives full +-100 deg range of extended position command. This results in 0.2 deg movement per US change in PWM. If the full range is not needed it can be reduced to increase resolution. 40 deg range gives 0.04 deg movement per US change in PWM, this is higher resolution than possible with the VOLZ protocol so further reduction in range will not improve resolution. Reduced range does allow PWMs outside the 1000 to 2000 range, with 40 deg range 750 PWM results in a angle of -30 deg, 2250 would be +30 deg. This is still limited by the 200 deg maximum range of the actuator.
+    // @Units: deg
+    AP_GROUPINFO("RANGE", 2, AP_Volz_Protocol, range, 200),
 
     AP_GROUPEND
 };
@@ -63,34 +81,31 @@ void AP_Volz_Protocol::update()
 
     last_volz_update_time = now;
 
-    uint8_t i;
-    uint16_t value;
 
     // loop for all channels
-    for (i=0; i<NUM_SERVO_CHANNELS; i++) {
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         // check if current channel is needed for Volz protocol
         if (last_used_bitmask & (1U<<i)) {
 
-            SRV_Channel *c = SRV_Channels::srv_channel(i);
+            const SRV_Channel *c = SRV_Channels::srv_channel(i);
             if (c == nullptr) {
                 continue;
             }
-            
-            // check if current channel PWM is within range
-            if (c->get_output_pwm() < VOLZ_PWM_POSITION_MIN) {
-                value = 0;
-            } else {
-                value = c->get_output_pwm() - VOLZ_PWM_POSITION_MIN;
+            uint16_t pwm = c->get_output_pwm();
+            if (pwm == 0) {
+                // 0 PMW should stop outputting, for example in "safe"
+                // There is no way to de-power, move to trim
+                pwm = c->get_trim();
             }
 
-            // scale the PWM value to Volz value
-            value = value * VOLZ_SCALE_VALUE / (VOLZ_PWM_POSITION_MAX - VOLZ_PWM_POSITION_MIN);
-            value = value + VOLZ_EXTENDED_POSITION_MIN;
+            // Map PWM to angle, this is a un-constrained interpolation
+            // ratio = 0 at PWM_POSITION_MIN to 1 at PWM_POSITION_MAX
+            const float ratio = (float(pwm) - PWM_POSITION_MIN) / (PWM_POSITION_MAX - PWM_POSITION_MIN);
+            // Convert ratio to +-0.5 and multiply by stroke
+            const float angle = (ratio - 0.5) * constrain_float(range, 0.0, 200.0);
 
-            // make sure value stays in range
-            if (value > VOLZ_EXTENDED_POSITION_MAX) {
-                value = VOLZ_EXTENDED_POSITION_MAX;
-            }
+            // Map angle to command out of full range, add 0.5 so that float to int truncation rounds correctly
+            const uint16_t value = linear_interpolate(EXTENDED_POSITION_MIN, EXTENDED_POSITION_MAX, angle, ANGLE_POSITION_MIN, ANGLE_POSITION_MAX) + 0.5;
 
             // prepare Volz protocol data.
             CMD cmd;
