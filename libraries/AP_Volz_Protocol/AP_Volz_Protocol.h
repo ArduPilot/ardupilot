@@ -64,14 +64,28 @@ public:
     CLASS_NO_COPY(AP_Volz_Protocol);
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     void update();
 
 private:
+
+    // Command frame
+    union CMD {
+        struct PACKED {
+            uint8_t ID; // CMD ID
+            uint8_t actuator_id; // actuator send to or receiving from
+            uint8_t arg1; // CMD dependant argument 1
+            uint8_t arg2; // CMD dependant argument 2
+            uint8_t crc1;
+            uint8_t crc2;
+        };
+        uint8_t data[6];
+    };
+
     AP_HAL::UARTDriver *port;
-    
+
     void init(void);
-    void send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]);
+    void send_command(CMD &cmd);
     void update_volz_bitmask(uint32_t new_bitmask);
 
     uint32_t last_volz_update_time;

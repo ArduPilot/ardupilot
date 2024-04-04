@@ -56,8 +56,8 @@ void AP_Volz_Protocol::update()
     }
 
     uint32_t now = AP_HAL::micros();
-    if (now - last_volz_update_time < volz_time_frame_micros ||
-        port->txspace() < VOLZ_DATA_FRAME_SIZE) {
+    if (((now - last_volz_update_time) < volz_time_frame_micros) ||
+        (port->txspace() < sizeof(CMD))) {
         return;
     }
 
@@ -93,31 +93,28 @@ void AP_Volz_Protocol::update()
             }
 
             // prepare Volz protocol data.
-            uint8_t data[VOLZ_DATA_FRAME_SIZE];
+            CMD cmd;
+            cmd.ID = SET_EXTENDED_POSITION_CMD;
+            cmd.actuator_id = i + 1; // send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
+            cmd.arg1 = HIGHBYTE(value);
+            cmd.arg2 = LOWBYTE(value);
 
-            data[0] = VOLZ_SET_EXTENDED_POSITION_CMD;
-            data[1] = i + 1;		// send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
-            data[2] = HIGHBYTE(value);
-            data[3] = LOWBYTE(value);
-
-            send_command(data);
+            send_command(cmd);
         }
     }
 }
 
 // calculate CRC for volz serial protocol and send the data.
-void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE])
+void AP_Volz_Protocol::send_command(CMD &cmd)
 {
-    uint8_t i,j;
     uint16_t crc = 0xFFFF;
 
     // calculate Volz CRC value according to protocol definition
-    for(i=0; i<4; i++) {
+    for(uint8_t i=0; i<4; i++) {
         // take input data into message that will be transmitted.
-        crc = ((data[i] << 8) ^ crc);
+        crc = (cmd.data[i] << 8) ^ crc;
 
-        for(j=0; j<8; j++) {
-
+        for(uint8_t j=0; j<8; j++) {
             if (crc & 0x8000) {
                 crc = (crc << 1) ^ 0x8005;
             } else {
@@ -127,9 +124,9 @@ void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE])
     }
 
     // add CRC result to the message
-    data[4] = HIGHBYTE(crc);
-    data[5] = LOWBYTE(crc);
-    port->write(data, VOLZ_DATA_FRAME_SIZE);
+    cmd.crc1 = HIGHBYTE(crc);
+    cmd.crc2 = LOWBYTE(crc);
+    port->write(cmd.data, sizeof(cmd));
 }
 
 void AP_Volz_Protocol::update_volz_bitmask(uint32_t new_bitmask)
