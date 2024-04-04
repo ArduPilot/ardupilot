@@ -43,6 +43,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 class AP_Volz_Protocol {
 public:
@@ -72,13 +73,15 @@ private:
 
     AP_HAL::UARTDriver *port;
 
+    // Loop in thread to output to uart
+    void loop();
+    uint8_t last_sent_index;
+
     void init(void);
     void send_command(CMD &cmd);
-    void update_volz_bitmask(uint32_t new_bitmask);
 
-    uint32_t last_volz_update_time;
-    uint32_t volz_time_frame_micros;
-    uint32_t last_used_bitmask;
+    // Incoming PWM commands from the servo lib
+    uint16_t servo_pwm[NUM_SERVO_CHANNELS];
 
     AP_Int32 bitmask;
     AP_Int16 range;
