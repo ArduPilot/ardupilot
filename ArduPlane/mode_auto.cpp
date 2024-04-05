@@ -126,17 +126,19 @@ void ModeAuto::navigate()
 bool ModeAuto::does_auto_navigation() const
 {
 #if AP_SCRIPTING_ENABLED
-   return (!plane.nav_scripting_active());
+    return (!plane.nav_scripting_active());
+#else
+    return true;
 #endif
-   return true;
 }
 
 bool ModeAuto::does_auto_throttle() const
 {
 #if AP_SCRIPTING_ENABLED
-   return (!plane.nav_scripting_active());
+    return (!plane.nav_scripting_active());
+#else
+    return true;
 #endif
-   return true;
 }
 
 // returns true if the vehicle can be armed in this mode
