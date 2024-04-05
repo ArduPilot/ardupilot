@@ -7,6 +7,9 @@
 #include <AP_NavEKF/EKF_Buffer.h>
 #include <stdlib.h>
 
+#include <AP_HAL/AP_HAL.h>
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 TEST(EKF_Buffer, EKF_Buffer)
@@ -117,6 +120,60 @@ TEST(EKF_Buffer, EKF_Buffer)
     EXPECT_EQ(d2.time_ms, uint32_t(0xFFFFFFFBU));
 
     EXPECT_FALSE(buf.recall(d2, 103));
+}
+
+TEST(ekf_imu_buffer, one_element_case)
+{
+    // test degenerate 1-element case:
+    struct element {
+        uint8_t value;
+    };
+    ekf_imu_buffer *b = new ekf_imu_buffer(sizeof(element));
+    b->init(1);  // 1 element
+    EXPECT_EQ(b->is_filled(), false);
+    EXPECT_EQ(b->get_oldest_index(), b->get_youngest_index());
+    const element e { 34 };
+    b->push_youngest_element((void*)&e);
+    EXPECT_EQ(b->is_filled(), true);
+    EXPECT_EQ(b->get_oldest_index(), b->get_youngest_index());
+    element returned_element {};
+    b->get_oldest_element((void*)&returned_element);
+    EXPECT_EQ(e.value, returned_element.value);
+    element *another_returned_element = (element*)b->get(0);
+    EXPECT_EQ(e.value, another_returned_element->value);
+    // we don't do bounds checking, so get here returns non-nullptr:
+    // another_returned_element = (element*)b.get(17);
+    // EXPECT_EQ(another_returned_element, nullptr);
+    b->reset();
+    EXPECT_EQ(b->get_oldest_index(), b->get_youngest_index());
+    // we don't do bounds checking, so get here returns non-nullptr:
+    // another_returned_element = (element*)b.get(0);
+    // EXPECT_EQ(another_returned_element, nullptr);
+}
+
+TEST(ekf_imu_buffer, is_filled)
+{
+    // https://github.com/ArduPilot/ardupilot/issues/25316
+    struct element {
+        uint8_t value;
+    };
+    ekf_imu_buffer *b = new ekf_imu_buffer(sizeof(element));
+    b->init(4);  // 4 elements
+    const element e { 34 };
+
+    EXPECT_EQ(b->is_filled(), false);
+
+    b->push_youngest_element((void*)&e);
+    EXPECT_EQ(b->is_filled(), false);
+
+    b->push_youngest_element((void*)&e);
+    EXPECT_EQ(b->is_filled(), false);
+
+    b->push_youngest_element((void*)&e);
+    EXPECT_EQ(b->is_filled(), false);
+
+    b->push_youngest_element((void*)&e);
+    EXPECT_EQ(b->is_filled(), true);
 }
 
 AP_GTEST_MAIN()
