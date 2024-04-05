@@ -110,7 +110,7 @@ void AP_EFI_Serial_Hirth::check_response()
         computed_checksum += res_data.quantity = port->read();
         computed_checksum += res_data.code = port->read();
 
-        if (res_data.code == requested_code) {
+        if (res_data.code == requested_code && res_data.quantity > QUANTITY_REQUEST_STATUS) {
             for (int i = 0; i < (res_data.quantity - QUANTITY_REQUEST_STATUS); i++) {
                 computed_checksum += raw_data[i] = port->read();
             }
