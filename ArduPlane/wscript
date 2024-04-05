@@ -14,6 +14,7 @@ def build(bld):
             'AP_Camera',
             'AP_L1_Control',
             'AP_Navigation',
+            'AP_NPFG',
             'AP_RCMapper',
             'AP_TECS',
             'AP_InertialNav',

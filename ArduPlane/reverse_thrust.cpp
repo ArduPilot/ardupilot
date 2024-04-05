@@ -84,6 +84,7 @@ bool Plane::allow_reverse_thrust(void) const
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_FBWB);
         break;
     case Mode::Number::AVOID_ADSB:
+    case Mode::Number::TERRAIN_NAVIGATION:
     case Mode::Number::GUIDED:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
         break;
