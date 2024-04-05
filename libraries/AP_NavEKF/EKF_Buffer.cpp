@@ -137,6 +137,7 @@ bool ekf_imu_buffer::init(uint32_t size)
     _size = size;
     _youngest = 0;
     _oldest = 0;
+    _filled = 0;
     return true;
 }
 
