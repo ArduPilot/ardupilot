@@ -432,9 +432,14 @@ class Board:
             ]
 
         if cfg.env.DEST_OS == 'darwin':
-            env.LINKFLAGS += [
-                '-Wl,-dead_strip',
-            ]
+            if self.cc_version_gte(cfg, 15, 0):
+                env.LINKFLAGS += [
+                    '-Wl,-dead_strip,-ld_classic',
+                ]
+            else:
+                env.LINKFLAGS += [
+                    '-Wl,-dead_strip',
+                ]
         else:
             env.LINKFLAGS += [
                 '-fno-exceptions',
