@@ -141,8 +141,19 @@ void AC_AutoTune_Heli::test_init()
 {
     switch (tune_type) {
     case RFF_UP:
-        rate_ff_test_init();
-        step_time_limit_ms = 10000;
+        freq_cnt = 12;
+        test_freq[freq_cnt] = 0.25f * 3.14159f * 2.0f;
+        curr_test.freq = test_freq[freq_cnt];
+        start_freq = curr_test.freq;
+        stop_freq = curr_test.freq;
+        attitude_control->bf_feedforward(false);
+        attitude_control->use_sqrt_controller(false);
+
+        freqresp.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
+        dwell_test_init(start_freq, stop_freq, start_freq, RATE);
+
+        step_time_limit_ms = (uint32_t) 23000;
+
         break;
     case MAX_GAINS:
     case RP_UP:
@@ -292,7 +303,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 
     switch (tune_type) {
     case RFF_UP:
-        rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS, dir_sign);
+        dwell_test_run(1, start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt], RATE);
         break;
     case RP_UP:
     case RD_UP:
@@ -324,6 +335,7 @@ void AC_AutoTune_Heli::do_gcs_announcements()
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: %s %s", axis_string(), type_string());
     send_step_string();
     switch (tune_type) {
+    case RFF_UP:
     case RD_UP:
     case RP_UP:
     case MAX_GAINS:
@@ -381,9 +393,6 @@ void AC_AutoTune_Heli::do_post_test_gcs_announcements() {
     if (step == UPDATE_GAINS) {
         switch (tune_type) {
         case RFF_UP:
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: target=%f rotation=%f command=%f", (double)(test_tgt_rate_filt*57.3f), (double)(test_rate_filt*57.3f), (double)(test_command_filt));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f", (double)tune_rff);
-            break;
         case RP_UP:
         case RD_UP:
         case SP_UP:
@@ -395,7 +404,9 @@ void AC_AutoTune_Heli::do_post_test_gcs_announcements() {
                if (tune_type == RP_UP) {
                    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_p=%f", (double)(tune_rp));
                } else if (tune_type == RD_UP) {
-               gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_d=%f", (double)(tune_rd));
+                   gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_d=%f", (double)(tune_rd));
+               } else if (tune_type == RFF_UP) {
+                   gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_ff=%f", (double)(tune_rff));
                } else if (tune_type == SP_UP) {
                    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: angle_p=%f tune_accel=%f max_accel=%f", (double)(tune_sp), (double)(tune_accel), (double)(test_accel_max));
                }
@@ -716,203 +727,6 @@ void AC_AutoTune_Heli::report_axis_gains(const char* axis_string, float rate_P, 
     gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.2f, Max Accel:%0.0f",axis_string,angle_P,max_accel);
 }
 
-
-void AC_AutoTune_Heli::rate_ff_test_init()
-{
-    ff_test_phase = 0;
-    rotation_rate_filt.reset(0);
-    rotation_rate_filt.set_cutoff_frequency(5.0f);
-    command_filt.reset(0);
-    command_filt.set_cutoff_frequency(5.0f);
-    target_rate_filt.reset(0);
-    target_rate_filt.set_cutoff_frequency(5.0f);
-    test_command_filt = 0.0f;
-    test_rate_filt = 0.0f;
-    test_tgt_rate_filt = 0.0f;
-    filt_target_rate = 0.0f;
-    settle_time = 200;
-    phase_out_time = 500;
-    rate_request_cds.reset(0);
-    rate_request_cds.set_cutoff_frequency(1.0f);
-    angle_request_cd.reset(0);
-    angle_request_cd.set_cutoff_frequency(1.0f);
-}
-
-void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cds, float dir_sign)
-{
-    float gyro_reading = 0.0f;
-    float command_reading =0.0f;
-    float tgt_rate_reading = 0.0f;
-    const uint32_t now = AP_HAL::millis();
-
-    target_rate_cds = dir_sign * target_rate_cds;
-
-    switch (axis) {
-    case ROLL:
-        gyro_reading = ahrs_view->get_gyro().x;
-        command_reading = motors->get_roll();
-        tgt_rate_reading = attitude_control->rate_bf_targets().x;
-        if (settle_time > 0) {
-            settle_time--;
-            trim_command_reading = motors->get_roll();
-            rate_request_cds.reset(gyro_reading);
-        } else if (((ahrs_view->roll_sensor <= max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->roll_sensor >= -max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 0) {
-            rate_request_cds.apply(target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(rate_request_cds.get(), 0.0f, 0.0f);
-        } else if (((ahrs_view->roll_sensor > max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->roll_sensor < -max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 0) {
-            ff_test_phase = 1;
-            rate_request_cds.apply(-target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(rate_request_cds.get(), 0.0f, 0.0f);
-            attitude_control->rate_bf_roll_target(rate_request_cds.get());
-        } else if (((ahrs_view->roll_sensor >= -max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->roll_sensor <= max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 1 ) {
-            rate_request_cds.apply(-target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(rate_request_cds.get(), 0.0f, 0.0f);
-            attitude_control->rate_bf_roll_target(rate_request_cds.get());
-        } else if (((ahrs_view->roll_sensor < -max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->roll_sensor > max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 1 ) {
-            ff_test_phase = 2;
-            attitude_control->reset_target_and_rate(false);
-            angle_request_cd.reset(ahrs_view->roll_sensor);
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(angle_request_cd.get(), start_angles.y, 0.0f);
-        } else if (ff_test_phase == 2 ) {
-            angle_request_cd.apply(start_angles.x, AP::scheduler().get_loop_period_s());
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(angle_request_cd.get(), start_angles.y, 0.0f);
-            phase_out_time--;
-        }
-        break;
-    case PITCH:
-        gyro_reading = ahrs_view->get_gyro().y;
-        command_reading = motors->get_pitch();
-        tgt_rate_reading = attitude_control->rate_bf_targets().y;
-        if (settle_time > 0) {
-            settle_time--;
-            trim_command_reading = motors->get_pitch();
-            rate_request_cds.reset(gyro_reading);
-        } else if (((ahrs_view->pitch_sensor <= max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->pitch_sensor >= -max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 0) {
-            rate_request_cds.apply(target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, rate_request_cds.get(), 0.0f);
-        } else if (((ahrs_view->pitch_sensor > max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->pitch_sensor < -max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 0) {
-            ff_test_phase = 1;
-            rate_request_cds.apply(-target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, rate_request_cds.get(), 0.0f);
-            attitude_control->rate_bf_pitch_target(rate_request_cds.get());
-        } else if (((ahrs_view->pitch_sensor >= -max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->pitch_sensor <= max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 1 ) {
-            rate_request_cds.apply(-target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, rate_request_cds.get(), 0.0f);
-            attitude_control->rate_bf_pitch_target(rate_request_cds.get());
-        } else if (((ahrs_view->pitch_sensor < -max_angle_cd + start_angle && is_positive(dir_sign))
-                   || (ahrs_view->pitch_sensor > max_angle_cd + start_angle && !is_positive(dir_sign)))
-                   && ff_test_phase == 1 ) {
-            ff_test_phase = 2;
-            attitude_control->reset_target_and_rate(false);
-            angle_request_cd.reset(ahrs_view->pitch_sensor);
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, angle_request_cd.get(), 0.0f);
-        } else if (ff_test_phase == 2 ) {
-            angle_request_cd.apply(start_angles.y, AP::scheduler().get_loop_period_s());
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, angle_request_cd.get(), 0.0f);
-            phase_out_time--;
-        }
-        break;
-    case YAW:
-    case YAW_D:
-        gyro_reading = ahrs_view->get_gyro().z;
-        command_reading = motors->get_yaw();
-        tgt_rate_reading = attitude_control->rate_bf_targets().z;
-        if (settle_time > 0) {
-            settle_time--;
-            trim_command_reading = motors->get_yaw();
-            trim_heading = ahrs_view->yaw_sensor;
-            rate_request_cds.reset(gyro_reading);
-        } else if (((wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) <= 2.0f * max_angle_cd && is_positive(dir_sign))
-                   || (wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) >= -2.0f * max_angle_cd && !is_positive(dir_sign)))
-                   && ff_test_phase == 0) {
-            rate_request_cds.apply(target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, rate_request_cds.get());
-        } else if (((wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) > 2.0f * max_angle_cd && is_positive(dir_sign))
-                   || (wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) < -2.0f * max_angle_cd && !is_positive(dir_sign)))
-                   && ff_test_phase == 0) {
-            ff_test_phase = 1;
-            rate_request_cds.apply(-target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, rate_request_cds.get());
-            attitude_control->rate_bf_yaw_target(rate_request_cds.get());
-        } else if (((wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) >= -2.0f * max_angle_cd && is_positive(dir_sign))
-                   || (wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) <= 2.0f * max_angle_cd && !is_positive(dir_sign)))
-                   && ff_test_phase == 1 ) {
-            rate_request_cds.apply(-target_rate_cds, AP::scheduler().get_loop_period_s());
-            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, rate_request_cds.get());
-            attitude_control->rate_bf_yaw_target(rate_request_cds.get());
-        } else if (((wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) < -2.0f * max_angle_cd && is_positive(dir_sign))
-                   || (wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) > 2.0f * max_angle_cd && !is_positive(dir_sign)))
-                   && ff_test_phase == 1 ) {
-            ff_test_phase = 2;
-            attitude_control->reset_yaw_target_and_rate(false);
-            angle_request_cd.reset(wrap_180_cd(ahrs_view->yaw_sensor - trim_heading));
-            attitude_control->input_euler_angle_roll_pitch_yaw(start_angles.x, start_angles.y, angle_request_cd.get(), false);
-        } else if (ff_test_phase == 2 ) {
-            angle_request_cd.apply(0.0f, AP::scheduler().get_loop_period_s());
-            attitude_control->input_euler_angle_roll_pitch_yaw(start_angles.x, start_angles.y, wrap_360_cd(trim_heading + angle_request_cd.get()), false);
-        }
-        break;
-    }
-
-    rotation_rate = rotation_rate_filt.apply(gyro_reading,
-                    AP::scheduler().get_loop_period_s());
-    command_out = command_filt.apply((command_reading - trim_command_reading),
-                                     AP::scheduler().get_loop_period_s());
-    filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
-                       AP::scheduler().get_loop_period_s());
-
-    // record steady state rate and motor command
-    switch (axis) {
-    case ROLL:
-        if (((ahrs_view->roll_sensor >= -max_angle_cd + start_angle && is_positive(dir_sign))
-            || (ahrs_view->roll_sensor <= max_angle_cd + start_angle && !is_positive(dir_sign)))
-            && ff_test_phase == 1 ) {
-            test_rate_filt = rotation_rate;
-            test_command_filt = command_out;
-            test_tgt_rate_filt = filt_target_rate;
-        }
-        break;
-    case PITCH:
-        if (((ahrs_view->pitch_sensor >= -max_angle_cd + start_angle && is_positive(dir_sign))
-            || (ahrs_view->pitch_sensor <= max_angle_cd + start_angle && !is_positive(dir_sign)))
-            && ff_test_phase == 1 ) {
-            test_rate_filt = rotation_rate;
-            test_command_filt = command_out;
-            test_tgt_rate_filt = filt_target_rate;
-        }
-        break;
-    case YAW:
-    case YAW_D:
-        if (((wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) >= -2.0f * max_angle_cd && is_positive(dir_sign))
-            || (wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) <= 2.0f * max_angle_cd && !is_positive(dir_sign)))
-            && ff_test_phase == 1 ) {
-            test_rate_filt = rotation_rate;
-            test_command_filt = command_out;
-            test_tgt_rate_filt = filt_target_rate;
-        }
-        break;
-    }
-    if (now - step_start_time_ms >= step_time_limit_ms || (ff_test_phase == 2 && phase_out_time == 0)) {
-        // we have passed the maximum stop time
-        step = UPDATE_GAINS;
-    }
-
-}
-
 void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float filt_freq, DwellType dwell_type)
 {
     dwell_start_time_ms = 0.0f;
@@ -1152,14 +966,14 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
-        updating_rate_ff_up(tune_roll_rff, test_tgt_rate_filt*5730.0f, test_rate_filt*5730.0f, test_command_filt);
+        updating_rate_ff_up(tune_roll_rff, test_freq, test_gain, test_phase, freq_cnt);
         break;
     case PITCH:
-        updating_rate_ff_up(tune_pitch_rff, test_tgt_rate_filt*5730.0f, test_rate_filt*5730.0f, test_command_filt);
+        updating_rate_ff_up(tune_pitch_rff, test_freq, test_gain, test_phase, freq_cnt);
         break;
     case YAW:
     case YAW_D:
-        updating_rate_ff_up(tune_yaw_rff, test_tgt_rate_filt*5730.0f, test_rate_filt*5730.0f, test_command_filt);
+        updating_rate_ff_up(tune_yaw_rff, test_freq, test_gain, test_phase, freq_cnt);
         // TODO make FF updating routine determine when to set rff gain to zero based on A/C response
         if (tune_yaw_rff <= AUTOTUNE_RFF_MIN && counter == AUTOTUNE_SUCCESS_COUNT) {
             tune_yaw_rff = 0.0f;
@@ -1266,45 +1080,32 @@ void AC_AutoTune_Heli::set_gains_post_tune(AxisType test_axis)
 
 // updating_rate_ff_up - adjust FF to ensure the target is reached
 // FF is adjusted until rate requested is achieved
-void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command)
+void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
 {
+    float test_freq_incr = 0.05f * 3.14159f * 2.0f;
 
-    if (ff_up_first_iter) {
-        if (!is_zero(meas_rate)) {
-            tune_ff = 5730.0f * meas_command / meas_rate;
-        }
-        tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
-        ff_up_first_iter = false;
-    } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 1.05f * fabsf(rate_target) &&
-               fabsf(meas_rate) > 0.95f * fabsf(rate_target)) {
-        if (!first_dir_complete) {
-            first_dir_rff = tune_ff;
-            first_dir_complete = true;
-            positive_direction = !positive_direction;
-        } else {
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            tune_ff = 0.95f * 0.5 * (tune_ff + first_dir_rff);
-            tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
-        }
-    } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) > 1.05f * fabsf(rate_target)) {
-        tune_ff = 0.98f * tune_ff;
-        if (tune_ff <= AUTOTUNE_RFF_MIN) {
-            tune_ff = AUTOTUNE_RFF_MIN;
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
-    } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 0.95f * fabsf(rate_target)) {
-        tune_ff = 1.02f * tune_ff;
-        if (tune_ff >= AUTOTUNE_RFF_MAX) {
-            tune_ff = AUTOTUNE_RFF_MAX;
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
+    if (phase[frq_cnt] > 15.0f) {
+        curr_test.freq = curr_test.freq - test_freq_incr;
+        freq[frq_cnt] = curr_test.freq;
+    } else if (phase[frq_cnt] < 0.0f) {
+        curr_test.freq = curr_test.freq + test_freq_incr;
+        freq[frq_cnt] = curr_test.freq;
     } else {
-        if (!is_zero(meas_rate)) {
-            tune_ff = 5730.0f * meas_command / meas_rate;
+        if ((gain[frq_cnt] > 0.1 && gain[frq_cnt] < 0.95) || gain[frq_cnt] > 1.0) {
+            tune_ff =  tune_ff / gain[frq_cnt] ;
+        } else if (gain[frq_cnt] >= 0.95 && gain[frq_cnt] <= 1.0) {
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            // reset curr_test.freq and frq_cnt for next test
+            curr_test.freq = freq[0];
+            frq_cnt = 0;
         }
-        tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
+    }
+
+    if (counter == AUTOTUNE_SUCCESS_COUNT) {
+        start_freq = 0.0f;  //initializes next test that uses dwell test
+    } else {
+        start_freq = curr_test.freq;
+        stop_freq = curr_test.freq;
     }
 }
 

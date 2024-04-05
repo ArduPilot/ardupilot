@@ -180,7 +180,7 @@ private:
 
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is achieved
-    void updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command);
+    void updating_rate_ff_up(float &tune_ff, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
 
     // updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
     void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p);
@@ -238,11 +238,7 @@ private:
     // previous gain
     float rd_prev_gain;
 
-    uint8_t  ff_test_phase;                         // phase of feedforward test
-    float    test_command_filt;                     // filtered commanded output for FF test analysis
-    float    test_rate_filt;                        // filtered rate output for FF test analysis
     float    command_out;                           // test axis command output
-    float    test_tgt_rate_filt;                    // filtered target rate for FF test analysis
     float    filt_target_rate;                      // filtered target rate
     float    test_gain[20];                         // frequency response gain for each dwell test iteration
     float    test_freq[20];                         // frequency of each dwell test iteration
@@ -260,14 +256,11 @@ private:
 
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
-    uint32_t phase_out_time;                        // time in ms to phase out response
     float    trim_meas_rate;                        // trim measured gyro rate
 
     //variables from rate FF test
     float trim_command_reading;
     float trim_heading;
-    LowPassFilterFloat rate_request_cds;
-    LowPassFilterFloat angle_request_cd;
 
     // variables from dwell test
     LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;
