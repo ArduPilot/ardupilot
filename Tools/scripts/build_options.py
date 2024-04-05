@@ -200,6 +200,7 @@ BUILD_OPTIONS = [
     Feature('Plane', 'QAUTOTUNE', 'QAUTOTUNE_ENABLED', 'Enable QuadPlane Autotune mode', 0, "QUADPLANE"),
     Feature('Plane', 'PLANE_BLACKBOX', 'AP_PLANE_BLACKBOX_LOGGING', 'Enable blackbox logging', 0, None),
     Feature('Plane', 'AP_TX_TUNING', 'AP_TUNING_ENABLED', 'Enable TX-based tuning parameter adjustments', 0, None),
+    Feature('Plane', 'RC_CHANNEL_PROPULSION_FAILED', 'AP_RC_CHANNEL_PROPULSION_FAILED_ENABLED', 'Enable RC channel for manually notifying the TECS of a propulsion failure', 0, None),  # NOQA: E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocol support", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF RC Protocol", 0, "RC_Protocol"),   # NOQA: E501

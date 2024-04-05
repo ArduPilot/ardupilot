@@ -165,6 +165,7 @@ class ExtractFeatures(object):
             ('QAUTOTUNE_ENABLED', 'ModeQAutotune::_enter',),
             ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
             ('HAL_LANDING_DEEPSTALL_ENABLED', r'AP_Landing_Deepstall::terminate\b',),
+            ('AP_RC_CHANNEL_PROPULSION_FAILED_ENABLED', r'RC_Channel_Plane::do_aux_function_propulsion_failed\b',),
 
             ('AP_GRIPPER_ENABLED', r'AP_Gripper::init\b',),
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
