@@ -397,10 +397,10 @@ void ModeRTL::build_path()
     rtl_path.climb_target = Location(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
 
     // descent target is below return target at rtl_alt_final
-    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location::AltFrame::ABOVE_HOME);
+    rtl_path.descent_target = Location(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final(), Location::AltFrame::ABOVE_HOME);
 
     // set land flag
-    rtl_path.land = g.rtl_alt_final <= 0;
+    rtl_path.land = (g.rtl_alt_final_m <= 0.0f);
 }
 
 // compute the return target - home or rally point
@@ -441,7 +441,7 @@ void ModeRTL::compute_return_target()
     if (alt_type == ReturnTargetAltType::RANGEFINDER) {
         if (copter.get_rangefinder_height_interpolated_cm(curr_alt)) {
             // set return_target.alt
-            rtl_path.return_target.set_alt_cm(MAX(curr_alt + MAX(0, g.rtl_climb_min), MAX(g.rtl_altitude, RTL_ALT_MIN)), Location::AltFrame::ABOVE_TERRAIN);
+            rtl_path.return_target.set_alt_cm(MAX(curr_alt + MAX(0, g.rtl_climb_min()), int32_t(MAX(g.rtl_altitude(), RTL_ALT_MIN))), Location::AltFrame::ABOVE_TERRAIN);
         } else {
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
@@ -482,8 +482,8 @@ void ModeRTL::compute_return_target()
     int32_t target_alt = MAX(rtl_path.return_target.alt, 0);
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
-    const float min_rtl_alt = MAX(RTL_ALT_MIN, curr_alt + MAX(0, g.rtl_climb_min));
-    target_alt = MAX(target_alt, MAX(g.rtl_altitude, min_rtl_alt));
+    const int32_t min_rtl_alt = MAX(RTL_ALT_MIN, curr_alt + MAX(0, g.rtl_climb_min()));
+    target_alt = MAX(target_alt, MAX(g.rtl_altitude(), min_rtl_alt));
 
     // reduce climb if close to return target
     float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
