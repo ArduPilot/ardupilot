@@ -1027,6 +1027,10 @@ void AP_Vehicle::one_Hz_update(void)
     scripting.update();
 #endif
 
+#if HAL_LOGGING_ENABLED
+    hal.util->uart_log();
+#endif
+
 }
 
 void AP_Vehicle::check_motor_noise()
