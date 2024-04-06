@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <AP_Common/AP_Common.h> // for FMT_PRINTF
 #include "AP_HAL_Namespace.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 class ExpandingString;
 
@@ -192,7 +193,13 @@ public:
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
+
+#if HAL_LOGGING_ENABLED
+    // Log UART message for each serial port
+    virtual void uart_log() {};
 #endif
+#endif // HAL_UART_STATS_ENABLED
+
     // request information on timer frequencies
     virtual void timer_info(ExpandingString &str) {}
 
