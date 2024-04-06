@@ -24,6 +24,13 @@ enum hw_type {
 
 class Util : public AP_HAL::Util {
 public:
+    virtual ~Util() {
+#if HAL_HAVE_SAFETY_SWITCH
+        delete _safety_switch;
+        _safety_switch = nullptr;
+#endif // HAL_HAVE_SAFETY_SWITCH
+    }
+
     static Util *from(AP_HAL::Util *util) {
         return static_cast<Util*>(util);
     }
@@ -68,6 +75,21 @@ public:
     void set_imu_target_temp(int8_t *target) override;
 
     uint32_t available_memory(void) override;
+
+#if HAL_HAVE_SAFETY_SWITCH
+    /*
+     * Read a GPIO as safety swtich state
+     * Implementation implies a pulled up pin with the switch pulling low when inserted
+     * set_safety_switch() is used to set the source during start-up
+     */
+    enum safety_state safety_switch_state(void) override;
+
+    /*
+     * Set the digital pin to be watched as a safety switch
+     * NOTE: takes ownership of the object
+     */
+    void set_safety_switch(AP_HAL::DigitalSource* source);
+#endif // HAL_HAVE_SAFETY_SWITCH
 
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
@@ -127,6 +149,10 @@ private:
       size_t current_heap_usage;
     };
 #endif // ENABLE_HEAP
+
+#if HAL_HAVE_SAFETY_SWITCH
+    AP_HAL::DigitalSource* _safety_switch = nullptr;
+#endif // HAL_HAVE_SAFETY_SWITCH
 
 };
 

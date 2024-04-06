@@ -108,6 +108,23 @@ uint32_t Util::available_memory(void)
 #define HAL_LINUX_DEFAULT_SYSTEM_ID "linux-unknown"
 #endif
 
+#if HAL_HAVE_SAFETY_SWITCH
+
+Util::safety_state Util::safety_switch_state(void)
+{
+    return _safety_switch->read() ? SAFETY_ARMED : SAFETY_DISARMED;
+}
+
+void Util::set_safety_switch(AP_HAL::DigitalSource* source)
+{
+    if (_safety_switch) {
+        delete _safety_switch;
+    }
+    _safety_switch = source;
+}
+
+#endif // HAL_HAVE_SAFETY_SWITCH
+
 /*
   get a (hopefully unique) machine ID
  */
