@@ -145,6 +145,12 @@ protected:
     void _flush() override;
     bool _discard_input() override;
 
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
+    uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#endif
+
 private:
     void handle_writing_from_writebuffer_to_device();
     void handle_reading_from_device_to_readbuffer();
