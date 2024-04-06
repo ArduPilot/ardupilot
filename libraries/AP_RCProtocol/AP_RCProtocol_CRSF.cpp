@@ -276,7 +276,7 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
         return false;
     }
 
-    if (_frame.length + CRSF_HEADER_LEN < _frame_ofs) {
+    if (_frame.length < CRSF_FRAME_LENGTH_MIN) {
         // invalid short frame
         return false;
     }
