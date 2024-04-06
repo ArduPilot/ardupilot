@@ -4,7 +4,7 @@
 // param set EAHRS_TYPE 5
 // param set SERIAL4_PROTOCOL 36
 // param set SERIAL4_BAUD 460800
-// sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:ILabs
+// sim_vehicle.py -v ArduPlane -D --console --map -A --serial4=sim:ILabs
 #pragma once
 
 #include "SIM_Aircraft.h"
