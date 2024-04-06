@@ -233,7 +233,13 @@ protected:
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
-    
+
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    virtual uint32_t get_total_tx_bytes() const { return 0; }
+    virtual uint32_t get_total_rx_bytes() const { return 0; }
+#endif
+
 private:
     // option bits for port
     uint16_t _last_options;
