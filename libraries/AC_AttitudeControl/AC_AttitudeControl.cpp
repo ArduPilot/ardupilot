@@ -228,12 +228,11 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 
 // Command a Quaternion attitude with feedforward and smoothing
 // attitude_desired_quat: is updated on each time_step by the integral of the angular velocity
-void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target)
+void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target, Vector3f ang_acceleration_target)
 {
     Quaternion attitude_error_quat = _attitude_target.inverse() * attitude_desired_quat;
     Vector3f attitude_error_angle;
     attitude_error_quat.to_axis_angle(attitude_error_angle);
-
     // Limit the angular velocity
     ang_vel_limit(ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
@@ -260,7 +259,7 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
     attitude_desired_update.from_axis_angle(ang_vel_target * _dt);
     attitude_desired_quat = attitude_desired_quat * attitude_desired_update;
     attitude_desired_quat.normalize();
-
+    _ang_acceleration_target = ang_acceleration_target;
     // Call quaternion attitude controller
     attitude_controller_run_quat();
 }

@@ -319,6 +319,21 @@
       <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     </topic>
   </data_reader>
+  <topic profile_name="angularcontrol__t">
+    <name>rt/ap/cmd_ang_goals</name>
+    <dataType>ardupilot_msgs::msg::dds_::AngularVelandAccn_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="angularcontrol__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/cmd_ang_goals</name>
+      <dataType>ardupilot_msgs::msg::dds_::AngularVelandAccn_</dataType>
+    </topic>
+  </data_reader>
   <replier profile_name="arm_motors__replier" service_name="rs/ap/arm_motorsService" request_type="ardupilot_msgs::srv::dds_::ArmMotors_Request_" reply_type="ardupilot_msgs::srv::dds_::ArmMotors_Response_">
     <request_topic_name>rq/ap/arm_motorsRequest</request_topic_name>
     <reply_topic_name>rr/ap/arm_motorsReply</reply_topic_name>

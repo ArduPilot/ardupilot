@@ -15,6 +15,13 @@ public:
       Yaw is in earth frame, NED [rad/s].
      */
     bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads) override WARN_IF_UNUSED;
+
+    /*
+        Sets the target orientation, angular velocity, angular acceleration and desired thrust
+        in body frame
+    */
+    bool set_angular_goals(const Quaternion &orientation, const Vector3f &angular_velocity, const Vector3f &angular_acceleration, const float &thrust) override WARN_IF_UNUSED;
+
 private:
     /*
       Return true if Copter is ready to handle external control data.

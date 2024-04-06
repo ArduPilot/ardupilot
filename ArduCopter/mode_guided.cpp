@@ -16,6 +16,7 @@ struct {
     uint32_t update_time_ms;
     Quaternion attitude_quat;
     Vector3f ang_vel;
+    Vector3f ang_acceleration; // angular acceleration, not used by main PID controller but can be used in custom controllers
     float yaw_rate_cds;
     float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
@@ -315,6 +316,7 @@ void ModeGuided::angle_control_start()
     guided_angle_state.update_time_ms = millis();
     guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
     guided_angle_state.ang_vel.zero();
+    guided_angle_state.ang_acceleration.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
     guided_angle_state.yaw_rate_cds = 0.0f;
     guided_angle_state.use_yaw_rate = false;
@@ -635,7 +637,7 @@ bool ModeGuided::use_wpnav_for_position_control() const
 // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
 // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
 //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust)
+void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, const Vector3f &ang_acceleration,float climb_rate_cms_or_thrust, bool use_thrust)
 {
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
@@ -644,6 +646,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 
     guided_angle_state.attitude_quat = attitude_quat;
     guided_angle_state.ang_vel = ang_vel;
+    guided_angle_state.ang_acceleration = ang_acceleration;
 
     guided_angle_state.use_thrust = use_thrust;
     if (use_thrust) {
@@ -978,7 +981,7 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.attitude_quat.is_zero()) {
         attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel.x) * 100.0f, ToDeg(guided_angle_state.ang_vel.y) * 100.0f, ToDeg(guided_angle_state.ang_vel.z) * 100.0f);
     } else {
-        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel);
+        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel, guided_angle_state.ang_acceleration);
     }
 
     // call position controller
