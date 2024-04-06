@@ -386,8 +386,6 @@ class MAVProxyLaunch:
 class SITLLaunch:
     """Launch functions for ArduPilot SITL."""
 
-    # Labels for the optional uart launch arguments.
-    UART_LABELS = ["A", "B", "C", "D", "E", "F", "H", "I", "J"]
     MAX_SERIAL_PORTS = 10
 
     @staticmethod
@@ -437,13 +435,6 @@ class SITLLaunch:
         if home:
             cmd_args.append(f"--home {home} ")
             print(f"home:             {home}")
-
-        # Optional uart arguments.
-        for label in SITLLaunch.UART_LABELS:
-            arg = LaunchConfiguration(f"uart{label}").perform(context)
-            if arg:
-                cmd_args.append(f"--uart{label} {arg} ")
-                print(f"uart{label}:            {arg}")
 
         # Optional serial arguments.
         for label in range(10):
@@ -651,16 +642,6 @@ class SITLLaunch:
             ),
         ]
 
-        # UART launch arguments.
-        uart_args = []
-        for label in SITLLaunch.UART_LABELS:
-            arg = DeclareLaunchArgument(
-                f"uart{label}",
-                default_value="",
-                description=f"set device string for UART{label}.",
-            )
-            uart_args.append(arg)
-
         # Serial launch arguments.
         serial_args = []
         for label in range(SITLLaunch.MAX_SERIAL_PORTS):
@@ -671,4 +652,4 @@ class SITLLaunch:
             )
             serial_args.append(arg)
 
-        return launch_args + uart_args + serial_args
+        return launch_args + serial_args
