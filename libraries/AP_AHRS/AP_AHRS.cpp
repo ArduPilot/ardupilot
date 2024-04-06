@@ -188,11 +188,11 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional AHRS behaviour
-    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. 
+    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating.
     // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -316,7 +316,7 @@ void AP_AHRS::reset_gyro_drift(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
+
     // update DCM
 #if AP_AHRS_DCM_ENABLED
     dcm.reset_gyro_drift();
@@ -403,7 +403,7 @@ void AP_AHRS::update(bool skip_ins_update)
 #if AP_AHRS_EXTERNAL_ENABLED
     update_external();
 #endif
-    
+
     if (_ekf_type == 2) {
         // if EK2 is primary then run EKF2 first to give it CPU
         // priority
@@ -527,7 +527,7 @@ void AP_AHRS::update_DCM()
     // really shouldn't be doing this.
 
     // if (active_EKF_type() == EKFType::DCM) {
-        copy_estimates_from_backend_estimates(dcm_estimates);
+    copy_estimates_from_backend_estimates(dcm_estimates);
     // }
 }
 #endif
@@ -1670,17 +1670,17 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
-            Vector2f posNE;
-            float posD;
-            if (EKF3.getPosNE(posNE) && EKF3.getPosD(posD)) {
-                // position is valid
-                vec.x = posNE.x;
-                vec.y = posNE.y;
-                vec.z = posD;
-                return true;
-            }
-            return false;
+        Vector2f posNE;
+        float posD;
+        if (EKF3.getPosNE(posNE) && EKF3.getPosD(posD)) {
+            // position is valid
+            vec.x = posNE.x;
+            vec.y = posNE.y;
+            vec.z = posD;
+            return true;
         }
+        return false;
+    }
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -1881,7 +1881,7 @@ AP_AHRS::EKFType AP_AHRS::ekf_type(void) const
 #elif AP_AHRS_DCM_ENABLED
     return EKFType::DCM;
 #else
-    #error "no default backend available"
+#error "no default backend available"
 #endif
 }
 
@@ -1992,12 +1992,12 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         }
 
         const bool disable_dcm_fallback = fly_forward?
-            option_set(Options::DISABLE_DCM_FALLBACK_FW) : option_set(Options::DISABLE_DCM_FALLBACK_VTOL);
+                                          option_set(Options::DISABLE_DCM_FALLBACK_FW) : option_set(Options::DISABLE_DCM_FALLBACK_VTOL);
         if (disable_dcm_fallback) {
             // don't fallback
             return ret;
         }
-        
+
         // Handle loss of global position when we still have a GPS fix
         if (hal.util->get_soft_armed() &&
             (_gps_use != GPSUse::Disable) &&
@@ -2155,8 +2155,8 @@ bool AP_AHRS::healthy(void) const
             return false;
         }
         if ((_vehicle_class == VehicleClass::FIXED_WING ||
-                _vehicle_class == VehicleClass::GROUND) &&
-                active_EKF_type() != EKFType::TWO) {
+             _vehicle_class == VehicleClass::GROUND) &&
+            active_EKF_type() != EKFType::TWO) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
             return false;
@@ -2172,8 +2172,8 @@ bool AP_AHRS::healthy(void) const
             return false;
         }
         if ((_vehicle_class == VehicleClass::FIXED_WING ||
-                _vehicle_class == VehicleClass::GROUND) &&
-                active_EKF_type() != EKFType::THREE) {
+             _vehicle_class == VehicleClass::GROUND) &&
+            active_EKF_type() != EKFType::THREE) {
             // on fixed wing we want to be using EKF to be considered
             // healthy if EKF is enabled
             return false;
@@ -2765,7 +2765,7 @@ bool AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
+
     switch (ekf_type()) {
 
 #if AP_AHRS_DCM_ENABLED
@@ -3168,7 +3168,7 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
         return 0;
     }
 
-// we only have affinity for EKF3 as of now
+    // we only have affinity for EKF3 as of now
 #if HAL_NAVEKF3_AVAILABLE
     if (active_EKF_type() == EKFType::THREE) {
         uint8_t ret = EKF3.getActiveAirspeed();
@@ -3288,7 +3288,7 @@ void AP_AHRS::check_lane_switch(void)
     case EKFType::EXTERNAL:
         break;
 #endif
-        
+
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.checkLaneSwitch();
@@ -3320,7 +3320,7 @@ void AP_AHRS::request_yaw_reset(void)
     case EKFType::EXTERNAL:
         break;
 #endif
-        
+
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.requestYawReset();
@@ -3350,7 +3350,7 @@ uint8_t AP_AHRS::get_posvelyaw_source_set() const
     return EKF3.get_active_source_set();
 #else
     return 0;
-#endif   
+#endif
 }
 
 void AP_AHRS::Log_Write()
@@ -3391,7 +3391,7 @@ bool AP_AHRS::using_noncompass_for_yaw(void) const
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
 #endif
-        return false; 
+        return false;
     }
     // since there is no default case above, this is unreachable
     return false;
@@ -3564,7 +3564,8 @@ bool AP_AHRS::get_location_from_home_offset(Location &loc, const Vector3p &offse
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 
-namespace AP {
+namespace AP
+{
 
 AP_AHRS &ahrs()
 {
