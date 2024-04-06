@@ -2,6 +2,7 @@
   implement generic UARTDriver code, including port locking
  */
 #include "AP_HAL.h"
+#include <AP_Logger/AP_Logger.h>
 
 void AP_HAL::UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
@@ -172,4 +173,35 @@ uint32_t AP_HAL::UARTDriver::StatsTracker::ByteTracker::update(uint32_t bytes)
     last_bytes = bytes;
     return change;
 }
-#endif
+
+#if HAL_LOGGING_ENABLED
+// Write UART log message
+void AP_HAL::UARTDriver::log_stats(const uint8_t inst, StatsTracker &stats, const uint32_t dt_ms)
+{
+    // get totals
+    const uint32_t total_tx_bytes = get_total_tx_bytes();
+    const uint32_t total_rx_bytes = get_total_rx_bytes();
+
+    // Don't log if we have never seen data
+    if ((total_tx_bytes == 0) && (total_rx_bytes == 0)) {
+        // This could be wrong if we happen to wrap both tx and rx to zero at exactly the same time
+        // In that very unlikely case one log will be missed
+        return;
+    }
+
+    // Update tracking
+    const uint32_t tx_bytes = stats.tx.update(total_tx_bytes);
+    const uint32_t rx_bytes = stats.rx.update(total_rx_bytes);
+
+    // Assemble struct and log
+    struct log_UART pkt {
+        LOG_PACKET_HEADER_INIT(LOG_UART_MSG),
+        time_us  : AP_HAL::micros64(),
+        instance : inst,
+        tx_rate  : float((tx_bytes * 1000) / dt_ms),
+        rx_rate  : float((rx_bytes * 1000) / dt_ms),
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+#endif // HAL_LOGGING_ENABLED
+#endif // HAL_UART_STATS_ENABLED
