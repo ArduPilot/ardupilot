@@ -274,6 +274,12 @@ protected:
     ssize_t _read(uint8_t *buffer, uint16_t count) override;
     uint32_t _available() override;
     bool _discard_input() override;
+
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
+    uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#endif
 };
 
 // access to usb init for stdio.cpp
