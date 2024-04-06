@@ -779,16 +779,18 @@ float AP_AHRS::get_error_rp(void) const
 {
 #if AP_AHRS_DCM_ENABLED
     return dcm.get_error_rp();
-#endif
+#else
     return 0;
+#endif
 }
 
 float AP_AHRS::get_error_yaw(void) const
 {
 #if AP_AHRS_DCM_ENABLED
     return dcm.get_error_yaw();
-#endif
+#else
     return 0;
+#endif
 }
 
 // return a wind estimation vector, in m/s
