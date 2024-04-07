@@ -400,6 +400,18 @@ class WaitAndMaintain(object):
             text += f" (maintain={delta:.1f}/{self.minimum_duration})"
         self.progress(text)
 
+    def progress_text(self, value):
+        return f"want={self.get_target_value()} got={value}"
+
+    def validate_value(self, value):
+        return value == self.get_target_value()
+
+    def timeoutexception(self):
+        return AutoTestTimeoutException("Failed to attain or maintain value")
+
+    def success_text(self):
+        return f"{type(self)} Success"
+
 
 class WaitAndMaintainLocation(WaitAndMaintain):
     def __init__(self, test_suite, target, accuracy=5, height_accuracy=1, **kwargs):
@@ -451,6 +463,17 @@ class WaitAndMaintainLocation(WaitAndMaintain):
             return (f"Want=({self.target.lat:.7f},{self.target.lng:.7f},{self.target.alt:.2f}) Got=({current_value.lat:.7f},{current_value.lng:.7f},{current_value.alt:.2f}) dist={self.horizontal_error(current_value):.2f} vdist={self.vertical_error(current_value):.2f}")  # noqa
 
         return (f"Want=({self.target.lat},{self.target.lng}) distance={self.horizontal_error(current_value)}")
+
+
+class WaitAndMaintainArmed(WaitAndMaintain):
+    def get_current_value(self):
+        return self.test_suite.armed()
+
+    def get_target_value(self):
+        return True
+
+    def announce_start_text(self):
+        return "Ensuring vehicle remains armed"
 
 
 class MSP_Generic(Telem):
