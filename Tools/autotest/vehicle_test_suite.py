@@ -5412,9 +5412,9 @@ class TestSuite(ABC):
         )
 
     def armed(self):
-        """Return true if vehicle is armed and safetyoff"""
-        self.wait_heartbeat()
-        return self.mav.motors_armed()
+        """Return True if vehicle is armed and safetyoff"""
+        m = self.wait_heartbeat()
+        return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
         self.send_cmd(
