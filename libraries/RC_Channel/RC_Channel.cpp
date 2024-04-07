@@ -624,6 +624,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     switch (ch_option) {
     // the following functions do not need to be initialised:
     case AUX_FUNC::ARMDISARM:
+    case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::BATTERY_MPPT_ENABLE:
     case AUX_FUNC::CAMERA_TRIGGER:
     case AUX_FUNC::CLEAR_WP:
@@ -828,6 +829,14 @@ bool RC_Channel::read_aux()
         return false;
     }
 
+    if (!switch_state.initialised) {
+        switch_state.initialised = true;
+        if (init_position_on_first_radio_read((AUX_FUNC)option.get())) {
+            switch_state.current_position = (int8_t)new_position;
+            switch_state.debounce_position = (int8_t)new_position;
+        }
+    }
+
     if (!debounce_completed((int8_t)new_position)) {
         return false;
     }
@@ -845,6 +854,23 @@ bool RC_Channel::read_aux()
     return true;
 }
 
+// returns true if the first time we successfully read the
+// channel's three-position-switch position we should record that
+// position as the current position *without* executing the
+// associated auxiliary function.  e.g. do not attempt to arm a
+// vehicle when the user turns on their transmitter with the arm
+// switch high!
+bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
+{
+    switch (func) {
+    case AUX_FUNC::ARMDISARM_AIRMODE:
+    case AUX_FUNC::ARMDISARM:
+        // we do not want to process 
+        return true;
+    default:
+        return false;
+    }
+}
 
 void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 {
