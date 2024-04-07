@@ -116,7 +116,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: MODE
     // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode
-    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.
+    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based harmonic notch cannot be used on fixed wing only planes. It can for Copters, QuaadPlane(while in VTOL modes), and Rovers.
     // @Range: 0 5
     // @Values: 0:Fixed,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor
     // @User: Advanced
