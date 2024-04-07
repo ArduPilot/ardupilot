@@ -114,7 +114,7 @@ protected:
 
     // methods to log autotune frequency response results
     void Log_AutoTuneSweep() override;
-    void Log_Write_AutoTuneSweep(float freq, float gain, float phase);
+    void Log_Write_AutoTuneSweep(float freq_mtr, float gain_mtr, float phase_mtr, float freq_tgt, float gain_tgt, float phase_tgt);
 #endif
 
     // send intermittent updates to user on status of tune
@@ -253,6 +253,8 @@ private:
         float phase;
     };
     sweep_info curr_test;
+    sweep_info curr_test_mtr;
+    sweep_info curr_test_tgt;
 
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
@@ -285,7 +287,8 @@ private:
 
         uint8_t  progress;  // set based on phase of frequency response.  0 - start; 1 - reached 180 deg; 2 - reached 270 deg;
     };
-    sweep_data sweep;
+    sweep_data sweep_mtr;
+    sweep_data sweep_tgt;
 
     // fix the frequency sweep time to 23 seconds
     const float sweep_time_ms = 23000;
@@ -302,7 +305,8 @@ private:
     AP_Float rate_max;          // maximum autotune angular rate
 
     // freqresp object for the frequency response tests
-    AC_AutoTune_FreqResp freqresp;
+    AC_AutoTune_FreqResp freqresp_mtr; // frequency response of output to motor mixer input
+    AC_AutoTune_FreqResp freqresp_tgt; // frequency response of output to target input
 
     Chirp chirp_input;
 };
