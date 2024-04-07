@@ -154,6 +154,15 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAGTHRESH", 10, AP_Arming, magfield_error_threshold,  AP_ARMING_MAGFIELD_ERROR_THRESHOLD),
 
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    // @Param: CRSDP_IGN
+    // @DisplayName: Disable CrashDump Arming check
+    // @Description: Must have value "1" if crashdump data is present on the system, or a prearm failure will be raised.  Do not set this parameter unless the risks of doing so are fully understood.  The presence of a crash dump means that the firmware currently installed has suffered a critical software failure which resulted in the autopilot immediately rebooting.  The crashdump file gives diagnostic information which can help in finding the issue, please contact the ArduPIlot support team.  If this crashdump data is present, the vehicle is likely unsafe to fly.  Check the ArduPilot documentation for more details.
+    // @Values: 0:Crash Dump arming check active, 1:Crash Dump arming check deactivated
+    // @User: Advanced
+    AP_GROUPINFO("CRSDP_IGN", 11, AP_Arming, crashdump_ack.acked, 0),
+#endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
     AP_GROUPEND
 };
 
@@ -180,6 +189,13 @@ AP_Arming::AP_Arming()
 // performs pre-arm checks. expects to be called at 1hz.
 void AP_Arming::update(void)
 {
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    // if we boot with no crashdump data present, reset the "ignore"
+    // parameter so the user will need to acknowledge future crashes
+    // too:
+    crashdump_ack.check_reset();
+#endif
+
     const uint32_t now_ms = AP_HAL::millis();
     // perform pre-arm checks & display failures every 30 seconds
     bool display_fail = false;
@@ -196,6 +212,19 @@ void AP_Arming::update(void)
 
     pre_arm_checks(display_fail);
 }
+
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+void AP_Arming::CrashDump::check_reset()
+{
+    // if there is no crash dump data then clear the crash dump ack.
+    // This means on subsequent crash-dumps appearing the user must
+    // re-acknowledge.
+    if (hal.util->last_crash_dump_size() == 0) {
+        // no crash dump data
+        acked.set_and_save_ifchanged(0);
+    }
+}
+#endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
 
 uint16_t AP_Arming::compass_magfield_expected() const
 {
@@ -1638,6 +1667,9 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_OPENDRONEID_ENABLED
         &  opendroneid_checks(report)
 #endif
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+        & crashdump_checks(report)
+#endif
         &  serial_protocol_checks(report)
         &  estop_checks(report);
 
@@ -1688,6 +1720,30 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
 
     return true;
 }
+
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+bool AP_Arming::crashdump_checks(bool report)
+{
+    if (hal.util->last_crash_dump_size() == 0) {
+        // no crash dump data
+        return true;
+    }
+
+    // see if the user has acknowledged the failure and wants to fly anyway:
+    if (crashdump_ack.acked) {
+        // they may have acked the problem, that doesn't mean we don't
+        // continue to warn them they're on thin ice:
+        if (report) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CrashDump data detected");
+        }
+        return true;
+    }
+
+    check_failed(ARMING_CHECK_PARAMETERS, true, "CrashDump data detected");
+
+    return false;
+}
+#endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
 
 bool AP_Arming::mandatory_checks(bool report)
 {
