@@ -71,7 +71,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
     }
 
     // cycles are complete! determine gain and phase and exit
-    if (max_meas_cnt > AUTOTUNE_DWELL_CYCLES + 1 && max_target_cnt > AUTOTUNE_DWELL_CYCLES + 1 && excitation == DWELL) {
+    if (max_meas_cnt > dwell_cycles + 1 && max_target_cnt > dwell_cycles + 1 && excitation == DWELL) {
         float delta_time = 0.0f;
         float sum_gain = 0.0f;
         uint8_t cnt = 0;
@@ -81,7 +81,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
         float tgt_ampl = 0.0f;
         uint32_t meas_time = 0;
         uint32_t tgt_time = 0;
-        for (uint8_t i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
+        for (uint8_t i = 0;  i < dwell_cycles; i++) {
             meas_cnt=0;
             tgt_cnt=0;
             pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
