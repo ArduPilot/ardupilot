@@ -1,6 +1,16 @@
 Antenna Tracker Release Notes:
 
 ------------------------------------------------------------------
+Release 4.5.1 8th April 2024
+
+This release fixes a critical bug in the CRSF R/C protocol parser that
+can lead to a handfault and a vehicle crashing. A similar fix was
+applied to the GHST protocol, although we believe that GHST could not
+be affected by the bug, so this was just a precaution.
+
+There are no other changes in this release.
+
+------------------------------------------------------------------
 Release 4.5.0-beta4 22nd March 2024
 
 Changes from 4.5.0-beta3
