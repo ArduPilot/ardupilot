@@ -3230,7 +3230,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         }
         if (is_equal(packet.param4, 94.0f)) {
             // the following text is unlikely to make it out...
-            send_text(MAV_SEVERITY_WARNING,"deferencing a bad thing");
+            send_text(MAV_SEVERITY_WARNING,"dereferencing a bad thing");
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
 // esp32 can't do this bit, skip it, return an error
