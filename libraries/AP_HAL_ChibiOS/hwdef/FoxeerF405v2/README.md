@@ -28,24 +28,17 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL0 -> USB
  - SERIAL1 -> UART1 (ESC Telemetry)
  - SERIAL2 -> UART2 (RX, DMA-enabled)
- - SERIAL3 -> UART3 (VTX)
- - SERIAL4 -> UART4
+ - SERIAL3 -> UART3 (VTX Tramp)
+ - SERIAL4 -> UART4 (MSP DisplayPort, DMA-enabled)
  - SERIAL5 -> UART5 (GPS, DMA-enabled)
- - SERIAL6 -> UART6
+ - SERIAL6 -> UART6 (RX in DJI connector)
  
 ## RC Input
 
 RC input is configured by default on the R2 (UART2_RX) pad. It supports all serial RC
-protocols. For protocols requiring separate half-duplex serial to transmit
-telemetry (such as FPort) you should setup SERIAL1 as an RC input serial port,
-with half-duplex, pin-swap and inversion enabled.
- 
-## FrSky Telemetry
- 
-FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
- 
-  - SERIAL1_PROTOCOL 10
-  - SERIAL1_OPTIONS 7
+protocols. Half-duplex serial protocols should be configured on T2 (UART2_TX). RC input is also
+supported on UART6_RX within the DJI connector, although because it is not inverted it cannot be
+used for SBUS.
   
 ## OSD Support
 
@@ -66,7 +59,9 @@ The PWM is in 4 groups:
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
-to use DShot.
+to use DShot. Note that channel 9 is explicitly configured as NeoPixel output
+which means that channel 5 cannot be used as a motor output without disabling NeoPixel 
+support on channel 9.
 
 ## Battery Monitoring
 
@@ -85,6 +80,11 @@ The correct battery setting parameters are:
 ## Compass
 
 The FoxeerF405v2 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+
+## Control GPIO pins
+GPIO pin 71 can be used to control camera switching. It is configured
+by default on relay 3 and so you can associate an RC switch with relay 3 in order
+to switch camera outputs.
 
 ## Loading Firmware
 
