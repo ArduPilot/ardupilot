@@ -139,6 +139,11 @@ AC_AutoTune_Heli::AC_AutoTune_Heli()
 // initialize tests for each tune type
 void AC_AutoTune_Heli::test_init()
 {
+
+    AC_AutoTune_FreqResp::InputType input_type = AC_AutoTune_FreqResp::InputType::DWELL;
+    AC_AutoTune_FreqResp::ResponseType resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
+    uint8_t num_dwell_cycles = 6;
+    DwellType dwell_test_type = RATE;
     switch (tune_type) {
     case RFF_UP:
         freq_cnt = 12;
@@ -146,73 +151,72 @@ void AC_AutoTune_Heli::test_init()
         curr_test.freq = test_freq[freq_cnt];
         start_freq = curr_test.freq;
         stop_freq = curr_test.freq;
+
         attitude_control->bf_feedforward(false);
         attitude_control->use_sqrt_controller(false);
 
-        freqresp_tgt.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
-        freqresp_mtr.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
-        dwell_test_init(start_freq, stop_freq, start_freq, RATE);
-
-        step_time_limit_ms = (uint32_t) 23000;
+        // variables needed to initialize frequency response object and dwell test method
+        resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
+        pre_calc_cycles = 1.0f;
+        num_dwell_cycles = 3;
+        dwell_test_type = RATE;
 
         break;
     case MAX_GAINS:
-    case RP_UP:
-    case RD_UP:
-        // initialize start frequency
         if (is_zero(start_freq)) {
-            if (tune_type == RP_UP || tune_type == RD_UP) {
-                // continue using frequency where testing left off or RD_UP completed
-                if (test_phase[12] > 0.0f && test_phase[12] < 180.0f) {
-                    freq_cnt = 12;
-                // start with freq found for sweep where phase was 180 deg
-                } else if (!is_zero(sweep_tgt.ph180.freq)) {
-                    freq_cnt = 12;
-                    test_freq[freq_cnt] = sweep_tgt.ph180.freq - 0.25f * 3.14159f * 2.0f;
-                // otherwise start at min freq to step up in dwell frequency until phase > 160 deg
-                } else {
-                    freq_cnt = 0;
-                    test_freq[freq_cnt] = min_sweep_freq;
-                }
+            if (!is_zero(sweep_mtr.ph180.freq)) {
+                freq_cnt = 12;
+                test_freq[freq_cnt] = sweep_mtr.ph180.freq - 0.25f * 3.14159f * 2.0f;
                 curr_test.freq = test_freq[freq_cnt];
                 start_freq = curr_test.freq;
                 stop_freq = curr_test.freq;
-
-            // MAX_GAINS starts with a sweep initially but if it has been completed then start dwells at the freq for 180 deg phase
-            } else {
-                if (!is_zero(sweep_mtr.ph180.freq)) {
-                    freq_cnt = 12;
-                    test_freq[freq_cnt] = sweep_mtr.ph180.freq - 0.25f * 3.14159f * 2.0f;
-                    curr_test.freq = test_freq[freq_cnt];
-                    start_freq = curr_test.freq;
-                    stop_freq = curr_test.freq;
-                    if (tune_type == MAX_GAINS) {
-                        reset_maxgains_update_gain_variables();
-                    }
-                } else {
-                    start_freq = min_sweep_freq;
-                    stop_freq = max_sweep_freq;
+                if (tune_type == MAX_GAINS) {
+                    reset_maxgains_update_gain_variables();
                 }
+            } else {
+                start_freq = min_sweep_freq;
+                stop_freq = max_sweep_freq;
             }
         }
         attitude_control->bf_feedforward(false);
         attitude_control->use_sqrt_controller(false);
 
-        if (!is_equal(start_freq,stop_freq)) {
-            // initialize determine_gain function whenever test is initialized
-            freqresp_tgt.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::RATE);
-            freqresp_mtr.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::RATE);
-            dwell_test_init(start_freq, stop_freq, stop_freq, RATE);
-        } else {
-            // initialize determine_gain function whenever test is initialized
-            freqresp_tgt.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
-            freqresp_mtr.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
-            dwell_test_init(start_freq, stop_freq, start_freq, RATE);
+        // variables needed to initialize frequency response object and dwell test method
+        resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
+        dwell_test_type = RATE;
+        pre_calc_cycles = 6.25f;
+        num_dwell_cycles = 6;
+
+        break;
+    case RP_UP:
+    case RD_UP:
+        // initialize start frequency
+        if (is_zero(start_freq)) {
+            // continue using frequency where testing left off or RD_UP completed
+            if (test_phase[12] > 0.0f && test_phase[12] < 180.0f) {
+                freq_cnt = 12;
+            // start with freq found for sweep where phase was 180 deg
+            } else if (!is_zero(sweep_tgt.ph180.freq)) {
+                freq_cnt = 12;
+                test_freq[freq_cnt] = sweep_tgt.ph180.freq - 0.25f * 3.14159f * 2.0f;
+            // otherwise start at min freq to step up in dwell frequency until phase > 160 deg
+            } else {
+                freq_cnt = 0;
+                test_freq[freq_cnt] = min_sweep_freq;
+            }
+            curr_test.freq = test_freq[freq_cnt];
+            start_freq = curr_test.freq;
+            stop_freq = curr_test.freq;
         }
-        if (!is_zero(start_freq)) {
-            // 4 seconds is added to allow aircraft to achieve start attitude.  Then the time to conduct the dwells is added to it.
-            step_time_limit_ms = (uint32_t)(4000 + (float)(AUTOTUNE_DWELL_CYCLES + 2) * 1000.0f * M_2PI / start_freq);
-        }
+        attitude_control->bf_feedforward(false);
+        attitude_control->use_sqrt_controller(false);
+
+        // variables needed to initialize frequency response object and dwell test method
+        resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
+        dwell_test_type = RATE;
+        pre_calc_cycles = 6.25f;
+        num_dwell_cycles = 6;
+
         break;
     case SP_UP:
         // initialize start frequency
@@ -232,23 +236,12 @@ void AC_AutoTune_Heli::test_init()
         attitude_control->bf_feedforward(false);
         attitude_control->use_sqrt_controller(false);
 
-        if (!is_equal(start_freq,stop_freq)) {
-            // initialize determine gain function
-            freqresp_tgt.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            freqresp_mtr.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            dwell_test_init(start_freq, stop_freq, stop_freq, DRB);
-        } else {
-            // initialize determine gain function
-            freqresp_tgt.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            freqresp_mtr.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            dwell_test_init(start_freq, stop_freq, start_freq, DRB);
-        }
+        // variables needed to initialize frequency response object and dwell test method
+        resp_type = AC_AutoTune_FreqResp::ResponseType::ANGLE;
+        dwell_test_type = DRB;
+        pre_calc_cycles = 6.25f;
+        num_dwell_cycles = 6;
 
-        // TODO add time limit for sweep test
-        if (!is_zero(start_freq)) {
-            // 1 seconds is added for a little buffer.  Then the time to conduct the dwells is added to it.
-            step_time_limit_ms = (uint32_t)(2000 + (float)(AUTOTUNE_DWELL_CYCLES + 7) * 1000.0f * M_2PI / start_freq);
-        }
         break;
     case TUNE_CHECK:
         // initialize start frequency
@@ -256,19 +249,33 @@ void AC_AutoTune_Heli::test_init()
             start_freq = min_sweep_freq;
             stop_freq = max_sweep_freq;
         }
-        // initialize determine gain function
-        freqresp_tgt.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-        freqresp_mtr.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-        dwell_test_init(start_freq, stop_freq, stop_freq, ANGLE);
-        // TODO add time limit for sweep test
-        if (!is_zero(start_freq)) {
-            // 1 seconds is added for a little buffer.  Then the time to conduct the dwells is added to it.
-            step_time_limit_ms = (uint32_t)(2000 + (float)(AUTOTUNE_DWELL_CYCLES + 7) * 1000.0f * M_2PI / start_freq);
-        }
+        // variables needed to initialize frequency response object and dwell test method
+        resp_type = AC_AutoTune_FreqResp::ResponseType::ANGLE;
+        dwell_test_type = ANGLE;
+
         break;
     default:
         break;
     }
+
+    // initialize frequency response object
+    if (!is_equal(start_freq,stop_freq)) {
+        input_type = AC_AutoTune_FreqResp::InputType::SWEEP;
+        step_time_limit_ms = sweep_time_ms + 500;
+    } else {
+        input_type = AC_AutoTune_FreqResp::InputType::DWELL;
+        freqresp_tgt.set_dwell_cycles(num_dwell_cycles);
+        freqresp_mtr.set_dwell_cycles(num_dwell_cycles);
+        if (!is_zero(start_freq)) {
+            // time limit set by adding the pre calc cycles with the dwell cycles.  500 ms added to account for settling with buffer.
+            step_time_limit_ms = (uint32_t) (500 + ((float) freqresp_tgt.get_dwell_cycles() + pre_calc_cycles + 2.0f) * 1000.0f * M_2PI / start_freq);
+        }
+    }
+    freqresp_tgt.init(input_type, resp_type);
+    freqresp_mtr.init(input_type, resp_type);
+
+    // initialize dwell test method
+    dwell_test_init(start_freq, stop_freq, start_freq, dwell_test_type);
 
     start_angles = Vector3f(roll_cd, pitch_cd, desired_yaw_cd);  // heli specific
 }
@@ -759,9 +766,14 @@ void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float fi
         reset_sweep_variables();
         curr_test.gain = 0.0f;
         curr_test.phase = 0.0f;
+        chirp_input.init(0.001f * sweep_time_ms, start_frq / M_2PI, stop_frq / M_2PI, 0.0f, 0.0001f * sweep_time_ms, 0.0f);
+    } else {
+        chirp_input.init(0.001f * step_time_limit_ms, start_frq / M_2PI, stop_frq / M_2PI, 0.0f, 0.0001f * step_time_limit_ms, 0.0f);
     }
 
-    chirp_input.init(sweep_time_ms * 0.001f, start_frq / M_2PI, stop_frq / M_2PI, 0.0f, 0.0001f * sweep_time_ms, 0.0f);
+    cycle_complete_tgt = false;
+    cycle_complete_mtr = false;
+
 
 }
 
@@ -881,7 +893,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
     float dwell_gain_tgt = 0.0f;
     float dwell_phase_tgt = 0.0f;
     // wait for dwell to start before determining gain and phase
-    if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
+    if ((float)(now - dwell_start_time_ms) > pre_calc_cycles * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
         freqresp_mtr.update(command_out,command_out,rotation_rate, dwell_freq);
         freqresp_tgt.update(command_out,filt_target_rate,rotation_rate, dwell_freq);
 
@@ -899,6 +911,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             } else {
                 dwell_gain_mtr = freqresp_mtr.get_gain();
                 dwell_phase_mtr = freqresp_mtr.get_phase();
+                cycle_complete_mtr = true;
             }
         }
 
@@ -918,6 +931,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
                 dwell_gain_tgt = freqresp_tgt.get_gain();
                 dwell_phase_tgt = freqresp_tgt.get_phase();
                 if (dwell_type == DRB) {test_accel_max = freqresp_tgt.get_accel_max();}
+                cycle_complete_tgt = true;
             }
         }
 
@@ -977,6 +991,11 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
         }
     } else {
         if (now - step_start_time_ms >= step_time_limit_ms || (freqresp_tgt.is_cycle_complete() && freqresp_mtr.is_cycle_complete())) {
+            if (now - step_start_time_ms >= step_time_limit_ms) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Step time limit exceeded");
+            }
+            cycle_complete_tgt = false;
+            cycle_complete_tgt = false;
             // we have passed the maximum stop time
             step = UPDATE_GAINS;
         }
@@ -1147,13 +1166,18 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float *freq, float *g
         curr_test.freq = curr_test.freq + test_freq_incr;
         freq[frq_cnt] = curr_test.freq;
     } else {
-        if ((gain[frq_cnt] > 0.1 && gain[frq_cnt] < 0.95) || gain[frq_cnt] > 1.0) {
-            tune_ff =  tune_ff / gain[frq_cnt] ;
-        } else if (gain[frq_cnt] >= 0.95 && gain[frq_cnt] <= 1.0) {
+        if ((gain[frq_cnt] > 0.1 && gain[frq_cnt] < 0.93) || gain[frq_cnt] > 0.98) {
+            if (tune_ff > 0.0f) {
+                tune_ff =  tune_ff / gain[frq_cnt];    
+            } else {
+                tune_ff = 0.03f;
+            }
+        } else if (gain[frq_cnt] >= 0.93 && gain[frq_cnt] <= 0.98) {
             counter = AUTOTUNE_SUCCESS_COUNT;
             // reset curr_test.freq and frq_cnt for next test
             curr_test.freq = freq[0];
             frq_cnt = 0;
+            tune_ff = constrain_float(tune_ff,0.0f,1.0f);
         }
     }
 
