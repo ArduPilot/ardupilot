@@ -3,16 +3,14 @@
 // set ahrs home to current location from inertial-nav location
 bool Rover::set_home_to_current_location(bool lock)
 {
-    Location temp_loc;
-    if (ahrs.have_inertial_nav() && ahrs.get_location(temp_loc)) {
-        if (!set_home(temp_loc, lock)) {
-            return false;
-        }
-        // we have successfully set AHRS home, set it for SmartRTL
-        g2.smart_rtl.set_home(true);
-        return true;
+    if (!AP_Vehicle::set_home_to_current_location(lock)) {
+        return false;
     }
-    return false;
+
+    // we have successfully set AHRS home, set it for SmartRTL
+    g2.smart_rtl.set_home(true);
+
+    return true;
 }
 
 // sets ahrs home to specified location
