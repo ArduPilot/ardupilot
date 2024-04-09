@@ -341,7 +341,9 @@ public:
         // rate_cds(): desired yaw rate in centidegrees/second:
         float rate_cds();
 
+        // returns a yaw in degrees, direction of vehicle travel:
         float look_ahead_yaw();
+
         float roi_yaw() const;
 
         // auto flight mode's yaw mode
