@@ -1,0 +1,184 @@
+# hw definition file for processing by chibios_hwdef.py
+# for HAKRCF405V2 hardware.
+# thanks to betaflight for pin information
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_HAKRCF405V2
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define STM32_ST_USE_TIMER 4
+define CH_CFG_ST_RESOLUTION 16
+
+# FLASH 
+FLASH_SIZE_KB 1024
+
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
+
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 2
+
+# debug (disabled out to allow for both LEDs)
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# LEDs
+PC15 LED0 OUTPUT LOW GPIO(90)
+define HAL_GPIO_A_LED_PIN 90
+
+PC14 LED1 OUTPUT LOW GPIO(91)
+define HAL_GPIO_B_LED_PIN 91
+define HAL_GPIO_LED_ON 0
+
+# buzzer
+PC13 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+define HAL_BUZZER_ON  1
+define HAL_BUZZER_OFF 0
+
+# spi1 bus for IMU
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# spi2 for OSD
+PB13 SPI2_SCK  SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+# spi3 for sdcard and onboard flash
+PC10 SPI3_SCK  SPI3
+PC11 SPI3_MISO SPI3
+PB5  SPI3_MOSI SPI3
+
+# CS
+PA4  ICM42688P_CS CS
+PB12 MAX7456_CS   CS
+PA15 FLASH_CS     CS
+
+# only one I2C bus
+I2C_ORDER I2C1
+
+# only one I2C bus in normal config
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# analog pins
+PC1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC3 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 11
+define HAL_BATT_CURR_PIN 13
+define HAL_BATT_VOLT_SCALE 11.0
+define HAL_BATT_CURR_SCALE 40.0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6 
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# alternative RC input using UART
+PA2 USART2_TX USART2 NODMA
+PA3 USART2_RX USART2 NODMA ALT(1)
+
+# RC input using timer
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN
+
+# USART3
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# UART4
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+# UART5
+PC12 UART5_TX UART5
+PD2  UART5_RX UART5
+
+# UART6
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+# PWM out pins. Note that channel order follows the ArduPilot motor
+# order conventions
+PC8  TIM3_CH3  TIM3 PWM(1) GPIO(50)
+PC9  TIM3_CH4  TIM3 PWM(2) GPIO(51)
+PA8  TIM1_CH1  TIM1 PWM(3) GPIO(52)
+PA9  TIM1_CH2  TIM1 PWM(4) GPIO(53)
+PA10 TIM1_CH3  TIM1 PWM(5) GPIO(54)
+PB4  TIM3_CH1  TIM3 PWM(6) GPIO(55)
+PB0  TIM8_CH2N TIM8 PWM(7) GPIO(56)
+PB1  TIM8_CH3N TIM8 PWM(8) GPIO(57)
+	
+# NeoPixel LED strip
+PB3  TIM2_CH2  TIM2 PWM(9) GPIO(58)
+define HAL_NEOPIXEL_COUNT 4
+define AP_NOTIFY_NEOPIXEL_ENABLED 1
+
+# GPIOs
+PC0  PINIO1 OUTPUT GPIO(81) LOW
+PC2  PINIO2 OUTPUT GPIO(82) LOW
+PC5  PINIO3 OUTPUT GPIO(83) LOW
+
+# probe for I2C SPL06_001, but allow init on board variants without onboard baro too
+BARO SPL06	I2C:0:0x76
+BARO BMP280 I2C:0:0x76
+define AP_BARO_SPL06_ENABLED 1
+define AP_BARO_BMP280_ENABLED 1
+define HAL_BARO_ALLOW_INIT_NO_BARO
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# SPI devices
+SPIDEV icm42688p   SPI1 DEVID1 ICM42688P_CS     MODE3  2*MHZ 16*MHZ 
+SPIDEV osd		   SPI2 DEVID1 MAX7456_CS       MODE0  10*MHZ 10*MHZ
+SPIDEV dataflash   SPI3 DEVID1 FLASH_CS       MODE0  400*KHZ 25*MHZ
+
+# one IMU
+IMU Invensensev3 SPI:icm42688p ROTATION_ROLL_180_YAW_90
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+# setup for OSD
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+# disable SMBUS battery monitors to save flash
+define AP_BATTERY_SMBUS_ENABLED 0
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+
+# reduce max size of embedded params for apj_tool.py
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+
+# save some flash
+include ../include/save_some_flash.inc
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc
