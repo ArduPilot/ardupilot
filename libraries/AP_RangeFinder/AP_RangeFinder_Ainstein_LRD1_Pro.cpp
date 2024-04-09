@@ -19,6 +19,8 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <ctype.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
 uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
@@ -54,11 +56,14 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
 
     bool has_data = false;
     int16_t nbytes = uart->available();
+    uint16_t reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm;
+    uint8_t snr_24, snr_60, snr_Int;
+    
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Data Length:: %f", float(nbytes));
     while (nbytes-- > PACKET_SIZE)
     {
-        int16_t r = uart->read();
-        uint8_t c = (uint8_t)r;
+        // int16_t r = uart->read();
+        // uint8_t c = (uint8_t)r;
 
         const uint8_t header[] = {
             0xEB, // Header MSB
@@ -134,8 +139,14 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         */
 
         reading_m = UINT16_VALUE(buffer[13], buffer[14]) * 0.01;
+        reading_24Gz_cm = UINT16_VALUE(buffer[3], buffer[4]);
+        reading_60Gz_cm = UINT16_VALUE(buffer[8], buffer[9]);
+        reading_Int_cm = UINT16_VALUE(buffer[13], buffer[14]);
 
         const uint8_t snr = buffer[15];
+        snr_24 = buffer[5];
+        snr_60 = buffer[10];
+        snr_Int = buffer[15];
 
         /*
         Set the data is available
@@ -181,8 +192,37 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         }
     }
 
+    /*Logging Point Start*/
+    #if HAL_LOGGING_ENABLED
+        if(has_data){
+            Log_LRD1_Pro(reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, snr_24, snr_60, snr_Int);
+        }
+        
+    #endif 
+
     return has_data;
 }
+
+ /* Logging Function */
+ // Write an RFND (rangefinder) packet
+void AP_RangeFinder_Ainstein_LRD1_Pro::Log_LRD1_Pro(uint16_t s_24, uint16_t s_60, uint16_t s_int, uint8_t snr_24, uint8_t snr_60, uint8_t snr_int) const
+{
+
+    // AP_Logger &logger = AP::logger();
+
+    const struct log_LRD1 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_LRD1_MSG),
+        time_us      : AP_HAL::micros64(),
+        dist_24_cm   : s_24 ,
+        dist_60_cm   : s_60,
+        dist_int_cm  : s_int,
+        snr_24       : snr_24,
+        snr_60       : snr_60,
+        snr_int      : snr_int,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
 
 /*
     Reporting any warnings from the radar

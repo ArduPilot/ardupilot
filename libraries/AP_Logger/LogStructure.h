@@ -461,6 +461,20 @@ struct PACKED log_RFND {
 };
 
 /*
+  Logging for LRD1 Pro QCCCBBB
+*/
+struct PACKED log_LRD1 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t dist_24_cm;
+    uint16_t dist_60_cm;
+    uint16_t dist_int_cm;
+    uint8_t snr_24;
+    uint8_t snr_60;
+    uint8_t snr_int;
+};
+
+/*
   terrain log structure
  */
 struct PACKED log_TERRAIN {
@@ -1253,6 +1267,8 @@ LOG_STRUCTURE_FROM_CAMERA \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
+    { LOG_LRD1_MSG, sizeof(log_LRD1), \
+      "LRD1", "QCCCBBB", "TimeUS,Dis24,Dis60,DisInt,Snr24,Snr60,SnrInt", "smmm---", "FBBB---", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
@@ -1374,6 +1390,8 @@ enum LogMessages : uint8_t {
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
+    // Adding new log for LRD1 Pro Abhishek Saxena
+    LOG_LRD1_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
