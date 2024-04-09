@@ -19,14 +19,8 @@ bool Rover::set_home_to_current_location(bool lock)
 // returns true if home location set successfully
 bool Rover::set_home(const Location& loc, bool lock)
 {
-    // set ahrs home
-    if (!ahrs.set_home(loc)) {
+    if (!AP_Vehicle::set_home(loc, lock)) {
         return false;
-    }
-
-    // lock home position
-    if (lock) {
-        ahrs.lock_home();
     }
 
     // Save Home to EEPROM
