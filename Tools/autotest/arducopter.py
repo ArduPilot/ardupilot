@@ -3008,6 +3008,124 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.CopterMission()
 
+    def TakeoffAltAutoArm(self):
+        """Test takeoff in auto with arming from auto."""
+        mission_file = "copter_takeoff.txt"
+        target_alt = 10
+        self.progress(f"# Load {mission_file}")
+        self.set_parameter("AUTO_OPTIONS", 135)
+
+        # load the waypoint count
+        num_wp = self.load_mission(mission_file, strict=False)
+        if not num_wp:
+            raise NotAchievedException(f"load {mission_file} failed")
+        self.start_subtest("Start Auto take off Relative")
+        self.set_current_waypoint(1)
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_waypoint(0, num_wp-1, timeout=500)
+        self.wait_altitude(target_alt - 1 , target_alt + 1, relative=True)
+        self.change_mode('LAND')
+        # set throttle to minimum
+        self.zero_throttle()
+        # wait for disarm
+        self.wait_disarmed()
+        self.progress("MOTORS DISARMED OK")
+
+        self.start_subtest("Start Auto take off Relative with home alt offset")
+        home = self.poll_home_position()
+        self.progress("home: %s" % str(home))
+        new_x = home.latitude
+        new_y = home.longitude
+        new_z = home.altitude + 20000 # +20 metres
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         0, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         new_x,
+                         new_y,
+                         new_z/1000.0, # mm => m
+                         )
+        home2 = self.poll_home_position()
+        self.progress("new home: %s" % str(home2))
+        self.set_current_waypoint(1)
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        # Change back home to initial position to trigger an alt offset
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         0, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         home.latitude,
+                         home.longitude,
+                         home.altitude/1000.0, # mm => m
+                         )
+        home3 = self.poll_home_position()
+        self.progress("new home2: %s" % str(home3))
+        self.arm_vehicle()
+        self.wait_waypoint(0, num_wp-1, timeout=500)
+        self.wait_altitude(target_alt - 1, target_alt + 1, relative=True, minimum_duration=1)
+        self.change_mode('LAND')
+
+        # set throttle to minimum
+        self.zero_throttle()
+
+        # wait for disarm
+        self.wait_disarmed()
+        self.progress("MOTORS DISARMED OK")
+
+        self.start_subtest("Start Auto take off AGL with home alt offset")
+        mission_file_agl = "copter_takeoff_agl.txt"
+        # load the waypoint count
+        num_wp = self.load_mission(mission_file_agl, strict=False)
+        if not num_wp:
+            raise NotAchievedException(f"load {mission_file_agl} failed")
+        home = self.poll_home_position()
+        self.progress("home: %s" % str(home))
+        new_x = home.latitude
+        new_y = home.longitude
+        new_z = home.altitude + 20000 # +20 metres
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         0, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         new_x,
+                         new_y,
+                         new_z/1000.0, # mm => m
+                         )
+        home2 = self.poll_home_position()
+        self.progress("new home: %s" % str(home2))
+        self.set_current_waypoint(1)
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        # Change back home to initial position to trigger an alt offset
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                         0, # p1,
+                         0, # p2,
+                         0, # p3,
+                         0, # p4,
+                         home.latitude,
+                         home.longitude,
+                         home.altitude/1000.0, # mm => m
+                         )
+        home3 = self.poll_home_position()
+        self.progress("new home2: %s" % str(home3))
+        self.arm_vehicle()
+        self.wait_waypoint(0, num_wp-1, timeout=500)
+        self.wait_altitude(target_alt - 1, target_alt + 1, relative=True, minimum_duration=1)
+        self.change_mode('LAND')
+
+        # set throttle to minimum
+        self.zero_throttle()
+
+        # wait for disarm
+        self.wait_disarmed()
+        self.progress("MOTORS DISARMED OK")
+
     def TakeoffAlt(self):
         '''Test Takeoff command altitude'''
         # Test case #1 (set target altitude to relative -10m from the ground, -10m is invalid, so it is set to 1m)
@@ -10513,6 +10631,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ModeFlip,
              self.CopterMission,
              self.TakeoffAlt,
+             self.TakeoffAltAutoArm,
              self.SplineLastWaypoint,
              self.Gripper,
              self.TestLocalHomePosition,
