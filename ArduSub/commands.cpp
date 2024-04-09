@@ -73,12 +73,3 @@ bool Sub::set_home(const Location& loc, bool lock)
     // return success
     return true;
 }
-
-// far_from_EKF_origin - checks if a location is too far from the EKF origin
-//  returns true if too far
-bool Sub::far_from_EKF_origin(const Location& loc)
-{
-    // check distance to EKF origin
-    Location ekf_origin;
-    return ahrs.get_origin(ekf_origin) && (ekf_origin.get_distance(loc) > EKF_ORIGIN_MAX_DIST_M);
-}
