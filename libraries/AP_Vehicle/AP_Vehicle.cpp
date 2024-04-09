@@ -1098,6 +1098,28 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
 }
 #endif
 
+#if AP_AHRS_ENABLED
+#ifndef EKF_ORIGIN_MAX_ALT_KM
+#define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
+#endif
+
+// far_from_EKF_origin - checks if a location is too far from the EKF origin
+//  returns true if too far
+bool AP_Vehicle::far_from_EKF_origin(const Location& loc)
+{
+    // check distance to EKF origin
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        if (labs(ekf_origin.alt - loc.alt)*0.01 > EKF_ORIGIN_MAX_ALT_KM*1000.0) {
+            return true;
+        }
+    }
+
+    // close enough to origin
+    return false;
+}
+#endif  // AP_AHRS_ENABLED
+
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
 AP_Vehicle *AP_Vehicle::get_singleton()

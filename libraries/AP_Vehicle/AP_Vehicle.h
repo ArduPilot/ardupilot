@@ -493,6 +493,12 @@ protected:
     // Check if this mode can be entered from the GCS
     bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
 
+#if AP_AHRS_ENABLED
+// far_from_EKF_origin - checks if a location is too far from the EKF origin
+//  returns true if too far
+    bool far_from_EKF_origin(const Location& loc);
+#endif
+
 private:
 
     // delay() callback that processing MAVLink packets
