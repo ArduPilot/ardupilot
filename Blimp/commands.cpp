@@ -32,17 +32,3 @@ void Blimp::set_home_to_current_location_inflight()
         }
     }
 }
-
-// set_home_to_current_location - set home to current GPS location
-bool Blimp::set_home_to_current_location(bool lock)
-{
-    // get current location from EKF
-    Location temp_loc;
-    if (ahrs.get_location(temp_loc)) {
-        if (!set_home(temp_loc, lock)) {
-            return false;
-        }
-        return true;
-    }
-    return false;
-}
