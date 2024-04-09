@@ -1122,7 +1122,24 @@ bool AP_Vehicle::set_home(const Location& loc, bool lock)
     // return success
     return true;
 }
-#endif
+
+// set_home_to_current_location - set home to current AHRS location
+bool AP_Vehicle::set_home_to_current_location(bool lock)
+{
+    // get current location from AHRS
+    Location temp_loc;
+    if (!ahrs.get_location(temp_loc)) {
+        return false;
+    }
+
+    if (!set_home(temp_loc, lock)) {
+        return false;
+    }
+
+    return true;
+}
+
+#endif  // AP_AHRS_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
