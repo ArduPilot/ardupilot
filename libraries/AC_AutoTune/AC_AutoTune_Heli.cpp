@@ -192,8 +192,8 @@ void AC_AutoTune_Heli::test_init()
     case RD_UP:
         // initialize start frequency
         if (is_zero(start_freq)) {
-            // continue using frequency where testing left off or RD_UP completed
-            if (test_phase[12] > 0.0f && test_phase[12] < 180.0f) {
+            // continue using frequency where testing left off with RD_UP completed
+            if (test_phase[12] > 0.0f && test_phase[12] < 180.0f && tune_type == RP_UP) {
                 freq_cnt = 12;
             // start with freq found for sweep where phase was 180 deg
             } else if (!is_zero(sweep_tgt.ph180.freq)) {
@@ -268,7 +268,7 @@ void AC_AutoTune_Heli::test_init()
         freqresp_mtr.set_dwell_cycles(num_dwell_cycles);
         if (!is_zero(start_freq)) {
             // time limit set by adding the pre calc cycles with the dwell cycles.  500 ms added to account for settling with buffer.
-            step_time_limit_ms = (uint32_t) (500 + ((float) freqresp_tgt.get_dwell_cycles() + pre_calc_cycles + 2.0f) * 1000.0f * M_2PI / start_freq);
+            step_time_limit_ms = (uint32_t) (2000 + ((float) freqresp_tgt.get_dwell_cycles() + pre_calc_cycles + 2.0f) * 1000.0f * M_2PI / start_freq);
         }
     }
     freqresp_tgt.init(input_type, resp_type);
@@ -1168,7 +1168,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float *freq, float *g
     } else {
         if ((gain[frq_cnt] > 0.1 && gain[frq_cnt] < 0.93) || gain[frq_cnt] > 0.98) {
             if (tune_ff > 0.0f) {
-                tune_ff =  tune_ff / gain[frq_cnt];    
+                tune_ff =  0.95f * tune_ff / gain[frq_cnt];
             } else {
                 tune_ff = 0.03f;
             }
