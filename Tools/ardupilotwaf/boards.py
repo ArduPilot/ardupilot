@@ -195,7 +195,7 @@ class Board:
                 (int(major) == want_major and int(minor) >= want_minor))
 
     def configure_env(self, cfg, env):
-        # Use a dictionary instead of the convetional list for definitions to
+        # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
         env.DEFINES = {}
 
