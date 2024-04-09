@@ -312,7 +312,6 @@ private:
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
-    bool far_from_EKF_origin(const Location& loc);
 
     // ekf_check.cpp
     void ekf_check();
