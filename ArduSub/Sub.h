@@ -425,7 +425,6 @@ private:
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
-    bool far_from_EKF_origin(const Location& loc);
     float get_alt_rel() const WARN_IF_UNUSED;
     float get_alt_msl() const WARN_IF_UNUSED;
     void exit_mission();
