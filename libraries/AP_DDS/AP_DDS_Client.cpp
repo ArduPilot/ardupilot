@@ -566,7 +566,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
-    
+
     case topics[to_underlying(TopicIndex::ANGULAR_CONTROL_SUB)].dr_id.id: {
         const bool success = custom_msgs_msg_AngularVelandAccn_deserialize_topic(ub, &rx_angular_control_topic);
         if (success == false) {
