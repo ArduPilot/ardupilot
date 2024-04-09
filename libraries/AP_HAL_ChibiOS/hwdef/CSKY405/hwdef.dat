@@ -28,7 +28,6 @@ PA14 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
 PA13 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 # --------------------- PWM -----------------------
 PA8  TIM1_CH1   TIM1  PWM(1)  GPIO(50)          // S1
