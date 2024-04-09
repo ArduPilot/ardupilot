@@ -370,7 +370,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     // by default current_alt_cm and alt_target_cm are alt-above-EKF-origin
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
-    float current_alt_cm = inertial_nav.get_position_z_up_cm();
+    int32_t current_alt_cm = static_cast<int32_t>(inertial_nav.get_position_z_up_cm());
     float terrain_offset;   // terrain's altitude in cm above the ekf origin
     // Record the takeoff target and set the location to current position as we always takeoff from current position.
     // we use now takeoff_loc instead of dest_loc to ensure we are getting altitude offset from the current position and not whatever inside the mission command
@@ -378,7 +378,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 
     if ((takeoff_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset(terrain_offset)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
-        current_alt_cm -= terrain_offset;
+        current_alt_cm -= static_cast<int32_t>(terrain_offset);
 
         // specify alt_target_cm as alt-above-terrain
         alt_target_cm = takeoff_loc.alt;
@@ -393,8 +393,9 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         }
     }
 
+
     // sanity check target
-    int32_t alt_target_min_cm = current_alt_cm + (copter.ap.land_complete ? 100 : 0);
+    const int32_t alt_target_min_cm = current_alt_cm + (copter.ap.land_complete ? 100 : 0);
     alt_target_cm = MAX(alt_target_cm, alt_target_min_cm);
 
     // initialise yaw
