@@ -495,18 +495,6 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         }
     }
 
-    // check if home is too far from EKF origin
-    if (copter.far_from_EKF_origin(ahrs.get_home())) {
-        check_failed(display_failure, "Home too far from EKF origin");
-        return false;
-    }
-
-    // check if vehicle is too far from EKF origin
-    if (copter.far_from_EKF_origin(copter.current_loc)) {
-        check_failed(display_failure, "Vehicle too far from EKF origin");
-        return false;
-    }
-
     // if we got here all must be ok
     return true;
 }
