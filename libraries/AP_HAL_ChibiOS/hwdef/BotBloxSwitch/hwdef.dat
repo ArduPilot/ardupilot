@@ -76,9 +76,6 @@ include ../include/network_PPPGW.inc
 # allow load from USB
 SERIAL_ORDER OTG1 USART3
 
-# bootloader embedding / bootloader flashing not available
-define AP_BOOTLOADER_FLASHING_ENABLED 0
-
 # no ADC pins
 define HAL_USE_ADC FALSE
 
