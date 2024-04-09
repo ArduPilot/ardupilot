@@ -472,6 +472,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #endif
         break;
     case Type::Ainstein_LRD1_Pro:
+    case Type::Ainstein_LR_D1:
 #if AP_RANGEFINDER_AINSTEIN_LRD1_PRO_SERIAL_ENABLED
         serial_create_fn = AP_RangeFinder_Ainstein_LRD1_Pro::create;
 #endif
