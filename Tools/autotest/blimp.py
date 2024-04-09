@@ -254,6 +254,7 @@ class AutoTestBlimp(TestSuite):
             self.FlyManual,
             self.FlyLoiter,
             self.PREFLIGHT_Pressure,
+            self.far_from_EKF_origin,
         ])
         return ret
 

@@ -13554,6 +13554,18 @@ switch value'''
             if dist < 1:
                 break
 
+    def far_from_EKF_origin(self):
+        '''test that we get a failure if home is set far from the EKF origin'''
+        self.wait_ready_to_arm()
+        here = self.poll_home_position()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=here.latitude,
+            p6=here.longitude,
+            p7=6000000,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
     def CRSF(self):
         '''Test RC CRSF'''
         self.context_push()
