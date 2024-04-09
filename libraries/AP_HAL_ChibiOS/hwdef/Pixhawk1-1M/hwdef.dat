@@ -3,9 +3,8 @@
 
 include ../Pixhawk1/hwdef.dat
 
-# only include UBLOX and NMEA GPS drivers
+# include NMEA GPS driver
 define AP_GPS_NMEA_ENABLED 1
-include ../include/minimal_GPS.inc
 
 FLASH_SIZE_KB 1024
 include ../include/minimize_features.inc
@@ -18,3 +17,4 @@ define BOARD_CHECK_F427_USE_2M "2M flash - use Pixhawk1 firmware"
 undef ROMFS
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 undef HAL_WITH_IO_MCU_DSHOT
+
