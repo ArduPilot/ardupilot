@@ -95,9 +95,9 @@ void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
         }    
 }
 
+#if HAL_SOARING_ENABLED
 void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
 {
-#if HAL_SOARING_ENABLED
     SoaringController::ActiveStatus desired_state = SoaringController::ActiveStatus::SOARING_DISABLED;
 
     switch (ch_flag) {
@@ -113,8 +113,8 @@ void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
         }
 
     plane.g2.soaring_controller.set_pilot_desired_state(desired_state);
-#endif
 }
+#endif
 
 void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 {
@@ -275,9 +275,11 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     }
 #endif
 
+#if HAL_SOARING_ENABLED
     case AUX_FUNC::SOARING:
         do_aux_function_soaring_3pos(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::FLAP:
     case AUX_FUNC::FBWA_TAILDRAGGER:
@@ -333,8 +335,8 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         break;
 #endif
 
-    case AUX_FUNC::ARSPD_CALIBRATE:
 #if AP_AIRSPEED_AUTOCAL_ENABLE
+    case AUX_FUNC::ARSPD_CALIBRATE:
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.airspeed.set_calibration_enabled(true);
@@ -345,20 +347,20 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
             plane.airspeed.set_calibration_enabled(false);
             break;
         }
-#endif
         break;
+#endif
 
     case AUX_FUNC::LANDING_FLARE:
         do_aux_function_flare(ch_flag);
         break;
 
-    case AUX_FUNC::PARACHUTE_RELEASE:
 #if HAL_PARACHUTE_ENABLED
+    case AUX_FUNC::PARACHUTE_RELEASE:
         if (ch_flag == AuxSwitchPos::HIGH) {
             plane.parachute_manual_release();
         }
-#endif
         break;
+#endif
 
     case AUX_FUNC::MODE_SWITCH_RESET:
         rc().reset_mode_switch();
