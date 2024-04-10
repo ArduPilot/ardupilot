@@ -243,8 +243,8 @@ SPIDEV icm42688       SPI4 DEVID2  ICM42688_CS     MODE3  2*MHZ  8*MHZ
 
 # RM3100 may be on SPI1 or SPI2 (not both). Later board revisions
 # have the RM3100 on SPI2, to leave SPI1 free for ADIS1647x
-SPIDEV rm3100-1       SPI1 DEVID1  RM3100_CS       MODE3  2*MHZ  8*MHZ
-SPIDEV rm3100-2       SPI2 DEVID2  RM3100_CS       MODE3  2*MHZ  8*MHZ
+SPIDEV rm3100-1       SPI1 DEVID1  RM3100_CS       MODE3  1*MHZ  1*MHZ
+SPIDEV rm3100-2       SPI2 DEVID2  RM3100_CS       MODE3  1*MHZ  1*MHZ
 
 # two baro
 BARO MS56XX SPI:ms5611_imu
