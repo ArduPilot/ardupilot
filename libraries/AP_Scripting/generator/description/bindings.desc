@@ -397,7 +397,7 @@ ap_object AP_HAL::UARTDriver method read int16_t
 ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1 1
 ap_object AP_HAL::UARTDriver method write uint32_t uint8_t'skip_check
 ap_object AP_HAL::UARTDriver method available uint32_t
-ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
+ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_RTS_DE
 
 singleton AP_SerialManager rename serial
 singleton AP_SerialManager depends HAL_GCS_ENABLED
