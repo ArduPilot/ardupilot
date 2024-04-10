@@ -129,6 +129,9 @@ PB1 AUX_ADC2 ADC1 SCALE(1)
 # And the analog input for airspeed (rarely used these days).
 PC5 PRESSURE_SENS ADC1 SCALE(2)
 
+# Servo rail analog input
+PF13 FMU_SERVORAIL_VCC_SENS ADC2 SCALE(2) 
+
 # RSSI Analog Input
 PC0 RSSI_IN ADC1
 
