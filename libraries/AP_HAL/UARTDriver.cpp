@@ -165,6 +165,20 @@ uint64_t AP_HAL::UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return AP_HAL::micros64();
 }
 
+// Helper to check if flow control is enabled given the passed setting
+bool AP_HAL::UARTDriver::flow_control_enabled(enum flow_control flow_control_setting) const
+{
+    switch(flow_control_setting) {
+        case FLOW_CONTROL_ENABLE:
+        case FLOW_CONTROL_AUTO:
+            return true;
+        case FLOW_CONTROL_DISABLE:
+        case FLOW_CONTROL_RTS_DE:
+            break;
+    }
+    return false;
+}
+
 #if HAL_UART_STATS_ENABLED
 // Take cumulative bytes and return the change since last call
 uint32_t AP_HAL::UARTDriver::StatsTracker::ByteTracker::update(uint32_t bytes)
