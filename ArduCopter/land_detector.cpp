@@ -156,14 +156,39 @@ void Copter::set_land_complete(bool b)
 
     // tell AHRS flying state
     set_likely_flying(!b);
-    
-    // trigger disarm-on-land if configured
-    bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
-    const bool mode_disarms_on_land = flightmode->allows_arming(AP_Arming::Method::LANDING) && !flightmode->has_manual_throttle();
 
-    if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
-        arming.disarm(AP_Arming::Method::LANDED);
+    if (!b) {
+        // not landed, no further action
+        return;
     }
+
+    // landed; trigger disarm-on-land if configured
+    if ((g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) == 0) {
+        // not configured to disarm on landing detection
+        return;
+    }
+
+    if (!motors->armed()) {
+        // we are not currently armed, so we don't need to disarm:
+        // n.b. should this be checking vehicle-armed rather than motors-armed?
+        return;
+    }
+
+    if (flightmode->has_manual_throttle()) {
+        // we do not use the landing detector to disarm if the vehicle
+        // is in e.g. STABILIZE.  The normal DISARM_DELAY logic applies.
+        return;
+    }
+
+    // the flightmode may not allow disarm on landing.  Note that this
+    // check returns false for the LAND flight mode - it checks the
+    // landing detector (ap.land_complete) itself.
+    if (!flightmode->allows_arming(AP_Arming::Method::LANDING)) {
+        return;
+    }
+
+    // all checks passed, disarm the vehicle:
+    arming.disarm(AP_Arming::Method::LANDED);
 }
 
 // set land complete maybe flag
