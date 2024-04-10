@@ -2,5 +2,25 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/ChibiOS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/CrashDebug" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/CrashDebug/CrashCatcher" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/CrashDebug/CrashCatcher/CppUTest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/CrashDebug/mri" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/CrashDebug/mri/CppUTest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/DroneCAN/DSDL" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/DroneCAN/dronecan_dsdlc" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/DroneCAN/libcanard" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/DroneCAN/libcanard/drivers/avr/avr-can-lib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/DroneCAN/pydronecan" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/Micro-CDR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/Micro-XRCE-DDS-Client" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/gbenchmark" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/gsoap" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/gtest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/lwip" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/mavlink" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/mavlink/pymavlink" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../modules/waf" vcs="Git" />
   </component>
 </project>

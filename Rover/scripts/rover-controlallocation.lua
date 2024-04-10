@@ -13,6 +13,11 @@
 local CONTROL_OUTPUT_THROTTLE = 3
 local CONTROL_OUTPUT_YAW = 4
 
+local THROTTLE_LEFT_id = 73
+local THROTTLE_RIGHT_id = 74
+local THROTTLE_LEFT_COMMAND = SRV_Channels:find_channel(73)
+local THROTTLE_RIGHT_COMMAND = SRV_Channels:find_channel(74)
+
 local steering = 0
 local throttle = 0
 
@@ -23,6 +28,33 @@ local trim1
 
 local function isempty(s)
   return s == nil or s == ''
+end
+
+local function ControleAlocacao()
+
+  --local 
+  steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
+  throttle = vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)
+
+  if arming:is_armed() and throttle > 0 then
+
+    --gcs:send_text(4, string.format("%f - %f ", steering, throttle))
+
+    local wl = math.floor(400.0*throttle + 100.0*steering)
+    local wr = math.floor(400.0*throttle - 100.0*steering)
+
+    local rossteering = math.floor(1000.0 * steering + 1000)
+    local rosthrottle = math.floor(1000.0 * throttle)
+
+    SRV_Channels:set_output_pwm_chan_timeout(THROTTLE_LEFT_COMMAND, wl+1500,300) 
+    SRV_Channels:set_output_pwm_chan_timeout(THROTTLE_RIGHT_COMMAND,wr+1500,300)
+    SRV_Channels:set_output_pwm_chan_timeout(6,rossteering,300) 
+    SRV_Channels:set_output_pwm_chan_timeout(7,rosthrottle,300)
+
+
+
+  end
+
 end
 
 
@@ -69,9 +101,6 @@ function update() -- this is the loop which periodically runs
 
   if not arming:is_armed() then
     
-    trim3 = param:get('RC3_TRIM')
-    trim1 = param:get('RC1_TRIM')
-
     --vehicle:set_mode(15)
     gcs:send_text(4, string.format("ROVER - desarmado "))
 
@@ -80,6 +109,9 @@ function update() -- this is the loop which periodically runs
     local PWM1_TRIM_VALUE = param:get('SERVO2_TRIM')
     local PWM2_TRIM_VALUE = param:get('SERVO3_TRIM')
     local PWM3_TRIM_VALUE = param:get('SERVO4_TRIM')
+
+    -- SRV_Channels:set_output_pwm_chan_timeout(THROTTLE_LEFT_COMMAND, 1500,300) 
+    -- SRV_Channels:set_output_pwm_chan_timeout(THROTTLE_RIGHT_COMMAND,1500,300)
 
  
     SRV_Channels:set_output_pwm_chan_timeout(0,PWM0_TRIM_VALUE,3000) 
@@ -122,7 +154,8 @@ function update() -- this is the loop which periodically runs
       throttle = vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)
     
       --gcs:send_text(4, string.format("t,s = %f ; %f",  throttle, steering))
-      CtrlAlocacaonovo(throttle,steering)
+      --CtrlAlocacaonovo(throttle,steering)
+      ControleAlocacao()
 
       return update, 200
     end

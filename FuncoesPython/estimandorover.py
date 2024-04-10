@@ -1,9 +1,9 @@
-#from scipy.optimize import minimize
+from scipy.optimize import minimize
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import optunity
-#from scipy.integrate import cumtrapz
+from scipy.integrate import cumtrapz
 
 
 # Definindo as funções conforme o código original
@@ -21,66 +21,55 @@ def robot_dynamics(params, inputs):
     r, L, k = params
     Pwmr, Pwml = inputs.T
 
-
-    predicted_v = r  * (k*Pwmr + k*Pwml)/2
+    predicted_v = r * (k*Pwmr + k*Pwml)/2
     predicted_thetadot = r * (k*Pwmr - k*Pwml)/L
 
-    return np.vstack((predicted_v*0, predicted_thetadot)).T
+    return np.vstack((predicted_v, predicted_thetadot)).T
 
 
 
-def objective_function(params, inputs, measured_outputs):
+def objective_function(params):
     predicted_outputs = robot_dynamics(params, inputs)
-    error = np.sum((measured_outputs - predicted_outputs)**2)
+    error = np.sum((outputs - predicted_outputs)**2)
     return error
 
 
 
 
 # Preparando os dados de entrada e saída
-data = pd.read_csv(f'data_478593200.csv')
-data.fillna(0, inplace=True)
+xdata = pd.read_csv(f'data_478593200.csv')
+xdata.fillna(0, inplace=True)
 
-# data = pd.DataFrame()
+data = pd.DataFrame()
 
-# colunas = xdata.columns
+xdata['time_seconds']= xdata['time']
 
-# for campo in colunas:
-#     data[campo] = moving_average(xdata[campo],10)
+for campo in xdata.columns:
+    data[campo] = moving_average(xdata[campo],10)
 
-data['time_seconds'] = (data['time'] - 478867800.0)
 #
 # data.to_csv("saida1_rover")
 # ('time,TL,TR,x,y,bearing,yaw,vel,gyroratings\n')
 # Supondo que 'pwml' e 'pwmr' são os sinais de controle para os motores
-entradas = data[['TL', 'TR']].values
-
-erro_minimo = 9999999999999
+inputs = data[['TL', 'TR']].values
 
 # Supondo que 'x', 'y', 'bearing' são as saídas medidas
 outputs = data[['vel', 'gyroratings']].values
 
 def nobjective_function(r, L, k):
-    global erro_minimo
     params = [r, L, k]
-    predicted_outputs = robot_dynamics(params, entradas)
+    predicted_outputs = robot_dynamics(params, inputs)
     error = np.sum((outputs - predicted_outputs)**2)
-    if error < erro_minimo:
-        erro_minimo = error
-        print(erro_minimo)
     return error
 
-optimal_pars, details, _ = optunity.minimize(nobjective_function, num_evals=100000, r=[.01, 1], L = [0,1.5], k=[0.0001,5])
+optimal_pars, details, _ = optunity.minimize(nobjective_function, num_evals=10000, r=[.10, .5], L = [0.3,1.5], k=[0.1,1000])
 
 print(optimal_pars)
 nparam = [optimal_pars['r'],optimal_pars['L'],optimal_pars['k']]
-predicted_outputs = robot_dynamics(nparam, entradas)
+predicted_outputs = robot_dynamics(nparam, inputs)
 
-# # Estimativa inicial dos parâmetros (r, L, k)
-# initial_guess = [0.01, 1.0, 1.0]
-#
-# # Otimização para encontrar os melhores parâmetros
-# result = minimize(objective_function, initial_guess, args=(inputs, outputs))
+
+
 # #
 # #
 # #
@@ -96,11 +85,11 @@ predicted_outputs = robot_dynamics(nparam, entradas)
 #
 # Plotando os resultados: sistema real vs sistema estimado
 plt.figure(figsize=(15, 5))
-
+print(max(outputs[:, 0]))
 # Plotando x
 plt.subplot(1, 3, 1)
-plt.plot(data['time_seconds'], outputs[:, 0], label='Real x')
-plt.plot(data['time_seconds'], predicted_outputs[:, 0], label='Estimado x', linestyle='--')
+plt.plot(data['time_seconds'], outputs[:, 0]/max(outputs[:, 0]), label='Real x')
+plt.plot(data['time_seconds'], predicted_outputs[:, 0]/max(predicted_outputs[:, 0]), label='Estimado x', linestyle='--')
 plt.xlabel('Tempo (s)')
 plt.ylabel('Posição em x')
 plt.title('Comparação em x')
