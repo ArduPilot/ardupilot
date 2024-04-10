@@ -269,6 +269,7 @@ AP_HW_FOXEERF405_V2                  1157
 AP_HW_CSKY405                        1158
 AP_HW_NxtPX4v2                       1159
 AP_HW_PixPilot-V6PRO                 1160
+AP_HW_MicoAir405Mini                 1161
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
