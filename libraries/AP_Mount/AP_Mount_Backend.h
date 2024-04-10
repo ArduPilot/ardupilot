@@ -326,6 +326,7 @@ protected:
 
     // structure holding the last RC inputs
     struct {
+        bool    initialised;
         int16_t roll_in;
         int16_t pitch_in;
         int16_t yaw_in;
