@@ -357,7 +357,7 @@ $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
 
 heading "Check if we are inside docker environment..."
 IS_DOCKER=false
-if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup ; then
+if [[ ${AP_DOCKER_BUILD:-0} -eq 1 ]] || [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup ; then
     IS_DOCKER=true
 fi
 echo "Done!"
