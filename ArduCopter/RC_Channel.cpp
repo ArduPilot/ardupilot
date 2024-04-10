@@ -108,6 +108,7 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::TURBINE_START:
+    case AUX_FUNC::FLIGHTMODE_PAUSE:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -563,6 +564,21 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
             case AuxSwitchPos::HIGH:
                 copter.surface_tracking.set_surface(Copter::SurfaceTracking::Surface::CEILING);
                 break;
+            }
+            break;
+
+        case AUX_FUNC::FLIGHTMODE_PAUSE:
+            switch (ch_flag) {
+                case AuxSwitchPos::HIGH:
+                    if (!copter.flightmode->pause()) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Flight Mode Pause failed");
+                    }
+                    break;
+                case AuxSwitchPos::MIDDLE:
+                    break;
+                case AuxSwitchPos::LOW:
+                    copter.flightmode->resume();
+                    break;
             }
             break;
 
