@@ -421,7 +421,7 @@ def start_SITL(binary,
                model=None,
                speedup=1,
                sim_rate_hz=None,
-               defaults_filepath=None,
+               defaults_filepath=[],
                unhide_parameters=False,
                gdbserver=False,
                breakpoints=[],
@@ -506,6 +506,13 @@ def start_SITL(binary,
             raise RuntimeError("DISPLAY was not set")
 
     cmd.append(binary)
+
+    if defaults_filepath is None:
+        defaults_filepath = []
+    if not isinstance(defaults_filepath, list):
+        defaults_filepath = [defaults_filepath]
+    defaults = [reltopdir(path) for path in defaults_filepath]
+
     if not supplementary:
         if wipe:
             cmd.append('-w')
@@ -515,7 +522,12 @@ def start_SITL(binary,
             cmd.extend(['--home', home])
         cmd.extend(['--model', model])
         if speedup is not None and speedup != 1:
-            cmd.extend(['--speedup', str(speedup)])
+            ntf = tempfile.NamedTemporaryFile(mode="w", delete=False)
+            print(f"SIM_SPEEDUP {speedup}", file=ntf)
+            ntf.close()
+            # prepend it so that a caller can override the speedup in
+            # passed-in defaults:
+            defaults = [ntf.name] + defaults
         if sim_rate_hz is not None:
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
@@ -525,13 +537,8 @@ def start_SITL(binary,
         if enable_fgview_output:
             cmd.append("--enable-fgview")
 
-    if defaults_filepath is not None:
-        if isinstance(defaults_filepath, list):
-            defaults = [reltopdir(path) for path in defaults_filepath]
-            if len(defaults):
-                cmd.extend(['--defaults', ",".join(defaults)])
-        else:
-            cmd.extend(['--defaults', reltopdir(defaults_filepath)])
+    if len(defaults):
+        cmd.extend(['--defaults', ",".join(defaults)])
 
     cmd.extend(customisations)
 
