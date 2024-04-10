@@ -868,6 +868,9 @@ bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
     switch (func) {
     case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::ARMDISARM:
+    case AUX_FUNC::ARM_EMERGENCY_STOP:
+    case AUX_FUNC::PARACHUTE_RELEASE:
+
         // we do not want to process 
         return true;
     default:
@@ -1154,7 +1157,6 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
     if (sprayer == nullptr) {
         return;
     }
-
     sprayer->run(ch_flag == AuxSwitchPos::HIGH);
     // if we are disarmed the pilot must want to test the pump
     sprayer->test_pump((ch_flag == AuxSwitchPos::HIGH) && !hal.util->get_soft_armed());
