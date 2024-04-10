@@ -37,9 +37,6 @@ USER ${USER_NAME}
 ENV SKIP_AP_EXT_ENV=$SKIP_AP_EXT_ENV SKIP_AP_GRAPHIC_ENV=$SKIP_AP_GRAPHIC_ENV SKIP_AP_COV_ENV=$SKIP_AP_COV_ENV SKIP_AP_GIT_CHECK=$SKIP_AP_GIT_CHECK
 RUN Tools/environment_install/install-prereqs-ubuntu.sh -y
 
-# add waf alias to ardupilot waf to .ardupilot_env
-RUN echo "alias waf=\"/${USER_NAME}/waf\"" >> ~/.ardupilot_env
-
 # Check that local/bin are in PATH for pip --user installed package
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
 
