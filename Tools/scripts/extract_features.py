@@ -251,6 +251,7 @@ class ExtractFeatures(object):
             ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
             ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotation::init'),
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
+            ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
         ]
 
     def progress(self, msg):
