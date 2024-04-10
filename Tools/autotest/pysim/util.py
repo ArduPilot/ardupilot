@@ -29,24 +29,6 @@ RADIUS_OF_EARTH = 6378100.0  # in meters
 windowID = []
 
 
-def m2ft(x):
-    """Meters to feet."""
-    return float(x) / 0.3048
-
-
-def ft2m(x):
-    """Feet to meters."""
-    return float(x) * 0.3048
-
-
-def kt2mps(x):
-    return x * 0.514444444
-
-
-def mps2kt(x):
-    return x / 0.514444444
-
-
 def topdir():
     """Return top of git tree where autotest is running from."""
     d = os.path.dirname(os.path.realpath(__file__))
