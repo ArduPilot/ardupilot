@@ -618,6 +618,13 @@ void AP_Mount_Backend::set_rctargeting_on_rcinput_change()
     const int16_t pitch_in = (pitch_ch == nullptr) ? 0 : pitch_ch->get_radio_in();
     const int16_t yaw_in = (yaw_ch == nullptr) ? 0 : yaw_ch->get_radio_in();
 
+    if (!last_rc_input.initialised) {
+            // The first time through, initial RC inputs should be set, but not used
+            last_rc_input.initialised = true;
+            last_rc_input.roll_in = roll_in;
+            last_rc_input.pitch_in = pitch_in;
+            last_rc_input.yaw_in = yaw_in;
+    }
     // if not in RC_TARGETING or RETRACT modes then check for RC change
     if (get_mode() != MAV_MOUNT_MODE_RC_TARGETING && get_mode() != MAV_MOUNT_MODE_RETRACT) {
         // get dead zones
@@ -629,11 +636,11 @@ void AP_Mount_Backend::set_rctargeting_on_rcinput_change()
         if ((abs(last_rc_input.roll_in - roll_in) > roll_dz) ||
             (abs(last_rc_input.pitch_in - pitch_in) > pitch_dz) ||
             (abs(last_rc_input.yaw_in - yaw_in) > yaw_dz)) {
-            set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+                set_mode(MAV_MOUNT_MODE_RC_TARGETING);
         }
     }
 
-    // if in RC_TARGETING or RETRACT mode then store last RC input
+    // if NOW in RC_TARGETING or RETRACT mode then store last RC input (mode might have changed)
     if (get_mode() == MAV_MOUNT_MODE_RC_TARGETING || get_mode() == MAV_MOUNT_MODE_RETRACT) {
         last_rc_input.roll_in = roll_in;
         last_rc_input.pitch_in = pitch_in;
