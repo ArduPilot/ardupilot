@@ -227,11 +227,9 @@ PF4  VDD_3V3_SENSORS2_EN OUTPUT HIGH
 PE7  VDD_3V3_SENSORS3_EN OUTPUT HIGH
 PG8  VDD_3V3_SENSORS4_EN OUTPUT HIGH
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
-PG10 nVDD_5V_HIPOWER_EN OUTPUT HIGH
-PG4  nVDD_5V_PERIPH_EN  OUTPUT HIGH
+# start peripheral power on
+PG10 nVDD_5V_HIPOWER_EN OUTPUT LOW
+PG4  nVDD_5V_PERIPH_EN  OUTPUT LOW
 
 # Control of Spektrum power pin
 PH2 SPEKTRUM_PWR OUTPUT HIGH GPIO(73)
