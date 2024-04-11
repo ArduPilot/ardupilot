@@ -32,7 +32,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 8), 'could not add p
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
-EFI_INF_ENABLE = bind_add_param("ENABLE", 1, 0)
+EFI_INF_ENABLE = bind_add_param("ENABLE", 1, 1)
 
 if EFI_INF_ENABLE:get() ~= 1 then
    return
@@ -71,16 +71,6 @@ local function read_bytes(n)
 end
 
 --[[
-   discard pending bytes
---]]
-local function discard_pending()
-   local n = uart:available():toint()
-   for _ = 1, n do
-      uart:read()
-   end
-end
-
---[[
    convert grams of fuel to cm3
 --]]
 local function gram_to_cm3(g)
@@ -97,40 +87,43 @@ end
    check for input and parse data
 --]]
 local function check_input()
+   local packet_size = 83
    local n_bytes = uart:available():toint()
-   if n_bytes < 83 then
-      return
-   end
-   if n_bytes > 83 then
-      discard_pending()
-      return
+   if n_bytes < packet_size then
+      return false
    end
 
    local tus = micros()
    state.chk0 = 0
    state.chk1 = 0
 
-   -- look for basic data table 2
-   header0, header1, source, target, dtype, num, id, ack = string.unpack("<BBBBBBIB", read_bytes(11))
-   if header0 ~= 0xB5 or header1 ~= 0x62 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad header 0x%02x 0x%0x2", header0, header1))
-      discard_pending()
-      return
+   -- sync on header start
+   local header_ok = false
+   while n_bytes >= packet_size and not header_ok do
+      local header0 = string.unpack("<B", read_bytes(1))
+      n_bytes = n_bytes - 1
+      if header0 == 0xB5 then
+         local header1 = string.unpack("<B", read_bytes(1))
+         n_bytes = n_bytes - 1
+         if header1 == 0x62 then
+            header_ok = true
+         end
+      end
    end
+   if not header_ok or n_bytes < packet_size-2 then
+      return false
+   end
+
+   -- look for basic data table 2
+   local _, _, dtype, num, _, ack = string.unpack("<BBBBIB", read_bytes(9))
    if dtype ~= 0x02 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad type3 0x%02x", dtype))
-      discard_pending()
-      return
+      return false
    end
    if ack ~= 0x50 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad ack 0x%02x", ack))
-      discard_pending()
-      return
+      return false
    end
-   if num < 83 then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("bad num %u n_bytes=%u", num, n_bytes))
-      discard_pending()
-      return
+   if num < packet_size then
+      return false
    end
 
    --gcs:send_text(MAV_SEVERITY.INFO, string.format("packet start"))
@@ -168,17 +161,18 @@ local function check_input()
    local chk0 = state.chk0
    local chk1 = state.chk1
    state.check0, state.check1 = string.unpack("<BB", read_bytes(2))
-   if chk0 ~= state.check0 or 0x00 ~= state.check1 then
+   --[[
+      we accept 0 or the right value for check1 as some devices always send 0 for chk1
+   --]]
+   local checksum_ok = chk0 == state.check0 and (0x00 == state.check1 or chk1 == state.check1)
+   if not checksum_ok then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("chksum wrong (0x%02x,0x%02x) (0x%02x,0x%02x)", chk0, chk1, state.check0, state.check1))
-      --discard_pending()
-      --return
+      return false
    end
    state.end0, state.end1 = string.unpack("<BB", read_bytes(2))
 
    if state.end0 ~= 0x0d or state.end1 ~= 0x0a then
-      gcs:send_text(MAV_SEVERITY.INFO, string.format("end wrong 0x%02x 0x%02x", state.end0, state.end1))
-      discard_pending()
-      return
+      return false
    end
 
    local dt = (tus - state.last_read_us):tofloat()*1.0e-6
@@ -189,14 +183,13 @@ local function check_input()
 
    state.last_read_us = micros()
 
-   -- discard the rest
-   discard_pending()
-
    gcs:send_named_float('VOL_SRV', state.vol_svr)
    gcs:send_named_float('VOL_PUMP', state.vol_pump)
    gcs:send_named_float('INF_ETEMP', state.tmp_env)
    gcs:send_named_float('INF_TEMP1', state.tmp0)
    gcs:send_named_float('INF_TEMP2', state.tmp1)
+
+   return true
 end
 
 --[[
@@ -236,8 +229,9 @@ end
    main update function
 --]]
 local function update()
-   check_input()
-   update_EFI()
+   if check_input() then
+      update_EFI()
+   end
 
    return update, 10
 end
