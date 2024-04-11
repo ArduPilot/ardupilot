@@ -44,18 +44,17 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
 {
     if (uart == nullptr)
     {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Abhishek :: get_reading UART Connection NULL");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Serial Connection LRD1 Pro is NULL");
     }
-    if (uart == nullptr || uart->available() == 0)
+    if (uart->available() == 0)
     {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Abhishek :: get_reading connection (%f)", float(uart->available()));
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "No Data from the LRD1Pro Radar (%f)", float(uart->available()));
         return false;
     }
 
     bool has_data = false;
     int16_t nbytes = uart->available();
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Data Length:: %f", float(nbytes));
     while (nbytes-- > PACKET_SIZE)
     {
         // int16_t r = uart->read();
@@ -141,7 +140,7 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         /* Validate the Data */
 
         has_data = check_radar_reading(reading_m);
-        
+
         /*
         Check for malfunction
         */
