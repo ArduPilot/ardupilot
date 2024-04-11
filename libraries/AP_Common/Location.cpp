@@ -209,6 +209,15 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     }
     return false;  // LCOV_EXCL_LINE  - not reachable
 }
+bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
+{
+    int32_t ret_alt_cm;
+    if (!get_alt_cm(desired_frame, ret_alt_cm)) {
+        return false;
+    }
+    ret_alt = ret_alt_cm * 0.01;
+    return true;
+}
 
 #if AP_AHRS_ENABLED
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
