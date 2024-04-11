@@ -1822,7 +1822,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
         const auto &gps = AP::gps();
         if (_gps_use == GPSUse::EnableWithHeight &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
-            posD = (get_home().alt - gps.location().alt) * 0.01;
+            posD = (_home.alt - gps.location().alt) * 0.01;
             return;
         }
 #endif
