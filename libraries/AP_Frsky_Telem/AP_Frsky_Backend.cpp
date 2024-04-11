@@ -75,15 +75,13 @@ void AP_Frsky_Backend::calc_nav_alt(void)
     _SPort_data.vario_vspd = (int32_t)(get_vspeed_ms()*100); //convert to cm/s
 
     Location loc;
-    float current_height = 0; // in centimeters above home
+    float current_height = 0;
 
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     if (_ahrs.get_location(loc)) {
-        current_height = loc.alt*0.01f;
-        if (!loc.relative_alt) {
-            // loc.alt has home altitude added, remove it
-            current_height -= _ahrs.get_home().alt*0.01f;
+        if (!loc.get_alt_m(Location::AltFrame::ABSOLUTE, current_height)) {
+            // ignore this error
         }
     }
 
