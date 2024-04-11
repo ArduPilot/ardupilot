@@ -128,7 +128,7 @@ void ModeZigZag::run()
             return_to_manual_control(false);
         } else if (reached_destination()) {
             // if vehicle has reached destination switch to manual control or moving to A or B
-            AP_Notify::events.waypoint_complete = 1;
+            AP_Notify::events.waypoint_complete = true;
             if (is_auto) {
                 if (line_num == ZIGZAG_LINE_INFINITY || line_count < line_num) {
                     if (auto_stage == AutoState::SIDEWAYS) {

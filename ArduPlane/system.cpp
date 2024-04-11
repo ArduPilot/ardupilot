@@ -238,7 +238,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         // don't switch modes if we are already in the correct mode.
         // only make happy noise if using a different method to switch, this stops beeping for repeated change mode requests from GCS
         if ((reason != control_mode_reason) && (reason != ModeReason::INITIALISED)) {
-            AP_Notify::events.user_mode_change = 1;
+            AP_Notify::events.user_mode_change = true;
         }
         return true;
     }
@@ -249,7 +249,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         gcs().send_text(MAV_SEVERITY_INFO,"Q_ENABLE 0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
-            AP_Notify::events.user_mode_change_failed = 1;
+            AP_Notify::events.user_mode_change_failed = true;
         }
         return false;
     }
@@ -260,7 +260,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         gcs().send_text(MAV_SEVERITY_INFO,"HAL_QUADPLANE_ENABLED=0");
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
-            AP_Notify::events.user_mode_change_failed = 1;
+            AP_Notify::events.user_mode_change_failed = true;
         }
         return false;
     }
@@ -275,7 +275,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         in_fence_recovery() &&
         !mode_reason_is_landing_sequence(reason)) {
         gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, in fence recovery", new_mode.name());
-        AP_Notify::events.user_mode_change_failed = 1;
+        AP_Notify::events.user_mode_change_failed = true;
         return false;
     }
 #endif
@@ -311,7 +311,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
         // make sad noise
         if (reason != ModeReason::INITIALISED) {
-            AP_Notify::events.user_mode_change_failed = 1;
+            AP_Notify::events.user_mode_change_failed = true;
         }
         return false;
     }
@@ -328,7 +328,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
     // make happy noise
     if (reason != ModeReason::INITIALISED) {
-        AP_Notify::events.user_mode_change = 1;
+        AP_Notify::events.user_mode_change = true;
     }
     return true;
 }

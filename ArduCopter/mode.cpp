@@ -194,7 +194,7 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
     // make sad noise
     if (copter.ap.initialised) {
-        AP_Notify::events.user_mode_change_failed = 1;
+        AP_Notify::events.user_mode_change_failed = true;
     }
 }
 
@@ -263,7 +263,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         }
         // make happy noise
         if (copter.ap.initialised && (reason != last_reason)) {
-            AP_Notify::events.user_mode_change = 1;
+            AP_Notify::events.user_mode_change = true;
         }
         return true;
     }
@@ -396,7 +396,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // make happy noise
     if (copter.ap.initialised) {
-        AP_Notify::events.user_mode_change = 1;
+        AP_Notify::events.user_mode_change = true;
     }
 
     // return success
