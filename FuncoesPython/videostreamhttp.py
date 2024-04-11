@@ -1,5 +1,14 @@
 import cv2
 from flask import Flask, Response
+import argparse
+
+parser = argparse.ArgumentParser(description='Descricao dos parametros de configuracao')
+
+parser.add_argument('--addr_server', type=str, help='endereco servidor', default='127.0.0.1')
+parser.add_argument('--server_port', type=int, help='porta', default=5000)
+
+
+args = parser.parse_args()
 
 app = Flask(__name__)
 
@@ -21,4 +30,6 @@ def video():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    app.run(host='192.168.0.161', port=5000)
+    app.run(host=args.addr_server, port=args.server_port)
+
+
