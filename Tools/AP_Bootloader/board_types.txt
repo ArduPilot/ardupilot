@@ -227,7 +227,7 @@ AP_HW_YJUAV_A6                       1113
 AP_HW_YJUAV_A6Nano                   1114
 AP_HW_ACNS_CM4PILOT                  1115
 AP_HW_ACNS_F405AIO                   1116
-AP_HW_BLITZF7                        1117
+AP_HW_BLITZF7AIO                     1117
 AP_HW_RADIX2HD                       1118
 AP_HW_HEEWING_F405                   1119
 AP_HW_PodmanH7                       1120
@@ -270,6 +270,9 @@ AP_HW_CSKY405                        1158
 AP_HW_NxtPX4v2                       1159
 AP_HW_PixPilot-V6PRO                 1160
 AP_HW_MicoAir405Mini                 1161
+AP_HW_BlitzH7Pro                     1162
+AP_HW_BlitzF7Mini                    1163
+AP_HW_BlitzF7                        1164
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
