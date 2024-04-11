@@ -45,6 +45,12 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-hexa.parm" ],
             },
+            "hexax": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-hexa.parm",
+                                            "default_params/copter-X.parm", ],
+            },
             "hexa-cwx": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": [
