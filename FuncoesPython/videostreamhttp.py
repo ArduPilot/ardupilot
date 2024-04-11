@@ -4,7 +4,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Descricao dos parametros de configuracao')
 
-parser.add_argument('--addr_server', type=str, help='endereco servidor', default='127.0.0.1')
+parser.add_argument('--addr_server', type=str, help='endereco servidor', default='192.168.0.187')
 parser.add_argument('--server_port', type=int, help='porta', default=5000)
 
 

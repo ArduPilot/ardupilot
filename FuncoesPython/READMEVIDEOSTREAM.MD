@@ -31,9 +31,21 @@ xvfb-run python3 streamserver.py --addr_server_socket 192.168.0.187 --show_image
 rodar no PC o cliente
 
 
-outra opcao e rodar o videostreamhttp.py
+outra opcao e rodar usando o videostreamhttp.py
 
 Isso iniciará o servidor Flask no Raspberry Pi. Certifique-se de que o Raspberry Pi e o celular estejam na mesma rede Wi-Fi.
 
 Em seu celular, abra um navegador e vá para http://<IP-DO-RASPBERRY-PI>:5000/video, substituindo <IP-DO-RASPBERRY-PI> pelo endereço IP do seu Raspberry Pi. 
 Você deve ser capaz de ver o stream de vídeo ao vivo da câmera conectada ao Raspberry Pi.
+
+para conectar a mais e um cliente:
+
+```
+pip3 install gunicorn
+```
+
+e depois (trocando o ip e a porta)
+
+```
+gunicorn -w 4 videostreamhttp:app --bind 192.168.0.187:5000
+```
