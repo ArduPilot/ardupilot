@@ -25,8 +25,6 @@ COPY Tools/environment_install/install-prereqs-ubuntu.sh /ardupilot/Tools/enviro
 COPY Tools/completion /ardupilot/Tools/completion/
 
 # Create non root user for pip
-ENV USER=${USER_NAME}
-
 RUN echo "ardupilot ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USER_NAME}
 RUN chmod 0440 /etc/sudoers.d/${USER_NAME}
 
@@ -34,8 +32,9 @@ RUN chown -R ${USER_NAME}:${USER_NAME} /${USER_NAME}
 
 USER ${USER_NAME}
 
-ENV SKIP_AP_EXT_ENV=$SKIP_AP_EXT_ENV SKIP_AP_GRAPHIC_ENV=$SKIP_AP_GRAPHIC_ENV SKIP_AP_COV_ENV=$SKIP_AP_COV_ENV SKIP_AP_GIT_CHECK=$SKIP_AP_GIT_CHECK
-RUN Tools/environment_install/install-prereqs-ubuntu.sh -y
+RUN SKIP_AP_EXT_ENV=$SKIP_AP_EXT_ENV SKIP_AP_GRAPHIC_ENV=$SKIP_AP_GRAPHIC_ENV SKIP_AP_COV_ENV=$SKIP_AP_COV_ENV SKIP_AP_GIT_CHECK=$SKIP_AP_GIT_CHECK \
+    USER=${USER_NAME} \
+    Tools/environment_install/install-prereqs-ubuntu.sh -y
 
 # Check that local/bin are in PATH for pip --user installed package
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
