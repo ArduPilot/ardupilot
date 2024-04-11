@@ -149,11 +149,16 @@ private:
     // max gain data for rate d tuning
     max_gain_data max_rate_d;
 
-    // dwell type identifies whether the dwell is ran on rate or angle
-    enum DwellType {
+    // FreqRespCalcType is the type of calculation done for the frequency response 
+    enum FreqRespCalcType {
         RATE    = 0,
         ANGLE   = 1,
         DRB     = 2,
+    };
+
+    enum FreqRespInput {
+        MOTOR    = 0,
+        TARGET   = 1,
     };
 
     float target_angle_max_rp_cd() const override;
@@ -169,10 +174,10 @@ private:
     float angle_lim_neg_rpy_cd() const override;
 
     // initialize dwell test or angle dwell test variables
-    void dwell_test_init(float start_frq, float stop_frq, float filt_freq, DwellType dwell_type);
+    void dwell_test_init(float start_frq, float stop_frq, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);
 
     // dwell test used to perform frequency dwells for rate gains
-    void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase, DwellType dwell_type);
+    void dwell_test_run(float &dwell_gain, float &dwell_phase);
 
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is achieved
@@ -202,6 +207,9 @@ private:
     // report gain formatting helper
     void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel) const;
 
+    // define input type as Dwell or Sweep.  Used through entire class
+    AC_AutoTune_FreqResp::InputType input_type;
+    
     // updating rate FF variables
     // flag for completion of the initial direction for the feedforward test
     bool first_dir_complete;
@@ -233,6 +241,16 @@ private:
     uint8_t rd_prev_good_frq_cnt;
     // previous gain
     float rd_prev_gain;
+
+    // Dwell Test variables
+    AC_AutoTune_FreqResp::InputType test_input_type;
+    FreqRespCalcType test_calc_type;
+    FreqRespInput test_freq_resp_input;
+    uint8_t num_dwell_cycles;
+    float test_start_freq;
+    
+    // number of cycles to complete before running frequency response calculations
+    float pre_calc_cycles;
 
     float    command_out;                           // test axis command output
     float    filt_target_rate;                      // filtered target rate
@@ -289,9 +307,6 @@ private:
 
     // fix the frequency sweep time to 23 seconds
     const float sweep_time_ms = 23000;
-
-    // number of cycles to complete before running frequency response calculations
-    float pre_calc_cycles;
 
     // parameters
     AP_Int8  axis_bitmask;        // axes to be tuned
