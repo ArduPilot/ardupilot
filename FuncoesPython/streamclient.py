@@ -4,7 +4,7 @@ import pickle
 import struct
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('127.0.0.1', 8888))  # Replace 'server_ip_address' with the actual server IP
+client_socket.connect(('192.168.0.187', 8888))  # Replace 'server_ip_address' with the actual server IP
 
 data = b""
 payload_size = struct.calcsize("Q")
