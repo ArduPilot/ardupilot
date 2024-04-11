@@ -275,6 +275,8 @@ AP_HW_BlitzF7Mini                    1163
 AP_HW_BlitzF7                        1164
 AP_HW_MicoAir743                     1166
 
+AP_HW_JHEMCUF405WING                 1169
+
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
