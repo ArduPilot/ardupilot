@@ -283,8 +283,6 @@ private:
     uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
-    float                               _last_altitude_EAS2TAS;
-    float                               _EAS2TAS;
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;

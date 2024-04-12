@@ -399,9 +399,6 @@ void AP_Baro::update_calibration()
 
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
-
-    // force EAS2TAS to recalculate
-    _EAS2TAS = 0;
 }
 
 // return altitude difference in meters between current pressure and a
@@ -437,10 +434,6 @@ float AP_Baro::get_sealevel_pressure(float pressure) const
 float AP_Baro::get_EAS2TAS(void)
 {
     float altitude = get_altitude();
-    if ((fabsf(altitude - _last_altitude_EAS2TAS) < 25.0f) && !is_zero(_EAS2TAS)) {
-        // not enough change to require re-calculating
-        return _EAS2TAS;
-    }
 
     float pressure = get_pressure();
     if (is_zero(pressure)) {
@@ -455,9 +448,7 @@ float AP_Baro::get_EAS2TAS(void)
     if (!is_positive(eas2tas_squared)) {
         return 1.0f;
     }
-    _EAS2TAS = sqrtf(eas2tas_squared);
-    _last_altitude_EAS2TAS = altitude;
-    return _EAS2TAS;
+    return sqrtf(eas2tas_squared);
 }
 
 // return air density / sea level density - decreases as altitude climbs
