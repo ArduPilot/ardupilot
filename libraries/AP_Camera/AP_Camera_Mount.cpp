@@ -70,17 +70,17 @@ bool AP_Camera_Mount::set_lens(uint8_t lens)
     return false;
 }
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
 bool AP_Camera_Mount::set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source)
 {
-#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
         return mount->set_camera_source(get_mount_instance(), (uint8_t)primary_source, (uint8_t)secondary_source);
     }
-#endif
     return false;
 }
+#endif
 
 // send camera information message to GCS
 void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
