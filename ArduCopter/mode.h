@@ -150,7 +150,7 @@ public:
     // Return true if the throttle high arming check can be skipped when arming from GCS or Scripting
     virtual bool allows_GCS_or_SCR_arming_with_throttle_high() const { return false; }
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME && AP_INVERTED_FLIGHT_ENABLED
     virtual bool allows_inverted() const { return false; };
 #endif
 
@@ -522,7 +522,7 @@ public:
     bool allows_flip() const override { return true; }
     bool allows_auto_trim() const override { return true; }
     bool allows_save_trim() const override { return true; }
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME && AP_INVERTED_FLIGHT_ENABLED
     bool allows_inverted() const override { return true; };
 #endif
 protected:
@@ -553,7 +553,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return _mode == SubMode::NAV_GUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME && AP_INVERTED_FLIGHT_ENABLED
     bool allows_inverted() const override { return true; };
 #endif
     bool move_vehicle_on_ekf_reset() const override;
@@ -1392,7 +1392,7 @@ public:
     bool allows_autotune() const override { return true; }
     bool allows_auto_trim() const override { return true; }
 
-#if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME && AP_INVERTED_FLIGHT_ENABLED
     bool allows_inverted() const override { return true; };
 #endif
 
@@ -1792,7 +1792,9 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     bool allows_inverted() const override { return true; };
+#endif
 
 protected:
 

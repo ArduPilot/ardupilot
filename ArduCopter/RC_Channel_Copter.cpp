@@ -125,7 +125,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
     case AUX_FUNC::ATTCON_FEEDFWD:
+#if AP_INVERTED_FLIGHT_ENABLED
     case AUX_FUNC::INVERTED:
+#endif
     case AUX_FUNC::MOTOR_INTERLOCK:
 #if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
@@ -443,7 +445,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             break;
 #endif
 
-#if FRAME_CONFIG == HELI_FRAME
+#if AP_INVERTED_FLIGHT_ENABLED && FRAME_CONFIG == HELI_FRAME
         case AUX_FUNC::INVERTED:
             switch (ch_flag) {
             case AuxSwitchPos::HIGH:
@@ -461,7 +463,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
                 break;
             }
             break;
-#endif
+#endif  // AP_INVERTED_FLIGHT_ENABLED && FRAME_CONFIG == HELI_FRAME
 
 #if AP_WINCH_ENABLED
         case AUX_FUNC::WINCH_ENABLE:
