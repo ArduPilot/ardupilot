@@ -290,6 +290,11 @@ public:
     // enable/disable rangefinder.  Returns true on success
     bool set_rangefinder_enable(uint8_t instance, bool enable);
 
+    // called by a vehicle to indicate the vehicle has moved into a
+    // landing phase.  For example, a Copter moving into LAND mode
+    // should call this method.
+    void vehicle_has_started_to_land();
+
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 

@@ -930,4 +930,14 @@ void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)
     _last_warning_ms = now_ms;
 }
 
+// called by a vehicle to indicate the vehicle has moved into a
+// landing phase.  For example, a Copter moving into LAND mode
+// should call this method.
+void AP_Mount_Backend::vehicle_has_started_to_land()
+{
+    if (option_set(Options::RETRACT_ON_LANDING)) {
+        UNUSED_RESULT(set_mode(MAV_MOUNT_MODE_RETRACT));
+    }
+}
+
 #endif // HAL_MOUNT_ENABLED
