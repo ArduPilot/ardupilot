@@ -144,11 +144,12 @@ void AC_AutoTune_Heli::test_init()
     FreqRespInput freq_resp_input = TARGET;
     switch (tune_type) {
     case RFF_UP:
-        freq_cnt = 12;
-        test_freq[freq_cnt] = 0.25f * 3.14159f * 2.0f;
-        curr_test.freq = test_freq[freq_cnt];
-        start_freq = curr_test.freq;
-        stop_freq = curr_test.freq;
+        if (!is_positive(next_test_freq)) {
+            start_freq = 0.25f * 3.14159f * 2.0f;
+        } else {
+            start_freq = next_test_freq;
+        }
+        stop_freq = start_freq;
 
         attitude_control->bf_feedforward(false);
         attitude_control->use_sqrt_controller(false);
@@ -303,7 +304,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         return;
     }
 
-    dwell_test_run(test_gain[freq_cnt], test_phase[freq_cnt]);
+    dwell_test_run(test_gain[freq_cnt], test_phase[freq_cnt], curr_data);
 
 }
 
@@ -382,8 +383,8 @@ void AC_AutoTune_Heli::do_post_test_gcs_announcements() {
         case MAX_GAINS:
             if (is_equal(start_freq,stop_freq)) {
                 // announce results of dwell
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]));
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f", (double)(test_phase[freq_cnt]));
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(curr_data.freq), (double)(curr_data.gain));
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f", (double)(curr_data.phase));
                if (tune_type == RP_UP) {
                    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_p=%f", (double)(tune_rp));
                } else if (tune_type == RD_UP) {
@@ -763,7 +764,7 @@ void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float fi
 
 }
 
-void AC_AutoTune_Heli::dwell_test_run(float &dwell_gain, float &dwell_phase)
+void AC_AutoTune_Heli::dwell_test_run(float &dwell_gain, float &dwell_phase, sweep_info &test_data)
 {
     float gyro_reading = 0.0f;
     float command_reading = 0.0f;
@@ -925,6 +926,9 @@ void AC_AutoTune_Heli::dwell_test_run(float &dwell_gain, float &dwell_phase)
             if (test_input_type == AC_AutoTune_FreqResp::InputType::SWEEP) {
                 curr_test = curr_test_tgt;
             } else {
+                test_data.freq = test_start_freq;
+                test_data.gain = dwell_gain_tgt;
+                test_data.phase = dwell_phase_tgt;
                 dwell_gain = dwell_gain_tgt;
                 dwell_phase = dwell_phase_tgt;
             }
@@ -932,6 +936,9 @@ void AC_AutoTune_Heli::dwell_test_run(float &dwell_gain, float &dwell_phase)
             if (test_input_type == AC_AutoTune_FreqResp::InputType::SWEEP) {
                 curr_test = curr_test_mtr;
             } else {
+                test_data.freq = test_start_freq;
+                test_data.gain = dwell_gain_mtr;
+                test_data.phase = dwell_phase_mtr;
                 dwell_gain = dwell_gain_mtr;
                 dwell_phase = dwell_phase_mtr;
             }
@@ -1027,14 +1034,14 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
-        updating_rate_ff_up(tune_roll_rff, test_freq, test_gain, test_phase, freq_cnt);
+        updating_rate_ff_up(tune_roll_rff, curr_data, next_test_freq);
         break;
     case PITCH:
-        updating_rate_ff_up(tune_pitch_rff, test_freq, test_gain, test_phase, freq_cnt);
+        updating_rate_ff_up(tune_pitch_rff, curr_data, next_test_freq);
         break;
     case YAW:
     case YAW_D:
-        updating_rate_ff_up(tune_yaw_rff, test_freq, test_gain, test_phase, freq_cnt);
+        updating_rate_ff_up(tune_yaw_rff, curr_data, next_test_freq);
         // TODO make FF updating routine determine when to set rff gain to zero based on A/C response
         if (tune_yaw_rff <= AUTOTUNE_RFF_MIN && counter == AUTOTUNE_SUCCESS_COUNT) {
             tune_yaw_rff = 0.0f;
@@ -1141,37 +1148,27 @@ void AC_AutoTune_Heli::set_gains_post_tune(AxisType test_axis)
 
 // updating_rate_ff_up - adjust FF to ensure the target is reached
 // FF is adjusted until rate requested is achieved
-void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
+void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, sweep_info &test_data, float &next_freq)
 {
     float test_freq_incr = 0.05f * 3.14159f * 2.0f;
-
-    if (phase[frq_cnt] > 15.0f) {
-        curr_test.freq = curr_test.freq - test_freq_incr;
-        freq[frq_cnt] = curr_test.freq;
-    } else if (phase[frq_cnt] < 0.0f) {
-        curr_test.freq = curr_test.freq + test_freq_incr;
-        freq[frq_cnt] = curr_test.freq;
+    next_freq = test_data.freq;
+    if (test_data.phase > 15.0f) {
+        next_freq -= test_freq_incr;
+    } else if (test_data.phase < 0.0f) {
+        next_freq += test_freq_incr;
     } else {
-        if ((gain[frq_cnt] > 0.1 && gain[frq_cnt] < 0.93) || gain[frq_cnt] > 0.98) {
+        if ((test_data.gain > 0.1 && test_data.gain < 0.93) || test_data.gain > 0.98) {
             if (tune_ff > 0.0f) {
-                tune_ff =  0.95f * tune_ff / gain[frq_cnt];
+                tune_ff =  0.95f * tune_ff / test_data.gain;
             } else {
                 tune_ff = 0.03f;
             }
-        } else if (gain[frq_cnt] >= 0.93 && gain[frq_cnt] <= 0.98) {
+        } else if (test_data.gain >= 0.93 && test_data.gain <= 0.98) {
             counter = AUTOTUNE_SUCCESS_COUNT;
-            // reset curr_test.freq and frq_cnt for next test
-            curr_test.freq = freq[0];
-            frq_cnt = 0;
+            // reset next_freq for next test
+            next_freq = 0.0f;
             tune_ff = constrain_float(tune_ff,0.0f,1.0f);
         }
-    }
-
-    if (counter == AUTOTUNE_SUCCESS_COUNT) {
-        start_freq = 0.0f;  //initializes next test that uses dwell test
-    } else {
-        start_freq = curr_test.freq;
-        stop_freq = curr_test.freq;
     }
 }
 
@@ -1654,11 +1651,7 @@ void AC_AutoTune_Heli::reset_vehicle_test_variables()
 // reset the update gain variables for heli
 void AC_AutoTune_Heli::reset_update_gain_variables()
 {
-    // reset feedforward update gain variables
-    ff_up_first_iter = true;
-    first_dir_complete = false;
-
-    // reset max gain variables
+   // reset max gain variables
     reset_maxgains_update_gain_variables();
 
     // reset rd_up variables
