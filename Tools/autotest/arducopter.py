@@ -10843,6 +10843,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()  # to "unstick" home
 
+    def GuidedModeThrust(self):
+        '''test handling of option-bit-3, where mavlink commands are
+        intrepreted as thrust not climb rate'''
+        self.set_parameter('GUID_OPTIONS', 8)
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.mav.mav.set_attitude_target_send(
+            0, # time_boot_ms
+            1, # target sysid
+            1, # target compid
+            0, # bitmask of things to ignore
+            mavextra.euler_to_quat([0, 0, 0]), # att
+            0, # roll rate  (rad/s)
+            0, # pitch rate (rad/s)
+            0, # yaw rate   (rad/s)
+            0.5
+        ) # thrust, 0 to 1
+        self.wait_altitude(0.5, 100, relative=True, timeout=10)
+        self.do_RTL()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -10922,6 +10943,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSForYawCompassLearn,
             self.CameraLogMessages,
             self.LoiterToGuidedHomeVSOrigin,
+            self.GuidedModeThrust,
         ])
         return ret
 
@@ -10952,6 +10974,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GroundEffectCompensation_touchDownExpected": "Flapping",
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
             "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
+            "GuidedModeThrust": "land detector raises internal error as we're not saying we're about to take off but just did",
         }
 
 
