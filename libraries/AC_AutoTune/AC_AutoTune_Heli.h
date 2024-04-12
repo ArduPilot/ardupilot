@@ -186,10 +186,10 @@ private:
     void updating_rate_ff_up(float &tune_ff, sweep_info &test_data, float &next_freq);
 
     // updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
-    void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p);
+    void updating_rate_p_up(float &tune_p, sweep_info &test_data, float &next_freq, max_gain_data &max_gain_p);
 
     // updating_rate_d_up - uses maximum allowable gain determined from max_gain test to determine rate d gain where the response gain is at a minimum
-    void updating_rate_d_up(float &tune_d, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_d);
+    void updating_rate_d_up(float &tune_d, sweep_info &test_data, float &next_freq, max_gain_data &max_gain_d);
 
     // updating_angle_p_up - determines maximum angle p gain for pitch and roll
     void updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
