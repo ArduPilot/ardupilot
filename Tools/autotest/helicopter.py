@@ -842,6 +842,14 @@ class AutoTestHelicopter(AutoTestCopter):
         if ex is not None:
             raise ex
 
+    def AUTOTUNE(self):
+        '''test AutoTune doesn't fall out of sky'''
+        self.takeoff(mode='GUIDED')
+        self.change_mode('LOITER')  # can't GUIDED -> AUTOTUNE
+        self.change_mode('AUTOTUNE')
+        self.wait_statustext('AutoTune: Success', timeout=300)
+        self.land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = vehicle_test_suite.TestSuite.tests(self)
@@ -859,6 +867,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.TurbineStart,
             self.NastyMission,
             self.PIDNotches,
+            self.AUTOTUNE,
         ])
         return ret
 
