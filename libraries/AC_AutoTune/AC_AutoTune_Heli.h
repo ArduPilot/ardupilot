@@ -144,10 +144,12 @@ private:
         float max_allowed;
     };
 
-    // max gain data for rate p tuning
-    max_gain_data max_rate_p;
-    // max gain data for rate d tuning
-    max_gain_data max_rate_d;
+    // sweep_info contains information about a specific test's sweep results
+    struct sweep_info {
+        float freq;
+        float gain;
+        float phase;
+    };
 
     // FreqRespCalcType is the type of calculation done for the frequency response 
     enum FreqRespCalcType {
@@ -177,11 +179,11 @@ private:
     void dwell_test_init(float start_frq, float stop_frq, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);
 
     // dwell test used to perform frequency dwells for rate gains
-    void dwell_test_run(float &dwell_gain, float &dwell_phase);
+    void dwell_test_run(float &dwell_gain, float &dwell_phase, sweep_info &test_data);
 
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is achieved
-    void updating_rate_ff_up(float &tune_ff, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
+    void updating_rate_ff_up(float &tune_ff, sweep_info &test_data, float &next_freq);
 
     // updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
     void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p);
@@ -210,11 +212,18 @@ private:
     // define input type as Dwell or Sweep.  Used through entire class
     AC_AutoTune_FreqResp::InputType input_type;
     
-    // updating rate FF variables
-    // flag for completion of the initial direction for the feedforward test
-    bool first_dir_complete;
-    // feedforward gain resulting from testing in the initial direction
-    float first_dir_rff;
+    sweep_info curr_data;                           // frequency response test results
+    float    next_test_freq;                        // next test frequency for next test cycle setup
+
+    float    test_gain[20];                         // frequency response gain for each dwell test iteration
+    float    test_freq[20];                         // frequency of each dwell test iteration
+    float    test_phase[20];                        // frequency response phase for each dwell test iteration
+    uint8_t  freq_cnt_max;                          // counter number for frequency that produced max gain response
+
+    // max gain data for rate p tuning
+    max_gain_data max_rate_p;
+    // max gain data for rate d tuning
+    max_gain_data max_rate_d;
 
     // updating max gain variables
     // flag for finding maximum p gain
@@ -249,27 +258,14 @@ private:
     uint8_t num_dwell_cycles;
     float test_start_freq;
     
-    // number of cycles to complete before running frequency response calculations
-    float pre_calc_cycles;
-
+    float    pre_calc_cycles;                       // number of cycles to complete before running frequency response calculations
     float    command_out;                           // test axis command output
     float    filt_target_rate;                      // filtered target rate
-    float    test_gain[20];                         // frequency response gain for each dwell test iteration
-    float    test_freq[20];                         // frequency of each dwell test iteration
-    float    test_phase[20];                        // frequency response phase for each dwell test iteration
     float    dwell_start_time_ms;                   // start time in ms of dwell test
-    uint8_t  freq_cnt_max;                          // counter number for frequency that produced max gain response
 
-    // sweep_info contains information about a specific test's sweep results
-    struct sweep_info {
-        float freq;
-        float gain;
-        float phase;
-    };
     sweep_info curr_test;
     sweep_info curr_test_mtr;
     sweep_info curr_test_tgt;
-    sweep_info test[20];
 
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
@@ -299,7 +295,6 @@ private:
         sweep_info maxgain;
         sweep_info ph180;
         sweep_info ph270;
-
         uint8_t  progress;  // set based on phase of frequency response.  0 - start; 1 - reached 180 deg; 2 - reached 270 deg;
     };
     sweep_data sweep_mtr;
