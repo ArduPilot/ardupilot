@@ -100,8 +100,11 @@ public:
     // current overall threat level
     MAV_COLLISION_THREAT_LEVEL current_threat_level() const;
 
-    // add obstacles into the Avoidance system from MAVLink messages
     void handle_msg(const mavlink_message_t &msg);
+    // add obstacles into the Avoidance system from MAVLink messages
+    void handle_msg_global_position_int(const mavlink_message_t &msg);
+    // handle an incoming collision message
+    void handle_msg_collision(const mavlink_message_t &msg);
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -145,6 +148,10 @@ protected:
     // Note: v1 is NED
     static Vector3f perpendicular_xyz(const Location &p1, const Vector3f &v1, const Location &p2);
     static Vector2f perpendicular_xy(const Location &p1, const Vector3f &v1, const Location &p2);
+
+    AP_Int8     _use_brake_alt;
+    AP_Int16    _brake_altitude;
+    AP_Int16    _descend_speed;
 
 private:
 
@@ -207,6 +214,8 @@ private:
     AP_Int8     _warn_time_horizon;
     AP_Float    _warn_distance_xy;
     AP_Float    _warn_distance_z;
+
+    bool        _override_threat_level;
 
     // multi-thread support for avoidance
     HAL_Semaphore _rsem;

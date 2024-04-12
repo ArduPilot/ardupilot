@@ -40,6 +40,9 @@ protected:
     // perpendicular (3 dimensional) avoidance handler
     bool handle_avoidance_perpendicular(const AP_Avoidance::Obstacle *obstacle, bool allow_mode_change);
 
+    // brake avoidance handler
+    bool handle_brake(bool allow_mode_change);
+
     // control mode before avoidance began
     Mode::Number prev_control_mode = Mode::Number::RTL;
 };
