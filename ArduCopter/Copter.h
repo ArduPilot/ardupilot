@@ -591,6 +591,11 @@ private:
 
     bool standby_active;
 
+#if HAL_MOUNT_ENABLED
+    // true if the last time we checked the flightmode was landing:
+    bool was_landing;
+#endif
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
