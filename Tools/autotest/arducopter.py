@@ -11512,6 +11512,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
+    def MountRetractOnLanding(self):
+        '''test mount retracts on landing when asked to'''
+        self.context_push()
+        self.setup_servo_mount()
+        self.set_parameter("MNT1_OPTIONS", 2)
+        self.reboot_sitl() # to handle MNT_TYPE changing
+
+        self.takeoff(10, mode='GUIDED')
+
+        self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+
+        angle = -10
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+            p1=angle,   # pitch angle in degrees
+            p2=0,     # yaw angle in degrees
+            p3=0,     # pitch rate in degrees (NaN to ignore)
+            p4=0,     # yaw rate in degrees (NaN to ignore)
+            p5=0,     # flags (0=Body-frame, 16/GIMBAL_MANAGER_FLAGS_YAW_LOCK=Earth Frame)
+            p6=0,     # unused
+            p7=0,     # gimbal id
+        )
+        self.test_mount_pitch(angle, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+
+        self.change_mode('LAND')
+        self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+
+        self.wait_disarmed()
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def CameraLogMessages(self):
         '''ensure Camera log messages are good'''
         self.set_parameter("RC12_OPTION", 9) # CameraTrigger
@@ -12231,6 +12263,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptMountPOI,
             self.ScriptCopterPosOffsets,
             self.MountSolo,
+            self.MountRetractOnLanding,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
