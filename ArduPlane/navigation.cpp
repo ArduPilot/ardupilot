@@ -394,14 +394,15 @@ void Plane::update_fbwb_speed_height(void)
             elevator_input = -elevator_input;
         }
 
-        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
-        change_target_altitude(alt_change_cm);
-
-        if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
-            // the user has just released the elevator, lock in
-            // the current altitude
+        bool input_stop_climb = !is_positive(elevator_input) && is_positive(target_altitude.last_elevator_input);
+        bool input_stop_descent = !is_negative(elevator_input) && is_negative(target_altitude.last_elevator_input);
+        if (input_stop_climb || input_stop_descent) {
+            // user elevator input reached or passed zero, lock in the current altitude
             set_target_altitude_current();
         }
+
+        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
+        change_target_altitude(alt_change_cm);
 
 #if HAL_SOARING_ENABLED
         if (g2.soaring_controller.is_active()) {
