@@ -82,10 +82,10 @@ public:
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
 
-#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
 
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
     virtual bool set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source) { return false; }
 #endif
