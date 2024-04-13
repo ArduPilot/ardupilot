@@ -45,6 +45,13 @@ protected:
     //
     // methods to load and save gains
     //
+    // sweep_info contains information about a specific test's sweep results
+    struct sweep_info {
+        float freq;
+        float gain;
+        float phase;
+    };
+
 
     // backup original gains and prepare for start of tuning
     void backup_gains_and_initialise() override;
@@ -144,13 +151,6 @@ private:
         float max_allowed;
     };
 
-    // sweep_info contains information about a specific test's sweep results
-    struct sweep_info {
-        float freq;
-        float gain;
-        float phase;
-    };
-
     // FreqRespCalcType is the type of calculation done for the frequency response 
     enum FreqRespCalcType {
         RATE    = 0,
@@ -179,7 +179,7 @@ private:
     void dwell_test_init(float start_frq, float stop_frq, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);
 
     // dwell test used to perform frequency dwells for rate gains
-    void dwell_test_run(float &dwell_gain, float &dwell_phase, sweep_info &test_data);
+    void dwell_test_run(sweep_info &test_data);
 
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is achieved
@@ -195,7 +195,7 @@ private:
     void updating_angle_p_up(float &tune_p, sweep_info &test_data, float &next_freq);
 
    // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
-    void updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
+    void updating_max_gains(sweep_info &test_data, float &next_freq, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
 
     // reset the max_gains update gain variables
     void reset_maxgains_update_gain_variables();
@@ -215,11 +215,6 @@ private:
     sweep_info curr_data;                           // frequency response test results
     float    next_test_freq;                        // next test frequency for next test cycle setup
 
-    float    test_gain[20];                         // frequency response gain for each dwell test iteration
-    float    test_freq[20];                         // frequency of each dwell test iteration
-    float    test_phase[20];                        // frequency response phase for each dwell test iteration
-    uint8_t  freq_cnt_max;                          // counter number for frequency that produced max gain response
-
     // max gain data for rate p tuning
     max_gain_data max_rate_p;
     // max gain data for rate d tuning
@@ -232,6 +227,10 @@ private:
     bool found_max_d;
     // flag for interpolating to find max response gain
     bool find_middle;
+    // data holding variables for calculations
+    sweep_info data_m_one;
+    sweep_info data_m_two;
+
 
     // updating angle P up variables
     // track the maximum phase and freq
