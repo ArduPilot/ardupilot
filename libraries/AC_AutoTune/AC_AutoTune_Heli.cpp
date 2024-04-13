@@ -134,7 +134,7 @@ void AC_AutoTune_Heli::test_init()
                 // start with freq found for sweep where phase was 180 deg
                 } else if (!is_zero(sweep.ph180.freq)) {
                     freq_cnt = 12;
-                    test_freq[freq_cnt] = sweep.ph180.freq - 0.25f * 3.14159f * 2.0f;
+                    test_freq[freq_cnt] = sweep.ph180.freq - 0.25f * M_2PI;
                 // otherwise start at min freq to step up in dwell frequency until phase > 160 deg
                 } else {
                     freq_cnt = 0;
@@ -148,7 +148,7 @@ void AC_AutoTune_Heli::test_init()
             } else {
                 if (!is_zero(sweep.ph180.freq)) {
                     freq_cnt = 12;
-                    test_freq[freq_cnt] = sweep.ph180.freq - 0.25f * 3.14159f * 2.0f;
+                    test_freq[freq_cnt] = sweep.ph180.freq - 0.25f * M_2PI;
                     curr_test.freq = test_freq[freq_cnt];
                     start_freq = curr_test.freq;
                     stop_freq = curr_test.freq;
@@ -180,7 +180,7 @@ void AC_AutoTune_Heli::test_init()
         if (is_zero(start_freq)) {
             if (!is_zero(sweep.maxgain.freq)) {
                 freq_cnt = 12;
-                test_freq[freq_cnt] = sweep.maxgain.freq - 0.25f * 3.14159f * 2.0f;
+                test_freq[freq_cnt] = sweep.maxgain.freq - 0.25f * M_2PI;
                 curr_test.freq = test_freq[freq_cnt];
                 start_freq = curr_test.freq;
                 stop_freq = curr_test.freq;
@@ -1405,7 +1405,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
 // updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
 void AC_AutoTune_Heli::updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p)
 {
-    float test_freq_incr = 0.25f * 3.14159f * 2.0f;
+    float test_freq_incr = 0.25f * M_2PI;
 
     if (frq_cnt < 12 && is_equal(start_freq,stop_freq)) {
         if (phase[frq_cnt] <= 180.0f && !is_zero(phase[frq_cnt])) {
@@ -1457,7 +1457,7 @@ void AC_AutoTune_Heli::updating_rate_p_up(float &tune_p, float *freq, float *gai
 // updating_rate_d_up - uses maximum allowable gain determined from max_gain test to determine rate d gain where the response gain is at a minimum
 void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_d)
 {
-    float test_freq_incr = 0.25f * 3.14159f * 2.0f;  // set for 1/4 hz increments
+    float test_freq_incr = 0.25f * M_2PI;  // set for 1/4 hz increments
 
     // frequency sweep was conducted.  check to see if freq for 180 deg phase was determined and start there if it was
     if (!is_equal(start_freq,stop_freq)) {
@@ -1524,7 +1524,7 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
 // updating_angle_p_up - determines maximum angle p gain for pitch and roll
 void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
 {
-    float test_freq_incr = 0.5f * 3.14159f * 2.0f;
+    float test_freq_incr = 0.5f * M_2PI;
     float gain_incr = 0.5f;
 
     if (!is_equal(start_freq,stop_freq)) {
