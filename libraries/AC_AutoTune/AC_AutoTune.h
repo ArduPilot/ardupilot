@@ -300,10 +300,8 @@ protected:
     float roll_cd, pitch_cd;
 
     // heli specific variables
-    uint8_t  freq_cnt;                              // dwell test iteration counter
-    float    start_freq;                            // start freq for dwell test
-    float    stop_freq;                             // ending freq for dwell test
-    bool     ff_up_first_iter;                      // true on first iteration of ff up testing
+    float    start_freq;                            //start freq for dwell test
+    float    stop_freq;                             //ending freq for dwell test
 
 private:
     // return true if we have a good position estimate
