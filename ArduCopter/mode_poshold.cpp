@@ -528,15 +528,17 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
     float brake_rate = g.poshold_brake_rate;
 
     brake_rate /= (float)LOOP_RATE_FACTOR;
-    if (brake_rate <= 1.0f) {
+    if (brake_rate < 1.0f) {
         brake_rate = 1.0f;
     }
 
     // calculate velocity-only based lean angle
-    if (velocity >= 0) {
+    if (is_positive(velocity)) {
         lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (velocity + 60.0f));
-    } else {
+    } else if (is_negative(velocity)) {
         lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (-velocity + 60.0f));
+    } else {
+        lean_angle = 0.0f;
     }
 
     // do not let lean_angle be too far from brake_angle
