@@ -217,19 +217,15 @@ void AC_AutoTune_Heli::test_init()
         num_dwell_cycles = 6;
         break;
     case SP_UP:
-        // initialize start frequency
-        if (is_zero(start_freq)) {
-            if (!is_zero(sweep_tgt.maxgain.freq)) {
-                freq_cnt = 12;
-                test_freq[freq_cnt] = sweep_tgt.maxgain.freq - 0.25f * 3.14159f * 2.0f;
-                curr_test.freq = test_freq[freq_cnt];
-                start_freq = curr_test.freq;
-                stop_freq = curr_test.freq;
-                test_accel_max = 0.0f;
-            } else {
-                start_freq = min_sweep_freq;
-                stop_freq = max_sweep_freq;
-            }
+        // initialize start frequency for sweep
+        if (!is_positive(next_test_freq)) {
+            start_freq = min_sweep_freq;
+            stop_freq = max_sweep_freq;
+            sweep_complete = true;
+        } else {
+            start_freq = next_test_freq;
+            stop_freq = start_freq;
+            test_accel_max = 0.0f;
         }
         attitude_control->bf_feedforward(false);
         attitude_control->use_sqrt_controller(false);
@@ -243,10 +239,10 @@ void AC_AutoTune_Heli::test_init()
         break;
     case TUNE_CHECK:
         // initialize start frequency
-        if (is_zero(start_freq)) {
-            start_freq = min_sweep_freq;
-            stop_freq = max_sweep_freq;
-        }
+        start_freq = min_sweep_freq;
+        stop_freq = max_sweep_freq;
+        test_accel_max = 0.0f;
+
         // variables needed to initialize frequency response object and test method
         resp_type = AC_AutoTune_FreqResp::ResponseType::ANGLE;
         calc_type = ANGLE;
@@ -1054,16 +1050,30 @@ void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
 {
     attitude_control->bf_feedforward(orig_bf_feedforward);
 
+    // sweep doesn't require gain update so return immediately after setting next test freq
+    if (input_type == AC_AutoTune_FreqResp::InputType::SWEEP) {
+        // determine next_test_freq for dwell testing
+        if (sweep_complete){
+            // if a max gain frequency was found then set the start of the dwells to that freq otherwise start at min frequency
+            if (!is_zero(sweep_tgt.maxgain.freq)) {
+                next_test_freq = sweep_tgt.maxgain.freq - 0.25f * 3.14159f * 2.0f;
+            } else {
+                next_test_freq = min_sweep_freq;            
+            }
+        }
+        return;
+    }
+
     switch (test_axis) {
     case ROLL:
-        updating_angle_p_up(tune_roll_sp, test_freq, test_gain, test_phase, freq_cnt);
+        updating_angle_p_up(tune_roll_sp, curr_data, next_test_freq);
         break;
     case PITCH:
-        updating_angle_p_up(tune_pitch_sp, test_freq, test_gain, test_phase, freq_cnt);
+        updating_angle_p_up(tune_pitch_sp, curr_data, next_test_freq);
         break;
     case YAW:
     case YAW_D:
-        updating_angle_p_up(tune_yaw_sp, test_freq, test_gain, test_phase, freq_cnt);
+        updating_angle_p_up(tune_yaw_sp, curr_data, next_test_freq);
         break;
     }
 }
@@ -1236,99 +1246,93 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, sweep_info &test_data, 
 }
 
 // updating_angle_p_up - determines maximum angle p gain for pitch and roll
-void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
+void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, sweep_info &test_data, float &next_freq)
 {
     float test_freq_incr = 0.5f * 3.14159f * 2.0f;
     float gain_incr = 0.5f;
 
-    if (!is_equal(start_freq,stop_freq)) {
-        if (!is_zero(sweep_tgt.maxgain.freq)) {
-            frq_cnt = 12;
-            freq[frq_cnt] = sweep_tgt.maxgain.freq - 0.5f * test_freq_incr;
-            freq_cnt_max = frq_cnt;
-        } else {
-            frq_cnt = 1;
-            freq[frq_cnt] = min_sweep_freq;
-            freq_cnt_max = 0;
-        }
-        curr_test.freq = freq[frq_cnt];
+    if (is_zero(test_data.phase)) {
+        // bad test point. increase slightly in hope of getting better result
+        next_freq += 0.5f * test_freq_incr;
+        return;
     }
-    if (frq_cnt < 12 && is_equal(start_freq,stop_freq)) {
-        if (gain[frq_cnt] > max_resp_gain && tune_p > AUTOTUNE_SP_MIN) {
+
+    if (!found_max_gain_freq) {
+        if (test_data.gain > max_resp_gain && tune_p > AUTOTUNE_SP_MIN) {
             // exceeded max response gain already, reduce tuning gain to remain under max response gain
             tune_p -= gain_incr;
             // force counter to stay on frequency
-            frq_cnt -= 1;
-        } else if (gain[frq_cnt] > max_resp_gain && tune_p <= AUTOTUNE_SP_MIN) {
+            next_freq = test_data.freq;
+            return;
+        } else if (test_data.gain > max_resp_gain && tune_p <= AUTOTUNE_SP_MIN) {
             // exceeded max response gain at the minimum allowable tuning gain. terminate testing.
             tune_p = AUTOTUNE_SP_MIN;
             counter = AUTOTUNE_SUCCESS_COUNT;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        } else if (gain[frq_cnt] > gain[freq_cnt_max]) {
-            freq_cnt_max = frq_cnt;
-            phase_max = phase[frq_cnt];
-            sp_prev_gain = gain[frq_cnt];
-        } else if (freq[frq_cnt] > max_sweep_freq || (gain[frq_cnt] > 0.0f && gain[frq_cnt] < 0.5f)) {
-            // must be past peak, continue on to determine angle p
-            frq_cnt = 11;
-        }
-        frq_cnt++;
-        if (frq_cnt == 12) {
-            freq[frq_cnt] = freq[freq_cnt_max];
-            curr_test.freq = freq[frq_cnt];
+        } else if (test_data.gain > sp_prev_gain) {
+            freq_max = test_data.freq;
+            phase_max = test_data.phase;
+            sp_prev_gain = test_data.gain;
+            next_freq = test_data.freq + test_freq_incr;
+            return;
+        // Gain is expected to continue decreasing past gain peak. declare max gain freq found and refine search.
+        } else if (test_data.gain < 0.9f * sp_prev_gain) {
+            found_max_gain_freq = true;
+            next_freq = freq_max + 0.5 * test_freq_incr;
+            return;
         } else {
-            freq[frq_cnt] = freq[frq_cnt-1] + test_freq_incr;
-            curr_test.freq = freq[frq_cnt];
+            next_freq = test_data.freq + test_freq_incr;
+            return;
         }
     }
 
-    // once finished with sweep of frequencies, cnt = 12 is used to then tune for max response gain
-    if (frq_cnt >= 12 && is_equal(start_freq,stop_freq)) {
-        if (gain[frq_cnt] < max_resp_gain && tune_p < AUTOTUNE_SP_MAX && !find_peak) {
-            // keep increasing tuning gain unless phase changes or max response gain is achieved
-            if (phase[frq_cnt]-phase_max > 20.0f && phase[frq_cnt] < 210.0f) {
-                freq[frq_cnt] += 0.5 * test_freq_incr;
-                find_peak = true;
-            } else {
-                tune_p += gain_incr;
-                freq[frq_cnt] = freq[freq_cnt_max];
-                if (tune_p >= AUTOTUNE_SP_MAX) {
-                    tune_p = AUTOTUNE_SP_MAX;
-                    counter = AUTOTUNE_SUCCESS_COUNT;
-                    LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-                }
+    // refine peak 
+    if (!found_peak) {
+        // look at frequency above max gain freq found
+        if (test_data.freq > freq_max && test_data.gain > sp_prev_gain) {
+            // found max at frequency greater than initial max gain frequency
+            found_peak = true;
+        } else if (test_data.freq > freq_max && test_data.gain < sp_prev_gain) {
+            // look at frequency below initial max gain frequency
+            next_freq = test_data.freq - 0.5 * test_freq_incr;
+            return;
+        } else if (test_data.freq < freq_max && test_data.gain > sp_prev_gain) {
+            // found max at frequency less than initial max gain frequency
+            found_peak = true;
+        } else {
+            found_peak = true;
+            test_data.freq = freq_max;
+            test_data.gain = sp_prev_gain;
+        }
+        sp_prev_gain = test_data.gain;
+    }
+
+    // start increasing gain
+    if (found_max_gain_freq && found_peak) {
+        if (test_data.gain < max_resp_gain && tune_p < AUTOTUNE_SP_MAX) {
+            tune_p += gain_incr;
+            next_freq = test_data.freq;
+            if (tune_p >= AUTOTUNE_SP_MAX) {
+                tune_p = AUTOTUNE_SP_MAX;
+                counter = AUTOTUNE_SUCCESS_COUNT;
+                LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
             }
-            curr_test.freq = freq[frq_cnt];
-            sp_prev_gain = gain[frq_cnt];
-        } else if (gain[frq_cnt] > 1.1f * max_resp_gain && tune_p > AUTOTUNE_SP_MIN && !find_peak) {
+            sp_prev_gain = test_data.gain;
+        } else if (test_data.gain > 1.1f * max_resp_gain && tune_p > AUTOTUNE_SP_MIN) {
             tune_p -= gain_incr;
-        } else if (find_peak) {
-            // find the frequency where the response gain is maximum
-            if (gain[frq_cnt] > sp_prev_gain) {
-                freq[frq_cnt] += 0.5 * test_freq_incr;
-            } else {
-                find_peak = false;
-                phase_max = phase[frq_cnt];
-            }
-            curr_test.freq = freq[frq_cnt];
-            sp_prev_gain = gain[frq_cnt];
         } else {
             // adjust tuning gain so max response gain is not exceeded
-            if (sp_prev_gain < max_resp_gain && gain[frq_cnt] > max_resp_gain) {
-                float adj_factor = (max_resp_gain - gain[frq_cnt]) / (gain[frq_cnt] - sp_prev_gain);
+            if (sp_prev_gain < max_resp_gain && test_data.gain > max_resp_gain) {
+                float adj_factor = (max_resp_gain - test_data.gain) / (test_data.gain - sp_prev_gain);
                 tune_p = tune_p + gain_incr * adj_factor; 
             }
             counter = AUTOTUNE_SUCCESS_COUNT;
         }
     }
     if (counter == AUTOTUNE_SUCCESS_COUNT) {
-        start_freq = 0.0f;  //initializes next test that uses dwell test
+        next_freq = 0.0f;  //initializes next test that uses dwell test
+        sweep_complete = false;
         reset_sweep_variables();
-        curr_test.freq = freq[0];
-        frq_cnt = 0;
-    } else {
-        start_freq = curr_test.freq;
-        stop_freq = curr_test.freq;
     }
 }
 
@@ -1602,6 +1606,8 @@ void AC_AutoTune_Heli::reset_vehicle_test_variables()
         freq_cnt = 0;
         start_freq = 0.0f;
         stop_freq = 0.0f;
+        next_test_freq = 0.0f;
+        sweep_complete = false;
     }
 }
 
@@ -1620,8 +1626,10 @@ void AC_AutoTune_Heli::reset_update_gain_variables()
 
     // reset sp_up variables
     phase_max = 0.0f;
+    freq_max = 0.0f;
     sp_prev_gain = 0.0f;
-    find_peak = false;
+    found_max_gain_freq = false;
+    found_peak = false;
 
 }
 

@@ -192,7 +192,7 @@ private:
     void updating_rate_d_up(float &tune_d, sweep_info &test_data, float &next_freq, max_gain_data &max_gain_d);
 
     // updating_angle_p_up - determines maximum angle p gain for pitch and roll
-    void updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
+    void updating_angle_p_up(float &tune_p, sweep_info &test_data, float &next_freq);
 
    // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
     void updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
@@ -234,12 +234,15 @@ private:
     bool find_middle;
 
     // updating angle P up variables
-    // track the maximum phase
+    // track the maximum phase and freq
     float phase_max;
+    float freq_max;
     // previous gain
     float sp_prev_gain;
+    // flag for finding max gain frequency
+    bool found_max_gain_freq;
     // flag for finding the peak of the gain response
-    bool find_peak;
+    bool found_peak;
 
     // updating rate P up
     // counter value of previous good frequency
@@ -299,6 +302,7 @@ private:
     };
     sweep_data sweep_mtr;
     sweep_data sweep_tgt;
+    bool sweep_complete;
 
     // fix the frequency sweep time to 23 seconds
     const float sweep_time_ms = 23000;
