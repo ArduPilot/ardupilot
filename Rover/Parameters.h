@@ -419,11 +419,6 @@ public:
     AP_Torqeedo torqeedo;
 #endif
 
-#if HAL_IRISORCA_ENABLED
-    // IrisOrca driver
-    AP_IrisOrca iris_orca;
-#endif
-
     // position controller
     AR_PosControl pos_control;
 
@@ -440,6 +435,12 @@ public:
     AP_Float fs_gcs_timeout;
 
     class ModeCircle mode_circle;
+
+#if HAL_IRISORCA_ENABLED
+    // IrisOrca driver
+    AP_IrisOrca iris_orca;
+#endif
+
 };
 
 extern const AP_Param::Info var_info[];

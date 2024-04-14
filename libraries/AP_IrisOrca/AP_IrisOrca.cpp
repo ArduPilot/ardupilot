@@ -18,10 +18,10 @@
 #if HAL_IRISORCA_ENABLED
 
 #include <AP_Common/AP_Common.h>
-//#include <AP_Math/AP_Math.h>
+#include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
-//#include <AP_Logger/AP_Logger.h>
-//#include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #define IRISORCA_SERIAL_BAUD        19200   // communication is always at 19200
@@ -31,6 +31,7 @@
 #define IRISORCA_SEND_ACTUATOR_STATUS_REQUEST_INTERVAL_MS  400 // actuator status requested every 0.4sec if connected to actuator
 #define IRISORCA_SEND_ACTUATOR_PARAM_REQUEST_INTERVAL_MS   400 // actuator param requested every 0.4sec if connected to actuator
 #define IRISORCA_REPLY_TIMEOUT_MS                          25      // stop waiting for replies after 25ms
+#define IRISORCA_EXPECTED_REPLY_MSG_LEN                    19      // expected length of reply message
 #define IRISORCA_ERROR_REPORT_INTERVAL_MAX_MS              10000   // errors reported to user at no less than once every 10 seconds
 
 #define HIGHWORD(x) ((uint16_t)((x) >> 16))
@@ -49,14 +50,14 @@ const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("DE_PIN", 1, AP_IrisOrca, _pin_de, -1),
 
-    // @Param: MAX_TRAVEL_MM
-    // @DisplayName: Iris Orca shaft max travel distance
+    // @Param: MAX_TRAVEL
+    // @DisplayName: Shaft max travel distance
     // @Description: Iris Orca travel distance as measured from the zero position, which will be at one end of the actuator after zeroing.
     // @Units: mm
     // @Range: 0 300
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("MAX_TRAVEL_MM", 2, AP_IrisOrca, _max_travel_mm, 261),
+    AP_GROUPINFO("MAX_TRAVEL", 2, AP_IrisOrca, _max_travel_mm, 261),
 
     AP_GROUPEND
 };
@@ -110,13 +111,19 @@ bool AP_IrisOrca::init_internals()
 // runs in background thread
 void AP_IrisOrca::thread_main()
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: INIT INTERNALS");
     // initialisation
     if (!init_internals()) {
         return;
     }
     _initialised = true;
 
-    while (true) {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: INIT INTERNALS COMPLETE");
+
+
+    bool error_state = false;
+    while (true)
+    {
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1000);
 
@@ -131,25 +138,30 @@ void AP_IrisOrca::thread_main()
         while (nbytes-- > 0) {
             int16_t b = _uart->read();
             if (b >= 0 ) {
-                // clear wait-for-reply because if we are waiting for a reply, this message must be it
-                set_reply_received();
+                if (parse_byte((uint8_t)b)) {
+                    // complete message received, parse it!
+                    error_state = !parse_message();
+                    // clear wait-for-reply because if we are waiting for a reply, this message must be it
+                    set_reply_received();
                 }
             }
         }
 
-        // send actuator position command
-        //bool log_update = false;
-        if (safe_to_send()) {
+        if (safe_to_send())
+        {
             uint32_t now_ms = AP_HAL::millis();
-
-            if (now_ms - _last_send_actuator_ms > IRISORCA_SEND_ACTUATOR_POSITION_INTERVAL_MS) {
-                send_actuator_position_cmd();
-                //log_update = true;
+            if (now_ms - _last_send_actuator_ms > IRISORCA_SEND_ACTUATOR_POSITION_INTERVAL_MS)
+            {
+                if (error_state) {
+                    // send sleep command if in error state to attempt to clear the error
+                    send_actuator_sleep_cmd();
+                }
+                else {
+                    send_actuator_position_cmd();
+                }
             }
         }
-
-        // log high level status and actuator position
-        //log_ORCA(log_update);
+    }
 }
 
 // returns true if communicating with the actuator
@@ -203,10 +215,13 @@ void AP_IrisOrca::check_for_send_end()
 uint32_t AP_IrisOrca::calc_send_delay_us(uint8_t num_bytes)
 {
     // baud rate of 19200 bits/sec
-    // total number of bits = 10 x num_bytes
+    // total number of bits = 10 x num_bytes (no parity)
+    // or 11 x num_bytes (with parity)
     // convert from seconds to micros by multiplying by 1,000,000
     // plus additional 300us safety margin
-    const uint32_t delay_us = 1e6 * num_bytes * 10 / IRISORCA_SERIAL_BAUD + 300;
+    uint8_t parity = IRISORCA_SERIAL_PARITY == 0 ? 0 : 1;
+    uint8_t bits_per_data_byte = 10 + parity;
+    const uint32_t delay_us = 1e6 * num_bytes * bits_per_data_byte / IRISORCA_SERIAL_BAUD + 300;
     return delay_us;
 }
 
@@ -242,35 +257,33 @@ void AP_IrisOrca::set_reply_received()
 bool AP_IrisOrca::send_motor_command_stream(const uint8_t sub_code, const uint32_t data)
 {
     // buffer for outgoing message
-    uint8_t send_buff[IRISORCA_MESSAGE_LEN_MAX];
-    uint8_t send_buff_num_bytes = 0;
+    uint8_t send_buff[9];
 
     // build message
-    send_buff[send_buff_num_bytes++] = static_cast<uint8_t>(MsgAddress::BUS_MASTER);
-    send_buff[send_buff_num_bytes++] = static_cast<uint8_t>(MsgAddress::DEVICE);
-    send_buff[send_buff_num_bytes++] = 0x64; // Function Code: Motor Command Stream
-    send_buff[send_buff_num_bytes++] = sub_code;
+    send_buff[0] = static_cast<uint8_t>(MsgAddress::DEVICE);
+    send_buff[1] = 0x64; // Function Code: Motor Command Stream
+    send_buff[2] = sub_code;
     // data is 32 bits - send as 4 bytes
-    send_buff[send_buff_num_bytes++] = HIGHBYTE(HIGHWORD(data));
-    send_buff[send_buff_num_bytes++] = LOWBYTE(HIGHWORD(data));
-    send_buff[send_buff_num_bytes++] = HIGHBYTE(LOWWORD(data));
-    send_buff[send_buff_num_bytes++] = LOWBYTE(LOWWORD(data));
+    send_buff[3] = HIGHBYTE(HIGHWORD(data));
+    send_buff[4] = LOWBYTE (HIGHWORD(data));
+    send_buff[5] = HIGHBYTE(LOWWORD(data));
+    send_buff[6] = LOWBYTE (LOWWORD(data));
 
     // Add Modbus CRC-16
-    uint16_t crc = calc_crc_modbus(send_buff, send_buff_num_bytes);
+    uint16_t crc = calc_crc_modbus(send_buff, sizeof(send_buff) - 2);
 
-    send_buff[send_buff_num_bytes++] = LOWBYTE(crc);
-    send_buff[send_buff_num_bytes++] = HIGHBYTE(crc);
+    send_buff[7] = (uint8_t)(crc & 0xFF);
+    send_buff[8] = (uint8_t)((crc >> 8) & 0xFF);
 
     // set send pin
     send_start();
 
     // write message
-    _uart->write(send_buff, send_buff_num_bytes);
+    _uart->write(send_buff, sizeof(send_buff));
 
     // record start and expected delay to send message
     _send_start_us = AP_HAL::micros();
-    _send_delay_us = calc_send_delay_us(send_buff_num_bytes);
+    _send_delay_us = calc_send_delay_us(sizeof(send_buff));
 
     return true;
 }
@@ -278,23 +291,100 @@ bool AP_IrisOrca::send_motor_command_stream(const uint8_t sub_code, const uint32
 // send a actuator speed position command as a value from 0 to max_travel_mm
 void AP_IrisOrca::send_actuator_position_cmd()
 {
-    // calculate desired actuator position
-
-    // if not armed, set to mid point
-    if (!hal.util->get_soft_armed()) {
-        _actuator_position_desired = (uint32_t) (_max_travel_mm * 1000 / 2);
-    } else {
-        // convert steering output to actuator output in range 0 to _max_travel_mm * 1000
-        // ToDo: convert PWM output to actuator output so that SERVOx_MIN, MAX and TRIM take effect
-        _actuator_position_desired = constrain_uint32(SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_steering) * _max_travel_mm * 1000 / 2, 0, _max_travel_mm * 1000);
-    }
+    // convert yaw output to actuator output in range 0 to _max_travel_mm * 1000
+    _actuator_position_desired = constrain_uint32(
+        (SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_steering) + 1) * _max_travel_mm * 0.5 * 1000, 
+        0,
+        _max_travel_mm * 1000);
 
     // send a message
-    if (send_motor_command_stream((uint8_t)MotorCommandStreamSubCode::POSITION_CONTROL_STREAM, _actuator_position_desired)){
+    if (send_motor_command_stream((uint8_t)MotorCommandStreamSubCode::POSITION_CONTROL_STREAM, 
+        _actuator_position_desired)){
         // record time of send for health reporting
         WITH_SEMAPHORE(_last_healthy_sem);
         _last_send_actuator_ms = AP_HAL::millis();
+
+        // set expected reply message id
+        set_expected_reply_msgid((uint8_t)FunctionCode::MOTOR_COMMAND_STREAM);
+
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Actuator position sent: %li", _actuator_position_desired);
+
     }
+}
+
+void AP_IrisOrca::send_actuator_sleep_cmd()
+{
+    // send a message
+    if (send_motor_command_stream((uint8_t)MotorCommandStreamSubCode::SLEEP_DATA_STREAM, 0)){
+        // record time of send for health reporting
+        WITH_SEMAPHORE(_last_healthy_sem);
+        _last_send_actuator_ms = AP_HAL::millis();
+
+        // set expected reply message id
+        set_expected_reply_msgid((uint8_t)FunctionCode::MOTOR_COMMAND_STREAM);
+
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Actuator sleep command sent");
+    }
+}
+
+// process a single byte received on serial port
+// return true if a complete message has been received (the message will be held in _received_buff)
+bool AP_IrisOrca::parse_byte(uint8_t b)
+{
+    bool complete_msg_received = false;
+
+    // add b to buffer
+
+    _received_buff[_received_buff_len] = b;
+    _received_buff_len++;
+
+    // check for a complete message
+    if (_received_buff_len >= IRISORCA_EXPECTED_REPLY_MSG_LEN)
+    {
+        // check CRC of the message
+        uint16_t crc_expected = calc_crc_modbus(_received_buff, _received_buff_len - 2);
+        uint16_t crc_received = (_received_buff[_received_buff_len - 2]) | (_received_buff[_received_buff_len - 1] << 8);
+        if (crc_expected != crc_received) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: CRC error");
+            _received_buff_len = 0;
+            _parse_error_count++;
+        } 
+        else {
+            // CRC is correct - reset buffer and set flag
+            _received_buff_len = 0;
+            _parse_success_count++;
+            // record time of receive for health reporting
+            WITH_SEMAPHORE(_last_healthy_sem);
+            _last_received_ms = AP_HAL::millis();
+            complete_msg_received = true;
+        }
+    } 
+    return complete_msg_received;
+}
+
+// process message held in _received_buff
+// return true if there are no errors and the message is as expected
+bool AP_IrisOrca::parse_message()
+{
+    // check for expected reply
+    if (_received_buff[1] == _reply_msgid) {
+        // handle reply
+        // Shaft position is in 4 bytes starting at byte 2
+        // uint32_t shaft_position = (_received_buff[2] << 24) | (_received_buff[3] << 16) | (_received_buff[4] << 8) | _received_buff[5];
+
+        // Error register is in 2 bytes starting at byte 15
+        uint16_t error = (_received_buff[15] << 8) | _received_buff[16];
+
+        if (error != 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Actuator error: %i", error);
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unexpected message");
+    return false;
 }
 
 // get the AP_IrisOrca singleton

@@ -101,6 +101,17 @@ private:
     // value is taken directly from the steering servo channel
     void send_actuator_position_cmd();
 
+    // send a actuator sleep command
+    void send_actuator_sleep_cmd();
+
+    // process a single byte received on serial port
+    // return true if a complete message has been received (the message will be held in _received_buff)
+    bool parse_byte(uint8_t b);
+
+    // process message held in _received_buff
+    // return true if the message was as expected and there are no actuator errors
+    bool parse_message();
+
     // parameters
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to actuator
     AP_Int16 _max_travel_mm;// maximum travel of actuator in millimeters
@@ -118,7 +129,11 @@ private:
 
 
     // message parsing members
-    uint32_t _last_received_ms;         // system time (in millis) last message was received
+    uint32_t _parse_error_count;    // total number of parsing errors (for reporting)
+    uint32_t _parse_success_count;  // number of messages successfully parsed (for reporting)
+    uint8_t _received_buff[IRISORCA_MESSAGE_LEN_MAX];   // characters received
+    uint8_t _received_buff_len;     // number of characters received
+    uint32_t _last_received_ms;     // system time (in millis) that a message was successfully parsed (for health reporting)
 
     // reply message handling
     uint8_t _reply_msgid;           // replies expected msgid (reply often does not specify the msgid so we must record it)
