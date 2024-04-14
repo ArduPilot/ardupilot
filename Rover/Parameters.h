@@ -419,6 +419,11 @@ public:
     AP_Torqeedo torqeedo;
 #endif
 
+#if HAL_IRISORCA_ENABLED
+    // IrisOrca driver
+    AP_IrisOrca irisorca;
+#endif
+
     // position controller
     AR_PosControl pos_control;
 

@@ -64,6 +64,10 @@
 #define HAL_TORQEEDO_ENABLED 0
 #endif
 
+#ifndef HAL_IRISORCA_ENABLED
+#define HAL_IRISORCA_ENABLED 0
+#endif
+
 #ifndef AP_KDECAN_ENABLED
 #define AP_KDECAN_ENABLED 0
 #endif
