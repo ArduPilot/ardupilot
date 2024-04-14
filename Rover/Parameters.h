@@ -421,7 +421,7 @@ public:
 
 #if HAL_IRISORCA_ENABLED
     // IrisOrca driver
-    AP_IrisOrca irisorca;
+    AP_IrisOrca iris_orca;
 #endif
 
     // position controller

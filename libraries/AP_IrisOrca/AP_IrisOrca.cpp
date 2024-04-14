@@ -18,10 +18,10 @@
 #if HAL_IRISORCA_ENABLED
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
+//#include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS.h>
+//#include <AP_Logger/AP_Logger.h>
+//#include <GCS_MAVLink/GCS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #define IRISORCA_SERIAL_BAUD        19200   // communication is always at 19200
@@ -41,22 +41,22 @@ extern const AP_HAL::HAL& hal;
 // parameters
 const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
 
-     // @Param: DE_PIN
+    // @Param: DE_PIN
     // @DisplayName: Iris Orca DE pin
     // @Description: Pin number connected to RS485 to Serial converter's DE pin. -1 to use serial port's CTS pin if available
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("DE_PIN", 0, AP_IrisOrca, _pin_de, -1),
+    AP_GROUPINFO("DE_PIN", 1, AP_IrisOrca, _pin_de, -1),
 
-    // @Param: MAX_TRAVEL_UM
-    // @DisplayName: Iris Orca travel distance in micrometers
+    // @Param: MAX_TRAVEL_MM
+    // @DisplayName: Iris Orca shaft max travel distance
     // @Description: Iris Orca travel distance as measured from the zero position, which will be at one end of the actuator after zeroing.
-    // @Units: micrometers
-    // @Range: 0 4294967295
+    // @Units: mm
+    // @Range: 0 300
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("MAX_TRAVEL_UM", 1, AP_IrisOrca, _max_travel_um, 262000),
+    AP_GROUPINFO("MAX_TRAVEL_MM", 2, AP_IrisOrca, _max_travel_mm, 261),
 
     AP_GROUPEND
 };
@@ -138,18 +138,18 @@ void AP_IrisOrca::thread_main()
         }
 
         // send actuator position command
-        bool log_update = false;
+        //bool log_update = false;
         if (safe_to_send()) {
             uint32_t now_ms = AP_HAL::millis();
 
             if (now_ms - _last_send_actuator_ms > IRISORCA_SEND_ACTUATOR_POSITION_INTERVAL_MS) {
                 send_actuator_position_cmd();
-                log_update = true;
+                //log_update = true;
             }
         }
 
         // log high level status and actuator position
-        log_ORCA(log_update);
+        //log_ORCA(log_update);
 }
 
 // returns true if communicating with the actuator
@@ -164,21 +164,6 @@ bool AP_IrisOrca::healthy()
         const uint32_t now_ms = AP_HAL::millis();
         return ((now_ms - _last_received_ms < 3000) && (now_ms - _last_send_actuator_ms < 3000));
     }
-}
-
-// run pre-arm check.  returns false on failure and fills in failure_msg
-// any failure_msg returned will not include a prefix
-bool AP_IrisOrca::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
-{
-    if (!_initialised) {
-        strncpy(failure_msg, "not initialised", failure_msg_len);
-        return false;
-    }
-    if (!healthy()) {
-        strncpy(failure_msg, "not healthy", failure_msg_len);
-        return false;
-    }
-    return true;
 }
 
 // set DE Serial CTS pin to enable sending commands to actuator
@@ -290,18 +275,18 @@ bool AP_IrisOrca::send_motor_command_stream(const uint8_t sub_code, const uint32
     return true;
 }
 
-// send a actuator speed position command as a value from 0 to max_travel_um
+// send a actuator speed position command as a value from 0 to max_travel_mm
 void AP_IrisOrca::send_actuator_position_cmd()
 {
     // calculate desired actuator position
 
     // if not armed, set to mid point
     if (!hal.util->get_soft_armed()) {
-        _actuator_position_desired = (uint32_t) (_max_travel_um / 2);
+        _actuator_position_desired = (uint32_t) (_max_travel_mm * 1000 / 2);
     } else {
-        // convert steering output to actuator output in range 0 to _max_travel_um
+        // convert steering output to actuator output in range 0 to _max_travel_mm * 1000
         // ToDo: convert PWM output to actuator output so that SERVOx_MIN, MAX and TRIM take effect
-        _actuator_position_desired = constrain_uint32(SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_steering) * _max_travel_um / 2, 0, _max_travel_um);
+        _actuator_position_desired = constrain_uint32(SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_steering) * _max_travel_mm * 1000 / 2, 0, _max_travel_mm * 1000);
     }
 
     // send a message

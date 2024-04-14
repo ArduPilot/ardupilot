@@ -46,10 +46,6 @@ public:
     // returns true if communicating with the actuator
     bool healthy();
 
-    // run pre-arm check.  returns false on failure and fills in failure_msg
-    // any failure_msg returned will not include a prefix
-    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
-
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -105,13 +101,9 @@ private:
     // value is taken directly from the steering servo channel
     void send_actuator_position_cmd();
 
-    // log ORCA message which holds high level status and latest desired actuator position
-    // force_logging should be true to immediately write log bypassing timing check to avoid spamming
-    void log_ORCA(bool force_logging);
-
     // parameters
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to actuator
-    AP_Int32 _max_travel_um;// maximum travel of actuator in micrometers
+    AP_Int16 _max_travel_mm;// maximum travel of actuator in millimeters
 
     // members
     AP_HAL::UARTDriver *_uart;          // serial port to communicate with actuator

@@ -84,8 +84,8 @@ void Rover::init_ardupilot()
 #endif
 
 #if HAL_IRISORCA_ENABLED
-    // init iris orca motor driver
-    g2.irisorca.init();
+    // init iris orca actuator driver
+    g2.iris_orca.init();
 #endif
 
 #if AP_OPTICALFLOW_ENABLED

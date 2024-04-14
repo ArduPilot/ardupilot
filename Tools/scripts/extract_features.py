@@ -66,7 +66,7 @@ class ExtractFeatures(object):
             ('AP_TEMPERATURE_SENSOR_{type}_ENABLED', 'AP_TemperatureSensor_(?P<type>.*)::update',),
 
             ('AP_BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
-            ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
+            ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo',),
 
             ('HAL_IRISORCA_ENABLED', 'AP_IrisOrca::AP_IrisOrca',),
 
