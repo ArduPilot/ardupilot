@@ -76,6 +76,7 @@ def build(bld):
                      'AP_AHRS',
                      'AP_Terrain',
                      'AP_Torqeedo',
+                     'AP_IrisOrca',
                      'AP_Volz_Protocol',
                      'AP_SBusOut',
                      'AP_RobotisServo',

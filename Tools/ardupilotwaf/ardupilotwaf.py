@@ -112,6 +112,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_FETtecOneWire',
     'AP_TemperatureSensor',
     'AP_Torqeedo',
+    'AP_IrisOrca',
     'AP_CustomRotations',
     'AP_AIS',
     'AP_OpenDroneID',
