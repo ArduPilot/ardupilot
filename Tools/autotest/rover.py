@@ -2608,7 +2608,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Unexpected mission type %u want=%u" %
                                        (m.mission_type, mission_type))
         if m.type != want_type:
-            raise NotAchievedException("Expected ack type got %u got %u" %
+            raise NotAchievedException("Expected ack type %u got %u" %
                                        (want_type, m.type))
 
     def assert_filepath_content(self, filepath, want):
@@ -6749,6 +6749,39 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         shutil.copy('build/sitl/bin/ardurover.noppp', 'build/sitl/bin/ardurover')
         self.reboot_sitl()
 
+    def MissionRetransfer(self, target_system=1, target_component=1):
+        '''torture-test with MISSION_COUNT'''
+#        self.send_debug_trap()
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_FENCE, 0)
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10000,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.wait_statustext('Only [0-9]+ items are supported', regex=True, check_context=True)
+        self.context_pop()
+        self.assert_not_receive_message('MISSION_REQUEST')
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_FENCE, 0)
+        self.assert_receive_mission_ack(
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
+        )
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6836,6 +6869,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.NetworkingWebServer,
             self.NetworkingWebServerPPP,
             self.RTL_SPEED,
+            self.MissionRetransfer,
         ])
         return ret
 
