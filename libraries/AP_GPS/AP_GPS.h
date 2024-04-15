@@ -614,6 +614,7 @@ protected:
     AP_Enum<SBAS_Mode> _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
+    AP_Int8 _rtcm_data;
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
     AP_Int8 _blend_mask;

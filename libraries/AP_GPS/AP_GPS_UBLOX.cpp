@@ -407,6 +407,17 @@ AP_GPS_UBLOX::_request_next_config(void)
         _unconfigured_messages & = ~CONFIG_RATE_RAW;
 #endif
         break;
+    case STEP_RTCM:
+#if UBLOX_RXM_RTCM_LOGGING
+        if(gps._rtcm_data == 0) {
+            _unconfigured_messages &= ~CONFIG_RATE_RTCM;
+        } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RTCM)) {
+            _next_message--;
+        }
+#else
+        _unconfigured_messages & = ~CONFIG_RATE_RTCM;
+#endif
+        break;
     case STEP_VERSION:
         if(!_have_version && !hal.util->get_soft_armed()) {
             _request_version();
@@ -582,9 +593,9 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             return;
         }
         break;
-#if UBLOX_RXM_RAW_LOGGING
     case CLASS_RXM:
         switch(msg_id) {
+#if UBLOX_RXM_RAW_LOGGING
         case MSG_RXM_RAW:
             desired_rate = gps._raw_data;
             config_msg_id = CONFIG_RATE_RAW;
@@ -593,11 +604,17 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
             desired_rate = gps._raw_data;
             config_msg_id = CONFIG_RATE_RAW;
             break;
+#endif // UBLOX_RXM_RAW_LOGGING
+#if UBLOX_RXM_RTCM_LOGGING
+        case MSG_RXM_RTCM:
+            desired_rate = gps._rtcm_data;
+            config_msg_id = CONFIG_RATE_RTCM;
+            break;
+#endif // UBLOX_RXM_RTCM_LOGGING
         default:
             return;
         }
         break;
-#endif // UBLOX_RXM_RAW_LOGGING
 #if UBLOX_TIM_TM2_LOGGING
     case CLASS_TIM:
         if (msg_id == MSG_TIM_TM2) {
@@ -974,6 +991,29 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 #endif
 }
 #endif // UBLOX_RXM_RAW_LOGGING
+
+#if UBLOX_RXM_RTCM_LOGGING
+void AP_GPS_UBLOX::log_rxm_rtcm(const struct ubx_rxm_rtcm &rtcm)
+{
+#if HAL_LOGGING_ENABLED
+    if (!should_log()) {
+        return;
+    }
+
+    uint64_t now = AP_HAL::micros64();
+
+    struct log_GPS_RTCM header = {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_RTCM_MSG),
+        time_us    : now,
+        version : rtcm.version,
+        flags : rtcm.flags,
+        refStation : rtcm.refStation,
+        msgType : rtcm.msgType
+    };
+    AP::logger().WriteBlock(&header, sizeof(header));
+#endif
+}
+#endif // UBLOX_RXM_RTCM_LOGGING
 
 void AP_GPS_UBLOX::unexpected_message(void)
 {
@@ -1470,6 +1510,13 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 #endif // UBLOX_RXM_RAW_LOGGING
+
+#if UBLOX_RXM_RTCM_LOGGING
+    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RTCM && gps._rtcm_data != 0) {
+        log_rxm_rtcm(_buffer.rxm_rtcm);
+        return false;
+    }
+#endif // UBLOX_RXM_RTCM_LOGGING
 
 #if UBLOX_TIM_TM2_LOGGING
     if ((_class == CLASS_TIM) && (_msg_id == MSG_TIM_TM2) && (_payload_length == 28)) {
@@ -2170,7 +2217,8 @@ static const char *reasons[] = {"navigation rate",
                                 "TIM TM2",
                                 "F9",
                                 "M10",
-                                "L5 Enable Disable"};
+                                "L5 Enable Disable",
+                                "rtcm rate"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 

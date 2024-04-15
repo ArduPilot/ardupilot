@@ -279,6 +279,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_SUBGROUPINFO(params[1], "2_", 33, AP_GPS, AP_GPS::Params),
 #endif
 
+    // @Param: _RTCM_DATA
+    // @DisplayName: RTCM data logging
+    // @Description: Handles logging RTCM data; on uBlox chips that support RTCM data this will log RXM messages into logger;
+    // @Values: 0:Ignore,1:Always log
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("_RTCM_DATA", 34, AP_GPS, _rtcm_data, 0),
+
     AP_GROUPEND
 };
 
