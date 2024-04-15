@@ -13,7 +13,7 @@
    than 1 then redundant sensors may be available
  */
 #ifndef GPS_MAX_RECEIVERS
-#define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
+#define GPS_MAX_RECEIVERS 4 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #endif
 #if !defined(GPS_MAX_INSTANCES)
 #if GPS_MAX_RECEIVERS > 1
