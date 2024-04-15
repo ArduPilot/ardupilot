@@ -58,7 +58,9 @@ private:
 
     // function codes
     enum class FunctionCode : uint8_t {
-        MOTOR_COMMAND_STREAM = 0x64
+        WRITE_REGISTER = 0x06,
+        MOTOR_COMMAND_STREAM = 0x64,
+        MOTOR_READ_STREAM = 0x68
     };
 
     // sub codes for MOTOR_COMMAND_STREAM
@@ -67,6 +69,21 @@ private:
         POSITION_CONTROL_STREAM = 0x1E,
         SLEEP_DATA_STREAM = 0x00 // sleep data stream is everything else
     };
+
+    // registers
+    enum class Register : uint16_t {
+        CTRL_REG_0 = 0,
+        CTRL_REG_3 = 3,
+        CTRL_REG_4 = 4,
+        POS_CMD = 30,
+        POS_CMD_H = 31,
+    };
+
+    // motor control states
+    enum class MotorControlState : uint8_t {
+        AUTO_ZERO = 0,
+        POSITION_CONTROL = 1
+    } _control_state;
 
     // initialise serial port (run from background thread)
     // returns true on success
@@ -93,16 +110,34 @@ private:
     // mark reply received. should be called whenever a message is received regardless of whether we are actually waiting for a reply
     void set_reply_received();
 
-    // send a 100/0x64 Motor Command Stream message to the actuator
+    // send a 0x06 Write Register message to the actuator
     // returns true on success
-    bool send_motor_command_stream(uint8_t sub_code, uint32_t data);
+    bool write_register(uint16_t reg_addr, uint16_t reg_value);
 
-    // send a actuator position command as a value from 0 to the maximum travel
+    // send a 0x64 Motor Command Stream message to the actuator
+    // returns true on success
+    bool write_motor_command_stream(uint8_t sub_code, uint32_t data);
+
+    // send a 0x68 Motor Read Stream message to the actuator
+    // returns true on success
+    bool write_motor_read_stream(uint16_t reg_addr, uint8_t reg_width);
+
+    // send an auto zero mode command
+    void send_auto_zero_mode_cmd();
+
+    // send an actuator position command as a value from 0 to the maximum travel
     // value is taken directly from the steering servo channel
     void send_actuator_position_cmd();
 
     // send a actuator sleep command
     void send_actuator_sleep_cmd();
+
+    // send a request for actuator status
+    void send_actuator_status_request();
+
+    // add CRC to a modbus message
+    // len is the length of the message WITHOUT the 2 CRC bytes
+    void add_crc_modbus(uint8_t *buff, uint8_t len);
 
     // process a single byte received on serial port
     // return true if a complete message has been received (the message will be held in _received_buff)
@@ -111,6 +146,15 @@ private:
     // process message held in _received_buff
     // return true if the message was as expected and there are no actuator errors
     bool parse_message();
+
+    // parse a 0x06 Write Register response
+    bool parse_write_register();
+    
+    // parse a 0x64 Motor Command Stream response
+    bool parse_motor_command_stream();
+
+    // parse a 0x68 Motor Read Stream response
+    bool parse_motor_read_stream();
 
     // parameters
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to actuator
@@ -123,6 +167,15 @@ private:
     uint32_t _last_send_actuator_ms;    // system time (in millis) last actuator position command was sent (used for health reporting)
     uint32_t _send_start_us;            // system time (in micros) when last message started being sent (used for timing to unset DE pin)
     uint32_t _send_delay_us;            // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
+
+    // state
+    uint8_t  _mode;                    // actuator mode
+    uint32_t _shaft_position;          // actuator position (um)
+    uint32_t _force_realized;          // force realized by actuator (mN)
+    uint16_t _power_consumed;          // power consumed by actuator (W)
+    uint8_t  _temperature;             // temperature of actuator (C)
+    uint16_t _voltage;                 // voltage of actuator (mV)
+    uint16_t _errors = 2048;           // error register contents (initialize to comm error)
 
     // health reporting
     HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_actuator_ms and _last_received_ms
@@ -137,8 +190,8 @@ private:
 
     // reply message handling
     uint8_t _reply_msgid;           // replies expected msgid (reply often does not specify the msgid so we must record it)
+    uint8_t _reply_msg_len;         // length of reply message expected (total including CRC)
     uint32_t _reply_wait_start_ms;  // system time that we started waiting for a reply message
-
 
     static AP_IrisOrca *_singleton;     // singleton instance
 

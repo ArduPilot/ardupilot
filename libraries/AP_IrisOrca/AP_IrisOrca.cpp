@@ -31,7 +31,6 @@
 #define IRISORCA_SEND_ACTUATOR_STATUS_REQUEST_INTERVAL_MS  400 // actuator status requested every 0.4sec if connected to actuator
 #define IRISORCA_SEND_ACTUATOR_PARAM_REQUEST_INTERVAL_MS   400 // actuator param requested every 0.4sec if connected to actuator
 #define IRISORCA_REPLY_TIMEOUT_MS                          25      // stop waiting for replies after 25ms
-#define IRISORCA_EXPECTED_REPLY_MSG_LEN                    19      // expected length of reply message
 #define IRISORCA_ERROR_REPORT_INTERVAL_MAX_MS              10000   // errors reported to user at no less than once every 10 seconds
 
 #define HIGHWORD(x) ((uint16_t)((x) >> 16))
@@ -111,17 +110,17 @@ bool AP_IrisOrca::init_internals()
 // runs in background thread
 void AP_IrisOrca::thread_main()
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: INIT INTERNALS");
     // initialisation
     if (!init_internals()) {
         return;
     }
     _initialised = true;
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: INIT INTERNALS COMPLETE");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Initialized");
 
+    _control_state = MotorControlState::AUTO_ZERO;
+    bool waiting_for_auto_zero = false;
 
-    bool error_state = false;
     while (true)
     {
         // 1ms loop delay
@@ -140,24 +139,57 @@ void AP_IrisOrca::thread_main()
             if (b >= 0 ) {
                 if (parse_byte((uint8_t)b)) {
                     // complete message received, parse it!
-                    error_state = !parse_message();
+                    parse_message();
                     // clear wait-for-reply because if we are waiting for a reply, this message must be it
                     set_reply_received();
                 }
             }
         }
 
-        if (safe_to_send())
+        // send a single command depending on the control state
+        // or send a sleep command if there is an active error
+        uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _last_send_actuator_ms > IRISORCA_SEND_ACTUATOR_POSITION_INTERVAL_MS)
         {
-            uint32_t now_ms = AP_HAL::millis();
-            if (now_ms - _last_send_actuator_ms > IRISORCA_SEND_ACTUATOR_POSITION_INTERVAL_MS)
-            {
-                if (error_state) {
-                    // send sleep command if in error state to attempt to clear the error
-                    send_actuator_sleep_cmd();
-                }
-                else {
-                    send_actuator_position_cmd();
+            if (_errors != 0) {
+                // send sleep command if in error state to attempt to clear the error
+                send_actuator_sleep_cmd();
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Error %i", _errors);
+            }
+            else {
+                // no errors - execute per control state
+                switch (_control_state)
+                {
+                    case MotorControlState::AUTO_ZERO:
+                        if (waiting_for_auto_zero) {
+                            // waiting for auto-zero to complete
+                            if (_mode != 55) {
+                                // zeroing complete
+                                waiting_for_auto_zero = false;
+                                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero complete");
+                                _control_state = MotorControlState::POSITION_CONTROL;
+                            }
+                            else if (safe_to_send()) {
+                            // zeroing is in progress - read the mode of operation to check if it has completed
+                                send_actuator_status_request();
+                            }
+                        }
+                        else if (safe_to_send()) {
+                            // start by sending an auto-zero command
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero");
+                            send_auto_zero_mode_cmd();
+                            waiting_for_auto_zero = true;
+                        }
+                        break;
+
+                    case MotorControlState::POSITION_CONTROL:
+                        // Send a position control command
+                        if (safe_to_send()) {
+                            send_actuator_position_cmd();
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -225,14 +257,6 @@ uint32_t AP_IrisOrca::calc_send_delay_us(uint8_t num_bytes)
     return delay_us;
 }
 
-
-// record msgid of message to wait for and set timer for timeout handling
-void AP_IrisOrca::set_expected_reply_msgid(uint8_t msg_id)
-{
-    _reply_msgid = msg_id;
-    _reply_wait_start_ms = AP_HAL::millis();
-}
-
 // check for timeout waiting for reply message
 void AP_IrisOrca::check_for_reply_timeout()
 {
@@ -251,17 +275,56 @@ void AP_IrisOrca::set_reply_received()
     _reply_wait_start_ms = 0;
 }
 
+// send a 0x06 Write Register message to the actuator
+// returns true on success
+bool AP_IrisOrca::write_register(uint16_t reg_addr, uint16_t reg_value)
+{
+    // buffer for outgoing message
+    uint8_t send_buff[8];
+
+    // set expected reply message length
+    _reply_msg_len = 8;
+
+    // build message
+    send_buff[0] = static_cast<uint8_t>(MsgAddress::DEVICE);
+    send_buff[1] = static_cast<uint8_t>(FunctionCode::WRITE_REGISTER);
+    send_buff[2] = HIGHBYTE(reg_addr);
+    send_buff[3] = LOWBYTE(reg_addr);
+    send_buff[4] = HIGHBYTE(reg_value);
+    send_buff[5] = LOWBYTE(reg_value);
+
+    // Add Modbus CRC-16
+    add_crc_modbus(send_buff, 6);
+
+    // set send pin
+    send_start();
+
+    // write message
+    _uart->write(send_buff, sizeof(send_buff));
+
+
+    // record start and expected delay to send message
+    _send_start_us = AP_HAL::micros();
+    _send_delay_us = calc_send_delay_us(sizeof(send_buff));
+
+    _reply_wait_start_ms = AP_HAL::millis();
+
+    return true;
+}
 
 // send a 100/0x64 Motor Command Stream message to the actuator
 // returns true on success
-bool AP_IrisOrca::send_motor_command_stream(const uint8_t sub_code, const uint32_t data)
+bool AP_IrisOrca::write_motor_command_stream(const uint8_t sub_code, const uint32_t data)
 {
     // buffer for outgoing message
     uint8_t send_buff[9];
 
+    // set expected reply message length
+    _reply_msg_len = 19;
+
     // build message
     send_buff[0] = static_cast<uint8_t>(MsgAddress::DEVICE);
-    send_buff[1] = 0x64; // Function Code: Motor Command Stream
+    send_buff[1] = static_cast<uint8_t>(FunctionCode::MOTOR_COMMAND_STREAM);
     send_buff[2] = sub_code;
     // data is 32 bits - send as 4 bytes
     send_buff[3] = HIGHBYTE(HIGHWORD(data));
@@ -270,10 +333,7 @@ bool AP_IrisOrca::send_motor_command_stream(const uint8_t sub_code, const uint32
     send_buff[6] = LOWBYTE (LOWWORD(data));
 
     // Add Modbus CRC-16
-    uint16_t crc = calc_crc_modbus(send_buff, sizeof(send_buff) - 2);
-
-    send_buff[7] = (uint8_t)(crc & 0xFF);
-    send_buff[8] = (uint8_t)((crc >> 8) & 0xFF);
+    add_crc_modbus(send_buff, 7);
 
     // set send pin
     send_start();
@@ -285,10 +345,61 @@ bool AP_IrisOrca::send_motor_command_stream(const uint8_t sub_code, const uint32
     _send_start_us = AP_HAL::micros();
     _send_delay_us = calc_send_delay_us(sizeof(send_buff));
 
+    _reply_wait_start_ms = AP_HAL::millis();
+
     return true;
 }
 
-// send a actuator speed position command as a value from 0 to max_travel_mm
+// send a 0x68 Motor Read Stream message to the actuator
+// returns true on success
+bool AP_IrisOrca::write_motor_read_stream(const uint16_t reg_addr, const uint8_t reg_width)
+{
+    // buffer for outgoing message
+    uint8_t send_buff[7];
+
+    // set expected reply message length
+    _reply_msg_len = 24;
+
+    // build message
+    send_buff[0] = static_cast<uint8_t>(MsgAddress::DEVICE);
+    send_buff[1] = static_cast<uint8_t>(FunctionCode::MOTOR_READ_STREAM);
+    send_buff[2] = HIGHBYTE(reg_addr);
+    send_buff[3] = LOWBYTE(reg_addr);
+    send_buff[4] = reg_width;
+
+    // Add Modbus CRC-16
+    add_crc_modbus(send_buff, 5);
+
+    // set send pin
+    send_start();
+
+    // write message
+    _uart->write(send_buff, sizeof(send_buff));
+
+    // record start and expected delay to send message
+    _send_start_us = AP_HAL::micros();
+    _send_delay_us = calc_send_delay_us(sizeof(send_buff));
+
+    _reply_wait_start_ms = AP_HAL::millis();
+
+    return true;
+}
+
+// perform an auto-zero by sending an auto zero command
+// and waiting for the actuator to complete the zeroing process
+// (transition to a mode other than auto-zero)
+// returns true on success
+void AP_IrisOrca::send_auto_zero_mode_cmd()
+{
+    // send a message
+    if (write_register((uint16_t)Register::CTRL_REG_3, 55)) {
+        // record time of send for health reporting
+        WITH_SEMAPHORE(_last_healthy_sem);
+        _last_send_actuator_ms = AP_HAL::millis();
+    }
+}
+
+// send an actuator speed position command as a value from 0 to max_travel_mm
 void AP_IrisOrca::send_actuator_position_cmd()
 {
     // convert yaw output to actuator output in range 0 to _max_travel_mm * 1000
@@ -297,34 +408,45 @@ void AP_IrisOrca::send_actuator_position_cmd()
         0,
         _max_travel_mm * 1000);
 
-    // send a message
-    if (send_motor_command_stream((uint8_t)MotorCommandStreamSubCode::POSITION_CONTROL_STREAM, 
+    // send message
+    if (write_motor_command_stream((uint8_t)MotorCommandStreamSubCode::POSITION_CONTROL_STREAM, 
         _actuator_position_desired)){
         // record time of send for health reporting
         WITH_SEMAPHORE(_last_healthy_sem);
         _last_send_actuator_ms = AP_HAL::millis();
-
-        // set expected reply message id
-        set_expected_reply_msgid((uint8_t)FunctionCode::MOTOR_COMMAND_STREAM);
-
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Actuator position sent: %li", _actuator_position_desired);
-
     }
 }
 
+// send an actuator sleep command
 void AP_IrisOrca::send_actuator_sleep_cmd()
 {
-    // send a message
-    if (send_motor_command_stream((uint8_t)MotorCommandStreamSubCode::SLEEP_DATA_STREAM, 0)){
+    // send message
+    if (write_motor_command_stream((uint8_t)MotorCommandStreamSubCode::SLEEP_DATA_STREAM, 0)){
         // record time of send for health reporting
         WITH_SEMAPHORE(_last_healthy_sem);
         _last_send_actuator_ms = AP_HAL::millis();
 
-        // set expected reply message id
-        set_expected_reply_msgid((uint8_t)FunctionCode::MOTOR_COMMAND_STREAM);
-
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Actuator sleep command sent");
     }
+}
+
+// send a request for actuator status
+void AP_IrisOrca::send_actuator_status_request()
+{
+    // send message
+    if (write_motor_read_stream((uint16_t)Register::CTRL_REG_3, 1)){
+        // record time of send for health reporting
+        WITH_SEMAPHORE(_last_healthy_sem);
+        _last_send_actuator_ms = AP_HAL::millis();
+    }
+}
+
+// add CRC to a modbus message
+void AP_IrisOrca::add_crc_modbus(uint8_t *buff, uint8_t len)
+{
+    uint16_t crc = calc_crc_modbus(buff, len);
+    buff[len] = (uint8_t)(crc & 0xFF);
+    buff[len + 1] = (uint8_t)((crc >> 8) & 0xFF);
 }
 
 // process a single byte received on serial port
@@ -339,7 +461,7 @@ bool AP_IrisOrca::parse_byte(uint8_t b)
     _received_buff_len++;
 
     // check for a complete message
-    if (_received_buff_len >= IRISORCA_EXPECTED_REPLY_MSG_LEN)
+    if (_received_buff_len >= _reply_msg_len)
     {
         // check CRC of the message
         uint16_t crc_expected = calc_crc_modbus(_received_buff, _received_buff_len - 2);
@@ -367,24 +489,63 @@ bool AP_IrisOrca::parse_byte(uint8_t b)
 bool AP_IrisOrca::parse_message()
 {
     // check for expected reply
-    if (_received_buff[1] == _reply_msgid) {
-        // handle reply
-        // Shaft position is in 4 bytes starting at byte 2
-        // uint32_t shaft_position = (_received_buff[2] << 24) | (_received_buff[3] << 16) | (_received_buff[4] << 8) | _received_buff[5];
-
-        // Error register is in 2 bytes starting at byte 15
-        uint16_t error = (_received_buff[15] << 8) | _received_buff[16];
-
-        if (error != 0) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Actuator error: %i", error);
+    switch (_received_buff[1]) 
+    {
+        case static_cast<uint8_t>(FunctionCode::WRITE_REGISTER):
+            return parse_write_register();
+        case static_cast<uint8_t>(FunctionCode::MOTOR_COMMAND_STREAM):
+            return parse_motor_command_stream();
+        case static_cast<uint8_t>(FunctionCode::MOTOR_READ_STREAM):
+            return parse_motor_read_stream();
+        default:
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unexpected message");
             return false;
-        }
-        else {
-            return true;
-        }
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unexpected message");
-    return false;
+}
+
+// parse a 0x06 Write Register response
+bool AP_IrisOrca::parse_write_register()
+{
+    // Switch on the register address (bytes 2 and 3)
+    switch ((_received_buff[2] << 8) | _received_buff[3])
+    {
+        case static_cast<uint16_t>(Register::CTRL_REG_3):
+            // Mode of operation was set
+            _mode = _received_buff[5];
+            break;
+        default:
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unexpected write register response");
+            return false;
+    }
+    return true;
+}
+
+// parse a 0x64 Motor Command Stream response
+bool AP_IrisOrca::parse_motor_command_stream()
+{
+    _shaft_position = (_received_buff[2] << 24) | (_received_buff[3] << 16) | (_received_buff[4] << 8) | _received_buff[5];
+    _force_realized = (_received_buff[6] << 24) | (_received_buff[7] << 16) | (_received_buff[8] << 8) | _received_buff[9];
+    _power_consumed = (_received_buff[10] << 8) | _received_buff[11];
+    _temperature = _received_buff[12];
+    _voltage = (_received_buff[13] << 8) | _received_buff[14];
+    _errors = (_received_buff[15] << 8) | _received_buff[16];
+
+    return true;
+}
+
+// parse a 0x68 Motor Read Stream response
+bool AP_IrisOrca::parse_motor_read_stream()
+{
+    // Ignore the read register value and set the other state members
+    _mode = _received_buff[6];
+    _shaft_position = (_received_buff[7] << 24) | (_received_buff[8] << 16) | (_received_buff[9] << 8) | _received_buff[10];
+    _force_realized = (_received_buff[11] << 24) | (_received_buff[12] << 16) | (_received_buff[13] << 8) | _received_buff[14];
+    _power_consumed = (_received_buff[15] << 8) | _received_buff[16];
+    _temperature = _received_buff[17];
+    _voltage = (_received_buff[18] << 8) | _received_buff[19];
+    _errors = (_received_buff[20] << 8) | _received_buff[21];
+
+    return true;
 }
 
 // get the AP_IrisOrca singleton
