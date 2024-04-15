@@ -73,6 +73,8 @@ void MissionItemProtocol::handle_mission_count(
         // the upload count may have changed; free resources and
         // allocate them again:
         free_upload_resources();
+        receiving = false;
+        link = nullptr;
     }
 
     if (packet.count > max_items()) {
