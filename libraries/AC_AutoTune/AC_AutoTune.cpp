@@ -272,7 +272,7 @@ bool AC_AutoTune::currently_level()
 {
     // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - level_start_time_ms > 2 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
+    if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
         mode = FAILED;
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
