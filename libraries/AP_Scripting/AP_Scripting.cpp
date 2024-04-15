@@ -180,12 +180,17 @@ void AP_Scripting::init(void) {
         return;
     }
 
-    const char *dir_name = SCRIPTING_DIRECTORY;
-    if (AP::FS().mkdir(dir_name)) {
-        if (errno != EEXIST) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: failed to create (%s)", dir_name);
+#if AP_FILESYSTEM_FILE_WRITING_ENABLED
+    if ((_dir_disable & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
+        // Only try creating scripts directory if loading from it is enabled
+        const char *dir_name = SCRIPTING_DIRECTORY;
+        if (AP::FS().mkdir(dir_name)) {
+            if (errno != EEXIST) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: failed to create (%s)", dir_name);
+            }
         }
     }
+#endif
 
     AP_HAL::Scheduler::priority_base priority = AP_HAL::Scheduler::PRIORITY_SCRIPTING;
     static const struct {

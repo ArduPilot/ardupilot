@@ -30,6 +30,10 @@ public:
     // give RGB value for single led
     virtual void rgb_set_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id) {}
 
+    // Allow text to be sent or removed from a display
+    virtual void send_text_blocking(const char *text, uint8_t line) {}
+    virtual void release_text(uint8_t line) {}
+
     // this pointer is used to read the parameters relative to devices
     const AP_Notify *pNotify;
 };

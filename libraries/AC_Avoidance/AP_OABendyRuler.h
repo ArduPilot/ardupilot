@@ -1,8 +1,13 @@
 #pragma once
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_BENDYRULER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 /*
  * BendyRuler avoidance algorithm for avoiding the polygon and circular fence and dynamic objects detected by the proximity sensor
@@ -67,7 +72,11 @@ private:
     bool calc_margin_from_object_database(const Location &start, const Location &end, float &margin) const;
 
     // Logging function
+#if HAL_LOGGING_ENABLED
     void Write_OABendyRuler(const uint8_t type, const bool active, const float target_yaw, const float target_pitch, const bool resist_chg, const float margin, const Location &final_dest, const Location &oa_dest) const;
+#else
+    void Write_OABendyRuler(const uint8_t type, const bool active, const float target_yaw, const float target_pitch, const bool resist_chg, const float margin, const Location &final_dest, const Location &oa_dest) const {}
+#endif
 
     // OA common parameters
     float _margin_max;              // object avoidance will ignore objects more than this many meters from vehicle
@@ -83,3 +92,5 @@ private:
     float _bearing_prev;            // stored bearing in degrees 
     Location _destination_prev;     // previous destination, to check if there has been a change in destination
 };
+
+#endif  // AP_OAPATHPLANNER_BENDYRULER_ENABLED

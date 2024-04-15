@@ -22,6 +22,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
@@ -298,6 +299,7 @@ public:
     enum EFIType {
         EFI_TYPE_NONE = 0,
         EFI_TYPE_MS = 1,
+        EFI_TYPE_LOWEHEISER = 2,
         EFI_TYPE_HIRTH = 8,
     };
     
@@ -414,6 +416,7 @@ public:
     } opos;
 
     uint16_t irlock_port;
+    uint16_t rcin_port;
 
     time_t start_time_UTC;
 
@@ -455,6 +458,9 @@ public:
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
+#if AP_SIM_LOWEHEISER_ENABLED
+    Loweheiser loweheiser_sim;
+#endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
 #if AP_TEST_DRONECAN_DRIVERS
@@ -531,6 +537,11 @@ public:
     };
     AP_Int8 gyro_file_rw;
     AP_Int8 accel_file_rw;
+#endif
+
+#ifdef WITH_SITL_OSD
+    AP_Int16 osd_rows;
+    AP_Int16 osd_columns;
 #endif
 };
 

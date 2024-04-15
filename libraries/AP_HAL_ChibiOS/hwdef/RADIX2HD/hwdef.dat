@@ -148,9 +148,6 @@ define HAL_GPIO_A_LED_PIN 10
 define HAL_GPIO_B_LED_PIN 11
 define HAL_GPIO_C_LED_PIN 12
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
-
 define HAL_HAVE_PIXRACER_LED
 
 # 9V regulator switch
@@ -169,8 +166,6 @@ define HAL_I2C_INTERNAL_MASK 0
 
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
-
-define STM32_PWM_USE_ADVANCED TRUE
 
 define HAL_STORAGE_SIZE 16384
 

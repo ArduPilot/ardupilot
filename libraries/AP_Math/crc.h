@@ -13,7 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  interfaces to ArduPilot collection of CRCs. 
+  interfaces to ArduPilot collection of CRCs.
  */
 #pragma once
 
@@ -28,6 +28,7 @@ uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length);
 uint8_t crc8_dvb_update(uint8_t crc, const uint8_t* buf, const uint16_t buf_len);
 uint8_t crc8_maxim(const uint8_t *data, uint16_t length);
 uint8_t crc8_sae(const uint8_t *data, uint16_t length);
+uint8_t crc8_rds02uf(const uint8_t *data, uint16_t length);
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);

@@ -826,6 +826,7 @@ int SocketAPM_close(lua_State *L) {
             ud->close();
             delete ud;
             scripting->_net_sockets[i] = nullptr;
+            *check_SocketAPM(L, 1) = nullptr;
             break;
         }
     }
@@ -919,6 +920,33 @@ int lua_get_current_ref()
     return scripting->get_current_ref();
 }
 
+// This is used when loading modules with require, lua must only look in enabled directory's
+const char* lua_get_modules_path()
+{
+#define LUA_PATH_ROMFS "@ROMFS/scripts/modules/?.lua;" "@ROMFS/scripts/modules/?/init.lua"
+#define LUA_PATH_SCRIPTS LUA_LDIR"?.lua;"  LUA_LDIR"?/init.lua"
+
+    uint16_t dir_disable = AP_Scripting::get_singleton()->get_disabled_dir();
+    dir_disable &= uint16_t(AP_Scripting::SCR_DIR::SCRIPTS) | uint16_t(AP_Scripting::SCR_DIR::ROMFS);
+    if (dir_disable == 0) {
+        // Both directory's are enabled, return both, ROMFS takes priority
+        return LUA_PATH_ROMFS ";" LUA_PATH_SCRIPTS;
+    }
+
+    if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
+        // Only scripts enabled
+        return LUA_PATH_SCRIPTS;
+    }
+
+    if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::ROMFS)) == 0) {
+        // Only ROMFS enabled
+        return LUA_PATH_ROMFS;
+    }
+
+    // Nothing enabled?
+    return "";
+}
+
 // Simple print to GCS or over CAN
 int lua_print(lua_State *L) {
     // Only support a single argument
@@ -954,5 +982,24 @@ int lua_range_finder_handle_script_msg(lua_State *L) {
     return 1;
 }
 #endif
+
+/*
+  lua wants to abort, and doesn't have access to a panic function
+ */
+void lua_abort()
+{
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+#if AP_SIM_ENABLED
+    AP_HAL::panic("lua_abort called");
+#else
+    if (!hal.util->get_soft_armed()) {
+        AP_HAL::panic("lua_abort called");
+    }
+    // abort while flying, all we can do is loop
+    while (true) {
+        hal.scheduler->delay(1000);
+    }
+#endif
+}
 
 #endif  // AP_SCRIPTING_ENABLED

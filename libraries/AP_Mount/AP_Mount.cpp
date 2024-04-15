@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -248,7 +249,7 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     backend->set_mode(mode);
 }
 
-// set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+// set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
 // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
 void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 {
@@ -354,6 +355,12 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if (isnan(pitch_angle_deg) && isnan(yaw_angle_deg) && isnan(pitch_rate_degs) && isnan(yaw_rate_degs)) {
+        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -495,6 +502,12 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
         const float pitch_rate_degs = degrees(packet.pitch_rate);
         const float yaw_rate_degs = degrees(packet.yaw_rate);
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if (isnan(packet.pitch) && isnan(packet.yaw) && isnan(packet.pitch_rate) && isnan(packet.yaw_rate)) {
+        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
@@ -711,6 +724,7 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
+#if HAL_LOGGING_ENABLED
 // write mount log packet for all backends
 void AP_Mount::write_log()
 {
@@ -730,6 +744,7 @@ void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
     }
     backend->write_log(timestamp_us);
 }
+#endif
 
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
@@ -830,6 +845,19 @@ bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
     return backend->set_lens(lens);
 }
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+// primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8_t secondary_source)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_camera_source(primary_source, secondary_source);
+}
+#endif
+
 // send camera information message to GCS
 void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
 {
@@ -868,6 +896,16 @@ bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) con
         return false;
     }
     return backend->get_rangefinder_distance(distance_m);
+}
+
+// enable/disable rangefinder.  Returns true on success
+bool AP_Mount::set_rangefinder_enable(uint8_t instance, bool enable)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_rangefinder_enable(enable);
 }
 
 AP_Mount_Backend *AP_Mount::get_primary() const

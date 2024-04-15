@@ -3,9 +3,12 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_GPS/AP_GPS_config.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
+#include "AP_Proximity/AP_Proximity_config.h"
 
 class AP_Arming {
 public:
@@ -229,15 +232,19 @@ protected:
     
     bool estop_checks(bool display_failure);
 
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    bool crashdump_checks(bool report);
+#endif
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
 
     bool fettec_checks(bool display_failure) const;
 
-    bool kdecan_checks(bool display_failure) const;
-
+#if HAL_PROXIMITY_ENABLED
     virtual bool proximity_checks(bool report) const;
+#endif
 
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
@@ -308,6 +315,18 @@ private:
     bool report_immediately; // set to true when check goes from true to false, to trigger immediate report
 
     void update_arm_gpio();
+
+#if !AP_GPS_BLENDED_ENABLED
+    bool blending_auto_switch_checks(bool report);
+#endif
+
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    struct CrashDump {
+        void check_reset();
+        AP_Int8  acked;
+    } crashdump_ack;
+#endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
 };
 
 namespace AP {

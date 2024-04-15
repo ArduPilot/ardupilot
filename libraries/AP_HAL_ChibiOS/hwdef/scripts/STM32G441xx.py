@@ -20,7 +20,7 @@ mcu = {
         (0x10000000, 10, 2), # CCM
     ],
 
-    'EXPECTED_CLOCK' : 168000000,
+    'EXPECTED_CLOCK' : 160000000,
 
     'DEFINES' : {
         'STM32G4' : '1',

@@ -28,6 +28,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Math/AP_Math.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #include <AP_CANManager/AP_CANManager.h>

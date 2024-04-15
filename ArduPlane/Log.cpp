@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
@@ -65,9 +65,11 @@ void Plane::Log_Write_FullRate(void)
     if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     if (should_log(MASK_LOG_NOTCH_FULLRATE)) {
         AP::ins().write_notch_log_messages();
     }
+#endif
 }
 
 
@@ -393,8 +395,14 @@ const struct LogStructure Plane::log_structure[] = {
       "QTUN", "QffffffeccfBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Trn,Ast", "s----mmmnn---", "F----00000---" , true },
 #endif
 
-// @LoggerMessage: PIQR,PIQP,PIQY,PIQA
-// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
+// @LoggerMessage: PIQR
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll rate
+// @LoggerMessage: PIQP
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Pitch rate
+// @LoggerMessage: PIQY
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Yaw rate
+// @LoggerMessage: PIQA
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for vertical acceleration
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
@@ -477,6 +485,11 @@ const struct LogStructure Plane::log_structure[] = {
 #endif
 };
 
+uint8_t Plane::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -492,26 +505,4 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
-/*
-  initialise logging subsystem
- */
-void Plane::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
-
-#else // LOGGING_ENABLED
-
-void Plane::Log_Write_Attitude(void) {}
-void Plane::Log_Write_Fast(void) {}
-void Plane::Log_Write_Control_Tuning() {}
-void Plane::Log_Write_OFG_Guided() {}
-void Plane::Log_Write_Nav_Tuning() {}
-void Plane::Log_Write_Status() {}
-void Plane::Log_Write_Guided(void) {}
-void Plane::Log_Write_RC(void) {}
-void Plane::Log_Write_Vehicle_Startup_Messages() {}
-
-void Plane::log_init(void) {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

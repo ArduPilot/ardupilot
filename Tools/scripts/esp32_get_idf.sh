@@ -1,5 +1,4 @@
-#!/bin/bash 
-
+#!/usr/bin/env bash
 # if you have modules/esp_idf setup as a submodule, then leave it as a submodule and switch branches
 if [ ! -d modules ]; then
 echo "this script needs to be run from the root of your repo, sorry, giving up."

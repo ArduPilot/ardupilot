@@ -55,7 +55,10 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
     _last_update_ms = now_ms;
 
     // send to EKF
+#if AP_AHRS_ENABLED || HAL_LOGGING_ENABLED
     const float time_delta_sec = packet.time_delta_usec * 1.0E-6;
+#endif
+#if AP_AHRS_ENABLED
     AP::ahrs().writeBodyFrameOdom(packet.confidence,
                                   position_delta,
                                   angle_delta,
@@ -63,12 +66,15 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
                                   now_ms,
                                   _frontend.get_delay_ms(),
                                   _frontend.get_pos_offset());
+#endif
 
+#if HAL_LOGGING_ENABLED
     // log sensor data
     Write_VisualOdom(time_delta_sec,
                                   angle_delta,
                                   position_delta,
                                   packet.confidence);
+#endif
 }
 #endif  // HAL_GCS_ENABLED
 

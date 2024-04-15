@@ -31,9 +31,31 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include "hwdef.h"
+#endif
+
 #ifdef   __cplusplus
 extern "C"
 {
+#endif
+
+/* macOS specific */
+#if defined(__APPLE__)
+/* lwip/contrib/ports/unix/port/netif/sio.c */
+#include <util.h>
+
+/* lwip/src/apps/http/makefsdata/makefsdata.c  */
+#define GETCWD(path, len)             getcwd(path, len)
+#define GETCWD_SUCCEEDED(ret)         (ret != NULL)
+#define CHDIR(path)                   chdir(path)
+#define CHDIR_SUCCEEDED(ret)          (ret == 0)
+
+/* lwip/src/netif/ppp/fsm.c */
+/* lwip/src/netif/ppp/pppos.c */
+/* lwip/src/netif/ppp/vj.c */
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 
 #ifdef LWIP_OPTTEST_FILE
@@ -53,22 +75,27 @@ extern "C"
 #define LWIP_NETCONN               (NO_SYS==0)
 #define LWIP_NETIF_API             (NO_SYS==0)
 
+#ifndef LWIP_IGMP
 #define LWIP_IGMP                  LWIP_IPV4
+#endif
 #define LWIP_ICMP                  LWIP_IPV4
 
 #define LWIP_SNMP                  LWIP_UDP
-#define MIB2_STATS                 LWIP_SNMP
 #ifdef LWIP_HAVE_MBEDTLS
 #define LWIP_SNMP_V3               (LWIP_SNMP)
 #endif
 
-#define LWIP_DNS                   LWIP_UDP
-#define LWIP_MDNS_RESPONDER        LWIP_UDP
+#define LWIP_DNS                   0
+#define LWIP_MDNS_RESPONDER        0
 
 #define LWIP_NUM_NETIF_CLIENT_DATA (LWIP_MDNS_RESPONDER)
 
+#ifndef LWIP_HAVE_LOOPIF
 #define LWIP_HAVE_LOOPIF           1
+#endif
+#ifndef LWIP_NETIF_LOOPBACK
 #define LWIP_NETIF_LOOPBACK        1
+#endif
 #define LWIP_LOOPBACK_MAX_PBUFS    10
 
 #define TCP_LISTEN_BACKLOG         1
@@ -194,7 +221,9 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_TCP                1
 #define TCP_TTL                 255
 
+#ifndef LWIP_ALTCP
 #define LWIP_ALTCP              (LWIP_TCP)
+#endif
 #ifdef LWIP_HAVE_MBEDTLS
 #define LWIP_ALTCP_TLS          (LWIP_TCP)
 #define LWIP_ALTCP_TLS_MBEDTLS  (LWIP_TCP)
@@ -238,13 +267,24 @@ a lot of data that needs to be copied, this should be set high. */
 #define LWIP_ARP                1
 #define ARP_TABLE_SIZE          10
 #define ARP_QUEUEING            1
+#ifndef ARP_PROXYARP_SUPPORT
+#define ARP_PROXYARP_SUPPORT    1
+#endif
 
 
 /* ---------- IP options ---------- */
 /* Define IP_FORWARD to 1 if you wish to have the ability to forward
    IP packets across network interfaces. If you are going to run lwIP
    on a device with only one network interface, define this to 0. */
+#ifndef IP_FORWARD
 #define IP_FORWARD              1
+#endif
+
+/*
+  extra header space when forwarding for adding the ethernet header
+*/
+#define PBUF_LINK_HLEN          16
+
 
 /* IP reassembly and segmentation.These are orthogonal even
  * if they both deal with IP fragments */
@@ -261,7 +301,9 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- DHCP options ---------- */
 /* Define LWIP_DHCP to 1 if you want DHCP configuration of
    interfaces. */
+#ifndef LWIP_DHCP
 #define LWIP_DHCP               1
+#endif
 
 /* 1 if you want to do an ARP check on the offered address
    (recommended). */
@@ -274,40 +316,30 @@ a lot of data that needs to be copied, this should be set high. */
 
 
 /* ---------- UDP options ---------- */
+#ifndef LWIP_UDP
 #define LWIP_UDP                1
+#endif
 #define LWIP_UDPLITE            LWIP_UDP
 #define UDP_TTL                 255
 
 
 /* ---------- RAW options ---------- */
-#define LWIP_RAW                1
+#define LWIP_RAW                0
 
 
 /* ---------- Statistics options ---------- */
 
-#define LWIP_STATS              1
-#define LWIP_STATS_DISPLAY      1
-
-#if LWIP_STATS
-#define LINK_STATS              1
-#define IP_STATS                1
-#define ICMP_STATS              1
-#define IGMP_STATS              1
-#define IPFRAG_STATS            1
-#define UDP_STATS               1
-#define TCP_STATS               1
-#define MEM_STATS               1
-#define MEMP_STATS              1
-#define PBUF_STATS              1
-#define SYS_STATS               1
-#endif /* LWIP_STATS */
+#define LWIP_STATS              0
+#define LWIP_STATS_DISPLAY      0
 
 /* ---------- NETBIOS options ---------- */
-#define LWIP_NETBIOS_RESPOND_NAME_QUERY 1
+#define LWIP_NETBIOS_RESPOND_NAME_QUERY 0
 
 /* ---------- PPP options ---------- */
 
+#ifndef PPP_SUPPORT
 #define PPP_SUPPORT             1      /* Set > 0 for PPP */
+#endif
 
 #if PPP_SUPPORT
 
@@ -319,14 +351,17 @@ a lot of data that needs to be copied, this should be set high. */
  * in this file.
  */
 #define PPPOE_SUPPORT           0
-#define PPPOS_SUPPORT           1
+#define PPPOS_SUPPORT           PPP_SUPPORT
 
 #define PAP_SUPPORT             0      /* Set > 0 for PAP. */
 #define CHAP_SUPPORT            0      /* Set > 0 for CHAP. */
 #define MSCHAP_SUPPORT          0      /* Set > 0 for MSCHAP */
 #define CBCP_SUPPORT            0      /* Set > 0 for CBCP (NOT FUNCTIONAL!) */
 #define CCP_SUPPORT             0      /* Set > 0 for CCP */
-#define VJ_SUPPORT              1      /* Set > 0 for VJ header compression. */
+/*
+  VJ support disabled due to bugs with IP forwarding
+ */
+#define VJ_SUPPORT              0      /* Set > 0 for VJ header compression. */
 #define MD5_SUPPORT             0      /* Set > 0 for MD5 (see also CHAP) */
 
 #endif /* PPP_SUPPORT */

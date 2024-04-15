@@ -159,7 +159,9 @@ bool AP_Winch::pre_arm_check(char *failmsg, uint8_t failmsg_len) const
     }
 
 PASS_TO_BACKEND(update)
+#if HAL_LOGGING_ENABLED
 PASS_TO_BACKEND(write_log)
+#endif
 
 #undef PASS_TO_BACKEND
 

@@ -26,6 +26,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Rally/AP_Rally.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -439,6 +440,7 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_Terrain::log_terrain_data()
 {
     if (!allocate()) {
@@ -472,6 +474,7 @@ void AP_Terrain::log_terrain_data()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 /*
   allocate terrain cache. Making this dynamically allocated allows

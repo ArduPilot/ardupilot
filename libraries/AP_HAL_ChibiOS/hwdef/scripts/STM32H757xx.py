@@ -71,6 +71,9 @@ mcu = {
         'HAL_HAVE_HARDWARE_DOUBLE' : '1',
         'HAL_WITH_MCU_MONITORING' : '1',
         'STM32H7' : '1',
+        # disable core m4 use to silence the asserts
+        # checking allocation of peripherals
+        'STM32_HAS_M4' : '0',
     }
 }
 
@@ -1293,19 +1296,19 @@ ADC1_map = {
     "PA1"	:	17,
     "PA4"	:	18,
     "PA5"	:	19,
-    "PF11"  :   2,
-	"PF12"  :   6,
-    "PF3"   :   5,
 }
 
 ADC2_map = {
 	# format is PIN : ADC2_CHAN
 	"PF13"  :   2,
 	"PB1"	:	5,
+	"PF14"  :   6,
 }
 
 ADC3_map = {
 	# format is PIN : ADC3_CHAN
 	"PC3"   :   1,
 	"PF3"	:   5,
+	"PF5"   :   4,
+	"PF4"   :   9,
 }

@@ -357,7 +357,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_SYSTEM_TIME,
     MSG_WIND,
+#if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#endif
     MSG_DISTANCE_SENSOR,
 #if AP_BATTERY_ENABLED
     MSG_BATTERY_STATUS,
@@ -407,15 +409,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
-bool GCS_MAVLINK_Blimp::handle_guided_request(AP_Mission::Mission_Command &cmd)
-{
-    // #if MODE_AUTO_ENABLED == ENABLED
-    //     // return blimp.mode_auto.do_guided(cmd);
-    // #else
-    return false;
-    // #endif
-}
-
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
@@ -453,15 +446,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
     }
     // blimp.flightmode->auto_yaw.set_roi(roi_loc);
     return MAV_RESULT_ACCEPTED;
-}
-
-bool GCS_MAVLINK_Blimp::set_home_to_current_location(bool _lock)
-{
-    return blimp.set_home_to_current_location(_lock);
-}
-bool GCS_MAVLINK_Blimp::set_home(const Location& loc, bool _lock)
-{
-    return blimp.set_home(loc, _lock);
 }
 
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
@@ -512,22 +496,16 @@ bool GCS_MAVLINK_Blimp::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD pac
 }
 #endif
 
-void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Blimp::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS: {     // MAV ID: 109
-        handle_radio_status(msg, blimp.should_log(MASK_LOG_PM));
-        break;
-    }
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
         break;
 
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     }     // end switch
 } // end handle mavlink

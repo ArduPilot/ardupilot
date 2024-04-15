@@ -126,7 +126,7 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
 {
     // assume X quad layout, with motors at 45, 135, 225 and 315 degrees
-    // order FrontRight, RearLeft, FrontLeft, RearLeft
+    // order FrontRight, RearLeft, FrontLeft, RearRight
     const float angles[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { 45, 225, 315, 135 };
     const bool x_clockwise[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { false, false, true, true };
     const float cos45 = cosf(radians(45));
@@ -159,7 +159,8 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+
     // Check if rotors are spooled down
     _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }
@@ -206,10 +207,6 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     update_takeoff_collective_flag(collective_out);
 
     float collective_range = (_collective_max - _collective_min) * 0.001f;
-
-    if (_heliflags.inverted_flight) {
-        collective_out = 1.0f - collective_out;
-    }
 
     // feed power estimate into main rotor controller
     _main_rotor.set_collective(fabsf(collective_out));

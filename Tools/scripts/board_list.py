@@ -179,7 +179,6 @@ class BoardList(object):
             "f103-HWESC",
             "f103-Trigger",
             "G4-ESC",
-            "HerePro",
         ]
         ret = []
         for x in self.boards:

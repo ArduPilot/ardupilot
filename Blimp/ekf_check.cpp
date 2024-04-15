@@ -69,7 +69,7 @@ void Blimp::ekf_check()
                 // limit count from climbing too high
                 ekf_check_state.fail_count = EKF_CHECK_ITERATIONS_MAX;
                 ekf_check_state.bad_variance = true;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
@@ -86,7 +86,7 @@ void Blimp::ekf_check()
             // if compass is flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
-                AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
                 // clear failsafe
                 failsafe_ekf_off_event();
             }
@@ -145,7 +145,7 @@ void Blimp::failsafe_ekf_event()
 
     // EKF failsafe event has occurred
     failsafe.ekf = true;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
     // does this mode require position?
     if (!blimp.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_MANUAL)) {
@@ -171,7 +171,7 @@ void Blimp::failsafe_ekf_off_event(void)
     }
 
     failsafe.ekf = false;
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
 // check for ekf yaw reset and adjust target heading, also log position reset
@@ -182,13 +182,13 @@ void Blimp::check_ekf_reset()
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         ekfYawReset_ms = new_ekfYawReset_ms;
-        AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
+        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
 
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
     if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
         ekf_primary_core = ahrs.get_primary_core_index();
-        AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
         gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
     }
 }
@@ -232,7 +232,7 @@ void Blimp::check_vibration()
                 // restore ekf gains, reset timers and update user
                 vibration_check.high_vibes = false;
                 vibration_check.clear_ms = 0;
-                AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
             }
         }
@@ -252,7 +252,7 @@ void Blimp::check_vibration()
         if (!vibration_check.high_vibes) {
             // switch ekf to use resistant gains
             vibration_check.high_vibes = true;
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
         }
     }

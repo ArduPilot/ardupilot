@@ -91,5 +91,7 @@ void Rover::update_wheel_encoder()
 void Rover::read_rangefinders(void)
 {
     rangefinder.update();
+#if HAL_LOGGING_ENABLED
     Log_Write_Depth();
+#endif
 }

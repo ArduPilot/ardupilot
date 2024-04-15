@@ -99,6 +99,7 @@ void SOCKET_CLASS_NAME::make_sockaddr(const char *address, uint16_t port, struct
     sockaddr.sin_addr.s_addr = htonl(inet_str_to_addr(address));
 }
 
+#if !defined(HAL_BOOTLOADER_BUILD)
 /*
   connect the socket
  */
@@ -185,6 +186,7 @@ fail_multi:
     fd_in = -1;
     return false;
 }
+#endif // HAL_BOOTLOADER_BUILD
 
 /*
   connect the socket with a timeout
@@ -358,8 +360,7 @@ ssize_t SOCKET_CLASS_NAME::recv(void *buf, size_t size, uint32_t timeout_ms)
  */
 void SOCKET_CLASS_NAME::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
-    // 16 bytes for aaa.bbb.ccc.ddd with null term
-    static char buf[16];
+    static char buf[IP4_STR_LEN];
     auto *str = last_recv_address(buf, sizeof(buf), port);
     ip_addr = str;
 }

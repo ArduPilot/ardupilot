@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_Baro.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -44,3 +48,5 @@ void AP_Baro::Write_Baro(void)
         Write_Baro_instance(time_us, i);
     }
 }
+
+#endif

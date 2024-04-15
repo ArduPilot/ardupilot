@@ -1,0 +1,41 @@
+include ../Pixhawk6X/hwdef.dat
+
+undef IOMCU_UART
+undef USART6
+undef ROMFS
+undef HAL_HAVE_SAFETY_SWITCH
+undef HAL_WITH_IO_MCU_BIDIR_DSHOT
+undef COMPASS
+undef BARO
+
+define AP_ADVANCEDFAILSAFE_ENABLED 0
+
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_PIXHAWK6X_PERIPH
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+define AP_CAN_SLCAN_ENABLED 0
+
+define HAL_PERIPH_ENABLE_NETWORKING
+define HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+
+define AP_NETWORKING_BACKEND_PPP 1
+
+define HAL_NO_MONITOR_THREAD
+
+define HAL_USE_RTC FALSE
+
+# use blue LED
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_LED_BLUE
+
+undef HAL_OS_FATFS_IO
+
+undef SDMMC1
+
+MAIN_STACK 0x2000
+PROCESS_STACK 0x6000
+
+include ../include/network_PPPGW.inc

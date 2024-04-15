@@ -62,7 +62,7 @@ void WiFiUdpDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2", Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2, &_wifi_task_handle,FASTCPU) != pdPASS) {
             hal.console->printf("FAILED to create task _wifi_thread2 on FASTCPU\n");
         } else {
-	    hal.console->printf("OK created task _wifi_thread2 on FASTCPU\n");
+	    hal.console->printf("OK created task _wifi_thread2 for UDP on port 14550 on FASTCPU\n"); //UDP_PORT
     	}
 		
         _readbuf.set_size(RX_BUF_SIZE);

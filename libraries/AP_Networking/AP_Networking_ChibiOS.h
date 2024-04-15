@@ -8,6 +8,7 @@
 class AP_Networking_ChibiOS : public AP_Networking_Backend
 {
 public:
+    friend class BL_Network;
     using AP_Networking_Backend::AP_Networking_Backend;
 
     /* Do not allow copies */
@@ -17,7 +18,7 @@ public:
     void update() override;
 
 private:
-    bool allocate_buffers(void);
+    static bool allocate_buffers(void);
     void thread(void);
     static void link_up_cb(void*);
     static void link_down_cb(void*);

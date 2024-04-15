@@ -494,7 +494,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
        !have_throttle &&
        !SRV_Channels::function_assigned(SRV_Channel::k_steering) &&
        !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
-       !has_sail()) {
+       !has_sail() &&
+       !is_omni()) {
         if (report) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
         }
@@ -924,7 +925,7 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         const float scaled_steering = steering / 4500.0f;
         const float scaled_lateral = lateral * 0.01f;
 
-        float thr_str_ltr_out[AP_MOTORS_NUM_MOTORS_MAX];
+        float thr_str_ltr_out[_motors_num];
         float thr_str_ltr_max = 1;
         for (uint8_t i=0; i<_motors_num; i++) {
             // Each motor outputs throttle + steering + lateral

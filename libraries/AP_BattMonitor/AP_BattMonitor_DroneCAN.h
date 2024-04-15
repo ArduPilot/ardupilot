@@ -61,7 +61,7 @@ public:
 private:
     void handle_battery_info(const uavcan_equipment_power_BatteryInfo &msg);
     void handle_battery_info_aux(const ardupilot_equipment_power_BatteryInfoAux &msg);
-    void update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc);
+    void update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc, uint8_t soh_pct);
 
     static bool match_battery_id(uint8_t instance, uint8_t battery_id);
 

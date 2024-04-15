@@ -4,6 +4,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include "quadplane.h"
+#include "defines.h"
 
 class GCS_MAVLINK_Plane : public GCS_MAVLINK
 {
@@ -17,6 +18,10 @@ public:
 protected:
 
     uint32_t telem_delay() const override;
+
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
+#endif
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg) override;
@@ -37,20 +42,19 @@ protected:
 
     bool persist_streamrates() const override { return true; }
 
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;
     void send_pid_tuning() override;
 
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
+    void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
 private:
 
-    void send_pid_info(const AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);
+    void send_pid_info(const struct AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);
 
-    void handleMessage(const mavlink_message_t &msg) override;
+    void handle_message(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
@@ -60,6 +64,10 @@ private:
     MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_DO_VTOL_TRANSITION(const mavlink_command_int_t &packet);
+
+    void handle_set_position_target_global_int(const mavlink_message_t &msg);
+    void handle_set_position_target_local_ned(const mavlink_message_t &msg);
+    void handle_set_attitude_target(const mavlink_message_t &msg);
 
 #if HAL_QUADPLANE_ENABLED
 #if AP_MAVLINK_COMMAND_LONG_ENABLED

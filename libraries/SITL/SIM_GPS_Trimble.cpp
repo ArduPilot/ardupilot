@@ -98,7 +98,7 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 pos_flags_2,
                 bootcount
             };
-            static_assert(sizeof(gsof_pos_time) - (sizeof(gsof_pos_time::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_time::RECORD_LEN)) == GSOF_POS_TIME_LEN);
+            static_assert(sizeof(gsof_pos_time) - (sizeof(gsof_pos_time::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_time::RECORD_LEN)) == GSOF_POS_TIME_LEN, "Trimble size check failed");
 
             payload_sz += sizeof(pos_time);
             memcpy(&buf[offset], &pos_time, sizeof(pos_time));
@@ -127,7 +127,7 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 gsof_pack_double(d->longitude * DEG_TO_RAD_DOUBLE),
                 gsof_pack_double(static_cast<double>(d->altitude))
             };
-            static_assert(sizeof(gsof_pos) - (sizeof(gsof_pos::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos::RECORD_LEN)) == GSOF_POS_LEN);
+            static_assert(sizeof(gsof_pos) - (sizeof(gsof_pos::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos::RECORD_LEN)) == GSOF_POS_LEN, "Trimble size check failed");
 
             payload_sz += sizeof(pos);
             memcpy(&buf[offset], &pos, sizeof(pos));
@@ -180,7 +180,7 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 // Intentionally narrow from double.
                 gsof_pack_float(static_cast<float>(d->speedD))
             };
-            static_assert(sizeof(gsof_vel) - (sizeof(gsof_vel::OUTPUT_RECORD_TYPE) + sizeof(gsof_vel::RECORD_LEN)) == GSOF_VEL_LEN);
+            static_assert(sizeof(gsof_vel) - (sizeof(gsof_vel::OUTPUT_RECORD_TYPE) + sizeof(gsof_vel::RECORD_LEN)) == GSOF_VEL_LEN, "Trimble size check failed");
 
             payload_sz += sizeof(vel);
             memcpy(&buf[offset], &vel, sizeof(vel));
@@ -204,13 +204,13 @@ void GPS_Trimble::publish(const GPS_Data *d)
             } dop {};
             // Check the payload size calculation in the compiler
             constexpr auto dop_size = sizeof(gsof_dop);
-            static_assert(dop_size == 18);
+            static_assert(dop_size == 18, "gsof_dop must be 8 bytes");
             constexpr auto dop_record_type_size = sizeof(gsof_dop::OUTPUT_RECORD_TYPE);
-            static_assert(dop_record_type_size == 1);
+            static_assert(dop_record_type_size == 1, "gsof_dop::OUTPUT_RECORD_TYPE must be 1 byte");
             constexpr auto len_size = sizeof(gsof_dop::RECORD_LEN);
-            static_assert(len_size == 1);
+            static_assert(len_size == 1, "gsof_dop::RECORD_LEN must be 1 bytes");
             constexpr auto dop_payload_size = dop_size - (dop_record_type_size + len_size);
-            static_assert(dop_payload_size == GSOF_DOP_LEN);
+            static_assert(dop_payload_size == GSOF_DOP_LEN, "dop_payload_size must be GSOF_DOP_LEN bytes");
 
             payload_sz += sizeof(dop);
             memcpy(&buf[offset], &dop, sizeof(dop));
@@ -237,7 +237,7 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 uint32_t unit_variance = htobe32(0);
                 uint16_t n_epocs = htobe32(1); // Always 1 for kinematic.
             } pos_sigma {};
-            static_assert(sizeof(gsof_pos_sigma) - (sizeof(gsof_pos_sigma::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_sigma::RECORD_LEN)) == GSOF_POS_SIGMA_LEN);
+            static_assert(sizeof(gsof_pos_sigma) - (sizeof(gsof_pos_sigma::OUTPUT_RECORD_TYPE) + sizeof(gsof_pos_sigma::RECORD_LEN)) == GSOF_POS_SIGMA_LEN, "Trimble size check failed");
             payload_sz += sizeof(pos_sigma);
             memcpy(&buf[offset], &pos_sigma, sizeof(pos_sigma));
             offset += sizeof(pos_sigma);
@@ -536,7 +536,7 @@ void GPS_Trimble::send_gsof(const uint8_t *buf, const uint16_t size)
 uint64_t GPS_Trimble::gsof_pack_double(const double& src)
 {
     uint64_t dst;
-    static_assert(sizeof(src) == sizeof(dst));
+    static_assert(sizeof(src) == sizeof(dst), "src and dst must have equal size");
     memcpy(&dst, &src, sizeof(dst));
     dst = htobe64(dst);
     return dst;
@@ -545,7 +545,7 @@ uint64_t GPS_Trimble::gsof_pack_double(const double& src)
 uint32_t GPS_Trimble::gsof_pack_float(const float& src)
 {
     uint32_t dst;
-    static_assert(sizeof(src) == sizeof(dst));
+    static_assert(sizeof(src) == sizeof(dst), "src and dst must have equal size");
     memcpy(&dst, &src, sizeof(dst));
     dst = htobe32(dst);
     return dst;

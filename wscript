@@ -86,6 +86,29 @@ def _set_build_context_variant(board):
             continue
         c.variant = board
 
+# Remove all submodules and then sync
+@conf
+def submodule_force_clean(ctx):
+    whitelist = {
+                            'COLCON_IGNORE',
+                            'esp_idf',
+                          }
+
+    # Get all items in the modules folder
+    module_list = os.scandir('modules')
+
+    # Delete all directories except those in the whitelist
+    for module in module_list:
+        if (module.is_dir()) and (module.name not in whitelist):
+            shutil.rmtree(module)
+
+    submodulesync(ctx)
+
+# run Tools/gittools/submodule-sync.sh to sync submodules
+@conf
+def submodulesync(ctx):
+    subprocess.call(['Tools/gittools/submodule-sync.sh'])
+
 def init(ctx):
     # Generate Task List, so that VS Code extension can keep track
     # of changes to possible build targets
@@ -651,9 +674,9 @@ def generate_tasklist(ctx, do_print=True):
             elif 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
-                if 'sitl' in board or 'SITL' in board:
+                if boards.is_board_based(board, boards.sitl):
                     task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'replay']
-                elif 'linux' in board:
+                elif boards.is_board_based(board, boards.linux):
                     task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub']
                 else:
                     task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader']
@@ -702,7 +725,7 @@ def _build_dynamic_sources(bld):
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/[a-z]* libraries/AP_DroneCAN/dsdl/[a-z]*', dir=True, src=False),
             output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
             name='dronecan',
             export_includes=[

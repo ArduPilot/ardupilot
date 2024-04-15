@@ -3,12 +3,13 @@
 
   Many thanks to the cleanflight and betaflight projects
  */
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_CC2500_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 // #pragma GCC optimize("O0")
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#if HAL_RCINPUT_WITH_AP_RADIO
 
 #include <AP_Math/AP_Math.h>
 #include "AP_Radio_cc2500.h"
@@ -1563,5 +1564,4 @@ void AP_Radio_cc2500::check_double_bind(void)
     radio_singleton->nextChannel(1);
 }
 
-#endif // HAL_RCINPUT_WITH_AP_RADIO
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif  // AP_RADIO_CC2500_ENABLED

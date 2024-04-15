@@ -177,8 +177,8 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_A_RAT_YAW_FF",    0.2 },
     { "Q_A_RAT_YAW_I",     0.18 },
     { "Q_A_ANGLE_BOOST",   0 },
-    { "LIM_PITCH_MAX",    3000 },
-    { "LIM_PITCH_MIN",    -3000 },
+    { "PTCH_LIM_MAX_DEG",  30 },
+    { "PTCH_LIM_MIN_DEG", -30 },
     { "MIXING_GAIN",      1.0 },
     { "RUDD_DT_GAIN",      10 },
     { "Q_TRANSITION_MS",   2000 },
@@ -783,6 +783,7 @@ void Tailsitter::speed_scaling(void)
 
 }
 
+#if HAL_LOGGING_ENABLED
 // Write tailsitter specific log
 void Tailsitter::write_log()
 {
@@ -799,6 +800,7 @@ void Tailsitter::write_log()
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // return true if pitch control should be relaxed
 // on vectored belly sitters the pitch control is not relaxed in order to keep motors pointing and avoid risk of props hitting the ground

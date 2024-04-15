@@ -36,8 +36,9 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Camera_Backend);
 
-    enum CAMOPTIONS {
-        REC_ARM_DISARM = 0, // Recording start/stop on Arm/Disarm
+    // camera options parameter values
+    enum class Options : int8_t {
+        RecordWhileArmed = (1 << 0U)
     };
 
     // init - performs any required initialisation
@@ -83,6 +84,11 @@ public:
 
     // set camera lens as a value from 0 to 5
     virtual bool set_lens(uint8_t lens) { return false; }
+
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    virtual bool set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source) { return false; }
+#endif
 
     // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
     float horizontal_fov() const { return MAX(0, _params.hfov); }

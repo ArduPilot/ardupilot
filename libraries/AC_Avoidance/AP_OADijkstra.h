@@ -1,9 +1,14 @@
 #pragma once
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_DIJKSTRA_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_OAVisGraph.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 /*
  * Dijkstra's algorithm for path planning around polygon fence
@@ -56,7 +61,7 @@ private:
         DIJKSTRA_ERROR_TOO_MANY_FENCE_POINTS,
         DIJKSTRA_ERROR_NO_POSITION_ESTIMATE,
         DIJKSTRA_ERROR_COULD_NOT_FIND_PATH
-    };
+    } _error_id;
 
     // return error message for a given error id
     const char* get_error_msg(AP_OADijkstra_Error error_id) const;
@@ -204,12 +209,19 @@ private:
     AP_OADijkstra_Error _error_last_id;                 // last error id sent to GCS
     uint32_t _error_last_report_ms;                     // last time an error message was sent to GCS
 
+#if HAL_LOGGING_ENABLED
     // Logging functions
     void Write_OADijkstra(const uint8_t state, const uint8_t error_id, const uint8_t curr_point, const uint8_t tot_points, const Location &final_dest, const Location &oa_dest) const;
     void Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const;
+#else
+    void Write_OADijkstra(const uint8_t state, const uint8_t error_id, const uint8_t curr_point, const uint8_t tot_points, const Location &final_dest, const Location &oa_dest) const {}
+    void Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const {}
+#endif
     uint8_t _log_num_points;
     uint8_t _log_visgraph_version;
 
     // reference to AP_OAPathPlanner options param
     AP_Int16 &_options;
 };
+
+#endif  // AP_OAPATHPLANNER_DIJKSTRA_ENABLED

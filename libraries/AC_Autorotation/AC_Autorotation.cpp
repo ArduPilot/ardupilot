@@ -252,6 +252,7 @@ float AC_Autorotation::get_rpm(bool update_counter)
 }
 
 
+#if HAL_LOGGING_ENABLED
 void AC_Autorotation::Log_Write_Autorotation(void) const
 {
 // @LoggerMessage: AROT
@@ -289,7 +290,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
                         (double)_accel_target,
                         (double)_pitch_target);
 }
-
+#endif  // HAL_LOGGING_ENABLED
 
 // Initialise forward speed controller
 void AC_Autorotation::init_fwd_spd_controller(void)

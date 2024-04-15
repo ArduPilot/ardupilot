@@ -84,7 +84,7 @@ public:
     int stat(const char *pathname, struct stat *stbuf);
 
     // stat variant for scripting
-    typedef struct {
+    typedef struct Stat {
         uint32_t size;
         int32_t mode;
         uint32_t mtime;
@@ -155,6 +155,14 @@ private:
       find backend by open fd
      */
     const Backend &backend_by_fd(int &fd) const;
+
+    // support for listing out virtual directory entries (e.g. @SYS
+    // then @MISSION)
+    struct {
+        uint8_t backend_ofs;
+        struct dirent de;
+        uint8_t d_off;
+    } virtual_dirent;
 };
 
 namespace AP {

@@ -20,6 +20,10 @@
   find which serial port they should use
  */
 
+#include "AP_SerialManager_config.h"
+
+#if AP_SERIALMANAGER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
@@ -867,3 +871,5 @@ AP_SerialManager &serialmanager()
 }
 
 }
+
+#endif  // AP_SERIALMANAGER_ENABLED

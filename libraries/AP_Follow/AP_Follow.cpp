@@ -214,9 +214,9 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
         return false;
     }
 
-    // change to altitude above home if relative altitude is being used
+    // change to altitude above home
     if (target_loc.relative_alt == 1) {
-        current_loc.alt -= AP::ahrs().get_home().alt;
+        current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME);
     }
 
     // calculate difference
@@ -395,8 +395,9 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         break;
     }
     }
-    
+
     if (updated) {
+#if HAL_LOGGING_ENABLED
         // get estimated location and velocity
         Location loc_estimate{};
         Vector3f vel_estimate;
@@ -431,6 +432,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
                                                loc_estimate.lng,
                                                loc_estimate.alt
                                                );
+#endif
     }
 }
 

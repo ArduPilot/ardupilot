@@ -20,7 +20,7 @@
 
 #include "AP_RCProtocol_config.h"
 
-#if AP_RCPROTOCOL_ENABLED
+#if AP_RCPROTOCOL_DSM_ENABLED
 
 #include "AP_RCProtocol_DSM.h"
 #include <AP_VideoTX/AP_VideoTX_config.h>
@@ -539,4 +539,4 @@ void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
     _process_byte(AP_HAL::millis(), b);
 }
 
-#endif  // AP_RCPROTOCOL_ENABLED
+#endif  // AP_RCPROTOCOL_DSM_ENABLED

@@ -30,28 +30,6 @@
 #include <SITL/SIM_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-/**
-   maximum number of GPS instances available on this platform. If more
-   than 1 then redundant sensors may be available
- */
-#ifndef GPS_MAX_RECEIVERS
-#define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
-#endif
-#if !defined(GPS_MAX_INSTANCES)
-#if GPS_MAX_RECEIVERS > 1
-#define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
-#else
-#define GPS_MAX_INSTANCES 1
-#endif // GPS_MAX_RECEIVERS > 1
-#endif // GPS_MAX_INSTANCES
-
-#if GPS_MAX_RECEIVERS <= 1 && GPS_MAX_INSTANCES > 1
-#error "GPS_MAX_INSTANCES should be 1 for GPS_MAX_RECEIVERS <= 1"
-#endif
-
-#if GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
-#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
-#endif
 #define GPS_UNKNOWN_DOP UINT16_MAX // set unknown DOP's to maximum value, which is also correct for MAVLink
 
 // the number of GPS leap seconds - copied into SIM_GPS.cpp
@@ -68,6 +46,7 @@
 #endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
+class RTCM3_Parser;
 
 /// @class AP_GPS
 /// GPS driver main class
@@ -135,6 +114,33 @@ public:
 #if HAL_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
+    };
+
+    // convenience methods for working out what general type an instance is:
+    bool is_rtk_base(uint8_t instance) const;
+    bool is_rtk_rover(uint8_t instance) const;
+
+    // params for an instance:
+    class Params {
+    public:
+        // Constructor
+        Params(void);
+
+        AP_Enum<GPS_Type> type;
+        AP_Int8 gnss_mode;
+        AP_Int16 rate_ms;   // this parameter should always be accessed using get_rate_ms()
+        AP_Vector3f antenna_offset;
+        AP_Int16 delay_ms;
+        AP_Int8  com_port;
+#if HAL_ENABLE_DRONECAN_DRIVERS
+        AP_Int32 node_id;
+        AP_Int32 override_node_id;
+#endif
+#if GPS_MOVING_BASELINE
+        MovingBase mb_params;
+#endif // GPS_MOVING_BASELINE
+
+        static const struct AP_Param::GroupInfo var_info[];
     };
 
     /// GPS status codes.  These are kept aligned with MAVLink by
@@ -212,6 +218,7 @@ public:
         float undulation;                   //<height that WGS84 is above AMSL at the current location
         bool have_undulation;               ///<do we have a value for the undulation
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
+        bool announced_detection;           ///< true once we have announced GPS has been seen to the user
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
         bool corrected_timestamp_updated;  ///< true if the corrected timestamp has been updated
         uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
@@ -237,7 +244,12 @@ public:
     };
 
     /// Startup initialisation.
-    void init(const class AP_SerialManager& serial_manager);
+    void init();
+
+    // ethod for APPPeriph to set the default type for the first GPS instance:
+    void set_default_type_for_gps1(uint8_t default_type) {
+        params[0].type.set_default(default_type);
+    }
 
     /// Update GPS state based on possible bytes received from the module.
     /// This routine must be called periodically (typically at 10Hz or
@@ -245,7 +257,7 @@ public:
     void update(void);
 
     // Pass mavlink data to message handlers (for MAV type)
-    void handle_msg(const mavlink_message_t &msg);
+    void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
@@ -524,7 +536,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if HAL_LOGGING_ENABLED
     void Write_AP_Logger_Log_Startup_messages();
+#endif
 
     // indicate which bit in LOG_BITMASK indicates gps logging enabled
     void set_log_gps_bit(uint32_t bit) { _log_gps_bit = bit; }
@@ -562,7 +576,7 @@ public:
 
     // get configured type by instance
     GPS_Type get_type(uint8_t instance) const {
-        return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
+        return instance>=ARRAY_SIZE(params) ? GPS_Type::GPS_TYPE_NONE : params[instance].type;
     }
 
     // get iTOW, if supported, zero otherwie
@@ -585,36 +599,27 @@ public:
     void clear_RTCMV3();
 #endif // GPS_MOVING_BASELINE
 
+#if !AP_GPS_BLENDED_ENABLED
+    uint8_t get_auto_switch_type() const { return _auto_switch; }
+#endif
+
 protected:
 
     // configuration parameters
-    AP_Int8 _type[GPS_MAX_RECEIVERS];
+    Params params[GPS_MAX_RECEIVERS];
     AP_Int8 _navfilter;
     AP_Int8 _auto_switch;
-    AP_Int8 _min_dgps;
     AP_Int16 _sbp_logmask;
     AP_Int8 _inject_to;
     uint32_t _last_instance_swap_ms;
     AP_Enum<SBAS_Mode> _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
-    AP_Int8 _gnss_mode[GPS_MAX_RECEIVERS];
-    AP_Int16 _rate_ms[GPS_MAX_RECEIVERS];   // this parameter should always be accessed using get_rate_ms()
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
-    AP_Vector3f _antenna_offset[GPS_MAX_RECEIVERS];
-    AP_Int16 _delay_ms[GPS_MAX_RECEIVERS];
-    AP_Int8  _com_port[GPS_MAX_RECEIVERS];
     AP_Int8 _blend_mask;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
-#if HAL_ENABLE_DRONECAN_DRIVERS
-    AP_Int32 _node_id[GPS_MAX_RECEIVERS];
-    AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
-#endif
-#if GPS_MOVING_BASELINE
-    MovingBase mb_params[GPS_MAX_RECEIVERS];
-#endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
 
@@ -624,6 +629,9 @@ protected:
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
         HeightEllipsoid   = (1U << 4),
+        GPSL5HealthOverride = (1U << 5),
+        AlwaysRTCMDecode = (1U << 6),
+        DisableRTCMDecode = (1U << 7),
     };
 
     // check if an option is set
@@ -676,13 +684,26 @@ private:
     struct detect_state {
         uint32_t last_baud_change_ms;
         uint8_t current_baud;
+        uint32_t probe_baud;
         bool auto_detected_baud;
+#if AP_GPS_UBLOX_ENABLED
         struct UBLOX_detect_state ublox_detect_state;
+#endif
+#if AP_GPS_SIRF_ENABLED
         struct SIRF_detect_state sirf_detect_state;
+#endif
+#if AP_GPS_NMEA_ENABLED
         struct NMEA_detect_state nmea_detect_state;
+#endif
+#if AP_GPS_SBP_ENABLED
         struct SBP_detect_state sbp_detect_state;
+#endif
+#if AP_GPS_SBP2_ENABLED
         struct SBP2_detect_state sbp2_detect_state;
+#endif
+#if AP_GPS_ERB_ENABLED
         struct ERB_detect_state erb_detect_state;
+#endif
     } detect_state[GPS_MAX_RECEIVERS];
 
     struct {
@@ -727,14 +748,14 @@ private:
     } rtcm_stats;
 
     // re-assemble GPS_RTCM_DATA message
-    void handle_gps_rtcm_data(const mavlink_message_t &msg);
+    void handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
 
     //Inject a packet of raw binary to a GPS
     void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
-#if defined(GPS_BLENDED_INSTANCE)
+#if AP_GPS_BLENDED_ENABLED
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
@@ -785,6 +806,21 @@ private:
     // logging support
     void Write_GPS(uint8_t instance);
 
+#if AP_GPS_RTCM_DECODE_ENABLED
+    /*
+      per mavlink channel RTCM decoder, enabled with RTCM decode
+       option in GPS_DRV_OPTIONS
+    */
+    struct {
+        RTCM3_Parser *parsers[MAVLINK_COMM_NUM_BUFFERS];
+        uint32_t sent_crc[32];
+        uint8_t sent_idx;
+        uint16_t seen_mav_channels;
+    } rtcm;
+    bool parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt);
+#endif
+
+    void convert_parameters();
 };
 
 namespace AP {

@@ -4,13 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 
-#include <AP_Gripper/AP_Gripper.h>
-#include <AP_Stats/AP_Stats.h>
 #include <AP_Arming/AP_Arming.h>
-
-#if AP_SCRIPTING_ENABLED
-#include <AP_Scripting/AP_Scripting.h>
-#endif
 
 // Global parameter class.
 //
@@ -67,7 +61,7 @@ public:
         k_param_BoardConfig = 20, // Board configuration (Pixhawk/Linux/etc)
         k_param_scheduler, // Scheduler (for debugging/perf_info)
         k_param_logger, // AP_Logger Logging
-        k_param_serial_manager, // Serial ports, AP_SerialManager
+        k_param_serial_manager_old, // Serial ports, AP_SerialManager
         k_param_notify, // Notify Library, AP_Notify
         k_param_arming = 26, // Arming checks
         k_param_can_mgr,
@@ -196,7 +190,7 @@ public:
         // Misc Sub settings
         k_param_log_bitmask = 165,
         k_param_angle_max = 167,
-        k_param_rangefinder_gain,
+        k_param_rangefinder_gain, // deprecated
         k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)
         k_param_pilot_speed_up,     // renamed from k_param_pilot_velocity_z_max
@@ -234,6 +228,8 @@ public:
         k_param_cam_slew_limit = 237, // deprecated
         k_param_lights_steps,
         k_param_pilot_speed_dn,
+        k_param_rangefinder_signal_min,
+        k_param_surftrak_depth,
 
         k_param_vehicle = 257, // vehicle common block of parameters
     };
@@ -248,7 +244,8 @@ public:
     AP_Float        throttle_filt;
 
 #if RANGEFINDER_ENABLED == ENABLED
-    AP_Float        rangefinder_gain;
+    AP_Int8         rangefinder_signal_min;     // minimum signal quality for good rangefinder readings
+    AP_Float        surftrak_depth;             // surftrak will try to keep sub below this depth
 #endif
 
     AP_Int8         failsafe_leak;              // leak detection failsafe behavior
@@ -354,17 +351,9 @@ public:
 class ParametersG2 {
 public:
     ParametersG2(void);
-#if STATS_ENABLED == ENABLED
-    // vehicle statistics
-    AP_Stats stats;
-#endif
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
-
-#if AP_GRIPPER_ENABLED
-    AP_Gripper gripper;
-#endif
 
 #if HAL_PROXIMITY_ENABLED
     // proximity (aka object avoidance) library
@@ -377,9 +366,6 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
 };
 
 extern const AP_Param::Info        var_info[];

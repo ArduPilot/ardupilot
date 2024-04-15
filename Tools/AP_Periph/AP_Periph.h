@@ -32,6 +32,9 @@
 #if HAL_WITH_ESC_TELEM
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #endif
+#ifdef HAL_PERIPH_ENABLE_RTC
+#include <AP_RTC/AP_RTC.h>
+#endif
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include "rc_in.h"
 #include "batt_balance.h"
@@ -39,6 +42,21 @@
 #include "serial_options.h"
 #if AP_SIM_ENABLED
 #include <SITL/SITL.h>
+#endif
+#include <AP_AHRS/AP_AHRS.h>
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    #error "Relay and PWM_HARDPOINT both use hardpoint message"
+#endif
+#include <AP_Relay/AP_Relay.h>
+#if !AP_RELAY_ENABLED
+    #error "HAL_PERIPH_ENABLE_RELAY requires AP_RELAY_ENABLED"
+#endif
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE) && !AP_TEMPERATURE_SENSOR_ENABLED
+    #error "HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE requires AP_TEMPERATURE_SENSOR_ENABLED"
 #endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -101,7 +119,9 @@ void stm32_watchdog_pat();
 extern const app_descriptor_t app_descriptor;
 
 extern "C" {
-void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
+    void can_vprintf(uint8_t severity, const char *fmt, va_list arg);
+    void can_printf_severity(uint8_t severity, const char *fmt, ...) FMT_PRINTF(2,3);
+    void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
 }
 
 struct CanardInstance;
@@ -342,6 +362,11 @@ public:
     
 #if AP_TEMPERATURE_SENSOR_ENABLED
     AP_TemperatureSensor temperature_sensor;
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    void temperature_sensor_update();
+    uint32_t temperature_last_send_ms;
+    uint8_t temperature_last_sent_index;
+#endif
 #endif
 
 #if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
@@ -383,6 +408,11 @@ public:
 #if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    AP_Relay relay;
+#endif
+
     // setup the var_info table
     AP_Param param_loader{var_info};
 
@@ -449,7 +479,10 @@ public:
                               uint16_t data_type_id,
                               CanardTransferType transfer_type,
                               uint8_t source_node_id);
-    
+
+    // reboot the peripheral, optionally holding in bootloader
+    void reboot(bool hold_in_bootloader);
+
 #if AP_UART_MONITOR_ENABLED
     void handle_tunnel_Targetted(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void send_serial_monitor_data();
@@ -482,6 +515,7 @@ public:
     void handle_beep_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_lightscommand(CanardInstance* canard_instance, CanardRxTransfer* transfer);
     void handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer);
+    void handle_hardpoint_command(CanardInstance* canard_instance, CanardRxTransfer* transfer);
 
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);

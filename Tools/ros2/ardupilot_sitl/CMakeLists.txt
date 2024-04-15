@@ -12,6 +12,13 @@ find_package(ament_cmake_python REQUIRED)
 # TODO(srmainwaring): add cache variables for vehicle type, debug etc.
 # set(ARDUPILOT_VEHICLE "copter" CACHE STRING "Vehicle type")
 
+option(ARDUPILOT_DISABLE_NETWORKING "Disable the networking API code" OFF)
+option(ARDUPILOT_DISABLE_SCRIPTING "Disable the scripting API code" OFF)
+option(ARDUPILOT_DISABLE_WATCHDOG "Build with watchdog disabled" OFF)
+option(ARDUPILOT_ENABLE_DDS "Enable the DDS client" ON)
+option(ARDUPILOT_ENABLE_NETWORKING_TESTS "Enable the networking test code" OFF)
+option(ARDUPILOT_ENABLE_PPP "Enable PPP networking" OFF)
+
 # NOTE: look for `waf` and set source and build directories to top level.
 # ${PROJECT_SOURCE_DIR} = ./Tools/ros2/ardupilot
 #
@@ -22,9 +29,22 @@ message(STATUS "WAF_COMMAND: ${WAF_COMMAND}")
 
 # Set the build config.
 set(WAF_CONFIG $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:"--debug">)
+set(WAF_DISABLE_NETWORKING $<$<BOOL:${ARDUPILOT_DISABLE_NETWORKING}>:"--disable-networking">)
+set(WAF_DISABLE_SCRIPTING $<$<BOOL:${ARDUPILOT_DISABLE_SCRIPTING}>:"--disable-scripting">)
+set(WAF_DISABLE_WATCHDOG $<$<BOOL:${ARDUPILOT_DISABLE_WATCHDOG}>:"--disable-watchdog">)
+set(WAF_ENABLE_DDS $<$<BOOL:${ARDUPILOT_ENABLE_DDS}>:"--enable-dds">)
+set(WAF_ENABLE_NETWORKING_TESTS $<$<BOOL:${ARDUPILOT_ENABLE_NETWORKING_TESTS}>:"--enable-networking-tests">)
+set(WAF_ENABLE_PPP $<$<BOOL:${ARDUPILOT_ENABLE_PPP}>:"--enable-ppp">)
 
 add_custom_target(ardupilot_configure ALL
-  ${WAF_COMMAND} configure --board sitl --enable-dds ${WAF_CONFIG}
+  ${WAF_COMMAND} configure --board sitl
+    ${WAF_CONFIG}
+    ${WAF_DISABLE_NETWORKING}
+    ${WAF_DISABLE_SCRIPTING}
+    ${WAF_DISABLE_WATCHDOG}
+    ${WAF_ENABLE_DDS}
+    ${WAF_ENABLE_NETWORKING_TESTS}
+    ${WAF_ENABLE_PPP}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 

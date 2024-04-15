@@ -59,6 +59,8 @@
 #include "AP_RangeFinder_NRA24_CAN.h"
 #include "AP_RangeFinder_TOFSenseF_I2C.h"
 #include "AP_RangeFinder_JRE_Serial.h"
+#include "AP_RangeFinder_Ainstein_LR_D1.h"
+#include "AP_RangeFinder_RDS02UF.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -552,6 +554,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 #endif
 
+#if AP_RANGEFINDER_AINSTEIN_LR_D1_ENABLED
+    case Type::Ainstein_LR_D1:
+        serial_create_fn = AP_RangeFinder_Ainstein_LR_D1::create;
+        break;
+#endif
+
 #if AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
     case Type::TOFSenseP_CAN:
         _add_backend(new AP_RangeFinder_TOFSenseP_CAN(state[instance], params[instance]), instance);
@@ -584,6 +592,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 #endif
 
+#if AP_RANGEFINDER_RDS02UF_ENABLED
+    case Type::RDS02UF:
+        serial_create_fn = AP_RangeFinder_RDS02UF::create;
+        break;
+#endif
     case Type::NONE:
         break;
     }
@@ -786,6 +799,7 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
+#if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
 {
@@ -816,6 +830,7 @@ void RangeFinder::Log_RFND() const
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const
 {

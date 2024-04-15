@@ -46,6 +46,7 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Common/ExpandingString.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -227,7 +228,9 @@ uint32_t UARTDriver::txspace(void)
 
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
-    return _readbuffer.read(buffer, count);
+    const ssize_t ret = _readbuffer.read(buffer, count);
+    _rx_stats_bytes += ret;
+    return ret;
 }
 
 bool UARTDriver::_discard_input(void)
@@ -284,6 +287,8 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
         }
 #endif // HAL_BUILD_AP_PERIPH
 
+    // Include lost byte in tx count, we think we sent it even though it was never added to the write buffer
+    _tx_stats_bytes += lost_byte;
 
     const size_t ret = _writebuffer.write(buffer, size - lost_byte) + lost_byte;
     if (_unbuffered_writes) {
@@ -834,6 +839,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             ssize_t ret = send(_fd, tmpbuf, n, MSG_DONTWAIT);
             if (ret > 0) {
                 _writebuffer.advance(ret);
+                _tx_stats_bytes += ret;
             }
         }
     } else {
@@ -855,6 +861,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             }
             if (nwritten > 0) {
                 _writebuffer.advance(nwritten);
+                _tx_stats_bytes += nwritten;
             }
         }
     }
@@ -1008,9 +1015,32 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 
 uint32_t UARTDriver::bw_in_bytes_per_second() const
 {
-    // if connected, assume at least a 10/100Mbps connection
-    const uint32_t bitrate = _connected ? 10E6 : _uart_baudrate;
+    // if connected, assume at least a 10/100Mbps connection if not limited
+    bool baud_limit = false;
+#if !defined(HAL_BUILD_AP_PERIPH)
+    SITL::SIM *_sitl = AP::sitl();
+    baud_limit = (_sitl != nullptr) && _sitl->telem_baudlimit_enable;
+#endif
+    const uint32_t bitrate = (_connected && !baud_limit) ? 10E6 : _uart_baudrate;
     return bitrate/10; // convert bits to bytes minus overhead
 };
+
+#if HAL_UART_STATS_ENABLED
+// request information on uart I/O for @SYS/uarts.txt for this uart
+void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms)
+{
+    const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
+    const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+
+    str.printf("TX=%8u RX=%8u TXBD=%6u RXBD=%6u %s (%s)\n",
+                unsigned(tx_bytes),
+                unsigned(rx_bytes),
+                unsigned((tx_bytes * 10000) / dt_ms),
+                unsigned((rx_bytes * 10000) / dt_ms),
+                _connected ? "connected    " : "not connected",
+                _sitlState->_serial_path[_portNumber]);
+}
+#endif
+
 #endif // CONFIG_HAL_BOARD
 

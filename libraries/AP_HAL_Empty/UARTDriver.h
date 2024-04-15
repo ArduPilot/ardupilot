@@ -15,7 +15,7 @@ public:
 
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O for one uart
-    void uart_info(ExpandingString &str) override;
+    void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
 #endif
 
 protected:

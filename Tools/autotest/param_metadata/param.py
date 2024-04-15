@@ -51,6 +51,7 @@ known_param_fields = [
              'ReadOnly',
              'Calibration',
              'Vector3Parameter',
+             'SortValues'
                       ]
 
 # Follow SI units conventions from:

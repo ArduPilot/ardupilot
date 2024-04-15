@@ -828,7 +828,8 @@ int64_t AP_Filesystem_FATFS::disk_space(const char *path)
  */
 static void unix_time_to_fat(time_t epoch, uint16_t &date, uint16_t &time)
 {
-    struct tm *t = gmtime((time_t *)&epoch);
+    struct tm tmd {};
+    struct tm *t = gmtime_r((time_t *)&epoch, &tmd);
 
     /* Pack date and time into a uint32_t variable */
     date = ((uint16_t)(t->tm_year - 80) << 9)

@@ -108,7 +108,8 @@ void AP_NMEA_Output::update()
 
     // not completely accurate, our time includes leap seconds and time_t should be without
     const time_t time_sec = time_usec / 1000000;
-    struct tm* tm = gmtime(&time_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&time_sec, &tmd);
 
     // format time string
     char tstring[10];

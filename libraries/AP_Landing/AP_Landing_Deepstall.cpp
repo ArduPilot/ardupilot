@@ -429,7 +429,7 @@ int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
         stage == DEEPSTALL_STAGE_LAND) {
         return landing.pre_flare_airspeed * 100;
     } else {
-        return landing.aparm.airspeed_cruise_cm;
+        return landing.aparm.airspeed_cruise*100;
     }
 }
 
@@ -456,6 +456,7 @@ const AP_PIDInfo& AP_Landing_Deepstall::get_pid_info(void) const
     return ds_PID.get_pid_info();
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_Landing_Deepstall::Log(void) const {
     const AP_PIDInfo& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
@@ -479,6 +480,7 @@ void AP_Landing_Deepstall::Log(void) const {
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 // termination handling, expected to set the servo outputs
 bool AP_Landing_Deepstall::terminate(void) {
@@ -644,7 +646,7 @@ float AP_Landing_Deepstall::update_steering()
             L1_xtrack_i = constrain_float(L1_xtrack_i, -0.5f, 0.5f);
             nu1 += L1_xtrack_i;
         }
-        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.yaw) / time_constant;
+        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.get_yaw()) / time_constant;
     }
 
     float yaw_rate = landing.ahrs.get_gyro().z;

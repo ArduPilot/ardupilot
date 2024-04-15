@@ -1696,9 +1696,11 @@ uint16_t UARTDriver::get_options(void) const
 
 #if HAL_UART_STATS_ENABLED
 // request information on uart I/O for @SYS/uarts.txt for this uart
-void UARTDriver::uart_info(ExpandingString &str)
+void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms)
 {
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
+    const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+
     if (sdef.is_usb) {
         str.printf("OTG%u  ", unsigned(sdef.instance));
     } else {
@@ -1706,14 +1708,11 @@ void UARTDriver::uart_info(ExpandingString &str)
     }
     str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n",
                tx_dma_enabled ? '*' : ' ',
-               unsigned(_tx_stats_bytes),
+               unsigned(tx_bytes),
                rx_dma_enabled ? '*' : ' ',
-               unsigned(_rx_stats_bytes),
-               unsigned(_tx_stats_bytes * 10000 / (now_ms - _last_stats_ms)),
-               unsigned(_rx_stats_bytes * 10000 / (now_ms - _last_stats_ms)));
-    _tx_stats_bytes = 0;
-    _rx_stats_bytes = 0;
-    _last_stats_ms = now_ms;
+               unsigned(rx_bytes),
+               unsigned((tx_bytes * 10000) / dt_ms),
+               unsigned((rx_bytes * 10000) / dt_ms));
 }
 #endif
 

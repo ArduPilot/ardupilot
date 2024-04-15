@@ -167,7 +167,9 @@ void ModeAuto::run()
     if (auto_RTL && (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE))) {
         auto_RTL = false;
         // log exit from Auto RTL
+#if HAL_LOGGING_ENABLED
         copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), ModeReason::AUTO_RTL_EXIT);
+#endif
     }
 }
 
@@ -214,13 +216,15 @@ bool ModeAuto::allows_weathervaning() const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
-    if (mission.jump_to_landing_sequence()) {
+    if (mission.jump_to_landing_sequence(get_stopping_point())) {
         mission.set_force_resume(true);
         // if not already in auto switch to auto
         if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
             auto_RTL = true;
+#if HAL_LOGGING_ENABLED
             // log entry into AUTO RTL
             copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+#endif
 
             // make happy noise
             if (copter.ap.initialised) {
@@ -236,7 +240,7 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
     }
 
-    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
     // make sad noise
     if (copter.ap.initialised) {
         AP_Notify::events.user_mode_change_failed = 1;
@@ -338,7 +342,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         // get altitude target above EKF origin
         if (!dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
             // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             // fall back to altitude above current altitude
             alt_target_cm = current_alt_cm + dest.alt;
         }
@@ -618,10 +622,12 @@ bool ModeAuto::set_speed_down(float speed_down_cms)
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
     // To-Do: logging when new commands start/end
     if (copter.should_log(MASK_LOG_CMD)) {
         copter.logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     switch(cmd.id) {
 
@@ -1229,8 +1235,7 @@ void PayloadPlace::run()
 
 #if AP_GRIPPER_ENABLED == ENABLED
     // if pilot releases load manually:
-    if (AP::gripper() != nullptr &&
-        AP::gripper()->valid() && AP::gripper()->released()) {
+    if (AP::gripper().valid() && AP::gripper().released()) {
         switch (state) {
         case State::FlyToLocation:
         case State::Descent_Start:
@@ -1296,14 +1301,14 @@ void PayloadPlace::run()
             // thrust is above minimum threshold
             place_start_time_ms = now_ms;
             break;
-        } else if (is_positive(g2.pldp_range_finder_minimum_m)) {
+        } else if (is_positive(g2.pldp_range_finder_maximum_m)) {
             if (!copter.rangefinder_state.enabled) {
                 // abort payload place because rangefinder is not enabled
                 state = State::Ascent_Start;
-                gcs().send_text(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MIN set and rangefinder not enabled", prefix_str);
+                gcs().send_text(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MAX set and rangefinder not enabled", prefix_str);
                 break;
-            } else if (copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0) && (copter.rangefinder_state.alt_cm > g2.pldp_range_finder_minimum_m * 100.0)) {
-                // range finder altitude is above minimum
+            } else if (copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0) && (copter.rangefinder_state.alt_cm > g2.pldp_range_finder_maximum_m * 100.0)) {
+                // range finder altitude is above maximum
                 place_start_time_ms = now_ms;
                 break;
             }
@@ -1328,9 +1333,9 @@ void PayloadPlace::run()
         // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
         pos_control->init_z_controller_no_descent();
 #if AP_GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid()) {
+        if (AP::gripper().valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "%s Releasing the gripper", prefix_str);
-            g2.gripper.release();
+            AP::gripper().release();
             state = State::Releasing;
         } else {
             state = State::Delay;
@@ -1341,8 +1346,8 @@ void PayloadPlace::run()
         break;
 
     case State::Releasing:
-#if AP_GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid() && !g2.gripper.released()) {
+#if AP_GRIPPER_ENABLED
+        if (AP::gripper().valid() && !AP::gripper().released()) {
             break;
         }
 #endif
@@ -1577,7 +1582,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
             // this can only fail due to missing terrain database alt or rangefinder alt
             // use current alt-above-home and report error
             target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
         }
 
@@ -1954,7 +1959,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
             // this can only fail due to missing terrain database alt or rangefinder alt
             // use current alt-above-home and report error
             target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
         }
         if (!wp_start(target_loc)) {
@@ -2184,8 +2189,10 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+    const float turns = cmd.get_loiter_turns();
+
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
+    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

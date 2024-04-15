@@ -142,6 +142,11 @@ template<typename s, size_t t> struct assert_storage_size {
     _assert_storage_size<s, sizeof(s), t> _member;
 };
 
+#define ASSERT_STORAGE_SIZE_JOIN( name, line ) ASSERT_STORAGE_SIZE_DO_JOIN( name, line )
+#define ASSERT_STORAGE_SIZE_DO_JOIN( name, line )  name ## line
+#define ASSERT_STORAGE_SIZE(structure, size) \
+    do { assert_storage_size<structure, size> ASSERT_STORAGE_SIZE_JOIN(assert_storage_sizex, __LINE__); (void)ASSERT_STORAGE_SIZE_JOIN(assert_storage_sizex, __LINE__); } while(false)
+
 ////////////////////////////////////////////////////////////////////////////////
 /// @name	Conversions
 ///

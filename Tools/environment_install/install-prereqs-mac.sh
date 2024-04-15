@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
 set -x
@@ -42,7 +42,7 @@ echo "Checking homebrew..."
 $(which -s brew) ||
 {
     echo "installing homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    /usr/bin/env bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 } 
 echo "Homebrew installed"
 
@@ -52,7 +52,7 @@ echo "Checking CLI Tools installed..."
     ERROR=$(xcode-select --install 2>&1 > /dev/null)
 } ||
 {
-if [[ $ERROR != *"command line tools are already installed"* ]]; then
+if [[ $ERROR != *"ommand line tools are already installed"* ]]; then
     echo "$ERROR" 1>&2
     exit 1
 fi
@@ -78,6 +78,7 @@ function install_arm_none_eabi_toolchain() {
         )
     fi
     echo "Registering STM32 Toolchain for ccache"
+    sudo mkdir -p /usr/local/opt/ccache/libexec
     sudo ln -s -f $CCACHE_PATH /usr/local/opt/ccache/libexec/arm-none-eabi-g++
     sudo ln -s -f $CCACHE_PATH /usr/local/opt/ccache/libexec/arm-none-eabi-gcc
     echo "Done!"

@@ -92,8 +92,10 @@ protected:
     // init pos controller Z velocity and accel limits
     virtual void init_z_limits() = 0;
 
+#if HAL_LOGGING_ENABLED
     // log PIDs at full rate for during twitch
     virtual void log_pids() = 0;
+#endif
 
     //
     // methods to load and save gains
@@ -151,9 +153,12 @@ protected:
     // reverse direction for twitch test
     virtual bool twitch_reverse_direction() = 0;
 
+
+#if HAL_LOGGING_ENABLED
     virtual void Log_AutoTune() = 0;
     virtual void Log_AutoTuneDetails() = 0;
     virtual void Log_AutoTuneSweep() = 0;
+#endif
 
     // internal init function, should be called from init()
     bool init_internals(bool use_poshold,

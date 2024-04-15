@@ -202,6 +202,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     bf_angles.x = constrain_float(bf_angles.x, -copter.aparm.angle_max, copter.aparm.angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: FHLD
 // @Description: FlowHold mode messages
 // @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
@@ -222,6 +223,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
                                                (double)quality_filtered,
                                                (double)xy_I.x, (double)xy_I.y);
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 
 // flowhold_run - runs the flowhold controller
@@ -330,7 +332,7 @@ void ModeFlowHold::run()
     bf_angles.x = constrain_float(bf_angles.x, -angle_max, angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -angle_max, angle_max);
 
-#if AC_AVOID_ENABLED == ENABLED
+#if AP_AVOIDANCE_ENABLED
     // apply avoidance
     copter.avoid.adjust_roll_pitch(bf_angles.x, bf_angles.y, copter.aparm.angle_max);
 #endif
@@ -478,6 +480,7 @@ void ModeFlowHold::update_height_estimate(void)
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: FHXY
 // @Description: Height estimation using optical flow sensor 
 // @Field: TimeUS: Time since system startup
@@ -504,6 +507,8 @@ void ModeFlowHold::update_height_estimate(void)
                                            (double)ins_height,
                                            (double)last_ins_height,
                                            dt_ms);
+#endif
+
     gcs().send_named_float("HEST", height_estimate);
     delta_velocity_ne.zero();
     last_ins_height = ins_height;

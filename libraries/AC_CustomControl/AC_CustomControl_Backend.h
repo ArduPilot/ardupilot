@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AC_CustomControl.h"
+#include "AC_CustomControl_config.h"
 
 #if AP_CUSTOMCONTROL_ENABLED
+
+#include "AC_CustomControl.h"
 
 class AC_CustomControl_Backend
 {
@@ -34,4 +36,4 @@ protected:
     AC_CustomControl& _frontend;
 };
 
-#endif
+#endif  // AP_CUSTOMCONTROL_ENABLED

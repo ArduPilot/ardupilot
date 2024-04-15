@@ -35,7 +35,7 @@ class EnumDocco(object):
         # attempts to extract name, value and comment from line.
 
         # Match:  "            FRED,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*,? *(?:// *(.*) *)?$", line)
+        m = re.match("\s*([A-Z0-9_a-z]+)\s*,? *(?://[/>]* *(.*) *)?$", line)
         if m is not None:
             return (m.group(1), None, m.group(2))
 
@@ -45,7 +45,7 @@ class EnumDocco(object):
             return (m.group(1), None, m.group(2))
 
         # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match("\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//\s*(.*) *)?$",
+        m = re.match("\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//[/<]*\s*(.*) *)?$",
                      line)
         if m is not None:
             return (m.group(1), m.group(2), m.group(3))
@@ -92,6 +92,10 @@ class EnumDocco(object):
             raise ValueError("Failed to match (%s)" % line)
 
     def enumerations_from_file(self, source_file):
+        def debug(x):
+            pass
+        # if source_file == "/home/pbarker/rc/ardupilot/libraries/AP_HAL/AnalogIn.h":
+        #     debug = print
         state_outside = "outside"
         state_inside = "inside"
 
@@ -103,6 +107,7 @@ class EnumDocco(object):
             in_class = None
             while True:
                 line = f.readline()
+                #  debug(f"{state} line: {line}")
                 if line == "":
                     break
                 line = line.rstrip()
@@ -113,7 +118,7 @@ class EnumDocco(object):
                     if re.match("class .*;", line) is not None:
                         # forward-declaration of a class
                         continue
-                    m = re.match("class *(\w+)", line)
+                    m = re.match("class *([:\w]+)", line)
                     if m is not None:
                         in_class = m.group(1)
                         continue
@@ -125,6 +130,7 @@ class EnumDocco(object):
                     if m is not None:
                         # all one one line!  Thanks!
                         enum_name = m.group(2)
+                        debug("ol: %s: %s" % (source_file, enum_name))
                         entries_string = m.group(3)
                         entry_names = [x.strip() for x in entries_string.split(",")]
                         count = 0
@@ -139,7 +145,7 @@ class EnumDocco(object):
                     m = re.match(".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", line)
                     if m is not None:
                         enum_name = m.group(2)
-                        # print("%s: %s" % (source_file, enum_name))
+                        debug("%s: %s" % (source_file, enum_name))
                         entries = []
                         last_value = None
                         state = state_inside
@@ -172,7 +178,7 @@ class EnumDocco(object):
                     if name is None:
                         skip_enumeration = True
                         continue
-                    # print(" name=(%s) value=(%s) comment=(%s)\n" % (name, value, comment))
+                    debug(" name=(%s) value=(%s) comment=(%s)\n" % (name, value, comment))
                     if value is None:
                         if last_value is None:
                             value = 0
@@ -190,6 +196,7 @@ class EnumDocco(object):
     class Enumeration(object):
 
         def __init__(self, name, entries):
+            # print("creating enum %s" % name)
             self.name = name
             self.entries = entries
 
@@ -246,4 +253,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     s.run()
-    print("Enumerations: %s" % s.enumerations)
+#    print("Enumerations: %s" % s.enumerations)

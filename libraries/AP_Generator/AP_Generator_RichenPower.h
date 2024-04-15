@@ -1,9 +1,11 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 #pragma once
 
-#include "AP_Generator_Backend.h"
+#include "AP_Generator_config.h"
 
 #if AP_GENERATOR_RICHENPOWER_ENABLED
+
+#include "AP_Generator_Backend.h"
 
 #include <AP_Logger/AP_Logger_config.h>
 #include <AP_Common/AP_Common.h>
@@ -153,7 +155,6 @@ private:
         uint8_t footermagic1;
         uint8_t footermagic2;
     };
-    assert_storage_size<RichenPacket, 70> _assert_storage_size_RichenPacket UNUSED_PRIVATE_MEMBER;
 
     union RichenUnion {
         uint8_t parse_buffer[70];
@@ -213,4 +214,4 @@ private:
     // maintenamce, this is the last time we sent the warning:
     uint32_t last_maintenance_warning_ms;
 };
-#endif
+#endif  // AP_GENERATOR_RICHENPOWER_ENABLED

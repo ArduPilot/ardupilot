@@ -27,8 +27,6 @@ PC15 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
-define HAL_GPIO_LED_OFF 1
-
 
 # --------------------- PWM -----------------------
 
@@ -42,8 +40,6 @@ PB15 TIM1_CH3N  TIM1   PWM(7)   GPIO(56)
 PB14 TIM1_CH2N  TIM1   PWM(8)   GPIO(57)
 PA8 TIM1_CH1    TIM1   PWM(9)   GPIO(58) BIDIR
 PA15 TIM2_CH1   TIM2   PWM(10)  GPIO(59) NODMA  # no output
-
-define STM32_PWM_USE_ADVANCED TRUE
 
 # Beeper
 #PA7 TIM3_CH2 TIM3 GPIO(32) ALARM
@@ -157,15 +153,8 @@ define HAL_BATT_CURR_SCALE 26.7
 #define BOARD_RSSI_ANA_PIN 8
 #define HAL_DEFAULT_AIRSPEED_PIN 10
 
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_WITH_DSP FALSE
-define HAL_GYROFFT_ENABLED 0
-
-# --------------------- save flash ----------------------
-define AP_BATTMON_SMBUS_ENABLE 0
 
 include ../include/minimize_fpv_osd.inc
-include ../include/save_some_flash.inc
 
 AUTOBUILD_TARGETS Plane

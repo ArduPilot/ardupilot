@@ -202,11 +202,13 @@ $ ros2 node list
 ```
 
 ```bash
-$ ros2 topic list  -v
+$ ros2 topic list -v
 Published topics:
  * /ap/battery/battery0 [sensor_msgs/msg/BatteryState] 1 publisher
  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
+ * /ap/gps_global_origin/filtered [geographic_msgs/msg/GeoPointStamped] 1 publisher
+ * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
  * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher

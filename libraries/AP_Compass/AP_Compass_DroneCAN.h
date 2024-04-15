@@ -19,6 +19,9 @@ public:
     static uint32_t get_detected_devid(uint8_t index) { return _detected_modules[index].devid; }
     static void handle_magnetic_field(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg);
     static void handle_magnetic_field_2(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg);
+#if AP_COMPASS_DRONECAN_HIRES_ENABLED
+    static void handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_magnetometer_MagneticFieldStrengthHiRes &msg);
+#endif
 
 private:
     bool init();

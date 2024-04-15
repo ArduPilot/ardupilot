@@ -156,9 +156,22 @@ public:
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
     bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
 
-    // set camera lens as a value from 0 to 5
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
+    // set camera lens as a value from 0 to 5, instance starts from 0
     bool set_lens(uint8_t lens);
     bool set_lens(uint8_t instance, uint8_t lens);
+
+    // camera source handling enum.  This is a one-to-one mapping with the CAMERA_SOURCE mavlink enum
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    enum class CameraSource {
+        DEFAULT = 0,
+        RGB = 1,
+        IR = 2,
+        NDVI = 3,
+        RGB_WIDEANGLE = 4,
+    };
+    bool set_camera_source(uint8_t instance, CameraSource primary_source, CameraSource secondary_source);
+#endif
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }

@@ -21,6 +21,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 #define AR_POSCON_TIMEOUT_MS            100     // timeout after 0.1 sec
 #define AR_POSCON_POS_P                 0.2f    // default position P gain
@@ -153,6 +154,7 @@ void AR_PosControl::update(float dt)
 
     // Limit the velocity to prevent fence violations
     bool backing_up = false;
+#if AP_AVOIDANCE_ENABLED
     AC_Avoid *avoid = AP::ac_avoid();
     if (avoid != nullptr) {
         Vector3f vel_3d_cms{_vel_target.x * 100.0f, _vel_target.y * 100.0f, 0.0f};
@@ -161,6 +163,7 @@ void AR_PosControl::update(float dt)
         _vel_target.x = vel_3d_cms.x * 0.01;
         _vel_target.y = vel_3d_cms.y * 0.01;
     }
+#endif  // AP_AVOIDANCE_ENABLED
 
     // calculate limit vector based on steering limits
     Vector2f steering_limit_vec;
@@ -363,6 +366,7 @@ void AR_PosControl::get_srate(float &velocity_srate)
     velocity_srate = _pid_vel.get_pid_info_x().slew_rate;
 }
 
+#if HAL_LOGGING_ENABLED
 // write PSC logs
 void AR_PosControl::write_log()
 {
@@ -384,7 +388,8 @@ void AR_PosControl::write_log()
     // convert position to required format
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;
 
-    AP::logger().Write_PSCN(pos_target_2d_cm.x,     // position target
+    // reuse logging from AC_PosControl:
+    AC_PosControl::Write_PSCN(pos_target_2d_cm.x,     // position target
                             curr_pos_NED.x * 100.0, // position
                             _vel_desired.x * 100.0, // desired velocity
                             _vel_target.x * 100.0,  // target velocity
@@ -392,7 +397,7 @@ void AR_PosControl::write_log()
                             _accel_desired.x * 100.0,   // desired accel
                             _accel_target.x * 100.0,    // target accel
                             curr_accel_NED.x);      // accel
-    AP::logger().Write_PSCE(pos_target_2d_cm.y,     // position target
+    AC_PosControl::Write_PSCE(pos_target_2d_cm.y,     // position target
                             curr_pos_NED.y * 100.0, // position
                             _vel_desired.y * 100.0, // desired velocity
                             _vel_target.y * 100.0,  // target velocity
@@ -401,6 +406,7 @@ void AR_PosControl::write_log()
                             _accel_target.y * 100.0,    // target accel
                             curr_accel_NED.y);      // accel
 }
+#endif
 
 /// initialise ekf xy position reset check
 void AR_PosControl::init_ekf_xy_reset()

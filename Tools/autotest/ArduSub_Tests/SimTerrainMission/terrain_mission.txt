@@ -1,0 +1,17 @@
+QGC WPL 110
+
+# Drive in a square over the synthetic ocean bottom
+# Item 0 is the home position, frame=3
+0	0	3	16	0.000000	0.000000	0.000000	0.000000	33.809780	-118.393982	0.0	1
+
+# Sub has already descended to 15m above sea floor. Start mission at 15 and maintain that height, frame=10
+1	0	10	16	0.000000	0.000000	0.000000	0.000000	33.809780	-118.394232	15.0	1
+
+# Travel at current rangefinder reading (15m), frame=10
+2	0	10	16	0.000000	0.000000	0.000000	0.000000	33.809780	-118.394432	15.0	1
+
+# Travel at current range finder reading, frame=10
+3	0	10	16	0.000000	0.000000	0.000000	0.000000	33.809250	-118.394432	15.0    1
+
+# Travel at current range finder reading, frame=10
+4	0	10	16	0.000000	0.000000	0.000000	0.000000	33.809250	-118.394232	15.0	1

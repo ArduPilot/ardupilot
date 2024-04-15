@@ -566,9 +566,6 @@ protected:
     void control_monitor_filter_pid(float value, float &rms_P);
     void control_monitor_update(void);
 
-    // true in inverted flight mode
-    bool _inverted_flight;
-
 public:
     // log a CTRL message
     void control_monitor_log(void) const;

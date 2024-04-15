@@ -18,6 +18,9 @@ void AP_Mount_SToRM32::update()
         return;
     }
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // flag to trigger sending target angles to gimbal
     bool resend_now = false;
 
@@ -125,6 +128,7 @@ void AP_Mount_SToRM32::find_gimbal()
     if (GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_GIMBAL, compid, _sysid, _chan)) {
         _compid = compid;
         _initialised = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "Mount: SToRM32");
     }
 }
 

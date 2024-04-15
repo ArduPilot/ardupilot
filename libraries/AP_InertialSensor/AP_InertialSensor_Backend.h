@@ -312,7 +312,7 @@ protected:
     */
     void notify_accel_fifo_reset(uint8_t instance) __RAMFUNC__;
     void notify_gyro_fifo_reset(uint8_t instance) __RAMFUNC__;
-    
+
     // log an unexpected change in a register for an IMU
     void log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg) __RAMFUNC__;
 

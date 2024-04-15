@@ -44,9 +44,8 @@ void AP_AccelCal::update()
     if (_started) {
         update_status();
 
-        AccelCalibrator *cal;
         uint8_t num_active_calibrators = 0;
-        for(uint8_t i=0; (cal = get_calibrator(i)); i++) {
+        for(uint8_t i=0; get_calibrator(i) != nullptr; i++) {
             num_active_calibrators++;
         }
         if (num_active_calibrators != _num_active_calibrators) {
@@ -56,6 +55,7 @@ void AP_AccelCal::update()
         if(_start_collect_sample) {
             collect_sample();
         }
+        AccelCalibrator *cal;
         switch(_status) {
             case ACCEL_CAL_NOT_STARTED:
                 fail();

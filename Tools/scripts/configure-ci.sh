@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Install dependencies and configure the environment for CI build testing
 
 set -ex

@@ -30,7 +30,8 @@
 class AP_RCProtocol_IBUS : public AP_RCProtocol_Backend
 {
 public:
-    AP_RCProtocol_IBUS(AP_RCProtocol &_frontend);
+    using AP_RCProtocol_Backend::AP_RCProtocol_Backend;
+
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:

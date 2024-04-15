@@ -1,0 +1,51 @@
+<HTML>
+ <HEAD>
+  <TITLE>AP_Bootloader</TITLE>
+ </HEAD>
+
+ <script>
+   function dynamic_load(div_id, uri, period_ms) {
+       var xhr = new XMLHttpRequest();
+       xhr.open('GET', uri);
+       
+       xhr.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
+       xhr.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
+       xhr.setRequestHeader("Pragma", "no-cache");
+       
+       xhr.onload = function () {
+           if (xhr.status === 200) {
+               var output = document.getElementById(div_id);
+               if (uri.endsWith('.shtml') || uri.endsWith('.html')) {
+                   output.innerHTML = xhr.responseText;
+               } else {
+                   output.textContent = xhr.responseText;
+               }
+           }
+           setTimeout(function() { dynamic_load(div_id,uri, period_ms); }, period_ms);
+       }
+       xhr.send();
+   }
+ </script>
+
+<h1>Bootloader</h1>
+
+<table>
+  <tr><td>Board Type</td><td>{BOARD_NAME}</td></tr>
+  <tr><td>Board ID</td><td>{BOARD_ID}</td></tr>
+  <tr><td>Flash Size</td><td>{FLASH_SIZE}</td></tr>
+</table>
+
+<h1>Firmware Update</h1>
+
+<form action="" method="post" enctype="multipart/form-data">
+  <input type="file" name="fileToUpload" id="fileToUpload">
+  <input type="submit" value="Upload" name="submit">
+  <input type="button" onclick="location.href='/REBOOT';" value="Reboot" />
+</form>
+
+<hr>
+<body onload="javascript: dynamic_load('bootloader_status','/bootloader_status.html',100)">
+<div id="bootloader_status"></div>
+
+ </BODY>
+</HTML>

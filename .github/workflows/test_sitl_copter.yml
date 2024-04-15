@@ -198,7 +198,7 @@ jobs:
             export CXX=clang++
           fi
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl
+          ./waf configure --board sitl --debug
           ./waf build --target bin/arducopter
           ccache -s
           ccache -z

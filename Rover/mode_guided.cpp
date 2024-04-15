@@ -322,7 +322,9 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
     // handle guided specific initialisation and logging
     _guided_mode = SubMode::WP;
     send_notification = true;
+#if HAL_LOGGING_ENABLED
     rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_speed_max(), 0.0f, 0.0f));
+#endif
     return true;
 }
 
@@ -338,8 +340,10 @@ void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_
     _desired_speed = target_speed;
     have_attitude_target = true;
 
+#if HAL_LOGGING_ENABLED
     // log new target
     rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_cd, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+#endif
 }
 
 void ModeGuided::set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed)
@@ -364,8 +368,10 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
     _desired_speed = target_speed;
     have_attitude_target = true;
 
+#if HAL_LOGGING_ENABLED
     // log new target
     rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+#endif
 }
 
 // set steering and throttle (both in the range -1 to +1)

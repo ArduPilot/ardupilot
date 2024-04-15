@@ -374,7 +374,8 @@ void AP_MotorsHeli_Dual::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+
     // Check if rotors are spooled down
     _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }
@@ -413,10 +414,6 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
             roll_out = _cyclic_max/4500.0f;
             limit.roll = true;
         }
-    }
-
-    if (_heliflags.inverted_flight) {
-        collective_in = 1 - collective_in;
     }
 
     // constrain collective input

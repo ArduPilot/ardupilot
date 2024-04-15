@@ -227,10 +227,14 @@ void AP_Tuning::check_input(uint8_t flightmode)
     changed = true;
     need_revert |= (1U << current_parm_index);
     set_value(current_parm, new_value);
+
+#if HAL_LOGGING_ENABLED
     Log_Write_Parameter_Tuning(new_value);
+#endif
 }
 
 
+#if HAL_LOGGING_ENABLED
 /*
   log a tuning change
  */
@@ -250,6 +254,7 @@ void AP_Tuning::Log_Write_Parameter_Tuning(float value)
                                            (double)value,
                                            (double)center_value);
 }
+#endif
 
 /*
   save parameters in the set

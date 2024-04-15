@@ -361,6 +361,7 @@ void AP_PiccoloCAN::update()
     }
 #endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
 
     // Push received telemetry data into the logging system
@@ -397,84 +398,11 @@ void AP_PiccoloCAN::update()
             }
         }
     }
+#else
+    (void)timestamp;
+#endif  // HAL_LOGGING_ENABLED
 }
 
-#if HAL_GCS_ENABLED
-// send ESC telemetry messages over MAVLink
-void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
-{
-    // Arrays to store ESC telemetry data
-    uint8_t temperature[4] {};
-    uint16_t voltage[4] {};
-    uint16_t rpm[4] {};
-    uint16_t count[4] {};
-    uint16_t current[4] {};
-    uint16_t totalcurrent[4] {};
-
-    bool dataAvailable = false;
-
-    uint8_t idx = 0;
-
-    WITH_SEMAPHORE(_telem_sem);
-
-    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
-
-        // Calculate index within storage array
-        idx = (ii % 4);
-
-        AP_PiccoloCAN_ESC &esc = _escs[idx];
-
-        // Has the ESC been heard from recently?
-        if (is_esc_present(ii)) {
-            dataAvailable = true;
-
-            // Provide the maximum ESC temperature in the telemetry stream
-            temperature[idx] = esc.temperature();   // Convert to C
-            voltage[idx] = esc.voltage() * 10;      // Convert to cV
-            current[idx] = esc.current() * 10;      // Convert to cA
-            totalcurrent[idx] = 0;
-            rpm[idx] = esc.rpm();
-            count[idx] = 0;
-        } else {
-            temperature[idx] = 0;
-            voltage[idx] = 0;
-            current[idx] = 0;
-            totalcurrent[idx] = 0;
-            rpm[idx] = 0;
-            count[idx] = 0;
-        }
-
-        // Send ESC telemetry in groups of 4
-        if ((ii % 4) == 3) {
-
-            if (dataAvailable) {
-                if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                    continue;
-                }
-
-                switch (ii) {
-                case 3:
-                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 7:
-                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 11:
-                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 15:
-                    mavlink_msg_esc_telemetry_13_to_16_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            dataAvailable = false;
-        }
-    }
-}
-#endif
 
 // send servo messages over CAN
 void AP_PiccoloCAN::send_servo_messages(void)

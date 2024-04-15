@@ -36,22 +36,6 @@ class udp_out(object):
             pass
 
 
-def ft2m(x):
-    return x * 0.3048
-
-
-def m2ft(x):
-    return x / 0.3048
-
-
-def kt2mps(x):
-    return x * 0.514444444
-
-
-def mps2kt(x):
-    return x / 0.514444444
-
-
 udp = udp_out("127.0.0.1:5501")
 
 latitude = -35

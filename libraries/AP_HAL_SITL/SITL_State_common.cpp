@@ -52,6 +52,12 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_adsb(adsb);
         return adsb;
 #endif
+    } else if (streq(name, "ainsteinlrd1")) {
+        if (ainsteinlrd1 != nullptr) {
+            AP_HAL::panic("Only one ainsteinlrd1 at a time");
+        }
+        ainsteinlrd1 = new SITL::RF_Ainstein_LR_D1();
+        return ainsteinlrd1;   
     } else if (streq(name, "benewake_tf03")) {
         if (benewake_tf03 != nullptr) {
             AP_HAL::panic("Only one benewake_tf03 at a time");
@@ -222,6 +228,11 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_adsb(adsb);
         return sagetech_mxs;
 #endif
+#if AP_SIM_LOWEHEISER_ENABLED
+    } else if (streq(name, "loweheiser")) {
+        sitl_model->set_loweheiser(&_sitl->loweheiser_sim);
+        return &_sitl->loweheiser_sim;
+#endif
 #if !defined(HAL_BUILD_AP_PERIPH)
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
@@ -333,6 +344,9 @@ void SITL_State_Common::sim_update(void)
                       attitude);
     }
 #endif
+    if (ainsteinlrd1 != nullptr) {
+        ainsteinlrd1->update(sitl_model->rangefinder_range());
+    }
     if (benewake_tf02 != nullptr) {
         benewake_tf02->update(sitl_model->rangefinder_range());
     }

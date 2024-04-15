@@ -991,6 +991,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
     uint16_t pwm[4];
     hal.rcout->read(pwm, 4);
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: THST
 // @Description: Maximum thrust limitation based on battery voltage in Toy Mode
 // @Field: TimeUS: Time since system startup
@@ -1008,7 +1009,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
                                                (double)thrust_mul,
                                                pwm[0], pwm[1], pwm[2], pwm[3]);
     }
-                                           
+#endif
 }
 
 #if ENABLE_LOAD_TEST

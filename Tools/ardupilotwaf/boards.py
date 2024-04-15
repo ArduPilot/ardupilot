@@ -195,7 +195,7 @@ class Board:
                 (int(major) == want_major and int(minor) >= want_minor))
 
     def configure_env(self, cfg, env):
-        # Use a dictionary instead of the convetional list for definitions to
+        # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
         env.DEFINES = {}
 
@@ -274,6 +274,7 @@ class Board:
             env.CXXFLAGS += [
                 '-fcheck-new',
                 '-fsingle-precision-constant',
+                '-Wno-psabi',
             ]
 
         if cfg.env.DEBUG:
@@ -509,6 +510,8 @@ class Board:
                         # exclude emacs tmp files
                         continue
                     fname = root[len(custom_dir)+1:]+"/"+f
+                    if fname.startswith("/"):
+                        fname = fname[1:]
                     env.ROMFS_FILES += [(fname,root+"/"+f)]
 
     def pre_build(self, bld):
@@ -574,6 +577,9 @@ def get_boards_names():
     add_dynamic_boards_esp32()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
+
+def is_board_based(board, cls):
+    return issubclass(_board_classes[board], cls)
 
 def get_ap_periph_boards():
     '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
@@ -654,7 +660,6 @@ class sitl(Board):
         cfg.define('AP_SIM_ENABLED', 1)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
-        cfg.define('AP_GENERATOR_RICHENPOWER_ENABLED', 1)
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
         cfg.define('AP_SIGNED_FIRMWARE', 0)
 
@@ -768,6 +773,11 @@ class sitl(Board):
                     env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
 
         if len(env.ROMFS_FILES) > 0:
+            # Allow lua to load from ROMFS if any lua files are added
+            for file in env.ROMFS_FILES:
+                if file[0].startswith("scripts") and file[0].endswith(".lua"):
+                    env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                    break
             env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
         if cfg.options.sitl_rgbled:
@@ -837,14 +847,66 @@ class sitl(Board):
         return self.__class__.__name__
 
 
-class sitl_periph_gps(sitl):
+class sitl_periph(sitl):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1
-        super(sitl_periph_gps, self).configure_env(cfg, env)
+        super(sitl_periph, self).configure_env(cfg, env)
         env.DEFINES.update(
             HAL_BUILD_AP_PERIPH = 1,
             PERIPH_FW = 1,
-            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph"',
+            HAL_RAM_RESERVE_START = 0,
+
+            CANARD_ENABLE_CANFD = 1,
+            CANARD_ENABLE_TAO_OPTION = 1,
+            CANARD_MULTI_IFACE = 1,
+
+            # FIXME: SITL library should not be using AP_AHRS:
+            AP_AHRS_ENABLED = 1,
+            AP_AHRS_BACKEND_DEFAULT_ENABLED = 0,
+            AP_AHRS_DCM_ENABLED = 1,  # need a default backend
+            HAL_EXTERNAL_AHRS_ENABLED = 0,
+
+            HAL_MAVLINK_BINDINGS_ENABLED = 1,
+
+            AP_AIRSPEED_AUTOCAL_ENABLE = 0,
+            AP_CAN_SLCAN_ENABLED = 0,
+            AP_ICENGINE_ENABLED = 0,
+            AP_MISSION_ENABLED = 0,
+            AP_RCPROTOCOL_ENABLED = 0,
+            AP_RTC_ENABLED = 0,
+            AP_SCHEDULER_ENABLED = 0,
+            AP_SCRIPTING_ENABLED = 0,
+            AP_STATS_ENABLED = 0,
+            AP_UART_MONITOR_ENABLED = 1,
+            COMPASS_CAL_ENABLED = 0,
+            COMPASS_LEARN_ENABLED = 0,
+            COMPASS_MOT_ENABLED = 0,
+            HAL_CAN_DEFAULT_NODE_ID = 0,
+            HAL_CANMANAGER_ENABLED = 0,
+            HAL_GCS_ENABLED = 0,
+            HAL_GENERATOR_ENABLED = 0,
+            HAL_LOGGING_ENABLED = 0,
+            HAL_LOGGING_MAVLINK_ENABLED = 0,
+            HAL_PROXIMITY_ENABLED = 0,
+            HAL_RALLY_ENABLED = 0,
+            HAL_SUPPORT_RCOUT_SERIAL = 0,
+            AP_TERRAIN_AVAILABLE = 0,
+            AP_CUSTOMROTATIONS_ENABLED = 0,
+        )
+
+        try:
+            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=1')
+        except ValueError:
+            pass
+        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
+
+class sitl_periph_universal(sitl_periph):
+    def configure_env(self, cfg, env):
+        super(sitl_periph_universal, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_universal"',
+            APJ_BOARD_ID = 100,
+
             HAL_PERIPH_ENABLE_GPS = 1,
             HAL_PERIPH_ENABLE_AIRSPEED = 1,
             HAL_PERIPH_ENABLE_MAG = 1,
@@ -856,48 +918,25 @@ class sitl_periph_gps(sitl):
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             HAL_PERIPH_ENABLE_ADSB = 1,
             HAL_PERIPH_ENABLE_SERIAL_OPTIONS = 1,
-            AP_ICENGINE_ENABLED = 0,
             AP_AIRSPEED_ENABLED = 1,
-            AP_AIRSPEED_AUTOCAL_ENABLE = 0,
-            AP_AHRS_ENABLED = 1,
-            AP_UART_MONITOR_ENABLED = 1,
-            HAL_CAN_DEFAULT_NODE_ID = 0,
-            HAL_RAM_RESERVE_START = 0,
-            APJ_BOARD_ID = 100,
-            HAL_GCS_ENABLED = 0,
-            HAL_MAVLINK_BINDINGS_ENABLED = 1,
-            HAL_LOGGING_ENABLED = 0,
-            HAL_LOGGING_MAVLINK_ENABLED = 0,
-            AP_MISSION_ENABLED = 0,
-            HAL_RALLY_ENABLED = 0,
-            AP_SCHEDULER_ENABLED = 0,
-            CANARD_ENABLE_TAO_OPTION = 1,
-            AP_RCPROTOCOL_ENABLED = 0,
-            CANARD_ENABLE_CANFD = 1,
-            CANARD_MULTI_IFACE = 1,
-            HAL_CANMANAGER_ENABLED = 0,
-            COMPASS_CAL_ENABLED = 0,
-            COMPASS_MOT_ENABLED = 0,
-            COMPASS_LEARN_ENABLED = 0,
             AP_BATTERY_ESC_ENABLED = 1,
-            HAL_EXTERNAL_AHRS_ENABLED = 0,
-            HAL_GENERATOR_ENABLED = 0,
-            AP_STATS_ENABLED = 0,
-            HAL_SUPPORT_RCOUT_SERIAL = 0,
-            AP_CAN_SLCAN_ENABLED = 0,
-            HAL_PROXIMITY_ENABLED = 0,
-            AP_SCRIPTING_ENABLED = 0,
-            HAL_NAVEKF3_AVAILABLE = 0,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,
-            AP_RTC_ENABLED = 0,
+            AP_TERRAIN_AVAILABLE = 1,
         )
 
-        try:
-            env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=1')
-        except ValueError:
-            pass
-        env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=0']
+class sitl_periph_gps(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super(sitl_periph_gps, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
+            APJ_BOARD_ID = 101,
+
+            HAL_PERIPH_ENABLE_GPS = 1,
+        )
 
 class esp32(Board):
     abstract = True
@@ -1313,6 +1352,11 @@ class linux(Board):
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
         if len(env.ROMFS_FILES) > 0:
+            # Allow lua to load from ROMFS if any lua files are added
+            for file in env.ROMFS_FILES:
+                if file[0].startswith("scripts") and file[0].endswith(".lua"):
+                    env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                    break
             env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
     def build(self, bld):

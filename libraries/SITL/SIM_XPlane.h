@@ -30,7 +30,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include "SIM_Aircraft.h"
-#include "picojson.h"
+#include <AP_JSON/AP_JSON.h>
 
 namespace SITL {
 
@@ -126,9 +126,9 @@ private:
     struct stat map_st;
 
     bool load_dref_map(const char *map_json);
-    void add_dref(const char *name, DRefType type, const picojson::value &dref);
-    void add_joyinput(const char *name, JoyType type, const picojson::value &d);
-    void handle_setting(const picojson::value &d);
+    void add_dref(const char *name, DRefType type, const AP_JSON::value &dref);
+    void add_joyinput(const char *name, JoyType type, const AP_JSON::value &d);
+    void handle_setting(const AP_JSON::value &d);
 
     void check_reload_dref(void);
 

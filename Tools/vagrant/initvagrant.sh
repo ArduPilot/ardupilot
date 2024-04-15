@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "---------- $0 start ----------"
 
 # this script is run by the root user in the virtual machine

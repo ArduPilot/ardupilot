@@ -31,9 +31,9 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_STORAGE_FILE
-// using SKETCHNAME allows the one microSD to be used
+// using AP_BUILD_TARGET_NAME allows the one microSD to be used
 // for multiple vehicle types
-#define HAL_STORAGE_FILE "/APM/" SKETCHNAME ".stg"
+#define HAL_STORAGE_FILE "/APM/" AP_BUILD_TARGET_NAME ".stg"
 #endif
 
 #ifndef HAL_STORAGE_BACKUP_FOLDER
@@ -330,7 +330,11 @@ void Storage::_flash_load(void)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
 
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    ::printf("Storage: Using flash pages %u to %u\n", _flash_page, _flash_page+3);
+#else
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
+#endif
 
     if (!_flash.init()) {
         AP_HAL::panic("Unable to init flash storage");
@@ -359,6 +363,9 @@ bool Storage::_flash_write(uint16_t line)
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    sector *= 2;
+#endif
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         EXPECT_DELAY_MS(1);
@@ -390,6 +397,9 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    sector *= 2;
+#endif
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
@@ -405,6 +415,9 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+    sector *= 2;
+#endif
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
@@ -415,9 +428,15 @@ bool Storage::_flash_erase_sector(uint8_t sector)
           in the main thread
          */
         EXPECT_DELAY_MS(1000);
+#if AP_FLASH_STORAGE_DOUBLE_PAGE
+        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
+            return true;
+        }
+#else
         if (hal.flash->erasepage(_flash_page+sector)) {
             return true;
         }
+#endif
         hal.scheduler->delay(1);
     }
     return false;

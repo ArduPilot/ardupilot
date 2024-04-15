@@ -3,14 +3,15 @@
 /// @file    AC_CustomControl.h
 /// @brief   ArduCopter custom control library
 
+#include "AC_CustomControl_config.h"
+
+#if AP_CUSTOMCONTROL_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AP_Motors/AP_MotorsMulticopter.h>
-#include <AP_Logger/AP_Logger.h>
-
-#if AP_CUSTOMCONTROL_ENABLED
 
 #ifndef CUSTOMCONTROL_MAX_TYPES
 #define CUSTOMCONTROL_MAX_TYPES 2
@@ -72,4 +73,4 @@ private:
     AC_CustomControl_Backend *_backend;
 };
 
-#endif
+#endif  // AP_CUSTOMCONTROL_ENABLED

@@ -1394,6 +1394,7 @@ void NavEKF3_core::updateMovementCheck(void)
 
     if (logStatusChange || imuSampleTime_ms - lastMoveCheckLogTime_ms > 200) {
         lastMoveCheckLogTime_ms = imuSampleTime_ms;
+#if HAL_LOGGING_ENABLED
         const struct log_XKFM pkt{
             LOG_PACKET_HEADER_INIT(LOG_XKFM_MSG),
             time_us            : dal.micros64(),
@@ -1405,6 +1406,7 @@ void NavEKF3_core::updateMovementCheck(void)
             accel_diff_ratio   : float(accel_diff_ratio),
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
+#endif
     }
 }
 

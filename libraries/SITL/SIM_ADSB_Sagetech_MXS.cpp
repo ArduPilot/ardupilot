@@ -143,8 +143,7 @@ void ADSB_Sagetech_MXS::handle_message()
 
 bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::Installation& opmsg)
 {
-    assert_storage_size<Installation, 36> _assert_storage_size_Installation;
-    (void)_assert_storage_size_Installation;
+    ASSERT_STORAGE_SIZE(Installation, 36);
 
     if (operating_mode != OperatingMode::OFF &&
         operating_mode != OperatingMode::MAINTENANCE) {
@@ -181,8 +180,7 @@ void ADSB_Sagetech_MXS::assert_good_flight_id()
 
 bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::FlightIDMessage& _msg)
 {
-    assert_storage_size<FlightIDMessage, 12> _assert_storage_size_FlightIDMessage;
-    (void)_assert_storage_size_FlightIDMessage;
+    ASSERT_STORAGE_SIZE(FlightIDMessage, 12);
 
     // do something!
     flight_id_set_time_ms = AP_HAL::millis();
@@ -194,8 +192,7 @@ bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::FlightIDMe
 
 bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::Operating& _msg)
 {
-    assert_storage_size<Operating, 12> _assert_storage_size_Operating;
-    (void)_assert_storage_size_Operating;
+    ASSERT_STORAGE_SIZE(Operating, 12);
 
     // do something!
 
@@ -222,8 +219,7 @@ double ADSB_Sagetech_MXS::lat_string_to_double(const uint8_t *str)
 
 bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::GPS& _msg)
 {
-    assert_storage_size<GPS, 63> _assert_storage_size_GPS;
-    (void)_assert_storage_size_GPS;
+    ASSERT_STORAGE_SIZE(GPS, 63);
 
     // store data to transmit via ADSB
     info_from_vehicle.gps.lat = lat_string_to_double(_msg.latitude);
@@ -234,8 +230,7 @@ bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::GPS& _msg)
 
 bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::DataRequest& _msg)
 {
-    assert_storage_size<DataRequest, 4> _assert_storage_size_DataRequest;
-    (void)_assert_storage_size_DataRequest;
+    ASSERT_STORAGE_SIZE(DataRequest, 4);
 
     // handle request to send data to vehicle.  Note that the
     // specification says (on page 32) that the ack is sent before the
@@ -246,8 +241,7 @@ bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::DataReques
 
 bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::TargetRequest& _msg)
 {
-    assert_storage_size<TargetRequest, 7> _assert_storage_size_TargetRequest;
-    (void)_assert_storage_size_TargetRequest;
+    ASSERT_STORAGE_SIZE(TargetRequest, 7);
 
     // handle request to send adsb data to vehicle as it is received
 

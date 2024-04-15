@@ -17,11 +17,13 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
 // update - should be called at 50hz
 void AP_Camera_Backend::update()
 {
-    // Check CAMx_OPTIONS and start/stop recording based on arm/disarm
-    if (_params.options.get() & CAMOPTIONS::REC_ARM_DISARM) {
+    // Check camera options and start/stop recording based on arm/disarm
+    if ((_params.options.get() & (uint8_t)Options::RecordWhileArmed) != 0) {
         if (hal.util->get_soft_armed() != last_is_armed) {
             last_is_armed = hal.util->get_soft_armed();
-            record_video(last_is_armed);
+            if (!record_video(last_is_armed)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Camera: failed to %s recording", last_is_armed ? "start" : "stop");
+            }
         }
     }
 
@@ -140,7 +142,9 @@ bool AP_Camera_Backend::take_picture()
         image_index++;
         last_picture_time_ms = now_ms;
         IGNORE_RETURN(AP::ahrs().get_location(last_location));
+#if HAL_LOGGING_ENABLED
         log_picture();
+#endif
         return true;
     }
 
@@ -358,16 +362,20 @@ void AP_Camera_Backend::feedback_pin_timer()
 void AP_Camera_Backend::check_feedback()
 {
     if (feedback_trigger_logged_count != feedback_trigger_count) {
+#if HAL_LOGGING_ENABLED
         const uint32_t timestamp32 = feedback_trigger_timestamp_us;
+#endif
         feedback_trigger_logged_count = feedback_trigger_count;
 
         // we should consider doing this inside the ISR and pin_timer
         prep_mavlink_msg_camera_feedback(feedback_trigger_timestamp_us);
 
+#if HAL_LOGGING_ENABLED
         // log camera message
         uint32_t tdiff = AP_HAL::micros() - timestamp32;
         uint64_t timestamp = AP_HAL::micros64();
         Write_Camera(timestamp - tdiff);
+#endif
     }
 }
 
@@ -386,6 +394,7 @@ void AP_Camera_Backend::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
     GCS_SEND_MESSAGE(MSG_CAMERA_FEEDBACK);
 }
 
+#if HAL_LOGGING_ENABLED
 // log picture
 void AP_Camera_Backend::log_picture()
 {
@@ -404,5 +413,6 @@ void AP_Camera_Backend::log_picture()
         Write_Trigger();
     }
 }
+#endif
 
 #endif // AP_CAMERA_ENABLED

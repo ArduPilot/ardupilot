@@ -2,6 +2,8 @@
 
 #include <AP_Logger/AP_Logger.h>
 
+#if HAL_LOGGING_ENABLED
+
 #pragma GCC diagnostic ignored "-Wnarrowing"
 
 void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, uint8_t core_index)
@@ -48,3 +50,5 @@ void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, u
     };
     AP::logger().WriteBlock(&ky1, sizeof(ky1));
 }
+
+#endif  // HAL_LOGGING_ENABLED

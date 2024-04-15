@@ -69,10 +69,6 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass, "COMPASS_", Compass),
 
-    // @Group: LOG
-    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
-    GOBJECT(logger, "LOG", AP_Logger),
-    
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(ekf3, NavEKF3, "EK3_", NavEKF3),
@@ -124,7 +120,6 @@ void ReplayVehicle::init_ardupilot(void)
     // message as a product of Replay), or the format understood in
     // the current code (if we do emit the message in the normal
     // places in the EKF, for example)
-    logger.Init(log_structure, 0);
     logger.set_force_log_disarmed(true);
 }
 

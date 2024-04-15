@@ -132,8 +132,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             // been set for landing. We don't do this till ground
             // speed drops below 3.0 m/s as otherwise we will change
             // target speeds too early.
-            aparm.airspeed_cruise_cm.load();
-            aparm.min_gndspeed_cm.load();
+            aparm.airspeed_cruise.load();
+            aparm.min_groundspeed.load();
             aparm.throttle_cruise.load();
         }
     } else if (type_slope_stage == SlopeStage::APPROACH && pre_flare_airspeed > 0) {
@@ -345,15 +345,15 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     // pre-flare airspeeds. Also increase for head-winds
 
     const float land_airspeed = tecs_Controller->get_land_airspeed();
-    int32_t target_airspeed_cm = aparm.airspeed_cruise_cm;
+    int32_t target_airspeed_cm = aparm.airspeed_cruise*100;
     if (land_airspeed >= 0) {
         target_airspeed_cm = land_airspeed * 100;
     } else {
-        target_airspeed_cm = 0.5 * (aparm.airspeed_cruise_cm * 0.01 + aparm.airspeed_min);
+        target_airspeed_cm = 100 * 0.5 * (aparm.airspeed_cruise + aparm.airspeed_min);
     }
     switch (type_slope_stage) {
     case SlopeStage::NORMAL:
-        target_airspeed_cm = aparm.airspeed_cruise_cm;
+        target_airspeed_cm = aparm.airspeed_cruise*100;
         break;
     case SlopeStage::APPROACH:
         break;
@@ -370,7 +370,7 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     const float head_wind_comp = constrain_float(wind_comp, 0.0f, 100.0f)*0.01;
     const int32_t head_wind_compensation_cm = ahrs.head_wind() * head_wind_comp * 100;
 
-    const uint32_t max_airspeed_cm = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max*100 : aparm.airspeed_cruise_cm;
+    const uint32_t max_airspeed_cm = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max*100 : aparm.airspeed_cruise*100;
     
     return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, max_airspeed_cm);
     
@@ -407,6 +407,7 @@ bool AP_Landing::type_slope_is_complete(void) const
     return (type_slope_stage == SlopeStage::FINAL);
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_Landing::type_slope_log(void) const
 {
 // @LoggerMessage: LAND
@@ -429,6 +430,7 @@ void AP_Landing::type_slope_log(void) const
                                             (double)alt_offset,
                                             (double)height_flare_log);
 }
+#endif
 
 bool AP_Landing::type_slope_is_throttle_suppressed(void) const
 {

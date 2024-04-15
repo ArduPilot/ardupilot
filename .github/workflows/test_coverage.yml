@@ -72,7 +72,7 @@ jobs:
             Tools/scripts/run_coverage.py -f
           else
             Tools/scripts/run_coverage.py -i
-            ./waf configure --board sitl_periph_gps --debug --coverage
+            ./waf configure --board sitl_periph_universal --debug --coverage
             ./waf build --target bin/AP_Periph
             Tools/scripts/run_coverage.py -i
             Tools/autotest/autotest.py test.CAN --debug --coverage

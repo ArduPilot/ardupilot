@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_AHRS.h"
 #include <AP_Logger/AP_Logger.h>
 
@@ -184,3 +188,5 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
         AP::logger().WriteBlock(&pkt_ATSC, sizeof(pkt_ATSC));
     }
 }
+
+#endif  // HAL_LOGGING_ENABLED

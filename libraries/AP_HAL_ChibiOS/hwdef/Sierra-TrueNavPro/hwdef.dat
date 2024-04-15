@@ -36,10 +36,8 @@ MAIN_STACK 0x300
 PROCESS_STACK 0xA00
 
 # save memory
-define HAL_DISABLE_LOOP_DELAY
 define HAL_NO_MONITOR_THREAD
 define HAL_USE_ADC FALSE
-define HAL_NO_RCIN_THREAD
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 256
@@ -114,3 +112,5 @@ define CAN_APP_NODE_NAME "in.sierraaerospace.TrueNavPro"
 
 # Enable GPS LDO
 PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1

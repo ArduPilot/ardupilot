@@ -27,8 +27,6 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
-
 // On H750 we want to measure external flash to ram performance
 #if defined(EXT_FLASH_SIZE_MB) && EXT_FLASH_SIZE_MB>0 && defined(STM32H7)
 #include "ch.h"
@@ -256,10 +254,5 @@ void loop()
     hal.console->printf("\n");
     hal.scheduler->delay(3000);
 }
-
-#else
-void loop() {}
-void setup() {}
-#endif
 
 AP_HAL_MAIN();

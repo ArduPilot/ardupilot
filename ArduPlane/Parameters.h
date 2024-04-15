@@ -3,7 +3,6 @@
 #define AP_PARAM_VEHICLE_NAME plane
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Gripper/AP_Gripper.h>
 
 // Global parameter class.
 //
@@ -56,7 +55,7 @@ public:
         //
         k_param_auto_trim      = 10, // unused
         k_param_log_bitmask_old,  // unused
-        k_param_pitch_trim_cd,
+        k_param_pitch_trim,
         k_param_mix_mode,
         k_param_reverse_elevons, // unused
         k_param_reverse_ch1_elevon, // unused
@@ -174,7 +173,7 @@ public:
         //
         k_param_airspeed_min = 120,
         k_param_airspeed_max,
-        k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
+        k_param_cruise_alt_floor,
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm, // unused
         k_param_flybywire_climb_rate,
@@ -203,7 +202,7 @@ public:
         k_param_curr_amp_offset,
         k_param_NavEKF,  // deprecated - remove
         k_param_mission, // mission library
-        k_param_serial_manager, // serial manager library
+        k_param_serial_manager_old, // serial manager library
         k_param_NavEKF2_old,  // deprecated - remove
         k_param_land_pre_flare_alt, // unused - moved to AP_Landing
         k_param_land_pre_flare_airspeed = 149,  // unused - moved to AP_Landing
@@ -213,13 +212,13 @@ public:
         //
         k_param_crosstrack_gain = 150, // unused
         k_param_crosstrack_entry_angle, // unused
-        k_param_roll_limit_cd,
-        k_param_pitch_limit_max_cd,
-        k_param_pitch_limit_min_cd,
-        k_param_airspeed_cruise_cm,
-        k_param_RTL_altitude_cm,
+        k_param_roll_limit,
+        k_param_pitch_limit_max,
+        k_param_pitch_limit_min,
+        k_param_airspeed_cruise,
+        k_param_RTL_altitude,
         k_param_inverted_flight_ch_unused, // unused
-        k_param_min_gndspeed_cm,
+        k_param_min_groundspeed,
         k_param_crosstrack_use_wind, // unused
 
 
@@ -436,9 +435,9 @@ public:
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
     AP_Int32 log_bitmask;
-    AP_Int32 RTL_altitude_cm;
-    AP_Int16 pitch_trim_cd;
-    AP_Int16 FBWB_min_altitude_cm;
+    AP_Float RTL_altitude;
+    AP_Float pitch_trim;
+    AP_Float cruise_alt_floor;
 
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
@@ -484,11 +483,6 @@ public:
     AP_Button *button_ptr;
 #endif
 
-#if STATS_ENABLED == ENABLED
-    // vehicle statistics
-    AP_Stats stats;
-#endif
-
 #if AP_ICENGINE_ENABLED
     // internal combustion engine control
     AP_ICEngine ice_control;
@@ -517,22 +511,17 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
-#if AP_GRIPPER_ENABLED
-    // Payload Gripper
-    AP_Gripper gripper;
-#endif
-
     AP_Int32 flight_options;
-
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
 
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
 
 #if AP_LANDINGGEAR_ENABLED
     AP_LandingGear landing_gear;
+#endif
+
+#if AC_PRECLAND_ENABLED
+    AC_PrecLand precland;
 #endif
 
     // crow flaps weighting

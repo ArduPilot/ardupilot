@@ -13,6 +13,8 @@
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include "AC_AttitudeControl.h"     // Attitude control library
 
+#include <AP_Logger/LogStructure.h>
+
 // position controller default definitions
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_JERK_XY                      5.0f    // default horizontal jerk m/s/s/s
@@ -399,6 +401,10 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    static void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+
 protected:
 
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
@@ -411,7 +417,7 @@ protected:
     void lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_cmss) const;
 
     // calculate_yaw_and_rate_yaw - calculate the vehicle yaw and rate of yaw.
-    bool calculate_yaw_and_rate_yaw();
+    void calculate_yaw_and_rate_yaw();
 
     // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
     float calculate_overspeed_gain();
@@ -484,4 +490,10 @@ protected:
 
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;
+
+private:
+    // convenience method for writing out the identical PSCE, PSCN, PSCD - and
+    // to save bytes
+    static void Write_PSCx(LogMessages ID, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+
 };

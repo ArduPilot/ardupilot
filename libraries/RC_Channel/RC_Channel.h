@@ -190,7 +190,7 @@ public:
         TER_DISABLE =         86, // disable terrain following in CRUISE/FBWB modes
         CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
         SOARING =             88, // three-position switch to set soaring mode
-        LANDING_FLARE =       89, // force flare, throttle forced idle, pitch to LAND_PITCH_CD, tilts up
+        LANDING_FLARE =       89, // force flare, throttle forced idle, pitch to LAND_PITCH_DEG, tilts up
         EKF_POS_SOURCE =      90, // change EKF position source between primary, secondary and tertiary sources
         ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
         FBWA =                92, // Fly-By-Wire-A
@@ -249,6 +249,8 @@ public:
         CAMERA_IMAGE_TRACKING = 174, // camera image tracking
         CAMERA_LENS =        175, // camera lens selection
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
+        MOUNT_LRF_ENABLE =   177,  // mount LRF enable/disable
+        FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
 
 
         // inputs from 200 will eventually used to replace RCMAP
@@ -285,7 +287,6 @@ public:
         // this must be higher than any aux function above
         AUX_FUNCTION_MAX =   308,
     };
-    typedef enum AUX_FUNC aux_func_t;
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):
     enum class AuxSwitchPos : uint8_t {
@@ -306,7 +307,7 @@ public:
     AuxSwitchPos get_aux_switch_pos() const;
 
     // wrapper function around do_aux_function which allows us to log
-    bool run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
+    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     const char *string_for_aux_function(AUX_FUNC function) const;
@@ -334,10 +335,10 @@ public:
 
 protected:
 
-    virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
+    virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
     // virtual function to be overridden my subclasses
-    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
+    virtual bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
     void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
@@ -407,11 +408,19 @@ private:
         int8_t debounce_position = -1;
         int8_t current_position = -1;
         uint32_t last_edge_time_ms;
+        bool initialised;
     } switch_state;
 
     void reset_mode_switch();
     void read_mode_switch();
     bool debounce_completed(int8_t position);
+    // returns true if the first time we successfully read the
+    // channel's three-position-switch position we should record that
+    // position as the current position *without* executing the
+    // associated auxiliary function.  e.g. do not attempt to arm a
+    // vehicle when the user turns on their transmitter with the arm
+    // switch high!
+    bool init_position_on_first_radio_read(AUX_FUNC func) const;
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // Structure to lookup switch change announcements
@@ -482,10 +491,10 @@ public:
     // is RC channel 1.  Beware this is not a cheap call.
     uint16_t get_override_mask() const;
 
-    class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
+    class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
     RC_Channel::AuxSwitchPos get_channel_pos(const uint8_t rcmapchan) const;
-    void convert_options(const RC_Channel::aux_func_t old_option, const RC_Channel::aux_func_t new_option);
+    void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     void init_aux_all();
     void read_aux_all();
@@ -586,8 +595,14 @@ public:
 
 #if AP_SCRIPTING_ENABLED
     // get last aux cached value for scripting. Returns false if never set, otherwise 0,1,2
-    bool get_aux_cached(RC_Channel::aux_func_t aux_fn, uint8_t &pos);
+    bool get_aux_cached(RC_Channel::AUX_FUNC aux_fn, uint8_t &pos);
 #endif
+
+    // returns true if we've ever seen RC input, via overrides or via
+    // AP_RCProtocol
+    bool has_ever_seen_rc_input() const {
+        return _has_ever_seen_rc_input;
+    }
 
     // get failsafe timeout in milliseconds
     uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
@@ -614,6 +629,9 @@ private:
     AP_Int32  _protocols;
     AP_Float _fs_timeout;
 
+    // set to true if we see overrides or other RC input
+    bool _has_ever_seen_rc_input;
+
     RC_Channel *flight_mode_channel() const;
 
     // Allow override by default at start
@@ -628,7 +646,7 @@ private:
     HAL_Semaphore aux_cache_sem;
     Bitmask<unsigned(RC_Channel::AUX_FUNC::AUX_FUNCTION_MAX)*2> aux_cached;
 
-    void set_aux_cached(RC_Channel::aux_func_t aux_fn, RC_Channel::AuxSwitchPos pos);
+    void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
 };
 

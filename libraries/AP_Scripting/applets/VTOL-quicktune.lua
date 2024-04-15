@@ -183,7 +183,7 @@ local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0
 local PILOT_INPUT_DELAY = 4.0
 
-local YAW_FLTE_MAX = 2.0
+local YAW_FLTE_MAX = 8.0
 local FLTD_MUL = 0.5
 local FLTT_MUL = 0.5
 
@@ -288,6 +288,7 @@ end
 -- setup filter frequencies
 function setup_filters(axis)
    if QUIK_AUTO_FILTER:get() <= 0 then
+      filters_done[axis] = true
       return
    end
    local fltd = axis .. "_FLTD"
@@ -297,7 +298,7 @@ function setup_filters(axis)
    adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
    if axis == "YAW" then
       local FLTE = params[flte]
-      if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
+      if FLTE:get() < 0.0 or FLTE:get() > YAW_FLTE_MAX then
          adjust_gain(flte, YAW_FLTE_MAX)
       end
    end

@@ -151,6 +151,7 @@ float Thrust_Linearization::remove_thrust_curve_and_volt_scaling(float throttle)
 // update_lift_max from battery voltage - used for voltage compensation
 void Thrust_Linearization::update_lift_max_from_batt_voltage()
 {
+#if AP_BATTERY_ENABLED
     // sanity check battery_voltage_min is not too small
     // if disabled or misconfigured exit immediately
     float _batt_voltage = motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE) ? AP::battery().voltage(batt_idx) : AP::battery().voltage_resting_estimate(batt_idx);
@@ -177,6 +178,7 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
     // calculate lift max
     float thrust_curve_expo = constrain_float(curve_expo, -1.0, 1.0);
     lift_max = batt_voltage_filt.get() * (1 - thrust_curve_expo) + thrust_curve_expo * batt_voltage_filt.get() * batt_voltage_filt.get();
+#endif
 }
 
 // return gain scheduling gain based on voltage and air density

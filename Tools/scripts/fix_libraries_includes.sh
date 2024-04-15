@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 src=$(realpath $(dirname $BASH_SOURCE)/../../)
 base=$src/libraries

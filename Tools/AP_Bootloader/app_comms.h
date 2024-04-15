@@ -10,7 +10,10 @@
 
 struct app_bootloader_comms {
     uint32_t magic;
-    uint32_t reserved[4];
+    uint32_t ip;
+    uint32_t netmask;
+    uint32_t gateway;
+    uint32_t reserved;
     uint8_t server_node_id;
     uint8_t my_node_id;
     uint8_t path[201];

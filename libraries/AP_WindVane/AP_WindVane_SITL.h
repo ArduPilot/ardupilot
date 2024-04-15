@@ -28,10 +28,8 @@ public:
     using AP_WindVane_Backend::AP_WindVane_Backend;
 
     // update state
-    #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        void update_direction() override;
-        void update_speed() override;
-    #endif
+    void update_direction() override;
+    void update_speed() override;
 };
 
 #endif  // AP_WINDVANE_SIM_ENABLED

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage - From ardupilot root directory, run - libraries/SITL/examples/follow-copter.sh $GCS_IP
 # $GCS_IP is the IP address of the system running the GCs, by default is 127.0.0.1

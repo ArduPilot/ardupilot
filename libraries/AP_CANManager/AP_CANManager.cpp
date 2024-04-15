@@ -70,19 +70,19 @@ const AP_Param::GroupInfo AP_CANManager::var_info[] = {
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS > 0
     // @Group: D1_
-    // @Path: ../AP_CANManager/AP_CANDriver.cpp
+    // @Path: ../AP_CANManager/AP_CANManager_CANDriver_Params.cpp
     AP_SUBGROUPINFO(_drv_param[0], "D1_", 4, AP_CANManager, AP_CANManager::CANDriver_Params),
 #endif
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1
     // @Group: D2_
-    // @Path: ../AP_CANManager/AP_CANDriver.cpp
+    // @Path: ../AP_CANManager/AP_CANManager_CANDriver_Params.cpp
     AP_SUBGROUPINFO(_drv_param[1], "D2_", 5, AP_CANManager, AP_CANManager::CANDriver_Params),
 #endif
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS > 2
     // @Group: D3_
-    // @Path: ../AP_CANManager/AP_CANDriver.cpp
+    // @Path: ../AP_CANManager/AP_CANManager_CANDriver_Params.cpp
     AP_SUBGROUPINFO(_drv_param[2], "D3_", 6, AP_CANManager, AP_CANManager::CANDriver_Params),
 #endif
 
@@ -377,26 +377,29 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
         _log_pos = 0;
     }
     //Tag Log Message
+    const char *log_level_tag = "";
     switch (loglevel) {
     case AP_CANManager::LOG_DEBUG :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s DEBUG :", tag);
+        log_level_tag = "DEBUG";
         break;
 
     case AP_CANManager::LOG_INFO :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s INFO :", tag);
+        log_level_tag = "INFO";
         break;
 
     case AP_CANManager::LOG_WARNING :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s WARN :", tag);
+        log_level_tag = "WARN";
         break;
 
     case AP_CANManager::LOG_ERROR :
-        _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s ERROR :", tag);
+        log_level_tag = "ERROR";
         break;
 
-    default :
+    case AP_CANManager::LOG_NONE:
         return;
     }
+
+    _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s %s :", log_level_tag, tag);
 
     va_list arg_list;
     va_start(arg_list, fmt);

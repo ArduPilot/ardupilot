@@ -1386,41 +1386,41 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     arg_number = arg_number + NULLABLE_ARG_COUNT_BASE;
     switch (t.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "%sbool data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sbool data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "%sfloat data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sfloat data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT8_T:
-        fprintf(source, "%sint8_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint8_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT16_T:
-        fprintf(source, "%sint16_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint16_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT32_T:
-        fprintf(source, "%sint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT8_T:
-        fprintf(source, "%suint8_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint8_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT16_T:
-        fprintf(source, "%suint16_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint16_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_AP_OBJECT:
       case TYPE_NONE:
       case TYPE_LITERAL:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
       case TYPE_STRING:
-        fprintf(source, "%schar * data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%schar * data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_ENUM:
-        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_USERDATA:
-        fprintf(source, "%s%s data_%d = {};\n", indentation, t.data.ud.name, arg_number);
+        fprintf(source, "%s%s data_%d {};\n", indentation, t.data.ud.name, arg_number);
         break;
     }
   } else {
@@ -1918,7 +1918,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
     fprintf(source, "    %s%sget_semaphore()->take_blocking();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "#if AP_SCHEDULER_ENABLED\n");
     fprintf(source, "    AP::scheduler().get_semaphore().take_blocking();\n");
+    fprintf(source, "#endif\n");
   }
 
   int static_cast = TRUE;
@@ -2050,7 +2052,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
     fprintf(source, "    %s%sget_semaphore()->give();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "#if AP_SCHEDULER_ENABLED\n");
     fprintf(source, "    AP::scheduler().get_semaphore().give();\n");
+    fprintf(source, "#endif\n");
   }
 
   // we need to emit out refernce arguments, iterate the args again, creating and copying objects, while keeping a new count
@@ -2923,6 +2927,8 @@ int main(int argc, char **argv) {
 
   // for set_and_print_new_error_message deprecate warning
   fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
+
+  fprintf(source, "extern const AP_HAL::HAL& hal;\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 

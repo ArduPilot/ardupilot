@@ -78,6 +78,10 @@ public:
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t lens) override;
 
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+    bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
@@ -90,6 +94,9 @@ public:
 
     // get rangefinder distance.  Returns true on success
     bool get_rangefinder_distance(float& distance_m) const override;
+
+    // enable/disable rangefinder.  Returns true on success
+    bool set_rangefinder_enable(bool enable) override;
 
 protected:
 
@@ -155,6 +162,15 @@ private:
         STOP_RECORD = 0x15,
         AUTO_FOCUS = 0x19,
         MANUAL_FOCUS = 0x1A
+    };
+
+    // C1 rangefinder commands
+    enum class LRFCommand : uint8_t {
+        NO_ACTION = 0x00,
+        SINGLE_RANGING = 0x01,
+        CONTINUOUS_RANGING_START = 0x02,
+        LPCL_CONTINUOUS_RANGING_START = 0x03,
+        STOP_RANGING = 0x05
     };
 
     // C2 camera commands
@@ -291,8 +307,8 @@ private:
             FrameId frame_id;           // always 0xB1
             uint8_t data_type;          // should be 0x07.  Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             uint8_t unused2to8[7];      // unused
-            be16_t pitch_be;            // vehicle pitch angle.  1bit=360deg/65536
             be16_t roll_be;             // vehicle roll angle.  1bit=360deg/65536
+            be16_t pitch_be;            // vehicle pitch angle.  1bit=360deg/65536
             be16_t yaw_be;              // vehicle yaw angle.  1bit=360deg/65536
             be16_t date_be;             // bit0~6:year, bit7~10:month, bit11~15:day
             uint8_t seconds_utc[3];     // seconds.  1bit = 0.01sec
@@ -347,7 +363,7 @@ private:
     bool send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
 
     // send camera command, affected image sensor and value (e.g. zoom speed)
-    bool send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value);
+    bool send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value, LRFCommand lrf_cmd = LRFCommand::NO_ACTION);
 
     // send camera command2 and corresponding value (e.g. zoom as absolute value)
     bool send_camera_command2(CameraCommand2 cmd, uint16_t value);

@@ -26,7 +26,6 @@ PA14 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
 PA13 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 
 # --------------------- PWM -----------------------
@@ -40,8 +39,6 @@ PB6  TIM4_CH1  TIM4 PWM(7) GPIO(56)
 PB7  TIM4_CH2  TIM4 PWM(8) GPIO(57)
 
 PA15 TIM2_CH1  TIM2 PWM(9) GPIO(58)  # LED pin
-
-define STM32_PWM_USE_ADVANCED TRUE
 
 # Beeper
 PA8 TIM1_CH1 TIM1 GPIO(32) ALARM
@@ -164,15 +161,9 @@ define HAL_BATT2_VOLT_SCALE 11.0
 
 # --------------------- save flash ----------------------
 include ../include/minimize_features.inc
-include ../include/minimal_GPS.inc
 
 undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
-
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-
-
 
 define DEFAULT_NTF_LED_TYPES 487

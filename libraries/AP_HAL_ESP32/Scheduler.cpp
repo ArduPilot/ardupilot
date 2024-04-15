@@ -231,7 +231,7 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    if (us < 100) {
+    if (in_main_thread() && us < 100) {
         ets_delay_us(us);
     } else { // Minimum delay for FreeRTOS is 1ms
         uint32_t tick = portTICK_PERIOD_MS * 1000;
@@ -548,10 +548,10 @@ void Scheduler::print_main_loop_rate(void)
     static int64_t last_run = 0;
     if (AP_HAL::millis64() - last_run > 10000) {
         last_run = AP_HAL::millis64();
-        const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
-        const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
-        hal.console->printf("loop_rate: actual: %uHz, expected: %uHz\n",
-            (uint16_t)actual_loop_rate, (uint16_t)expected_loop_rate);
+        // null pointer in here...
+        //const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
+        //const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
+        //hal.console->printf("loop_rate: actual: %uHz, expected: %uHz\n",
     }
 }
 

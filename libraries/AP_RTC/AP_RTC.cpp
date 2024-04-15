@@ -111,7 +111,8 @@ void AP_RTC::clock_ms_to_hms_fields(const uint64_t time_ms, uint8_t &hour, uint8
 bool AP_RTC::clock_s_to_date_fields(const uint32_t utc_sec32, uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint8_t &wday) const
 {
     const time_t utc_sec = utc_sec32;
-    struct tm* tm = gmtime(&utc_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&utc_sec, &tmd);
     if (tm == nullptr) {
         return false;
     }
@@ -243,7 +244,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += ms - curr_ms;
     }
     if (largest_element == 1 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += 1000);
+        return static_cast<uint32_t>(total_delay_ms + 1000);
     }
 
     // calculate sec to target
@@ -251,7 +252,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += (sec - curr_sec)*1000;
     }
     if (largest_element == 2 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += (60*1000));
+        return static_cast<uint32_t>(total_delay_ms + (60*1000));
     }
 
     // calculate min to target
@@ -259,7 +260,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += (min - curr_min)*60*1000;
     }
     if (largest_element == 3 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += (60*60*1000));
+        return static_cast<uint32_t>(total_delay_ms + (60*60*1000));
     }
 
     // calculate hours to target
@@ -267,7 +268,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
         total_delay_ms += (hour - curr_hour)*60*60*1000;
     }
     if (largest_element == 4 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms += (24*60*60*1000));
+        return static_cast<uint32_t>(total_delay_ms + (24*60*60*1000));
     }
 
     // total delay in milliseconds
@@ -284,7 +285,8 @@ bool AP_RTC::get_date_and_time_utc(uint16_t& year, uint8_t& month, uint8_t& day,
         return false;
     }
     time_t utc_sec = time_us / (1000U * 1000U);
-    struct tm* tm = gmtime(&utc_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&utc_sec, &tmd);
     if (tm == nullptr) {
         return false;
     }

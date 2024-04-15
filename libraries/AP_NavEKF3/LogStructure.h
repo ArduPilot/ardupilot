@@ -440,7 +440,7 @@ struct PACKED log_XKV {
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
       "XKFS","QBBBBBB","TimeUS,C,MI,BI,GI,AI,SS", "s#-----", "F------" , true }, \
-    { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
+    { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#----", "F-0000" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \
     { LOG_XKTV_MSG, sizeof(log_XKTV),                         \

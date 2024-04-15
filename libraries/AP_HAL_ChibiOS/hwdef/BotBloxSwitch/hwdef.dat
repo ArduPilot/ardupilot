@@ -1,0 +1,87 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the BotBloxSwitch hardware
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# MCU class and specific type
+MCU STM32H7xx STM32H723xx
+
+# crystal frequency
+OSCILLATOR_HZ 0
+
+# setup build for a peripheral bootloader
+env AP_PERIPH 1
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_BotBloxSwitch
+
+FLASH_RESERVE_START_KB 128
+
+define HAL_STORAGE_SIZE 32768
+
+# use last 2 pages for flash storage
+# H723 has 8 pages of 128k each
+STORAGE_FLASH_PAGE 6
+
+# flash size
+FLASH_SIZE_KB 1024
+
+env OPTIMIZE -Os
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# USB
+PA11 OTG_HS_DM OTG1
+PA12 OTG_HS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# CAN bus
+PD0  CAN1_RX CAN1
+PD1  CAN1_TX CAN1
+
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD12 USART3_RTS USART3
+PD11 USART3_CTS USART3
+
+# LEDs
+PE3 LED_RED OUTPUT OPENDRAIN HIGH
+PE4 LED_GREEN OUTPUT OPENDRAIN HIGH
+PE5 LED_BLUE OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+# use blue LED
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_LED_BLUE
+
+PC1 ETH_MDC              ETH1
+PA2 ETH_MDIO             ETH1
+PC4 ETH_RMII_RXD0        ETH1
+PC5 ETH_RMII_RXD1        ETH1
+#PB12 ETH_RMII_TXD0       ETH1
+PG13 ETH_RMII_TXD0       ETH1
+PB13 ETH_RMII_TXD1       ETH1
+#PB11 ETH_RMII_TX_EN      ETH1
+PG11 ETH_RMII_TX_EN      ETH1
+PA7 ETH_RMII_CRS_DV      ETH1
+PA1 ETH_RMII_REF_CLK     ETH1
+
+define BOARD_PHY_ID  MII_LAN8742A_ID
+define BOARD_PHY_RMII
+
+include ../include/network_PPPGW.inc
+
+# allow load from USB
+SERIAL_ORDER OTG1 USART3
+
+# no ADC pins
+define HAL_USE_ADC FALSE
+
+define STM32_ADC_USE_ADC1 FALSE
+define STM32_ADC_USE_ADC2 FALSE
+define STM32_ADC_USE_ADC3 FALSE
+
+define HAL_RCIN_THREAD_ENABLED 1
+define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1

@@ -62,6 +62,10 @@ public:
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t lens) override;
 
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+    bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
@@ -252,7 +256,7 @@ private:
         uint16_t apeture;                           // cameras' aperture * 100
         uint16_t iso_sensitivity;                   // camera's iso sensitivity
     } _status;                                      // latest status received
-    static_assert(sizeof(_status) == 48);           // status should be 48 bytes
+    static_assert(sizeof(_status) == 48, "status must be 48 bytes");           // status should be 48 bytes
     struct {
         uint32_t last_request_ms;                   // system time that status was last requested
         uint32_t last_error_status;                 // last error status reported to user

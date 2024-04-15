@@ -27,6 +27,9 @@ void Location::zero(void)
 // Construct location using position (NEU) from ekf_origin for the given altitude frame
 Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame)
 {
+    // make sure we know what size the Location object is:
+    ASSERT_STORAGE_SIZE(Location, 16);
+
     zero();
     lat = latitude;
     lng = longitude;
@@ -380,10 +383,6 @@ bool Location::sanitize(const Location &defaultLoc)
 
     return has_changed;
 }
-
-// make sure we know what size the Location object is:
-assert_storage_size<Location, 16> _assert_storage_size_Location;
-
 
 // return bearing in radians from location to loc2, return is 0 to 2*Pi
 ftype Location::get_bearing(const Location &loc2) const

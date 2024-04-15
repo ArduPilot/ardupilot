@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_AVOIDANCE_ENABLED
+
 #include "AC_Avoid.h"
 #include <AP_AHRS/AP_AHRS.h>     // AHRS library
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
@@ -259,6 +263,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         _last_limit_time = AP_HAL::millis();
     }
 
+#if HAL_LOGGING_ENABLED
     if (limits_active()) {
         // log at not more than 10hz (adjust_velocity method can be potentially called at 400hz!)
         uint32_t now = AP_HAL::millis();
@@ -275,6 +280,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
             _last_log_ms = 0;
         }
     }
+#endif
 }
 
 /*
@@ -1137,10 +1143,6 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     }
 
     AP_Proximity &_proximity = *proximity;
-    // check for status of the sensor
-    if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
-    }
     // get total number of obstacles
     const uint8_t obstacle_num = _proximity.get_obstacle_count();
     if (obstacle_num == 0) {
@@ -1432,14 +1434,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         return;
     }
     AP_Proximity &_proximity = *proximity;
-
-    // exit immediately if proximity sensor is not present
-    if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
-    }
-
     const uint8_t obj_count = _proximity.get_object_count();
-
     // if no objects return
     if (obj_count == 0) {
         return;
@@ -1486,3 +1481,5 @@ AC_Avoid *ac_avoid()
 }
 
 #endif // !APM_BUILD_Arduplane
+
+#endif  // AP_AVOIDANCE_ENABLED

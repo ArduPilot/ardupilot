@@ -9,6 +9,7 @@ from waflib.TaskGen import feature, before_method, extension
 import os
 import os.path
 from xml.etree import ElementTree as et
+import subprocess
 
 class dronecangen(Task.Task):
     """generate uavcan header files"""
@@ -21,9 +22,10 @@ class dronecangen(Task.Task):
         src = self.env.get_flat('SRC')
         dsdlc = self.env.get_flat("DC_DSDL_COMPILER")
 
-        ret = self.exec_command(['{}'.format(python),
-                                 '{}'.format(dsdlc),
-                                 '-O{}'.format(out)] + [x.abspath() for x in self.inputs])
+        cmd = ['{}'.format(python),
+               '{}'.format(dsdlc),
+               '-O{}'.format(out)] + [x.abspath() for x in self.inputs]
+        ret = self.exec_command(cmd)
         if ret != 0:
             # ignore if there was a signal to the interpreter rather
             # than a real error in the script. Some environments use a
@@ -32,6 +34,9 @@ class dronecangen(Task.Task):
                 Logs.warn('dronecangen crashed with code: {}'.format(ret))
                 ret = 0
             else:
+                Logs.warn('dronecangen: cmd=%s ' % str(cmd))
+                # re-run command with stdout visible to see errors
+                subprocess.call(cmd)
                 Logs.error('dronecangen returned {} error code'.format(ret))
         return ret
 

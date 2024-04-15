@@ -37,17 +37,23 @@ This is a list of log messages which may be present in logs produced and stored 
 
             rows = []
             for f in docco.fields_order:
+                # Populate the description column
                 if "description" in docco.fields[f]:
                     fdesc = docco.fields[f]["description"]
                 else:
                     fdesc = ""
+                # Initialise Type/Unit and check for enum/bitfields
+                ftypeunit = ""
                 fieldnamething = None
                 if "bitmaskenum" in docco.fields[f]:
                     fieldnamething = "bitmaskenum"
                     table_label = "Bitmask values"
+                    ftypeunit = "bitmask"
                 elif "valueenum" in docco.fields[f]:
                     fieldnamething = "valueenum"
                     table_label = "Values"
+                    ftypeunit = "enum"
+                # If an enum/bitmask is defined, build the table
                 if fieldnamething is not None:
                     enum_name = docco.fields[f][fieldnamething]
                     if enum_name not in enumerations:
@@ -62,9 +68,16 @@ This is a list of log messages which may be present in logs produced and stored 
                             comment = ""
                         bitmaskrows.append([enumentry.name, str(enumentry.value), comment])
                     fdesc += "\n%s:\n\n%s" % (table_label, self.tablify(bitmaskrows))
-                rows.append([f, fdesc])
+                # Populate the Type/Units column
+                if "units" in docco.fields[f] and docco.fields[f]["units"] != "":
+                    ftypeunit = docco.fields[f]["units"]
+                elif "fmt" in docco.fields[f] and "char" in docco.fields[f]["fmt"]:
+                    ftypeunit = docco.fields[f]["fmt"]
+                # Add the new row
+                rows.append([f, ftypeunit, fdesc])
 
-            print(self.tablify(rows), file=self.fh)
+            if rows:
+                print(self.tablify(rows), file=self.fh)
 
             print("", file=self.fh)
         self.stop()

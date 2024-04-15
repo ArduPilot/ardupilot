@@ -26,7 +26,7 @@ void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)
 }
 
 // init_aux_switch_function - initialize aux functions
-void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
     // init channel options
     switch (ch_option) {
@@ -130,7 +130,7 @@ void RC_Channel_Rover::do_aux_function_sailboat_motor_3pos(const AuxSwitchPos ch
     }
 }
 
-bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch_flag)
 {
     switch (ch_option) {
     case AUX_FUNC::DO_NOTHING:

@@ -8,13 +8,14 @@ float Mode::AutoYaw::roi_yaw() const
     return get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
 }
 
+// returns a yaw in degrees, direction of vehicle travel:
 float Mode::AutoYaw::look_ahead_yaw()
 {
     const Vector3f& vel = copter.inertial_nav.get_velocity_neu_cms();
     const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
     if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
-        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x))*100.0f;
+        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x));
     }
     return _look_ahead_yaw;
 }
@@ -80,7 +81,7 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
 
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        _look_ahead_yaw = copter.ahrs.yaw_sensor;
+        _look_ahead_yaw = copter.ahrs.yaw_sensor * 0.01;  // cdeg -> deg
         break;
 
     case Mode::RESETTOARMEDYAW:
@@ -230,7 +231,7 @@ float Mode::AutoYaw::yaw_cd()
 
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        _yaw_angle_cd = look_ahead_yaw();
+        _yaw_angle_cd = look_ahead_yaw() * 100.0;
         break;
 
     case Mode::RESETTOARMEDYAW:

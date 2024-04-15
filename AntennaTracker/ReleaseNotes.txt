@@ -1,4 +1,88 @@
 Antenna Tracker Release Notes:
+
+------------------------------------------------------------------
+Release 4.5.1 8th April 2024
+
+This release fixes a critical bug in the CRSF R/C protocol parser that
+can lead to a handfault and a vehicle crashing. A similar fix was
+applied to the GHST protocol, although we believe that GHST could not
+be affected by the bug, so this was just a precaution.
+
+There are no other changes in this release.
+
+------------------------------------------------------------------
+Release 4.5.0 2nd April 2024
+
+No changes from 4.5.0-beta4
+------------------------------------------------------------------
+Release 4.5.0-beta4 22nd March 2024
+Changes from 4.5.0-beta3
+1) system changes
+
+- fixed a cache corruption issue with microSD card data on H7 based boards
+- rename parameter NET_ENABLED to NET_ENABLE
+- fixed FDCAN labels for adding new H7 boards
+- avoid logging dma.txt to save CPU
+- fixed roll/pitch in viewpro driver
+- added band X in VideoTX
+- fixed quaternion attitude reporting for Microstrain external AHRS
+- add RPLidarC1 proximity support
+
+2) new boards
+- added MicoAir405v2
+- add Orqa F405 Pro
+
+------------------------------------------------------------------
+AntennaTracker 4.5.0 beta3 14-Mar-2024
+Changes from 4.5.0 beta1
+
+Board specific changes
+- added PixFlamingo F7 board
+- support ICM42688 on BlitzF745AIO
+- fixed IMU orientation of CubeRedSecondary
+- enable all FPV features on SpeedyBeeF405WING
+
+System level changes
+
+- improved robustness of CRSF parser
+- reduced memory used by DDS/ROS2
+- added filesystem crc32 binding in lua scripting
+- support visual odometry quality metric and added autoswitching lua script
+- allow for expansion of fence storage to microSD for larger pologon fences
+- allow FTP upload of fence and rally points
+- fixed vehicle type of ship simulation for ship landing
+- make severity level depend on generator error level in IE 2400 generator
+- speed up initial GPS probe by using SERIALn_BAUD first
+- allow NanoRadar radar and proximity sensor to share the CAN bus
+- added MR72 CAN proximity sensor
+- only produce *_with_bl.hex not *.hex in builds if bootloader available
+- fixed check for GPS antenna separation in moving baseline yaw
+- added GPS_DRV_OPTIONS options for fully parsing RTCMv3 stream
+- fixed logging of RTCM fragments in GPS driver
+- fixed video recording while armed
+- robostness and logging improvements for ExternalAHRS
+- fixed RPM from bdshot on boards with IOMCU
+- fixed accel cal simple to remove unused IMUs
+- fixed float rounding issue in HAL_Linux millis and micros functions
+- fixed loading of defaults.parm parameters for dynamic parameter subtrees
+- fixed discrimination between GHST and CRSF protocols
+- fixed bug in DroneCAN packet parsing for corrupt packets that could cause a crash
+- fixed handling of network sockets in scripting when used after close
+- fixed bit timing of CANFD buses
+
+New Autopilots supported
+ - YJUAV_A6Ultra
+ - AnyLeaf H7
+
+- do relay parameter conversion for parachute parameters if ever has been used
+- broaden acceptance criteria for GPS yaw measurement for moving baseline yaw
+
+------------------------------------------------------------------
+AntennaTracker 4.5.0 beta1 22-Feb-2024
+Changes from 4.2.0
+1) Innumerable system-level improvements; see Copter and Plane release notes
+2) fix EKF2/EKF3 parameters
+3) improve logging
 ------------------------------------------------------------------
 AntennaTracker 4.2.0 beta1 25-May-2022
 Changes from 1.1.0

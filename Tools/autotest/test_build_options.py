@@ -23,6 +23,7 @@ from __future__ import print_function
 import fnmatch
 import optparse
 import os
+import pathlib
 import sys
 
 from pysim import util
@@ -49,8 +50,10 @@ class TestBuildOptions(object):
                  do_step_disable_in_turn=True,
                  do_step_enable_in_turn=True,
                  build_targets=None,
-                 board="DevEBoxH7v2",
-                 extra_hwdef=None):
+                 board="CubeOrange",  # DevEBoxH7v2 also works
+                 extra_hwdef=None,
+                 emit_disable_all_defines=None,
+                 ):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
         self.match_glob = match_glob
@@ -63,7 +66,11 @@ class TestBuildOptions(object):
         if self.build_targets is None:
             self.build_targets = self.all_targets()
         self._board = board
+        self.emit_disable_all_defines = emit_disable_all_defines
         self.results = {}
+
+        self.enable_in_turn_results = {}
+        self.sizes_everything_disabled = None
 
     def must_have_defines_for_board(self, board):
         '''return a set of defines which must always be enabled'''
@@ -82,15 +89,22 @@ class TestBuildOptions(object):
                 'AP_COMPASS_AK09916_ENABLED',
                 'AP_COMPASS_ICM20948_ENABLED',
             ]),
+            "Pixhawk6X-GenericVehicle": frozenset([
+                "AP_BARO_BMP388_ENABLED",
+                "AP_BARO_ICP201XX_ENABLED",
+            ]),
         }
         return must_have_defines.get(board, frozenset([]))
+
+    def must_have_defines(self):
+        return self.must_have_defines_for_board(self._board)
 
     @staticmethod
     def all_targets():
         return ['copter', 'plane', 'rover', 'antennatracker', 'sub', 'blimp']
 
     def progress(self, message):
-        print("###### %s" % message)
+        print("###### %s" % message, file=sys.stderr)
 
     # swiped from app.py:
     def get_build_options_from_ardupilot_tree(self):
@@ -105,12 +119,14 @@ class TestBuildOptions(object):
         return mod.BUILD_OPTIONS
 
     def write_defines_to_file(self, defines, filepath):
+        self.write_defines_to_Path(defines, pathlib.Path(filepath))
+
+    def write_defines_to_Path(self, defines, Path):
         lines = []
         lines.extend(["undef %s\n" % (a, ) for (a, b) in defines.items()])
         lines.extend(["define %s %s\n" % (a, b) for (a, b) in defines.items()])
         content = "".join(lines)
-        with open(filepath, "w") as f:
-            f.write(content)
+        Path.write_text(content)
 
     def get_disable_defines(self, feature, options):
         '''returns a hash of (name, value) defines to turn feature off -
@@ -131,7 +147,7 @@ class TestBuildOptions(object):
                     if f.define not in ret:
                         continue
 
-                    print("%s requires %s" % (option.define, f.define))
+                    print("%s requires %s" % (option.define, f.define), file=sys.stderr)
                     added_one = True
                     ret[option.define] = 0
                     break
@@ -182,8 +198,6 @@ class TestBuildOptions(object):
                 # or all vehicles:
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
-                    'AC_AVOID_ENABLED',  # Rover doesn't obey this
-                    'AC_OAPATHPLANNER_ENABLED',   # Rover doesn't obey this
                     'BEACON_ENABLED',  # Rover doesn't obey this (should also be AP_BEACON_ENABLED)
                     'WINCH_ENABLED',  # Copter doesn't use this; should use AP_WINCH_ENABLED
                 ])
@@ -322,6 +336,21 @@ class TestBuildOptions(object):
             count += 1
             self.disable_in_turn_check_sizes(feature, self.sizes_nothing_disabled)
 
+    def enable_in_turn_check_sizes(self, feature, sizes_everything_disabled):
+        if not self.do_step_disable_all:
+            self.progress("disable-none skipped, size comparison not available")
+            return
+        current_sizes = self.find_build_sizes()
+        for (build, new_size) in current_sizes.items():
+            old_size = sizes_everything_disabled[build]
+            self.progress("Enabling %s(%s) on %s costs %u bytes" %
+                          (feature.label, feature.define, build, old_size - new_size))
+            if feature.define not in self.enable_in_turn_results:
+                self.enable_in_turn_results[feature.define] = {}
+            self.enable_in_turn_results[feature.define][build] = TestBuildOptionsResult(feature.define, build, old_size - new_size)  # noqa
+            with open("/tmp/enable-in-turn.csv", "w") as f:
+                f.write(self.csv_for_results(self.enable_in_turn_results))
+
     def run_enable_in_turn(self):
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
@@ -335,6 +364,7 @@ class TestBuildOptions(object):
                 f.write(f"{count}/{len(options)} {feature.define}\n")
             self.test_enable_feature(feature, options)
             count += 1
+            self.enable_in_turn_check_sizes(feature, self.sizes_everything_disabled)
 
     def get_option_by_label(self, label, options):
         for x in options:
@@ -359,6 +389,7 @@ class TestBuildOptions(object):
     def run_disable_all(self):
         defines = self.get_disable_all_defines()
         self.test_compile_with_defines(defines)
+        self.sizes_everything_disabled = self.find_build_sizes()
 
     def run_disable_none(self):
         self.test_compile_with_defines({})
@@ -386,9 +417,21 @@ class TestBuildOptions(object):
                 raise ValueError("Duplicate entries found for label '%s'" % feature.label)
             seen_labels[feature.label] = True
 
+    def do_emit_disable_all_defines(self):
+        defines = tbo.get_disable_all_defines()
+        for f in self.must_have_defines():
+            defines[f] = 1
+        tbo.write_defines_to_Path(defines, pathlib.Path("/dev/stdout"))
+        sys.exit(0)
+
     def run(self):
         self.check_deps_consistency()
         self.check_duplicate_labels()
+
+        if self.emit_disable_all_defines:
+            self.do_emit_disable_all_defines()
+            sys.exit(0)
+
         if self.do_step_run_with_defaults:
             self.progress("Running run-with-defaults step")
             self.run_with_defaults()
@@ -441,6 +484,9 @@ if __name__ == '__main__':
                       type='string',
                       default="DevEBoxH7v2",
                       help='board to build for')
+    parser.add_option("--emit-disable-all-defines",
+                      action='store_true',
+                      help='emit defines used for disabling all features then exit')
 
     opts, args = parser.parse_args()
 
@@ -454,5 +500,7 @@ if __name__ == '__main__':
         build_targets=opts.build_targets,
         board=opts.board,
         extra_hwdef=opts.extra_hwdef,
+        emit_disable_all_defines=opts.emit_disable_all_defines,
     )
+
     tbo.run()

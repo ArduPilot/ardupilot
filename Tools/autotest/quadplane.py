@@ -817,7 +817,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("STALL_PREVENTION", 0)
 
         thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
-        lim_roll_deg = self.get_parameter("LIM_ROLL_CD") * 0.01
+        lim_roll_deg = self.get_parameter("ROLL_LIMIT_DEG")
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
@@ -1335,6 +1335,120 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.remove_installed_script(applet_script)
         self.reboot_sitl()
 
+    def PrecisionLanding(self):
+        '''VTOL precision landing'''
+        applet_script = "plane_precland.lua"
+
+        self.install_applet_script(applet_script)
+
+        here = self.mav.location()
+        target = self.offset_location_ne(here, 20, 0)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 4,
+            "SIM_PLD_ENABLE":   1,
+            "SIM_PLD_LAT" : target.lat,
+            "SIM_PLD_LON" : target.lng,
+            "SIM_PLD_HEIGHT" : 0,
+            "SIM_PLD_ALT_LMT" : 50,
+            "SIM_PLD_DIST_LMT" : 30,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_PIN" : 0,
+            "RNGFND1_SCALING" : 12.2,
+            "RNGFND1_MAX_CM" : 5000,
+            "RNGFND_LANDING" : 1,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "PLND_ALT_CUTOFF" : 5,
+            "SIM_SPEEDUP" : 10,
+            })
+
+        self.scripting_restart()
+        self.wait_text("PLND: Loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("GUIDED")
+        self.arm_vehicle()
+        self.takeoff(60, 'GUIDED')
+        self.wait_altitude(58, 62, relative=True)
+        self.drain_mav()
+        self.change_mode("QRTL")
+
+        self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
+
+        self.wait_disarmed(timeout=180)
+        loc2 = self.mav.location()
+        error = self.get_distance(target, loc2)
+        self.progress("Target error %.1fm" % error)
+        if error > 2:
+            raise NotAchievedException("too far from target %.1fm" % error)
+
+        self.context_pop()
+        self.remove_installed_script(applet_script)
+        self.reboot_sitl()
+
+    def ShipLanding(self):
+        '''ship landing test'''
+        applet_script = "plane_ship_landing.lua"
+
+        self.install_applet_script(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 5,
+            "SIM_SHIP_DSIZE": 10,
+            "FOLL_ENABLE": 1,
+            "FOLL_SYSID": 17,
+            "FOLL_OFS_TYPE": 1,
+            "SIM_TERRAIN" : 0,
+            "TERRAIN_ENABLE" : 0,
+        })
+
+        self.load_mission("takeoff100.txt")
+
+        self.reboot_sitl(check_position=False)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SHIP_ENABLE" : 1,
+            "SIM_SPEEDUP" : 10,
+            })
+
+        self.scripting_restart()
+        self.wait_text("ShipLanding: loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("AUTO")
+        self.arm_vehicle()
+        self.wait_altitude(95, 105, relative=True, timeout=90)
+        self.drain_mav()
+
+        self.wait_text("Mission complete, changing mode to RTL", check_context=True, timeout=60)
+        self.wait_text("Descending for approach", check_context=True, timeout=60)
+        self.wait_text("Reached target altitude", check_context=True, timeout=120)
+        self.wait_text("Starting approach", check_context=True, timeout=120)
+        self.wait_text("Land complete", check_context=True, timeout=120)
+
+        self.wait_disarmed(timeout=180)
+
+        # we confirm successful landing on the ship from our ground speed. The
+        # deck is just 10m in size, so we must be within 10m if we are moving
+        # with the deck
+        self.wait_groundspeed(4.8, 5.2)
+
+        self.context_pop()
+        self.remove_installed_script(applet_script)
+        self.reboot_sitl(check_position=False)
+
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
         self.set_parameter("RC9_OPTION", 106)
@@ -1548,6 +1662,115 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # Force disarm
         self.disarm_vehicle(force=True)
 
+    def RTL_AUTOLAND_1(self):
+        '''test behaviour when RTL_AUTOLAND==1'''
+
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+        })
+
+        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
+        # then to the landing sequence.  This mission puts the landing
+        # sequence well to the West of home so if we go directly there
+        # we won't come within 200m of home
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            # fly North
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
+            # add a waypoint 1km North (which we will look for and trigger RTL
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
+
+            # *exciting* landing sequence is ~1km West and points away from Home.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)  # will be 2km North here
+        self.change_mode('RTL')
+
+        self.wait_distance_to_home(100, 200, timeout=120)
+        self.wait_current_waypoint(7)
+
+        self.fly_home_land_and_disarm()
+
+    def send_reposition_to_loc(self, loc):
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            1,  # reposition flags; 1 means "change to guided"
+            0,
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            20,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+
+    def reposition_to_loc(self, loc, accuracy=100):
+        self.send_reposition_to_loc(loc)
+        self.wait_location(
+            loc,
+            accuracy=accuracy,
+            minimum_duration=20,
+            timeout=120,
+        )
+
+    def RTL_AUTOLAND_1_FROM_GUIDED(self):
+        '''test behaviour when RTL_AUTOLAND==1 and entering from guided'''
+
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+        })
+
+        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
+        # then to the landing sequence.  This mission puts the landing
+        # sequence well to the West of home so if we go directly there
+        # we won't come within 200m of home
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            # fly North
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
+            # add a waypoint 1km North (which we will look for and trigger RTL
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
+
+            # *exciting* landing sequence is ~1km West and points away from Home.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
+        ])
+        self.check_mission_upload_download(wps)
+        self.set_current_waypoint(0, check_afterwards=False)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        here = self.mav.location()
+        guided_loc = self.offset_location_ne(here, 500, -500)
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)  # will be 2km North here
+        self.reposition_to_loc(guided_loc)
+        self.send_cmd_do_set_mode('RTL')
+
+        self.wait_distance_to_home(100, 200, timeout=120)
+        self.wait_current_waypoint(7)
+
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1578,6 +1801,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            self.PrecisionLanding,
+            self.ShipLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
                 "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
                 "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
@@ -1590,5 +1815,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_NAV_TAKEOFF,
             self.Q_GUIDED_MODE,
             self.DCMClimbRate,
+            self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
+            self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
         ])
         return ret

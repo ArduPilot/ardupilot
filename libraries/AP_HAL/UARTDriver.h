@@ -4,6 +4,7 @@
 
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
@@ -152,9 +153,27 @@ public:
     virtual bool is_dma_enabled() const { return false; }
 
 #if HAL_UART_STATS_ENABLED
+    // Helper to keep track of data usage since last call
+    struct StatsTracker {
+        class ByteTracker {
+        public:
+            // Take cumulative bytes and return the change since last call
+            uint32_t update(uint32_t bytes);
+        private:
+            uint32_t last_bytes;
+        };
+        ByteTracker tx;
+        ByteTracker rx;
+    };
+
     // request information on uart I/O for this uart, for @SYS/uarts.txt
-    virtual void uart_info(ExpandingString &str) {}
+    virtual void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) {}
+
+#if HAL_LOGGING_ENABLED
+    // Log stats for this instance
+    void log_stats(const uint8_t inst, StatsTracker &stats, const uint32_t dt_ms);
 #endif
+#endif // HAL_UART_STATS_ENABLED
 
     /*
       software control of the CTS/RTS pins if available. Return false if
@@ -177,6 +196,13 @@ public:
         return true;
     }
 #endif
+
+    /*
+      return true if the port is currently locked for writing
+     */
+    bool is_write_locked(void) const {
+        return lock_write_key != 0;
+    }
 
 protected:
     // key for a locked port
@@ -213,7 +239,13 @@ protected:
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
-    
+
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    virtual uint32_t get_total_tx_bytes() const { return 0; }
+    virtual uint32_t get_total_rx_bytes() const { return 0; }
+#endif
+
 private:
     // option bits for port
     uint16_t _last_options;

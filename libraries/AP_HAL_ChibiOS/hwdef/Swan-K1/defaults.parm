@@ -38,16 +38,16 @@ ARMING_RUDDER 2
 ARSPD_TUBE_ORDR 0
 ARSPD_USE 1
 
-ALT_HOLD_RTL 3000
-ARSPD_FBW_MAX  25
-ARSPD_FBW_MIN  8
+RTL_ALTITUDE 30.00
+AIRSPEED_MAX  25
+AIRSPEED_MIN  8
 ARSPD_RATIO    1.9
-LIM_ROLL_CD    4000
+ROLL_LIMIT_DEG 40.00
 
 # the HWing can become unstable at high speeds. Limit pitch angle
 # to prevent overspeed
-LIM_PITCH_MAX  4500
-LIM_PITCH_MIN  -1500
+PTCH_LIM_MAX_DEG 45.00
+PTCH_LIM_MIN_DEG -15.00
 
 # setup left 3-pos switch for QHOVER, QLOITER and FBWA
 FLTMODE1 18
@@ -70,7 +70,7 @@ INS_HNTCH_REF          0.4560
 KFF_RDDRMIX 0
 
 # reasonable attitude limits
-LIM_PITCH_MAX 4000
+PTCH_LIM_MAX_DEG 40.00
 LOG_FILE_DSRMROT 1
 
 # lower logging rate a bit to make logs faster to fetch
@@ -133,7 +133,7 @@ RC_OPTIONS 32
 TECS_LAND_ARSPD 8
 
 # 16 m/s target airspeed in auto modes
-TRIM_ARSPD_CM 1600
+AIRSPEED_CRUISE 16.00
 TRIM_THROTTLE 29
 
 # 2nd lane tends to be better

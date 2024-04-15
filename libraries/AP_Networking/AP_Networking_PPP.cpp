@@ -57,10 +57,17 @@ void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, voi
     switch (code) {
     case PPPERR_NONE:
         // got new addresses for the link
-        driver.activeSettings.ip = ntohl(netif_ip4_addr(pppif)->addr);
-        driver.activeSettings.gw = ntohl(netif_ip4_gw(pppif)->addr);
-        driver.activeSettings.nm = ntohl(netif_ip4_netmask(pppif)->addr);
-        driver.activeSettings.last_change_ms = AP_HAL::millis();
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+        if (driver.frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: got addresses");
+        } else
+#endif
+        {
+            driver.activeSettings.ip = ntohl(netif_ip4_addr(pppif)->addr);
+            driver.activeSettings.gw = ntohl(netif_ip4_gw(pppif)->addr);
+            driver.activeSettings.nm = ntohl(netif_ip4_netmask(pppif)->addr);
+            driver.activeSettings.last_change_ms = AP_HAL::millis();
+        }
         break;
 
     case PPPERR_OPEN:
@@ -94,10 +101,13 @@ bool AP_Networking_PPP::init()
         return false;
     }
 
-    // initialise TCP/IP thread
-    LWIP_TCPIP_LOCK();
-    tcpip_init(NULL, NULL);
-    LWIP_TCPIP_UNLOCK();
+    const bool ethernet_gateway = frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
+    if (!ethernet_gateway) {
+        // initialise TCP/IP thread
+        LWIP_TCPIP_LOCK();
+        tcpip_init(NULL, NULL);
+        LWIP_TCPIP_UNLOCK();
+    }
 
     hal.scheduler->delay(100);
     
@@ -127,9 +137,14 @@ void AP_Networking_PPP::ppp_loop(void)
     while (!hal.scheduler->is_system_initialized()) {
         hal.scheduler->delay_microseconds(1000);
     }
+    const bool ppp_gateway = frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
+    if (ppp_gateway) {
+        // wait for the ethernet interface to be up
+        AP::network().startup_wait();
+    }
 
     // ensure this thread owns the uart
-    uart->begin(0);
+    uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, 0));
     uart->set_unbuffered_writes(true);
 
     while (true) {
@@ -137,9 +152,63 @@ void AP_Networking_PPP::ppp_loop(void)
 
         // connect and set as default route
         LWIP_TCPIP_LOCK();
+
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+        if (ppp_gateway) {
+            /*
+              when bridging setup the ppp interface with the same IP
+              as the ethernet interface, and set the remote IP address
+              as the local address + 1
+             */
+            ip4_addr_t our_ip, his_ip;
+            const uint32_t ip = frontend.get_ip_active();
+            uint32_t rem_ip = frontend.param.remote_ppp_ip.get_uint32();
+            if (rem_ip == 0) {
+                // use ethernet IP +1 by default
+                rem_ip = ip+1;
+            }
+            our_ip.addr = htonl(ip);
+            his_ip.addr = htonl(rem_ip);
+            ppp_set_ipcp_ouraddr(ppp, &our_ip);
+            ppp_set_ipcp_hisaddr(ppp, &his_ip);
+            if (netif_list != nullptr) {
+                const uint32_t nmask = frontend.get_netmask_param();
+                if ((ip & nmask) == (rem_ip & nmask)) {
+                    // remote PPP IP is on the same subnet as the
+                    // local ethernet IP, so enable proxyarp to avoid
+                    // users having to setup routes in all devices
+                    netif_set_proxyarp(netif_list, &his_ip);
+                }
+            }
+        }
+
+        // connect to the remote end
         ppp_connect(ppp, 0);
 
+        if (ppp_gateway) {
+            extern struct netif *netif_list;
+            /*
+              when we are setup as a PPP gateway we want the pppif to be
+              first in the list so routing works if it is on the same
+              subnet
+            */
+            if (netif_list != nullptr &&
+                netif_list->next != nullptr &&
+                netif_list->next->next == pppif) {
+                netif_list->next->next = nullptr;
+                pppif->next = netif_list;
+                netif_list = pppif;
+            }
+        } else {
+            netif_set_default(pppif);
+        }
+#else
+        // normal PPP link, connect to the remote end and set as the
+        // default route
+        ppp_connect(ppp, 0);
         netif_set_default(pppif);
+#endif // AP_NETWORKING_PPP_GATEWAY_ENABLED
+
         LWIP_TCPIP_UNLOCK();
 
         need_restart = false;

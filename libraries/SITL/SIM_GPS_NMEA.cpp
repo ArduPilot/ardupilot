@@ -45,7 +45,8 @@ void GPS_NMEA::publish(const GPS_Data *d)
 
     simulation_timeval(&tv);
 
-    tm = gmtime(&tv.tv_sec);
+    struct tm tvd {};
+    tm = gmtime_r(&tv.tv_sec, &tvd);
 
     // format time string
     hal.util->snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec*1.0e-6);

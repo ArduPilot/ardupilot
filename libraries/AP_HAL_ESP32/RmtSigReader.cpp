@@ -13,6 +13,7 @@ void RmtSigReader::init()
     config.clk_div = 80;   //80MHZ APB clock to the 1MHZ target frequency
     config.gpio_num = HAL_ESP32_RCIN;
     config.mem_block_num = 2; //each block could store 64 pulses
+    config.flags = 0;
     config.rx_config.filter_en = true;
     config.rx_config.filter_ticks_thresh = 8;
     config.rx_config.idle_threshold = idle_threshold;

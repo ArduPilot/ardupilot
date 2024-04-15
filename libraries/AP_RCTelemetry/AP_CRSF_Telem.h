@@ -236,6 +236,8 @@ public:
     void update();
     // get next telemetry data for external consumers of SPort data
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
+    // start bind request
+    void start_bind() { _bind_request_pending = true; }
 
 private:
 
@@ -271,6 +273,7 @@ private:
     void calc_device_info();
     void calc_device_ping(uint8_t destination);
     void calc_command_response();
+    void calc_bind();
     void calc_parameter();
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);
@@ -349,6 +352,8 @@ private:
         bool valid;
         uint8_t port_id;
     } _baud_rate_request;
+
+    bool _bind_request_pending;
 
     // vtx state
     bool _vtx_freq_update;  // update using the frequency method or not

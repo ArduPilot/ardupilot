@@ -1,0 +1,55 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32G4xx STM32G491xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+FLASH_SIZE_KB 256
+
+# board ID for firmware load
+APJ_BOARD_ID 5301
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# blue LED
+PA4 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_NO_GPIO_IRQ
+define HAL_USE_EMPTY_IO TRUE
+define HAL_NO_TIMER_THREAD
+define DMA_RESERVE_SIZE 0
+define HAL_USE_SERIAL FALSE
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PB5 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PA2 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW LOW
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a smaller bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 2500
+
+# Add CS pins to ensure they are high in bootloader
+PA9 RM3100_CS CS
+PA10 DPS310_CS CS
+
+define CAN_APP_NODE_NAME "in.sierraaerospace.TrueNavPro-G4"
