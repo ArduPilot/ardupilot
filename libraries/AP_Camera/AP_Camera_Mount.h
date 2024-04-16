@@ -69,6 +69,9 @@ public:
 
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan) const override;
+
+    // send video stream information message to GCS
+    void send_video_stream_information(mavlink_channel_t chan) const override;
 };
 
 #endif // AP_CAMERA_MOUNT_ENABLED
