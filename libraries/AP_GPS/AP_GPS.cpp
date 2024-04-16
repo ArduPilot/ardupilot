@@ -1656,8 +1656,8 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             
             bool already_seen = false;
             for (uint8_t c=0; c<ARRAY_SIZE(rtcm.sent_crc); c++) {
-                if (rtcm.sent_crc[c] == crc) {
-                    // we have already sent this message
+                if (rtcm.sent_crc[c] == crc && rtcm.sent_channels[c] != chan) {
+                    // we have already sent this message, duplicates on the same channel are allowed
                     already_seen = true;
                     break;
                 }
@@ -1666,6 +1666,7 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
                 continue;
             }
             rtcm.sent_crc[rtcm.sent_idx] = crc;
+            rtcm.sent_channels[rtcm.sent_idx] = chan;
             rtcm.sent_idx = (rtcm.sent_idx+1) % ARRAY_SIZE(rtcm.sent_crc);
 
             if (buf != nullptr && len > 0) {
