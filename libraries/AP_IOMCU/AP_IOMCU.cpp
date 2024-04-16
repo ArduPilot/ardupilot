@@ -346,7 +346,7 @@ void AP_IOMCU::thread_main(void)
         // update failsafe pwm
         if (pwm_out.failsafe_pwm_set != pwm_out.failsafe_pwm_sent) {
             uint8_t set = pwm_out.failsafe_pwm_set;
-            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.failsafe_pwm)) {
+            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_RC_CHANNELS, pwm_out.failsafe_pwm)) {
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
@@ -372,7 +372,7 @@ void AP_IOMCU::send_servo_out()
         if (rate.sbus_rate_hz == 0) {
             n = MIN(n, 8);
         } else {
-            n = MIN(n, IOMCU_MAX_CHANNELS);
+            n = MIN(n, IOMCU_MAX_RC_CHANNELS);
         }
         uint32_t now = AP_HAL::micros();
         if (now - last_servo_out_us >= 2000 || AP_BoardConfig::io_dshot()) {
