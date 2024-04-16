@@ -370,7 +370,7 @@ HarmonicNotchFilterParams::HarmonicNotchFilterParams(void)
 
 void HarmonicNotchFilterParams::init()
 {
-    _harmonics.convert_parameter_width(AP_PARAM_INT8);
+    _harmonics.convert_bitmask_parameter_width(AP_PARAM_INT8);
 }
 
 /*
