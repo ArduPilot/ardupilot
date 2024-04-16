@@ -19,6 +19,11 @@ public:
 #if HAL_GCS_ENABLED
         k_param_sysid_this_mav =   2,
 #endif
+
+#if AP_BOARDCONFIG_SINGLETON_ENABLED
+        // BoardConfig object
+        k_param_BoardConfig = 3,
+#endif
     };
 
     AP_Int16 format_version;
