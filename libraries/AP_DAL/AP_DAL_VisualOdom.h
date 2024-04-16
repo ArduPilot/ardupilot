@@ -18,7 +18,7 @@ public:
         return RVOH.enabled;
     }
 
-    bool get_delay_ms() const {
+    uint16_t get_delay_ms() const {
         return RVOH.delay_ms;
     }
 
