@@ -13,6 +13,7 @@ def build(bld):
             'AP_Arming',
             'AP_Camera',
             'AP_L1_Control',
+            'AP_PTKP_Kontrolcu',
             'AP_Navigation',
             'AP_RCMapper',
             'AP_TECS',

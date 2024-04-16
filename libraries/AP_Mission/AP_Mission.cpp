@@ -852,6 +852,8 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_LOITER_TO_ALT:
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
     case MAV_CMD_NAV_GUIDED_ENABLE:
+    case MAV_CMD_NAV_PIST_BASLANGIC:
+    case MAV_CMD_NAV_PIST_BITIS:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_GO_AROUND:
@@ -1109,6 +1111,18 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.nav_delay.hour_utc = packet.param2;// absolute time's hour (utc)
         cmd.content.nav_delay.min_utc = packet.param3;// absolute time's min (utc)
         cmd.content.nav_delay.sec_utc = packet.param4; // absolute time's second (utc)
+        break;
+
+    case MAV_CMD_NAV_PIST_BASLANGIC:                            // MAV ID: 93
+        cmd.content.pist_baslangic.lat = packet.param1;// absolute time's hour (utc)
+        cmd.content.pist_baslangic.lon = packet.param2;// absolute time's min (utc)
+        cmd.content.pist_baslangic.alt = packet.param3; // absolute time's second (utc)
+        break;
+
+    case MAV_CMD_NAV_PIST_BITIS:                            // MAV ID: 93
+        cmd.content.pist_bitis.lat = packet.param1;// absolute time's hour (utc)
+        cmd.content.pist_bitis.lon = packet.param2;// absolute time's min (utc)
+        cmd.content.pist_bitis.alt = packet.param3; // absolute time's second (utc)
         break;
 
     case MAV_CMD_CONDITION_DELAY:                       // MAV ID: 112
@@ -1652,6 +1666,18 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.speed.speed_type;   // 0 = airspeed, 1 = ground speed
         packet.param2 = cmd.content.speed.target_ms;    // speed in m/s
         packet.param3 = cmd.content.speed.throttle_pct; // throttle as a percentage from 1 ~ 100%
+        break;
+
+    case MAV_CMD_NAV_PIST_BASLANGIC:                       
+        packet.param1 = cmd.content.pist_baslangic.lat;   
+        packet.param2 = cmd.content.pist_baslangic.lon;    
+        packet.param3 = cmd.content.pist_baslangic.alt; 
+        break;
+
+    case MAV_CMD_NAV_PIST_BITIS:                       
+        packet.param1 = cmd.content.pist_bitis.lat;   
+        packet.param2 = cmd.content.pist_bitis.lon;    
+        packet.param3 = cmd.content.pist_bitis.alt; 
         break;
 
     case MAV_CMD_DO_SET_HOME:                           // MAV ID: 179
@@ -2579,6 +2605,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "LoitAltitude";
     case MAV_CMD_NAV_SET_YAW_SPEED:
         return "SetYawSpd";
+    case MAV_CMD_NAV_PIST_BASLANGIC:
+        return "PistBaslangic";
+    case MAV_CMD_NAV_PIST_BITIS:
+        return "PistBitis";
     case MAV_CMD_CONDITION_DELAY:
         return "CondDelay";
     case MAV_CMD_CONDITION_DISTANCE:

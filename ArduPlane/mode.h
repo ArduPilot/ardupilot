@@ -39,6 +39,8 @@ public:
         AVOID_ADSB    = 14,
         GUIDED        = 15,
         INITIALISING  = 16,
+        PIST_TAKIP    = 27, //pist takip modu eklendi.
+
 #if HAL_QUADPLANE_ENABLED
         QSTABILIZE    = 17,
         QHOVER        = 18,
@@ -54,6 +56,7 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+
     };
 
     // Constructor
@@ -567,6 +570,39 @@ protected:
     int32_t locked_heading_cd;
     uint32_t lock_timer_ms;
 };
+
+//----------------------pisttakip------------------------
+
+class ModePistTakip : public Mode  //pist takip modu eklendi.
+{
+public:
+
+    Number mode_number() const override { return Number::PIST_TAKIP; }
+    const char *name() const override { return "PIST_TAKIP"; }
+    const char *name4() const override { return "PTKP"; }
+
+    void update() override;
+
+    void navigate() override;
+
+    void run() override;
+
+    bool does_auto_throttle() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
+
+protected:
+
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
+
+    bool _enter() override;
+    
+    void _exit() override;
+
+};
+
+
+//-----------------------------------------------------
 
 #if HAL_ADSB_ENABLED
 class ModeAvoidADSB : public Mode

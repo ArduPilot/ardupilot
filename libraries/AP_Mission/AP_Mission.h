@@ -221,6 +221,22 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
+    struct PACKED Pist_Baslangic {
+ 
+        float lat;   
+        float lon;     
+        float alt;
+
+    };
+
+    struct PACKED Pist_Bitis {
+
+        float lat;   
+        float lon;     
+        float alt;
+
+    };
+
     // Scripting command structure
     struct PACKED scripting_Command {
         float p1;
@@ -374,6 +390,10 @@ public:
 
         // do scripting
         scripting_Command scripting;
+
+        Pist_Baslangic pist_baslangic;
+        Pist_Bitis pist_bitis;
+        
 
 #if AP_SCRIPTING_ENABLED
         // nav scripting

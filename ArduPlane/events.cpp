@@ -90,6 +90,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::CIRCLE:  // these modes never take any short failsafe action and continue
     case Mode::Number::TAKEOFF:
     case Mode::Number::RTL:
+    case Mode::Number::PIST_TAKIP: //pist takip modu eklendi.
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
@@ -120,6 +121,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::FLY_BY_WIRE_A:
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::PIST_TAKIP: //pist takip modu eklendi.
     case Mode::Number::CRUISE:
     case Mode::Number::TRAINING:
     case Mode::Number::CIRCLE:

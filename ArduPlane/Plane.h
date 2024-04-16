@@ -58,6 +58,7 @@
 
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_L1_Control/AP_L1_Control.h>
+#include <AP_PTKP_Kontrolcu/AP_PTKP_Kontrolcu.h>
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -151,6 +152,8 @@ public:
     friend class ModeAcro;
     friend class ModeFBWA;
     friend class ModeFBWB;
+    friend class ModePistTakip; //pist takip modu eklendi.
+
     friend class ModeCruise;
     friend class ModeAutoTune;
     friend class ModeAuto;
@@ -213,12 +216,14 @@ private:
 
     AP_TECS TECS_controller{ahrs, aparm, landing, MASK_LOG_TECS};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
+    AP_PTKP_Kontrolcu PTKP_kontrolcu{ahrs, &TECS_controller}; // Pist Takip HLC Kontrolcü için eklendi.
 
     // Attitude to servo controllers
     AP_RollController rollController{aparm};
     AP_PitchController pitchController{aparm};
     AP_YawController yawController{aparm};
     AP_SteerController steerController{};
+    AP_TekerDumenKontrolcu tekerdumenKontrolcu{}; //Teker Dümen LLC için eklendi.
 
     // Training mode
     bool training_manual_roll;  // user has manual roll control
@@ -285,6 +290,7 @@ private:
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
+    ModePistTakip mode_pist_takip; //pist takip modu eklendi.
 #if HAL_QUADPLANE_ENABLED
     ModeQStabilize mode_qstabilize;
     ModeQHover mode_qhover;
@@ -356,6 +362,7 @@ private:
         WAIT_FOR_BREAKOUT,
         APPROACH_LINE,
         VTOL_LANDING,
+        PIST_TAKIP,
     };
 
 #if HAL_QUADPLANE_ENABLED

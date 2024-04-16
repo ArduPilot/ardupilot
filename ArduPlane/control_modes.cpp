@@ -43,6 +43,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
+    case Mode::Number::PIST_TAKIP: //pist takip modu eklendi.
+        ret = &mode_pist_takip;
+        break;
     case Mode::Number::AVOID_ADSB:
 #if HAL_ADSB_ENABLED
         ret = &mode_avoidADSB;

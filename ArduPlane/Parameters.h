@@ -329,6 +329,9 @@ public:
         k_param_TECS_controller,
         k_param_rally_total_old,  //unused
         k_param_steerController,
+        k_param_PTKP_kontrolcu, // Pist Takip HLC için eklendi.
+        k_param_tekerdumenKontrolcu, // Teker Dümen LLC için eklendi.
+
 
         //
         // 240: PID Controllers
@@ -340,6 +343,7 @@ public:
         k_param_pidTeThrottle, // unused
         k_param_pidNavPitchAltitude, // unused
         k_param_pidWheelSteer, // unused
+
 
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
@@ -356,6 +360,8 @@ public:
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
         k_param_autotune_options,
+
+
     };
 
     AP_Int16 format_version;

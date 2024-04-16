@@ -190,6 +190,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Bitmask{Plane}: 11:Takeoff
     // @Bitmask{Plane}: 12:AVOID_ADSB
     // @Bitmask{Plane}: 13:Guided
+    // @Bitmask{Plane}: 27:PIST_TAKIP
     // @Bitmask{Plane}: 14:THERMAL
     // @Bitmask{Plane}: 15:QSTABILIZE
     // @Bitmask{Plane}: 16:QHOVER

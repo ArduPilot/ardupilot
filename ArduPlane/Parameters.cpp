@@ -471,7 +471,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand, 27:PistTakip
     // @User: Standard
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
@@ -830,6 +830,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/APM_Control/AP_SteerController.cpp
 	GOBJECT(steerController,        "STEER2SRV_",   AP_SteerController),
 
+    // @Group: TKRDMN_
+    // @Path: ../libraries/APM_Control/AP_TekerDumenKontrolcu.cpp
+	GOBJECT(tekerdumenKontrolcu,        "TKRDMN_",   AP_TekerDumenKontrolcu), // Teker Dümen LLC için eklendi.
+
 	// variables not in the g class which contain EEPROM saved variables
 
     // @Group: COMPASS_
@@ -901,6 +905,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: TECS_
     // @Path: ../libraries/AP_TECS/AP_TECS.cpp
     GOBJECT(TECS_controller,         "TECS_",   AP_TECS),
+
+    // @Group: PTKP_
+    // @Path: ../libraries/AP_TECS/AP_PTKP_Kontrolcu.cpp
+    GOBJECT(PTKP_kontrolcu,         "PTKP_",   AP_PTKP_Kontrolcu), // Pist Takip HLC için eklendi.
 
 #if HAL_MOUNT_ENABLED
     // @Group: MNT
