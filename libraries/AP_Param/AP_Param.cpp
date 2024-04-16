@@ -2078,7 +2078,7 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
  convert width of a parameter, allowing update to wider scalar values
  without changing the parameter indexes
 */
-bool AP_Param::convert_parameter_width(ap_var_type old_ptype, float scale_factor)
+bool AP_Param::_convert_parameter_width(ap_var_type old_ptype, float scale_factor, bool bitmask)
 {
     if (configured_in_storage()) {
         // already converted or set by the user
@@ -2122,10 +2122,46 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype, float scale_factor
     
     AP_Param *old_ap = (AP_Param *)&old_value[0];
 
-    // going via float is safe as the only time we would be converting
-    // from AP_Int32 is when converting to float
-    float old_float_value = old_ap->cast_to_float(old_ptype);
-    set_value(new_ptype, this, old_float_value*scale_factor);
+    if (!bitmask) {
+        // Numeric conversion
+        // going via float is safe as the only time we would be converting
+        // from AP_Int32 is when converting to float
+        float old_float_value = old_ap->cast_to_float(old_ptype);
+        set_value(new_ptype, this, old_float_value*scale_factor);
+
+    } else {
+        // Bitmask conversion, go via uint32
+        // int8 -1 should convert to int16 255
+        uint32_t mask;
+        switch (old_ptype) {
+        case AP_PARAM_INT8:
+            mask = (uint8_t)(*(AP_Int8*)old_ap);
+            break;
+        case AP_PARAM_INT16:
+            mask = (uint16_t)(*(AP_Int16*)old_ap);
+            break;
+        case AP_PARAM_INT32:
+            mask = (uint32_t)(*(AP_Int32*)old_ap);
+            break;
+        default:
+            return false;
+        }
+
+        switch (new_ptype) {
+        case AP_PARAM_INT8:
+            ((AP_Int8 *)this)->set(mask);
+            break;
+        case AP_PARAM_INT16:
+            ((AP_Int16 *)this)->set(mask);
+            break;
+        case AP_PARAM_INT32:
+            ((AP_Int32 *)this)->set(mask);
+            break;
+        default:
+            return false;
+        }
+    }
+
 
     // force save as the new type
     save(true);
