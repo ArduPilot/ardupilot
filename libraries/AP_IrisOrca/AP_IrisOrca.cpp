@@ -15,7 +15,7 @@
 
 #include "AP_IrisOrca.h"
 
-#if HAL_IRISORCA_ENABLED
+// #if HAL_IRISORCA_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -163,7 +163,7 @@ void AP_IrisOrca::thread_main()
                     case MotorControlState::AUTO_ZERO:
                         if (waiting_for_auto_zero) {
                             // waiting for auto-zero to complete
-                            if (_mode != 55) {
+                            if (_mode != OperatingMode::AUTO_ZERO) {
                                 // zeroing complete
                                 waiting_for_auto_zero = false;
                                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero complete");
@@ -320,7 +320,7 @@ bool AP_IrisOrca::write_motor_command_stream(const uint8_t sub_code, const uint3
     uint8_t send_buff[9];
 
     // set expected reply message length
-    _reply_msg_len = 19;
+    _reply_msg_len = 20;
 
     // build message
     send_buff[0] = static_cast<uint8_t>(MsgAddress::DEVICE);
@@ -489,13 +489,13 @@ bool AP_IrisOrca::parse_byte(uint8_t b)
 bool AP_IrisOrca::parse_message()
 {
     // check for expected reply
-    switch (_received_buff[1]) 
+    switch (static_cast<FunctionCode>(_received_buff[1])) 
     {
-        case static_cast<uint8_t>(FunctionCode::WRITE_REGISTER):
+        case FunctionCode::WRITE_REGISTER:
             return parse_write_register();
-        case static_cast<uint8_t>(FunctionCode::MOTOR_COMMAND_STREAM):
+        case FunctionCode::MOTOR_COMMAND_STREAM:
             return parse_motor_command_stream();
-        case static_cast<uint8_t>(FunctionCode::MOTOR_READ_STREAM):
+        case FunctionCode::MOTOR_READ_STREAM:
             return parse_motor_read_stream();
         default:
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unexpected message");
@@ -507,14 +507,14 @@ bool AP_IrisOrca::parse_message()
 bool AP_IrisOrca::parse_write_register()
 {
     // Switch on the register address (bytes 2 and 3)
-    switch ((_received_buff[2] << 8) | _received_buff[3])
+    switch ((_received_buff[WriteRegRspIdx::REG_ADDR_HI] << 8) | _received_buff[WriteRegRspIdx::REG_ADDR_LO])
     {
         case static_cast<uint16_t>(Register::CTRL_REG_3):
             // Mode of operation was set
-            _mode = _received_buff[5];
+            _mode = static_cast<OperatingMode>(_received_buff[WriteRegRspIdx::DATA_LO]);
             break;
         default:
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unexpected write register response");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Unsupported write register.");
             return false;
     }
     return true;
@@ -563,4 +563,4 @@ AP_IrisOrca *irisorca()
 }
 };
 
-#endif // HAL_IRISORCA_ENABLED
+// #endif // HAL_IRISORCA_ENABLED

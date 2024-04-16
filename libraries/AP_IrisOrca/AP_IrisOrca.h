@@ -50,6 +50,8 @@ public:
 
 private:
 
+    static constexpr uint8_t CRC_LEN = 2;
+
     // message addresses
     enum class MsgAddress : uint8_t {
         BUS_MASTER = 0x00,
@@ -79,11 +81,64 @@ private:
         POS_CMD_H = 31,
     };
 
+    enum class OperatingMode : uint8_t {
+        SLEEP = 1,
+        FORCE = 2,
+        POSITION = 3,
+        HAPTIC = 4,
+        KINEMATIC = 5,
+        AUTO_ZERO = 55,
+    };
+
     // motor control states
     enum class MotorControlState : uint8_t {
         AUTO_ZERO = 0,
         POSITION_CONTROL = 1
     } _control_state;
+
+
+    // Specifies the meaning of the indices used for the modbus rtu
+    // function 0x06, write single register
+    static constexpr int WRITE_REG_MSG_LEN = 8;
+    enum WriteRegIdx {
+        DEVICE_ADDR = 0,
+        FUNCTION_CODE = 1,
+        REG_ADDR_HI = 2,
+        REG_ADDR_LO = 3,
+        WRITE_DATA_HI = 4,
+        WRITE_DATA_LO = 5,
+        CRC_LO = 6,
+        CRC_HI = 7
+    };
+
+    // Specifies the meaning of the indices used for the response to the 
+    // modbus rtu function 0x06, write single register
+    static constexpr int WRITE_REG_MSG_RSP_LEN = 8;
+    enum WriteRegRspIdx {
+        DEVICE_ADDR = 0,
+        FUNCTION_CODE = 1,
+        REG_ADDR_HI = 2,
+        REG_ADDR_LO = 3,
+        DATA_HI = 4,
+        DATA_LO = 5,
+        CRC_LO = 6,
+        CRC_HI = 7
+    };
+
+    // Specifies the data layout of the orca-specific motor
+    // command stream message, 0x64
+    static constexpr int MOTOR_COMMAND_STREAM_MSG_LEN  = 9; 
+    enum MotorCommandStreamIdx {
+        DEVICE_ADDR = 0,
+        FUNCTION_CODE = 1,
+        SUB_CODE = 2,
+        DATA_MSB_HI = 3,
+        DATA_MSB_LO = 4,
+        DATA_LSB_HI = 5,
+        DATA_LSB_LO = 6,
+        CRC_LO = 7,
+        CRC_HI = 8,
+    };
 
     // initialise serial port (run from background thread)
     // returns true on success
@@ -169,7 +224,7 @@ private:
     uint32_t _send_delay_us;            // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
 
     // state
-    uint8_t  _mode;                    // actuator mode
+    OperatingMode  _mode;                    // actuator mode
     uint32_t _shaft_position;          // actuator position (um)
     uint32_t _force_realized;          // force realized by actuator (mN)
     uint16_t _power_consumed;          // power consumed by actuator (W)
