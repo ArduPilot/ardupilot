@@ -326,7 +326,7 @@ void ModeZigZag::manual_control()
     // althold state machine
     switch (althold_state) {
 
-    case AltHold_MotorStopped:
+    case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
@@ -334,7 +334,7 @@ void ModeZigZag::manual_control()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
         break;
 
-    case AltHold_Takeoff:
+    case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
@@ -353,18 +353,18 @@ void ModeZigZag::manual_control()
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
-    case AltHold_Landed_Ground_Idle:
+    case AltHoldModeState::Landed_Ground_Idle:
         attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
-    case AltHold_Landed_Pre_Takeoff:
+    case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
-    case AltHold_Flying:
+    case AltHoldModeState::Flying:
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 

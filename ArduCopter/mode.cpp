@@ -973,19 +973,19 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
         switch (motors->get_spool_state()) {
 
         case AP_Motors::SpoolState::SHUT_DOWN:
-            return AltHold_MotorStopped;
+            return AltHoldModeState::MotorStopped;
 
         case AP_Motors::SpoolState::GROUND_IDLE:
-            return AltHold_Landed_Ground_Idle;
+            return AltHoldModeState::Landed_Ground_Idle;
 
         default:
-            return AltHold_Landed_Pre_Takeoff;
+            return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
     } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
-        return AltHold_Takeoff;
+        return AltHoldModeState::Takeoff;
 
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         // the aircraft is armed and landed
@@ -1000,17 +1000,17 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
         if (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
             // the aircraft is waiting in ground idle
-            return AltHold_Landed_Ground_Idle;
+            return AltHoldModeState::Landed_Ground_Idle;
 
         } else {
             // the aircraft can leave the ground at any time
-            return AltHold_Landed_Pre_Takeoff;
+            return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
     } else {
         // the aircraft is in a flying state
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-        return AltHold_Flying;
+        return AltHoldModeState::Flying;
     }
 }
 
