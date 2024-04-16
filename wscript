@@ -657,6 +657,8 @@ def list_ap_periph_boards(ctx):
 def ap_periph_boards(ctx):
     return boards.get_ap_periph_boards()
 
+vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'plane', 'rover', 'sub']
+
 def generate_tasklist(ctx, do_print=True):
     boardlist = boards.get_boards_names()
     ap_periph_targets = boards.get_ap_periph_boards()
@@ -675,11 +677,11 @@ def generate_tasklist(ctx, do_print=True):
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
                 if boards.is_board_based(board, boards.sitl):
-                    task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'replay']
+                    task['targets'] = vehicles + ['replay']
                 elif boards.is_board_based(board, boards.linux):
-                    task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub']
+                    task['targets'] = vehicles
                 else:
-                    task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader']
+                    task['targets'] = vehicles + ['bootloader']
                     task['buildOptions'] = '--upload'
             tasks.append(task)
         tlist.write(json.dumps(tasks))
@@ -901,7 +903,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'blimp', 'bootloader','iofirmware','AP_Periph','replay'):
+for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
