@@ -231,12 +231,12 @@ protected:
     virtual float throttle_hover() const;
 
     // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
-    enum AltHoldModeState {
-        AltHold_MotorStopped,
-        AltHold_Takeoff,
-        AltHold_Landed_Ground_Idle,
-        AltHold_Landed_Pre_Takeoff,
-        AltHold_Flying
+    enum class AltHoldModeState {
+        MotorStopped,
+        Takeoff,
+        Landed_Ground_Idle,
+        Landed_Pre_Takeoff,
+        Flying
     };
     AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
 
