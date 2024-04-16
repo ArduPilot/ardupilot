@@ -966,7 +966,7 @@ bool AP_IOMCU_FW::handle_code_write()
         }
         /* copy channel data */
         uint16_t i = 0, num_values = rx_io_packet.count;
-        while ((i < IOMCU_MAX_CHANNELS) && (num_values > 0)) {
+        while ((i < IOMCU_MAX_RC_CHANNELS) && (num_values > 0)) {
             /* XXX range-check value? */
             if (rx_io_packet.regs[i] != PWM_IGNORE_THIS_CHANNEL) {
                 reg_direct_pwm.pwm[i] = rx_io_packet.regs[i];
