@@ -271,6 +271,8 @@ public:
     // send camera capture status message to GCS
     void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
 
+    void send_video_stream_information(uint8_t instance, mavlink_channel_t chan);
+
     //
     // rangefinder
     //

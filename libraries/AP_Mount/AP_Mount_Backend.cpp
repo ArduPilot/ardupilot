@@ -205,6 +205,10 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
 }
 #endif
 
+void AP_Mount_Backend::send_video_stream_information(mavlink_channel_t chan) const
+{
+}
+
 // return gimbal manager capability flags used by GIMBAL_MANAGER_INFORMATION message
 uint32_t AP_Mount_Backend::get_gimbal_manager_capability_flags() const
 {
