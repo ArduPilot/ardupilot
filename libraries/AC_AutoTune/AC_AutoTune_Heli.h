@@ -197,6 +197,9 @@ private:
    // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
     void updating_max_gains(sweep_info &test_data, float &next_freq, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
 
+    // freq_search_for_phase: general search strategy for specified phase.  interpolation done once specified phase has been bounded.
+    bool freq_search_for_phase(sweep_info test, float desired_phase, float freq_incr, sweep_info &est_data, float &new_freq);
+
     // reset the max_gains update gain variables
     void reset_maxgains_update_gain_variables();
 
@@ -225,33 +228,19 @@ private:
     bool found_max_p;
     // flag for finding maximum d gain
     bool found_max_d;
-    // flag for interpolating to find max response gain
-    bool find_middle;
-    // data holding variables for calculations
-    sweep_info data_m_one;
-    sweep_info data_m_two;
-
 
     // updating angle P up variables
-    // track the maximum phase and freq
-    float phase_max;
+    float phase_max;             // track the maximum phase and freq
     float freq_max;
-    // previous gain
-    float sp_prev_gain;
-    // flag for finding max gain frequency
-    bool found_max_gain_freq;
-    // flag for finding the peak of the gain response
-    bool found_peak;
-
-    // updating rate P up
-    // counter value of previous good frequency
-    uint8_t rp_prev_good_frq_cnt;
+    float sp_prev_gain;          // previous gain
+    bool found_max_gain_freq;    // flag for finding max gain frequency
+    bool found_peak;             // flag for finding the peak of the gain response
 
     // updating rate D up
-    // counter value of previous good frequency
-    uint8_t rd_prev_good_frq_cnt;
-    // previous gain
-    float rd_prev_gain;
+    float rd_prev_gain;               // previous gain
+
+    // freq search for phase
+    sweep_info prev_test;              // data from previous dwell
 
     // Dwell Test variables
     AC_AutoTune_FreqResp::InputType test_input_type;
