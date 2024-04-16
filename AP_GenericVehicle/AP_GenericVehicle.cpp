@@ -14,6 +14,8 @@
  */
 #include "AP_GenericVehicle.h"
 
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
@@ -51,5 +53,16 @@ void AP_GenericVehicle::init_ardupilot()
 #endif  // AP_SCHEDULER_ENABLED
 #endif  // AP_INERTIALSENSOR_ENABLED
 }
+
+/*
+ * AdvancedFailsafe compatability.  The following methods allow us to
+ * not build and link in the AP_AdvancedFailsafe library while still
+ * compiling for all boards:
+ */
+#if AP_ADVANCEDFAILSAFE_ENABLED
+// dummy method to avoid linking AFS
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+#endif  // AP_ADVANCEDFAILSAFE_ENABLED
 
 AP_HAL_MAIN_CALLBACKS(&genericvehicle);
