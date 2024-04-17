@@ -273,10 +273,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(can_mgr,        "CAN_",       AP_CANManager),
 #endif
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_

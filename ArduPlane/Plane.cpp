@@ -445,8 +445,6 @@ void Plane::airspeed_ratio_update(void)
  */
 void Plane::update_GPS_50Hz(void)
 {
-    gps.update();
-
     update_current_loc();
 }
 

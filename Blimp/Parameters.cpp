@@ -297,10 +297,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // BARO was here
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp

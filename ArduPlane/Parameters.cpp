@@ -750,10 +750,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // BARO was here
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
 #if AP_CAMERA_ENABLED
     // @Group: CAM

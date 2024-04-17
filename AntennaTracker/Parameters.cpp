@@ -236,10 +236,7 @@ const AP_Param::Info Tracker::var_info[] = {
     GOBJECT(can_mgr,        "CAN_",       AP_CANManager),
 #endif
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp

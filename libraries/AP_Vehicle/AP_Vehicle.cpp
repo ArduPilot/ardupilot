@@ -292,6 +292,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(barometer, "BARO", 32, AP_Vehicle, AP_Baro),
 #endif
 
+#if AP_GPS_ENABLED
+    // @Group: GPS
+    // @Path: ../AP_GPS/AP_GPS.cpp
+    AP_SUBGROUPINFO(gps, "GPS", 33, AP_Vehicle, AP_GPS),
+#endif
+
     AP_GROUPEND
 };
 
@@ -433,6 +439,10 @@ void AP_Vehicle::setup()
 #if AP_BARO_ENABLED
     barometer.init();
     barometer.set_log_baro_bit(baro_log_bit());
+#endif
+
+#if AP_GPS_ENABLED
+    gps.init();
 #endif
 
     // init_ardupilot is where the vehicle does most of its initialisation.
@@ -629,6 +639,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_BARO_ENABLED
     SCHED_TASK(update_barometer,         10, 200, 40),
+#endif
+#if AP_GPS_ENABLED
+    SCHED_TASK_CLASS(AP_GPS,               &vehicle.gps,                 update,          50, 200,   9),
 #endif
 #if AP_AIRSPEED_ENABLED
     SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors

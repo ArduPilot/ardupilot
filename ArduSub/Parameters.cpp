@@ -616,10 +616,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // BARO was here
 
-    // GPS driver
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
+    // GPS was here
 
     // Leak detector
     // @Group: LEAK
