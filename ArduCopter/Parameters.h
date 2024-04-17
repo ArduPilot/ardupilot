@@ -254,7 +254,7 @@ public:
         k_param_super_simple = 155,
         k_param_axis_enabled = 157, // deprecated - remove with next eeprom number change
         k_param_copter_leds_mode,   // deprecated - remove with next eeprom number change
-        k_param_ahrs, // AHRS group // 159
+        k_param_ahrs_old, // AHRS group // 159
 
         //
         // 160: Navigation parameters

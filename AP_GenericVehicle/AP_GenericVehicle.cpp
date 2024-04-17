@@ -30,7 +30,14 @@ AP_GenericVehicle::AP_GenericVehicle()
 }
 
 #if AP_SCHEDULER_ENABLED
+#define FAST_TASK(func) FAST_TASK_CLASS(AP_GenericVehicle, &genericvehicle, func)
 const AP_Scheduler::Task AP_GenericVehicle::scheduler_tasks[] {
+#if AP_INERTIALSENSOR_ENABLED
+    FAST_TASK_CLASS(AP_InertialSensor, &genericvehicle.ins, update),
+#endif
+#if AP_AHRS_ENABLED
+    FAST_TASK(ahrs_update),
+#endif
 #if HAL_GCS_ENABLED
     SCHED_TASK_CLASS(GCS,            (GCS*)&genericvehicle._gcs,       update_receive,   300,  500,  57),
     SCHED_TASK_CLASS(GCS,            (GCS*)&genericvehicle._gcs,       update_send,      300,  750,  60),
@@ -45,6 +52,10 @@ void AP_GenericVehicle::get_scheduler_tasks(const AP_Scheduler::Task *&tasks, ui
 
 void AP_GenericVehicle::init_ardupilot()
 {
+#if AP_AHRS_ENABLED
+    ahrs.init();
+#endif
+
 #if AP_INERTIALSENSOR_ENABLED
 #if AP_SCHEDULER_ENABLED
     ins.init(scheduler.get_loop_rate_hz());
@@ -52,7 +63,18 @@ void AP_GenericVehicle::init_ardupilot()
     ins.init(1000);
 #endif  // AP_SCHEDULER_ENABLED
 #endif  // AP_INERTIALSENSOR_ENABLED
+
+#if AP_AHRS_ENABLED
+    ahrs.reset();
+#endif
 }
+
+#if AP_AHRS_ENABLED
+void AP_GenericVehicle::ahrs_update()
+{
+    ahrs.update(false);
+}
+#endif
 
 /*
  * AdvancedFailsafe compatability.  The following methods allow us to

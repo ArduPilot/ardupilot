@@ -153,7 +153,7 @@ public:
         //
         k_param_compass,
         k_param_frame_type, //unused
-        k_param_ahrs, // AHRS group // 159
+        k_param_ahrs_old, // AHRS group
 
         //
         // 160: Navigation parameters

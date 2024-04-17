@@ -50,6 +50,9 @@ private:
     uint8_t get_num_log_structures() const override;
 #endif
 
+#if AP_AHRS_ENABLED
+    void ahrs_update();
+#endif
 };
 
 extern AP_GenericVehicle genericvehicle;

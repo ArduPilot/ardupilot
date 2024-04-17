@@ -298,6 +298,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(gps, "GPS", 33, AP_Vehicle, AP_GPS),
 #endif
 
+#if AP_AHRS_ENABLED
+    // @Group: AHRS_
+    // @Path: ../AP_AHRS/AP_AHRS.cpp
+    AP_SUBGROUPINFO(ahrs, "AHRS_", 34, AP_Vehicle, AP_AHRS),
+#endif
+
     AP_GROUPEND
 };
 

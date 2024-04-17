@@ -484,9 +484,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // SR0 through SR6 was here
 
-    // @Group: AHRS_
-    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
-    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+    // AHRS was here
 
 #if HAL_MOUNT_ENABLED
     // @Group: MNT
