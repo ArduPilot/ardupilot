@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // @Param: SLEW_YAW
     // @DisplayName: Yaw target slew rate
-    // @Description: Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
+    // @Description: Maximum rate the yaw target can be updated in RTL and Auto flight modes
     // @Units: cdeg/s
     // @Range: 500 18000
     // @Increment: 100
