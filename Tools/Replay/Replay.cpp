@@ -72,10 +72,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(ekf3, NavEKF3, "EK3_", NavEKF3),
 
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
-    
+    // GPS was here
+
     AP_VAREND
 };
 
