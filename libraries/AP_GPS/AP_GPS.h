@@ -614,7 +614,6 @@ protected:
     AP_Enum<SBAS_Mode> _sbas_mode;
     AP_Int8 _min_elevation;
     AP_Int8 _raw_data;
-    AP_Int8 _rtcm_data;
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
     AP_Int8 _blend_mask;
@@ -632,6 +631,7 @@ protected:
         GPSL5HealthOverride = (1U << 5),
         AlwaysRTCMDecode = (1U << 6),
         DisableRTCMDecode = (1U << 7),
+        LogRTCMData = (1U << 8),
     };
 
     // check if an option is set

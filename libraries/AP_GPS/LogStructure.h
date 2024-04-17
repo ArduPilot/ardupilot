@@ -207,9 +207,9 @@ struct PACKED log_GPS_RAWS {
 // @LoggerMessage: GRTK
 // @Description: RTCM input status
 // @Field: TimeUS: Time since system startup
-// @Field: version: Message version (0x02 for this version)
-// @Field: flags: RTCM input status flags (see graphic below)
-// @Field: refStation: Reference station ID
+// @Field: ver: Message version (0x02 for this version)
+// @Field: flgs: RTCM input status flags (see graphic below)
+// @Field: ref: Reference station ID
 // @Field: msgType: Message type
 struct PACKED log_GPS_RTCM {
     LOG_PACKET_HEADER;

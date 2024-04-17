@@ -105,8 +105,8 @@
 #define CONFIG_F9            (1<<19)
 #define CONFIG_M10           (1<<20)
 #define CONFIG_L5            (1<<21)
-#define CONFIG_RATE_RTCM     (1<<21)
-#define CONFIG_LAST          (1<<22) // this must always be the last bit
+#define CONFIG_RATE_RTCM     (1<<22)
+#define CONFIG_LAST          (1<<23) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -861,6 +861,7 @@ private:
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
     void log_rxm_rtcm(const struct ubx_rxm_rtcm &rtcm);
+    void log_status(const struct ubx_nav_status &status);
 
 #if GPS_MOVING_BASELINE
     // see if we should use uart2 for moving baseline config
