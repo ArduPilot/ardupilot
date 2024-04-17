@@ -2,13 +2,6 @@
 
 #include "qautotune.h"
 
-/*****************************************************************************
-*   The init_ardupilot function processes everything we need for an in - air restart
-*        We will determine later if we are actually on the ground and process a
-*        ground start in that case.
-*
-*****************************************************************************/
-
 static void failsafe_check_static()
 {
     plane.failsafe_check();
@@ -109,8 +102,38 @@ void Plane::init_ardupilot()
 #endif
 
     AP_Param::reload_defaults_file(true);
-    
-    startup_ground();
+
+    set_mode(mode_initializing, ModeReason::INITIALISED);
+
+#if (GROUND_START_DELAY > 0)
+    gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
+    delay(GROUND_START_DELAY * 1000);
+#else
+    gcs().send_text(MAV_SEVERITY_INFO,"Ground start");
+#endif
+
+    //INS ground start
+    //------------------------
+    //
+    startup_INS();
+
+    // Save the settings for in-air restart
+    // ------------------------------------
+    //save_EEPROM_groundstart();
+
+    // initialise mission library
+    mission.init();
+
+    // initialise AP_Logger library
+#if HAL_LOGGING_ENABLED
+    logger.setVehicle_Startup_Writer(
+        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
+        );
+#endif
+
+    // reset last heartbeat time, so we don't trigger failsafe on slow
+    // startup
+    gcs().sysid_myggcs_seen(AP_HAL::millis());
 
     // don't initialise aux rc output until after quadplane is setup as
     // that can change initial values of channels
@@ -137,45 +160,6 @@ void Plane::init_ardupilot()
     g2.precland.init(scheduler.get_loop_rate_hz());
 #endif
 }
-
-//********************************************************************************
-//This function does all the calibrations, etc. that we need during a ground start
-//********************************************************************************
-void Plane::startup_ground(void)
-{
-    set_mode(mode_initializing, ModeReason::INITIALISED);
-
-#if (GROUND_START_DELAY > 0)
-    gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
-    delay(GROUND_START_DELAY * 1000);
-#else
-    gcs().send_text(MAV_SEVERITY_INFO,"Ground start");
-#endif
-
-    //INS ground start
-    //------------------------
-    //
-    startup_INS_ground();
-
-    // Save the settings for in-air restart
-    // ------------------------------------
-    //save_EEPROM_groundstart();
-
-    // initialise mission library
-    mission.init();
-
-    // initialise AP_Logger library
-#if HAL_LOGGING_ENABLED
-    logger.setVehicle_Startup_Writer(
-        FUNCTOR_BIND(&plane, &Plane::Log_Write_Vehicle_Startup_Messages, void)
-        );
-#endif
-
-    // reset last heartbeat time, so we don't trigger failsafe on slow
-    // startup
-    gcs().sysid_myggcs_seen(AP_HAL::millis());
-}
-
 
 #if AP_FENCE_ENABLED
 /*
@@ -418,7 +402,7 @@ void Plane::check_short_failsafe()
 }
 
 
-void Plane::startup_INS_ground(void)
+void Plane::startup_INS(void)
 {
     if (ins.gyro_calibration_timing() != AP_InertialSensor::GYRO_CAL_NEVER) {
         gcs().send_text(MAV_SEVERITY_ALERT, "Beginning INS calibration. Do not move plane");
