@@ -82,6 +82,9 @@ public:
     // get mask of ESCs that sent valid telemetry data in the last
     // ESC_TELEM_DATA_TIMEOUT_MS
     uint32_t get_active_esc_mask() const;
+    
+    // pre arm check 
+    bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len, uint32_t esc_check_mask) const;
 
     // return the last time telemetry data was received in ms for the given ESC or 0 if never
     uint32_t get_last_telem_data_ms(uint8_t esc_index) const {

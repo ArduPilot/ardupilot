@@ -211,6 +211,32 @@ bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
     return true;
 }
 
+// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
+bool AP_ESC_Telem::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len, uint32_t esc_check_mask) const
+{
+    if (esc_check_mask == 0) {
+        return true;
+    }
+
+    const uint32_t active_esc_mask = get_active_esc_mask();
+    // Find the ESCs that are both active and need to be checked
+    uint32_t active_and_need_check = esc_check_mask & active_esc_mask;
+    // Find the ESCs that need to be checked but are not active
+    uint32_t need_check_but_not_active = esc_check_mask ^ active_and_need_check;
+
+    if (need_check_but_not_active != 0) {
+        for (int i = 0; i < 32; i++) {
+            if (need_check_but_not_active & (1 << i)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, " %d not active", i);
+                return false;
+            }
+        }
+    }
+
+    // if we got this far everything must be ok
+    return true;
+}
+
 // get an individual ESC's temperature in centi-degrees if available, returns true on success
 bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
