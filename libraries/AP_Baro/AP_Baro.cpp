@@ -1043,16 +1043,6 @@ void AP_Baro::update_field_elevation(void)
 #endif
 }
 
-/*
-  call accumulate on all drivers
- */
-void AP_Baro::accumulate(void)
-{
-    for (uint8_t i=0; i<_num_drivers; i++) {
-        drivers[i]->accumulate();
-    }
-}
-
 
 /* register a new sensor, claiming a sensor slot. If we are out of
    slots it will panic

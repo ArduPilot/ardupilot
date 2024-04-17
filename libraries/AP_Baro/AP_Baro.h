@@ -87,10 +87,6 @@ public:
     // get pressure correction in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
     float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
-    
-    // accumulate a reading on sensors. Some backends without their
-    // own thread or a timer may need this.
-    void accumulate(void);
 
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
