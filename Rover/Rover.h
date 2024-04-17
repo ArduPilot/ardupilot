@@ -393,7 +393,7 @@ private:
         return control_mode == &mode_auto;
     }
 
-    void startup_INS_ground(void);
+    void startup_INS(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
