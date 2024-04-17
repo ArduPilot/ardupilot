@@ -8881,8 +8881,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # the model string for Callisto has crap in it.... we
             # should really have another entry in the vehicleinfo data
             # to carry the path to the JSON.
-            actual_model = model.split(":")[0]
-            defaults = self.model_defaults_filepath(actual_model)
+            defaults = self.model_defaults_filepath(frame)
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
