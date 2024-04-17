@@ -80,7 +80,7 @@ public:
 
 
         // Navigation libraries
-        k_param_ahrs = 50, // AHRS
+        k_param_ahrs_old = 50, // AHRS
         k_param_NavEKF, // Extended Kalman Filter Inertial Navigation             // remove
         k_param_NavEKF2, // EKF2
         k_param_attitude_control, // Attitude Control

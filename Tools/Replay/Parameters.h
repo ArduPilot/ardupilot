@@ -10,7 +10,7 @@ public:
         k_param_dummy,
         k_param_barometer_old,
         k_param_ins,
-        k_param_ahrs,
+        k_param_ahrs_old,
         k_param_airspeed,
         k_param_NavEKF2,
         k_param_compass,
