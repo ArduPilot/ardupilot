@@ -295,16 +295,10 @@ void NavEKF3_core::readMagData()
     }
 
     if (compass.learn_offsets_enabled()) {
-        // while learning offsets keep all mag states reset
-        InitialiseVariablesMag();
         wasLearningCompass_ms = imuSampleTime_ms;
     } else if (wasLearningCompass_ms != 0 && imuSampleTime_ms - wasLearningCompass_ms > 1000) {
+        // allow time for old data to clear the buffer before signalling other code that compass data can be used
         wasLearningCompass_ms = 0;
-        // force a new yaw alignment 1s after learning completes. The
-        // delay is to ensure any buffered mag samples are discarded
-        yawAlignComplete = false;
-        yawAlignGpsValidCount = 0;
-        InitialiseVariablesMag();
     }
 
     // If the magnetometer has timed out (been rejected for too long), we find another magnetometer to use if available
@@ -1329,9 +1323,8 @@ ftype NavEKF3_core::MagDeclination(void) const
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-                                       yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
+    const bool runCheck = onGround && (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+                                       yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
     if (!runCheck)
     {
         onGroundNotMoving = false;
