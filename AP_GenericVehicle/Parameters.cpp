@@ -26,6 +26,14 @@ const AP_Param::Info AP_GenericVehicle::var_info[] = {
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),
 #endif
 
+#if HAL_LOGGING_ENABLED
+    // @Param: LOG_BITMASK
+    // @DisplayName: Log bitmask
+    // @Description: yes
+    // @User: Standard
+    GSCALAR(log_bitmask,    "LOG_BITMASK",          65535),
+#endif
+
     AP_VAREND
 };
 

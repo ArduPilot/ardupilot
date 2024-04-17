@@ -37,6 +37,19 @@ public:
     GCS_GenericVehicle &gcs() { return _gcs; }
 #endif
 
+protected:
+
+private:
+
+#if HAL_LOGGING_ENABLED
+    static const struct LogStructure log_structure[];
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+#endif
+
 };
 
 extern AP_GenericVehicle genericvehicle;
