@@ -24,10 +24,18 @@ public:
         // BoardConfig object
         k_param_BoardConfig = 3,
 #endif
+#if HAL_LOGGING_ENABLED
+        k_param_log_bitmask = 4,
+#endif
     };
 
     AP_Int16 format_version;
 #if HAL_GCS_ENABLED
     AP_Int16 sysid_this_mav;
 #endif
+
+#if HAL_LOGGING_ENABLED
+    AP_Int32 log_bitmask;
+#endif
+
 };
