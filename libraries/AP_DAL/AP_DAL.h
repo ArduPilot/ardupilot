@@ -159,7 +159,9 @@ public:
     }
 #endif
 
+#if AP_COMPASS_ENABLED
     AP_DAL_Compass &compass() { return _compass; }
+#endif
 
     // random methods that AP_NavEKF3 wants to call on AHRS:
     bool airspeed_sensor_enabled(void) const {
@@ -299,10 +301,14 @@ public:
     }
 
     void handle_message(const log_RMGH &msg) {
+#if AP_COMPASS_ENABLED
         _compass.handle_message(msg);
+#endif
     }
     void handle_message(const log_RMGI &msg) {
+#if AP_COMPASS_ENABLED
         _compass.handle_message(msg);
+#endif
     }
 
     void handle_message(const log_RBCH &msg) {

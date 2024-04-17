@@ -1,3 +1,7 @@
+#include "AP_Compass_config.h"
+
+#if COMPASS_MOT_ENABLED
+
 /*
   per-motor compass compensation
  */
@@ -229,3 +233,5 @@ void Compass_PerMotor::compensate(Vector3f &offset)
         offset += c * output;
     }
 }
+
+#endif  // COMPASS_MOT_ENABLED

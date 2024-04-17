@@ -2,6 +2,8 @@
 
 #include "AP_Compass_config.h"
 
+#if AP_COMPASS_ENABLED
+
 #include <inttypes.h>
 
 #include <AP_Common/AP_Common.h>
@@ -27,9 +29,6 @@
 #define MAG_BOARD_ORIENTATION ROTATION_NONE
 #endif
 
-#ifndef COMPASS_MOT_ENABLED
-#define COMPASS_MOT_ENABLED 1
-#endif
 #ifndef COMPASS_LEARN_ENABLED
 #define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 #endif
@@ -674,3 +673,5 @@ private:
 namespace AP {
     Compass &compass();
 };
+
+#endif  // AP_COMPASS_ENABLED
