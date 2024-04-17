@@ -9,6 +9,7 @@
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
 #include "AP_Proximity/AP_Proximity_config.h"
+#include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 
 class AP_Arming {
 public:
@@ -43,6 +44,7 @@ public:
         ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
         ARMING_CHECK_OSD         = (1U << 20),
+        ARMING_CHECK_ESC_TELEM   = (1U << 21),
     };
 
     enum class Method {
@@ -165,6 +167,10 @@ protected:
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
 
+#if HAL_WITH_ESC_TELEM
+    AP_Int32                esc_telem_check;        // bitmask for which ESC telemetry checks are required
+#endif // HAL_WITH_ESC_TELEM
+
     // internal members
     bool                    armed;
     uint32_t                last_accel_pass_ms;
@@ -180,6 +186,10 @@ protected:
     virtual bool ins_checks(bool report);
 #endif
 
+#if HAL_WITH_ESC_TELEM
+    bool esc_telemetry_checks(bool report);
+#endif // HAL_WITH_ESC_TELEM
+    
     bool compass_checks(bool report);
 
     virtual bool gps_checks(bool report);
