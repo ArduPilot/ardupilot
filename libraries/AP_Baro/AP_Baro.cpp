@@ -217,12 +217,13 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[1].wind_coeff, "2_WCF_", 19, AP_Baro, WindCoeff),
 #endif
-
 #if BARO_MAX_INSTANCES > 2
     // @Group: 3_WCF_
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
 #endif
+#endif  // HAL_BARO_WIND_COMP_ENABLED
+
 #if AP_FIELD_ELEVATION_ENABLED
     // @Param: _FIELD_ELV
     // @DisplayName: field elevation
@@ -232,7 +233,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Volatile: True
     // @User: Advanced
     AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
-#endif
 #endif
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
