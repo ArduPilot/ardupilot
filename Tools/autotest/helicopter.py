@@ -199,7 +199,8 @@ class AutoTestHelicopter(AutoTestCopter):
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(defaults), ],
+                [],
+                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
@@ -210,7 +211,8 @@ class AutoTestHelicopter(AutoTestCopter):
     def governortest(self):
         '''Test Heli Internal Throttle Curve and Governor'''
         self.customise_SITL_commandline(
-            ["--defaults", ','.join(self.model_defaults_filepath('heli-gas')), ],
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-gas'),
             model="heli-gas",
             wipe=True,
         )
