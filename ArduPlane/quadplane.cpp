@@ -1588,7 +1588,7 @@ void SLT_Transition::update()
         if (!in_forced_transition) {
             const bool show_message = transition_state != TRANSITION_AIRSPEED_WAIT || transition_start_ms == 0;
             if (show_message) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Transition started airspeed %.1f", (double)aspeed);
+                gcs().send_text(MAV_SEVERITY_WARNING, "QAssist: Transition started airspeed %.1f", (double)aspeed);
             }
             transition_state = TRANSITION_AIRSPEED_WAIT;
             if (transition_start_ms == 0) {
