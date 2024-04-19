@@ -91,7 +91,6 @@ class AutoTestHelicopter(AutoTestCopter):
             raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
-        self.set_rc(8, 1000)
         self.land_and_disarm()
         self.mav.wait_heartbeat()
 
@@ -206,7 +205,6 @@ class AutoTestHelicopter(AutoTestCopter):
             )
             self.takeoff(10)
             self.do_RTL()
-            self.set_rc(8, 1000)
 
     def governortest(self):
         '''Test Heli Internal Throttle Curve and Governor'''
@@ -219,7 +217,6 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameter("H_RSC_MODE", 4)
         self.takeoff(10)
         self.do_RTL()
-        self.set_rc(8, 1000)
 
     def hover(self):
         self.progress("Setting hover collective")
@@ -280,7 +277,6 @@ class AutoTestHelicopter(AutoTestCopter):
             ex = e
 
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         self.context_pop()
 
@@ -318,7 +314,6 @@ class AutoTestHelicopter(AutoTestCopter):
             ex = e
 
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         self.context_pop()
 
@@ -878,7 +873,6 @@ class AutoTestHelicopter(AutoTestCopter):
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         # test pitch rate P and Rate D tuning
         self.set_parameters({
@@ -898,7 +892,6 @@ class AutoTestHelicopter(AutoTestCopter):
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         # test Roll rate P and Rate D tuning
         self.set_parameters({
@@ -918,7 +911,6 @@ class AutoTestHelicopter(AutoTestCopter):
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         # test Roll and pitch angle P tuning
         self.set_parameters({
@@ -938,7 +930,6 @@ class AutoTestHelicopter(AutoTestCopter):
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         # test yaw FF, rate P and Rate D, and angle P tuning
         self.set_parameters({
@@ -958,6 +949,15 @@ class AutoTestHelicopter(AutoTestCopter):
         now = self.get_sim_time()
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.land_and_disarm()
+
+    def land_and_disarm(self, **kwargs):
+        super(AutoTestHelicopter, self).land_and_disarm(**kwargs)
+        self.progress("Killing rotor speed")
+        self.set_rc(8, 1000)
+
+    def do_RTL(self, **kwargs):
+        super(AutoTestHelicopter, self).do_RTL(**kwargs)
+        self.progress("Killing rotor speed")
         self.set_rc(8, 1000)
 
     def tests(self):
