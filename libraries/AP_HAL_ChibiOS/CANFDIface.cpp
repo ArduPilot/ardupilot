@@ -323,6 +323,7 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
 
 /*
   table driven timings for CANFD
+  These timings are from https://www.kvaser.com/support/calculators/can-fd-bit-timing-calculator
  */
 bool CANIface::computeFDTimings(const uint32_t target_bitrate, Timings& out_timings) const
 {
@@ -334,11 +335,11 @@ bool CANIface::computeFDTimings(const uint32_t target_bitrate, Timings& out_timi
         uint8_t sjw;
         uint8_t sample_point_pct;
     } CANFD_timings[] {
-        { 1, 5, 15, 6, 6, 75},
-        { 2, 3, 15, 6, 6, 75},
-        { 4, 2, 15, 6, 6, 75},
-        { 5, 2, 12, 5, 5, 75},
-        { 8, 2,  8, 3, 3, 80},
+        { 1, 4, 14, 5, 5, 75},
+        { 2, 2, 14, 5, 5, 75},
+        { 4, 1, 14, 5, 5, 75},
+        { 5, 1, 11, 4, 4, 75},
+        { 8, 1,  6, 3, 3, 70},
     };
     for (const auto &t : CANFD_timings) {
         if (t.bitrate_mbaud*1000U*1000U == target_bitrate) {
@@ -719,7 +720,11 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
         can_->DBTP = (((fdtimings.bs1-1) << FDCAN_DBTP_DTSEG1_Pos) |
                       ((fdtimings.bs2-1) << FDCAN_DBTP_DTSEG2_Pos)  |
                       ((fdtimings.prescaler-1) << FDCAN_DBTP_DBRP_Pos) |
-                      ((fdtimings.sjw-1) << FDCAN_DBTP_DSJW_Pos));
+                      ((fdtimings.sjw-1) << FDCAN_DBTP_DSJW_Pos)) |
+            FDCAN_DBTP_TDC;
+        // use a transmitter delay compensation offset of 10, suitable
+        // for MCP2557FD transceiver with delay of 120ns
+        can_->TDCR = 10<<FDCAN_TDCR_TDCO_Pos;
     }
 
     //RX Config

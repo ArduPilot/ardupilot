@@ -675,7 +675,9 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_WIND,
+#if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#endif
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE
@@ -745,6 +747,16 @@ void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &c
     plane.reset_offset_altitude();
 }
 
+
+/*
+  handle a LANDING_TARGET command. The timestamp has been jitter corrected
+*/
+void GCS_MAVLINK_Plane::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
+{
+#if AC_PRECLAND_ENABLED
+    plane.g2.precland.handle_msg(packet, timestamp_ms);
+#endif
+}
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {

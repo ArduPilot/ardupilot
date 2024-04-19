@@ -29,6 +29,9 @@ void ModeQLand::update()
 
 void ModeQLand::run()
 {
+    /*
+      use QLOITER to do the main control
+     */
     plane.mode_qloiter.run();
 }
 

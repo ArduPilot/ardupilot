@@ -1566,7 +1566,10 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
      */
     static const char *log_content_filenames[] = {
         "@SYS/uarts.txt",
+#ifdef HAL_DEBUG_BUILD
+        // logging dma.txt has a performance impact
         "@SYS/dma.txt",
+#endif
         "@SYS/memory.txt",
         "@SYS/threads.txt",
         "@SYS/timers.txt",

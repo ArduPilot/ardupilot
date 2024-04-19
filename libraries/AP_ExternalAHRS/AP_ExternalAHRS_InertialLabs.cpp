@@ -501,28 +501,6 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @LoggerMessage: ILB1
         // @Description: InertialLabs AHRS data1
         // @Field: TimeUS: Time since system startup
-        // @Field: Roll: euler roll
-        // @Field: Pitch: euler pitch
-        // @Field: Yaw: euler yaw
-        // @Field: VN: velocity north
-        // @Field: VE: velocity east
-        // @Field: VD: velocity down
-        // @Field: Lat: latitude
-        // @Field: Lon: longitude
-        // @Field: Alt: altitude AMSL
-
-        AP::logger().WriteStreaming("ILB1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
-                                    "sdddnnnDUm",
-                                    "F000000GG0",
-                                    "QffffffLLf",
-                                    now_us,
-                                    degrees(roll), degrees(pitch), degrees(yaw),
-                                    state.velocity.x, state.velocity.y, state.velocity.z,
-                                    state.location.lat, state.location.lng, state.location.alt*0.01);
-
-        // @LoggerMessage: ILB2
-        // @Description: InertialLabs AHRS data2
-        // @Field: TimeUS: Time since system startup
         // @Field: PosVarN: position variance north
         // @Field: PosVarE: position variance east
         // @Field: PosVarD: position variance down
@@ -530,7 +508,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: VelVarE: velocity variance east
         // @Field: VelVarD: velocity variance down
 
-        AP::logger().WriteStreaming("ILB2", "TimeUS,PosVarN,PosVarE,PosVarD,VelVarN,VelVarE,VelVarD",
+        AP::logger().WriteStreaming("ILB1", "TimeUS,PosVarN,PosVarE,PosVarD,VelVarN,VelVarE,VelVarD",
                                     "smmmnnn",
                                     "F000000",
                                     "Qffffff",
@@ -538,7 +516,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     state2.kf_pos_covariance.x, state2.kf_pos_covariance.x, state2.kf_pos_covariance.z,
                                     state2.kf_vel_covariance.x, state2.kf_vel_covariance.x, state2.kf_vel_covariance.z);
 
-        // @LoggerMessage: ILB3
+        // @LoggerMessage: ILB2
         // @Description: InertialLabs AHRS data3
         // @Field: TimeUS: Time since system startup
         // @Field: Stat1: unit status1
@@ -553,7 +531,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: WVE: Wind velocity east
         // @Field: WVD: Wind velocity down
 
-        AP::logger().WriteStreaming("ILB3", "TimeUS,Stat1,Stat2,FType,SpStat,GI1,GI2,GJS,TAS,WVN,WVE,WVD",
+        AP::logger().WriteStreaming("ILB2", "TimeUS,Stat1,Stat2,FType,SpStat,GI1,GI2,GJS,TAS,WVN,WVE,WVD",
                                     "s-----------",
                                     "F-----------",
                                     "QHHBBBBBffff",

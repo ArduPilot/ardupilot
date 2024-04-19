@@ -3702,12 +3702,12 @@ void GCS_MAVLINK::handle_odometry(const mavlink_message_t &msg)
     }
 
     const uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ODOMETRY));
-    visual_odom->handle_pose_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, q, posErr, angErr, m.reset_counter);
+    visual_odom->handle_pose_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, q, posErr, angErr, m.reset_counter, m.quality);
 
     // convert velocity vector from FRD to NED frame
     Vector3f vel{m.vx, m.vy, m.vz};
     vel = q * vel;
-    visual_odom->handle_vision_speed_estimate(m.time_usec, timestamp_ms, vel, m.reset_counter);
+    visual_odom->handle_vision_speed_estimate(m.time_usec, timestamp_ms, vel, m.reset_counter, m.quality);
 }
 
 // there are several messages which all have identical fields in them.
@@ -3739,7 +3739,7 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
         angErr = cbrtf(sq(covariance[15])+sq(covariance[18])+sq(covariance[20]));
     }
 
-    visual_odom->handle_pose_estimate(usec, timestamp_ms, x, y, z, roll, pitch, yaw, posErr, angErr, reset_counter);
+    visual_odom->handle_pose_estimate(usec, timestamp_ms, x, y, z, roll, pitch, yaw, posErr, angErr, reset_counter, 0);
 }
 
 void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
@@ -3755,7 +3755,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
         return;
     }
     // note: att_pos_mocap does not include reset counter
-    visual_odom->handle_pose_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, 0, 0, 0);
+    visual_odom->handle_pose_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, 0, 0, 0, 0);
 }
 
 void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
@@ -3768,7 +3768,7 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
     mavlink_msg_vision_speed_estimate_decode(&msg, &m);
     const Vector3f vel = {m.x, m.y, m.z};
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.usec, PAYLOAD_SIZE(chan, VISION_SPEED_ESTIMATE));
-    visual_odom->handle_vision_speed_estimate(m.usec, timestamp_ms, vel, m.reset_counter);
+    visual_odom->handle_vision_speed_estimate(m.usec, timestamp_ms, vel, m.reset_counter, 0);
 }
 #endif  // HAL_VISUALODOM_ENABLED
 
@@ -4140,7 +4140,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_GPS_INPUT:
     case MAVLINK_MSG_ID_HIL_GPS:
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
-        AP::gps().handle_msg(msg);
+        AP::gps().handle_msg(chan, msg);
         break;
 #endif
 

@@ -141,6 +141,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AP_LANDINGGEAR_ENABLED
     SCHED_TASK(landing_gear_update, 5, 50, 159),
 #endif
+#if AC_PRECLAND_ENABLED
+    SCHED_TASK(precland_update, 400, 50, 160),
+#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -603,7 +606,8 @@ void Plane::update_alt()
                                                  get_takeoff_pitch_min_cd(),
                                                  throttle_nudge,
                                                  tecs_hgt_afe(),
-                                                 aerodynamic_load_factor);
+                                                 aerodynamic_load_factor,
+                                                 g.pitch_trim.get());
     }
 }
 
@@ -859,11 +863,22 @@ bool Plane::get_target_location(Location& target_loc)
  */
 bool Plane::update_target_location(const Location &old_loc, const Location &new_loc)
 {
-    if (!old_loc.same_loc_as(next_WP_loc)) {
+    /*
+      by checking the caller has provided the correct old target
+      location we prevent a race condition where the user changes mode
+      or commands a different target in the controlling lua script
+     */
+    if (!old_loc.same_loc_as(next_WP_loc) ||
+        old_loc.get_alt_frame() != new_loc.get_alt_frame()) {
         return false;
     }
     next_WP_loc = new_loc;
-    next_WP_loc.change_alt_frame(old_loc.get_alt_frame());
+
+#if HAL_QUADPLANE_ENABLED
+    if (control_mode == &mode_qland || control_mode == &mode_qloiter) {
+        mode_qloiter.last_target_loc_set_ms = AP_HAL::millis();
+    }
+#endif
 
     return true;
 }
@@ -885,7 +900,8 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
 bool Plane::set_land_descent_rate(float descent_rate)
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_vtol_land_descent()) {
+    if (quadplane.in_vtol_land_descent() ||
+        control_mode == &mode_qland) {
         quadplane.poscontrol.override_descent_rate = descent_rate;
         quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
@@ -951,5 +967,13 @@ bool Plane::flight_option_enabled(FlightOptions flight_option) const
 {
     return g2.flight_options & flight_option;
 }
+
+#if AC_PRECLAND_ENABLED
+void Plane::precland_update(void)
+{
+    // alt will be unused if we pass false through as the second parameter:
+    return g2.precland.update(rangefinder_state.height_estimate*100, rangefinder_state.in_range);
+}
+#endif
 
 AP_HAL_MAIN_CALLBACKS(&plane);

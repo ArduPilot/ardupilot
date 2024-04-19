@@ -1242,7 +1242,7 @@ bool AP_Arming::can_checks(bool report)
                 }
                 case AP_CAN::Protocol::USD1:
                 case AP_CAN::Protocol::TOFSenseP:
-                case AP_CAN::Protocol::NanoRadar_NRA24:
+                case AP_CAN::Protocol::NanoRadar:
                 case AP_CAN::Protocol::Benewake:
                 {
                     for (uint8_t j = i; j; j--) {
@@ -1288,6 +1288,13 @@ bool AP_Arming::fence_checks(bool display_failure)
         check_failed(display_failure, "%s", fail_msg);
     }
 
+#if AP_SDCARD_STORAGE_ENABLED
+    if (fence->failed_sdcard_storage() || StorageManager::storage_failed()) {
+        check_failed(display_failure, "Failed to open fence storage");
+        return false;
+    }
+#endif
+    
     return false;
 }
 #endif  // AP_FENCE_ENABLED

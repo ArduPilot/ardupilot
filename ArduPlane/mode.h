@@ -632,6 +632,8 @@ class ModeQLoiter : public Mode
 {
 friend class QuadPlane;
 friend class ModeQLand;
+friend class Plane;
+
 public:
 
     Number mode_number() const override { return Number::QLOITER; }
@@ -649,6 +651,7 @@ public:
 protected:
 
     bool _enter() override;
+    uint32_t last_target_loc_set_ms;
 };
 
 class ModeQLand : public Mode

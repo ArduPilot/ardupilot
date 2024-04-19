@@ -1045,7 +1045,10 @@ void AC_PosControl::update_z_controller()
 float AC_PosControl::get_lean_angle_max_cd() const
 {
     if (is_positive(_angle_max_override_cd)) {
-@@ -1035,6 +1053,26 @@ float AC_PosControl::get_lean_angle_max_cd() const
+        return _angle_max_override_cd;
+    }
+    if (!is_positive(_lean_angle_max)) {
+        return _attitude_control.lean_angle_max_cd();
     }
     return _lean_angle_max * 100.0f;
 }

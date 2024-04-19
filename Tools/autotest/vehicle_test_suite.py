@@ -2002,14 +2002,14 @@ class TestSuite(ABC):
                                        0,
                                        0)
 
-    def reboot_sitl(self, required_bootcount=None, force=False):
+    def reboot_sitl(self, required_bootcount=None, force=False, check_position=True):
         """Reboot SITL instance and wait for it to reconnect."""
         if self.armed() and not force:
             raise NotAchievedException("Reboot attempted while armed")
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        if self.frame != 'sailboat':  # sailboats drift with wind!
+        if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
             self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
@@ -2438,19 +2438,6 @@ class TestSuite(ABC):
             "SIM_VIB_MOT_MASK",
             "SIM_VIB_MOT_MAX",
             "SIM_VIB_MOT_MULT",
-            "SIM_VICON_FAIL",
-            "SIM_VICON_GLIT_X",
-            "SIM_VICON_GLIT_Y",
-            "SIM_VICON_GLIT_Z",
-            "SIM_VICON_POS_X",
-            "SIM_VICON_POS_Y",
-            "SIM_VICON_POS_Z",
-            "SIM_VICON_TMASK",
-            "SIM_VICON_VGLI_X",
-            "SIM_VICON_VGLI_Y",
-            "SIM_VICON_VGLI_Z",
-            "SIM_VICON_YAW",
-            "SIM_VICON_YAWERR",
             "SIM_WAVE_AMP",
             "SIM_WAVE_DIR",
             "SIM_WAVE_ENABLE",
@@ -4258,6 +4245,7 @@ class TestSuite(ABC):
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
+        self.set_parameter('SIM_SPEEDUP', 1)
         mavproxy.send("log list\n")
         mavproxy.expect("numLogs")
         self.wait_heartbeat()
@@ -4272,7 +4260,7 @@ class TestSuite(ABC):
         """Download latest log over network port"""
         self.context_push()
         self.set_parameters({
-            "NET_ENABLED": 1,
+            "NET_ENABLE": 1,
             "LOG_DISARMED": 1,
             "LOG_DARM_RATEMAX": 1, # make small logs
             # UDP client
@@ -4309,6 +4297,9 @@ class TestSuite(ABC):
             "NET_P4_IP3": 0,
             })
         self.reboot_sitl()
+
+        self.set_parameter('SIM_SPEEDUP', 1)
+
         endpoints = [('UDPClient', ':16001') ,
                      ('UDPServer', 'udpout:127.0.0.1:16002'),
                      ('TCPClient', 'tcpin:0.0.0.0:16003'),
@@ -4352,6 +4343,9 @@ class TestSuite(ABC):
             "LOG_DISARMED": 0,
             })
         self.reboot_sitl()
+
+        self.set_parameter('SIM_SPEEDUP', 1)
+
         endpoints = [('UDPMulticast', 'mcast:16005') ,
                      ('UDPBroadcast', ':16006')]
         for name, e in endpoints:
@@ -4389,6 +4383,9 @@ class TestSuite(ABC):
             "CAN_D1_UC_S1_PRO": 2,
             })
         self.reboot_sitl()
+
+        self.set_parameter('SIM_SPEEDUP', 1)
+
         filename = "MAVProxy-downloaded-can-log.BIN"
         # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
         mavproxy = self.start_mavproxy(master=':15550')
