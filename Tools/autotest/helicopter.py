@@ -882,7 +882,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AUTOTUNE_AXES": 2,
             "AUTOTUNE_SEQ": 2,
-            "AUTOTUNE_GN_MAX": 2.0,
+            "AUTOTUNE_GN_MAX": 1.8,
             })
 
         # Conduct testing from althold
@@ -901,7 +901,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AUTOTUNE_AXES": 1,
             "AUTOTUNE_SEQ": 2,
-            "AUTOTUNE_GN_MAX": 1.8,
+            "AUTOTUNE_GN_MAX": 1.6,
             })
 
         # Conduct testing from althold
@@ -920,7 +920,9 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AUTOTUNE_AXES": 3,
             "AUTOTUNE_SEQ": 4,
-            "AUTOTUNE_GN_MAX": 2.0,
+            "AUTOTUNE_FRQ_MIN": 5,
+            "AUTOTUNE_FRQ_MAX": 50,
+            "AUTOTUNE_GN_MAX": 1.6,
             })
 
         # Conduct testing from althold
@@ -935,11 +937,35 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
         self.land_and_disarm()
 
-        # test yaw FF, rate P and Rate D, and angle P tuning
+        # test yaw FF and rate P and Rate D
         self.set_parameters({
             "AUTOTUNE_AXES": 4,
-            "AUTOTUNE_SEQ": 7,
-            "AUTOTUNE_GN_MAX": 2.0,
+            "AUTOTUNE_SEQ": 3,
+            "AUTOTUNE_FRQ_MIN": 10,
+            "AUTOTUNE_FRQ_MAX": 70,
+            "AUTOTUNE_GN_MAX": 1.4,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+        self.set_rc(8, 1000)
+
+        # test yaw angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 4,
+            "AUTOTUNE_SEQ": 4,
+            "AUTOTUNE_FRQ_MIN": 5,
+            "AUTOTUNE_FRQ_MAX": 50,
+            "AUTOTUNE_GN_MAX": 1.5,
             })
 
         # Conduct testing from althold
