@@ -7047,56 +7047,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
 
-        ex = None
-        try:
-            self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.change_mode('POSHOLD')
-            self.set_rc(3, 1000)
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.delay_sim_time(2)
-            # check we are still on the ground...
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            if abs(m.relative_alt) > 100:
-                raise NotAchievedException("Took off prematurely")
+        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.change_mode('POSHOLD')
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(2)
+        # check we are still on the ground...
+        relative_alt = self.get_altitude(relative=True)
+        if relative_alt > 0.1:
+            raise NotAchievedException("Took off prematurely")
 
-            self.progress("Pushing throttle up")
-            self.set_rc(3, 1710)
-            self.delay_sim_time(0.5)
-            self.progress("Bringing back to hover throttle")
-            self.set_rc(3, 1500)
+        self.progress("Pushing throttle up")
+        self.set_rc(3, 1710)
+        self.delay_sim_time(0.5)
+        self.progress("Bringing back to hover throttle")
+        self.set_rc(3, 1500)
 
-            # make sure we haven't already reached alt:
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_initial_alt = 2000
-            if abs(m.relative_alt) > max_initial_alt:
-                raise NotAchievedException("Took off too fast (%f > %f" %
-                                           (abs(m.relative_alt), max_initial_alt))
+        # make sure we haven't already reached alt:
+        relative_alt = self.get_altitude(relative=True)
+        max_initial_alt = 2.0
+        if abs(relative_alt) > max_initial_alt:
+            raise NotAchievedException("Took off too fast (%f > %f" %
+                                       (relative_alt, max_initial_alt))
 
-            self.progress("Monitoring takeoff-to-alt")
-            self.wait_altitude(6.9, 8, relative=True)
-
-            self.progress("Making sure we stop at our takeoff altitude")
-            tstart = self.get_sim_time()
-            while self.get_sim_time() - tstart < 5:
-                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-                delta = abs(7000 - m.relative_alt)
-                self.progress("alt=%f delta=%f" % (m.relative_alt/1000,
-                                                   delta/1000))
-                if delta > 1000:
-                    raise NotAchievedException("Failed to maintain takeoff alt")
-            self.progress("takeoff OK")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.progress("Monitoring takeoff-to-alt")
+        self.wait_altitude(6.9, 8, relative=True, minimum_duration=10)
+        self.progress("takeoff OK")
 
         self.land_and_disarm()
         self.set_rc(8, 1000)
 
         self.context_pop()
-
-        if ex is not None:
-            raise ex
 
     def initial_mode(self):
         return "STABILIZE"
