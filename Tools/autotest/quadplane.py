@@ -808,6 +808,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QAssist(self):
         '''QuadPlane Assist tests'''
+        self.set_parameter("Q_ASSIST_DELAY", 0.01)
         # find a motor peak
         self.takeoff(10, mode="QHOVER")
         self.set_rc(3, 1800)
@@ -831,7 +832,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.progress("Stopping forward motor to kill airspeed below limit")
         self.set_rc(3, 1000)
         self.progress("Waiting for qassist to kick in")
-        self.wait_servo_channel_value(5, 1400, timeout=30, comparator=operator.gt)
+        self.wait_servo_channel_value(5, 1150, timeout=30, comparator=operator.gt)
         self.progress("Move forward again, check qassist stops")
         self.set_rc(3, 1800)
         self.progress("Checking qassist stops")

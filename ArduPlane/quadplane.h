@@ -347,7 +347,9 @@ private:
     // altitude to trigger assistance
     AP_Int16 assist_alt;
     uint32_t alt_error_start_ms;
+    uint32_t airspeed_error_start_ms;
     bool in_alt_assist;
+    bool in_airspeed_assist;
 
     // landing speed in m/s
     AP_Float land_final_speed;

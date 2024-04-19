@@ -1487,16 +1487,28 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
         return false;
     }
 
+    const uint32_t now = AP_HAL::millis();
+
     // assistance due to Q_ASSIST_SPEED
     // if option bit is enabled only allow assist with real airspeed sensor
     if ((have_airspeed && aspeed < assist_speed) && 
        (!option_is_set(QuadPlane::OPTION::DISABLE_SYNTHETIC_AIRSPEED_ASSIST) || ahrs.using_airspeed_sensor())) {
-        in_angle_assist = false;
-        angle_error_start_ms = 0;
-        return true;
+        if (airspeed_error_start_ms == 0) {
+            airspeed_error_start_ms = now;
+        }
+        if (now - airspeed_error_start_ms > assist_delay*1000) {
+            if (!in_airspeed_assist) {
+                in_angle_assist = false;
+                angle_error_start_ms = 0;
+                in_airspeed_assist = true;
+                gcs().send_text(MAV_SEVERITY_INFO, "Arspd assist %.1fm/s", aspeed);
+                return true;
+            }
+        }
+    } else {
+        in_airspeed_assist = false;
+        airspeed_error_start_ms = 0;
     }
-
-    const uint32_t now = AP_HAL::millis();
 
     /*
       optional assistance when altitude is too close to the ground
@@ -1720,6 +1732,8 @@ void SLT_Transition::update()
             in_forced_transition = false;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
+	    	quadplane.in_airspeed_assist = false;
+            quadplane.airspeed_error_start_ms = 0;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition done");
         }
 
