@@ -21,6 +21,7 @@
 #pragma once
 
 #include "AP_IrisOrca_config.h"
+#include <string>
 
 #if HAL_IRISORCA_ENABLED
 
@@ -28,27 +29,9 @@
 
 #define IRISORCA_MESSAGE_LEN_MAX    35  // messages are no more than 35 bytes
 
-class AP_IrisOrca {
-public:
-    AP_IrisOrca();
+namespace orca {
 
-    CLASS_NO_COPY(AP_IrisOrca);
-
-    static AP_IrisOrca* get_singleton();
-
-    // initialise driver
-    void init();
-
-    // consume incoming messages from actuator, reply with latest actuator position
-    // runs in background thread
-    void thread_main();
-
-    // returns true if communicating with the actuator
-    bool healthy();
-
-    static const struct AP_Param::GroupInfo var_info[];
-
-private:
+    
 
     static constexpr uint8_t CRC_LEN = 2;
 
@@ -94,51 +77,235 @@ private:
     enum class MotorControlState : uint8_t {
         AUTO_ZERO = 0,
         POSITION_CONTROL = 1
-    } _control_state;
+    };
 
 
     // Specifies the meaning of the indices used for the modbus rtu
     // function 0x06, write single register
-    static constexpr int WRITE_REG_MSG_LEN = 8;
-    enum WriteRegIdx {
-        DEVICE_ADDR = 0,
-        FUNCTION_CODE = 1,
-        REG_ADDR_HI = 2,
-        REG_ADDR_LO = 3,
-        WRITE_DATA_HI = 4,
-        WRITE_DATA_LO = 5,
-        CRC_LO = 6,
-        CRC_HI = 7
+    static constexpr uint8_t WRITE_REG_MSG_LEN = 8;
+    struct WriteReg {
+        enum Idx {
+            DEVICE_ADDR = 0,
+            FUNCTION_CODE = 1,
+            REG_ADDR_HI = 2,
+            REG_ADDR_LO = 3,
+            WRITE_DATA_HI = 4,
+            WRITE_DATA_LO = 5,
+            CRC_LO = 6,
+            CRC_HI = 7
+        };
     };
+
 
     // Specifies the meaning of the indices used for the response to the 
     // modbus rtu function 0x06, write single register
-    static constexpr int WRITE_REG_MSG_RSP_LEN = 8;
-    enum WriteRegRspIdx {
-        DEVICE_ADDR = 0,
-        FUNCTION_CODE = 1,
-        REG_ADDR_HI = 2,
-        REG_ADDR_LO = 3,
-        DATA_HI = 4,
-        DATA_LO = 5,
-        CRC_LO = 6,
-        CRC_HI = 7
+    static constexpr uint8_t WRITE_REG_MSG_RSP_LEN = 8;
+    struct WriteRegRsp {
+        enum Idx {
+            DEVICE_ADDR = 0,
+            FUNCTION_CODE = 1,
+            REG_ADDR_HI = 2,
+            REG_ADDR_LO = 3,
+            DATA_HI = 4,
+            DATA_LO = 5,
+            CRC_LO = 6,
+            CRC_HI = 7
+        };
     };
+
 
     // Specifies the data layout of the orca-specific motor
     // command stream message, 0x64
-    static constexpr int MOTOR_COMMAND_STREAM_MSG_LEN  = 9; 
-    enum MotorCommandStreamIdx {
-        DEVICE_ADDR = 0,
-        FUNCTION_CODE = 1,
-        SUB_CODE = 2,
-        DATA_MSB_HI = 3,
-        DATA_MSB_LO = 4,
-        DATA_LSB_HI = 5,
-        DATA_LSB_LO = 6,
-        CRC_LO = 7,
-        CRC_HI = 8,
+    static constexpr uint8_t MOTOR_COMMAND_STREAM_MSG_LEN  = 9; 
+    struct MotorCommandStream {
+        enum Idx {
+            DEVICE_ADDR = 0,
+            FUNCTION_CODE = 1,
+            SUB_CODE = 2,
+            DATA_MSB_HI = 3,
+            DATA_MSB_LO = 4,
+            DATA_LSB_HI = 5,
+            DATA_LSB_LO = 6,
+            CRC_LO = 7,
+            CRC_HI = 8,
+        };
     };
+
+
+    static constexpr uint8_t MOTOR_COMMAND_STREAM_MSG_RSP_LEN = 19;
+    struct MotorCommandStreamRsp {
+        enum Idx {
+            DEVICE_ADDR = 0,
+            FUNCTION_CODE = 1,
+            POSITION_MSB_HI = 2,
+            POSITION_MSB_LO = 3,
+            POSITION_LSB_HI = 4,
+            POSITION_LSB_LO = 5,
+            FORCE_MSB_HI = 6,
+            FORCE_MSB_LO = 7,
+            FORCE_LSB_HI = 8,
+            FORCE_LSB_LO = 9,
+            POWER_HI = 10,
+            POWER_LO = 11,
+            TEMP = 12,
+            VOLTAGE_HI = 13,
+            VOLTAGE_LO = 14,
+            ERROR_HI = 15,
+            ERROR_LO = 16,
+            CRC_LO = 17,
+            CRC_HI = 18,
+        };
+    };
+
+
+    // Specifies the data layout of the orca-specific motor
+    // read stream message, 0x68
+    static constexpr uint8_t MOTOR_READ_STREAM_MSG_LEN = 7;
+    struct MotorReadStream {
+        enum Idx {
+            DEVICE_ADDR = 0,
+            FUNCTION_CODE = 1,
+            REG_ADDR_HI = 2,
+            REG_ADDR_LO = 3,
+            REG_WIDTH = 4,
+            CRC_LO = 5,
+            CRC_HI = 6,
+        };
+    };
+
+
+    static constexpr uint8_t MOTOR_READ_STREAM_MSG_RSP_LEN = 24;
+    struct MotorReadStreamRsp {
+        enum Idx {
+            DEVICE_ADDR = 0,
+            FUNCTION_CODE = 1,
+            REG_DATA_MSB_HI = 2,
+            REG_DATA_MSB_LO = 3,
+            REG_DATA_LSB_HI = 4,
+            REG_DATA_LSB_LO = 5,
+            MODE = 6,
+            POSITION_MSB_HI = 7,
+            POSITION_MSB_LO = 8,
+            POSITION_LSB_HI = 9,
+            POSITION_LSB_LO = 10,
+            FORCE_MSB_HI = 11,
+            FORCE_MSB_LO = 12, 
+            FORCE_LSB_HI = 13,
+            FORCE_LSB_LO = 14,
+            POWER_HI = 15,
+            POWER_LO = 16,
+            TEMP = 17,
+            VOLTAGE_HI = 18,
+            VOLTAGE_LO = 19,
+            ERROR_HI = 20,
+            ERROR_LO = 21,
+            CRC_LO = 22,
+            CRC_HI = 23,
+        };
+    };
+
+    struct ActuatorState {
+        OperatingMode mode;
+        uint32_t shaft_position;
+        uint32_t force_realized;
+        uint16_t power_consumed;
+        uint8_t temperature;
+        uint16_t voltage;
+        uint16_t errors{2048};
+
+        std::string to_string() const {
+          return "Orca actuator state: \n\tmode: " +
+                 std::to_string(static_cast<uint8_t>(mode)) +
+                 " \n\tposition: " + std::to_string(shaft_position) +
+                 " um \n\tforce: " + std::to_string(force_realized) +
+                 " un \n\tpower: " + std::to_string(power_consumed) +
+                 " W \n\ttemperature: " + std::to_string(temperature) +
+                 " deg c \n\tvoltage: " + std::to_string(voltage) +
+                 " V \n\terrors: " + std::to_string(errors);
+        }
+    };
+
+    inline uint16_t u16_from_be(uint8_t *bytes, uint8_t start_idx) {
+        return uint16_t(bytes[start_idx] << 8 | bytes[start_idx + 1]);
+    }
+
+    inline uint32_t u32_from_be(uint8_t *bytes, uint8_t start_idx) {
+        return uint32_t(bytes[start_idx] << 24 |
+                        bytes[start_idx + 1] << 16 |
+                        bytes[start_idx + 2] << 8 |
+                        bytes[start_idx + 3]);
+    }
+
+    /**
+     * @brief Parse the response to a 0x06 write
+     * register response message. Currently only supports
+     * handling the response to a write to register 3.
+     * 
+     * @param[in] rcvd_buff The buffer containing received response data
+     * @param[in] buff_len The length of the received buffer
+     * @param[out] state (output parameter) State data of the actuator to populate with response.
+     * Currently only updates the mode.
+     * @return true response successfully parsed 
+     * @return false response parsing failed
+     */
+    bool parse_write_register(uint8_t *rcvd_buff, uint8_t buff_len, ActuatorState &state);
+
+    /**
+     * @brief Parse the response to a 0x64 Motor Command Stream message.
+     * 
+     * @param[in] rcvd_buff The buffer containing received response data
+     * @param[in] buff_len The length of the received buffer
+     * @param[out] state (output parameter) Newly read state data of the actuator
+     * @return true response successfully parsed
+     * @return false response parsing failed
+     */
+    bool parse_motor_command_stream(uint8_t *rcvd_buff, uint8_t buff_len, ActuatorState &state);
+
+    /**
+     * @brief Parse the response to a 0x68 Motor Read Stream message.
+     * 
+     * @param[in] rcvd_buff The buffer containing received response data
+     * @param[in] buff_len The length of the received buffer
+     * @param[out] state Newly read state data of the actuator
+     * @return true response successfully parsed 
+     * @return false response parsing failed
+     */
+    bool parse_motor_read_stream(uint8_t *rcvd_buff, uint8_t buff_len, ActuatorState &state);
+
+    /**
+     * @brief Add the CRC to a modbus message
+     * 
+     * @param buff Input buffer (message) to add CRC to final two bytes
+     * @param len Length of the message WITHOUT 2 trailing CRC bytes.
+     * Lengthstruc must be > 2 since the CRC itself is two bytes.
+     */
+    void add_crc_modbus(uint8_t *buff, uint8_t len);
+}
+
+class AP_IrisOrca {
+public:
+    AP_IrisOrca();
+
+    CLASS_NO_COPY(AP_IrisOrca);
+
+    static AP_IrisOrca* get_singleton();
+
+    // initialise driver
+    void init();
+
+    // consume incoming messages from actuator, reply with latest actuator position
+    // runs in background thread
+    void thread_main();
+
+    // returns true if communicating with the actuator
+    bool healthy();
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
+
+    orca::ActuatorState _actuator_state;
+    orca::MotorControlState _control_state;
 
     // initialise serial port (run from background thread)
     // returns true on success
@@ -190,10 +357,6 @@ private:
     // send a request for actuator status
     void send_actuator_status_request();
 
-    // add CRC to a modbus message
-    // len is the length of the message WITHOUT the 2 CRC bytes
-    void add_crc_modbus(uint8_t *buff, uint8_t len);
-
     // process a single byte received on serial port
     // return true if a complete message has been received (the message will be held in _received_buff)
     bool parse_byte(uint8_t b);
@@ -202,14 +365,6 @@ private:
     // return true if the message was as expected and there are no actuator errors
     bool parse_message();
 
-    // parse a 0x06 Write Register response
-    bool parse_write_register();
-    
-    // parse a 0x64 Motor Command Stream response
-    bool parse_motor_command_stream();
-
-    // parse a 0x68 Motor Read Stream response
-    bool parse_motor_read_stream();
 
     // parameters
     AP_Int8 _pin_de;        // Pin number connected to RS485 to Serial converter's DE pin. -1 to disable sending commands to actuator
@@ -223,18 +378,9 @@ private:
     uint32_t _send_start_us;            // system time (in micros) when last message started being sent (used for timing to unset DE pin)
     uint32_t _send_delay_us;            // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
 
-    // state
-    OperatingMode  _mode;                    // actuator mode
-    uint32_t _shaft_position;          // actuator position (um)
-    uint32_t _force_realized;          // force realized by actuator (mN)
-    uint16_t _power_consumed;          // power consumed by actuator (W)
-    uint8_t  _temperature;             // temperature of actuator (C)
-    uint16_t _voltage;                 // voltage of actuator (mV)
-    uint16_t _errors = 2048;           // error register contents (initialize to comm error)
 
     // health reporting
     HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_actuator_ms and _last_received_ms
-
 
     // message parsing members
     uint32_t _parse_error_count;    // total number of parsing errors (for reporting)
