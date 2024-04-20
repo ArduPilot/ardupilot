@@ -44,7 +44,7 @@ void Sub::Log_Write_Control_Tuning()
         angle_boost         : attitude_control.angle_boost(),
         throttle_out        : motors.get_throttle(),
         throttle_hover      : motors.get_throttle_hover(),
-        desired_alt         : pos_control.get_pos_target_z_cm() / 100.0f,
+        desired_alt         : pos_control.get_pos_target_z_cm() * 0.01f,
         inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : (int16_t)mode_surftrak.get_rangefinder_target_cm(),

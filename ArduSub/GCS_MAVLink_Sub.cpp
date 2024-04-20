@@ -153,7 +153,7 @@ bool GCS_MAVLINK_Sub::send_info()
     send_named_float("RollPitch", sub.roll_pitch_flag);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() / 100.0f);
+    send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() * 0.01f);
 
     return true;
 }
