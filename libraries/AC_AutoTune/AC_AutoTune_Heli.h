@@ -45,13 +45,6 @@ protected:
     //
     // methods to load and save gains
     //
-    // sweep_info contains information about a specific test's sweep results
-    struct sweep_info {
-        float freq;
-        float gain;
-        float phase;
-    };
-
 
     // backup original gains and prepare for start of tuning
     void backup_gains_and_initialise() override;
@@ -143,6 +136,13 @@ protected:
     uint32_t get_testing_step_timeout_ms() const override;
 
 private:
+    // sweep_info contains information about a specific test's sweep results
+    struct sweep_info {
+        float freq;
+        float gain;
+        float phase;
+    };
+
     // max_gain_data type stores information from the max gain test
     struct max_gain_data {
         float freq;
