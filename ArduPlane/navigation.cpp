@@ -401,7 +401,10 @@ void Plane::update_fbwb_speed_height(void)
             set_target_altitude_current();
         }
 
-        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
+        float climb_rate = g.flybywire_climb_rate * elevator_input;
+        climb_rate = constrain_float(climb_rate, -TECS_controller.get_max_sinkrate(), TECS_controller.get_max_climbrate());
+
+        int32_t alt_change_cm = climb_rate * dt * 100;
         change_target_altitude(alt_change_cm);
 
 #if HAL_SOARING_ENABLED
