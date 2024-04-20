@@ -435,7 +435,7 @@ void AP_IOMCU::read_erpm()
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
             if (dshot_erpm.update_mask & 1U<<esc_id) {
-                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] / 100.0);
+                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] * 0.01);
             }
         }
     }
