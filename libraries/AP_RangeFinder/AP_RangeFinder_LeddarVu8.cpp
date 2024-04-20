@@ -78,7 +78,7 @@ bool AP_RangeFinder_LeddarVu8::get_reading(float &reading_m)
         } else {
             // if only out of range readings return larger of
             // driver defined maximum range for the model and user defined max range + 1m
-            reading_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)/100.0f;
+            reading_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)*0.01f;
         }
         return true;
     }
