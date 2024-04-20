@@ -514,7 +514,7 @@ void AP_ESC_Telem::update()
                 get_rpm(i, rpm);
                 float raw_rpm = AP::logger().quiet_nanf();
                 get_raw_rpm(i, raw_rpm);
-
+                uint8_t _i = i + 1;
                 // Write ESC status messages
                 //   id starts from 0
                 //   rpm, raw_rpm is eRPM (in RPM units)
@@ -527,7 +527,7 @@ void AP_ESC_Telem::update()
                 const struct log_Esc pkt{
                     LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
                     time_us     : now_us64,
-                    instance    : i,
+                    instance    : _i,  //makes logged instance agree to output that ESC is attached
                     rpm         : rpm,
                     raw_rpm     : raw_rpm,
                     voltage     : telemdata.voltage,
