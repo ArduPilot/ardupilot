@@ -214,7 +214,6 @@ void AP_IrisOrca::thread_main()
                 if (parse_byte((uint8_t)b)) {
                     // complete message received, parse it!
                     parse_message();
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", _actuator_state.to_string().c_str());
                     // clear wait-for-reply because if we are waiting for a reply, this message must be it
                     set_reply_received();
                 }

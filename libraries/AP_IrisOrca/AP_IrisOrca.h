@@ -21,7 +21,6 @@
 #pragma once
 
 #include "AP_IrisOrca_config.h"
-#include <string>
 
 #if HAL_IRISORCA_ENABLED
 
@@ -213,16 +212,6 @@ namespace orca {
         uint16_t voltage;
         uint16_t errors{2048};
 
-        std::string to_string() const {
-          return "Orca actuator state: \n\tmode: " +
-                 std::to_string(static_cast<uint8_t>(mode)) +
-                 " \n\tposition: " + std::to_string(shaft_position) +
-                 " um \n\tforce: " + std::to_string(force_realized) +
-                 " un \n\tpower: " + std::to_string(power_consumed) +
-                 " W \n\ttemperature: " + std::to_string(temperature) +
-                 " deg c \n\tvoltage: " + std::to_string(voltage) +
-                 " V \n\terrors: " + std::to_string(errors);
-        }
     };
 
     inline uint16_t u16_from_be(uint8_t *bytes, uint8_t start_idx) {
