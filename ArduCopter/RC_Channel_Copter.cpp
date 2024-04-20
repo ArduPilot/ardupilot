@@ -710,8 +710,8 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
 void Copter::save_trim()
 {
     // save roll and pitch trim
-    float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
-    float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
+    float roll_trim = ToRad((float)channel_roll->get_control_in()*0.01f);
+    float pitch_trim = ToRad((float)channel_pitch->get_control_in()*0.01f);
     ahrs.add_trim(roll_trim, pitch_trim);
     LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
