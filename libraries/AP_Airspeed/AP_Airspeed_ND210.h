@@ -11,14 +11,13 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   SuperiorSensors ND210 Airspeed Sensor Backend - Datasheet: https://superiorsensors.com/wp-content/uploads/DS-0003E.ND-Series.pdf
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
 
-#ifndef AP_AIRSPEED_ND210_ENABLED
-#define AP_AIRSPEED_ND210_ENABLED AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_ND210_ENABLED
 

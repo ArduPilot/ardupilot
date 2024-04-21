@@ -73,6 +73,15 @@
  *  (NotchFilterEnable << 7) | (BandWidth << 6) | (WatchdogEnable << 4) | PressureRange;
  */
 static constexpr uint8_t MODE_CONTROL_REGISTER = 0xF7; // 0xF6 is default
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_MASK = 0x07;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_INVALID = 0b000;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_0_25 = 0b001;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_0_5 = 0b010;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_1_0 = 0b011;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_2_0 = 0b100;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_4_0 = 0b101;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_5_0 = 0b110;
+static constexpr uint8_t MODE_CONTROL_REGISTER_PRESSURE_RANGE_10_0 = 0b111;
 
 /*
  * The Rate Control Register controls the rate at which the DAV
@@ -130,27 +139,27 @@ bool AP_Airspeed_ND210::init()
 
     _dev->get_semaphore()->give();
 
-    switch(MODE_CONTROL_REGISTER & 0x07) {
-        case 0b000:
-        case 0b001:
+    switch(MODE_CONTROL_REGISTER & MODE_CONTROL_REGISTER_PRESSURE_RANGE_MASK) {
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_INVALID:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_0_25:
             _selected_pressure_range = 0.25;
             break;
-        case 0b010:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_0_5:
             _selected_pressure_range = 0.5;
             break;
-        case 0b011:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_1_0:
             _selected_pressure_range = 1.0;
             break;
-        case 0b100:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_2_0:
             _selected_pressure_range = 2.0;
             break;
-        case 0b101:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_4_0:
             _selected_pressure_range = 4.0;
             break;
-        case 0b110:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_5_0:
             _selected_pressure_range = 5.0;
             break;
-        case 0b111:
+        case MODE_CONTROL_REGISTER_PRESSURE_RANGE_10_0:
             _selected_pressure_range = 10.0;
             break;
     }
@@ -172,25 +181,22 @@ bool AP_Airspeed_ND210::init()
 
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Airspeed_ND210::_timer, void));
 
-    _print_info();
+    // _print_info();
 
     return true;
 }
 
+#if HAL_GCS_ENABLED
 void AP_Airspeed_ND210::_print_info()
 {
-#if HAL_GCS_ENABLED
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     uint8_t val[22];
     bool ret = _dev->transfer(nullptr, 0, val, sizeof(val));
     if (ret == false) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Init Read Failed");
-        _dev->get_semaphore()->give();
         return;
     }
-    _dev->get_semaphore()->give();
-
     // Model, 5-12, 8 byte, ASCII, null terminated,   
     // Right reading ASCII with null terminator, 
     // eg  4EH,44H,32H,31H,30H,00H,xxH,xxH = ND210
@@ -220,8 +226,8 @@ void AP_Airspeed_ND210::_print_info()
                   "ND210: _selected_pressure_range=%f",
                   _selected_pressure_range
                   );
-#endif
 }
+#endif
 
 
 // read the values from the sensor. Called at 50Hz
@@ -230,7 +236,7 @@ void AP_Airspeed_ND210::_timer()
     // read 4 bytes from the sensor
     uint8_t val[4];
     bool ret = _dev->transfer(nullptr, 0, val, sizeof(val));
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     if (ret == false) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Read Failed");
         if (now - _last_sample_time_ms > 200) {
@@ -240,12 +246,12 @@ void AP_Airspeed_ND210::_timer()
         return;
     }
 
-    uint16_t P = (((uint16_t)val[0]) << 8) | val[1];
+    int16_t P = (((int16_t)val[0]) << 8) | val[1];
     float diff_pressure_h20 = (float(P) / ND210_SCALE_PRESSURE_ND210) * _selected_pressure_range;
     // GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Raw Pressure = 0x%02X", P);
 
     uint8_t temperatureInteger = val[2];
-    float temperatureFractional = val[3] / 256; // convert byte to fraction.
+    float temperatureFractional = (float)val[3] / 256.0f; // convert byte to fraction.
     float temperatureCelsius = temperatureInteger + temperatureFractional;
     // GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Temperature Celcius = %f", temperatureCelsius);
 
