@@ -171,3 +171,6 @@ ENV/
 env.bak/
 venv.bak/
 autotest_result_*_junit.xml
+
+# Ignore JSON message definitions
+mav_msg_def/**/*.json

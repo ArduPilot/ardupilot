@@ -1,0 +1,20 @@
+# This file is used to populate the VIDEO_STREAM_INFORMATION message sent by
+# the AP_Camera library if the message is not already provided by the selected
+# backend driver.
+#
+# Refer to the following for message field definitions:
+#   - https://mavlink.io/en/messages/common.html#VIDEO_STREAM_INFORMATION
+{
+    # "stream_id" is populated automatically
+    # "count" is populated automatically
+    "type": 1, # VIDEO_STREAM_TYPE_RTPUDP
+    # "flags" is populated automatically
+    "framerate": 30,
+    "resolution_h": 1920,
+    "resolution_v": 1080,
+    "bitrate": 1500,
+    "rotation": 0,
+    "hfov": 50,
+    "name": "Video",
+    "uri": "127.0.0.1:5600"
+}

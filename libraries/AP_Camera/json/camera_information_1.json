@@ -1,0 +1,22 @@
+# This file is used to populate the CAMERA_INFORMATION message sent by
+# the AP_Camera library if the message is not already provided by the selected
+# backend driver.
+#
+# Refer to the following for message field definitions:
+#   - https://mavlink.io/en/messages/common.html#CAMERA_INFORMATION
+{
+    # "time_boot_ms" is populated automatically
+    "vendor_name": "Unknown",
+    "model_name": "Camera",
+    "firmware_version": 0,
+    "focal_length": 1.6,
+    "sensor_size_h": 3840,
+    "sensor_size_v": 2160,
+    "resolution_h": 1920,
+    "resolution_v": 1080,
+    "lens_id": 0,
+    "flags": 256,
+    "cam_definition_version": 0,
+    "cam_definition_uri": ""
+    # "gimbal_device_id" is populated automatically
+}
