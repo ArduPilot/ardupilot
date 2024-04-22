@@ -194,6 +194,7 @@ private:
 
     // system.cpp
     void init_ardupilot() override;
+    uint32_t baro_log_bit() const override { return MASK_LOG_IMU; }
     bool get_home_eeprom(Location &loc) const;
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
