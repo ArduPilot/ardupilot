@@ -906,13 +906,13 @@ void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t ch
 }
 
 // send a VIDEO_STREAM_INFORMATION message to GCS
-void AP_Mount::send_video_stream_information(uint8_t instance, mavlink_channel_t chan)
+bool AP_Mount::send_video_stream_information(uint8_t instance, mavlink_channel_t chan)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
-        return;
+        return false;
     }
-    backend->send_video_stream_information(chan);
+    return backend->send_video_stream_information(chan);
 }
 
 // get rangefinder distance.  Returns true on success

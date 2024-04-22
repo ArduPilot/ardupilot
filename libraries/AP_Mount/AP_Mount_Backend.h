@@ -200,7 +200,8 @@ public:
     virtual void send_camera_capture_status(mavlink_channel_t chan) const {}
 
     // send video stream information message to GCS
-    virtual void send_video_stream_information(mavlink_channel_t chan) const;
+    // returns true if the message was sent
+    virtual bool send_video_stream_information(mavlink_channel_t chan) const { return false; };
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
