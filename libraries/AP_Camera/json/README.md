@@ -5,6 +5,10 @@ for the MAVLink message, and has a numeric suffix to indicate which Camera
 instance it is for, e.g.:
 * _"camera_information_1.json"_ defines the `CAMERA_INFORMATION` message for Camera 1.
 
+Currently supported messages are:
+* [`CAMERA_INFORMATION`](https://mavlink.io/en/messages/common.html#CAMERA_INFORMATION)
+* [`VIDEO_STREAM_INFORMATION`](https://mavlink.io/en/messages/common.html#VIDEO_STREAM_INFORMATION)
+
 # Usage
 To use these with SITL:
 * these files need to be in the `<repo_root>/mav_msg_def/AP_Camera/` folder.

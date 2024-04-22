@@ -5,6 +5,16 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Mount/AP_Mount.h>
 
+#if AP_CAMERA_JSON_INFO_ENABLED
+
+#ifndef AP_CAMERA_JSON_INFO_DEBUG
+#define AP_CAMERA_JSON_INFO_DEBUG 1
+#endif // AP_CAMERA_JSON_INFO_DEBUG
+
+#include <AP_Filesystem/AP_Filesystem.h>
+#include <stdio.h>
+#endif // AP_CAMERA_JSON_INFO_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 // Constructor
@@ -13,6 +23,13 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
     _params(params),
     _instance(instance)
 {}
+
+void AP_Camera_Backend::init() {
+#if AP_CAMERA_JSON_INFO_ENABLED
+    init_camera_information_from_json();
+    init_video_stream_information_from_json();
+#endif // AP_CAMERA_JSON_INFO_ENABLED
+}
 
 // update - should be called at 50hz
 void AP_Camera_Backend::update()
@@ -211,6 +228,15 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
 // send camera information message to GCS
 void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
 {
+#if AP_CAMERA_JSON_INFO_ENABLED
+    if (camera_info.is_valid) {
+        // This is a const function, so we need to clone the camera_info msg in
+        // order to update the time_boot_ms field.
+        auto cam_info = camera_info.msg;
+        cam_info.time_boot_ms = AP_HAL::millis();
+        mavlink_msg_camera_information_send_struct(chan, &cam_info);
+    }
+#else
     // prepare vendor, model and cam definition strings
     const uint8_t vendor_name[32] {};
     const uint8_t model_name[32] {};
@@ -235,6 +261,7 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
         0,                      // cam_definition_version uint16_t
         cam_definition_uri,     // cam_definition_uri char[140]
         get_gimbal_device_id());// gimbal_device_id uint8_t
+#endif // AP_CAMERA_JSON_INFO_ENABLED
 }
 
 // send camera settings message to GCS
@@ -308,6 +335,15 @@ void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
         0,                // elapsed time since recording started (ms)
         NaN,              // available storage capacity (ms)
         image_index);     // total number of images captured
+}
+
+// send video stream information message to GCS
+void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const {
+#if AP_CAMERA_JSON_INFO_ENABLED
+    if (video_stream_info.is_valid) {
+        mavlink_msg_video_stream_information_send_struct(chan, &video_stream_info.msg);
+    }
+#endif // AP_CAMERA_JSON_INFO_ENABLED
 }
 
 // setup a callback for a feedback pin. When on PX4 with the right FMU
@@ -414,5 +450,184 @@ void AP_Camera_Backend::log_picture()
     }
 }
 #endif
+
+#if AP_CAMERA_JSON_INFO_ENABLED
+// Read a JSON file from the expected folder on the SD card. If not found, will
+// fall back to looking for the same folder in ROMFS.
+//
+// Note: The `json_filename` param must not include the file suffix.
+//
+// This allocates a AP_JSON::value object that will need to be freed.
+AP_JSON::value * AP_Camera_Backend::_load_mount_msg_json(const char* json_filename, uint8_t instance) {
+    char* romfs_json_path = nullptr;
+    // Instance IDs are zero-based, but we use one-based for the file names.
+    int alloc = asprintf(&romfs_json_path, "@ROMFS/mav_msg_def/AP_Camera/%s_%u.json", json_filename, instance + 1);
+    if (alloc < 0) {
+        ::printf("AP_Camera: json load bad alloc\n");
+        return nullptr;
+    }
+
+    // drop the "@ROMFS/" so we can search local storage first...
+    char const * json_path = &romfs_json_path[7];
+
+    struct stat st;
+    if (AP::FS().stat(json_path, &st) != 0) {
+        // not in local storage, so try full ROMFS path
+        ::printf("AP_Camera: failed to load '%s'\n", json_path);
+        json_path = romfs_json_path;
+        if (AP::FS().stat(json_path, &st) != 0) {
+            ::printf("AP_Camera: failed to load '%s'\n", json_path);
+            json_path = nullptr;
+        }
+    }
+
+    AP_JSON::value * obj = nullptr;
+    if (json_path) {
+        obj = AP_JSON::load_json(json_path);
+        if (obj == nullptr) {
+            ::printf("AP_Camera: failed to parse '%s'\n", json_path);
+        }
+    }
+
+    free(romfs_json_path);
+    return obj;
+}
+
+// helper function to copy a JSON double into a msg struct
+template <typename T>
+bool AP_Camera_Backend::_copy_json_field_double(const AP_JSON::value* obj, const char* key, T& dst)
+{
+    auto v = obj->get(key);
+    if (!v.is<double>()) {
+        return false;
+    }
+
+    dst = v.get<double>();
+    return true;
+}
+
+// helper function to copy a JSON string into a msg struct
+bool AP_Camera_Backend::_copy_json_field_string(const AP_JSON::value* obj, const char* key, char* dst, size_t dst_sz)
+{
+    auto v = obj->get(key);
+    if (!v.is<std::string>()) {
+        return false;
+    }
+
+    const auto src = v.get<std::string>().c_str();
+    strncpy(dst, src, dst_sz - 1);
+    dst[dst_sz - 1] = '\0';
+    return true;
+}
+
+void AP_Camera_Backend::init_video_stream_information_from_json()
+{
+    video_stream_info.is_valid = false;
+
+    const auto filename = "video_stream_information";
+    auto *obj = _load_mount_msg_json(filename, _instance);
+    if (obj == nullptr) {
+        return;
+    }
+
+    if (!_copy_json_field_double(obj, "type", video_stream_info.msg.type)) goto err;
+    if (!_copy_json_field_double(obj, "framerate", video_stream_info.msg.framerate)) goto err;
+    if (!_copy_json_field_double(obj, "resolution_h", video_stream_info.msg.resolution_h)) goto err;
+    if (!_copy_json_field_double(obj, "resolution_v", video_stream_info.msg.resolution_v)) goto err;
+    if (!_copy_json_field_double(obj, "bitrate", video_stream_info.msg.bitrate)) goto err;
+    if (!_copy_json_field_double(obj, "rotation", video_stream_info.msg.rotation)) goto err;
+    if (!_copy_json_field_double(obj, "hfov", video_stream_info.msg.hfov)) goto err;
+
+    if (!_copy_json_field_string(obj, "name", video_stream_info.msg.name, sizeof(video_stream_info.msg.name))) goto err;
+    if (!_copy_json_field_string(obj, "uri", video_stream_info.msg.uri, sizeof(video_stream_info.msg.uri))) goto err;
+
+    // Populate the fields that shouldn't change.
+    video_stream_info.msg.stream_id = 1; // We currently only support a single stream defined in JSON
+    video_stream_info.msg.count = 1;
+    video_stream_info.msg.flags = VIDEO_STREAM_STATUS_FLAGS_RUNNING;
+
+    // If we got this far, then we've got all the required fields.
+    video_stream_info.is_valid = true;
+
+err:
+    delete obj;
+
+#if AP_CAMERA_JSON_INFO_DEBUG
+    if (video_stream_info.is_valid) {
+        ::printf("AP_Camera: Loaded video_stream_info from '%s_%u.json'\n", filename, _instance + 1);
+        ::printf("    video_stream_info.msg.stream_id=%u\n", video_stream_info.msg.stream_id);
+        ::printf("    video_stream_info.msg.count=%u\n", video_stream_info.msg.count);
+        ::printf("    video_stream_info.msg.type=%u\n", video_stream_info.msg.type);
+        ::printf("    video_stream_info.msg.flags=%u\n", video_stream_info.msg.flags);
+        ::printf("    video_stream_info.msg.framerate=%f\n", video_stream_info.msg.framerate);
+        ::printf("    video_stream_info.msg.resolution_h=%u\n", video_stream_info.msg.resolution_h);
+        ::printf("    video_stream_info.msg.resolution_v=%u\n", video_stream_info.msg.resolution_v);
+        ::printf("    video_stream_info.msg.bitrate=%u\n", video_stream_info.msg.bitrate);
+        ::printf("    video_stream_info.msg.rotation=%u\n", video_stream_info.msg.rotation);
+        ::printf("    video_stream_info.msg.hfov=%u\n", video_stream_info.msg.hfov);
+
+        ::printf("    video_stream_info.msg.name='%s'\n", video_stream_info.msg.name);
+        ::printf("    video_stream_info.msg.uri='%s'\n", video_stream_info.msg.uri);
+    }
+#endif // AP_CAMERA_JSON_INFO_DEBUG
+}
+
+void AP_Camera_Backend::init_camera_information_from_json()
+{
+    camera_info.is_valid = false;
+
+    const auto filename = "camera_information";
+    auto *obj = _load_mount_msg_json(filename, _instance);
+    if (obj == nullptr) {
+        return;
+    }
+
+    if (!_copy_json_field_double(obj, "firmware_version", camera_info.msg.firmware_version)) goto err;
+    if (!_copy_json_field_double(obj, "focal_length", camera_info.msg.focal_length)) goto err;
+    if (!_copy_json_field_double(obj, "sensor_size_h", camera_info.msg.sensor_size_h)) goto err;
+    if (!_copy_json_field_double(obj, "sensor_size_v", camera_info.msg.sensor_size_v)) goto err;
+    if (!_copy_json_field_double(obj, "resolution_h", camera_info.msg.resolution_h)) goto err;
+    if (!_copy_json_field_double(obj, "resolution_v", camera_info.msg.resolution_v)) goto err;
+    if (!_copy_json_field_double(obj, "lens_id", camera_info.msg.lens_id)) goto err;
+    if (!_copy_json_field_double(obj, "flags", camera_info.msg.flags)) goto err;
+    if (!_copy_json_field_double(obj, "cam_definition_version", camera_info.msg.cam_definition_version)) goto err;
+
+    if (!_copy_json_field_string(obj, "vendor_name", (char*)camera_info.msg.vendor_name, sizeof(camera_info.msg.vendor_name))) goto err;
+    if (!_copy_json_field_string(obj, "model_name", (char*)camera_info.msg.model_name, sizeof(camera_info.msg.model_name))) goto err;
+    if (!_copy_json_field_string(obj, "cam_definition_uri", camera_info.msg.cam_definition_uri, sizeof(camera_info.msg.cam_definition_uri))) goto err;
+
+    // Populate the fields that shouldn't change.
+    // We don't populate time_boot_ms here because it is set when the message is sent.
+    camera_info.msg.gimbal_device_id = get_gimbal_device_id();
+
+    // If we got this far, then we've got all the required fields.
+    camera_info.is_valid = true;
+
+err:
+    delete obj;
+
+#if AP_CAMERA_JSON_INFO_DEBUG
+    if (camera_info.is_valid) {
+        ::printf("AP_Camera: Loaded camera_info from '%s_%u.json'\n", filename, _instance + 1);
+        ::printf("    camera_info.msg.time_boot_ms=%u\n", camera_info.msg.time_boot_ms);
+        ::printf("    camera_info.msg.vendor_name='%s'\n", camera_info.msg.vendor_name);
+        ::printf("    camera_info.msg.model_name='%s'\n", camera_info.msg.model_name);
+        ::printf("    camera_info.msg.firmware_version=%u\n", camera_info.msg.firmware_version);
+        ::printf("    camera_info.msg.focal_length=%f\n", camera_info.msg.focal_length);
+        ::printf("    camera_info.msg.sensor_size_h=%f\n", camera_info.msg.sensor_size_h);
+        ::printf("    camera_info.msg.sensor_size_v=%f\n", camera_info.msg.sensor_size_v);
+        ::printf("    camera_info.msg.resolution_h=%u\n", camera_info.msg.resolution_h);
+        ::printf("    camera_info.msg.resolution_v=%u\n", camera_info.msg.resolution_v);
+        ::printf("    camera_info.msg.lens_id=%u\n", camera_info.msg.lens_id);
+        ::printf("    camera_info.msg.flags=%u\n", camera_info.msg.flags);
+        ::printf("    camera_info.msg.cam_definition_version=%u\n", camera_info.msg.cam_definition_version);
+        ::printf("    camera_info.msg.cam_definition_uri='%s'\n", camera_info.msg.cam_definition_uri);
+        ::printf("    camera_info.msg.gimbal_device_id=%u\n", camera_info.msg.gimbal_device_id);
+    }
+#endif // AP_CAMERA_JSON_INFO_DEBUG
+}
+
+#endif // AP_CAMERA_JSON_INFO_ENABLED
+
 
 #endif // AP_CAMERA_ENABLED

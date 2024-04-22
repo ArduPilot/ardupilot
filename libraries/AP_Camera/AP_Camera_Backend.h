@@ -26,6 +26,10 @@
 #include <AP_Common/Location.h>
 #include <AP_Logger/LogStructure.h>
 
+#if AP_CAMERA_JSON_INFO_ENABLED
+#include <AP_JSON/AP_JSON.h>
+#endif // AP_CAMERA_JSON_INFO_ENABLED
+
 class AP_Camera_Backend
 {
 public:
@@ -42,7 +46,7 @@ public:
     };
 
     // init - performs any required initialisation
-    virtual void init() {};
+    virtual void init();
 
     // update - should be called at 50hz
     virtual void update();
@@ -124,7 +128,7 @@ public:
     virtual void send_camera_capture_status(mavlink_channel_t chan) const;
 
     // send video stream information message to GCS
-    virtual void send_video_stream_information(mavlink_channel_t chan) const {}
+    virtual void send_video_stream_information(mavlink_channel_t chan) const;
 
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
@@ -173,6 +177,26 @@ protected:
     // get mavlink gimbal device id which is normally mount_instance+1
     uint8_t get_gimbal_device_id() const;
 
+#if AP_CAMERA_JSON_INFO_ENABLED
+    // Read a JSON file from the expected folder on the SD card. If not found, will
+    // fall back to looking for the same folder in ROMFS.
+    //
+    // Note: The `json_filename` param must not include the file suffix.
+    //
+    // This allocates a AP_JSON::value object that will need to be freed.
+    static AP_JSON::value * _load_mount_msg_json(const char* json_filename, uint8_t instance);
+    // helper function to copy a JSON double into a msg struct
+    static bool _copy_json_field_string(const AP_JSON::value* obj, const char* key, char* dst, size_t dst_sz);
+    // helper function to copy a JSON string into a msg struct
+    template <typename T>
+    static bool _copy_json_field_double(const AP_JSON::value* obj, const char* key, T& dst);
+
+    // loads data for the VIDEO_STREAM_INFORMATION message from a JSON file
+    void init_video_stream_information_from_json();
+    // loads data for the CAMERA_INFORMATION message from a JSON file
+    void init_camera_information_from_json();
+#endif // AP_CAMERA_JSON_INFO_ENABLED
+
     // internal members
     uint8_t _instance;      // this instance's number
     bool timer_installed;   // true if feedback pin change detected using timer
@@ -186,6 +210,17 @@ protected:
     Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
     bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
+
+#if AP_CAMERA_JSON_INFO_ENABLED
+    struct {
+        bool is_valid;
+        mavlink_video_stream_information_t msg;
+    } video_stream_info;
+    struct {
+        bool is_valid;
+        mavlink_camera_information_t msg;
+    } camera_info;
+#endif // AP_CAMERA_JSON_INFO_ENABLED
 };
 
 #endif // AP_CAMERA_ENABLED
