@@ -960,8 +960,8 @@ void ModeGuided::angle_control_run()
     }
 
     // TODO: use get_alt_hold_state
-    // landed with positive desired climb rate, takeoff
-    if (copter.ap.land_complete && (guided_angle_state.climb_rate_cms > 0.0f)) {
+    // landed with positive desired climb rate or thrust, takeoff
+    if (copter.ap.land_complete && positive_thrust_or_climbrate) {
         zero_throttle_and_relax_ac();
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
