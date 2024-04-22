@@ -1081,7 +1081,7 @@ private:
     void update_GPS_50Hz(void);
     void update_GPS_10Hz(void);
     void update_compass(void);
-    void update_alt(void);
+    void update_barometer(void) override;
 #if AP_ADVANCEDFAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
@@ -1132,6 +1132,7 @@ private:
 
     // system.cpp
     __INITFUNC__ void init_ardupilot() override;
+    uint32_t baro_log_bit() const override { return MASK_LOG_IMU; }
     bool set_mode(Mode& new_mode, const ModeReason reason);
     bool set_mode(const uint8_t mode, const ModeReason reason) override;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
