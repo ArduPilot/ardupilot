@@ -14,7 +14,7 @@
     "sensor_size_v": 2160,
     "resolution_h": 1920,
     "resolution_v": 1080,
-    "lens_id": 0,
+    # "lens_id" is populated with the instance number, to disambiguate multiple cameras
     "flags": 256,
     "cam_definition_version": 0,
     "cam_definition_uri": ""

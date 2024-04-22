@@ -588,7 +588,6 @@ void AP_Camera_Backend::init_camera_information_from_json()
     if (!_copy_json_field_double(obj, "sensor_size_v", camera_info.msg.sensor_size_v)) goto err;
     if (!_copy_json_field_double(obj, "resolution_h", camera_info.msg.resolution_h)) goto err;
     if (!_copy_json_field_double(obj, "resolution_v", camera_info.msg.resolution_v)) goto err;
-    if (!_copy_json_field_double(obj, "lens_id", camera_info.msg.lens_id)) goto err;
     if (!_copy_json_field_double(obj, "flags", camera_info.msg.flags)) goto err;
     if (!_copy_json_field_double(obj, "cam_definition_version", camera_info.msg.cam_definition_version)) goto err;
 
@@ -596,8 +595,12 @@ void AP_Camera_Backend::init_camera_information_from_json()
     if (!_copy_json_field_string(obj, "model_name", (char*)camera_info.msg.model_name, sizeof(camera_info.msg.model_name))) goto err;
     if (!_copy_json_field_string(obj, "cam_definition_uri", camera_info.msg.cam_definition_uri, sizeof(camera_info.msg.cam_definition_uri))) goto err;
 
-    // Populate the fields that shouldn't change.
-    // We don't populate time_boot_ms here because it is set when the message is sent.
+    // Populate the fields that shouldn't change. We don't populate time_boot_ms
+    // here because it is set when the message is sent.
+
+    // To disambiguate when we have multiple cameras, the lens_id is populated
+    // with the instance number.
+    camera_info.msg.lens_id = _instance + 1;
     camera_info.msg.gimbal_device_id = get_gimbal_device_id();
 
     // If we got this far, then we've got all the required fields.
