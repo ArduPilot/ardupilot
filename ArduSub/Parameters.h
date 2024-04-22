@@ -71,7 +71,7 @@ public:
         // Sensor objects
         k_param_ins = 30, // AP_InertialSensor
         k_param_compass, // Compass
-        k_param_barometer, // Barometer/Depth Sensor
+        k_param_barometer_old, // Barometer/Depth Sensor
         k_param_battery, // AP_BattMonitor
         k_param_leak_detector, // Leak Detector
         k_param_rangefinder, // Rangefinder

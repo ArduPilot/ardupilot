@@ -607,9 +607,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
+    // BARO was here
 
     // GPS driver
     // @Group: GPS
@@ -881,6 +879,12 @@ void Sub::load_parameters()
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
     AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
+
+    AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+
+#if AP_BARO_ENABLED
+    AP::baro().convert_parameters_for_move_to_ap_vehicle(Parameters::k_param_barometer_old);
+#endif  // AP_BARO_ENABLED
 }
 
 void Sub::convert_old_parameters()
