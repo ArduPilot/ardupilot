@@ -876,13 +876,13 @@ bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8
 #endif
 
 // send camera information message to GCS
-void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
+bool AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
-        return;
+        return false;
     }
-    backend->send_camera_information(chan);
+    return backend->send_camera_information(chan);
 }
 
 // send camera settings message to GCS

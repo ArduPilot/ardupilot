@@ -190,7 +190,8 @@ public:
 #endif
 
     // send camera information message to GCS
-    virtual void send_camera_information(mavlink_channel_t chan) const {}
+    // returns true if the message was sent
+    virtual bool send_camera_information(mavlink_channel_t chan) const { return false; };
 
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const {}

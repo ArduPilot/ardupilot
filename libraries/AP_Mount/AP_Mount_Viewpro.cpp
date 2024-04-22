@@ -891,11 +891,12 @@ bool AP_Mount_Viewpro::set_camera_source(uint8_t primary_source, uint8_t seconda
 }
 
 // send camera information message to GCS
-void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
+bool AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
 {
     // exit immediately if not initialised
     if (!_initialised) {
-        return;
+        // Note: we return true because we don't want the camera driver to attempt to send this message
+        return true;
     }
 
     static const uint8_t vendor_name[32] = "Viewpro";
@@ -930,6 +931,8 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         0,                      // cam_definition_version uint16_t
         cam_definition_uri,     // cam_definition_uri char[140]
         _instance + 1);         // gimbal_device_id uint8_t
+
+    return true;
 }
 
 // send camera settings message to GCS

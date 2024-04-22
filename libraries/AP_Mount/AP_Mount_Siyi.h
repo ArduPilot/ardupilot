@@ -77,7 +77,8 @@ public:
     bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
 
     // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const override;
+    // returns true if the message was sent
+    bool send_camera_information(mavlink_channel_t chan) const override;
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;

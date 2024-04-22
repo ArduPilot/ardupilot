@@ -263,7 +263,8 @@ public:
 #endif
 
     // send camera information message to GCS
-    void send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
+    // returns true if the message was sent
+    bool send_camera_information(uint8_t instance, mavlink_channel_t chan) const;
 
     // send camera settings message to GCS
     void send_camera_settings(uint8_t instance, mavlink_channel_t chan) const;

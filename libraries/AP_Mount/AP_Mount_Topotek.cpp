@@ -368,7 +368,7 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
         int16_t bottom_rightx = (int16_t)(MAX(p1.x, p2.x)*TRACK_TOTAL_WIDTH);
         int16_t bottom_righty = (int16_t)(MAX(p1.y, p2.y)*TRACK_TOTAL_HEIGHT);
 
-        // calculated width and height and sanity check 
+        // calculated width and height and sanity check
         const int16_t frame_selection_width = bottom_rightx - upper_leftx;
         const int16_t frame_selection_height = bottom_righty - upper_lefty;
         if (frame_selection_width <= 0 || frame_selection_height <= 0) {
@@ -499,11 +499,12 @@ bool AP_Mount_Topotek::set_camera_source(uint8_t primary_source, uint8_t seconda
 }
 
 // send camera information message to GCS
-void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
+bool AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
 {
     // exit immediately if not initialised
     if (!_initialised) {
-        return;
+        // Note: we return true because we don't want the camera driver to attempt to send this message
+        return true;
     }
 
     static const uint8_t vendor_name[32] = "Topotek";
@@ -535,6 +536,8 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
         0,                      // cam_definition_version uint16_t
         cam_definition_uri,     // cam_definition_uri char[140]
         _instance + 1);         // gimbal_device_id uint8_t
+
+    return true;
 }
 
 // send camera settings message to GCS
@@ -694,7 +697,7 @@ void AP_Mount_Topotek::read_incoming_packets()
                 reset_parser = true;
                 break;
             }
-            
+
             // advance parser state once expected number of bytes have been received
             if (data_bytes_received == _parser.data_len) {
                 _parser.state = ParseState::WAITING_FOR_CRC_LOW;
