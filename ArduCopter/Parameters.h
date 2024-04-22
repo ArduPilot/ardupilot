@@ -67,7 +67,7 @@ public:
         k_param_sitl = 10,
 
         // barometer object (needed for SITL)
-        k_param_barometer,
+        k_param_barometer_old,
 
         // scheduler object (for debugging)
         k_param_scheduler,
