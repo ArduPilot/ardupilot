@@ -14,6 +14,7 @@ import sys
 import argparse
 import subprocess
 import time
+import shutil
 import string
 import pathlib
 
@@ -50,10 +51,18 @@ class TestParamUpgradeTestSuiteSetParameters(vehicle_test_suite.TestSuite):
             return "ArduCopter"
         raise ValueError("Can't determine vehicleinfo_key from binary path")
 
+    def model(self):
+        path = self.binary.lower()
+        if "plane" in path:
+            return "quadplane"
+        if "copter" in path:
+            return "X"
+        raise ValueError("Can't determine vehicleinfo_key from binary path")
+
     def run(self):
         self.start_SITL(
             binary=self.binary,
-            model="novehicle",
+            model=self.model(),
             wipe=True,
             sitl_home="1,1,1,1",
         )
@@ -90,10 +99,18 @@ class TestParamUpgradeTestSuiteCheckParameters(vehicle_test_suite.TestSuite):
             return "ArduCopter"
         raise ValueError("Can't determine vehicleinfo_key from binary path")
 
+    def model(self):
+        path = self.binary.lower()
+        if "plane" in path:
+            return "quadplane"
+        if "copter" in path:
+            return "X"
+        raise ValueError("Can't determine vehicleinfo_key from binary path")
+
     def run(self):
         self.start_SITL(
             binary=self.binary,
-            model="novehicle",
+            model=self.model(),
             sitl_home="1,1,1,1",
             wipe=False,
         )
@@ -243,6 +260,7 @@ class TestParamUpgradeForVehicle():
 
         self.run_git(["checkout", master_commit], show_output=False)
         self.run_git(["submodule", "update", "--recursive"], show_output=False)
+        shutil.rmtree("build", ignore_errors=True)
         board = "sitl"
         if "AP_Periph" in self.vehicle:
             board = "sitl_periph_universal"
@@ -257,6 +275,7 @@ class TestParamUpgradeForVehicle():
 
         self.run_git(["checkout", branch], show_output=False)
         self.run_git(["submodule", "update", "--recursive"], show_output=False)
+        shutil.rmtree("build", ignore_errors=True)
         util.build_SITL(
             self.build_target_name(self.vehicle),
             board=board,
@@ -281,12 +300,14 @@ class TestParamUpgrade():
                  vehicles=None,
                  run_eedump_before=False,
                  run_eedump_after=False,
+                 master_branch="master",
                  ):
         self.vehicles = vehicles
         self.param_changes = param_changes
         self.vehicles = vehicles
         self.run_eedump_before = run_eedump_before
         self.run_eedump_after = run_eedump_after
+        self.master_branch = master_branch
 
         if self.vehicles is None:
             self.vehicles = self.all_vehicles()
@@ -310,6 +331,7 @@ class TestParamUpgrade():
                 self.param_changes,
                 run_eedump_before=self.run_eedump_before,
                 run_eedump_after=self.run_eedump_after,
+                master_branch=self.master_branch,
             )
             s.run()
 
@@ -346,7 +368,12 @@ if __name__ == "__main__":
         default=False,
         help="run the (already-compiled) eedump tool on eeprom.bin after doing conversion",
     )
-
+    parser.add_argument(
+        "--master-branch",
+        type=str,
+        default="master",
+        help="master branch to use",
+    )
     args = parser.parse_args()
 
     param_changes = []
@@ -374,5 +401,6 @@ if __name__ == "__main__":
         vehicles=vehicles,
         run_eedump_before=args.run_eedump_before,
         run_eedump_after=args.run_eedump_after,
+        master_branch=args.master_branch,
     )
     x.run()
