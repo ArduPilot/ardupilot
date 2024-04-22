@@ -338,7 +338,11 @@ protected:
 #if AP_GPS_ENABLED
     AP_GPS gps;
 #endif
+#if AP_BARO_ENABLED
     AP_Baro barometer;
+    virtual uint32_t baro_log_bit() const { return -1; }
+    virtual void update_barometer();
+#endif
 #if AP_COMPASS_ENABLED
     Compass compass;
 #endif
