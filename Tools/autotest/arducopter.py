@@ -11020,7 +11020,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GroundEffectCompensation_touchDownExpected": "Flapping",
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
             "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
-            "GuidedModeThrust": "land detector raises internal error as we're not saying we're about to take off but just did",
             "CompassMot": "Cuases an arithmetic exception in the EKF",
         }
 
