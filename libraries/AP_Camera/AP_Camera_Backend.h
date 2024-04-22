@@ -181,10 +181,8 @@ protected:
     // Read a JSON file from the expected folder on the SD card. If not found, will
     // fall back to looking for the same folder in ROMFS.
     //
-    // Note: The `json_filename` param must not include the file suffix.
-    //
     // This allocates a AP_JSON::value object that will need to be freed.
-    static AP_JSON::value * _load_mount_msg_json(const char* json_filename, uint8_t instance);
+    static AP_JSON::value * _load_mount_msg_json(const char* json_filename);
     // helper function to copy a JSON double into a msg struct
     static bool _copy_json_field_string(const AP_JSON::value* obj, const char* key, char* dst, size_t dst_sz);
     // helper function to copy a JSON string into a msg struct

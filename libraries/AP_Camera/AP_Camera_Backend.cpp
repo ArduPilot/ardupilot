@@ -455,13 +455,11 @@ void AP_Camera_Backend::log_picture()
 // Read a JSON file from the expected folder on the SD card. If not found, will
 // fall back to looking for the same folder in ROMFS.
 //
-// Note: The `json_filename` param must not include the file suffix.
-//
 // This allocates a AP_JSON::value object that will need to be freed.
-AP_JSON::value * AP_Camera_Backend::_load_mount_msg_json(const char* json_filename, uint8_t instance) {
+AP_JSON::value * AP_Camera_Backend::_load_mount_msg_json(const char* json_filename)
+{
     char* romfs_json_path = nullptr;
-    // Instance IDs are zero-based, but we use one-based for the file names.
-    int alloc = asprintf(&romfs_json_path, "@ROMFS/mav_msg_def/AP_Camera/%s_%u.json", json_filename, instance + 1);
+    int alloc = asprintf(&romfs_json_path, "@ROMFS/mav_msg_def/AP_Camera/%s", json_filename);
     if (alloc < 0) {
         ::printf("AP_Camera: json load bad alloc\n");
         return nullptr;
@@ -524,8 +522,8 @@ void AP_Camera_Backend::init_video_stream_information_from_json()
 {
     video_stream_info.is_valid = false;
 
-    const auto filename = "video_stream_information";
-    auto *obj = _load_mount_msg_json(filename, _instance);
+    const auto filename = "video_stream_information.json";
+    auto *obj = _load_mount_msg_json(filename);
     if (obj == nullptr) {
         return;
     }
@@ -554,7 +552,7 @@ err:
 
 #if AP_CAMERA_JSON_INFO_DEBUG
     if (video_stream_info.is_valid) {
-        ::printf("AP_Camera: Loaded video_stream_info from '%s_%u.json'\n", filename, _instance + 1);
+        ::printf("AP_Camera: Loaded video_stream_info from '%s'\n", filename);
         ::printf("    video_stream_info.msg.stream_id=%u\n", video_stream_info.msg.stream_id);
         ::printf("    video_stream_info.msg.count=%u\n", video_stream_info.msg.count);
         ::printf("    video_stream_info.msg.type=%u\n", video_stream_info.msg.type);
@@ -576,8 +574,8 @@ void AP_Camera_Backend::init_camera_information_from_json()
 {
     camera_info.is_valid = false;
 
-    const auto filename = "camera_information";
-    auto *obj = _load_mount_msg_json(filename, _instance);
+    const auto filename = "camera_information.json";
+    auto *obj = _load_mount_msg_json(filename);
     if (obj == nullptr) {
         return;
     }
@@ -611,7 +609,7 @@ err:
 
 #if AP_CAMERA_JSON_INFO_DEBUG
     if (camera_info.is_valid) {
-        ::printf("AP_Camera: Loaded camera_info from '%s_%u.json'\n", filename, _instance + 1);
+        ::printf("AP_Camera: Loaded camera_info from '%s'\n", filename);
         ::printf("    camera_info.msg.time_boot_ms=%u\n", camera_info.msg.time_boot_ms);
         ::printf("    camera_info.msg.vendor_name='%s'\n", camera_info.msg.vendor_name);
         ::printf("    camera_info.msg.model_name='%s'\n", camera_info.msg.model_name);

@@ -1,9 +1,12 @@
 # Summary
 
 These files define MAVLink messages for the Camera in JSON. Each file is named
-for the MAVLink message, and has a numeric suffix to indicate which Camera
-instance it is for, e.g.:
-* _"camera_information_1.json"_ defines the `CAMERA_INFORMATION` message for Camera 1.
+for the MAVLink message it is for, e.g.:
+* _"camera_information.json"_ defines the `CAMERA_INFORMATION` message for the Camera.
+
+**NOTE**: ArduPilot cannot currently disambiguate MAVLink Camera messages between backends -- all
+messages will appear to come from the same Camera instance. As such, only one message definition
+can be defined here for each message.
 
 Currently supported messages are:
 * [`CAMERA_INFORMATION`](https://mavlink.io/en/messages/common.html#CAMERA_INFORMATION)
