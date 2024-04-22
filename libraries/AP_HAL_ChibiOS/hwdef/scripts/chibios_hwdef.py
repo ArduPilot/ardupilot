@@ -3270,6 +3270,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.romfs_add_dir(['scripts'])
         self.romfs_add_dir(['param'])
 
+        # add JSON MAVLink message definitions if they are present in the hwdef folder
+        self.romfs_add_dir(['mav_msg_def'])
+
         # write out hwdef.h
         self.write_hwdef_header(os.path.join(self.outdir, "hwdef.h"))
 
