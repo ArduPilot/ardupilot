@@ -19,6 +19,7 @@
 #endif
 
 #include "NotchFilter.h"
+#include <AP_Logger/AP_Logger.h>
 
 const static float NOTCH_MAX_SLEW       = 0.05f;
 const static float NOTCH_MAX_SLEW_LOWER = 1.0f - NOTCH_MAX_SLEW;
@@ -134,6 +135,15 @@ void NotchFilter<T>::reset()
 {
     need_reset = true;
 }
+
+#if HAL_LOGGING_ENABLED
+// return the frequency to log for the notch
+template <class T>
+float NotchFilter<T>::logging_frequency() const
+{
+    return initialised ? _center_freq_hz : AP::logger().quiet_nanf();
+}
+#endif
 
 /*
    instantiate template classes
