@@ -437,6 +437,7 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     }
     _heap.deallocate(script->name);
     _heap.deallocate(script);
+    script = nullptr;
 }
 
 void lua_scripts::reschedule_script(script_info *script) {
@@ -670,9 +671,11 @@ void lua_scripts::run(void) {
             hal.scheduler->restore_interrupts(istate);
 #endif
 
-            script_to_run->memory += allocated - deallocated;
-
-            update_stats(script_to_run->name, runEnd - loadEnd, endMem, script_to_run->memory, allocated);
+            if (script_to_run != nullptr) {
+                // If script crashed in `run_next_script` it will be nullptr
+                script_to_run->memory += allocated - deallocated;
+                update_stats(script_to_run->name, runEnd - loadEnd, endMem, script_to_run->memory, allocated);
+            }
 
             // Re-zero count for next script
             allocated = 0;
