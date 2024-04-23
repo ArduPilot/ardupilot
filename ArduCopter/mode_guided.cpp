@@ -1011,12 +1011,16 @@ void ModeGuided::angle_control_run()
 // helper function to set yaw state and targets
 void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
 {
-    if (use_yaw && relative_angle) {
-        auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
-    } else if (use_yaw && use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, yaw_rate_cds * 0.01f);
-    } else if (use_yaw && !use_yaw_rate) {
-        auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, 0.0f);
+    if (use_yaw) {
+        if (relative_angle) {
+            auto_yaw.set_fixed_yaw(yaw_cd * 0.01f, 0.0f, 0, relative_angle);
+        } else {
+            float rate = 0.0f;
+            if (use_yaw_rate) {
+                rate = yaw_rate_cds * 0.01f;
+            }
+            auto_yaw.set_yaw_angle_rate(yaw_cd * 0.01f, rate);
+        }
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     } else {
