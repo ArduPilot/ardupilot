@@ -81,6 +81,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     // CRSF telemetry rate is 150Hz (4ms) max, so these rates must fit
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
     add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
+    add_scheduler_entry(50, 200);   // baro_vario        5Hz
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -152,6 +153,8 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
         // standard telemetry for high data rates
         set_scheduler_entry(BATTERY, 1000, 1000);       // 1Hz
         set_scheduler_entry(ATTITUDE, 1000, 1000);      // 1Hz
+        set_scheduler_entry(BARO_VARIO, 1000, 1000);    // 1Hz
+        set_scheduler_entry(VARIO, 1000, 1000);         // 1Hz
         // custom telemetry for high data rates
         set_scheduler_entry(GPS, 550, 500);            // 2.0Hz
         set_scheduler_entry(PASSTHROUGH, 100, 100);    // 8Hz
@@ -160,6 +163,8 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
         // standard telemetry for low data rates
         set_scheduler_entry(BATTERY, 1000, 2000);       // 0.5Hz
         set_scheduler_entry(ATTITUDE, 1000, 3000);      // 0.33Hz
+        set_scheduler_entry(BARO_VARIO, 1000, 3000);    // 0.33Hz
+        set_scheduler_entry(VARIO, 1000, 3000);         // 0.33Hz
         if (is_elrs()) {
             // ELRS custom telemetry for low data rates
             set_scheduler_entry(GPS, 550, 1000);            // 1.0Hz
@@ -320,6 +325,8 @@ void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 void AP_CRSF_Telem::disable_tx_entries()
 {
     disable_scheduler_entry(ATTITUDE);
+    disable_scheduler_entry(BARO_VARIO);
+    disable_scheduler_entry(VARIO);
     disable_scheduler_entry(BATTERY);
     disable_scheduler_entry(GPS);
     disable_scheduler_entry(FLIGHT_MODE);
@@ -334,6 +341,8 @@ void AP_CRSF_Telem::disable_tx_entries()
 void AP_CRSF_Telem::enable_tx_entries()
 {
     enable_scheduler_entry(ATTITUDE);
+    enable_scheduler_entry(BARO_VARIO);
+    enable_scheduler_entry(VARIO);
     enable_scheduler_entry(BATTERY);
     enable_scheduler_entry(GPS);
     enable_scheduler_entry(FLIGHT_MODE);
@@ -427,6 +436,12 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             break;
         case PARAMETERS: // update parameter settings
             process_pending_requests();
+            break;
+        case BARO_VARIO:
+            calc_baro_vario();
+            break;
+        case VARIO:
+            calc_vario();
             break;
         case ATTITUDE:
             calc_attitude();
@@ -910,6 +925,60 @@ void AP_CRSF_Telem::calc_battery()
 
     _telem_size = sizeof(BatteryFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR;
+
+    _telem_pending = true;
+}
+
+uint16_t AP_CRSF_Telem::get_altitude_packed()
+{
+    int32_t altitude_dm = get_nav_alt_m(Location::AltFrame::ABOVE_HOME) * 10;
+
+    enum : int32_t {
+        ALT_MIN_DM = 10000,                     // minimum altitude in dm
+        ALT_THRESHOLD_DM = 0x8000 - ALT_MIN_DM, // altitude of precision changing in dm
+        ALT_MAX_DM = 0x7ffe * 10 - 5,           // maximum altitude in dm
+    };
+
+    if (altitude_dm < -ALT_MIN_DM) { // less than minimum altitude
+        return 0; // minimum
+    }
+    if (altitude_dm > ALT_MAX_DM) { // more than maximum
+        return 0xFFFEU; // maximum
+    }
+    if(altitude_dm < ALT_THRESHOLD_DM) { //dm-resolution range
+        return uint16_t(altitude_dm + ALT_MIN_DM);
+    }
+    return uint16_t((altitude_dm + 5) / 10) | uint16_t(0x8000); // meter-resolution range
+}
+
+int8_t AP_CRSF_Telem::get_vertical_speed_packed()
+{
+    float vspeed = get_vspeed_ms();
+    float vertical_speed_cm_s = vspeed * 100.0f;
+    const int16_t Kl = 100; // linearity constant;
+    const float Kr = .026f; // range constant;
+    int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
+    return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_baro_vario()
+{
+    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
+
+    _telem_size = sizeof(BaroVarioFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BARO_VARIO;
+
+    _telem_pending = true;
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_vario()
+{
+    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem_size = sizeof(VarioFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
 
     _telem_pending = true;
 }
