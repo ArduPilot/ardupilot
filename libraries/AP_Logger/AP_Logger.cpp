@@ -6,7 +6,7 @@
 
 #include "AP_Logger_File.h"
 #include "AP_Logger_Flash_JEDEC.h"
-#include "AP_Logger_W25N01GV.h"
+#include "AP_Logger_W25NXX.h"
 #include "AP_Logger_MAVLink.h"
 
 #include <AP_InternalError/AP_InternalError.h>
