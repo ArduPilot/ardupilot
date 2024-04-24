@@ -9,13 +9,13 @@
 
 #if HAL_LOGGING_DATAFLASH_ENABLED
 
-class AP_Logger_W25N01GV : public AP_Logger_Block {
+class AP_Logger_W25NXX : public AP_Logger_Block {
 public:
-    AP_Logger_W25N01GV(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+    AP_Logger_W25NXX(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
         AP_Logger_Block(front, writer) {}
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_W25N01GV(front, ls);
+        return new AP_Logger_W25NXX(front, ls);
     }
     void              Init(void) override;
     bool              CardInserted() const override { return !flash_died && df_NumPages > 0; }
