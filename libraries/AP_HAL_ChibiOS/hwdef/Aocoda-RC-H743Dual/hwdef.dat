@@ -218,6 +218,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH_ENABLED 1
-define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25N01GV
+define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX
 
 
