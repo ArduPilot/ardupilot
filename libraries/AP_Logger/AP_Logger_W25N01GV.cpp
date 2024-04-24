@@ -52,9 +52,12 @@ extern const AP_HAL::HAL& hal;
 #define W25N01G_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
 #define W25N01G_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
 #define W25N01G_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
+
 #define W25N01G_NUM_BLOCKS                  1024
+#define W25N02K_NUM_BLOCKS                  2048
 
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
+#define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
 
 void AP_Logger_W25N01GV::Init()
 {
@@ -133,6 +136,13 @@ bool AP_Logger_W25N01GV::getSectorCount(void)
         df_PageSize = 2048;
         df_PagePerBlock = 64;
         df_PagePerSector = 64; // make sectors equivalent to block
+        flash_blockNum = W25N01G_NUM_BLOCKS;
+        break;
+    case JEDEC_ID_WINBOND_W25N02KV:
+        df_PageSize = 2048;
+        df_PagePerBlock = 64;
+        df_PagePerSector = 64; // make sectors equivalent to block
+        flash_blockNum = W25N02K_NUM_BLOCKS;
         break;
 
     default:
@@ -141,7 +151,7 @@ bool AP_Logger_W25N01GV::getSectorCount(void)
         return false;
     }
 
-    df_NumPages = W25N01G_NUM_BLOCKS * df_PagePerBlock;
+    df_NumPages = flash_blockNum * df_PagePerBlock;
 
     printf("SPI Flash 0x%08x found pages=%u\n", id, df_NumPages);
     return true;
@@ -186,7 +196,7 @@ void AP_Logger_W25N01GV::send_command_addr(uint8_t command, uint32_t PageAdr)
 {
     uint8_t cmd[4];
     cmd[0] = command;
-    cmd[1] = 0;    // dummy
+    cmd[1] = (PageAdr >>  16) & 0xff;
     cmd[2] = (PageAdr >>  8) & 0xff;
     cmd[3] = (PageAdr >>  0) & 0xff;
 
@@ -312,7 +322,7 @@ void AP_Logger_W25N01GV::StartErase()
 bool AP_Logger_W25N01GV::InErase()
 {
     if (erase_start_ms && !Busy()) {
-        if (erase_block < W25N01G_NUM_BLOCKS) {
+        if (erase_block < flash_blockNum) {
             SectorErase(erase_block++);
         } else {
             printf("Dataflash: erase done (%u ms)\n", AP_HAL::millis() - erase_start_ms);

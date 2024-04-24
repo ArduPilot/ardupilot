@@ -39,6 +39,8 @@ private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
     AP_HAL::Semaphore *dev_sem;
 
+    uint32_t flash_blockNum;
+
     bool flash_died;
     uint32_t erase_start_ms;
     uint16_t erase_block;
