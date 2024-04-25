@@ -167,6 +167,25 @@ The correct battery setting parameters are:
  - BATT_CURR_PIN 11
  - BATT_VOLT_MULT 10.1
  - BATT_AMP_PERVLT varies depending on external current sensor
+ - 
+ ## Servo Output Mapping¶
+The PWM outputs are marked M1-M8 in the above pinouts. The corresponding servo outputs are:
+
+M1 -> Servo Output 4 
+
+M2 -> Servo Output 1
+
+M3 -> Servo Output 2
+
+M4 -> Servo Output 3
+
+M5 -> Servo Output 5
+
+M6 -> Servo Output 6
+
+M7 -> Servo Output 7
+
+M8 -> Servo Output 8
 
 ## Compass¶
 
