@@ -966,8 +966,6 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def tests(self):
         '''return list of all tests'''
-        ret = ([self.AutoRotation, self.ManAutoRotation,])
-        return ret
         ret = vehicle_test_suite.TestSuite.tests(self)
         ret.extend([
             self.AVCMission,
