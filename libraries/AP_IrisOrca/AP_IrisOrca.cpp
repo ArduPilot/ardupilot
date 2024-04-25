@@ -132,6 +132,13 @@ const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MAX_TRAVEL", 2, AP_IrisOrca, _max_travel_mm, 261),
 
+    // @Param: REVERSE_DIR
+    // @DisplayName: Reverse direction
+    // @Description: Reverse the direction of the actuator
+    // @Values: 0:Normal,1:Reverse
+    // @User: Standard
+    AP_GROUPINFO("REVERSE_DIR", 3, AP_IrisOrca, _reverse_direction, 0),
+
     AP_GROUPEND
 };
 
@@ -484,8 +491,11 @@ void AP_IrisOrca::send_actuator_position_cmd()
     // convert yaw output to actuator output in range 0 to _max_travel_mm * 1000
     _actuator_position_desired = constrain_uint32(
         (SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_steering) + 1) * _max_travel_mm * 0.5 * 1000, 
-        0,
-        _max_travel_mm * 1000);
+        0, _max_travel_mm * 1000);
+    // reverse direction if required
+    if (_reverse_direction) {
+        _actuator_position_desired = _max_travel_mm * 1000 - _actuator_position_desired;
+    }
 
     // send message
     if (write_motor_command_stream((uint8_t)orca::MotorCommandStreamSubCode::POSITION_CONTROL_STREAM, 
