@@ -1,0 +1,92 @@
+FRAME_CLASS 2
+
+SERVO1_MAX       2000
+SERVO1_MIN       1000
+SERVO1_TRIM      1500
+SERVO2_MAX       2000
+SERVO2_MIN       1000
+SERVO2_TRIM      1500
+SERVO3_MAX       2000
+SERVO3_MIN       1000
+SERVO3_TRIM      1500
+SERVO4_MAX       2000
+SERVO4_MIN       1000
+SERVO4_TRIM      1500
+
+LOIT_LAG         0.1
+
+# default PID params for position and velocity-controlled modes
+MAX_POS_X   2.0
+MAX_POS_Y   2.0
+MAX_POS_YAW 2.0
+MAX_POS_Z   2.0
+MAX_VEL_X   0.3
+MAX_VEL_Y   0.3
+MAX_VEL_YAW 0.3
+MAX_VEL_Z   0.3
+
+VELX_D          1.0
+VELX_FF         0.0
+VELX_I          1.5
+VELX_P          5.0
+
+VELY_D          1.0
+VELY_FF         0.0
+VELY_I          1.5
+VELY_P          5.0
+
+VELYAW_D         0.0
+VELYAW_FF        0.0
+VELYAW_I         0.8
+VELYAW_P         10.0
+
+VELZ_D           0.0
+VELZ_FF          0.0
+VELZ_I           1.0
+VELZ_P           15.0
+
+POSX_D          0.0
+POSX_FF         0.0
+POSX_I          0.05
+POSX_P          1.0
+
+POSY_D          0.0
+POSY_FF         0.0
+POSY_I          0.05
+POSY_P          1.0
+
+POSYAW_D         1.0
+POSYAW_FF        0.0
+POSYAW_I         0.1
+POSYAW_P         3.0
+
+POSZ_D           0.0
+POSZ_FF          0.0
+POSZ_I           0.0
+POSZ_P           0.7
+
+POSX_FLTD        0.0
+POSX_FLTE        0.0
+POSX_FLTT        0.0
+POSYAW_FLTD      0.0
+POSYAW_FLTE      0.0
+POSYAW_FLTT      0.0
+POSY_FLTD        0.0
+POSY_FLTE        0.0
+POSY_FLTT        0.0
+POSZ_FLTD        0.0
+POSZ_FLTE        0.0
+POSZ_FLTT        0.0
+VELX_FLTD        0.0
+VELX_FLTE        0.0
+VELX_FLTT        0.0
+VELYAW_FLTD      0.0
+VELYAW_FLTE      0.0
+VELYAW_FLTT      0.0
+VELY_FLTD        0.0
+VELY_FLTE        0.0
+VELY_FLTT        0.0
+VELZ_FLTD        0.0
+VELZ_FLTE        0.0
+VELZ_FLTT        0.0
+
