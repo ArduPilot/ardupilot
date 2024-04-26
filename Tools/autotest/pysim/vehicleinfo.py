@@ -368,6 +368,10 @@ class VehicleInfo(object):
                 "extra_mavlink_cmds": "module load sitl_calibration;",
                 "external": True,  # lies!  OTOH, hard to take off with this
             },
+            "stratoblimp": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/stratoblimp.parm",
+            },
         },
     },
     "Rover": {
