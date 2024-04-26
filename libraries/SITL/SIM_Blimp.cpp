@@ -31,14 +31,21 @@ Blimp::Blimp(const char *frame_str) :
     mass = 0.07;
     radius = 0.25;
     moment_of_inertia = {0.004375, 0.004375, 0.004375}; //m*r^2 for hoop...
-    cog = {0, 0, 0.1}; //10 cm down from center (i.e. center of buoyancy), for now
+    cog = {0, 0, 0.1}; //10 cm down from center (i.e. center of buoyancy) for now
     k_tan = 0.6e-7; //Tangential (thrust) and normal force multipliers
     k_nor = 0;//3.4e-7;
+    k_m = 5e-3;
+    gondolawidth = 0.1; //10cm
     drag_constant = 0.05;
     drag_gyr_constant = 0.15;
 
     lock_step_scheduled = true;
     ::printf("Starting Blimp model\n");
+
+    if (strstr(frame_str, "motor")) {
+      motorblimp = true;
+      ::printf("Running motorblimp frame.\n");
+    }
 }
 
 // calculate rotational and linear accelerations
@@ -50,6 +57,7 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
       return;
   }
 
+  if (!motorblimp) { //Finned blimp
   //all fin setup
   for (uint8_t i=0; i<4; i++) {
     fin[i].last_angle = fin[i].angle;
@@ -181,6 +189,70 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
   rot_accel.x = rot_T.x / moment_of_inertia.x;
   rot_accel.y = rot_T.y / moment_of_inertia.y;
   rot_accel.z = rot_T.z / moment_of_inertia.z;
+  
+  } else { //MotorBlimp
+for (uint8_t i=0; i<4; i++) {
+    if (input.servos[i] == 0) {
+        mot[i].throttle = 0;
+    } else {
+      //for servo range of -75 deg to +75 deg
+      mot[i].throttle = filtered_servo_angle(input, i);
+    }
+    mot[i].thrust = mot[i].throttle * k_m;
+
+    mot[i].Fx = 0;
+    mot[i].Fy = 0;
+    mot[i].Fz = 0;
+  }
+
+  //FrontLeft motor
+  mot[0].Fx = mot[0].thrust;
+  //FrontRight motor
+  mot[1].Fx = mot[1].thrust;
+  //Up motor
+  mot[2].Fz = -mot[2].thrust;
+  //Right motor
+  mot[3].Fy = mot[3].thrust;
+ 
+  Vector3f F_BF{0,0,0};
+  for (uint8_t i=0; i<4; i++) {
+    F_BF.x = F_BF.x + mot[i].Fx;
+    F_BF.y = F_BF.y + mot[i].Fy;
+    F_BF.z = F_BF.z + mot[i].Fz;
+  }
+  body_acc.x = F_BF.x/mass; //mass in kg, thus accel in m/s/s
+  body_acc.y = F_BF.y/mass;
+  body_acc.z = F_BF.z/mass;
+
+  Vector3f rot_T{0,0,0};
+  rot_T.z = mot[0].thrust * gondolawidth - mot[1].thrust * gondolawidth; //in N*m (Torque = force * lever arm)
+  //rot accel = torque / moment of inertia
+  //Torque = moment force.
+  rot_accel.x = rot_T.x / moment_of_inertia.x;
+  rot_accel.y = rot_T.y / moment_of_inertia.y;
+  rot_accel.z = rot_T.z / moment_of_inertia.z;
+
+  AP::logger().WriteStreaming("SFTH", "TimeUS,f0,f1,f2,f3",
+                              "Qffff",
+                              AP_HAL::micros64(),
+                              mot[0].thrust, mot[1].thrust, mot[2].thrust, mot[3].thrust);
+  AP::logger().WriteStreaming("SFTR", "TimeUS,n0,n1,n2,n3",
+                              "Qffff",
+                              AP_HAL::micros64(),
+                              mot[0].throttle, mot[1].throttle, mot[2].throttle, mot[3].throttle);
+  AP::logger().WriteStreaming("SBA", "TimeUS,ax,ay,az",
+                              "Qfff",
+                              AP_HAL::micros64(),
+                              body_acc.x, body_acc.y, body_acc.z);
+  AP::logger().WriteStreaming("SSAN", "TimeUS,f0,f1,f2,f3",
+                              "QHHHH",
+                              AP_HAL::micros64(),
+                              input.servos[0], input.servos[1], input.servos[2], input.servos[3]);
+  AP::logger().WriteStreaming("SRT1", "TimeUS,rtx,rty,rtz",
+                              "Qfff",
+                              AP_HAL::micros64(),
+                              rot_T.x, rot_T.y, rot_T.z);
+  }
 }
 
 /*
