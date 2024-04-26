@@ -18,7 +18,11 @@ import base64
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
-    tmp_str = bldnode.find_node('include_dirs').read()
+    include_dirs_node = bldnode.find_node('include_dirs')
+    if include_dirs_node is None:
+        _dynamic_env_data['include_dirs'] = []
+        return
+    tmp_str = include_dirs_node.read()
     tmp_str = tmp_str.replace(';\n','')
     tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
     # split, coping with separator
