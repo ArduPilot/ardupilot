@@ -37,6 +37,8 @@
   #endif
 #endif // SFML_JOYSTICK
 
+#include "SIM_StratoBlimp.h"
+
 extern const AP_HAL::HAL& hal;
 
 #ifndef SIM_RATE_HZ_DEFAULT
@@ -175,9 +177,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
-#if AP_SIM_SHIP_ENABLED
-    AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
-#endif
+    AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
 #if HAL_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
@@ -537,7 +537,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Range: 10 100
     AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
 #endif
-    
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
@@ -1185,6 +1185,23 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPEND
 };
 
+// user settable parameters for the physics models
+const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
+
+#if AP_SIM_SHIP_ENABLED
+    // @Group: SHIP_
+    // @Path: ./SIM_Ship.cpp
+    AP_SUBGROUPINFO(shipsim, "SHIP_", 1, SIM::ModelParm, ShipSim),
+#endif
+#if AP_SIM_STRATOBLIMP_ENABLED
+    // @Group: SB_
+    // @Path: ./SIM_StratoBlimp.cpp
+    AP_SUBGROUPPTR(stratoblimp_ptr, "SB_",  2, SIM::ModelParm, StratoBlimp),
+#endif
+    
+    AP_GROUPEND
+};
+    
 const Location post_origin {
     518752066,
     146487830,

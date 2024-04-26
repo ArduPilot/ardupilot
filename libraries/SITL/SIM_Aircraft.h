@@ -128,6 +128,9 @@ public:
     // get position relative to home
     Vector3d get_position_relhome() const;
 
+    // get air density in kg/m^3
+    float get_air_density(float alt_amsl) const;
+
     // distance the rangefinder is perceiving
     float rangefinder_range() const;
 

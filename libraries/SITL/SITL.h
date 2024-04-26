@@ -11,6 +11,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
@@ -46,7 +47,8 @@ struct float_array {
     uint16_t length;
     float *data;
 };
-    
+
+class StratoBlimp;
 
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
@@ -294,6 +296,19 @@ public:
         AP_Int8  signflip;
     };
     AirspeedParm airspeed[AIRSPEED_MAX_SENSORS];
+
+    // physics model parameters
+    class ModelParm {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+#if AP_SIM_STRATOBLIMP_ENABLED
+        StratoBlimp *stratoblimp_ptr;
+#endif
+#if AP_SIM_SHIP_ENABLED
+        ShipSim shipsim;
+#endif
+    };
+    ModelParm models;
     
     // EFI type
     enum EFIType {
@@ -442,11 +457,6 @@ public:
     }
 
     Sprayer sprayer_sim;
-
-    // simulated ship takeoffs
-#if AP_SIM_SHIP_ENABLED
-    ShipSim shipsim;
-#endif
 
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;

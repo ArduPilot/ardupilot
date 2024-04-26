@@ -628,6 +628,12 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     gyro.y = constrain_float(gyro.y, -radians(2000.0f), radians(2000.0f));
     gyro.z = constrain_float(gyro.z, -radians(2000.0f), radians(2000.0f));
 
+    // limit body accel to 64G
+    const float accel_limit = 64*GRAVITY_MSS;
+    accel_body.x = constrain_float(accel_body.x, -accel_limit, accel_limit);
+    accel_body.y = constrain_float(accel_body.y, -accel_limit, accel_limit);
+    accel_body.z = constrain_float(accel_body.z, -accel_limit, accel_limit);
+
     // update attitude
     dcm.rotate(gyro * delta_time);
     dcm.normalize();
@@ -675,7 +681,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
         // get speed of ground movement (for ship takeoff/landing)
         float yaw_rate = 0;
 #if AP_SIM_SHIP_ENABLED
-        const Vector2f ship_movement = sitl->shipsim.get_ground_speed_adjustment(location, yaw_rate);
+        const Vector2f ship_movement = sitl->models.shipsim.get_ground_speed_adjustment(location, yaw_rate);
         const Vector3f gnd_movement(ship_movement.x, ship_movement.y, 0);
 #else
         const Vector3f gnd_movement;
@@ -1024,7 +1030,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
 #if AP_SIM_SHIP_ENABLED
-    sitl->shipsim.update();
+    sitl->models.shipsim.update();
 #endif
 
     // update IntelligentEnergy 2.4kW generator
@@ -1166,4 +1172,15 @@ Vector3d Aircraft::get_position_relhome() const
     Vector3d pos = position;
     pos.xy() += home.get_distance_NE_double(origin);
     return pos;
+}
+
+// get air density in kg/m^3
+float Aircraft::get_air_density(float alt_amsl) const
+{
+    float sigma, delta, theta;
+
+    AP_Baro::SimpleAtmosphere(alt_amsl * 0.001f, sigma, delta, theta);
+
+    const float air_pressure = SSL_AIR_PRESSURE * delta;
+    return air_pressure / (ISA_GAS_CONSTANT * SSL_AIR_TEMPERATURE);
 }
