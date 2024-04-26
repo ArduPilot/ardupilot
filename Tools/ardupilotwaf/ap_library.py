@@ -206,6 +206,8 @@ class ap_library_check_headers(Task.Task):
 
         # force dependency scan, if necessary
         self.compiled_task.signature()
+        if not self.compiled_task.uid() in self.generator.bld.node_deps:
+            return r, []
         for n in self.generator.bld.node_deps[self.compiled_task.uid()]:
             # using common Node methods doesn't work here
             p = n.abspath()
