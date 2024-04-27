@@ -1216,7 +1216,7 @@ void AP_IOMCU_FW::rcout_config_update(void)
  */
 void AP_IOMCU_FW::fill_failsafe_pwm(void)
 {
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
         if (reg_status.flag_safety_off) {
             reg_direct_pwm.pwm[i] = reg_failsafe_pwm.pwm[i];
         } else {
