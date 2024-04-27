@@ -477,20 +477,21 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
         ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
+        const char *ekf_variance = "EKF %s variance";
         if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF compass variance");
+            check_failed(display_failure, ekf_variance, "compass");
             return false;
         }
         if (pos_variance >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF position variance");
+            check_failed(display_failure, ekf_variance, "position");
             return false;
         }
         if (vel_variance >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF velocity variance");
+            check_failed(display_failure, ekf_variance, "velocity");
             return false;
         }
         if (hgt_variance >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF height variance");
+            check_failed(display_failure, ekf_variance, "height");
             return false;
         }
     }
@@ -607,14 +608,15 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
         if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS || copter.flightmode->mode_number() == Mode::Number::AUTO))) {
             // above top of deadband is too always high
+            const char *high_msg = "%s too high";
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
-                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
+                check_failed(ARMING_CHECK_RC, true, high_msg, rc_item);
                 return false;
             }
             // in manual modes throttle must be at zero
             #if FRAME_CONFIG != HELI_FRAME
             if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
-                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
+                check_failed(ARMING_CHECK_RC, true, high_msg, rc_item);
                 return false;
             }
             #endif
