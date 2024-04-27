@@ -130,7 +130,7 @@ void AP_IOMCU_FW::run_mixer(void)
     // get RC input angles
     if (rc_input.flags_rc_ok) {
         for (uint8_t i=0;i<4; i++) {
-            if (mixing.rc_channel[i] > 0 && mixing.rc_channel[i] <= IOMCU_MAX_CHANNELS) {
+            if (mixing.rc_channel[i] > 0 && mixing.rc_channel[i] <= IOMCU_MAX_RC_CHANNELS) {
                 uint8_t chan = mixing.rc_channel[i]-1;
                 if (i == 2 && !mixing.throttle_is_angle) {
                     rcin[i] = mix_input_range(i, rc_input.pwm[chan]);
@@ -141,7 +141,7 @@ void AP_IOMCU_FW::run_mixer(void)
         }
     }
 
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
         SRV_Channel::Aux_servo_function_t function = (SRV_Channel::Aux_servo_function_t)mixing.servo_function[i];
         uint16_t &pwm = reg_direct_pwm.pwm[i];
 
