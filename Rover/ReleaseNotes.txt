@@ -1,5 +1,40 @@
 Rover Release Notes:
 --------------------
+Release 4.5.2-beta1 29th April 2024
+
+Changes from 4.5.1
+
+1) Board specific enhancements and bug fixes
+
+- FoxeerF405v2 support
+- iFlight BLITZ Mini F745 support
+- Pixhawk5X, Pixhawk6C, Pixhawk6X, Durandal power peripherals immediately at startup
+
+2) System level minor enhancements and bug fixes
+
+- Camera lens (e.g. RGB, IR) can be selected from GCS or during missions using set-camera-source
+- Crashdump pre-arm check added
+- Gimbal gets improved yaw lock reporting to GCS
+- Gimbal default mode fixed (MNTx_DEFLT_MODE was being overriden by RC input)
+- RM3100 compass SPI bus speed reduced to 1Mhz
+- SBUS output fix for channels 1 to 8 also applying to 9 to 16
+- ViewPro gimbal supports enable/disable rangefinder from RC aux switch
+- Visual Odometry delay fixed (was always using 1ms delay, see VISO_DELAY_MS)
+
+3) AHRS / EKF fixes
+
+- Compass learning disabled when using GPS-for-yaw
+- GSF reset minimum speed reduced to 1m/s (except Plane which remains 5m/s)
+- MicroStrain7 External AHRS position quantization bug fix
+- MicroStrain7 init failure warning added
+- MicroStrain5 and 7 position and velocity variance reporting fix
+
+4) Other minor enhancements and bug fixes
+
+- DDS_UDP_PORT parameter renamed (was DDS_PORT)
+- Harmonic Notch bitmask parameter conversion fix (see INS_HNTCH_HMNCS)
+
+------------------------------------------------------------------
 Release 4.5.1 8th April 2024
 
 This release fixes a critical bug in the CRSF R/C protocol parser that
