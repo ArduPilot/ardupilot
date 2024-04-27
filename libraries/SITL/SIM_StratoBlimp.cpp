@@ -60,7 +60,7 @@ const AP_Param::GroupInfo StratoBlimp::var_info[] = {
     // @Description: drag on X axis
     AP_GROUPINFO("DRAG_FWD", 5, StratoBlimp,  drag_fwd, 0.27),
 
-    // @Param: DRAG_FWD
+    // @Param: DRAG_UP
     // @DisplayName: drag in upward direction
     // @Description: drag on Z axis
     AP_GROUPINFO("DRAG_UP",  6, StratoBlimp,  drag_up, 0.1),
