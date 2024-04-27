@@ -646,7 +646,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
 {
-    float vspd = get_vspeed_ms();
+    float vspd = AP_RCTelemetry::get_vspeed_ms();
     // vertical velocity in dm/s
     uint32_t velandyaw = prep_number(roundf(vspd * 10), 2, 1);
     float airspeed_m;       // m/s

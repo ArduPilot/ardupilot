@@ -5,6 +5,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_RCTelemetry/AP_RCTelemetry.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,46 +46,14 @@ void AP_Frsky_Backend::loop(void)
 }
 
 /*
- * get vertical speed from ahrs, if not available fall back to baro climbrate, units is m/s
- * for FrSky D and SPort protocols
- */
-float AP_Frsky_Backend::get_vspeed_ms(void)
-{
-
-    {
-        // release semaphore as soon as possible
-        AP_AHRS &_ahrs = AP::ahrs();
-        Vector3f v;
-        WITH_SEMAPHORE(_ahrs.get_semaphore());
-        if (_ahrs.get_velocity_NED(v)) {
-            return -v.z;
-        }
-    }
-
-    auto &_baro = AP::baro();
-    WITH_SEMAPHORE(_baro.get_semaphore());
-    return _baro.get_climb_rate();
-}
-
-/*
  * prepare altitude between vehicle and home location data
  * for FrSky D and SPort protocols
  */
 void AP_Frsky_Backend::calc_nav_alt(void)
 {
-    _SPort_data.vario_vspd = (int32_t)(get_vspeed_ms()*100); //convert to cm/s
+    _SPort_data.vario_vspd = (int32_t)(AP_RCTelemetry::get_vspeed_ms()*100); //convert to cm/s
 
-    Location loc;
-    float current_height = 0;
-
-    AP_AHRS &_ahrs = AP::ahrs();
-    WITH_SEMAPHORE(_ahrs.get_semaphore());
-    if (_ahrs.get_location(loc)) {
-        if (!loc.get_alt_m(Location::AltFrame::ABSOLUTE, current_height)) {
-            // ignore this error
-        }
-    }
-
+    float current_height = AP_RCTelemetry::get_nav_alt_m();
     _SPort_data.alt_nav_meters = float_to_uint16(current_height);
     _SPort_data.alt_nav_cm = float_to_uint16((current_height - _SPort_data.alt_nav_meters) * 100);
 }
