@@ -323,6 +323,10 @@ class VehicleInfo(object):
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [], # defaults are loaded in SIM_Plane.cpp
             },
+            "glider": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": "default_params/glider.parm",
+            },
             "quadplane-copter_tailsitter": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["default_params/quadplane.parm","default_params/quadplane-copter_tailsitter.parm"],
