@@ -29,7 +29,7 @@ using namespace SITL;
 
 extern const AP_HAL::HAL& hal;
 
-// SITL Ship parameters
+// SITL StratoBlimp parameters
 const AP_Param::GroupInfo StratoBlimp::var_info[] = {
     // @Param: MASS
     // @DisplayName: mass
