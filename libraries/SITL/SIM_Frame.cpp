@@ -323,12 +323,7 @@ static Frame supported_frames[] =
 // get air density in kg/m^3
 float Frame::get_air_density(float alt_amsl) const
 {
-    float sigma, delta, theta;
-
-    AP_Baro::SimpleAtmosphere(alt_amsl * 0.001f, sigma, delta, theta);
-
-    const float air_pressure = SSL_AIR_PRESSURE * delta;
-    return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN(model.refTempC)));
+    return AP_Baro::get_air_density_for_alt_amsl(alt_amsl);
 }
 
 /*
