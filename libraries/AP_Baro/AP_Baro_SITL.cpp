@@ -118,12 +118,9 @@ void AP_Baro_SITL::_timer()
     }
 
 #if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    float sigma, delta, theta;
-
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
-
+    float p, T_K;
+    AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T_K);
+    float T = KELVIN_TO_C(T_K);
     temperature_adjustment(p, T);
 #else
     float rho, delta, theta;
@@ -143,7 +140,7 @@ void AP_Baro_SITL::_timer()
 // unhealthy if baro is turned off or beyond supported instances
 bool AP_Baro_SITL::healthy(uint8_t instance) 
 {
-    return !_sitl->baro[instance].disable;
+    return _last_sample_time != 0 && !_sitl->baro[instance].disable;
 }
 
 // Read the sensor
@@ -189,7 +186,7 @@ float AP_Baro_SITL::wind_pressure_correction(uint8_t instance)
         error += bp.wcof_zn * sqz;
     }
 
-    return error * 0.5 * SSL_AIR_DENSITY * AP::baro().get_air_density_ratio();
+    return error * 0.5 * SSL_AIR_DENSITY * AP::baro()._get_air_density_ratio();
 }
 
 #endif  // AP_SIM_BARO_ENABLED
