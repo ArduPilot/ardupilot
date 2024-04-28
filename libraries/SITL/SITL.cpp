@@ -38,6 +38,7 @@
 #endif // SFML_JOYSTICK
 
 #include "SIM_StratoBlimp.h"
+#include "SIM_Glider.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -86,7 +87,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
-    AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+
+    // @Group: SERVO_
+    // @Path: ./ServoModel.cpp
+    AP_SUBGROUPINFO(servo, "SERVO_", 16, SIM, ServoParams),
+
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery voltage
@@ -1203,7 +1208,13 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     // @Path: ./SIM_StratoBlimp.cpp
     AP_SUBGROUPPTR(stratoblimp_ptr, "SB_",  2, SIM::ModelParm, StratoBlimp),
 #endif
-    
+
+#if AP_SIM_GLIDER_ENABLED
+    // @Group: GLD_
+    // @Path: ./SIM_Glider.cpp
+    AP_SUBGROUPPTR(glider_ptr, "GLD_",  3, SIM::ModelParm, Glider),
+#endif
+
     AP_GROUPEND
 };
     

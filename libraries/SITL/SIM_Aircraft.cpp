@@ -37,6 +37,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_JSON/AP_JSON.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 using namespace SITL;
 
@@ -176,16 +177,18 @@ void Aircraft::update_position(void)
                                            pos_home.x, pos_home.y, pos_home.z);
 #endif
 
-    uint32_t now = AP_HAL::millis();
-    if (now - last_one_hz_ms >= 1000) {
-        // shift origin of position at 1Hz to current location
-        // this prevents sperical errors building up in the GPS data
-        last_one_hz_ms = now;
-        Vector2d diffNE = origin.get_distance_NE_double(location);
-        position.xy() -= diffNE;
-        smoothing.position.xy() -= diffNE;
-        origin.lat = location.lat;
-        origin.lng = location.lng;
+    if (!disable_origin_movement) {
+        uint32_t now = AP_HAL::millis();
+        if (now - last_one_hz_ms >= 1000) {
+            // shift origin of position at 1Hz to current location
+            // this prevents sperical errors building up in the GPS data
+            last_one_hz_ms = now;
+            Vector2d diffNE = origin.get_distance_NE_double(location);
+            position.xy() -= diffNE;
+            smoothing.position.xy() -= diffNE;
+            origin.lat = location.lat;
+            origin.lng = location.lng;
+        }
     }
 }
 
@@ -619,6 +622,12 @@ void Aircraft::update_model(const struct sitl_input &input)
  */
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
+    // update eas2tas and air density
+#if AP_AHRS_ENABLED
+    eas2tas = AP::ahrs().get_EAS2TAS();
+#endif
+    air_density = SSL_AIR_DENSITY / sq(eas2tas);
+
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // update rotational rates in body frame
@@ -906,30 +915,9 @@ void Aircraft::smooth_sensors(void)
   return a filtered servo input as a value from -1 to 1
   servo is assumed to be 1000 to 2000, trim at 1500
  */
-float Aircraft::filtered_idx(float v, uint8_t idx)
-{
-    if (sitl->servo_speed <= 0) {
-        return v;
-    }
-    const float cutoff = 1.0f / (2 * M_PI * sitl->servo_speed);
-    servo_filter[idx].set_cutoff_frequency(cutoff);
-
-    if (idx >= ARRAY_SIZE(servo_filter)) {
-        AP_HAL::panic("Attempt to filter invalid servo at offset %u", (unsigned)idx);
-    }
-
-    return servo_filter[idx].apply(v, frame_time_us * 1.0e-6f);
-}
-
-
-/*
-  return a filtered servo input as a value from -1 to 1
-  servo is assumed to be 1000 to 2000, trim at 1500
- */
 float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx)
 {
-    const float v = (input.servos[idx] - 1500)/500.0f;
-    return filtered_idx(v, idx);
+    return servo_filter[idx].filter_angle(input.servos[idx], frame_time_us * 1.0e-6);
 }
 
 /*
@@ -938,8 +926,14 @@ float Aircraft::filtered_servo_angle(const struct sitl_input &input, uint8_t idx
  */
 float Aircraft::filtered_servo_range(const struct sitl_input &input, uint8_t idx)
 {
-    const float v = (input.servos[idx] - 1000)/1000.0f;
-    return filtered_idx(v, idx);
+    return servo_filter[idx].filter_range(input.servos[idx], frame_time_us * 1.0e-6);
+}
+
+// setup filtering for servo
+void Aircraft::filtered_servo_setup(uint8_t idx, uint16_t pwm_min, uint16_t pwm_max, float deflection_deg)
+{
+    servo_filter[idx].set_pwm_range(pwm_min, pwm_max);
+    servo_filter[idx].set_deflection(deflection_deg);
 }
 
 // extrapolate sensors by a given delta time in seconds
