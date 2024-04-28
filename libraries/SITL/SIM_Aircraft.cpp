@@ -630,6 +630,10 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     const float delta_time = frame_time_us * 1.0e-6f;
 
+    // update eas2tas and air density
+    eas2tas = AP_Baro::get_EAS2TAS_for_alt_amsl(location.alt*0.01);
+    air_density = AP_Baro::get_air_density_for_alt_amsl(location.alt*0.01);
+
     // update rotational rates in body frame
     gyro += rot_accel * delta_time;
 
@@ -674,10 +678,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
     // airspeed
-    airspeed = velocity_air_ef.length();
-
-    // airspeed as seen by a fwd pitot tube (limited to 120m/s)
-    airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
+    update_eas_airspeed();
 
     // constrain height to the ground
     if (on_ground()) {
@@ -1171,10 +1172,33 @@ Vector3d Aircraft::get_position_relhome() const
 // get air density in kg/m^3
 float Aircraft::get_air_density(float alt_amsl) const
 {
-    float sigma, delta, theta;
+    return AP_Baro::get_air_density_for_alt_amsl(alt_amsl);
+}
 
-    AP_Baro::SimpleAtmosphere(alt_amsl * 0.001f, sigma, delta, theta);
+/*
+  update EAS airspeed and pitot speed
+ */
+void Aircraft::update_eas_airspeed()
+{
+    airspeed = velocity_air_ef.length() / eas2tas;
 
-    const float air_pressure = SSL_AIR_PRESSURE * delta;
-    return air_pressure / (ISA_GAS_CONSTANT * SSL_AIR_TEMPERATURE);
+    /*
+      airspeed as seen by a fwd pitot tube (limited to 120m/s)
+    */
+    airspeed_pitot = airspeed;
+
+    // calculate angle between the local flow vector and a pitot tube aligned with the X body axis
+    const float pitot_aoa =  atan2f(sqrtf(sq(velocity_air_bf.y) + sq(velocity_air_bf.z)), velocity_air_bf.x);
+
+    /*
+      assume the pitot can correctly capture airspeed up to 20 degrees off the nose
+      and follows a cose law outside that range
+    */
+    const float max_pitot_aoa = radians(20);
+    if (pitot_aoa > radians(90)) {
+        airspeed_pitot = 0;
+    } else if (pitot_aoa > max_pitot_aoa) {
+        const float gain_factor = M_PI_2 / (radians(90) - max_pitot_aoa);
+        airspeed_pitot *= cosf((pitot_aoa - max_pitot_aoa) * gain_factor);
+    }
 }
