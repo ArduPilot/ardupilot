@@ -46,13 +46,11 @@ template <class T>
 void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB)
 {
     // check center frequency is in the allowable range
+    initialised = false;
     if ((center_freq_hz > 0.5 * bandwidth_hz) && (center_freq_hz < 0.5 * sample_freq_hz)) {
         float A, Q;
-        initialised = false;    // force center frequency change
         calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, A, Q);
         init_with_A_and_Q(sample_freq_hz, center_freq_hz, A, Q);
-    } else {
-        initialised = false;
     }
 }
 
