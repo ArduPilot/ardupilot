@@ -378,9 +378,16 @@ void ModeAuto::wiggle_servos()
         wiggle.stage = 0;
         servo_value = 0;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS ; i++) {
+        const SRV_Channel *chan = SRV_Channels::srv_channel(i);
+        if (chan == nullptr) {
+            continue;
+        }
+        const SRV_Channel::Aux_servo_function_t func = chan->get_function();
+        if (SRV_Channel::is_control_surface(func)) {
+            SRV_Channels::set_output_scaled(func, servo_value);
+        }
+    }
 
 }
 
