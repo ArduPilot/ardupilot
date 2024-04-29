@@ -548,6 +548,11 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 // user settable parameters for the barometers
 const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("RND",      1, SIM::BaroParm,  noise, 0.2f),
+    // @Param: BARO_DRIFT
+    // @DisplayName: Baro altitude drift
+    // @Description: Barometer altitude drifts at this rate
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("DRIFT",    2, SIM::BaroParm,  drift, 0),
     AP_GROUPINFO("DISABLE",  3, SIM::BaroParm,  disable, 0),
     AP_GROUPINFO("GLITCH",   4, SIM::BaroParm,  glitch, 0),
