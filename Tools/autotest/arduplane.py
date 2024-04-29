@@ -3013,7 +3013,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if m.relative_alt/1000.0 > max_alt:
                 max_alt = m.relative_alt/1000.0
 
-        self.install_message_hook(record_maxalt)
+        self.install_message_hook_context(record_maxalt)
 
         self.fly_mission_waypoints(num_wp-1, mission_timeout=600)
 
