@@ -2331,7 +2331,6 @@ class TestSuite(ABC):
             "SIM_BARO_COUNT",
             "SIM_BARO_DELAY",
             "SIM_BARO_DISABLE",
-            "SIM_BARO_DRIFT",
             "SIM_BARO_FREEZE",
             "SIM_BARO_WCF_BAK",
             "SIM_BARO_WCF_DN",
