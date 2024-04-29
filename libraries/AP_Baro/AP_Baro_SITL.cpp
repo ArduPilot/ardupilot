@@ -66,7 +66,11 @@ void AP_Baro_SITL::_timer()
         return;
     }
 
-    sim_alt += _sitl->baro[_instance].drift * now * 0.001f;
+    const auto drift_delta_t_ms = now - last_drift_delta_t_ms;
+    last_drift_delta_t_ms = now;
+    total_alt_drift += _sitl->baro[_instance].drift * drift_delta_t_ms * 0.001f;
+
+    sim_alt += total_alt_drift;
     sim_alt += _sitl->baro[_instance].noise * rand_float();
 
     // add baro glitch
