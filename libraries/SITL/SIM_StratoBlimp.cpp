@@ -217,25 +217,15 @@ float StratoBlimp::get_lift(float altitude)
     // start with neutral buoyancy
     float lift_accel = GRAVITY_MSS;
 
-    // add helper balloons if they're still attached
+    // add helper balloon if it's still attached
     if (helper_balloon_attached) {
+        // the helper balloon adds an amount of lift based on free lift ratio
         lift_accel += GRAVITY_MSS*free_lift_ratio;
+        // detach helper balloon if the target altitude has been reached
         if (altitude >= altitude_target) {
             helper_balloon_attached = false;
-            printf("detached");
         }
     }
-    /* old code
-
-    // assume lift will equal drag at the given climb rate
-    float climb_accel = 0.5 * air_density * sq(target_climb_rate) * drag_up;
-
-    // ramp down lift as we approach target alt
-    lift_accel += linear_interpolate(climb_accel, 0,
-                                     altitude,
-                                     altitude_target-1000, altitude_target);
-                                     */
-
     return mass * lift_accel;
 }
 
