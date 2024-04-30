@@ -20,6 +20,7 @@ Changes from 4.5.1
 - SBUS output fix for channels 1 to 8 also applying to 9 to 16
 - ViewPro gimbal supports enable/disable rangefinder from RC aux switch
 - Visual Odometry delay fixed (was always using 1ms delay, see VISO_DELAY_MS)
+- fixed serial passthrough to avoid data loss at high data rates
 
 3) AHRS / EKF fixes
 
