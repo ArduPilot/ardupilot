@@ -61,15 +61,17 @@ private:
     float EAS2TAS;
     float drag_yaw;
     bool released;
+    bool helper_balloon_attached = true;
 
     AP_Float mass;
     AP_Float helium_mass;
     AP_Float arm_length;
     AP_Float motor_thrust;
     AP_Float drag_fwd;
+    AP_Float drag_side;
     AP_Float drag_up;
     AP_Float altitude_target;
-    AP_Float climb_rate;
+    AP_Float target_climb_rate;
     AP_Float turn_rate;
     AP_Float motor_angle;
     AP_Float yaw_rate_max;
@@ -78,6 +80,7 @@ private:
     AP_Float moi_pitch;
     AP_Float center_of_lift;
     AP_Float center_of_drag;
+    AP_Float free_lift_rate;
 };
 
 }
