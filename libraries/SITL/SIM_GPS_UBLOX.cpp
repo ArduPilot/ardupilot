@@ -216,7 +216,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
-    velned.speed_accuracy = 40;
+    velned.speed_accuracy = _sitl->gps_vel_err[instance].get().xy().length() * 100;  // m/s -> cm/s
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
@@ -260,7 +260,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.velD = 1000.0f * d->speedD;
     pvt.gspeed = norm(d->speedN, d->speedE) * 1000;
     pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5;
-    pvt.s_acc = 40;
+    pvt.s_acc = velned.speed_accuracy;
     pvt.head_acc = 38 * 1.0e5;
     pvt.p_dop = 65535;
     memset(pvt.reserved1, '\0', ARRAY_SIZE(pvt.reserved1));
