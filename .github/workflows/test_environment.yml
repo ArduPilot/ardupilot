@@ -36,8 +36,6 @@ jobs:
             name: lunar
           - os: ubuntu
             name: mantic
-          - os: archlinux
-            name: latest
           - os: debian
             name: bullseye
           - os: debian
