@@ -85,6 +85,33 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
     return false;
 }
 
+bool AP_DDS_External_Control::handle_angular_control(custom_msgs_msg_AngularVelandAccn& cmd_angular_goals)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    // commands in body frame
+    Quaternion orientation;
+    orientation[0] = cmd_angular_goals.orientation.x;
+    orientation[1] = cmd_angular_goals.orientation.y;
+    orientation[2] = cmd_angular_goals.orientation.z;
+    orientation[3] = cmd_angular_goals.orientation.w;
+
+    Vector3f angular_velocity;
+    angular_velocity[0] = cmd_angular_goals.angular_rate.x;
+    angular_velocity[1] = cmd_angular_goals.angular_rate.y;
+    angular_velocity[2] = cmd_angular_goals.angular_rate.z;
+
+    Vector3f angular_acceleration;
+    angular_acceleration[0] = cmd_angular_goals.angular_acceleration.x;
+    angular_acceleration[1] = cmd_angular_goals.angular_acceleration.y;
+    angular_acceleration[2] = cmd_angular_goals.angular_acceleration.z;
+    float Thrust = cmd_angular_goals.thrust;
+    return external_control->set_angular_goals(orientation, angular_velocity, angular_acceleration, Thrust);
+}
+
 bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out)
 {
 

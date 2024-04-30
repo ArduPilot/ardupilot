@@ -161,7 +161,8 @@ public:
 
     // Command a Quaternion attitude with feedforward and smoothing
     // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
-    virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target);
+    // Angular acceleration target will be ignored, only for use with custom controllers
+    virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target, Vector3f ang_acceleration_target);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
@@ -490,6 +491,10 @@ protected:
     // attitude controller by the System Identification Mode.
     // It is reset to zero immediately after it is used.
     Vector3f            _sysid_ang_vel_body;
+
+    // This is the angular acceleration in radians per second^2 in the body frame. This is not used in 
+    // main attitude controller but can be used in custom attitude controllers.
+    Vector3f            _ang_acceleration_target;
 
     // This is the unitless value added to the output of the PID by the System Identification Mode.
     // It is reset to zero immediately after it is used.

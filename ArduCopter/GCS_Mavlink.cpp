@@ -1263,7 +1263,8 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
             ang_vel.z = packet.body_yaw_rate;
         }
 
-        copter.mode_guided.set_angle(attitude_quat, ang_vel,
+        Vector3f angular_acceleration{0.0, 0.0, 0.0}; // only for use with custom controllers, hence 0 by default
+        copter.mode_guided.set_angle(attitude_quat, ang_vel, angular_acceleration,
                 climb_rate_or_thrust, use_thrust);
 }
 

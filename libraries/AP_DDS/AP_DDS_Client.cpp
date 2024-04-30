@@ -15,6 +15,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
+#include "ardupilot_msgs/msg/AngularVelandAccn.h"
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
 
@@ -46,6 +47,7 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
+custom_msgs_msg_AngularVelandAccn AP_DDS_Client::rx_angular_control_topic {};
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 
 
@@ -564,6 +566,21 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+
+    case topics[to_underlying(TopicIndex::ANGULAR_CONTROL_SUB)].dr_id.id: {
+        const bool success = custom_msgs_msg_AngularVelandAccn_deserialize_topic(ub, &rx_angular_control_topic);
+        if (success == false) {
+            break;
+        }
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::handle_angular_control(rx_angular_control_topic)) {
+            // TODO #23430 handle velocity control failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
+        break;
+    }
+
     case topics[to_underlying(TopicIndex::GLOBAL_POSITION_SUB)].dr_id.id: {
         const bool success = ardupilot_msgs_msg_GlobalPosition_deserialize_topic(ub, &rx_global_position_control_topic);
         if (success == false) {

@@ -25,6 +25,7 @@ enum class TopicIndex: uint8_t {
     JOY_SUB,
     DYNAMIC_TRANSFORMS_SUB,
     VELOCITY_CONTROL_SUB,
+    ANGULAR_CONTROL_SUB,
     GLOBAL_POSITION_SUB,
 };
 
@@ -165,6 +166,16 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "velocitycontrol__t",
         .dw_profile_label = "",
         .dr_profile_label = "velocitycontrol__dr",
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::ANGULAR_CONTROL_SUB),
+        .pub_id = to_underlying(TopicIndex::ANGULAR_CONTROL_SUB),
+        .sub_id = to_underlying(TopicIndex::ANGULAR_CONTROL_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::ANGULAR_CONTROL_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::ANGULAR_CONTROL_SUB), .type=UXR_DATAREADER_ID},
+        .topic_profile_label = "angularcontrol__t",
+        .dw_profile_label = "",
+        .dr_profile_label = "angularcontrol__dr",
     },
     {
         .topic_id = to_underlying(TopicIndex::GLOBAL_POSITION_SUB),

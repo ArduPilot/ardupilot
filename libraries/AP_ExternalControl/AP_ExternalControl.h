@@ -26,6 +26,14 @@ public:
     }
 
     /*
+        Sets the target orientation, angular velocity, angular acceleration and desired thrust
+        in body frame
+    */
+    virtual bool set_angular_goals(const Quaternion &orientation, const Vector3f &angular_velocity, const Vector3f &angular_acceleration, const float &thrust) WARN_IF_UNUSED {
+        return true;
+    }
+
+    /*
         Sets the target global position with standard guided mode behavior.
     */
     virtual bool set_global_position(const Location& loc) WARN_IF_UNUSED {

@@ -1,0 +1,34 @@
+// This is an example and does not exist in the default ROS 2 message sets.
+
+#include "geometry_msgs/msg/Vector3.idl"
+#include "geometry_msgs/msg/Quaternion.idl"
+#include "std_msgs/msg/Header.idl"
+
+module custom_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "This message contains angular rate, angular acceleration, orientation as a quaternion, and thrust, each with a reference frame and timestamp. \
+       The angular rate and angular acceleration are represented in free space, anchored at the origin, and only the rotational component applies when transformed. \
+       The orientation is represented as a quaternion. \
+       The thrust is represented as a single floating-point number.")
+    struct AngularVelandAccn {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text="Angular rate represented by a Vector3. \
+                                           It describes the angular velocity around each of the three principal axes.")
+      geometry_msgs::msg::Vector3 angular_rate;
+
+      @verbatim (language="comment", text="Angular acceleration represented by a Vector3. \
+                                           It describes the rate of change of angular velocity around each of the three principal axes.")
+      geometry_msgs::msg::Vector3 angular_acceleration;
+
+      @verbatim (language="comment", text="Orientation represented by a quaternion. \
+                                           It describes the orientation in space as a rotation from a reference orientation.")
+      geometry_msgs::msg::Quaternion orientation;
+
+      @verbatim (language="comment", text="Thrust represented as a single floating-point number. \
+                                           It describes the magnitude of the thrust force.")
+      double thrust;
+    };
+  };
+};
