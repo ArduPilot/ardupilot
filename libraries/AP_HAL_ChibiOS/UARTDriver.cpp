@@ -805,7 +805,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     }
 
     while (n > 0) {
-        if (_flow_control != FLOW_CONTROL_DISABLE &&
+        if (flow_control_enabled(_flow_control) &&
             acts_line != 0 &&
             palReadLine(acts_line)) {
             // we are using hw flow control and the CTS line is high. We
@@ -1360,6 +1360,33 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         }
         chSysUnlock();
         break;
+
+    case FLOW_CONTROL_RTS_DE:
+        // Driver Enable, RTS pin high during transmit
+        // If posible enable in hardware
+#if defined(USART_CR3_DEM)
+        if (sdef.rts_alternative_function != UINT8_MAX) {
+            // Hand over control of RTS pin to the UART driver
+            palSetLineMode(arts_line, PAL_MODE_ALTERNATE(sdef.rts_alternative_function));
+
+            // Enable in driver, if not already set
+            chSysLock();
+            if ((sd->usart->CR3 & USART_CR3_DEM) != USART_CR3_DEM) {
+                // Disable UART, set bit and then re-enable
+                sd->usart->CR1 &= ~USART_CR1_UE;
+                sd->usart->CR3 |= USART_CR3_DEM;
+                sd->usart->CR1 |= USART_CR1_UE;
+            }
+            chSysUnlock();
+        } else
+#endif
+        {
+            // No hardware support for DEM mode or
+            // No alternative function, RTS GPIO pin is not a conected to the UART peripheral
+            // This is typicaly fine becaues we do software flow control.
+            set_flow_control(FLOW_CONTROL_DISABLE);
+        }
+        break;
     }
 #endif // HAL_USE_SERIAL
 }
@@ -1370,7 +1397,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
  */
 __RAMFUNC__ void UARTDriver::update_rts_line(void)
 {
-    if (arts_line == 0 || _flow_control == FLOW_CONTROL_DISABLE) {
+    if (arts_line == 0 || !flow_control_enabled(_flow_control)) {
         return;
     }
     uint16_t space = _readbuf.space();
@@ -1706,13 +1733,14 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
     } else {
         str.printf("UART%u ", unsigned(sdef.instance));
     }
-    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u\n",
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u FlowCtrl=%u\n",
                tx_dma_enabled ? '*' : ' ',
                unsigned(tx_bytes),
                rx_dma_enabled ? '*' : ' ',
                unsigned(rx_bytes),
                unsigned((tx_bytes * 10000) / dt_ms),
-               unsigned((rx_bytes * 10000) / dt_ms));
+               unsigned((rx_bytes * 10000) / dt_ms),
+               _flow_control);
 }
 #endif
 

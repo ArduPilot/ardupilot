@@ -74,6 +74,7 @@ public:
         int8_t txinv_gpio;
         uint8_t txinv_polarity;
         uint8_t endpoint_id;
+        uint8_t rts_alternative_function;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
