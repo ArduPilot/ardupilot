@@ -272,6 +272,22 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Copter::_failsafe_priorities[7];
 
+
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if MODE_GUIDED_ENABLED == ENABLED
+// set target location (for use by external control and scripting)
+bool Copter::set_target_location(const Location& target_loc)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    return mode_guided.set_destination(target_loc);
+}
+#endif //MODE_GUIDED_ENABLED == ENABLED
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED == ENABLED
 // start takeoff to given altitude (for use by scripting)
@@ -287,17 +303,6 @@ bool Copter::start_takeoff(float alt)
         return true;
     }
     return false;
-}
-
-// set target location (for use by scripting)
-bool Copter::set_target_location(const Location& target_loc)
-{
-    // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!flightmode->in_guided_mode()) {
-        return false;
-    }
-
-    return mode_guided.set_destination(target_loc);
 }
 
 // set target position (for use by scripting)
