@@ -74,32 +74,12 @@
  # define RANGEFINDER_ENABLED ENABLED
 #endif
 
-#ifndef RANGEFINDER_HEALTH_MAX
- # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
-#endif
-
-#ifndef RANGEFINDER_TIMEOUT_MS
-# define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
-#endif
-
 #ifndef RANGEFINDER_FILT_DEFAULT
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
-#endif
-
-#ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
- # define RANGEFINDER_TILT_CORRECTION ENABLED
-#endif
-
-#ifndef RANGEFINDER_GLITCH_ALT_CM
- # define RANGEFINDER_GLITCH_ALT_CM  200      // amount of rangefinder change to be considered a glitch
-#endif
-
-#ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
- # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
 #endif
 
 #ifndef MAV_SYSTEM_ID
