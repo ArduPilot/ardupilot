@@ -2927,6 +2927,9 @@ int main(int argc, char **argv) {
 
   // for set_and_print_new_error_message deprecate warning
   fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
+  fprintf(source, "\n");
+  // the generated source uses the Scehduler singleton:
+  fprintf(source, "#include <AP_Scheduler/AP_Scheduler.h>\n");
 
   fprintf(source, "extern const AP_HAL::HAL& hal;\n");
 
