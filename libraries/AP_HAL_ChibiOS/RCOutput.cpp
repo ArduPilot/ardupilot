@@ -2300,7 +2300,7 @@ void RCOutput::safety_update(void)
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
     if (safety_pressed) {
         AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
-        if (safety_press_count < 255) {
+        if (safety_press_count < UINT8_MAX) {
             safety_press_count++;
         }
         if (brdconfig && brdconfig->safety_button_handle_pressed(safety_press_count)) {
