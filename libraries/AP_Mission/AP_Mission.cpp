@@ -413,10 +413,17 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 
     }
 
-    if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
+    switch (cmd.id) {
+    case MAV_CMD_DO_JUMP:
+    case MAV_CMD_JUMP_TAG:
+    case MAV_CMD_DO_JUMP_TAG:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
-    } else {
+        break;
+
+    default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+        break;
+
     }
 
     switch (cmd.id) {
@@ -545,13 +552,18 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
         return default_angle;
     }
     // special handling for nav commands with no target location
-    if (cmd.id == MAV_CMD_NAV_GUIDED_ENABLE ||
-        cmd.id == MAV_CMD_NAV_DELAY) {
+    switch (cmd.id) {
+    case MAV_CMD_NAV_GUIDED_ENABLE:
+    case MAV_CMD_NAV_DELAY:
         return default_angle;
-    }
-    if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
+
+    case MAV_CMD_NAV_SET_YAW_SPEED:
         return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
+
+    default:
+        break;
     }
+
     return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
@@ -565,11 +577,17 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     // read command to check for DO_LAND_START and DO_RETURN_PATH_START
     Mission_Command cmd;
     if (read_cmd_from_storage(index, cmd)) {
-        if (cmd.id == MAV_CMD_DO_LAND_START) {
+        switch (cmd.id) {
+        case MAV_CMD_DO_LAND_START:
             _flags.in_landing_sequence = true;
+            break;
 
-        } else if (cmd.id == MAV_CMD_DO_RETURN_PATH_START) {
+        case MAV_CMD_DO_RETURN_PATH_START:
             _flags.in_return_path = true;
+            break;
+
+        default:
+            break;
 
         }
     }
