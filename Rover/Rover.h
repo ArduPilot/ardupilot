@@ -269,8 +269,11 @@ private:
     cruise_learn_t cruise_learn;
 
     // Rover.cpp
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     bool set_target_location(const Location& target_loc) override;
+#endif
+
+#if AP_SCRIPTING_ENABLED
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
     bool get_steering_and_throttle(float& steering, float& throttle) override;

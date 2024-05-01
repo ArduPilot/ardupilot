@@ -157,8 +157,8 @@ Rover::Rover(void) :
 {
 }
 
-#if AP_SCRIPTING_ENABLED
-// set target location (for use by scripting)
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+// set target location (for use by external control and scripting)
 bool Rover::set_target_location(const Location& target_loc)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
@@ -168,7 +168,9 @@ bool Rover::set_target_location(const Location& target_loc)
 
     return mode_guided.set_desired_location(target_loc);
 }
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
+#if AP_SCRIPTING_ENABLED
 // set target velocity (for use by scripting)
 bool Rover::set_target_velocity_NED(const Vector3f& vel_ned)
 {
