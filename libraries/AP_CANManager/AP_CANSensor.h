@@ -36,6 +36,9 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
+    // Return true if this sensor has been successfully registered to a driver and initialized.
+    bool initialized() const { return _initialized; }
+
     // handler for incoming frames
     virtual void handle_frame(AP_HAL::CANFrame &frame) = 0;
 
