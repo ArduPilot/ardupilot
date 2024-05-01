@@ -486,6 +486,9 @@ private:
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
 
+    uint32_t velocity_match_time_ms;
+    Vector2f velocity_match;
+
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
 #endif
@@ -690,6 +693,7 @@ private:
     // lua scripts use this to retrieve EKF failsafe state
     // returns true if the EKF failsafe has triggered
     bool has_ekf_failsafed() const override;
+    bool set_velocity_match(const Vector2f &velocity) override;
 #endif // AP_SCRIPTING_ENABLED
     bool is_landing() const override;
     bool is_taking_off() const override;

@@ -213,4 +213,13 @@ int32_t ModeLoiter::wp_bearing() const
     return loiter_nav->get_bearing_to_target();
 }
 
+#if AC_PRECLAND_ENABLED
+
+bool ModeLoiter::set_target_location(const Location& location)
+{
+    return copter.precland.set_target_location(location);
+}
+
+#endif
+
 #endif

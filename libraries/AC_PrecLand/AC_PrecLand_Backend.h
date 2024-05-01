@@ -7,6 +7,7 @@
 #include "AC_PrecLand.h"
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
+#include <AP_Common/Location.h>
 
 
 class AC_PrecLand_Backend
@@ -47,6 +48,9 @@ public:
 
     // parses a mavlink message from the companion computer
     virtual void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) {};
+
+    // handles a set target location lua script call
+    virtual bool set_target_location(const Location &location) { return false; };
 
     // get bus parameter
     int8_t get_bus(void) const { return _frontend._bus.get(); }

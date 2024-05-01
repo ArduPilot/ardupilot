@@ -12,6 +12,7 @@
 #include "AC_PrecLand_IRLock.h"
 #include "AC_PrecLand_SITL_Gazebo.h"
 #include "AC_PrecLand_SITL.h"
+#include "AC_PrecLand_Script.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -41,7 +42,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
-    // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo, 4:SITL
+    // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo, 4:SITL, 5:Scripted
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
@@ -260,6 +261,11 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
 #if AC_PRECLAND_SITL_ENABLED
         case Type::SITL:
             _backend = new AC_PrecLand_SITL(*this, _backend_state);
+            break;
+#endif
+#if AC_PRECLAND_SCRIPT_ENABLED
+        case Type::SCRIPT:
+            _backend = new AC_PrecLand_Script(*this, _backend_state);
             break;
 #endif
     }
@@ -482,6 +488,16 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
     // run backend update
     if (_backend != nullptr) {
         _backend->handle_msg(packet, timestamp_ms);
+    }
+}
+
+// Allow setting target location from script if scripted backend is active
+bool AC_PrecLand::set_target_location(const Location &location)
+{
+    if (_backend != nullptr) {
+        return _backend->set_target_location(location);
+    } else {
+        return false;
     }
 }
 

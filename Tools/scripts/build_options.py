@@ -378,6 +378,7 @@ BUILD_OPTIONS = [
     Feature('Precision Landing', 'PrecLand', 'AC_PRECLAND_ENABLED', 'Enable Precision Landing support', 0, None),
     Feature('Precision Landing', 'PrecLand - Companion', 'AC_PRECLAND_COMPANION_ENABLED', 'Enable Companion-Supported Precision Landing support', 0, "PrecLand"),  # noqa
     Feature('Precision Landing', 'PrecLand - IRLock', 'AC_PRECLAND_IRLOCK_ENABLED', 'Enable IRLock-Supported Precision Landing support', 0, "PrecLand"),  # noqa
+    Feature('Precision Landing', 'PrecLand - Script', 'AC_PRECLAND_SCRIPT_ENABLED', 'Enable Scripted Precision Landing Support', 0, "PrecLand,SCRIPTING"),  # noqa
 
     #    Feature('Filesystem', 'FILESYSTEM_ESP32_ENABLED', 'AP_FILESYSTEM_ESP32_ENABLED', 'Enable ESP32 Filesystem', 0, None),
     # Feature('Filesystem', 'FILESYSTEM_FATFS', 'AP_FILESYSTEM_FATFS_ENABLED', 'Enable FATFS Filesystem', 0, None),

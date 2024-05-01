@@ -149,6 +149,13 @@ void ModeLand::do_not_use_GPS()
     control_position = false;
 }
 
+#if AC_PRECLAND_ENABLED
+bool ModeLand::set_target_location(const Location& location)
+{
+    return copter.precland.set_target_location(location);
+}
+#endif
+
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_land_with_pause(ModeReason reason)

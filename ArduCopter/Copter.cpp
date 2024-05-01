@@ -293,11 +293,12 @@ bool Copter::start_takeoff(float alt)
 bool Copter::set_target_location(const Location& target_loc)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!flightmode->in_guided_mode()) {
-        return false;
+    if (flightmode->in_guided_mode()) {
+        return mode_guided.set_destination(target_loc);
     }
 
-    return mode_guided.set_destination(target_loc);
+    // check if rtl is active (RTL or auto-rtl)
+    return flightmode->set_target_location(target_loc);
 }
 
 // set target position (for use by scripting)
@@ -439,6 +440,13 @@ void Copter::nav_script_time_done(uint16_t id)
 bool Copter::has_ekf_failsafed() const
 {
     return failsafe.ekf;
+}
+
+bool Copter::set_velocity_match(const Vector2f &velocity)
+{
+    velocity_match = velocity;
+    velocity_match_time_ms = AP_HAL::millis();
+    return true;
 }
 
 #endif // AP_SCRIPTING_ENABLED
