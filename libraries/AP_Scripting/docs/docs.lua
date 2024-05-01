@@ -344,14 +344,14 @@ function efi:get_backend(instance) end
 ---@class CAN
 CAN = {}
 
--- get a CAN bus device handler first scripting driver
+-- get a CAN bus device handler first scripting driver, will return nil if no driver with protocol Scripting is configured
 ---@param buffer_len uint32_t_ud -- buffer length 1 to 25
----@return ScriptingCANBuffer_ud
+---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device(buffer_len) end
 
--- get a CAN bus device handler second scripting driver
+-- get a CAN bus device handler second scripting driver, will return nil if no driver with protocol Scripting2 is configured
 ---@param buffer_len uint32_t_ud -- buffer length 1 to 25
----@return ScriptingCANBuffer_ud
+---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device2(buffer_len) end
 
 -- Auto generated binding
