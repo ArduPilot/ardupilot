@@ -117,18 +117,10 @@ Sailboat::Sailboat()
 // true if sailboat navigation (aka tacking) is enabled
 bool Sailboat::tack_enabled() const
 {
-    // tacking disabled if not a sailboat
-    if (!sail_enabled()) {
-        return false;
-    }
+    if (!sail_enabled() ||  // tacking disabled if not a sailboat
+        motor_state == UseMotor::USE_MOTOR_ALWAYS ||  // tacking disabled if motor is always on
+        motor_assist_low_wind()) {  // disable tacking if motor is available and wind is below cutoff
 
-    // tacking disabled if motor is always on
-    if (motor_state == UseMotor::USE_MOTOR_ALWAYS) {
-        return false;
-    }
-
-    // disable tacking if motor is available and wind is below cutoff
-    if (motor_assist_low_wind()) {
         return false;
     }
 
