@@ -239,7 +239,7 @@ ap_object AP_RangeFinder_Backend method signal_quality_pct rename signal_quality
 ap_object AP_RangeFinder_Backend method orientation Rotation'enum
 ap_object AP_RangeFinder_Backend method type uint8_t
 ap_object AP_RangeFinder_Backend method status uint8_t
-ap_object AP_RangeFinder_Backend manual handle_script_msg lua_range_finder_handle_script_msg 1
+ap_object AP_RangeFinder_Backend manual handle_script_msg lua_range_finder_handle_script_msg 1 1
 ap_object AP_RangeFinder_Backend method get_state void RangeFinder::RangeFinder_State'Ref
 
 singleton RangeFinder depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
@@ -369,7 +369,7 @@ singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_functi
 singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method get_emergency_stop boolean
-singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0
+singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0 1
 
 ap_object RC_Channel depends AP_RC_CHANNEL_ENABLED
 ap_object RC_Channel method norm_input float
@@ -394,7 +394,7 @@ include AP_SerialManager/AP_SerialManager.h
 
 ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
 ap_object AP_HAL::UARTDriver method read int16_t
-ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1
+ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1 1
 ap_object AP_HAL::UARTDriver method write uint32_t uint8_t'skip_check
 ap_object AP_HAL::UARTDriver method available uint32_t
 ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
@@ -576,11 +576,11 @@ include AP_HAL/I2CDevice.h
 ap_object AP_HAL::I2CDevice semaphore-pointer
 ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
 ap_object AP_HAL::I2CDevice method write_register boolean uint8_t'skip_check uint8_t'skip_check
-ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2
+ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2 1
 ap_object AP_HAL::I2CDevice method set_address void uint8_t'skip_check
 
 include AP_HAL/utility/Socket.h depends (AP_NETWORKING_ENABLED==1)
-global manual Socket lua_get_SocketAPM 1 depends (AP_NETWORKING_ENABLED==1)
+global manual Socket lua_get_SocketAPM 1 1 depends (AP_NETWORKING_ENABLED==1)
 
 ap_object SocketAPM depends (AP_NETWORKING_ENABLED==1)
 ap_object SocketAPM method connect boolean string uint16_t'skip_check
@@ -592,10 +592,10 @@ ap_object SocketAPM method is_connected boolean
 ap_object SocketAPM method pollout boolean uint32_t'skip_check
 ap_object SocketAPM method pollin boolean uint32_t'skip_check
 ap_object SocketAPM method reuseaddress boolean
-ap_object SocketAPM manual sendfile SocketAPM_sendfile 1
-ap_object SocketAPM manual close SocketAPM_close 0
-ap_object SocketAPM manual recv SocketAPM_recv 1
-ap_object SocketAPM manual accept SocketAPM_accept 1
+ap_object SocketAPM manual sendfile SocketAPM_sendfile 1 1
+ap_object SocketAPM manual close SocketAPM_close 0 0
+ap_object SocketAPM manual recv SocketAPM_recv 1 1
+ap_object SocketAPM manual accept SocketAPM_accept 0 1
 
 ap_object AP_HAL::AnalogSource depends !defined(HAL_DISABLE_ADC_DRIVER)
 ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t'skip_check
@@ -603,7 +603,7 @@ ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
 
-global manual PWMSource lua_get_PWMSource 0
+global manual PWMSource lua_get_PWMSource 0 1
 
 ap_object AP_HAL::PWMSource method set_pin boolean uint8_t'skip_check "Scripting"'literal
 ap_object AP_HAL::PWMSource method get_pwm_us uint16_t
@@ -647,8 +647,8 @@ singleton AP_InertialSensor method get_gyro Vector3f uint8_t'skip_check
 singleton AP_InertialSensor method get_accel Vector3f uint8_t'skip_check
 singleton AP_InertialSensor method gyros_consistent boolean uint8_t'skip_check
 
-singleton CAN manual get_device lua_get_CAN_device 1
-singleton CAN manual get_device2 lua_get_CAN_device2 1
+singleton CAN manual get_device lua_get_CAN_device 1 1
+singleton CAN manual get_device2 lua_get_CAN_device2 1 1
 singleton CAN depends AP_SCRIPTING_CAN_SENSOR_ENABLED
 
 include AP_Scripting/AP_Scripting_CANSensor.h
@@ -842,15 +842,15 @@ singleton AP_EFI method get_state void EFI_State'Ref
 include AP_Logger/AP_Logger.h
 singleton AP_Logger depends HAL_LOGGING_ENABLED
 singleton AP_Logger rename logger
-singleton AP_Logger manual write AP_Logger_Write 7
+singleton AP_Logger manual write AP_Logger_Write 7 0
 singleton AP_Logger method log_file_content void string
 singleton AP_Logger method log_file_content depends HAL_LOGGER_FILE_CONTENTS_ENABLED
 
-singleton i2c manual get_device lua_get_i2c_device 4
+singleton i2c manual get_device lua_get_i2c_device 4 1
 
-global manual millis lua_millis 0
-global manual micros lua_micros 0
-global manual mission_receive lua_mission_receive 0 depends AP_MISSION_ENABLED
+global manual millis lua_millis 0 1
+global manual micros lua_micros 0 1
+global manual mission_receive lua_mission_receive 0 5 depends AP_MISSION_ENABLED
 
 userdata uint32_t creation lua_new_uint32_t 1
 userdata uint32_t manual_operator __add uint32_t___add
@@ -869,19 +869,19 @@ userdata uint32_t manual_operator __lt uint32_t___lt
 userdata uint32_t manual_operator __le uint32_t___le
 userdata uint32_t manual_operator __bnot uint32_t___bnot
 userdata uint32_t manual_operator __tostring uint32_t___tostring
-userdata uint32_t manual toint uint32_t_toint 0
-userdata uint32_t manual tofloat uint32_t_tofloat 0
+userdata uint32_t manual toint uint32_t_toint 0 1
+userdata uint32_t manual tofloat uint32_t_tofloat 0 1
 
-global manual dirlist lua_dirlist 1
-global manual remove lua_removefile 1
-global manual print lua_print 1
+global manual dirlist lua_dirlist 1 2
+global manual remove lua_removefile 1 3
+global manual print lua_print 1 0
 
 singleton mavlink depends HAL_GCS_ENABLED
-singleton mavlink manual init lua_mavlink_init 2
-singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1
-singleton mavlink manual send_chan lua_mavlink_send_chan 3
-singleton mavlink manual receive_chan lua_mavlink_receive_chan 0
-singleton mavlink manual block_command lua_mavlink_block_command 1
+singleton mavlink manual init lua_mavlink_init 2 0
+singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1 1
+singleton mavlink manual send_chan lua_mavlink_send_chan 3 1
+singleton mavlink manual receive_chan lua_mavlink_receive_chan 0 3
+singleton mavlink manual block_command lua_mavlink_block_command 1 1
 
 include AC_Fence/AC_Fence.h depends AP_FENCE_ENABLED
 include AC_Fence/AC_Fence_config.h

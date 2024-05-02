@@ -367,6 +367,7 @@ struct method_alias {
   char *alias;
   int line;
   int num_args;
+  int num_ret;
   enum alias_type type;
   char *dependency;
 };
@@ -887,6 +888,12 @@ void handle_manual(struct userdata *node, enum alias_type type) {
       error(ERROR_SINGLETON, "Expected number of args for manual method %s %s", node->name, name);
     }
     alias->num_args = atoi(num_args);
+
+    char *num_ret = next_token();
+    if (num_ret == NULL) {
+      error(ERROR_SINGLETON, "Expected number of returns for manual method %s %s", node->name, name);
+    }
+    alias->num_ret = atoi(num_ret);
   }
 
   char *depends_keyword = next_token();
@@ -2689,6 +2696,12 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
       if (emit_creation) {
         // creation function
+        if (node->creation != NULL) {
+          for (int i = 0; i < node->creation_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+        }
+
         fprintf(docs, "---@return %s\n", name);
         fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
         if (node->creation == NULL) {
@@ -2770,7 +2783,17 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
       } else if (alias->type == ALIAS_TYPE_MANUAL) {
           // Cant do a great job, don't know types or return
-          fprintf(docs, "-- desc\nfunction %s:%s(", name, alias->alias);
+          fprintf(docs, "-- desc\n");
+
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+
+          for (int i = 0; i < alias->num_ret; ++i) {
+            fprintf(docs, "---@return UNKNOWN\n");
+          }
+
+          fprintf(docs, "function %s:%s(", name, alias->alias);
           for (int i = 0; i < alias->num_args; ++i) {
             fprintf(docs, "param%i", i+1);
             if (i < alias->num_args-1) {
@@ -3058,7 +3081,17 @@ int main(int argc, char **argv) {
     while(alias) {
       if (alias->type == ALIAS_TYPE_MANUAL) {
           // Cant do a great job, don't know types or return
-          fprintf(docs, "-- desc\nfunction %s(", alias->alias);
+          fprintf(docs, "-- desc\n");
+
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+
+          for (int i = 0; i < alias->num_ret; ++i) {
+            fprintf(docs, "---@return UNKNOWN\n");
+          }
+
+          fprintf(docs, "function %s(", alias->alias);
           for (int i = 0; i < alias->num_args; ++i) {
             fprintf(docs, "param%i", i+1);
             if (i < alias->num_args-1) {
