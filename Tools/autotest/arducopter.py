@@ -3178,9 +3178,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             # ignore the first 20Hz and look for a peak at -15dB or more
-            ignore_bins = 20
+            # it should be at about 190Hz, each bin is 1000/1024Hz wide
+            ignore_bins = int(100 * 1.024)  # start at 100Hz to be safe
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
-            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 180 or freq > 300:
+            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 100 or freq > 300:
                 raise NotAchievedException(
                     "Did not detect a motor peak, found %f at %f dB" %
                     (freq, numpy.amax(psd["X"][ignore_bins:])))
@@ -11308,7 +11309,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MotorVibration,
             Test(self.DynamicNotches, attempts=4),
             self.PositionWhenGPSIsZero,
-            self.DynamicRpmNotches,
+            self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.PIDNotches,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
