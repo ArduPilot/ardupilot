@@ -111,7 +111,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     // we proportionally reduce steering and throttle
     if (g2.motors.have_skid_steering()) {
         const float steer_normalised = constrain_float(steering_out / 4500.0f, -1.0f, 1.0f);
-        const float throttle_normalised = constrain_float(throttle_out / 100.0f, -1.0f, 1.0f);
+        const float throttle_normalised = constrain_float(throttle_out * 0.01f, -1.0f, 1.0f);
         const float saturation_value = fabsf(steer_normalised) + fabsf(throttle_normalised);
         if (saturation_value > 1.0f) {
             steering_out /= saturation_value;
