@@ -210,7 +210,11 @@ local function check_input()
    local chk1 = state.chk1
    state.check0, state.check1 = string.unpack("<BB", read_bytes(2))
 
-   local checksum_ok = chk0 == state.check0 and chk1 == state.check1
+   --[[
+      the device will sometimes use 0 for the 2nd 8 bits of the checksum
+      we will accept these packets, relying on the other header checks
+   --]]
+   local checksum_ok = chk0 == state.check0 and (chk1 == state.check1 or state.check1 == 0)
    if not checksum_ok then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("chksum wrong (0x%02x,0x%02x) (0x%02x,0x%02x)", chk0, chk1, state.check0, state.check1))
       return false
