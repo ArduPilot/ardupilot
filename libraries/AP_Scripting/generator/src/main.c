@@ -2608,6 +2608,12 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
   }
 }
 
+void emit_docs_return_type(struct type type, int nullable) {
+  // AP_Objects can be nil
+  nullable |= (type.type == TYPE_AP_OBJECT);
+  emit_docs_type(type, "---@return", (nullable == 0) ? "\n" : "|nil\n");
+}
+
 void emit_docs_method(const char *name, const char *method_name, struct method *method) {
 
   fprintf(docs, "-- desc\n");
@@ -2632,18 +2638,14 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
 
   // return type
   if ((method->flags & TYPE_FLAGS_NULLABLE) == 0) {
-    emit_docs_type(method->return_type, "---@return", "\n");
+    emit_docs_return_type(method->return_type, FALSE);
   }
 
   arg = method->arguments;
   // nulable and refences returns
   while (arg != NULL) {
     if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
-      if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
-        emit_docs_type(arg->type, "---@return", "|nil\n");
-      } else {
-        emit_docs_type(arg->type, "---@return", "\n");
-      }
+      emit_docs_return_type(arg->type, arg->type.flags & TYPE_FLAGS_NULLABLE);
     }
     arg = arg->next;
   }
