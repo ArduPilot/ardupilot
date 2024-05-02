@@ -77,7 +77,7 @@ i2c = {}
 ---@param address integer -- device address 0 to 128
 ---@param clock? uint32_t_ud -- optional bus clock, default 400000
 ---@param smbus? boolean -- optional sumbus flag, default false
----@return AP_HAL__I2CDevice_ud
+---@return AP_HAL__I2CDevice_ud|nil
 function i2c:get_device(bus, address, clock, smbus) end
 
 -- EFI state structure
@@ -337,7 +337,7 @@ function efi:get_state() end
 
 -- desc
 ---@param instance integer
----@return AP_EFI_Backend_ud
+---@return AP_EFI_Backend_ud|nil
 function efi:get_backend(instance) end
 
 -- CAN bus interaction
@@ -456,8 +456,10 @@ function motor_factor_table_ud:roll(index, value) end
 ---@class SocketAPM_ud
 local SocketAPM_ud = {}
 
--- desc
-function Socket(param1) end
+-- Get a new socket
+---@param datagram boolean
+---@return SocketAPM_ud
+function Socket(datagram) end
 
 -- return true if a socket is connected
 ---@return boolean
@@ -494,11 +496,12 @@ function SocketAPM_ud:connect(IP_address, port) end
 --[[ accept new incoming sockets, returning a new socket.
      Must be used on a stream socket in listen state
 --]]
-function SocketAPM_ud:accept(param1) end
+---@return SocketAPM_ud|nil
+function SocketAPM_ud:accept() end
 
 -- receive data from a socket
----@param length
----@return data
+---@param length integer
+---@return string|nil
 function SocketAPM_ud:recv(length) end
 
 -- check for available input
@@ -1506,7 +1509,7 @@ function ins:gyros_consistent(threshold) end
 function ins:get_gyro_health(instance) end
 
 -- Check if the accelerometers are consistent
----@param threshold float -- the threshold allowed before returning false
+---@param threshold number -- the threshold allowed before returning false
 ---@return boolean
 function ins:accels_consistent(threshold) end
 
@@ -1553,7 +1556,7 @@ function Motors_dynamic:init(expected_num_motors) end
 analog = {}
 
 -- desc
----@return AP_HAL__AnalogSource_ud
+---@return AP_HAL__AnalogSource_ud|nil
 function analog:channel() end
 
 
@@ -1696,11 +1699,11 @@ function sub:get_and_clear_button_count(index) end
 function sub:rangefinder_alt_ok() end
 
 -- SURFTRAK mode: return the rangefinder target in cm
----@return float
+---@return number
 function sub:get_rangefinder_target_cm() end
 
 -- SURFTRAK mode: set the rangefinder target in cm, return true if successful
----@param new_target_cm float
+---@param new_target_cm number
 ---@return boolean
 function sub:set_rangefinder_target_cm(new_target_cm) end
 
@@ -1927,7 +1930,7 @@ esc_telem = {}
 function esc_telem:update_telem_data(instance, telemdata, data_mask) end
 
 -- desc
----@param param1 integer
+---@param instance integer
 ---@return uint32_t_ud|nil
 function esc_telem:get_usage_seconds(instance) end
 
@@ -2024,7 +2027,7 @@ serial = {}
 -- For instance = 0, returns first such UART, second for instance = 1, and so on.
 -- If such an instance is not found, returns nil.
 ---@param instance integer -- the 0-based index of the UART instance to return.
----@return AP_HAL__UARTDriver_ud -- the requested UART instance available for scripting, or nil if none.
+---@return AP_HAL__UARTDriver_ud|nil -- the requested UART instance available for scripting, or nil if none.
 function serial:find_serial(instance) end
 
 
@@ -2034,7 +2037,7 @@ rc = {}
 
 -- desc
 ---@param chan_num integer
----@return RC_Channel_ud
+---@return RC_Channel_ud|nil
 function rc:get_channel(chan_num) end
 
 -- desc
@@ -2662,7 +2665,7 @@ rangefinder = {}
 
 -- get backend based on rangefinder instance provided
 ---@param rangefinder_instance integer
----@return AP_RangeFinder_Backend_ud
+---@return AP_RangeFinder_Backend_ud|nil
 function rangefinder:get_backend(rangefinder_instance) end
 
 -- desc
@@ -2752,7 +2755,7 @@ proximity = {}
 
 -- get backend based on proximity instance provided
 ---@param instance integer
----@return AP_Proximity_Backend_ud
+---@return AP_Proximity_Backend_ud|nil
 function proximity:get_backend(instance) end
 
 -- desc
