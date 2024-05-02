@@ -851,10 +851,14 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     }
 
     // check for supported coordinate frames
-    if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
-        packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+    switch (packet.coordinate_frame) {
+    case MAV_FRAME_LOCAL_NED:
+    case MAV_FRAME_LOCAL_OFFSET_NED:
+    case MAV_FRAME_BODY_NED:
+    case MAV_FRAME_BODY_OFFSET_NED:
+        break;
+
+    default:
         return;
     }
 
@@ -970,14 +974,19 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         return;
     }
     // check for supported coordinate frames
-    if (packet.coordinate_frame != MAV_FRAME_GLOBAL &&
-        packet.coordinate_frame != MAV_FRAME_GLOBAL_INT &&
-        packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT &&
-        packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
-        packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
-        packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
+    switch (packet.coordinate_frame) {
+    case MAV_FRAME_GLOBAL:
+    case MAV_FRAME_GLOBAL_INT:
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
+    case MAV_FRAME_GLOBAL_TERRAIN_ALT:
+    case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
+        break;
+
+    default:
         return;
     }
+    
     bool pos_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
     bool vel_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
     bool acc_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
