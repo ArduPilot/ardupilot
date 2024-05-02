@@ -68,12 +68,6 @@ private:
     bool _init;
     const char *last_protocol;
 
-    enum class RCSource {
-        NONE = 0,
-        RCPROT_PULSES = 2,
-        RCPROT_BYTES = 3,
-    } last_source;
-
     bool pulse_input_enabled;
 
 #if HAL_USE_ICU == TRUE
