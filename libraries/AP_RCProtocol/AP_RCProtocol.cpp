@@ -46,6 +46,8 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol::init()
@@ -454,6 +456,39 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
     return true;
 }
 
+const char *AP_RCProtocol::detected_protocol_name() const
+{
+    switch (_detected_protocol) {
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    case AP_RCProtocol::IOMCU:
+        return ((AP_RCProtocol_IOMCU*)(backend[AP_RCProtocol::IOMCU]))->get_rc_protocol();
+#endif
+    default:
+        return protocol_name_from_protocol(_detected_protocol);
+    }
+}
+
+void AP_RCProtocol::announce_detected()
+{
+    const char *src;
+    const char *name = detected_protocol_name();
+    if (name == nullptr) {
+        return;
+    }
+    switch (_detected_protocol) {
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    case AP_RCProtocol::IOMCU:
+        src = "IOMCU";
+        break;
+#endif
+    default:
+        src = using_uart() ? "Bytes" : "Pulses";
+    }
+    (void)src;  // iofirmware doesn't use this
+    (void)name;  // iofirmware doesn't use this
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s (%s)", name, src);
+}
+
 bool AP_RCProtocol::new_input()
 {
     // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
@@ -509,6 +544,14 @@ bool AP_RCProtocol::new_input()
         _detected_protocol = AP_RCProtocol::IOMCU;
     }
 #endif
+
+    // announce protocol changes:
+    if (_detected_protocol != _last_detected_protocol ||
+        using_uart() != _last_detected_using_uart) {
+        _last_detected_protocol = _detected_protocol;
+        _last_detected_using_uart = using_uart();
+        announce_detected();
+    }
 
     bool ret = _new_input;
     _new_input = false;
@@ -667,14 +710,6 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 }
 
 #if AP_RCPROTOCOL_ENABLED
-/*
-  return protocol name
- */
-const char *AP_RCProtocol::protocol_name(void) const
-{
-    return protocol_name_from_protocol(_detected_protocol);
-}
-
 /*
   add a uart to decode
  */

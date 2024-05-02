@@ -19,6 +19,8 @@ public:
         return ever_seen_input && AP_HAL::micros() - last_iomcu_us < 400000;
     }
 
+    const char *get_rc_protocol() const;
+
 private:
 
     uint32_t last_iomcu_us;

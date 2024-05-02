@@ -6,7 +6,13 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
+
 extern AP_IOMCU iomcu;
+
+const char *AP_RCProtocol_IOMCU::get_rc_protocol() const
+{
+    return iomcu.get_rc_protocol();
+}
 
 void AP_RCProtocol_IOMCU::update()
 {
