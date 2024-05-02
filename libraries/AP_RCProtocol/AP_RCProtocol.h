@@ -93,6 +93,9 @@ public:
 #if AP_RCPROTOCOL_RADIO_ENABLED
         RADIO = 19,
 #endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+        IOMCU = 20,
+#endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         EMLID_RCIO = 21,
 #endif
@@ -203,6 +206,9 @@ public:
 #if AP_RCPROTOCOL_RADIO_ENABLED
         case RADIO:
 #endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+        case IOMCU:
+#endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         case EMLID_RCIO:
 #endif
@@ -219,7 +225,7 @@ public:
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();
-    void start_bind(void);
+    void start_bind(int dsmMode);
     int16_t get_RSSI(void) const;
     int16_t get_rx_link_quality(void) const;
 
