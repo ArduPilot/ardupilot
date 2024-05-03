@@ -2,6 +2,10 @@
    parameter reversion utility. This helps with manual tuning
    in-flight by giving a way to instantly revert parameters to the startup parameters
 --]]
+
+---@diagnostic disable: param-type-mismatch
+
+
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local PARAM_TABLE_KEY = 31

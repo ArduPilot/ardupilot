@@ -1,6 +1,10 @@
 --[[
    example script to test lua socket API
 --]]
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: redundant-parameter
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 

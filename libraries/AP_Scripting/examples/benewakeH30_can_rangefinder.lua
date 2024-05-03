@@ -1,5 +1,7 @@
 -- Lua Can Driver for Benewake CAN Rangefinder
 
+---@diagnostic disable: undefined-global
+
 -- User settable parameters
 local update_rate_ms    = 10    -- update rate (in ms) of the driver
 local debug_enable = false    -- true to enable debug messages

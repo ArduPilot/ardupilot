@@ -13,6 +13,8 @@
 --  SCR_USER3 is a bit field that controls driver logging.
 --
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
 
 local UPDATE_PERIOD_MS = 50
 

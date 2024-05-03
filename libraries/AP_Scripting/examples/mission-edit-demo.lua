@@ -2,6 +2,9 @@
 -- by Buzz 2020
 -- luacheck: only 0
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+
 current_pos = nil
 home = 0
 a = {}

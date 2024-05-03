@@ -71,6 +71,9 @@
 
 --]]
 
+---@diagnostic disable: cast-local-type
+
+
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis

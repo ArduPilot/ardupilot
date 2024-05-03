@@ -2,6 +2,11 @@
   EFI Scripting backend driver for Halo6000 generator
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: need-check-nil
+
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
 local SCRIPT_NAME       = "EFI: Halo6000 CAN"
