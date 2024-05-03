@@ -1,3 +1,4 @@
+---@meta
 -- ArduPilot lua scripting documentation in EmmyLua Annotations
 -- This file should be auto generated and then manual edited
 -- generate with --scripting-docs, eg  ./waf copter --scripting-docs
@@ -6,18 +7,32 @@
 -- luacheck: ignore 122 (Setting a read-only field of a global variable)
 -- luacheck: ignore 212 (Unused argument)
 -- luacheck: ignore 241 (Local variable is mutated but never accessed)
+-- luacheck: ignore 221 (Local variable is accessed but never set.)
 
 -- set and get for field types share function names
 ---@diagnostic disable: duplicate-set-field
 ---@diagnostic disable: missing-return
 
+-- integer enum value unknown by docs generator
+---@type integer
+local enum_integer
+
 -- manual bindings
 
----@class uint32_t_ud
+---@class (exact) uint32_t_ud
+---@operator add(uint32_t_ud|integer|number): uint32_t_ud
+---@operator sub(uint32_t_ud|integer|number): uint32_t_ud
+---@operator mul(uint32_t_ud|integer|number): uint32_t_ud
+---@operator div(uint32_t_ud|integer|number): uint32_t_ud
+---@operator mod(uint32_t_ud|integer|number): uint32_t_ud
+---@operator band(uint32_t_ud|integer|number): uint32_t_ud
+---@operator bor(uint32_t_ud|integer|number): uint32_t_ud
+---@operator shl(uint32_t_ud|integer|number): uint32_t_ud
+---@operator shr(uint32_t_ud|integer|number): uint32_t_ud
 local uint32_t_ud = {}
 
 -- create uint32_t_ud with optional value
----@param value? number|integer
+---@param value? uint32_t_ud|integer|number
 ---@return uint32_t_ud
 function uint32_t(value) end
 
@@ -52,7 +67,6 @@ function mission_receive() end
 function print(text) end
 
 -- data flash logging to SD card
----@class logger
 logger = {}
 
 -- write value to data flash log with given types and names, optional units and multipliers, timestamp will be automatically added
@@ -69,19 +83,18 @@ function logger:write(name, labels, format, units, multipliers, data1, ...) end
 function logger:log_file_content(filename) end
 
 -- i2c bus interaction
----@class i2c
 i2c = {}
 
 -- get a i2c device handler
 ---@param bus integer -- bus number
 ---@param address integer -- device address 0 to 128
----@param clock? uint32_t_ud -- optional bus clock, default 400000
+---@param clock? uint32_t_ud|integer|number -- optional bus clock, default 400000
 ---@param smbus? boolean -- optional sumbus flag, default false
 ---@return AP_HAL__I2CDevice_ud|nil
 function i2c:get_device(bus, address, clock, smbus) end
 
 -- EFI state structure
----@class EFI_State_ud
+---@class (exact) EFI_State_ud
 local EFI_State_ud = {}
 
 ---@return EFI_State_ud
@@ -236,7 +249,7 @@ function EFI_State_ud:spark_dwell_time_ms(value) end
 function EFI_State_ud:engine_speed_rpm() end
 
 -- set field
----@param value uint32_t_ud
+---@param value uint32_t_ud|integer|number
 function EFI_State_ud:engine_speed_rpm(value) end
 
 -- get field
@@ -260,12 +273,12 @@ function EFI_State_ud:general_error(value) end
 function EFI_State_ud:last_updated_ms() end
 
 -- set field
----@param value uint32_t_ud
+---@param value uint32_t_ud|integer|number
 function EFI_State_ud:last_updated_ms(value) end
 
 
 -- EFI Cylinder_Status structure
----@class Cylinder_Status_ud
+---@class (exact) Cylinder_Status_ud
 local Cylinder_Status_ud = {}
 
 ---@return Cylinder_Status_ud
@@ -328,7 +341,6 @@ function Cylinder_Status_ud:ignition_timing_deg() end
 function Cylinder_Status_ud:ignition_timing_deg(value) end
 
 -- desc
----@class efi
 efi = {}
 
 -- desc
@@ -341,23 +353,22 @@ function efi:get_state() end
 function efi:get_backend(instance) end
 
 -- CAN bus interaction
----@class CAN
 CAN = {}
 
 -- get a CAN bus device handler first scripting driver, will return nil if no driver with protocol Scripting is configured
----@param buffer_len uint32_t_ud -- buffer length 1 to 25
+---@param buffer_len uint32_t_ud|integer|number -- buffer length 1 to 25
 ---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device(buffer_len) end
 
 -- get a CAN bus device handler second scripting driver, will return nil if no driver with protocol Scripting2 is configured
----@param buffer_len uint32_t_ud -- buffer length 1 to 25
+---@param buffer_len uint32_t_ud|integer|number -- buffer length 1 to 25
 ---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device2(buffer_len) end
 
 -- Auto generated binding
 
 -- desc
----@class CANFrame_ud
+---@class (exact) CANFrame_ud
 local CANFrame_ud = {}
 
 ---@return CANFrame_ud
@@ -386,7 +397,7 @@ function CANFrame_ud:data(index, value) end
 function CANFrame_ud:id() end
 
 -- set field
----@param value uint32_t_ud
+---@param value uint32_t_ud|integer|number
 function CANFrame_ud:id(value) end
 
 -- desc
@@ -406,7 +417,7 @@ function CANFrame_ud:isExtended() end
 function CANFrame_ud:id_signed() end
 
 -- desc
----@class motor_factor_table_ud
+---@class (exact) motor_factor_table_ud
 local motor_factor_table_ud = {}
 
 ---@return motor_factor_table_ud
@@ -453,7 +464,7 @@ function motor_factor_table_ud:roll(index) end
 function motor_factor_table_ud:roll(index, value) end
 
 -- network socket class
----@class SocketAPM_ud
+---@class (exact) SocketAPM_ud
 local SocketAPM_ud = {}
 
 -- Get a new socket
@@ -477,7 +488,7 @@ function SocketAPM_ud:listen(backlog) end
 
 -- send a lua string. May contain binary data
 ---@param str string
----@param len uint32_t_ud
+---@param len uint32_t_ud|integer|number
 ---@return integer
 function SocketAPM_ud:send(str, len) end
 
@@ -505,12 +516,12 @@ function SocketAPM_ud:accept() end
 function SocketAPM_ud:recv(length) end
 
 -- check for available input
----@param timeout_ms uint32_t_ud
+---@param timeout_ms uint32_t_ud|integer|number
 ---@return boolean
 function SocketAPM_ud:pollin(timeout_ms) end
 
 -- check for availability of space to write to socket
----@param timeout_ms uint32_t_ud
+---@param timeout_ms uint32_t_ud|integer|number
 ---@return boolean
 function SocketAPM_ud:pollout(timeout_ms) end
 
@@ -535,7 +546,7 @@ function SocketAPM_ud:sendfile(filehandle) end
 function SocketAPM_ud:reuseaddress() end
 
 -- desc
----@class AP_HAL__PWMSource_ud
+---@class (exact) AP_HAL__PWMSource_ud
 local AP_HAL__PWMSource_ud = {}
 
 ---@return AP_HAL__PWMSource_ud
@@ -556,7 +567,7 @@ function AP_HAL__PWMSource_ud:set_pin(pin_number) end
 
 
 -- desc
----@class mavlink_mission_item_int_t_ud
+---@class (exact) mavlink_mission_item_int_t_ud
 local mavlink_mission_item_int_t_ud = {}
 
 ---@return mavlink_mission_item_int_t_ud
@@ -652,7 +663,7 @@ function mavlink_mission_item_int_t_ud:param1(value) end
 
 
 -- desc
----@class Parameter_ud
+---@class (exact) Parameter_ud
 local Parameter_ud = {}
 
 ---@return Parameter_ud
@@ -684,7 +695,7 @@ function Parameter_ud:get() end
 
 -- desc
 ---@param key integer
----@param group_element uint32_t_ud
+---@param group_element uint32_t_ud|integer|number
 ---@param type integer
 ---| '1' # AP_PARAM_INT8
 ---| '2' # AP_PARAM_INT16
@@ -700,7 +711,9 @@ function Parameter_ud:init(name) end
 
 
 -- desc
----@class Vector2f_ud
+---@class (exact) Vector2f_ud
+---@operator add(Vector2f_ud): Vector2f_ud
+---@operator sub(Vector2f_ud): Vector2f_ud
 local Vector2f_ud = {}
 
 ---@return Vector2f_ud
@@ -754,7 +767,9 @@ function Vector2f_ud:length() end
 function Vector2f_ud:angle() end
 
 -- desc
----@class Vector3f_ud
+---@class (exact) Vector3f_ud
+---@operator add(Vector3f_ud): Vector3f_ud
+---@operator sub(Vector3f_ud): Vector3f_ud
 local Vector3f_ud = {}
 
 ---@return Vector3f_ud
@@ -836,7 +851,8 @@ function Vector3f_ud:rotate_xy(param1) end
 function Vector3f_ud:xy() end
 
 -- desc
----@class Quaternion_ud
+---@class (exact) Quaternion_ud
+---@operator mul(Quaternion_ud): Quaternion_ud
 local Quaternion_ud = {}
 
 ---@return Quaternion_ud
@@ -922,7 +938,7 @@ function Quaternion_ud:normalize() end
 function Quaternion_ud:length() end
 
 -- desc
----@class Location_ud
+---@class (exact) Location_ud
 local Location_ud = {}
 
 ---@return Location_ud
@@ -1046,7 +1062,7 @@ function Location_ud:offset(ofs_north, ofs_east) end
 function Location_ud:get_distance(loc) end
 
 -- desc
----@class AP_EFI_Backend_ud
+---@class (exact) AP_EFI_Backend_ud
 local AP_EFI_Backend_ud = {}
 
 -- desc
@@ -1055,7 +1071,7 @@ local AP_EFI_Backend_ud = {}
 function AP_EFI_Backend_ud:handle_scripting(state) end
 
 -- desc
----@class ScriptingCANBuffer_ud
+---@class (exact) ScriptingCANBuffer_ud
 local ScriptingCANBuffer_ud = {}
 
 -- desc
@@ -1065,20 +1081,20 @@ function ScriptingCANBuffer_ud:read_frame() end
 -- Add a filter to the CAN buffer, mask is bitwise ANDed with the frame id and compared to value if not match frame is not buffered
 -- By default no filters are added and all frames are buffered, write is not affected by filters
 -- Maximum number of filters is 8
----@param mask uint32_t_ud
----@param value uint32_t_ud
+---@param mask uint32_t_ud|integer|number
+---@param value uint32_t_ud|integer|number
 ---@return boolean -- returns true if the filler was added successfully
 function ScriptingCANBuffer_ud:add_filter(mask, value) end
 
 -- desc
 ---@param frame CANFrame_ud
----@param timeout_us uint32_t_ud
+---@param timeout_us uint32_t_ud|integer|number
 ---@return boolean
 function ScriptingCANBuffer_ud:write_frame(frame, timeout_us) end
 
 
 -- desc
----@class AP_HAL__AnalogSource_ud
+---@class (exact) AP_HAL__AnalogSource_ud
 local AP_HAL__AnalogSource_ud = {}
 
 -- desc
@@ -1100,7 +1116,7 @@ function AP_HAL__AnalogSource_ud:set_pin(pin_number) end
 
 
 -- desc
----@class AP_HAL__I2CDevice_ud
+---@class (exact) AP_HAL__I2CDevice_ud
 local AP_HAL__I2CDevice_ud = {}
 
 -- desc
@@ -1126,7 +1142,7 @@ function AP_HAL__I2CDevice_ud:set_retries(retries) end
 
 
 -- desc
----@class AP_HAL__UARTDriver_ud
+---@class (exact) AP_HAL__UARTDriver_ud
 local AP_HAL__UARTDriver_ud = {}
 
 -- desc
@@ -1150,7 +1166,7 @@ function AP_HAL__UARTDriver_ud:write(value) end
 function AP_HAL__UARTDriver_ud:read() end
 
 -- desc
----@param baud_rate uint32_t_ud
+---@param baud_rate uint32_t_ud|integer|number
 function AP_HAL__UARTDriver_ud:begin(baud_rate) end
 
 --[[
@@ -1163,7 +1179,7 @@ function AP_HAL__UARTDriver_ud:readstring(count) end
 
 
 -- desc
----@class RC_Channel_ud
+---@class (exact) RC_Channel_ud
 local RC_Channel_ud = {}
 
 -- desc
@@ -1187,7 +1203,6 @@ function RC_Channel_ud:norm_input() end
 function RC_Channel_ud:norm_input_dz() end
 
 -- desc
----@class winch
 winch = {}
 
 -- desc
@@ -1210,7 +1225,6 @@ function winch:relax() end
 function winch:healthy() end
 
 -- desc
----@class iomcu
 iomcu = {}
 
 -- Check if the IO is healthy
@@ -1218,7 +1232,6 @@ iomcu = {}
 function iomcu:healthy() end
 
 -- desc
----@class compass
 compass = {}
 
 -- Check if the compass is healthy
@@ -1227,7 +1240,6 @@ compass = {}
 function compass:healthy(instance) end
 
 -- desc
----@class camera
 camera = {}
 
 -- desc
@@ -1246,7 +1258,7 @@ function camera:record_video(instance, start_recording) end
 function camera:take_picture(instance) end
 
 -- desc
----@class AP_Camera__camera_state_t_ud
+---@class (exact) AP_Camera__camera_state_t_ud
 local AP_Camera__camera_state_t_ud = {}
 
 ---@return AP_Camera__camera_state_t_ud
@@ -1294,7 +1306,6 @@ function AP_Camera__camera_state_t_ud:take_pic_incr() end
 function camera:get_state(instance) end
 
 -- desc
----@class mount
 mount = {}
 
 -- desc
@@ -1364,7 +1375,6 @@ function mount:get_mode(instance) end
 function mount:get_attitude_euler(instance) end
 
 -- desc
----@class motors
 motors = {}
 
 -- Get motors interlock state, the state of motors controlled by AP_Motors, Copter and Quadplane VTOL motors. Not plane forward flight motors.
@@ -1435,7 +1445,6 @@ function motors:get_roll_ff() end
 function motors:get_roll() end
 
 -- desc
----@class FWVersion
 FWVersion = {}
 
 -- get field
@@ -1472,7 +1481,6 @@ function FWVersion:string() end
 
 
 -- desc
----@class periph
 periph = {}
 
 -- desc
@@ -1492,7 +1500,6 @@ function periph:can_printf(text) end
 function periph:reboot(hold_in_bootloader) end
 
 -- desc
----@class ins
 ins = {}
 
 -- desc
@@ -1535,7 +1542,6 @@ function ins:get_gyro(instance) end
 function ins:get_accel(instance) end
 
 -- desc
----@class Motors_dynamic
 Motors_dynamic = {}
 
 -- desc
@@ -1554,7 +1560,6 @@ function Motors_dynamic:init(expected_num_motors) end
 
 
 -- desc
----@class analog
 analog = {}
 
 -- desc
@@ -1563,7 +1568,6 @@ function analog:channel() end
 
 
 -- Control of general purpose input/output pins
----@class gpio
 gpio = {}
 
 -- set GPIO pin mode
@@ -1591,7 +1595,6 @@ function gpio:read(pin_number) end
 
 
 -- desc
----@class Motors_6DoF
 Motors_6DoF = {}
 
 -- desc
@@ -1613,7 +1616,6 @@ function Motors_6DoF:init(expected_num_motors) end
 
 
 -- desc
----@class attitude_control
 attitude_control = {}
 
 -- desc
@@ -1631,7 +1633,6 @@ function attitude_control:set_lateral_enable(bool) end
 
 
 -- desc
----@class frsky_sport
 frsky_sport = {}
 
 -- desc
@@ -1651,7 +1652,6 @@ function frsky_sport:sport_telemetry_push(sensor, frame, appid, data) end
 
 
 -- desc
----@class MotorsMatrix
 MotorsMatrix = {}
 
 -- desc
@@ -1683,7 +1683,6 @@ function MotorsMatrix:get_thrust_boost() end
 
 
 -- Sub singleton
----@class sub
 sub = {}
 
 -- Return true if joystick button is currently pressed
@@ -1711,7 +1710,6 @@ function sub:set_rangefinder_target_cm(new_target_cm) end
 
 
 -- desc
----@class quadplane
 quadplane = {}
 
 -- desc
@@ -1732,7 +1730,6 @@ function quadplane:abort_landing() end
 
 
 -- desc
----@class LED
 LED = {}
 
 -- desc
@@ -1743,7 +1740,6 @@ function LED:get_rgb() end
 
 
 -- desc
----@class button
 button = {}
 
 -- desc
@@ -1753,7 +1749,6 @@ function button:get_button_state(button_number) end
 
 
 -- desc
----@class RPM
 RPM = {}
 
 -- desc
@@ -1763,11 +1758,10 @@ function RPM:get_rpm(instance) end
 
 
 -- desc
----@class mission
----@field MISSION_COMPLETE number
----@field MISSION_RUNNING number
----@field MISSION_STOPPED number
 mission = {}
+mission.MISSION_COMPLETE = enum_integer
+mission.MISSION_RUNNING = enum_integer
+mission.MISSION_STOPPED = enum_integer
 
 -- clear - clears out mission
 ---@return boolean
@@ -1853,7 +1847,6 @@ function mission:jump_to_landing_sequence() end
 function mission:jump_to_abort_landing_sequence() end
 
 -- desc
----@class param
 param = {}
 
 -- desc
@@ -1895,7 +1888,7 @@ function param:add_table(table_key, prefix, num_params) end
 function param:add_param(table_key, param_num, name, default_value) end
 
 -- desc
----@class ESCTelemetryData_ud
+---@class (exact) ESCTelemetryData_ud
 local ESCTelemetryData_ud = {}
 
 ---@return ESCTelemetryData_ud
@@ -1922,7 +1915,6 @@ function ESCTelemetryData_ud:voltage(value) end
 function ESCTelemetryData_ud:temperature_cdeg(value) end
 
 -- desc
----@class esc_telem
 esc_telem = {}
 
 -- update telemetry data for an ESC instance
@@ -1978,7 +1970,6 @@ function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 
 -- desc
----@class optical_flow
 optical_flow = {}
 
 -- desc
@@ -1995,7 +1986,6 @@ function optical_flow:enabled() end
 
 
 -- desc
----@class baro
 baro = {}
 
 -- desc
@@ -2022,7 +2012,6 @@ function baro:healthy(instance) end
 
 
 -- desc
----@class serial
 serial = {}
 
 -- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28`).
@@ -2034,7 +2023,6 @@ function serial:find_serial(instance) end
 
 
 -- desc
----@class rc
 rc = {}
 
 -- desc
@@ -2072,7 +2060,6 @@ function rc:get_pwm(chan_num) end
 
 
 -- desc
----@class SRV_Channels
 SRV_Channels = {}
 
 -- Get emergency stop state if active no motors of any kind will be active
@@ -2140,7 +2127,6 @@ function SRV_Channels:find_channel(function_num) end
 
 
 -- desc
----@class serialLED
 serialLED = {}
 
 -- desc
@@ -2176,7 +2162,6 @@ function serialLED:set_num_neopixel(chan, num_leds) end
 function serialLED:set_num_neopixel_rgb(chan, num_leds) end
 
 -- desc
----@class vehicle
 vehicle = {}
 
 -- override landing descent rate, times out in 1s
@@ -2393,7 +2378,6 @@ function vehicle:is_taking_off() end
 function vehicle:is_landing() end
 
 -- desc
----@class onvif
 onvif = {}
 
 -- desc
@@ -2420,7 +2404,6 @@ function onvif:start(username, password, httphostname) end
 
 
 -- MAVLink interaction with ground control station
----@class gcs
 gcs = {}
 
 -- send named float value using NAMED_VALUE_FLOAT message
@@ -2430,7 +2413,7 @@ function gcs:send_named_float(name, value) end
 
 -- set message interval for a given serial port and message id
 ---@param port_num integer -- serial port number
----@param msg_id uint32_t_ud -- MAVLink message id
+---@param msg_id uint32_t_ud|integer|number -- MAVLink message id
 ---@param interval_us integer -- interval in micro seconds
 ---@return integer
 ---| '0' # Accepted
@@ -2515,7 +2498,6 @@ function gcs:send_text(severity, text) end
 function gcs:last_seen() end
 
 -- desc
----@class relay
 relay = {}
 
 -- desc
@@ -2542,11 +2524,10 @@ function relay:on(instance) end
 
 
 -- desc
----@class terrain
----@field TerrainStatusOK number
----@field TerrainStatusUnhealthy number
----@field TerrainStatusDisabled number
 terrain = {}
+terrain.TerrainStatusOK = enum_integer
+terrain.TerrainStatusUnhealthy = enum_integer
+terrain.TerrainStatusDisabled = enum_integer
 
 -- desc
 ---@param extrapolate boolean
@@ -2574,7 +2555,7 @@ function terrain:enabled() end
 
 
 -- RangeFinder state structure
----@class RangeFinder_State_ud
+---@class (exact) RangeFinder_State_ud
 local RangeFinder_State_ud = {}
 
 ---@return RangeFinder_State_ud
@@ -2585,7 +2566,7 @@ function RangeFinder_State() end
 function RangeFinder_State_ud:last_reading() end
 
 -- set system time (ms) of last successful update from sensor
----@param value uint32_t_ud
+---@param value uint32_t_ud|integer|number
 function RangeFinder_State_ud:last_reading(value) end
 
 -- get sensor status
@@ -2630,7 +2611,7 @@ function RangeFinder_State_ud:voltage(value) end
 
 
 -- RangeFinder backend
----@class AP_RangeFinder_Backend_ud
+---@class (exact) AP_RangeFinder_Backend_ud
 local AP_RangeFinder_Backend_ud = {}
 
 -- Send range finder measurement to lua rangefinder backend. Returns false if failed
@@ -2664,7 +2645,6 @@ function AP_RangeFinder_Backend_ud:get_state() end
 
 
 -- desc
----@class rangefinder
 rangefinder = {}
 
 -- get backend based on rangefinder instance provided
@@ -2722,7 +2702,7 @@ function rangefinder:has_orientation(orientation) end
 function rangefinder:num_sensors() end
 
 -- Proximity backend methods
----@class AP_Proximity_Backend_ud
+---@class (exact) AP_Proximity_Backend_ud
 local AP_Proximity_Backend_ud = {}
 
 -- Push virtual proximity boundary into actual boundary
@@ -2754,7 +2734,6 @@ function AP_Proximity_Backend_ud:handle_script_3d_msg(vector_3d, update_boundary
 function AP_Proximity_Backend_ud:handle_script_distance_msg(dist_m, yaw_deg, pitch_deg, update_boundary) end
 
 -- desc
----@class proximity
 proximity = {}
 
 -- get backend based on proximity instance provided
@@ -2787,7 +2766,6 @@ function proximity:get_status() end
 
 
 -- desc
----@class notify
 notify = {}
 
 -- desc
@@ -2818,15 +2796,14 @@ function notify:send_text(text, row) end
 function notify:release_text(row) end
 
 -- desc
----@class gps
----@field GPS_OK_FIX_3D_RTK_FIXED number
----@field GPS_OK_FIX_3D_RTK_FLOAT number
----@field GPS_OK_FIX_3D_DGPS number
----@field GPS_OK_FIX_3D number
----@field GPS_OK_FIX_2D number
----@field NO_FIX number
----@field NO_GPS number
 gps = {}
+--gps.GPS_OK_FIX_3D_RTK_FIXED = enum_integer
+--gps.GPS_OK_FIX_3D_RTK_FLOAT = enum_integer
+--gps.GPS_OK_FIX_3D_DGPS = enum_integer
+--gps.GPS_OK_FIX_3D = enum_integer
+--gps.GPS_OK_FIX_2D = enum_integer
+--gps.NO_FIX = enum_integer
+--gps.NO_GPS = enum_integer
 
 -- desc
 ---@return integer|nil
@@ -2926,7 +2903,7 @@ function gps:primary_sensor() end
 function gps:num_sensors() end
 
 -- desc
----@class BattMonitorScript_State_ud
+---@class (exact) BattMonitorScript_State_ud
 local BattMonitorScript_State_ud = {}
 
 ---@return BattMonitorScript_State_ud
@@ -2974,7 +2951,6 @@ function BattMonitorScript_State_ud:voltage(value) end
 function BattMonitorScript_State_ud:healthy(value) end
 
 -- desc
----@class battery
 battery = {}
 
 -- desc
@@ -3060,7 +3036,6 @@ function battery:get_cell_voltage(instance, cell) end
 
 
 -- desc
----@class arming
 arming = {}
 
 -- desc
@@ -3094,7 +3069,6 @@ function arming:disarm() end
 
 
 -- desc
----@class ahrs
 ahrs = {}
 
 -- desc
@@ -3244,7 +3218,6 @@ function ahrs:get_pitch() end
 function ahrs:get_roll() end
 
 -- desc
----@class AC_AttitudeControl
 AC_AttitudeControl = {}
 
 -- return slew rates for VTOL controller
@@ -3254,7 +3227,6 @@ AC_AttitudeControl = {}
 function AC_AttitudeControl:get_rpy_srate() end
 
 -- desc
----@class AR_AttitudeControl
 AR_AttitudeControl = {}
 
 -- return attitude controller slew rates for rovers
@@ -3263,7 +3235,6 @@ AR_AttitudeControl = {}
 function AR_AttitudeControl:get_srate() end
 
 -- desc
----@class AR_PosControl
 AR_PosControl = {}
 
 -- return position controller slew rates for rovers
@@ -3271,7 +3242,6 @@ AR_PosControl = {}
 function AR_PosControl:get_srate() end
 
 -- precision landing access
----@class precland
 precland = {}
 
 -- get Location of target or nil if target not acquired
@@ -3295,7 +3265,6 @@ function precland:target_acquired() end
 function precland:healthy() end
 
 -- desc
----@class follow
 follow = {}
 
 -- desc
@@ -3321,7 +3290,6 @@ function follow:get_last_update_ms() end
 function follow:have_target() end
 
 -- desc
----@class scripting
 scripting = {}
 
 -- desc
@@ -3341,12 +3309,11 @@ function dirlist(directoryname) end
 function remove(filename) end
 
 -- desc
----@class mavlink
 mavlink = {}
 
 -- initializes mavlink
----@param num_rx_msgid uint32_t_ud|integer
----@param msg_queue_length uint32_t_ud|integer
+---@param num_rx_msgid uint32_t_ud|integer|number
+---@param msg_queue_length uint32_t_ud|integer|number
 function mavlink:init(num_rx_msgid, msg_queue_length) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
@@ -3374,7 +3341,6 @@ function mavlink:send_chan(chan, msgid, message) end
 function mavlink:block_command(comand_id) end
 
 -- Geofence library
----@class fence
 fence = {}
 
 -- Returns the time at which the current breach started
@@ -3390,7 +3356,7 @@ function fence:get_breach_time() end
 function fence:get_breaches() end
 
 -- desc
----@class stat_t_ud
+---@class (exact) stat_t_ud
 local stat_t_ud = {}
 
 ---@return stat_t_ud
@@ -3421,7 +3387,6 @@ function stat_t_ud:size() end
 function stat_t_ud:is_directory() end
 
 -- desc
----@class rtc
 rtc = {}
 
 -- return a time since 1970 in seconds from GMT date elements
@@ -3435,7 +3400,7 @@ rtc = {}
 function rtc:date_fields_to_clock_s(year, month, day, hour, min, sec) end
 
 -- break a time in seconds since 1970 to GMT date elements
----@param param1 uint32_t_ud
+---@param param1 uint32_t_ud|integer|number
 ---@return integer|nil -- year 20xx
 ---@return integer|nil -- month 0-11
 ---@return integer|nil -- day 1-31
@@ -3446,7 +3411,6 @@ function rtc:date_fields_to_clock_s(year, month, day, hour, min, sec) end
 function rtc:clock_s_to_date_fields(param1) end
 
 -- desc
----@class fs
 fs = {}
 
 -- desc
@@ -3468,11 +3432,10 @@ function fs:get_format_status() end
 function fs:crc32(file_name) end
 
 -- desc
----@class networking
 networking = {}
 
 -- conver uint32_t address to string
----@param ip4addr uint32_t_ud
+---@param ip4addr uint32_t_ud|integer|number
 ---@return string
 function networking:address_to_str(ip4addr) end
 
