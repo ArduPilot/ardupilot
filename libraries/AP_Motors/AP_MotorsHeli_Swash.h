@@ -81,7 +81,7 @@ private:
     float                _pitchFactor[_max_num_servos];             // Pitch axis scaling of servo output based on servo position
     float                _collectiveFactor[_max_num_servos];        // Collective axis scaling of servo output based on servo position
     float                _output[_max_num_servos];                  // Servo output value
-    uint8_t              _motor_num[_max_num_servos];               // Motor function to use for output
+    const uint8_t        _motor_num[_max_num_servos];               // Motor function to use for output
     const uint8_t        _instance;                                 // Swashplate instance. Used for logging.
 
     // Variables stored for logging
