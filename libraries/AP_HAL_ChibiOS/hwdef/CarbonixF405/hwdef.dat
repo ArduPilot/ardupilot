@@ -17,7 +17,7 @@ APJ_BOARD_ID 1064
 env AP_PERIPH 1
 
 # crystal frequency set to 0 to use internal clock
-OSCILLATOR_HZ 0
+OSCILLATOR_HZ 12000000
 
 #MCU F405 Flash 1024
 FLASH_SIZE_KB 1024
