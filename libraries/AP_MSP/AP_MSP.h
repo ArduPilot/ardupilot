@@ -57,6 +57,7 @@ public:
         TELEMETRY_MODE = 1U<<0,
         TELEMETRY_DISABLE_DJI_WORKAROUNDS = 1U<<1,
         DISPLAYPORT_BTFL_SYMBOLS = 1U<<2,
+        RAW_RC_TELEM = 1U<<3,
     };
 
     bool is_option_enabled(const Option option) const;

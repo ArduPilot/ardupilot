@@ -1056,17 +1056,32 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
+    const AP_MSP *msp = AP::msp();
+    if (msp == nullptr) {
+        return MSP_RESULT_ERROR;
+    }
 #if AP_RCMAPPER_ENABLED
     const RCMapper* rcmap = AP::rcmap();
     if (rcmap == nullptr) {
         return MSP_RESULT_ERROR;
     }
-
-    // note: rcmap channels start at 1
-    float roll = rc().rc_channel(rcmap->roll()-1)->norm_input_dz();
-    float pitch = -rc().rc_channel(rcmap->pitch()-1)->norm_input_dz();
-    float yaw = rc().rc_channel(rcmap->yaw()-1)->norm_input_dz();
-    float throttle = rc().rc_channel(rcmap->throttle()-1)->norm_input_dz();
+    uint16_t values[16] = {};
+    rc().get_radio_in(values, ARRAY_SIZE(values));
+    uint16_t roll = values[rcmap->roll()-1];      //A
+    uint16_t pitch = values[rcmap->pitch()-1];    //E
+    uint16_t yaw = values[rcmap->yaw()-1];        //R
+    uint16_t thr = values[rcmap->throttle()-1];   //T
+    
+    if (!msp->is_option_enabled(AP_MSP::Option::RAW_RC_TELEM)) {
+    roll = rc().rc_channel(rcmap->roll()-1)->norm_input_dz();
+    pitch = -rc().rc_channel(rcmap->pitch()-1)->norm_input_dz();
+    yaw = rc().rc_channel(rcmap->yaw()-1)->norm_input_dz();
+    thr = rc().rc_channel(rcmap->throttle()-1)->norm_input_dz();
+    roll = roll * 500 + 1500;
+    pitch = pitch * 500 + 1500;
+    yaw = yaw * 500 + 1500;
+    thr = thr * 500 + 1500;
+    }
 
     const struct PACKED {
         uint16_t a;
@@ -1075,12 +1090,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
         uint16_t t;
     } rc {
         // send only 4 channels, MSP order is AERT
-        a : uint16_t(roll*500+1500),       // A
-        e : uint16_t(pitch*500+1500),      // E
-        r : uint16_t(yaw*500+1500),        // R
-        t : uint16_t(throttle*1000+1000)    // T
+        a : roll,       // A
+        e : pitch,      // E
+        r : yaw,        // R
+        t : thr         // T
     };
-
+    
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
 #else

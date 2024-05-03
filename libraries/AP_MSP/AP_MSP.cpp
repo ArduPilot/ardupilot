@@ -44,8 +44,8 @@ const AP_Param::GroupInfo AP_MSP::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: MSP OSD Options
-    // @Description: A bitmask to set some MSP specific options: EnableTelemetryMode-allows "push" mode telemetry when only rx line of OSD ic connected to autopilot,  EnableBTFLFonts-uses indexes corresponding to Betaflight fonts if OSD uses those instead of ArduPilot fonts.
-    // @Bitmask: 0:EnableTelemetryMode, 1: unused, 2:EnableBTFLFonts
+    // @Description: A bitmask to set some MSP specific options: EnableTelemetryMode-allows "push" mode telemetry when only rx line of OSD ic connected to autopilot,  EnableBTFLFonts-uses indexes corresponding to Betaflight fonts if OSD uses those instead of ArduPilot fonts. Raw MSP RC- uses directly received RC input for MSP telem as did prior versions to 4.6 reported instead of scaled/reversed 
+    // @Bitmask: 0:EnableTelemetryMode, 1: unused, 2:EnableBTFLFonts, 3: Raw MSP RC
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 2, AP_MSP, _options, 0),
 
