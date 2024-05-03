@@ -88,13 +88,9 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
 };
 
 AP_MotorsHeli_Swash::AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t instance) :
-    _instance(instance)
+    _instance(instance),
+    _motor_num{mot_0, mot_1, mot_2, mot_3}
 {
-    _motor_num[0] = mot_0;
-    _motor_num[1] = mot_1;
-    _motor_num[2] = mot_2;
-    _motor_num[3] = mot_3;
-
     AP_Param::setup_object_defaults(this, var_info);
 }
 
