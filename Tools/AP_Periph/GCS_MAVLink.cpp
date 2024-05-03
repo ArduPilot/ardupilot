@@ -35,6 +35,7 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 #if AP_GPS_ENABLED
     MSG_GPS_RAW,
     MSG_GPS_RTK,
+    MSG_GNSS_INTEGRITY,
 #endif
 };
 

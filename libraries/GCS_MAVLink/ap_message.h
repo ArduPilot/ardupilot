@@ -35,6 +35,7 @@ enum ap_message : uint8_t {
     MSG_SCALED_PRESSURE3,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
+    MSG_GNSS_INTEGRITY,
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
     MSG_SYSTEM_TIME,

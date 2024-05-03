@@ -156,6 +156,49 @@ public:
         GPS_OK_FIX_3D_RTK_FIXED = 6, ///< Receiving valid messages and 3D RTK Fixed
     };
 
+    /// GPS error bits. These are kept aligned with MAVLink by static_assert
+    /// in AP_GPS.cpp
+    enum GPS_Errors {
+        GPS_SYSTEM_ERROR_NONE =      0,
+        INCOMING_CORRECTIONS =  1 << 0,
+        CONFIGURATION =         1 << 1,
+        SOFTWARE =              1 << 2,
+        ANTENNA =               1 << 3,
+        EVENT_CONGESTION =      1 << 4,
+        CPU_OVERLOAD =          1 << 5,
+        OUTPUT_CONGESTION =     1 << 6,
+    };
+
+    /// GPS authentication status. These are kept aligned with MAVLink by static_assert
+    /// in AP_GPS.cpp
+    enum GPS_Authentication {
+        AUTHENTICATION_UNKNOWN =       0,
+        AUTHENTICATION_INITIALIZING =  1,
+        AUTHENTICATION_ERROR =         2,
+        AUTHENTICATION_OK =            3,
+        AUTHENTICATION_DISABLED =      4,
+    };
+
+    /// GPS jamming status. These are kept aligned with MAVLink by static_assert
+    /// in AP_GPS.cpp
+    enum GPS_Jamming {
+        JAMMING_UNKNOWN =   0,
+        JAMMING_OK =        1,
+        JAMMING_MITIGATED = 2,
+        JAMMING_DETECTED =  3,
+        
+    };
+
+    /// GPS spoofing status. These are kept aligned with MAVLink by static_assert
+    /// in AP_GPS.cpp
+    enum GPS_Spoofing {
+        SPOOFING_UNKNOWN =   0,
+        SPOOFING_OK =        1,
+        SPOOFING_MITIGATED = 2,
+        SPOOFING_DETECTED =  3,
+        
+    };
+
     // GPS navigation engine settings. Not all GPS receivers support
     // this
     enum GPS_Engine_Setting {
@@ -223,6 +266,10 @@ public:
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
         bool corrected_timestamp_updated;  ///< true if the corrected timestamp has been updated
         uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
+        uint32_t system_errors;             ///< system errors
+        uint8_t authentication_state;        ///< authentication state of GNSS signals
+        uint8_t jamming_state;               ///< jamming state of GNSS signals
+        uint8_t spoofing_state;              ///< spoofing state of GNSS signals
 
         // all the following fields must only all be filled by RTK capable backend drivers
         uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
@@ -430,6 +477,42 @@ public:
         return get_hdop(primary_instance);
     }
 
+    // general errors in the GPS system
+    uint32_t get_system_errors(uint8_t instance) const {
+        return state[instance].system_errors;
+    }
+
+    uint32_t get_system_errors() const {
+        return get_system_errors(primary_instance);
+    }
+
+    // authentication state of GNSS signals
+    uint8_t get_authentication_state(uint8_t instance) const {
+        return state[instance].authentication_state;
+    }
+
+    uint8_t get_authentication_state() const {
+        return get_authentication_state(primary_instance);
+    }
+
+    // jamming state of GNSS signals
+    uint8_t get_jamming_state(uint8_t instance) const {
+        return state[instance].jamming_state;
+    }
+
+    uint8_t get_jamming_state() const {
+        return get_jamming_state(primary_instance);
+    }
+
+    // spoofing state of GNSS signals
+    uint8_t get_spoofing_state(uint8_t instance) const {
+        return state[instance].spoofing_state;
+    }
+
+    uint8_t get_spoofing_state() const {
+        return get_spoofing_state(primary_instance);
+    }
+
     // vertical dilution of precision
     uint16_t get_vdop(uint8_t instance) const {
         return state[instance].vdop;
@@ -505,6 +588,7 @@ public:
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 
     void send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst);
+    void send_mavlink_gnss_integrity(mavlink_channel_t chan, uint8_t inst);
 
     // Returns true if there is an unconfigured GPS, and provides the instance number of the first non configured GPS
     bool first_unconfigured_gps(uint8_t &instance) const WARN_IF_UNUSED;
