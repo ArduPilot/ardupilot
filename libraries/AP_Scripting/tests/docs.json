@@ -1,0 +1,22 @@
+{ // lua-language-server config for docs generation
+    "runtime.version": "Lua 5.3",
+    "runtime.builtin": {
+        "basic": "disable",
+        "bit": "disable",
+        "bit32": "disable",
+        "builtin": "disable",
+        "coroutine": "disable",
+        "debug": "disable",
+        "ffi": "disable",
+        "io": "disable",
+        "jit": "disable",
+        "math": "disable",
+        "os": "disable",
+        "package": "disable",
+        "string": "disable",
+        "table": "disable",
+        "table.clear": "disable",
+        "table.new": "disable",
+        "utf8": "disable"
+      }
+}
