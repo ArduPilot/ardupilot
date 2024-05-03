@@ -187,14 +187,11 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
  */
 void GCS_MAVLINK_Rover::send_pid_tuning()
 {
-    Parameters &g = rover.g;
-    ParametersG2 &g2 = rover.g2;
-
     const AP_PIDInfo *pid_info;
 
     // steering PID
-    if (g.gcs_pid_mask & 1) {
-        pid_info = &g2.attitude_control.get_steering_rate_pid().get_pid_info();
+    if (rover.g.gcs_pid_mask & 1) {
+        pid_info = &rover.g2.attitude_control.get_steering_rate_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_STEER,
                                     degrees(pid_info->target),
                                     degrees(pid_info->actual),
@@ -210,8 +207,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // speed to throttle PID
-    if (g.gcs_pid_mask & 2) {
-        pid_info = &g2.attitude_control.get_throttle_speed_pid_info();
+    if (rover.g.gcs_pid_mask & 2) {
+        pid_info = &rover.g2.attitude_control.get_throttle_speed_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info->target,
                                     pid_info->actual,
@@ -227,8 +224,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // pitch to throttle pid
-    if (g.gcs_pid_mask & 4) {
-        pid_info = &g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info();
+    if (rover.g.gcs_pid_mask & 4) {
+        pid_info = &rover.g2.attitude_control.get_pitch_to_throttle_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
                                     degrees(pid_info->target),
                                     degrees(pid_info->actual),
@@ -244,8 +241,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // left wheel rate control pid
-    if (g.gcs_pid_mask & 8) {
-        pid_info = &g2.wheel_rate_control.get_pid(0).get_pid_info();
+    if (rover.g.gcs_pid_mask & 8) {
+        pid_info = &rover.g2.wheel_rate_control.get_pid(0).get_pid_info();
         mavlink_msg_pid_tuning_send(chan, 7,
                                     pid_info->target,
                                     pid_info->actual,
@@ -261,8 +258,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // right wheel rate control pid
-    if (g.gcs_pid_mask & 16) {
-        pid_info = &g2.wheel_rate_control.get_pid(1).get_pid_info();
+    if (rover.g.gcs_pid_mask & 16) {
+        pid_info = &rover.g2.wheel_rate_control.get_pid(1).get_pid_info();
         mavlink_msg_pid_tuning_send(chan, 8,
                                     pid_info->target,
                                     pid_info->actual,
@@ -278,8 +275,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // sailboat heel to mainsail pid
-    if (g.gcs_pid_mask & 32) {
-        pid_info = &g2.attitude_control.get_sailboat_heel_pid().get_pid_info();
+    if (rover.g.gcs_pid_mask & 32) {
+        pid_info = &rover.g2.attitude_control.get_sailboat_heel_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, 9,
                                     pid_info->target,
                                     pid_info->actual,
@@ -295,8 +292,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // Position Controller Velocity North PID
-    if (g.gcs_pid_mask & 64) {
-        pid_info = &g2.pos_control.get_vel_pid().get_pid_info_x();
+    if (rover.g.gcs_pid_mask & 64) {
+        pid_info = &rover.g2.pos_control.get_vel_pid().get_pid_info_x();
         mavlink_msg_pid_tuning_send(chan, 10,
                                     pid_info->target,
                                     pid_info->actual,
@@ -312,8 +309,8 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     }
 
     // Position Controller Velocity East PID
-    if (g.gcs_pid_mask & 128) {
-        pid_info = &g2.pos_control.get_vel_pid().get_pid_info_y();
+    if (rover.g.gcs_pid_mask & 128) {
+        pid_info = &rover.g2.pos_control.get_vel_pid().get_pid_info_y();
         mavlink_msg_pid_tuning_send(chan, 11,
                                     pid_info->target,
                                     pid_info->actual,
@@ -332,12 +329,12 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
 void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
 {
     // send wheel encoder data using wheel_distance message
-    if (g2.wheel_encoder.num_sensors() > 0) {
+    if (rover.g2.wheel_encoder.num_sensors() > 0) {
         double distances[MAVLINK_MSG_WHEEL_DISTANCE_FIELD_DISTANCE_LEN] {};
-        for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
+        for (uint8_t i = 0; i < rover.g2.wheel_encoder.num_sensors(); i++) {
             distances[i] = wheel_encoder_last_distance_m[i];
         }
-        mavlink_msg_wheel_distance_send(chan, 1000UL * AP_HAL::millis(), g2.wheel_encoder.num_sensors(), distances);
+        mavlink_msg_wheel_distance_send(chan, 1000UL * AP_HAL::millis(), rover.g2.wheel_encoder.num_sensors(), distances);
     }
 }
 
