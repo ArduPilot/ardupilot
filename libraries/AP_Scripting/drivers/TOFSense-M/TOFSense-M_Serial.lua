@@ -2,6 +2,10 @@
   Upto 3 CAN devices supported in this script although its easy to extend.
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 local sensor_no         = 1     -- Sensor ID. Upload a copy of this script to the flight controller with this variable changed if you would like to use multiple of these sensors as serial. Switching to CAN highly recommended in that case
 local update_rate_ms    = 10    -- update rate (in ms) of the driver. 10ms was found to be appropriate
 local bytes_to_parse    = 100   -- serial bytes to parse in one interation of lua script. Reduce this if script is not able to complete in time

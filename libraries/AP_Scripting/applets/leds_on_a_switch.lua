@@ -1,6 +1,8 @@
 -- leds_on_a_switch.lua: control led brightness with a radio switch
 --
 
+---@diagnostic disable: cast-local-type
+
 -- constants
 local AuxSwitchPos = {LOW=0, MIDDLE=1, HIGH=2}
 local NTF_LED_BRIGHT = Parameter("NTF_LED_BRIGHT")

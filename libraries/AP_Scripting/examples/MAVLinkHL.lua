@@ -17,9 +17,14 @@ Caveats:
 
 Written by Stephen Dade (stephen_dade@hotmail.com)
 --]]
+
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
+
+
 local port = serial:find_serial(0)
 
-if not port or baud == 0 then
+if not port then
     gcs:send_text(0, "No Scripting Serial Port")
     return
 end

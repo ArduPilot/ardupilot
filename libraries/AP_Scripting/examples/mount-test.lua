@@ -12,6 +12,8 @@
 -- stage 9: point North and Down
 -- stage 10: move angle to neutral position
 
+---@diagnostic disable: cast-local-type
+
 local stage = 0
 local stage_time_ms = 5000
 local stage_start_time_ms = 0

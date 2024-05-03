@@ -2,6 +2,11 @@
   EFI Scripting backend driver for HFE based on HFEDCN0191 Rev E
 --]]
 -- luacheck: only 0
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: redundant-parameter
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: need-check-nil
 
 
 -- Check Script uses a miniumum firmware version

@@ -16,6 +16,9 @@
 --     otherwise source2 (T265) or source3 (optical flow) will be used based on rangefinder distance
 -- luacheck: only 0
 
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
+
 local rangefinder_rotation = 25     -- check downward (25) facing lidar
 local source_prev = 0               -- previous source, defaults to primary source
 local sw_source_prev = -1           -- previous source switch position

@@ -6,6 +6,9 @@
 
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: missing-parameter
 
 --[[
  - TODO:

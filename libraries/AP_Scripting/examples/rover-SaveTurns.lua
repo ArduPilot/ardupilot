@@ -12,6 +12,9 @@ of a vehicle.  Use this script AT YOUR OWN RISK.
 LICENSE - GNU GPLv3 https://www.gnu.org/licenses/gpl-3.0.en.html
 ------------------------------------------------------------------------------]]
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
+
 local SCRIPT_NAME = 'SaveTurns'
 
 --------  USER EDITABLE GLOBALS  --------

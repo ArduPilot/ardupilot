@@ -6,6 +6,10 @@ cmd = 4: knife edge at any angle, arg1 = roll angle to hold, arg2 = duration
 cmd = 5: pause, holding heading and alt to allow stabilization after a move, arg1 = duration in seconds
 ]]--
 -- luacheck: only 0
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
 
 DO_JUMP = 177
 k_throttle = 70
