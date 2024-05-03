@@ -517,7 +517,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum bank angle commanded in modes with stabilized limits. Increase this value for sharper turns, but decrease to prevent accelerated stalls.
     // @Units: deg
     // @Range: 0 90
-    // @Increment: 0.1
+    // @Increment: 1
     // @User: Standard
     ASCALAR(roll_limit,          "ROLL_LIMIT_DEG",    ROLL_LIMIT_DEG),
 
@@ -526,7 +526,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum pitch up angle commanded in modes with stabilized limits.
     // @Units: deg
     // @Range: 0 90
-    // @Increment: 10
+    // @Increment: 1
     // @User: Standard
     ASCALAR(pitch_limit_max,     "PTCH_LIM_MAX_DEG",  PITCH_MAX),
 
@@ -535,7 +535,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum pitch down angle commanded in modes with stabilized limits
     // @Units: deg
     // @Range: -90 0
-    // @Increment: 10
+    // @Increment: 1
     // @User: Standard
     ASCALAR(pitch_limit_min,     "PTCH_LIM_MIN_DEG",  PITCH_MIN),
 
