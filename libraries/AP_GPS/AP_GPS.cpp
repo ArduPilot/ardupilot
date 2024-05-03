@@ -106,6 +106,30 @@ static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint32_t)GPS_FIX_T
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint32_t)GPS_FIX_TYPE_DGPS, "FIX_DGPS incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
 static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
+
+static_assert((uint32_t)AP_GPS::GPS_Errors::NONE == (uint32_t)GPS_SYSTEM_ERROR_NONE);
+static_assert((uint32_t)AP_GPS::GPS_Errors::INCOMING_CORRECTIONS == (uint32_t)GPS_SYSTEM_ERROR_INCOMING_CORRECTIONS);
+static_assert((uint32_t)AP_GPS::GPS_Errors::CONFIGURATION == (uint32_t)GPS_SYSTEM_ERROR_CONFIGURATION);
+static_assert((uint32_t)AP_GPS::GPS_Errors::SOFTWARE == (uint32_t)GPS_SYSTEM_ERROR_SOFTWARE);
+static_assert((uint32_t)AP_GPS::GPS_Errors::ANTENNA == (uint32_t)GPS_SYSTEM_ERROR_ANTENNA);
+static_assert((uint32_t)AP_GPS::GPS_Errors::EVENT_CONGESTION == (uint32_t)GPS_SYSTEM_ERROR_EVENT_CONGESTION);
+static_assert((uint32_t)AP_GPS::GPS_Errors::CPU_OVERLOAD == (uint32_t)GPS_SYSTEM_ERROR_CPU_OVERLOAD);
+static_assert((uint32_t)AP_GPS::GPS_Errors::OUTPUT_CONGESTION == (uint32_t)GPS_SYSTEM_ERROR_OUTPUT_CONGESTION);
+
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_UNKNOWN == (uint8_t)GPS_AUTHENTICATION_STATE_UNKNOWN);
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_INITIALIZING == (uint8_t)GPS_AUTHENTICATION_STATE_INITIALIZING);
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_ERROR == (uint8_t)GPS_AUTHENTICATION_STATE_ERROR);
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_OK == (uint8_t)GPS_AUTHENTICATION_STATE_OK);
+static_assert((uint8_t)AP_GPS::GPS_Authentication::AUTHENTICATION_DISABLED == (uint8_t)GPS_AUTHENTICATION_STATE_DISABLED);
+
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_UNKNOWN == (uint8_t)GPS_JAMMING_STATE_UNKNOWN);
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_OK == (uint8_t)GPS_JAMMING_STATE_OK);
+static_assert((uint8_t)AP_GPS::GPS_Jamming::JAMMING_DETECTED == (uint8_t)GPS_JAMMING_STATE_DETECTED);
+
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_UNKNOWN == (uint8_t)GPS_SPOOFING_STATE_UNKNOWN);
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_OK == (uint8_t)GPS_SPOOFING_STATE_OK);
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_DETECTED == (uint8_t)GPS_SPOOFING_STATE_DETECTED);
+static_assert((uint8_t)AP_GPS::GPS_Spoofing::SPOOFING_MITIGATED == (uint8_t)GPS_SPOOFING_STATE_MITIGATED);
 #endif
 
 // ensure that our own enum-class status is equivalent to the
@@ -1395,7 +1419,11 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         vacc * 1000,          // one-sigma standard deviation in mm
         sacc * 1000,          // one-sigma standard deviation in mm/s
         0,                    // TODO one-sigma heading accuracy standard deviation
-        gps_yaw_cdeg(0));
+        gps_yaw_cdeg(0),
+        get_system_errors(0),
+        get_authentication_state(0),
+        get_jamming_state(0),
+        get_spoofing_state(0));
 }
 
 #if GPS_MAX_RECEIVERS > 1

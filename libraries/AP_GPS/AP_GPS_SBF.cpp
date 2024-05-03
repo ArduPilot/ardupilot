@@ -45,6 +45,9 @@ do {                                            \
 #ifndef GPS_SBF_STREAM_NUMBER
   #define GPS_SBF_STREAM_NUMBER 1
 #endif
+#ifndef GPS_SBF_STATUS_STREAM_NUMBER
+  #define GPS_SBF_STATUS_STREAM_NUMBER 3
+#endif
 
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
@@ -136,6 +139,13 @@ AP_GPS_SBF::read(void)
                                              (int)params.com_port,
                                              extra_config) == -1) {
                                     config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::SSO_Status:
+                                if (asprintf(&config_string, "sso,Stream%d,COM%d,GalAuthStatus+RFStatus+QualityInd+ReceiverStatus,sec1\n",
+                                            (int)GPS_SBF_STATUS_STREAM_NUMBER,
+                                            (int)params.com_port) == -1) {
+                                                config_string = nullptr;
                                 }
                                 break;
                             case Config_State::Blob:
@@ -364,6 +374,9 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::SSO;
                                     break;
                                 case Config_State::SSO:
+                                    config_step = Config_State::SSO_Status;
+                                    break;
+                                case Config_State::SSO_Status:
                                     config_step = Config_State::Blob;
                                     break;
                                 case Config_State::Blob:
@@ -519,6 +532,76 @@ AP_GPS_SBF::process_message(void)
                             (unsigned int)(RxError & RX_ERROR_MASK), (unsigned int)(temp.RxError & RX_ERROR_MASK));
         }
         RxError = temp.RxError;
+        ExtError = temp.ExtError;
+        state.system_errors = AP_GPS::GPS_Errors::NONE;
+        if (ExtError & CORRECTION)
+            state.system_errors |= AP_GPS::GPS_Errors::INCOMING_CORRECTIONS;
+        if (RxError & INVALIDCONFIG)
+            state.system_errors |= AP_GPS::GPS_Errors::CONFIGURATION;
+        if (RxError & SOFTWARE)
+            state.system_errors |= AP_GPS::GPS_Errors::SOFTWARE;
+        if (RxError & ANTENNA)
+            state.system_errors |= AP_GPS::GPS_Errors::ANTENNA;
+        if (RxError & MISSEDEVENT)
+            state.system_errors |= AP_GPS::GPS_Errors::EVENT_CONGESTION;
+        if (RxError & CPUOVERLOAD)
+            state.system_errors |= AP_GPS::GPS_Errors::CPU_OVERLOAD;
+        if (RxError & CONGESTION)
+            state.system_errors |= AP_GPS::GPS_Errors::OUTPUT_CONGESTION;
+        break;
+    }
+    case RFStatus:
+    {
+        const msg4092 &temp = sbf_msg.data.msg4092u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+	if (temp.Flags==0) {
+	    state.spoofing_state = AP_GPS::GPS_Spoofing::SPOOFING_OK;
+	}
+	else {
+	    state.spoofing_state = AP_GPS::GPS_Spoofing::SPOOFING_DETECTED;
+	}
+        state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_OK;
+        for (int i = 0; i < temp.N; i++) {
+            RFStatusRFBandSubBlock* rf_band_data = (RFStatusRFBandSubBlock*)(&temp.RFBand + i * temp.SBLength);
+            switch (rf_band_data->Info & (uint8_t)0b111) {
+            case 1:
+            case 2:
+                // As long as there is indicated but unmitigated spoofing in one band, don't report the overall state as mitigated
+                if (state.jamming_state == AP_GPS::GPS_Jamming::JAMMING_OK) {
+                    state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_MITIGATED;
+                }
+                break;
+            case 8:
+                state.jamming_state = AP_GPS::GPS_Jamming::JAMMING_DETECTED;
+                break;
+            }
+        }
+        break;
+    }
+    case GALAuthStatus:
+    {
+        const msg4245 &temp = sbf_msg.data.msg4245u;
+        check_new_itow(temp.TOW, sbf_msg.length);
+        switch (temp.OSNMAStatus & (uint16_t)0b111) {
+        case 0:
+            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_DISABLED;
+            break;
+        case 1:
+        case 2:
+            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_INITIALIZING;
+            break;
+        case 3:
+        case 4:
+        case 5:
+            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_ERROR;
+            break;
+        case 6:
+            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_OK;
+            break;
+        default:
+            state.authentication_state = AP_GPS::GPS_Authentication::AUTHENTICATION_UNKNOWN;
+            break;
+        }
         break;
     }
     case VelCovGeodetic:
