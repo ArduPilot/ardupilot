@@ -3570,6 +3570,13 @@ float AP_AHRS::get_EAS2TAS(void) const
     return 1.0;
 }
 
+// get air density / sea level density - decreases as altitude climbs
+float AP_AHRS::get_air_density_ratio(void) const
+{
+    const float eas2tas = get_EAS2TAS();
+    return 1.0 / sq(eas2tas);
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 
