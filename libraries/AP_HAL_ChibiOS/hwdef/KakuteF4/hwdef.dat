@@ -70,9 +70,12 @@ define HAL_BATT_CURR_SCALE 17.0
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART6 USART1 UART4 UART5 USART3
 
-# rcinput is PB11
+# RC input defaults to timer capture
 PB11 TIM2_CH4 TIM2 RCININT PULLDOWN LOW
-PB10 USART3_TX USART3
+
+# alternative RC input using USART3 serial port.
+PB10 USART3_TX USART3 NODMA
+PB11 USART3_RX USART3 NODMA ALT(1)
 
 # SBUS inversion control pin, active high
 PB15 USART3_RXINV OUTPUT LOW GPIO(78) POL(1)
