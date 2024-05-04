@@ -73,7 +73,9 @@ SERIAL_ORDER OTG1 USART6 USART1 UART4 UART5 USART3
 # RC input defaults to timer capture
 PB11 TIM2_CH4 TIM2 RCININT PULLDOWN LOW
 
-# alternative RC input using USART3 serial port.
+# alternative RC input using USART3 serial port,
+# according to https://github.com/betaflight/betaflight/pull/4427/
+# PB11 has an Inverter built-in, so invert-rx option must be used.
 PB10 USART3_TX USART3 NODMA
 PB11 USART3_RX USART3 NODMA ALT(1)
 
