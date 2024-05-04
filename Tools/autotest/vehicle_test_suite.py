@@ -2530,7 +2530,6 @@ class TestSuite(ABC):
             "SIM_RC_CHANCOUNT",
             "SIM_RICH_CTRL",
             "SIM_RICH_ENABLE",
-            "SIM_SERVO_SPEED",
             "SIM_SHIP_DSIZE",
             "SIM_SHIP_ENABLE",
             "SIM_SHIP_OFS_X",
