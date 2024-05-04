@@ -78,7 +78,7 @@ PB10 USART3_TX USART3 NODMA
 PB11 USART3_RX USART3 NODMA ALT(1)
 
 # SBUS inversion control pin, active high
-PB15 USART3_RXINV OUTPUT LOW GPIO(78) POL(1)
+PB15 USART3_RXINV OUTPUT LOW GPIO(78) POL(1) ALT(0)
 
 # for FrSky S.PORT. Has builtin inverters and diode to combine
 # RX and TX onto the one pin
