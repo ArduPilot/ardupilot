@@ -141,9 +141,7 @@ public:
      */
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        return state.EAS2TAS;
-    }
+    float get_EAS2TAS(void) const;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
