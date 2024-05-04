@@ -707,7 +707,7 @@ void Tailsitter::speed_scaling(void)
             // (mass / A) is disk loading DL so:
             // Ue^2 = (((t / t_h) * DL * 9.81)/(0.5 * rho)) + U0^2
 
-            const float rho = SSL_AIR_DENSITY * plane.barometer.get_air_density_ratio();
+            const float rho = SSL_AIR_DENSITY * quadplane.ahrs.get_air_density_ratio();
             float hover_rho = rho;
             if ((gain_scaling_mask & TAILSITTER_GSCL_ALTITUDE) != 0) {
                 // if applying altitude correction use sea level density for hover case
@@ -752,7 +752,7 @@ void Tailsitter::speed_scaling(void)
 
     if ((gain_scaling_mask & TAILSITTER_GSCL_ALTITUDE) != 0) {
         // air density correction
-        spd_scaler /= plane.barometer.get_air_density_ratio();
+        spd_scaler /= quadplane.ahrs.get_air_density_ratio();
     }
 
     const SRV_Channel::Aux_servo_function_t functions[] = {
