@@ -3559,6 +3559,17 @@ bool AP_AHRS::get_location_from_home_offset(Location &loc, const Vector3p &offse
     return true;
 }
 
+/*
+  get EAS to TAS scaling
+ */
+float AP_AHRS::get_EAS2TAS(void) const
+{
+    if (is_positive(state.EAS2TAS)) {
+        return state.EAS2TAS;
+    }
+    return 1.0;
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 
