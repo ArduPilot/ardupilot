@@ -3658,6 +3658,9 @@ void QuadPlane::Log_Write_QControl_Tuning()
 
     // write multicopter position control message
     pos_control->write_log();
+
+    // Write tiltrotor tilt angle log
+    tiltrotor.write_log();
 }
 #endif
 
