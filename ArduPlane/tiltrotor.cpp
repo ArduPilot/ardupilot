@@ -295,7 +295,7 @@ void Tiltrotor::continuous_update(void)
         // operate in all VTOL modes except Q_AUTOTUNE. Forward rotor tilt is used to produce
         // forward thrust equivalent to what would have been produced by a forward thrust motor
         // set to quadplane.forward_throttle_pct()
-        const float fwd_g_demand = 0.01f * quadplane.forward_throttle_pct() / plane.quadplane.q_fwd_thr_gain;
+        const float fwd_g_demand = 0.01 * quadplane.forward_throttle_pct();
         const float fwd_tilt_deg = MIN(degrees(atanf(fwd_g_demand)), (float)max_angle_deg);
         slew(MIN(fwd_tilt_deg * (1/90.0), get_forward_flight_tilt()));
         return;
