@@ -394,6 +394,33 @@ void Tiltrotor::update(void)
     }
 }
 
+#if HAL_LOGGING_ENABLED
+// Write tiltrotor specific log
+void Tiltrotor::write_log()
+{
+    struct log_tiltrotor pkt {
+        LOG_PACKET_HEADER_INIT(LOG_TILT_MSG),
+        time_us      : AP_HAL::micros64(),
+        current_tilt : current_tilt * 90.0,
+    };
+
+    if (type != TILT_TYPE_VECTORED_YAW) {
+        // Left and right tilt are invalid
+        pkt.front_left_tilt = plane.logger.quiet_nanf();
+        pkt.front_right_tilt = plane.logger.quiet_nanf();
+
+    } else {
+        // Calculate tilt angle from servo outputs
+        const float total_angle = 90.0 + tilt_yaw_angle + fixed_angle;
+        const float scale = total_angle * 0.001;
+        pkt.front_left_tilt = (SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * scale) - tilt_yaw_angle;
+        pkt.front_right_tilt = (SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * scale) - tilt_yaw_angle;
+    }
+
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif
+
 /*
   tilt compensation for angle of tilt. When the rotors are tilted the
   roll effect of differential thrust on the tilted rotors is decreased

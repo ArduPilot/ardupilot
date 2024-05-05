@@ -439,6 +439,17 @@ const struct LogStructure Plane::log_structure[] = {
       "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },
 #endif
 
+// @LoggerMessage: TILT
+// @Description: Tiltrotor tilt values
+// @Field: TimeUS: Time since system startup
+// @Field: Tilt: Current tilt angle, 0 deg vertical, 90 deg horizontal
+// @Field: FL: Front left tilt angle, 0 deg vertical, 90 deg horizontal
+// @Field: FR: Front right tilt angle, 0 deg vertical, 90 deg horizontal
+#if HAL_QUADPLANE_ENABLED
+    { LOG_TILT_MSG, sizeof(Tiltrotor::log_tiltrotor),
+      "TILT", "Qfff",  "TimeUS,Tilt,FL,FR", "sddd", "F---" , true },
+#endif
+
 // @LoggerMessage: PIDG
 // @Description: Plane Proportional/Integral/Derivative gain values for Heading when using COMMAND_INT control.
 // @Field: TimeUS: Time since system startup
