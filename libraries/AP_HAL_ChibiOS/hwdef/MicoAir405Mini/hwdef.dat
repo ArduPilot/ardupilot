@@ -145,6 +145,9 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
+# setup for BF migration
+define HAL_FRAME_TYPE_DEFAULT 12
+
 # reduce flash usage
 include ../include/minimize_fpv_osd.inc
 undef AP_OPTICALFLOW_ENABLED
