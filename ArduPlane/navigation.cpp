@@ -425,8 +425,6 @@ void Plane::update_fbwb_speed_height(void)
 
     check_fbwb_altitude();
 
-    altitude_error_cm = calc_altitude_error_cm();
-
     calc_throttle();
     calc_nav_pitch();
 }
