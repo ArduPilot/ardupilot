@@ -12,6 +12,7 @@ CONTROL_OUTPUT_THROTTLE = 3
 CONTROL_OUTPUT_YAW = 4
 TRIM3 = 1500
 TRIM1 = 1500
+SYSTEM_STARTED = Parameter()
 
 --[[ 
   Control Allocation Function 
@@ -86,6 +87,12 @@ function update()
   if not (vehicle_type == 1) then
     gcs:send_text(4, string.format("Not a boat, exiting this lua script."))
     return
+  end
+
+  -- Check if the system was already started before running this function
+  if not SYSTEM_STARTED:init('ROVER_SYSTEM_SYSTEM_STARTED') then
+    gcs:send_text(6, 'ROVER_SYSTEM_SYSTEM_STARTED is not set yet, not running control allocation yet ...')
+    return update, 2000
   end
 
   -- Check if armed to begin control allocation safely
