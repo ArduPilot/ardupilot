@@ -440,6 +440,10 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
     return bus.register_periodic_callback(period_usec, cb, this);
 }
 
+void I2CDevice::set_periodic_minimum(uint32_t min_period_usec)
+{
+    return bus.set_periodic_minimum(min_period_usec);
+}
 
 /*
   adjust a periodic callback

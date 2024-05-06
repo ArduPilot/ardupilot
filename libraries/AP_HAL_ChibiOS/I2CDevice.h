@@ -86,6 +86,9 @@ public:
     AP_HAL::Device::PeriodicHandle register_periodic_callback(
         uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
 
+    /* See AP_HAL::Device::set_periodic_minimum() */
+    void set_periodic_minimum(uint32_t min_period_usec) override;
+
     /* See AP_HAL::Device::adjust_periodic_callback() */
     bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
