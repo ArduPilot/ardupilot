@@ -102,7 +102,8 @@ public:
     float get_altitude(uint8_t instance) const { return sensors[instance].altitude; }
 
     // get altitude above mean sea level
-    float get_altitude_AMSL(void) const { return get_altitude() + _field_elevation_active; }
+    float get_altitude_AMSL(uint8_t instance) const { return get_altitude(instance) + _field_elevation_active; }
+    float get_altitude_AMSL(void) const { return get_altitude_AMSL(_primary); }
 
     // returns which i2c bus is considered "the" external bus
     uint8_t external_bus() const { return _ext_bus; }
