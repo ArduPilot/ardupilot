@@ -62,6 +62,9 @@ public:
     virtual bool adjust_periodic_callback(
         PeriodicHandle h, uint32_t period_usec) override { return false; }
 
+    /* See AP_HAL::Device::set_periodic_minimum() */
+    void set_periodic_minimum(uint32_t min_period_usec) override {}
+
     // setup a bus clock slowdown factor (optional interface)
     virtual void set_slowdown(uint8_t slowdown) {}
 };

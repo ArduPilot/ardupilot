@@ -57,6 +57,9 @@ public:
     virtual bool adjust_periodic_callback(
         Device::PeriodicHandle h, uint32_t period_usec) override = 0;
 
+    /* See AP_HAL::Device::set_periodic_minimum() */
+    void set_periodic_minimum(uint32_t min_period_usec) override {}
+
     /*
      * Force I2C transfers to be split between send and receive parts, with a
      * stop condition between them. Setting this allows to conveniently

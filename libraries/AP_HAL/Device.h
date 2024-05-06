@@ -260,6 +260,12 @@ public:
     virtual PeriodicHandle register_periodic_callback(uint32_t period_usec, PeriodicCb) = 0;
 
     /*
+     * Adjust the minimum time allowed between cycles of the periodic callback registered with
+     * #register_periodic_callback.
+     */
+    virtual void set_periodic_minimum(uint32_t min_usec) = 0;
+
+    /*
      * Adjust the time for the periodic callback registered with
      * #register_periodic_callback. Note that the time will be re-calculated
      * from the moment this call is made and expire after @period_usec.
