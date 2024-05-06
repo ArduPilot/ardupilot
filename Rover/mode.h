@@ -545,6 +545,8 @@ public:
     void limit_init_time_and_location();
     bool limit_breached() const;
 
+    static constexpr const char *timeout_msg = "target not received last 3secs, stopping";
+
 protected:
 
     enum class SubMode: uint8_t {
