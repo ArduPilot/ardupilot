@@ -316,11 +316,11 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
             bool motor_lim_low = g2.motors.limit.throttle_lower || attitude_control.pitch_limited();
             bool motor_lim_high = g2.motors.limit.throttle_upper || attitude_control.pitch_limited();
             throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, motor_lim_low, motor_lim_high, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
-        }
 
-        // if vehicle is balance bot, calculate actual throttle required for balancing
-        if (rover.is_balancebot()) {
-            rover.balancebot_pitch_control(throttle_out);
+            // if vehicle is balance bot, calculate actual throttle required for balancing
+            if (rover.is_balancebot()) {
+                rover.balancebot_pitch_control(throttle_out);
+            }
         }
     }
 
