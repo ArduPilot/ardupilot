@@ -1417,7 +1417,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
     float climb_rate;
     if (plane.control_mode->does_auto_throttle()) {
         // use altitude_error_cm, spread over 10s interval
-        climb_rate = plane.altitude_error_cm * 0.1f;
+        climb_rate = plane.calc_altitude_error_cm() * 0.1f;
     } else {
         // otherwise estimate from pilot input
         climb_rate = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd/(plane.aparm.pitch_limit_max*100));

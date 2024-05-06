@@ -400,9 +400,6 @@ private:
     int32_t groundspeed_undershoot;
     bool groundspeed_undershoot_is_valid;
 
-    // Difference between current altitude and desired altitude.  Centimeters
-    int32_t altitude_error_cm;
-
     // speed scaler for control surfaces, updated at 10Hz
     float surface_speed_scaler = 1.0;
 
