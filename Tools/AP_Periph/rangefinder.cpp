@@ -39,6 +39,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
         // limit to max rate
         return;
     }
+    last_rangefinder_update_ms = now;
 
     // update all rangefinder instances
     rangefinder.update();
@@ -114,7 +115,6 @@ void AP_Periph_FW::can_rangefinder_update(void)
                         &buffer[0],
                         total_size);
 
-        last_rangefinder_update_ms = now;
     }
 }
 
