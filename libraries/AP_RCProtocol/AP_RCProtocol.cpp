@@ -23,6 +23,7 @@
 
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
+#include "AP_RCProtocol_Emlid_RCIO.h"
 #include "AP_RCProtocol_IBUS.h"
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
@@ -113,6 +114,9 @@ void AP_RCProtocol::init()
 #endif  // AP_RCPROTOCOL_FDM_ENABLED
 #if AP_RCPROTOCOL_RADIO_ENABLED
     backend[AP_RCProtocol::RADIO] = NEW_NOTHROW AP_RCProtocol_Radio(*this);
+#endif
+#if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+    backend[AP_RCProtocol::EMLID_RCIO] = new AP_RCProtocol_Emlid_RCIO(*this);
 #endif
 }
 
@@ -479,6 +483,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_RADIO_ENABLED
         AP_RCProtocol::RADIO,
 #endif
+#if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+        AP_RCProtocol::EMLID_RCIO,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -630,6 +637,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_RADIO_ENABLED
     case RADIO:
         return "Radio";
+#endif
+#if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
+    case EMLID_RCIO:
+        return "Emlid RCIO";
 #endif
     case NONE:
         break;
