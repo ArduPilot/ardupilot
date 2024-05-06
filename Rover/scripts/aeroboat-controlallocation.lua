@@ -22,7 +22,7 @@ local function new_control_allocation(t, s)
 
   -- Calculating the norm of each component on the desired control vector (t,s)
   local aloc = 400
-  
+
   local hip = math.sqrt(t*t + s*s) + 0.0001
 
   local nTa = aloc * t / hip
@@ -39,12 +39,12 @@ local function new_control_allocation(t, s)
   local naloc_left = math.floor(nft - nfs)
 
   -- Getting the trim values for PWM outputs
-  local pwm0_trim_value = param:get('SERVO1_TRIM')
-  local pwm1_trim_value = param:get('SERVO2_TRIM')
-  local pwm2_trim_value = param:get('SERVO3_TRIM')
-  local pwm3_trim_value = param:get('SERVO4_TRIM')
-  local pwm4_trim_value = param:get('SERVO5_TRIM')
-  local pwm5_trim_value = param:get('SERVO6_TRIM')
+  local pwm0_trim_value = tonumber(param:get('SERVO1_TRIM')) or 0
+  local pwm1_trim_value = tonumber(param:get('SERVO2_TRIM')) or 0
+  local pwm2_trim_value = tonumber(param:get('SERVO3_TRIM')) or 0
+  local pwm3_trim_value = tonumber(param:get('SERVO4_TRIM')) or 0
+  local pwm4_trim_value = tonumber(param:get('SERVO5_TRIM')) or 0
+  local pwm5_trim_value = tonumber(param:get('SERVO6_TRIM')) or 0
 
   -- Setting the PWM outputs based on the control allocation directions
   if naloc_right >= 0 then
@@ -97,15 +97,15 @@ function update()
     TRIM1 = param:get('RC1_TRIM')
 
     -- Send the PWM trim (neutral) values to the servo outputs
-    local pwm0_trim_value = param:get('SERVO1_TRIM')
-    local pwm1_trim_value = param:get('SERVO2_TRIM')
-    local pwm2_trim_value = param:get('SERVO3_TRIM')
-    local pwm3_trim_value = param:get('SERVO4_TRIM')
-    local pwm4_trim_value = param:get('SERVO5_TRIM')
-    local pwm5_trim_value = param:get('SERVO6_TRIM')
-    SRV_Channels:set_output_pwm_chan_timeout(0, pwm0_trim_value, 3000) 
+    local pwm0_trim_value = tonumber(param:get('SERVO1_TRIM')) or 0
+    local pwm1_trim_value = tonumber(param:get('SERVO2_TRIM')) or 0
+    local pwm2_trim_value = tonumber(param:get('SERVO3_TRIM')) or 0
+    local pwm3_trim_value = tonumber(param:get('SERVO4_TRIM')) or 0
+    local pwm4_trim_value = tonumber(param:get('SERVO5_TRIM')) or 0
+    local pwm5_trim_value = tonumber(param:get('SERVO6_TRIM')) or 0
+    SRV_Channels:set_output_pwm_chan_timeout(0, pwm0_trim_value, 3000)
     SRV_Channels:set_output_pwm_chan_timeout(1, pwm1_trim_value, 3000)
-    SRV_Channels:set_output_pwm_chan_timeout(2, pwm2_trim_value, 3000) 
+    SRV_Channels:set_output_pwm_chan_timeout(2, pwm2_trim_value, 3000)
     SRV_Channels:set_output_pwm_chan_timeout(3, pwm3_trim_value, 3000)
     SRV_Channels:set_output_pwm_chan_timeout(4, pwm4_trim_value, 3000)
     SRV_Channels:set_output_pwm_chan_timeout(5, pwm5_trim_value, 3000)
@@ -124,8 +124,8 @@ function update()
     TRIM3 = param:get('RC3_TRIM')
     TRIM1 = param:get('RC1_TRIM')
     -- Get the RC PWM values
-    rc3_pwm = rc:get_pwm(3)
-    rc1_pwm = rc:get_pwm(1)
+    rc3_pwm = tonumber(rc:get_pwm(3)) or 0
+    rc1_pwm = tonumber(rc:get_pwm(1)) or 0
     -- Transform the RC PWM values to the desired control values and send to allocation
     throttle = (TRIM3 - rc3_pwm) / 450
     steering = (rc1_pwm - TRIM1) / 450
@@ -139,12 +139,12 @@ function update()
     end
 
     -- Get the control outputs from the vehicle and pass into control allocation
-    steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
-    throttle = vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)  
+    steering = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_YAW)) or 0
+    throttle = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)) or 0
     --gcs:send_text(4, string.format("t,s = %f ; %f",  throttle, steering))
     new_control_allocation(throttle,steering)
 
-    return update, 200    
+    return update, 200
   end
 
 end -- update function
