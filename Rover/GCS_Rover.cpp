@@ -49,23 +49,27 @@ void GCS_Rover::update_vehicle_sensor_status_flags(void)
 
 #if HAL_PROXIMITY_ENABLED
     const AP_Proximity *proximity = AP_Proximity::get_singleton();
-    if (proximity && proximity->get_status() > AP_Proximity::Status::NotConnected) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
-    }
-    if (proximity && proximity->get_status() != AP_Proximity::Status::NoData) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+    if (proximity) {
+        if (proximity->get_status() > AP_Proximity::Status::NotConnected) {
+            control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        }
+        if (proximity->get_status() != AP_Proximity::Status::NoData) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
+        }
     }
 #endif
 
 #if AP_OPTICALFLOW_ENABLED
     const AP_OpticalFlow *optflow = AP::opticalflow();
-    if (optflow && optflow->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-    if (optflow && optflow->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    if (optflow) {
+        if (optflow->enabled()) {
+            control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        }
+        if (optflow->healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        }
     }
 #endif
 
