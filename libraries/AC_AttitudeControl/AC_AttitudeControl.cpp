@@ -303,7 +303,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
         _euler_angle_target.y = euler_pitch_angle;
         _euler_angle_target.z += euler_yaw_rate * _dt;
         // Compute quaternion target attitude
-        _attitude_target.from_euler(_euler_angle_target.x, _euler_angle_target.y, _euler_angle_target.z);
+        _attitude_target.from_euler(_euler_angle_target);
 
         // Set rate feedforward requests to zero
         _euler_rate_target.zero();
@@ -359,7 +359,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
             _euler_angle_target.z = euler_yaw_angle;
         }
         // Compute quaternion target attitude
-        _attitude_target.from_euler(_euler_angle_target.x, _euler_angle_target.y, _euler_angle_target.z);
+        _attitude_target.from_euler(_euler_angle_target);
 
         // Set rate feedforward requests to zero
         _euler_rate_target.zero();
@@ -402,7 +402,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
         _ang_vel_target.zero();
 
         // Compute quaternion target attitude
-        _attitude_target.from_euler(_euler_angle_target.x, _euler_angle_target.y, _euler_angle_target.z);
+        _attitude_target.from_euler(_euler_angle_target);
     }
 
     // Call quaternion attitude controller
