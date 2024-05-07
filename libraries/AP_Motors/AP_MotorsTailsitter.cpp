@@ -171,8 +171,8 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
     }
 
     // calculate left and right throttle outputs
-    _thrust_left  = throttle_thrust + roll_thrust * 0.5f;
-    _thrust_right = throttle_thrust - roll_thrust * 0.5f;
+    _thrust_left  = throttle_thrust + (roll_thrust * 0.5f) + pitch_thrust * 0.3f;
+    _thrust_right = throttle_thrust - (roll_thrust * 0.5f) + pitch_thrust * 0.3f;
 
     thrust_max = MAX(_thrust_right,_thrust_left);
     thrust_min = MIN(_thrust_right,_thrust_left);
