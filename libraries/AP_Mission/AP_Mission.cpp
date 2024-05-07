@@ -2138,24 +2138,18 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 jump_index = cmd_index;
             }
 
-            // check if jump command is 'repeat forever'
-            if (temp_cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER) {
+            // get number of times jump command has already been run
+            if (temp_cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER ||
+                get_jump_times_run(temp_cmd) < temp_cmd.content.jump.num_times) {
+                // update the record of the number of times run
+                if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
+                    increment_jump_times_run(temp_cmd, send_gcs_msg);
+                }
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;
             } else {
-                // get number of times jump command has already been run
-                int16_t jump_times_run = get_jump_times_run(temp_cmd);
-                if (jump_times_run < temp_cmd.content.jump.num_times) {
-                    // update the record of the number of times run
-                    if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
-                        increment_jump_times_run(temp_cmd, send_gcs_msg);
-                    }
-                    // continue searching from jump target
-                    cmd_index = temp_cmd.content.jump.target;
-                } else {
-                    // jump has been run specified number of times so move search to next command in mission
-                    cmd_index++;
-                }
+                // jump has been run specified number of times so move search to next command in mission
+                cmd_index++;
             }
         } else {
             // this is a non-jump command so return it
@@ -2291,7 +2285,11 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_ms
         if (_jump_tracking[i].index == cmd.index) {
             _jump_tracking[i].num_times_run++;
             if (send_gcs_msg) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                if (cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/unlimited", _jump_tracking[i].index, _jump_tracking[i].num_times_run);
+                } else {
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                }
             }
             return;
         } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
