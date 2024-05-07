@@ -296,6 +296,8 @@ AP_HW_RadiolinkPIX6                  1410
 
 AP_HW_JHEMCU-H743HD                  1411
 
+AP_HW_LongbowF405                    1422
+
 AP_HW_SakuraRC-H743                  2714
 
 # IDs 5000-5099 reserved for Carbonix
