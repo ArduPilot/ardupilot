@@ -51,6 +51,7 @@
 #include "AP_RangeFinder_MSP.h"
 #include "AP_RangeFinder_USD1_CAN.h"
 #include "AP_RangeFinder_Benewake_CAN.h"
+#include "AP_RangeFinder_Ainstein_LRD1_Pro.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -468,6 +469,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::LWSER:
 #if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
         serial_create_fn = AP_RangeFinder_LightWareSerial::create;
+#endif
+        break;
+    case Type::Ainstein_LRD1_Pro:
+#if AP_RANGEFINDER_AINSTEIN_LRD1_PRO_SERIAL_ENABLED
+        serial_create_fn = AP_RangeFinder_Ainstein_LRD1_Pro::create;
 #endif
         break;
     case Type::LEDDARONE:
