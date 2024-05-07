@@ -710,143 +710,149 @@ function Parameter_ud:init_by_info(key, group_element, type) end
 function Parameter_ud:init(name) end
 
 
--- desc
+-- Vector2f is a userdata object that holds a 2D vector with x and y components. The components are stored as floating point numbers.
+-- To create a new Vector2f you can call Vector2f() to allocate a new one, or call a method that returns one to you.
 ---@class (exact) Vector2f_ud
 ---@operator add(Vector2f_ud): Vector2f_ud
 ---@operator sub(Vector2f_ud): Vector2f_ud
 local Vector2f_ud = {}
 
+-- Create Vector2f object
 ---@return Vector2f_ud
 function Vector2f() end
 
--- copy
----@return Vector2f_ud
+-- Copy this Vector2f returning a new userdata object
+---@return Vector2f_ud -- a copy of this Vector2f
 function Vector2f_ud:copy() end
 
--- get field
+-- get y component
 ---@return number
 function Vector2f_ud:y() end
 
--- set field
+-- set y component
 ---@param value number
 function Vector2f_ud:y(value) end
 
--- get field
+-- get x component
 ---@return number
 function Vector2f_ud:x() end
 
--- set field
+-- set x component
 ---@param value number
 function Vector2f_ud:x(value) end
 
--- desc
----@param angle_rad number
+-- rotate vector by angle in radians
+---@param angle_rad number -- angle in radians
 function Vector2f_ud:rotate(angle_rad) end
 
--- desc
----@return boolean
+-- Check if both components of the vector are zero
+---@return boolean -- true if both components are zero
 function Vector2f_ud:is_zero() end
 
--- desc
----@return boolean
+-- Check if either components of the vector are infinite
+---@return boolean -- true if either components are infinite
 function Vector2f_ud:is_inf() end
 
--- desc
----@return boolean
+-- Check if either components of the vector are nan
+---@return boolean -- true if either components are nan
 function Vector2f_ud:is_nan() end
 
--- desc
+-- normalize this vector to a unit length
 function Vector2f_ud:normalize() end
 
--- desc
----@return number
+-- Calculate length of this vector sqrt(x^2 + y^2)
+---@return number -- length of this vector
 function Vector2f_ud:length() end
 
--- desc
----@return number
+-- Calculate the angle of this vector in radians
+-- 2PI + atan2(-x, y)
+---@return number -- angle in radians
 function Vector2f_ud:angle() end
 
--- desc
+-- Vector3f is a userdata object that holds a 3D vector with x, y and z components.
+-- The components are stored as floating point numbers.
+-- To create a new Vector3f you can call Vector3f() to allocate a new one, or call a method that returns one to you.
 ---@class (exact) Vector3f_ud
 ---@operator add(Vector3f_ud): Vector3f_ud
 ---@operator sub(Vector3f_ud): Vector3f_ud
 local Vector3f_ud = {}
 
+-- Create Vector3f object
 ---@return Vector3f_ud
 function Vector3f() end
 
--- copy
----@return Vector3f_ud
+-- Copy this Vector3f returning a new userdata object
+---@return Vector3f_ud -- a copy of this Vector3f
 function Vector3f_ud:copy() end
 
--- get field
+-- get z component
 ---@return number
 function Vector3f_ud:z() end
 
--- set field
+-- set z component
 ---@param value number
 function Vector3f_ud:z(value) end
 
--- get field
+-- get y component
 ---@return number
 function Vector3f_ud:y() end
 
--- set field
+-- set y component
 ---@param value number
 function Vector3f_ud:y(value) end
 
--- get field
+-- get x component
 ---@return number
 function Vector3f_ud:x() end
 
--- set field
+-- set x component
 ---@param value number
 function Vector3f_ud:x(value) end
 
--- desc
+-- Return a new Vector3 based on this one with scaled length and the same changing direction
 ---@param scale_factor number
----@return Vector3f_ud
+---@return Vector3f_ud -- scaled copy of this vector
 function Vector3f_ud:scale(scale_factor) end
 
--- desc
+-- Cross product of two Vector3fs
 ---@param vector Vector3f_ud
----@return Vector3f_ud
+---@return Vector3f_ud -- result
 function Vector3f_ud:cross(vector) end
 
--- desc
+-- Dot product of two Vector3fs
 ---@param vector Vector3f_ud
----@return number
+---@return number -- result
 function Vector3f_ud:dot(vector) end
 
--- desc
----@return boolean
+-- Check if all components of the vector are zero
+---@return boolean -- true if all components are zero
 function Vector3f_ud:is_zero() end
 
--- desc
----@return boolean
+-- Check if any components of the vector are infinite
+---@return boolean -- true if any components are infinite
 function Vector3f_ud:is_inf() end
 
--- desc
----@return boolean
+-- Check if any components of the vector are nan
+---@return boolean -- true if any components are nan
 function Vector3f_ud:is_nan() end
 
--- desc
+-- normalize this vector to a unit length
 function Vector3f_ud:normalize() end
 
--- desc
----@return number
+-- Calculate length of this vector sqrt(x^2 + y^2 + z^2)
+---@return number -- length of this vector
 function Vector3f_ud:length() end
 
 -- Computes angle between this vector and vector v2
----@param v2 Vector3f_ud 
+---@param v2 Vector3f_ud
 ---@return number
 function Vector3f_ud:angle(v2) end
 
--- desc
+-- Rotate vector by angle in radians in xy plane leaving z untouched
 ---@param param1 number -- XY rotation in radians
 function Vector3f_ud:rotate_xy(param1) end
 
--- desc
+-- return the x and y components of this vector as a Vector2f
 ---@return Vector2f_ud
 function Vector3f_ud:xy() end
 
@@ -937,83 +943,86 @@ function Quaternion_ud:normalize() end
 ---@return number
 function Quaternion_ud:length() end
 
--- desc
+-- Location is a userdata object that holds locations expressed as latitude, longitude, altitude.
+-- The altitude can be in several different frames, relative to home, absolute altitude above mean sea level, or relative to terrain.
+-- To create a new Location userdata you can call Location() to allocate an empty location object, or call a method that returns one to you.
 ---@class (exact) Location_ud
 local Location_ud = {}
 
+-- Create location object
 ---@return Location_ud
 function Location() end
 
--- copy
----@return Location_ud
+-- Copy this location returning a new userdata object
+---@return Location_ud -- a copy of this location
 function Location_ud:copy() end
 
--- get field
----@return boolean
+-- get loiter xtrack
+---@return boolean -- Get if the location is used for a loiter location this flags if the aircraft should track from the center point, or from the exit location of the loiter.
 function Location_ud:loiter_xtrack() end
 
--- set field
----@param value boolean
+-- set loiter xtrack
+---@param value boolean -- Set if the location is used for a loiter location this flags if the aircraft should track from the center point, or from the exit location of the loiter.
 function Location_ud:loiter_xtrack(value) end
 
--- get field
----@return boolean
+-- get origin alt
+---@return boolean -- true if altitude is relative to origin
 function Location_ud:origin_alt() end
 
--- set field
----@param value boolean
+-- set origin alt
+---@param value boolean -- set true if altitude is relative to origin
 function Location_ud:origin_alt(value) end
 
--- get field
----@return boolean
+-- get terrain alt
+---@return boolean -- true if altitude is relative to terrain
 function Location_ud:terrain_alt() end
 
--- set field
----@param value boolean
+-- set terrain alt
+---@param value boolean -- set true if altitude is relative to home
 function Location_ud:terrain_alt(value) end
 
--- get field
----@return boolean
+-- get relative alt
+---@return boolean -- true if altitude is relative to home
 function Location_ud:relative_alt() end
 
--- set field
----@param value boolean
+-- set relative alt
+---@param value boolean -- set true if altitude is relative to home
 function Location_ud:relative_alt(value) end
 
--- get field
----@return integer
+-- get altitude in cm
+---@return integer -- altitude in cm
 function Location_ud:alt() end
 
--- set field
+-- set altitude in cm
 ---@param value integer
 function Location_ud:alt(value) end
 
--- get field
----@return integer
+-- get longitude in degrees * 1e7
+---@return integer -- longitude in degrees * 1e7
 function Location_ud:lng() end
 
--- set field
----@param value integer
+-- set longitude in degrees * 1e7
+---@param value integer -- longitude in degrees * 1e7
 function Location_ud:lng(value) end
 
--- get field
----@return integer
+-- get latitude in degrees * 1e7
+---@return integer -- latitude in degrees * 1e7
 function Location_ud:lat() end
 
--- set field
----@param value integer
+-- set latitude in degrees * 1e7
+---@param value integer -- latitude in degrees * 1e7
 function Location_ud:lat(value) end
 
--- get altitude frame
----@return integer
+-- get altitude frame of this location
+---@return integer -- altitude frame
 ---| '0' # ABSOLUTE
 ---| '1' # ABOVE_HOME
 ---| '2' # ABOVE_ORIGIN
 ---| '3' # ABOVE_TERRAIN
 function Location_ud:get_alt_frame() end
 
--- desc
----@param desired_frame integer
+-- Set the altitude frame of this location
+---@param desired_frame integer  -- altitude frame
 ---| '0' # ABSOLUTE
 ---| '1' # ABOVE_HOME
 ---| '2' # ABOVE_ORIGIN
@@ -1021,44 +1030,45 @@ function Location_ud:get_alt_frame() end
 ---@return boolean
 function Location_ud:change_alt_frame(desired_frame) end
 
--- desc
----@param loc Location_ud
----@return Vector2f_ud
+-- Given a Location this calculates the north and east distance between the two locations in meters.
+---@param loc Location_ud -- location to compare with
+---@return Vector2f_ud -- North east distance vector in meters
 function Location_ud:get_distance_NE(loc) end
 
--- desc
----@param loc Location_ud
----@return Vector3f_ud
+-- Given a Location this calculates the north, east and down distance between the two locations in meters.
+---@param loc Location_ud -- location to compare with
+---@return Vector3f_ud -- North east down distance vector in meters
 function Location_ud:get_distance_NED(loc) end
 
--- desc
----@param loc Location_ud
----@return number
+-- Given a Location this calculates the relative bearing to the location in radians
+---@param loc Location_ud -- location to compare with
+---@return number -- bearing in radians
 function Location_ud:get_bearing(loc) end
 
--- desc
----@return Vector3f_ud|nil
+-- Returns the offset from the EKF origin to this location.
+-- Returns nil if the EKF origin wasn’t available at the time this was called.
+---@return Vector3f_ud|nil -- Vector between origin and location north east up in meters
 function Location_ud:get_vector_from_origin_NEU() end
 
--- desc
----@param bearing_deg number
----@param distance number
+-- Translates this Location by the specified  distance given a bearing.
+---@param bearing_deg number -- bearing in degrees
+---@param distance number -- distance in meters
 function Location_ud:offset_bearing(bearing_deg, distance) end
 
--- desc
----@param bearing_deg number
----@param pitch_deg number
----@param distance number
+-- Translates this Location by the specified distance given a bearing and pitch.
+---@param bearing_deg number -- bearing in degrees
+---@param pitch_deg number -- pitch in degrees
+---@param distance number -- distance in meters
 function Location_ud:offset_bearing_and_pitch(bearing_deg, pitch_deg, distance) end
 
--- desc
----@param ofs_north number
----@param ofs_east number
+-- Translates this Location by the specified north and east distance in meters.
+---@param ofs_north number -- north offset in meters
+---@param ofs_east number -- east offset in meters
 function Location_ud:offset(ofs_north, ofs_east) end
 
--- desc
----@param loc Location_ud
----@return number
+-- Given a Location this calculates the horizontal distance between the two locations in meters.
+---@param loc Location_ud -- location to compare with
+---@return number -- horizontal distance in meters
 function Location_ud:get_distance(loc) end
 
 -- desc
@@ -1141,31 +1151,31 @@ function AP_HAL__I2CDevice_ud:write_register(register_num, value) end
 function AP_HAL__I2CDevice_ud:set_retries(retries) end
 
 
--- desc
+-- Serial driver object
 ---@class (exact) AP_HAL__UARTDriver_ud
 local AP_HAL__UARTDriver_ud = {}
 
--- desc
+-- Set flow control option for serial port
 ---@param flow_control_setting integer
 ---| '0' # disabled
 ---| '1' # enabled
 ---| '2' # auto
 function AP_HAL__UARTDriver_ud:set_flow_control(flow_control_setting) end
 
--- desc
+-- Returns number of available bytes to read.
 ---@return uint32_t_ud
 function AP_HAL__UARTDriver_ud:available() end
 
--- desc
----@param value integer
----@return uint32_t_ud
+-- Writes a single byte
+---@param value integer -- byte to write
+---@return uint32_t_ud -- 1 if success else 0
 function AP_HAL__UARTDriver_ud:write(value) end
 
--- desc
----@return integer
+-- Read a single byte from the serial port
+---@return integer -- byte, -1 if not available
 function AP_HAL__UARTDriver_ud:read() end
 
--- desc
+-- Start serial port with given baud rate
 ---@param baud_rate uint32_t_ud|integer|number
 function AP_HAL__UARTDriver_ud:begin(baud_rate) end
 
@@ -1739,21 +1749,21 @@ LED = {}
 function LED:get_rgb() end
 
 
--- desc
+-- button handling
 button = {}
 
--- desc
----@param button_number integer
+-- Returns button state if available. Buttons are 1 indexed.
+---@param button_number integer -- button number 1 indexed.
 ---@return boolean
 function button:get_button_state(button_number) end
 
 
--- desc
+-- RPM handling
 RPM = {}
 
--- desc
----@param instance integer
----@return number|nil
+--  Returns RPM of given instance, or nil if not available
+---@param instance integer -- RPM instance
+---@return number|nil -- RPM value if available
 function RPM:get_rpm(instance) end
 
 
@@ -1846,30 +1856,30 @@ function mission:jump_to_landing_sequence() end
 ---@return boolean
 function mission:jump_to_abort_landing_sequence() end
 
--- desc
+-- Parameter access
 param = {}
 
--- desc
----@param name string
----@param value number
----@return boolean
+-- set and save parameter value, this will be saved for subsequent boots
+---@param name string -- parameter name
+---@param value number -- value to set and save
+---@return boolean -- true if parameter was found
 function param:set_and_save(name, value) end
 
--- desc
----@param name string
----@param value number
----@return boolean
+-- set parameter value, this will not be retained over a reboot
+---@param name string -- parameter name
+---@param value number -- value to set
+---@return boolean -- true if parameter was found
 function param:set(name, value) end
 
--- desc
----@param name string
----@return number|nil
+-- Get parameter value
+---@param name string -- parameter name
+---@return number|nil -- nill if parameter was not found
 function param:get(name) end
 
--- desc
----@param name string
----@param value number
----@return boolean
+-- Set default value for a given parameter. If the parameter has not been configured by the user then the set to this default value.
+---@param name string -- parameter name
+---@param value number -- default value
+---@return boolean -- true if parameter was found
 function param:set_default(name, value) end
 
 -- desc
@@ -1918,54 +1928,54 @@ function ESCTelemetryData_ud:temperature_cdeg(value) end
 esc_telem = {}
 
 -- update telemetry data for an ESC instance
----@param instance integer -- 0 is first motor
+---@param instance integer -- esc instance 0 indexed
 ---@param telemdata ESCTelemetryData_ud
 ---@param data_mask integer -- bit mask of what fields are filled in
 function esc_telem:update_telem_data(instance, telemdata, data_mask) end
 
--- desc
----@param instance integer
----@return uint32_t_ud|nil
+-- Returns an individual ESC’s usage time in seconds, or nil if not available.
+---@param instance integer -- esc instance 0 indexed
+---@return uint32_t_ud|nil -- usage time in seconds, nill if not available.
 function esc_telem:get_usage_seconds(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- esc instance 0 indexed
 ---@return number|nil
 function esc_telem:get_consumption_mah(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- esc instance 0 indexed
 ---@return number|nil
 function esc_telem:get_voltage(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- esc instance 0 indexed
 ---@return number|nil
 function esc_telem:get_current(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- esc instance 0 indexed
 ---@return integer|nil
 function esc_telem:get_motor_temperature(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- esc instance 0 indexed
 ---@return integer|nil
 function esc_telem:get_temperature(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- esc instance 0 indexed
 ---@return number|nil
 function esc_telem:get_rpm(instance) end
 
 -- update RPM for an ESC
----@param esc_index integer -- ESC number
+---@param esc_index integer -- esc instance 0 indexed
 ---@param rpm integer -- RPM
 ---@param error_rate number -- error rate
 function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 
 -- set scale factor for RPM on a motor
----@param esc_index integer -- index (0 is first motor)
+---@param esc_index integer -- esc instance 0 indexed
 ---@param scale_factor number -- factor
 function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 
@@ -1988,16 +1998,16 @@ function optical_flow:enabled() end
 -- desc
 baro = {}
 
--- desc
----@return number
+-- get external temperature in degrees C
+---@return number -- temperature in degrees C
 function baro:get_external_temperature() end
 
--- temperature in degrees C
----@return number
+-- get temperature in degrees C
+---@return number -- temperature in degrees C
 function baro:get_temperature() end
 
--- pressure in Pascal. Divide by 100 for millibars or hectopascals
----@return number
+-- Returns pressure in Pascal. Divide by 100 for millibars or hectopascals
+---@return number -- pressure in Pascal
 function baro:get_pressure() end
 
 -- get current altitude in meters relative to altitude at the time
@@ -2011,7 +2021,7 @@ function baro:get_altitude() end
 function baro:healthy(instance) end
 
 
--- desc
+-- Serial ports
 serial = {}
 
 -- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28`).
@@ -2053,9 +2063,9 @@ function rc:run_aux_function(aux_fun, ch_flag) end
 ---@return RC_Channel_ud|nil
 function rc:find_channel_for_option(aux_fun) end
 
--- desc
----@param chan_num integer
----@return integer|nil
+-- Returns the RC input PWM value given a channel number. Note that channel here is indexed from 1. Returns nill if channel is not available.
+---@param chan_num integer -- input channel number, 1 indexed
+---@return integer|nil -- pwm input or nil if not availables
 function rc:get_pwm(chan_num) end
 
 
@@ -2075,90 +2085,90 @@ function SRV_Channels:get_emergency_stop() end
 function SRV_Channels:get_safety_state() end
 
 -- desc
----@param function_num integer
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
 ---@param range integer
 function SRV_Channels:set_range(function_num, range) end
 
 -- desc
----@param function_num integer
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
 ---@param angle integer
 function SRV_Channels:set_angle(function_num, angle) end
 
 -- desc
----@param function_num integer
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
 ---@param value number
 function SRV_Channels:set_output_norm(function_num, value) end
 
--- desc
----@param function_num integer
----@return number
+-- Get the scaled value for a given servo function
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
+---@return number -- scaled value
 function SRV_Channels:get_output_scaled(function_num) end
 
--- desc
----@param function_num integer
----@return integer|nil
+-- Returns first servo output PWM value an output assigned output_function (See SERVOx_FUNCTION parameters). Nil if none is assigned.
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
+---@return integer|nil -- output pwm if available
 function SRV_Channels:get_output_pwm(function_num) end
 
--- desc
----@param function_num integer
----@param value number
+-- Set the scaled value of the output function, scale is out of the value set with the set_range or set_angle call
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
+---@param value number -- scaled value
 function SRV_Channels:set_output_scaled(function_num, value) end
 
--- desc
----@param chan integer
----@param pwm integer
----@param timeout_ms integer
+-- Sets servo channel to specified PWM for a time in ms. This overrides any commands from the autopilot until the timeout expires.
+---@param chan integer -- servo channel number (zero indexed)
+---@param pwm integer -- pwm value
+---@param timeout_ms integer -- duration of the override
 function SRV_Channels:set_output_pwm_chan_timeout(chan, pwm, timeout_ms) end
 
--- desc
----@param chan integer
----@param pwm integer
+-- Set the pwm for a given servo output channel
+---@param chan integer -- servo channel number (zero indexed)
+---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm_chan(chan, pwm) end
 
--- desc
----@param function_num integer
----@param pwm integer
+-- Set the pwm for a given servo output function
+---@param function_num integer -- servo function number (See SERVOx_FUNCTION parameters)
+---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm(function_num, pwm) end
 
--- desc
----@param function_num integer
----@return integer|nil
+-- Returns first servo output number (zero indexed) of an output assigned output_function (See SERVOx_FUNCTION parameters ). 0 = SERVO1_FUNCTION ect. Nil if none is assigned.
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
+---@return integer|nil -- output channel number if available
 function SRV_Channels:find_channel(function_num) end
 
 
--- desc
+-- This library allows the control of RGB LED strings via an output reserved for scripting and selected by SERVOx_FUNCTION = 94 thru 109 (Script Out 1 thru 16)
 serialLED = {}
 
--- desc
----@param chan integer
----@return boolean
+-- Send the configured RGB values to the LED string
+---@param chan integer -- output number to which the leds are attached 1-16
+---@return boolean -- true if successful 
 function serialLED:send(chan) end
 
--- desc
----@param chan integer
----@param led_index integer
----@param red integer
----@param green integer
----@param blue integer
----@return boolean
+--  Set the data for LED_number on the string attached channel output
+---@param chan integer -- output number to which the leds are attached 1-16
+---@param led_index integer -- led number 0 index, -1 sets all
+---@param red integer -- red value 0 to 255
+---@param green integer -- green value 0 to 255
+---@param blue integer -- blue value 0 to 255
+---@return boolean -- true if successful
 function serialLED:set_RGB(chan, led_index, red, green, blue) end
 
--- desc
----@param chan integer
----@param num_leds integer
----@return boolean
+-- Sets the number of LEDs in a profiled string on a servo output.
+---@param chan integer -- output number to which the leds are attached 1-16
+---@param num_leds integer -- number of leds in the string
+---@return boolean -- true if successful
 function serialLED:set_num_profiled(chan, num_leds) end
 
--- desc
----@param chan integer
----@param num_leds integer
----@return boolean
+-- Sets the number of LEDs in a neopixel string on a servo output.
+---@param chan integer -- output number to which the leds are attached 1-16
+---@param num_leds integer -- number of leds in the string
+---@return boolean -- true if successful
 function serialLED:set_num_neopixel(chan, num_leds) end
 
--- desc
----@param chan integer
----@param num_leds integer
----@return boolean
+-- Sets the number of LEDs in a rgb neopixel string on a servo output.
+---@param chan integer -- output number to which the leds are attached 1-16
+---@param num_leds integer -- number of leds in the string
+---@return boolean -- true if successful
 function serialLED:set_num_neopixel_rgb(chan, num_leds) end
 
 -- desc
@@ -2225,9 +2235,9 @@ function vehicle:get_circle_radius() end
 ---@return boolean
 function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms, use_yaw_rate, yaw_rate_degs) end
 
--- desc
----@param vel_ned Vector3f_ud
----@return boolean
+-- Sets the target velocity using a Vector3f object in a guided mode.
+---@param vel_ned Vector3f_ud -- North, East, Down meters / second
+---@return boolean -- true on success
 function vehicle:set_target_velocity_NED(vel_ned) end
 
 -- desc
@@ -2276,18 +2286,18 @@ function vehicle:set_target_pos_NED(target_pos, use_yaw, yaw_deg, use_yaw_rate, 
 ---@return boolean
 function vehicle:update_target_location(current_target, new_target) end
 
--- desc
----@return Location_ud|nil
+-- Get the current target location if available in current mode
+---@return Location_ud|nil -- target location
 function vehicle:get_target_location() end
 
--- desc
----@param target_loc Location_ud
----@return boolean
+-- Set the target veicle location in a guided mode
+---@param target_loc Location_ud -- target location
+---@return boolean -- true on success
 function vehicle:set_target_location(target_loc) end
 
--- desc
----@param alt number
----@return boolean
+-- Trigger a takeoff start if in a auto or guided mode. Not supported by all vehicles
+---@param alt number -- takeoff altitude in meters
+---@return boolean -- true on success
 function vehicle:start_takeoff(alt) end
 
 -- desc
@@ -2303,25 +2313,25 @@ function vehicle:start_takeoff(alt) end
 ---@return number|nil
 function vehicle:get_control_output(control_output) end
 
--- desc
----@return uint32_t_ud
+-- Returns time in milliseconds since the autopilot thinks it started flying, or zero if not currently flying.
+---@return uint32_t_ud -- flying time in milliseconds
 function vehicle:get_time_flying_ms() end
 
--- desc
----@return boolean
+-- Returns true if the autopilot thinks it is flying. Not guaranteed to be accurate.
+---@return boolean -- true if likely flying
 function vehicle:get_likely_flying() end
 
 -- desc
 ---@return integer
 function vehicle:get_control_mode_reason() end
 
--- desc
----@return integer
+--  Returns current vehicle mode by mode_number.
+---@return integer -- mode number. Values for each vehcile type can be found here: https://mavlink.io/en/messages/ardupilotmega.html#PLANE_MODE
 function vehicle:get_mode() end
 
--- desc
----@param mode_number integer
----@return boolean
+-- Attempts to change vehicle mode to mode_number. Returns true if successful, false if mode change is not successful.
+---@param mode_number integer -- mode number values for each vehcile type can be found here: https://mavlink.io/en/messages/ardupilotmega.html#PLANE_MODE
+---@return boolean -- success
 function vehicle:set_mode(mode_number) end
 
 -- desc
@@ -2497,59 +2507,62 @@ function gcs:send_text(severity, text) end
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
 
--- desc
+-- The relay library provides access to controlling relay outputs.
 relay = {}
 
--- desc
----@param instance integer
+-- Toggles the requested relay from on to off or from off to on.
+---@param instance integer -- relay instance
 function relay:toggle(instance) end
 
--- desc
----@param instance integer
+-- Returns true if the requested relay is enabled.
+---@param instance integer -- relay instance
 ---@return boolean
 function relay:enabled(instance) end
 
 -- return state of a relay
----@param instance integer
----@return integer
+---@param instance integer -- relay instance
+---@return integer -- relay state
 function relay:get(instance) end
 
--- desc
----@param instance integer
+-- Turns the requested relay off.
+---@param instance integer -- relay instance
 function relay:off(instance) end
 
--- desc
----@param instance integer
+-- Turns the requested relay on.
+---@param instance integer -- relay instance
 function relay:on(instance) end
 
 
--- desc
+-- The terrain library provides access to checking heights against a terrain database.
 terrain = {}
 terrain.TerrainStatusOK = enum_integer
 terrain.TerrainStatusUnhealthy = enum_integer
 terrain.TerrainStatusDisabled = enum_integer
 
--- desc
+-- Returns the height (in meters) that the vehicle is currently above the terrain, or returns nil if that is not available.
+-- If extrapolate is true then allow return of an extrapolated terrain altitude based on the last available data
 ---@param extrapolate boolean
----@return number|nil
+---@return number|nil -- height above terrain in meters if available
 function terrain:height_above_terrain(extrapolate) end
 
--- desc
+-- find difference between home terrain height and the terrain height at the current location in meters. A positive result means the terrain is higher than home.
+-- return false is terrain at the current location or at home location is not available
+-- If extrapolate is true then allow return of an extrapolated terrain altitude based on the last available data
 ---@param extrapolate boolean
----@return number|nil
+---@return number|nil -- height difference in meters if available
 function terrain:height_terrain_difference_home(extrapolate) end
 
--- desc
----@param loc Location_ud
----@param corrected boolean
----@return number|nil
+--  Returns the terrain height (in meters) above mean sea level at the provided Location userdata, or returns nil if that is not available.
+---@param loc Location_ud -- location at which to lookup terrain
+---@param corrected boolean -- if true the terrain altitude should be correced based on the diffrence bettween the database and measured altitude at home
+---@return number|nil -- amsl altitude of terrain at given locaiton in meters
 function terrain:height_amsl(loc, corrected) end
 
--- desc
----@return integer
+-- Returns the current status of the terrain. Compare this to one of the terrain statuses (terrain.TerrainStatusDisabled, terrain.TerrainStatusUnhealthy, terrain.TerrainStatusOK).
+---@return integer -- terrain status
 function terrain:status() end
 
--- desc
+-- Returns true if terrain is enabled.
 ---@return boolean
 function terrain:enabled() end
 
@@ -2782,7 +2795,8 @@ function notify:handle_rgb_id(red, green, blue, id) end
 ---@param rate_hz integer
 function notify:handle_rgb(red, green, blue, rate_hz) end
 
--- desc
+-- Plays a MML tune through the buzzer on the vehicle. The tune is provided as a string.
+-- An online tune tester can be found here: https://firmware.ardupilot.org/Tools/ToneTester/
 ---@param tune string
 function notify:play_tune(tune) end
 
@@ -2795,111 +2809,114 @@ function notify:send_text(text, row) end
 ---@param row integer
 function notify:release_text(row) end
 
--- desc
+-- The GPS library provides access to information about the GPS’s on the vehicle.
 gps = {}
---gps.GPS_OK_FIX_3D_RTK_FIXED = enum_integer
---gps.GPS_OK_FIX_3D_RTK_FLOAT = enum_integer
---gps.GPS_OK_FIX_3D_DGPS = enum_integer
---gps.GPS_OK_FIX_3D = enum_integer
---gps.GPS_OK_FIX_2D = enum_integer
---gps.NO_FIX = enum_integer
---gps.NO_GPS = enum_integer
+gps.GPS_OK_FIX_3D_RTK_FIXED = enum_integer
+gps.GPS_OK_FIX_3D_RTK_FLOAT = enum_integer
+gps.GPS_OK_FIX_3D_DGPS = enum_integer
+gps.GPS_OK_FIX_3D = enum_integer
+gps.GPS_OK_FIX_2D = enum_integer
+gps.NO_FIX = enum_integer
+gps.NO_GPS = enum_integer
 
--- desc
+--  Returns nil or the instance number of the first GPS that has not been fully configured. If all GPS’s have been configured this returns nil.
 ---@return integer|nil
 function gps:first_unconfigured_gps() end
 
--- desc
----@param instance integer
----@return Vector3f_ud
+-- Returns a Vector3f that contains the offsets of the GPS in meters in the body frame.
+---@param instance integer -- instance number
+---@return Vector3f_ud -- anteena offset vector forward, right, down in meters
 function gps:get_antenna_offset(instance) end
 
--- desc
----@param instance integer
----@return boolean
+-- Returns true if the GPS instance can report the vertical velocity.
+---@param instance integer -- instance number
+---@return boolean -- true if vertical velocity is available
 function gps:have_vertical_velocity(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- instance number
 ---@return uint32_t_ud
 function gps:last_message_time_ms(instance) end
 
--- desc
----@param instance integer
----@return uint32_t_ud
+-- Returns the time of the last fix in system milliseconds.
+---@param instance integer -- instance number
+---@return uint32_t_ud -- system time of last fix in milliseconds
 function gps:last_fix_time_ms(instance) end
 
--- desc
----@param instance integer
----@return integer
+-- Returns the vertical dilution of precision of the GPS instance.
+---@param instance integer -- instance number
+---@return integer -- vdop
 function gps:get_vdop(instance) end
 
--- desc
----@param instance integer
----@return integer
+-- Returns the horizontal dilution of precision of the GPS instance.
+---@param instance integer -- instance number
+---@return integer -- hdop
 function gps:get_hdop(instance) end
 
--- desc
----@param instance integer
----@return uint32_t_ud
+-- Returns the number of milliseconds into the current week.
+---@param instance integer -- instance number
+---@return uint32_t_ud -- milliseconds of current week
 function gps:time_week_ms(instance) end
 
--- desc
----@param instance integer
----@return integer
+-- Returns the GPS week number.
+---@param instance integer -- instance number
+---@return integer -- week number
 function gps:time_week(instance) end
 
--- desc
----@param instance integer
----@return integer
+-- Returns the number of satellites that the GPS is currently tracking.
+---@param instance integer -- instance number
+---@return integer -- number of satellites
 function gps:num_sats(instance) end
 
--- desc
----@param instance integer
----@return number
+-- Returns the ground course of the vehicle in degrees. You must check the status to know if the ground course is still current.
+---@param instance integer -- instance number
+---@return number -- ground course in degrees
 function gps:ground_course(instance) end
 
--- desc
----@param instance integer
----@return number
+-- Returns the ground speed of the vehicle in meters per second. You must check the status to know if the ground speed is still current.
+---@param instance integer -- instance number
+---@return number -- ground speed m/s
 function gps:ground_speed(instance) end
 
--- desc
----@param instance integer
----@return Vector3f_ud
+-- Returns a Vector3f that contains the velocity as observed by the GPS.
+-- You must check the status to know if the velocity is still current.
+---@param instance integer -- instance number
+---@return Vector3f_ud -- 3D velocity in m/s, in NED format
 function gps:velocity(instance) end
 
 -- desc
----@param instance integer
+---@param instance integer -- instance number
 ---@return number|nil
 function gps:vertical_accuracy(instance) end
 
--- desc
----@param instance integer
----@return number|nil
+-- horizontal RMS accuracy estimate in m
+---@param instance integer -- instance number
+---@return number|nil -- accuracy in meters
 function gps:horizontal_accuracy(instance) end
 
--- desc
----@param instance integer
----@return number|nil
+-- Returns nil, or the speed accuracy of the GPS in meters per second, if the information is available for the GPS instance.
+---@param instance integer -- instance number
+---@return number|nil -- 3D velocity RMS accuracy estimate in m/s if available
 function gps:speed_accuracy(instance) end
 
--- desc
----@param instance integer
----@return Location_ud
+-- eturns a Location userdata for the last GPS position. You must check the status to know if the location is still current, if it is NO_GPS, or NO_FIX then it will be returning old data.
+---@param instance integer -- instance number
+---@return Location_ud --gps location
 function gps:location(instance) end
 
--- desc
----@param instance integer
----@return integer
+-- Returns the GPS fix status. Compare this to one of the GPS fix types.
+-- Posible status are provided as values on the gps object. eg: gps.GPS_OK_FIX_3D
+---@param instance integer -- instance number
+---@return integer -- status
 function gps:status(instance) end
 
--- desc
----@return integer
+-- Returns which GPS is currently being used as the primary GPS device.
+---@return integer -- primary sensor instance
 function gps:primary_sensor() end
 
--- desc
----@return integer
+-- Returns the number of connected GPS devices.
+-- If GPS blending is turned on that will show up as the third sensor, and be reported here.
+---@return integer -- number of sensors
 function gps:num_sensors() end
 
 -- desc
@@ -2950,7 +2967,7 @@ function BattMonitorScript_State_ud:voltage(value) end
 ---@param value boolean
 function BattMonitorScript_State_ud:healthy(value) end
 
--- desc
+-- The battery library provides access to information about the currently connected batteries on the vehicle.
 battery = {}
 
 -- desc
@@ -2960,72 +2977,72 @@ battery = {}
 function battery:handle_scripting(idx, state) end
 
 -- desc
----@param instance integer
+---@param instance integer -- battery instance
 ---@param percentage number
 ---@return boolean
 function battery:reset_remaining(instance, percentage) end
 
--- desc
----@param instance integer
----@return integer|nil
+-- Returns cycle count of the battery or nil if not available.
+---@param instance integer -- battery instance
+---@return integer|nil -- cycle count if available
 function battery:get_cycle_count(instance) end
 
--- desc
----@param instance integer
----@return number|nil
+-- Returns the temperature of the battery in degrees Celsius if the battery supports temperature monitoring.
+---@param instance integer -- battery instance
+---@return number|nil -- temperature if available
 function battery:get_temperature(instance) end
 
--- desc
----@param instance integer
----@return boolean
+-- returns true if too much power is being drawn from the battery being monitored.
+---@param instance integer -- battery instance
+---@return boolean -- true if in overpower condition
 function battery:overpower_detected(instance) end
 
--- desc
----@return boolean
+-- Returns true if any of the batteries being monitored have triggered a failsafe.
+---@return boolean -- true if any battery has failsafed
 function battery:has_failsafed() end
 
--- desc
----@param instance integer
----@return integer
+-- Returns the full pack capacity (in milliamp hours) from the battery.
+---@param instance integer -- battery instance
+---@return integer -- capacity in milliamp hours
 function battery:pack_capacity_mah(instance) end
 
--- desc
----@param instance integer
----@return integer|nil
+-- Returns the remaining percentage of battery (from 0 to 100), or nil if energy monitoring is not available.
+---@param instance integer -- battery instance
+---@return integer|nil -- remaining capacity as a percentage of total capacity if available
 function battery:capacity_remaining_pct(instance) end
 
--- desc
----@param instance integer
----@return number|nil
+-- Returns the used watt hours from the battery, or nil if energy monitoring is not available.
+---@param instance integer -- battery instance
+---@return number|nil -- consumed energy in watt hours if available
 function battery:consumed_wh(instance) end
 
--- desc
----@param instance integer
----@return number|nil
+-- Returns the capacity (in milliamp hours) used from the battery, or nil if current monitoring is not available.
+---@param instance integer -- battery instance
+---@return number|nil -- consumed capacity in milliamp hours
 function battery:consumed_mah(instance) end
 
--- desc
----@param instance integer
----@return number|nil
+-- Returns the current (in Amps) that is currently being consumed by the battery, or nil if current monitoring is not available.
+---@param instance integer -- battery instance
+---@return number|nil -- current in amps if available
 function battery:current_amps(instance) end
 
--- desc
----@param instance integer
----@return number
+-- Returns the estimated battery voltage if it was not under load.
+---@param instance integer -- battery instance
+---@return number -- resting voltage
 function battery:voltage_resting_estimate(instance) end
 
--- desc
----@param instance integer
----@return number
+-- Returns the voltage of the selected battery instance.
+---@param instance integer -- battery instance
+---@return number -- voltage
 function battery:voltage(instance) end
 
--- desc
----@param instance integer
+-- Returns true if the requested battery instance is healthy. Healthy is considered to be ArduPilot is currently able to monitor the battery.
+---@param instance integer -- battery instance
 ---@return boolean
 function battery:healthy(instance) end
 
--- desc
----@return integer
+-- Returns the number of battery instances currently available.
+---@return integer -- number of instances
 function battery:num_instances() end
 
 -- get individual cell voltage
@@ -3035,7 +3052,7 @@ function battery:num_instances() end
 function battery:get_cell_voltage(instance, cell) end
 
 
--- desc
+-- The Arming library provides access to arming status and commands.
 arming = {}
 
 -- desc
@@ -3051,24 +3068,25 @@ function arming:set_aux_auth_passed(auth_id) end
 ---@return integer|nil
 function arming:get_aux_auth_id() end
 
--- desc
----@return boolean
+-- Attempts to arm the vehicle. Returns true if successful.
+---@return boolean -- true if armed successfully
 function arming:arm() end
 
--- desc
----@return boolean
+-- Returns a true if vehicle is currently armed.
+---@return boolean -- true if armed
 function arming:is_armed() end
 
 -- desc
 ---@return boolean
 function arming:pre_arm_checks() end
 
--- desc
----@return boolean
+-- Disarms the vehicle in all cases. Returns false only if already disarmed.
+---@return boolean -- true if disarmed successfully, false if already disarmed.
 function arming:disarm() end
 
 
--- desc
+-- The ahrs library represents the Attitude Heading Reference System computed by the autopilot. 
+-- It provides estimates for the vehicles attitude, and position.
 ahrs = {}
 
 -- desc
@@ -3133,16 +3151,16 @@ function ahrs:earth_to_body(vector) end
 ---@return Vector3f_ud
 function ahrs:get_vibration() end
 
--- desc
----@return number|nil
+-- Return the estimated airspeed of the vehicle if available
+---@return number|nil -- airspeed in meters / second if available
 function ahrs:airspeed_estimate() end
 
 -- desc
 ---@return boolean
 function ahrs:healthy() end
 
--- desc
----@return boolean
+-- Returns a true if home position has been set.
+---@return boolean -- true if home position has been set
 function ahrs:home_is_set() end
 
 -- desc
@@ -3157,16 +3175,16 @@ function ahrs:get_relative_position_NED_origin() end
 ---@return Vector3f_ud|nil
 function ahrs:get_relative_position_NED_home() end
 
--- desc
----@return Vector3f_ud|nil
+-- Returns nil, or a Vector3f containing the current NED vehicle velocity in meters/second in north, east, and down components.
+---@return Vector3f_ud|nil -- North, east, down velcoity in meters / second if available
 function ahrs:get_velocity_NED() end
 
--- desc
----@return Vector2f_ud
+-- Get current groundspeed vector in meter / second
+---@return Vector2f_ud -- ground speed vector, North East, meters / second
 function ahrs:groundspeed_vector() end
 
--- desc
----@return Vector3f_ud
+-- Returns a Vector3f containing the current wind estimate for the vehicle.
+---@return Vector3f_ud -- wind estiamte North, East, Down meters / second
 function ahrs:wind_estimate() end
 
 -- Determine how aligned heading_deg is with the wind. Return result
@@ -3181,40 +3199,41 @@ function ahrs:wind_alignment(heading_deg) end
 ---@return number
 function ahrs:head_wind() end
 
--- desc
----@return number|nil
+--  Returns nil, or the latest altitude estimate above ground level in meters
+---@return number|nil -- height above ground level in meters
 function ahrs:get_hagl() end
 
 -- desc
 ---@return Vector3f_ud
 function ahrs:get_accel() end
 
--- desc
----@return Vector3f_ud
+-- Returns a Vector3f containing the current smoothed and filtered gyro rates (in radians/second)
+---@return Vector3f_ud -- roll, pitch, yaw gyro rates in radians / second
 function ahrs:get_gyro() end
 
--- desc
----@return Location_ud
+-- Returns a Location that contains the vehicles current home waypoint.
+---@return Location_ud -- home location
 function ahrs:get_home() end
 
--- desc
----@return Location_ud|nil
+-- Returns nil or Location userdata that contains the vehicles current position.
+-- Note: This will only return a Location if the system considers the current estimate to be reasonable.
+---@return Location_ud|nil -- current location if available
 function ahrs:get_location() end
 
 -- same as `get_location` will be removed
 ---@return Location_ud|nil
 function ahrs:get_position() end
 
--- desc
----@return number
+-- Returns the current vehicle euler yaw angle in radians.
+---@return number -- yaw angle in radians.
 function ahrs:get_yaw() end
 
--- desc
----@return number
+-- Returns the current vehicle euler pitch angle in radians.
+---@return number -- pitch angle in radians.
 function ahrs:get_pitch() end
 
--- desc
----@return number
+-- Returns the current vehicle euler roll angle in radians.
+---@return number -- roll angle in radians
 function ahrs:get_roll() end
 
 -- desc
