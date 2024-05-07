@@ -47,6 +47,11 @@ public:
     // Get model/type name
     const char* get_name() const override;
 
+protected:
+
+    uint8_t num_gps_sensors(void) const override {
+        return 1;
+    }
 private:
     AP_HAL::UARTDriver *uart;
     int8_t port_num;

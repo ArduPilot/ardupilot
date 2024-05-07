@@ -40,7 +40,7 @@ void AP_Periph_FW::can_mag_update(void)
     compass.read();
 
 #if AP_PERIPH_PROBE_CONTINUOUS
-    if (compass.get_count() == 0) {
+    if (option_is_set(PeriphOptions::PROBE_CONTINUOUS) && !hal.util->get_soft_armed() && (compass.get_count() == 0)) {
         static uint32_t last_probe_ms;
         uint32_t now = AP_HAL::millis();
         if (now - last_probe_ms >= 1000) {

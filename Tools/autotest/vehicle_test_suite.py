@@ -2331,7 +2331,6 @@ class TestSuite(ABC):
             "SIM_BARO_COUNT",
             "SIM_BARO_DELAY",
             "SIM_BARO_DISABLE",
-            "SIM_BARO_DRIFT",
             "SIM_BARO_FREEZE",
             "SIM_BARO_WCF_BAK",
             "SIM_BARO_WCF_DN",
@@ -6045,13 +6044,14 @@ class TestSuite(ABC):
         del context.collections[msg_type]
         return ret
 
-    def context_pop(self, process_interaction_allowed=True):
+    def context_pop(self, process_interaction_allowed=True, hooks_already_removed=False):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
         # remove hooks first; these hooks can raise exceptions which
         # we really don't want...
-        for hook in dead.message_hooks:
-            self.remove_message_hook(hook)
+        if not hooks_already_removed:
+            for hook in dead.message_hooks:
+                self.remove_message_hook(hook)
         for script in dead.installed_scripts:
             self.remove_installed_script(script)
         for (message_id, interval_us) in dead.overridden_message_rates.items():
@@ -8409,7 +8409,7 @@ Also, ignores heartbeats not from our target system'''
 
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile, suppress_stdout=suppress_stdout)
 
-        start_message_hooks = self.mav.message_hooks
+        start_message_hooks = copy.copy(self.mav.message_hooks)
 
         prettyname = "%s (%s)" % (name, desc)
         self.start_test(prettyname)
@@ -8420,6 +8420,8 @@ Also, ignores heartbeats not from our target system'''
         start_time = time.time()
 
         orig_speedup = None
+
+        hooks_removed = False
 
         ex = None
         try:
@@ -8444,6 +8446,7 @@ Also, ignores heartbeats not from our target system'''
             for h in self.mav.message_hooks:
                 if h not in start_message_hooks:
                     self.mav.message_hooks.remove(h)
+            hooks_removed = True
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
 
@@ -8470,7 +8473,7 @@ Also, ignores heartbeats not from our target system'''
             reset_needed = True
 
         try:
-            self.context_pop(process_interaction_allowed=ardupilot_alive)
+            self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
         except Exception as e:
             self.print_exception_caught(e, send_statustext=False)
             passed = False
@@ -8522,7 +8525,7 @@ Also, ignores heartbeats not from our target system'''
             # pop off old contexts to clean up message hooks etc
             while len(self.contexts) > old_contexts_length:
                 try:
-                    self.context_pop(process_interaction_allowed=ardupilot_alive)
+                    self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
                 except Exception as e:
                     self.print_exception_caught(e, send_statustext=False)
             self.progress("Done popping extra contexts")
@@ -13682,7 +13685,7 @@ switch value'''
             n = self.poll_home_position(timeout=120)
             distance = self.get_distance_int(orig, n)
             if distance > 1:
-                raise NotAchievedException("gps type %u misbehaving" % name)
+                raise NotAchievedException(f"gps type {name} misbehaving")
 
     def assert_gps_satellite_count(self, messagename, count):
         m = self.assert_receive_message(messagename)
@@ -14205,6 +14208,8 @@ SERIAL5_BAUD 128
         sample_rate = 0
         counts = 0
         window = numpy.hanning(fft_len)
+        # The returned float array f contains the frequency bin centers in cycles per unit of the
+        # sample spacing (with zero at the start).
         freqmap = numpy.fft.rfftfreq(fft_len, 1.0 / messages[0].sample_rate_hz)
 
         # calculate NEBW constant

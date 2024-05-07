@@ -276,7 +276,8 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if MODE_AUTO_ENABLED == ENABLED
     if (mode == Mode::Number::AUTO_RTL) {
         // Special case for AUTO RTL, not a true mode, just AUTO in disguise
-        return mode_auto.jump_to_landing_sequence_auto_RTL(reason);
+        // Attempt to join return path, fallback to do-land-start
+        return mode_auto.return_path_or_jump_to_landing_sequence_auto_RTL(reason);
     }
 #endif
 

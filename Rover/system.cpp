@@ -1,10 +1,3 @@
-/*****************************************************************************
-The init_ardupilot function processes everything we need for an in - air restart
-    We will determine later if we are actually on the ground and process a
-    ground start in that case.
-
-*****************************************************************************/
-
 #include "Rover.h"
 
 static void failsafe_check_static()
@@ -121,7 +114,21 @@ void Rover::init_ardupilot()
     g2.oa.init();
 #endif
 
-    startup_ground();
+    set_mode(mode_initializing, ModeReason::INITIALISED);
+
+    startup_INS();
+
+#if AP_MISSION_ENABLED
+    // initialise mission library
+    mode_auto.mission.init();
+#endif
+
+    // initialise AP_Logger library
+#if HAL_LOGGING_ENABLED
+    logger.setVehicle_Startup_Writer(
+        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
+        );
+#endif
 
     Mode *initial_mode = mode_from_mode_num((enum Mode::Number)g.initial_mode.get());
     if (initial_mode == nullptr) {
@@ -143,30 +150,6 @@ void Rover::init_ardupilot()
 
     // flag that initialisation has completed
     initialised = true;
-}
-
-//*********************************************************************************
-// This function does all the calibrations, etc. that we need during a ground start
-//*********************************************************************************
-void Rover::startup_ground(void)
-{
-    set_mode(mode_initializing, ModeReason::INITIALISED);
-
-    // IMU ground start
-    //------------------------
-    //
-
-    startup_INS_ground();
-
-    // initialise mission library
-    mode_auto.mission.init();
-
-    // initialise AP_Logger library
-#if HAL_LOGGING_ENABLED
-    logger.setVehicle_Startup_Writer(
-        FUNCTOR_BIND(&rover, &Rover::Log_Write_Vehicle_Startup_Messages, void)
-        );
-#endif
 }
 
 // update the ahrs flyforward setting which can allow
@@ -285,7 +268,7 @@ bool Rover::set_mode(Mode::Number new_mode, ModeReason reason)
     return rover.set_mode(*mode, reason);
 }
 
-void Rover::startup_INS_ground(void)
+void Rover::startup_INS(void)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
     hal.scheduler->delay(100);

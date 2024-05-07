@@ -553,6 +553,12 @@ public:
     // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
     bool jump_to_landing_sequence_auto_RTL(ModeReason reason);
 
+    // Join mission after DO_RETURN_PATH_START waypoint, if succeeds pretend to be Auto RTL mode
+    bool return_path_start_auto_RTL(ModeReason reason);
+
+    // Try join return path else do land start
+    bool return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reason);
+
     // lua accessors for nav script time support
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
@@ -588,6 +594,9 @@ private:
         IgnorePilotYaw                     = (1 << 2U),
         AllowWeatherVaning                 = (1 << 7U),
     };
+
+    // Enter auto rtl pseudo mode
+    bool enter_auto_rtl(ModeReason reason);
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

@@ -294,6 +294,19 @@ Vector3d Location::get_distance_NED_double(const Location &loc2) const
                     (alt - loc2.alt) * 0.01);
 }
 
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2 considering alt frame, if altitude cannot be resolved down distance is 0
+Vector3f Location::get_distance_NED_alt_frame(const Location &loc2) const
+{
+    int32_t alt1, alt2 = 0;
+    if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
+        // one or both of the altitudes are invalid, don't do alt distance calc
+        alt1 = 0, alt2 = 0;
+    }
+    return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2),
+                    (alt1 - alt2) * 0.01);
+}
+
 Vector2d Location::get_distance_NE_double(const Location &loc2) const
 {
     return Vector2d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),

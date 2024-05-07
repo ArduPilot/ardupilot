@@ -449,12 +449,6 @@ public:
         float calculated_notch_freq_hz[INS_MAX_NOTCHES];
         uint8_t num_calculated_notch_frequencies;
 
-        // Update the harmonic notch frequency
-        void update_notch_freq_hz(float scaled_freq);
-
-        // Update the harmonic notch frequencies
-        void update_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
-
         // runtime update of notch parameters
         void update_params(uint8_t instance, bool converging, float gyro_rate);
 

@@ -318,8 +318,11 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
     const uint32_t now_us = AP_HAL::micros();
 
     // loop through groups of 4 ESCs
-    const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS - 1);
-    const uint8_t num_idx = ESC_TELEM_MAX_ESCS / 4;
+    const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
+
+    // ensure we send out partially-full groups:
+    const uint8_t num_idx = (ESC_TELEM_MAX_ESCS + 3) / 4;
+
     for (uint8_t idx = 0; idx < num_idx; idx++) {
         const uint8_t i = (next_idx + idx) % num_idx;
 

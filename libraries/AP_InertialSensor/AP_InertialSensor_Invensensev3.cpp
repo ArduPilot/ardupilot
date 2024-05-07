@@ -468,6 +468,9 @@ static inline float uint20_to_float(uint8_t msb, uint8_t bits, uint8_t lsb)
 
 bool AP_InertialSensor_Invensensev3::accumulate_highres_samples(const FIFODataHighRes *data, uint8_t n_samples)
 {
+#if INV3_ENABLE_FIFO_LOGGING
+    const uint64_t tstart = AP_HAL::micros64();
+#endif
     for (uint8_t i = 0; i < n_samples; i++) {
         const FIFODataHighRes &d = data[i];
 
@@ -488,6 +491,9 @@ bool AP_InertialSensor_Invensensev3::accumulate_highres_samples(const FIFODataHi
         accel *= accel_scale;
         gyro *= gyro_scale;
 
+#if INV3_ENABLE_FIFO_LOGGING
+        Write_GYR(gyro_instance, tstart+(i*backend_period_us), gyro, true);
+#endif
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
         // these four calls are about 40us

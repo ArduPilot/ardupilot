@@ -58,7 +58,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Baro,          &tracker.barometer,  update,         10, 1500, 40),
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_receive, 50, 1700, 45),
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000, 50),
-    SCHED_TASK_CLASS(AP_Baro,           &tracker.barometer, accumulate,     50,  900, 55),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,    10,    300, 60),
     SCHED_TASK_CLASS(AP_Logger,   &tracker.logger, periodic_tasks, 50,  300, 65),

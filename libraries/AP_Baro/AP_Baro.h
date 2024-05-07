@@ -87,10 +87,6 @@ public:
     // get pressure correction in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
     float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
-    
-    // accumulate a reading on sensors. Some backends without their
-    // own thread or a timer may need this.
-    void accumulate(void);
 
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
@@ -287,8 +283,6 @@ private:
     uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
-    float                               _last_altitude_EAS2TAS;
-    float                               _EAS2TAS;
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;

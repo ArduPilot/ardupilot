@@ -26,6 +26,7 @@ from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, P
 from vehicle_test_suite import Test
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import WaitAndMaintainArmed
+from vehicle_test_suite import WaitModeTimeout
 
 from pymavlink.rotmat import Vector3
 
@@ -1603,6 +1604,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.zero_throttle()
 
+    # MaxAltFence - fly up and make sure fence action does not trigger
+    # Also check that the vehicle will not try and descend too fast when trying to backup from a max alt fence due to avoidance
+    def MaxAltFenceAvoid(self):
+        '''Test Max Alt Fence Avoidance'''
+        self.takeoff(10, mode="LOITER")
+        """Hold loiter position."""
+
+        # enable fence, only max altitude, defualt is 100m
+        # No action, rely on avoidance to prevent the breach
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 1,
+            "FENCE_ACTION": 0,
+        })
+
+        # Try and fly past the fence
+        self.set_rc(3, 1920)
+
+        # Avoid should prevent the vehicle flying past the fence, so the altitude wait should timeouts
+        try:
+            self.wait_altitude(140, 150, timeout=90, relative=True)
+            raise NotAchievedException("Avoid should prevent reaching altitude")
+        except AutoTestTimeoutException:
+            pass
+        except Exception as e:
+            raise e
+
+        # Check descent is not too fast, allow 10% above the configured backup speed
+        max_descent_rate = -self.get_parameter("AVOID_BACKUP_SPD") * 1.1
+
+        def get_climb_rate(mav, m):
+            m_type = m.get_type()
+            if m_type != 'VFR_HUD':
+                return
+            if m.climb < max_descent_rate:
+                raise NotAchievedException("Decending too fast want %f got %f" % (max_descent_rate, m.climb))
+
+        self.context_push()
+        self.install_message_hook_context(get_climb_rate)
+
+        # Reduce fence alt, this will result in a fence breach, but there is no action.
+        # Avoid should then backup the vehicle to be under the new fence alt.
+        self.set_parameters({
+            "FENCE_ALT_MAX": 50,
+        })
+        self.wait_altitude(40, 50, timeout=90, relative=True)
+
+        self.context_pop()
+
+        self.set_rc(3, 1500)
+        self.do_RTL()
+
     # fly_alt_min_fence_test - fly down until you hit the fence floor
     def MinAltFence(self):
         '''Test Min Alt Fence'''
@@ -3125,9 +3178,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             # ignore the first 20Hz and look for a peak at -15dB or more
-            ignore_bins = 20
+            # it should be at about 190Hz, each bin is 1000/1024Hz wide
+            ignore_bins = int(100 * 1.024)  # start at 100Hz to be safe
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
-            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 180 or freq > 300:
+            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 100 or freq > 300:
                 raise NotAchievedException(
                     "Did not detect a motor peak, found %f at %f dB" %
                     (freq, numpy.amax(psd["X"][ignore_bins:])))
@@ -5845,8 +5899,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
-    def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
-                                                   reverse=None, takeoff=True):
+    def hover_and_check_matched_frequency_with_fft_and_psd(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
+                                                           reverse=None, takeoff=True, instance=0):
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
@@ -5854,7 +5908,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.do_RTL()
 
-        psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
+        psd = self.mavfft_fttd(1, instance, tstart * 1.0e6, tend * 1.0e6)
 
         # batch sampler defaults give 1024 fft and sample rate of 1kz so roughly 1hz/bin
         freq = psd["F"][numpy.argmax(psd["X"][minhz:maxhz]) + minhz] * (1000. / 1024.)
@@ -5873,7 +5927,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Detected motor peak at %fHz, throttle %f%%, %fdB" %
                               (freq, hover_throttle, peakdb))
 
+        return freq, hover_throttle, peakdb, psd
+
+    def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
+                                                   reverse=None, takeoff=True, instance=0):
+        freq, hover_throttle, peakdb, psd = \
+            self.hover_and_check_matched_frequency_with_fft_and_psd(dblevel, minhz,
+                                                                    maxhz, peakhz, reverse, takeoff, instance)
         return freq, hover_throttle, peakdb
+
+    def get_average_esc_frequency(self):
+        mlog = self.dfreader_for_current_onboard_log()
+        rpm_total = 0
+        rpm_count = 0
+        tho = 0
+        while True:
+            m = mlog.recv_match()
+            if m is None:
+                break
+            msg_type = m.get_type()
+            if msg_type == "CTUN":
+                tho = m.ThO
+            elif msg_type == "ESC" and tho > 0.1:
+                rpm_total += m.RPM
+                rpm_count += 1
+
+        esc_hz = rpm_total / (rpm_count * 60)
+        return esc_hz
 
     def DynamicNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
@@ -5911,13 +5991,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             })
             self.reboot_sitl()
 
-            freq, hover_throttle, peakdb1 = self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
+            freq, hover_throttle, peakdb1 = \
+                self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
 
             # now add double dynamic notches and check that the peak is squashed
             self.set_parameter("INS_HNTCH_OPTS", 1)
             self.reboot_sitl()
 
-            freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+            freq, hover_throttle, peakdb2 = \
+                self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
             # double-notch should do better, but check for within 5%
             if peakdb2 * 1.05 > peakdb1:
@@ -5929,7 +6011,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameter("INS_HNTCH_OPTS", 16)
             self.reboot_sitl()
 
-            freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+            freq, hover_throttle, peakdb2 = \
+                self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
             # triple-notch should do better, but check for within 5%
             if peakdb2 * 1.05 > peakdb1:
@@ -5955,7 +6038,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AHRS_EKF_TYPE": 10,
             "INS_LOG_BAT_MASK": 3,
             "INS_LOG_BAT_OPT": 0,
-            "INS_GYRO_FILTER": 100, # set gyro filter high so we can observe behaviour
+            "INS_GYRO_FILTER": 300, # set gyro filter high so we can observe behaviour
             "LOG_BITMASK": 958,
             "LOG_DISARMED": 0,
             "SIM_VIB_MOT_MAX": 350,
@@ -5966,12 +6049,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.takeoff(10, mode="ALT_HOLD")
 
-        # find a motor peak
-        freq, hover_throttle, peakdb = self.hover_and_check_matched_frequency_with_fft(-15, 200, 300)
+        # find a motor peak, the peak is at about 190Hz, so checking between 50 and 320Hz should be safe.
+        # there is a second harmonic at 380Hz which should be avoided to make the test reliable
+        # detect at -5dB so we don't pick some random noise as the peak. The actual peak is about +15dB
+        freq, hover_throttle, peakdb = self.hover_and_check_matched_frequency_with_fft(-5, 50, 320)
 
         # now add a dynamic notch and check that the peak is squashed
         self.set_parameters({
-            "INS_LOG_BAT_OPT": 2,
+            "INS_LOG_BAT_OPT": 4,
             "INS_HNTCH_ENABLE": 1,
             "INS_HNTCH_FREQ": 80,
             "INS_HNTCH_REF": 1.0,
@@ -5982,19 +6067,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        freq, hover_throttle, peakdb1 = self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
+        # -10dB is pretty conservative - actual is about -25dB
+        freq, hover_throttle, peakdb1, psd = \
+            self.hover_and_check_matched_frequency_with_fft_and_psd(-10, 50, 320, reverse=True, instance=2)
+        # find the noise at the motor frequency
+        esc_hz = self.get_average_esc_frequency()
+        esc_peakdb1 = psd["X"][int(esc_hz)]
 
         # now add notch-per motor and check that the peak is squashed
         self.set_parameter("INS_HNTCH_OPTS", 2)
         self.reboot_sitl()
 
-        freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+        freq, hover_throttle, peakdb2, psd = \
+            self.hover_and_check_matched_frequency_with_fft_and_psd(-10, 50, 320, reverse=True, instance=2)
+        # find the noise at the motor frequency
+        esc_hz = self.get_average_esc_frequency()
+        esc_peakdb2 = psd["X"][int(esc_hz)]
 
-        # notch-per-motor should do better, but check for within 10%. ( its mostly within 5%, but does vary a bit)
-        if peakdb2 * 1.10 > peakdb1:
+        # notch-per-motor will be better at the average ESC frequency
+        if esc_peakdb2 > esc_peakdb1:
             raise NotAchievedException(
                 "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
-                (peakdb2, peakdb1))
+                (esc_peakdb2, esc_peakdb1))
+
+        # check that the noise is being squashed at all. this needs to be an aggresive check so that failure happens easily
+        # testing shows this to be -58dB on average
+        if esc_peakdb2 > -25:
+            raise NotAchievedException(
+                "Notch-per-motor had a peak of %fdB there should be none" % esc_peakdb2)
 
         # Now do it again for an octacopter
         self.context_push()
@@ -6007,20 +6107,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 defaults_filepath=','.join(self.model_defaults_filepath("octa")),
                 model="octa"
             )
-            freq, hover_throttle, peakdb1 = self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
+            freq, hover_throttle, peakdb1, psd = \
+                self.hover_and_check_matched_frequency_with_fft_and_psd(-10, 50, 320, reverse=True, instance=2)
+            # find the noise at the motor frequency
+            esc_hz = self.get_average_esc_frequency()
+            esc_peakdb1 = psd["X"][int(esc_hz)]
 
             # now add notch-per motor and check that the peak is squashed
             self.set_parameter("INS_HNTCH_HMNCS", 1)
             self.set_parameter("INS_HNTCH_OPTS", 2)
             self.reboot_sitl()
 
-            freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+            freq, hover_throttle, peakdb2, psd = \
+                self.hover_and_check_matched_frequency_with_fft_and_psd(-15, 50, 320, reverse=True, instance=2)
+            # find the noise at the motor frequency
+            esc_hz = self.get_average_esc_frequency()
+            esc_peakdb2 = psd["X"][int(esc_hz)]
 
-            # notch-per-motor should do better, but check for within 5%
-            if peakdb2 * 1.05 > peakdb1:
+            # notch-per-motor will be better at the average ESC frequency
+            if esc_peakdb2 > esc_peakdb1:
                 raise NotAchievedException(
                     "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
-                    (peakdb2, peakdb1))
+                    (esc_peakdb2, esc_peakdb1))
+
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
@@ -7047,56 +7156,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
 
-        ex = None
-        try:
-            self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.change_mode('POSHOLD')
-            self.set_rc(3, 1000)
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.delay_sim_time(2)
-            # check we are still on the ground...
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            if abs(m.relative_alt) > 100:
-                raise NotAchievedException("Took off prematurely")
+        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.change_mode('POSHOLD')
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(2)
+        # check we are still on the ground...
+        relative_alt = self.get_altitude(relative=True)
+        if relative_alt > 0.1:
+            raise NotAchievedException("Took off prematurely")
 
-            self.progress("Pushing throttle up")
-            self.set_rc(3, 1710)
-            self.delay_sim_time(0.5)
-            self.progress("Bringing back to hover throttle")
-            self.set_rc(3, 1500)
+        self.progress("Pushing throttle up")
+        self.set_rc(3, 1710)
+        self.delay_sim_time(0.5)
+        self.progress("Bringing back to hover throttle")
+        self.set_rc(3, 1500)
 
-            # make sure we haven't already reached alt:
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_initial_alt = 2000
-            if abs(m.relative_alt) > max_initial_alt:
-                raise NotAchievedException("Took off too fast (%f > %f" %
-                                           (abs(m.relative_alt), max_initial_alt))
+        # make sure we haven't already reached alt:
+        relative_alt = self.get_altitude(relative=True)
+        max_initial_alt = 2.0
+        if abs(relative_alt) > max_initial_alt:
+            raise NotAchievedException("Took off too fast (%f > %f" %
+                                       (relative_alt, max_initial_alt))
 
-            self.progress("Monitoring takeoff-to-alt")
-            self.wait_altitude(6.9, 8, relative=True)
-
-            self.progress("Making sure we stop at our takeoff altitude")
-            tstart = self.get_sim_time()
-            while self.get_sim_time() - tstart < 5:
-                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-                delta = abs(7000 - m.relative_alt)
-                self.progress("alt=%f delta=%f" % (m.relative_alt/1000,
-                                                   delta/1000))
-                if delta > 1000:
-                    raise NotAchievedException("Failed to maintain takeoff alt")
-            self.progress("takeoff OK")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.progress("Monitoring takeoff-to-alt")
+        self.wait_altitude(6.9, 8, relative=True, minimum_duration=10)
+        self.progress("takeoff OK")
 
         self.land_and_disarm()
         self.set_rc(8, 1000)
 
         self.context_pop()
-
-        if ex is not None:
-            raise ex
 
     def initial_mode(self):
         return "STABILIZE"
@@ -7652,7 +7743,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ex = None
         try:
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(self.model_defaults_filepath('Callisto'))],
+                [],
+                defaults_filepath=self.model_defaults_filepath('Callisto'),
                 model="octa-quad:@ROMFS/models/Callisto.json",
                 wipe=True,
             )
@@ -8769,7 +8861,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         print("log difference: %s" % str(log_difference))
         return log_difference[0]
 
-    def GPSBlending(self):
+    def GPSBlendingLog(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
 
@@ -8844,10 +8936,141 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def GPSBlending(self):
+        '''Test GPS Blending'''
+        '''ensure we get dataflash log messages for blended instance'''
+
+        self.context_push()
+
+        # configure:
+        self.set_parameters({
+            "WP_YAW_BEHAVIOR": 0,  # do not yaw
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_DISABLE": 0,
+            "SIM_GPS_POS_X": 1.0,
+            "SIM_GPS_POS_Y": -1.0,
+            "SIM_GPS2_POS_X": -1.0,
+            "SIM_GPS2_POS_Y": 1.0,
+            "GPS_AUTO_SWITCH": 2,
+        })
+        self.reboot_sitl()
+
+        alt = 10
+        self.takeoff(alt, mode='GUIDED')
+        self.fly_guided_move_local(30, 0, alt)
+        self.fly_guided_move_local(30, 30, alt)
+        self.fly_guided_move_local(0, 30, alt)
+        self.fly_guided_move_local(0, 0, alt)
+        self.change_mode('LAND')
+
+        current_log_file = self.dfreader_for_current_onboard_log()
+
+        self.wait_disarmed()
+
+        # ensure that the blended solution is always about half-way
+        # between the two GPSs:
+        current_ts = None
+        while True:
+            m = current_log_file.recv_match(type='GPS')
+            if m is None:
+                break
+            if current_ts is None:
+                if m.I != 0:  # noqa
+                    continue
+                current_ts = m.TimeUS
+                measurements = {}
+            if m.TimeUS != current_ts:
+                current_ts = None
+                continue
+            measurements[m.I] = (m.Lat, m.Lng)
+            if len(measurements) == 3:
+                # check lat:
+                for n in 0, 1:
+                    expected_blended = (measurements[0][n] + measurements[1][n])/2
+                    epsilon = 0.0000002
+                    error = abs(measurements[2][n] - expected_blended)
+                    if error > epsilon:
+                        raise NotAchievedException("Blended diverged")
+                current_ts = None
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def GPSWeightedBlending(self):
+        '''Test GPS Weighted Blending'''
+
+        self.context_push()
+
+        # configure:
+        self.set_parameters({
+            "WP_YAW_BEHAVIOR": 0,  # do not yaw
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_DISABLE": 0,
+            "SIM_GPS_POS_X": 1.0,
+            "SIM_GPS_POS_Y": -1.0,
+            "SIM_GPS2_POS_X": -1.0,
+            "SIM_GPS2_POS_Y": 1.0,
+            "GPS_AUTO_SWITCH": 2,
+        })
+        # configure velocity errors such that the 1st GPS should be
+        # 4/5, second GPS 1/5 of result (0.5**2)/((0.5**2)+(1.0**2))
+        self.set_parameters({
+            "SIM_GPS_VERR_X": 0.3,  # m/s
+            "SIM_GPS_VERR_Y": 0.4,
+            "SIM_GPS2_VERR_X": 0.6,  # m/s
+            "SIM_GPS2_VERR_Y": 0.8,
+            "GPS_BLEND_MASK": 4,  # use only speed for blend calculations
+        })
+        self.reboot_sitl()
+
+        alt = 10
+        self.takeoff(alt, mode='GUIDED')
+        self.fly_guided_move_local(30, 0, alt)
+        self.fly_guided_move_local(30, 30, alt)
+        self.fly_guided_move_local(0, 30, alt)
+        self.fly_guided_move_local(0, 0, alt)
+        self.change_mode('LAND')
+
+        current_log_file = self.dfreader_for_current_onboard_log()
+
+        self.wait_disarmed()
+
+        # ensure that the blended solution is always about half-way
+        # between the two GPSs:
+        current_ts = None
+        while True:
+            m = current_log_file.recv_match(type='GPS')
+            if m is None:
+                break
+            if current_ts is None:
+                if m.I != 0:  # noqa
+                    continue
+                current_ts = m.TimeUS
+                measurements = {}
+            if m.TimeUS != current_ts:
+                current_ts = None
+                continue
+            measurements[m.I] = (m.Lat, m.Lng)
+            if len(measurements) == 3:
+                # check lat:
+                for n in 0, 1:
+                    expected_blended = 0.8*measurements[0][n] + 0.2*measurements[1][n]
+                    epsilon = 0.0000002
+                    error = abs(measurements[2][n] - expected_blended)
+                    if error > epsilon:
+                        raise NotAchievedException(f"Blended diverged {measurements[0][n]=} {measurements[1][n]=}")
+                current_ts = None
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def Callisto(self):
         '''Test Callisto'''
         self.customise_SITL_commandline(
-            ["--defaults", ','.join(self.model_defaults_filepath('Callisto')), ],
+            [],
+            defaults_filepath=self.model_defaults_filepath('Callisto'),
             model="octa-quad:@ROMFS/models/Callisto.json",
             wipe=True,
         )
@@ -8881,12 +9104,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # the model string for Callisto has crap in it.... we
             # should really have another entry in the vehicleinfo data
             # to carry the path to the JSON.
-            actual_model = model.split(":")[0]
-            defaults = self.model_defaults_filepath(actual_model)
+            defaults = self.model_defaults_filepath(frame)
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(defaults), ],
+                [],
+                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
@@ -10203,6 +10426,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.HorizontalFence,
              self.HorizontalAvoidFence,
              self.MaxAltFence,
+             self.MaxAltFenceAvoid,
              self.MinAltFence,
              self.FenceFloorEnabledLanding,
              self.AutoTuneSwitch,
@@ -10925,13 +11149,167 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(0.5, 100, relative=True, timeout=10)
         self.do_RTL()
 
+    def AutoRTL(self):
+        '''Test Auto RTL mode using do land start and return path start mission items'''
+        alt = 50
+        guided_loc = self.home_relative_loc_ne(1000, 0)
+        guided_loc.alt += alt
+
+        # Arm, take off and fly to guided location
+        self.takeoff(mode='GUIDED')
+        self.fly_guided_move_to(guided_loc, timeout=240)
+
+        # Try auto RTL mode, should fail with no mission
+        try:
+            self.change_mode('AUTO_RTL', timeout=10)
+            raise NotAchievedException("Should not change mode with no mission")
+        except WaitModeTimeout:
+            pass
+        except Exception as e:
+            raise e
+
+        # pymavlink does not understand the new return path command yet, at some point it will
+        cmd_return_path_start = 188 # mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START
+
+        # Do land start and do return path should both fail as commands too
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+        # Load mission with do land start
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, alt), # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  750, 0, alt), # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 250, 0, alt),  # 5
+        ])
+
+        # Return path should still fail
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+        # Do land start should jump to the waypoint following the item
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.drain_mav()
+        self.assert_current_waypoint(4)
+
+        # Back to guided location
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(guided_loc)
+
+        # mode change to Auto RTL should do the same
+        self.change_mode('AUTO_RTL')
+        self.drain_mav()
+        self.assert_current_waypoint(4)
+
+        # Back to guided location
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(guided_loc)
+
+        # Add a return path item
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1250, 0, alt), # 1
+            self.create_MISSION_ITEM_INT(cmd_return_path_start),  # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 900, 0, alt),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 750, 0, alt),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 550, 0, alt),  # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, alt),  # 6
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START), # 7
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  250, 0, alt), # 8
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -250, 0, alt), # 9
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -500, 0, alt), # 10
+        ])
+
+        # Return path should now work
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.drain_mav()
+        self.assert_current_waypoint(3)
+
+        # Back to guided location
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(guided_loc)
+
+        # mode change to Auto RTL should join the return path
+        self.change_mode('AUTO_RTL')
+        self.drain_mav()
+        self.assert_current_waypoint(3)
+
+        # do land start should still work
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.drain_mav()
+        self.assert_current_waypoint(8)
+
+        # Move a bit closer in guided
+        return_path_test = self.home_relative_loc_ne(600, 0)
+        return_path_test.alt += alt
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(return_path_test, timeout=100)
+
+        # check the mission is joined further along
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.drain_mav()
+        self.assert_current_waypoint(5)
+
+        # fly over home
+        home = self.home_relative_loc_ne(0, 0)
+        home.alt += alt
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(home, timeout=140)
+
+        # Should never join return path after do land start
+        self.run_cmd(cmd_return_path_start, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.drain_mav()
+        self.assert_current_waypoint(6)
+
+        # Done
+        self.land_and_disarm()
+
+    def EK3_OGN_HGT_MASK(self):
+        '''test baraometer-alt-compensation based on long-term GPS readings'''
+        self.context_push()
+        self.set_parameters({
+            'EK3_OGN_HGT_MASK': 1,  # compensate baro drift using GPS
+        })
+        self.reboot_sitl()
+
+        expected_alt = 10
+
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        current_alt = self.get_altitude()
+
+        expected_alt_abs = current_alt + expected_alt
+
+        self.takeoff(expected_alt, mode='GUIDED')
+        self.delay_sim_time(5)
+
+        self.set_parameter("SIM_BARO_DRIFT", 0.01)  # 1cm/second
+
+        def check_altitude(mav, m):
+            m_type = m.get_type()
+            epsilon = 10  # in metres
+            if m_type == 'GPS_RAW_INT':
+                got_gps_alt = m.alt * 0.001
+                if abs(expected_alt_abs - got_gps_alt) > epsilon:
+                    raise NotAchievedException(f"Bad GPS altitude (got={got_gps_alt} want={expected_alt_abs})")
+            elif m_type == 'GLOBAL_POSITION_INT':
+                got_canonical_alt = m.relative_alt * 0.001
+                if abs(expected_alt - got_canonical_alt) > epsilon:
+                    raise NotAchievedException(f"Bad canonical altitude (got={got_canonical_alt} want={expected_alt})")
+
+        self.install_message_hook_context(check_altitude)
+
+        self.delay_sim_time(1500)
+
+        self.context_pop()
+        self.reboot_sitl(force=True)
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
             self.MotorVibration,
             Test(self.DynamicNotches, attempts=4),
             self.PositionWhenGPSIsZero,
-            Test(self.DynamicRpmNotches, attempts=4),
+            self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.PIDNotches,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
@@ -10952,6 +11330,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.RTL_TO_RALLY,
             self.FlyEachFrame,
             self.GPSBlending,
+            self.GPSWeightedBlending,
+            self.GPSBlendingLog,
             self.DataFlash,
             Test(self.DataFlashErase, attempts=8),
             self.Callisto,
@@ -11006,6 +11386,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
             self.CompassMot,
+            self.AutoRTL,
+            self.EK3_OGN_HGT_MASK,
         ])
         return ret
 
@@ -11036,7 +11418,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GroundEffectCompensation_touchDownExpected": "Flapping",
             "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
             "GPSForYawCompassLearn": "Vehicle currently crashed in spectacular fashion",
-            "GuidedModeThrust": "land detector raises internal error as we're not saying we're about to take off but just did",
             "CompassMot": "Cuases an arithmetic exception in the EKF",
         }
 

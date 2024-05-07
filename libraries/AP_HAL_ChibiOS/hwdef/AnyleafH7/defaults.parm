@@ -21,3 +21,7 @@ SERIAL3_PROTOCOL 16 # ESC telemetry
 
 # Remove default serial protocols; set to None.
 SERIAL6_PROTOCOL -1
+
+# Set the logging backend to flash memory, and disable EKF3 logging to save space.
+LOG_BACKEND_TYPE 4
+EK3_LOG_LEVEL 3

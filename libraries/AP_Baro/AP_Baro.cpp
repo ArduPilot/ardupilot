@@ -74,6 +74,10 @@
 #define HAL_BARO_ALLOW_INIT_NO_BARO
 #endif
 
+#ifndef AP_FIELD_ELEVATION_ENABLED
+#define AP_FIELD_ELEVATION_ENABLED !defined(HAL_BUILD_AP_PERIPH) && !APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -213,13 +217,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[1].wind_coeff, "2_WCF_", 19, AP_Baro, WindCoeff),
 #endif
-
 #if BARO_MAX_INSTANCES > 2
     // @Group: 3_WCF_
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
 #endif
-#ifndef HAL_BUILD_AP_PERIPH
+#endif  // HAL_BARO_WIND_COMP_ENABLED
+
+#if AP_FIELD_ELEVATION_ENABLED
     // @Param: _FIELD_ELV
     // @DisplayName: field elevation
     // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. Changes to this parameter will only be used when disarmed. A value of 0 means the EKF origin height is used for takeoff height above sea level.
@@ -228,7 +233,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Volatile: True
     // @User: Advanced
     AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
-#endif
 #endif
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -395,9 +399,6 @@ void AP_Baro::update_calibration()
 
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
-
-    // force EAS2TAS to recalculate
-    _EAS2TAS = 0;
 }
 
 // return altitude difference in meters between current pressure and a
@@ -433,10 +434,6 @@ float AP_Baro::get_sealevel_pressure(float pressure) const
 float AP_Baro::get_EAS2TAS(void)
 {
     float altitude = get_altitude();
-    if ((fabsf(altitude - _last_altitude_EAS2TAS) < 25.0f) && !is_zero(_EAS2TAS)) {
-        // not enough change to require re-calculating
-        return _EAS2TAS;
-    }
 
     float pressure = get_pressure();
     if (is_zero(pressure)) {
@@ -451,9 +448,7 @@ float AP_Baro::get_EAS2TAS(void)
     if (!is_positive(eas2tas_squared)) {
         return 1.0f;
     }
-    _EAS2TAS = sqrtf(eas2tas_squared);
-    _last_altitude_EAS2TAS = altitude;
-    return _EAS2TAS;
+    return sqrtf(eas2tas_squared);
 }
 
 // return air density / sea level density - decreases as altitude climbs
@@ -958,7 +953,7 @@ void AP_Baro::update(void)
             }
         }
     }
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_FIELD_ELEVATION_ENABLED
     update_field_elevation();
 #endif
 
@@ -1004,6 +999,7 @@ bool AP_Baro::healthy(uint8_t instance) const {
  */
 void AP_Baro::update_field_elevation(void)
 {
+#if AP_FIELD_ELEVATION_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     bool new_field_elev = false;
     const bool armed = hal.util->get_soft_armed();
@@ -1035,16 +1031,7 @@ void AP_Baro::update_field_elevation(void)
         update_calibration();
         BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Field Elevation Set: %.0fm", _field_elevation_active);
     }
-}
-
-/*
-  call accumulate on all drivers
- */
-void AP_Baro::accumulate(void)
-{
-    for (uint8_t i=0; i<_num_drivers; i++) {
-        drivers[i]->accumulate();
-    }
+#endif
 }
 
 
