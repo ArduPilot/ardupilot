@@ -1457,6 +1457,40 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
 #endif
 }
 
+
+/*
+  handle ESC Extended status message
+ */
+void AP_DroneCAN::handle_ESC_extended_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg)
+{
+#if HAL_WITH_ESC_TELEM
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_index = msg.esc_index + esc_offset;
+
+    if (!is_esc_data_index_valid(esc_index)) {
+        return;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_log_escx_ms < 100) {
+        return;
+    }
+    last_log_escx_ms = now_ms;
+    AP::logger().WriteStreaming("ESCX",
+                                "TimeUS,I,IThr,OThr,mTemp,mAng,stat",
+                                "s#%%O--",
+                                "F------",
+                                "QBBBhHI",
+                                AP_HAL::micros64(),
+                                esc_index,
+                                msg.input_pct,
+                                msg.output_pct,
+                                msg.motor_temperature_degC,
+                                msg.motor_angle,
+                                msg.status_flags);
+
+#endif
+}
+
 bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     if (index > DRONECAN_SRV_NUMBER) {
         // printf("DroneCAN: invalid esc index: %d. max index allowed: %d\n\r", index, DRONECAN_SRV_NUMBER);
