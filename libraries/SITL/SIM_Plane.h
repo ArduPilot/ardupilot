@@ -101,6 +101,7 @@ protected:
     bool aerobatic;
     bool copter_tailsitter;
     bool have_launcher;
+    bool have_steering;
     float launch_accel;
     float launch_time;
     uint64_t launch_start_ms;
