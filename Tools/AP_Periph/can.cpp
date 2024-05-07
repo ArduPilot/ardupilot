@@ -1720,6 +1720,26 @@ void AP_Periph_FW::esc_telem_update()
                          total_size);
     }
 }
+
+void AP_Periph_FW::esc_extended_telem_update()
+{
+    uavcan_equipment_esc_StatusExtended pkt {};
+    pkt.esc_index = 1;
+    pkt.input_pct = 10;
+    pkt.output_pct = 20;
+    pkt.motor_temperature_degC = 30;
+    pkt.motor_angle = 40;
+    pkt.status_flags = 1;
+
+    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUSEXTENDED_MAX_SIZE] {};
+    uint16_t total_size = uavcan_equipment_esc_StatusExtended_encode(&pkt, buffer, !canfdout());
+    canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_STATUSEXTENDED_ID,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+}
+
 #endif // HAL_WITH_ESC_TELEM
 
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
@@ -1837,6 +1857,7 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
         apd_esc_telem_update();
 #endif
+    esc_extended_telem_update();
     #ifdef HAL_PERIPH_ENABLE_MSP
         msp_sensor_update();
     #endif

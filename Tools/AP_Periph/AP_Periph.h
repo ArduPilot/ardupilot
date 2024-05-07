@@ -337,6 +337,7 @@ public:
     uint32_t last_esc_telem_update_ms;
     void esc_telem_update();
     uint32_t esc_telem_update_period_ms;
+    void esc_extended_telem_update();
 #endif
 
     SRV_Channels servo_channels;
