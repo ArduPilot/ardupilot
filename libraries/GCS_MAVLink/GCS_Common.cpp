@@ -1007,6 +1007,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_SCALED_IMU,            MSG_SCALED_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
         { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
+#if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
+        { MAVLINK_MSG_ID_HIGHRES_IMU,           MSG_HIGHRES_IMU},
+#endif
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
         { MAVLINK_MSG_ID_SCALED_PRESSURE2,      MSG_SCALED_PRESSURE2},
         { MAVLINK_MSG_ID_SCALED_PRESSURE3,      MSG_SCALED_PRESSURE3},
@@ -2128,6 +2131,83 @@ void GCS_MAVLINK::send_raw_imu()
         int16_t(ins.get_temperature(0)*100));
 #endif
 }
+
+#if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
+void GCS_MAVLINK::send_highres_imu()
+{
+    // static const uint16_t HIGHRES_IMU_UPDATED_NONE = 0x00;
+    static const uint16_t HIGHRES_IMU_UPDATED_XACC = 0x01;
+    static const uint16_t HIGHRES_IMU_UPDATED_YACC = 0x02;
+    static const uint16_t HIGHRES_IMU_UPDATED_ZACC = 0x04;
+    static const uint16_t HIGHRES_IMU_UPDATED_XGYRO = 0x08;
+    static const uint16_t HIGHRES_IMU_UPDATED_YGYRO = 0x10;
+    static const uint16_t HIGHRES_IMU_UPDATED_ZGYRO = 0x20;
+    static const uint16_t HIGHRES_IMU_UPDATED_XMAG = 0x40;
+    static const uint16_t HIGHRES_IMU_UPDATED_YMAG = 0x80;
+    static const uint16_t HIGHRES_IMU_UPDATED_ZMAG = 0x100;
+    static const uint16_t HIGHRES_IMU_UPDATED_ABS_PRESSURE = 0x200;
+    static const uint16_t HIGHRES_IMU_UPDATED_DIFF_PRESSURE = 0x400;
+    static const uint16_t HIGHRES_IMU_UPDATED_PRESSURE_ALT = 0x800;
+    static const uint16_t HIGHRES_IMU_UPDATED_TEMPERATURE = 0x1000;
+    static const uint16_t HIGHRES_IMU_UPDATED_ALL = 0xFFFF;
+
+    const AP_InertialSensor &ins = AP::ins();
+    const Vector3f& accel = ins.get_accel();
+    const Vector3f& gyro = ins.get_gyro();
+
+    mavlink_highres_imu_t reply = {
+        .time_usec = AP_HAL::micros64(),
+        .xacc = accel.x,
+        .yacc = accel.y,
+        .zacc = accel.z,
+        .xgyro = gyro.x,
+        .ygyro = gyro.y,
+        .zgyro = gyro.z,
+        .xmag = 0.0, 
+        .ymag = 0.0, 
+        .zmag = 0.0, 
+        .abs_pressure = 0.0, 
+        .diff_pressure = 0.0,
+        .pressure_alt = 0.0, 
+        .temperature = 0.0,  
+        .fields_updated = (HIGHRES_IMU_UPDATED_XACC | HIGHRES_IMU_UPDATED_YACC | HIGHRES_IMU_UPDATED_ZACC |
+            HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO), 
+        .id = ins.get_primary_accel(),
+    };
+    
+    
+#if AP_COMPASS_ENABLED
+    const Compass &compass = AP::compass();
+    if (compass.get_count() >= 1) {
+        const Vector3f field = compass.get_field() * 1000.0f;
+        reply.xmag = field.x; // convert to gauss
+        reply.ymag = field.y;
+        reply.zmag = field.z;
+        reply.fields_updated |= (HIGHRES_IMU_UPDATED_XMAG | HIGHRES_IMU_UPDATED_YMAG | HIGHRES_IMU_UPDATED_ZMAG);
+    }
+#endif
+
+#if AP_BARO_ENABLED
+    const AP_Baro &barometer = AP::baro();
+    reply.abs_pressure = barometer.get_pressure() * 0.01f;
+    reply.temperature = barometer.get_temperature();
+    reply.pressure_alt = barometer.get_altitude_AMSL();
+    reply.diff_pressure = reply.abs_pressure - barometer.get_ground_pressure() * 0.01f;
+    reply.fields_updated |= (HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
+        HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
+#endif
+    static const uint16_t all_flags = (HIGHRES_IMU_UPDATED_XACC | HIGHRES_IMU_UPDATED_YACC | HIGHRES_IMU_UPDATED_ZACC |
+        HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO | 
+        HIGHRES_IMU_UPDATED_XMAG | HIGHRES_IMU_UPDATED_YMAG | HIGHRES_IMU_UPDATED_ZMAG |
+        HIGHRES_IMU_UPDATED_ABS_PRESSURE | HIGHRES_IMU_UPDATED_DIFF_PRESSURE |
+        HIGHRES_IMU_UPDATED_PRESSURE_ALT | HIGHRES_IMU_UPDATED_TEMPERATURE);
+    if (reply.fields_updated == all_flags) {
+        reply.fields_updated |= HIGHRES_IMU_UPDATED_ALL;
+    }
+
+    mavlink_msg_highres_imu_send_struct(chan, &reply);
+}
+#endif // AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
 
 void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature))
 {
@@ -6150,6 +6230,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(SCALED_IMU3);
         send_scaled_imu(2, mavlink_msg_scaled_imu3_send);
         break;
+#if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
+    case MSG_HIGHRES_IMU:
+        CHECK_PAYLOAD_SIZE(HIGHRES_IMU);
+        send_highres_imu();
+        break;
+#endif
 
     case MSG_SCALED_PRESSURE:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
