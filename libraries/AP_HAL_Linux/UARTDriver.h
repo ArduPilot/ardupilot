@@ -56,7 +56,7 @@ public:
 
     uint32_t bw_in_bytes_per_second() const override;
 
-    uint32_t get_baud_rate() const override { return _baudrate; }
+    virtual uint32_t get_baud_rate() const override { return _baudrate; }
 
 private:
     AP_HAL::OwnPtr<SerialDevice> _device;
