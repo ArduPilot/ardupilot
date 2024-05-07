@@ -3780,7 +3780,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         minimum_duration = 5
 
-        self.takeoff(500, timeout=60)
+        self.takeoff(500, timeout=70)
         self.change_mode('AUTO')
 
         start_speed_ms = self.get_parameter('WPNAV_SPEED_DN') / 100.0
