@@ -1,45 +1,47 @@
-SYSTEM_STARTED = 0.0
-
--- The table key must be a number between 0 and 200. The key is persistent in storage
-local PARAM_TABLE_KEY = 180
-local PARAM_TABLE_PREFIX = "ROVER_SYSTEM_"
-
--- add a parameter and bind it to a variable
-function bind_add_param(name, idx, default_value)
-    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-    return Parameter(PARAM_TABLE_PREFIX .. name)
-end
+-- Control the system start and set the parameters for the system
+SYSTEM_STARTED = 0
 
 -- Severity for logging in GCS
-local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
+MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
--- Function to define the parameters table that will be used throughout the system execution
+--[[
+This function will set the parameters for the system. 
+All the other scripts must look for BATT_SOC_SYSSTART parameter to be set before running
+--]]
 function system_start()
-
-    -- If system is started, no need to run
-    if SYSTEM_STARTED == 1.0 then
-        gcs:send_text(MAV_SEVERITY.WARNING, string.format("System is all set, we can start now... %d",  SYSTEM_STARTED))
+    -- Check if it was all set at first so we can skip this function
+    if SYSTEM_STARTED == 1 then
+        gcs:send_text(MAV_SEVERITY.CRITICAL, 'System already started')
         return
     end
 
-    -- Create a parameter table with N parameters in it. A table can have at most 63 parameters.
-    -- The prefix is used to ensure another script doesn't use the same PARAM_TABLE_KEY.
-    -- OBS: ALWAYS REMEMBER TO UPDATE THIS VALUE IF ADDING A NEW PARAMETER!
-    local n = 4
-    assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, n), 'Could not add ROVER SYSTEM param table')
+    -- The table creation is very critical. We must use an existing table index, otherwise it will not work
+    -- We are using the BATT_SOC table as it has many parameters left (32), but only 1 is used so far
+    -- We cannot add more than 31 parameters then (index 32)
+    local PARAM_TABLE_KEY = 14
+    assert(param:add_table(PARAM_TABLE_KEY, "BATT_SOC", 32), 'could not add param table')
 
-    ACTIVATE_OBSTACLE_AVOIDANCE = bind_add_param('ACTIVATE_OBSTACLE_AVOIDANCE', 1, 0.0)
-    OBSTACLE_AVOIDANCE_YAW = bind_add_param('OBSTACLE_AVOIDANCE_YAW', 2, 0.0)
-    OBSTACLE_AVOIDANCE_THROTTLE = bind_add_param('OBSTACLE_AVOIDANCE_THROTTLE', 3, 0.0)
-    -- After all parameters are created, we can enable the other scripts to run their control loops
-    SYSTEM_STARTED_PARAM = bind_add_param('SYSTEM_STARTED', 4, 0.0)
+    -- Add the parameters to the table
+    -- OBS: Keep the index in order, otherwise it will not work
+    -- OBS: Always use the name as short as possible, as the table has a limit and the parameter wont be set
+    assert(param:add_param(PARAM_TABLE_KEY, 2,  '_ACTOBSAVD', 0), 'could not add ACTIVATE_OBSTACLE_AVOIDANCE')
+    assert(param:add_param(PARAM_TABLE_KEY, 3,  '_OBSYAW', 0), 'could not add OBSTACLE_AVOIDANCE_YAW')
+    assert(param:add_param(PARAM_TABLE_KEY, 4,  '_OBSTHR', 0), 'could not add OBSTACLE_AVOIDANCE_THROTTLE')
+    assert(param:add_param(PARAM_TABLE_KEY, 5,  '_SYSSTART', 1), 'could not add SYSTEM_STARTED')
     
-    -- If the parameter is correctly set to 1, it is all set and we can skip this function in next calls
-    if SYSTEM_STARTED_PARAM:get() == 1.0 then
-        SYSTEM_STARTED = 1.0
-        gcs:send_text(MAV_SEVERITY.WARNING, string.format("We set the system table with result = %d",  SYSTEM_STARTED))
-    end
+    -- Check if the parameter was set properly
+    local system_started_param = Parameter()
+    system_started_param:init('BATT_SOC_SYSSTART')
+    SYSTEM_STARTED = system_started_param:get()
+    gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("SYSTEM STARTED was set with value = %d", SYSTEM_STARTED))
 
+    -- Run the system start function faster if we were not able to set the parameter
+    if SYSTEM_STARTED == 1 then
+        gcs:send_text(MAV_SEVERITY.CRITICAL, 'System started properly')
+        return
+    else
+        return system_start, 100
+    end
 end
 
 return system_start, 1000
