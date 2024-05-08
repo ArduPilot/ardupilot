@@ -4,16 +4,15 @@
 void Rover::fence_check()
 {
 #if AP_FENCE_ENABLED
-    uint8_t new_breaches;  // the type of fence that has been breached
-    const uint8_t orig_breaches = fence.get_breaches();
-
-    // check for a breach
-    new_breaches = fence.check();
-
     // return immediately if motors are not armed
     if (!arming.is_armed()) {
         return;
     }
+
+    const uint8_t orig_breaches = fence.get_breaches();
+
+    // check for a breach
+    uint8_t new_breaches = fence.check();
 
     // if there is a new breach take action
     if (new_breaches) {
