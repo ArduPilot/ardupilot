@@ -14,10 +14,13 @@ TRIM3 = 1500
 TRIM1 = 1500
 SYSTEM_STARTED = Parameter()
 
+-- Severity for logging in GCS
+MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
+
 --[[ 
-  Control Allocation Function 
-  It basically calculates the norm of the desired control vector (t,s) 
-  and then splits it into the right and left side
+Control Allocation Function 
+It basically calculates the norm of the desired control vector (t,s) 
+and then splits it into the right and left side
 --]]
 local function new_control_allocation(t, s)
 
@@ -75,29 +78,29 @@ local function new_control_allocation(t, s)
 end -- new_control_allocation function
 
 --[[ 
-  Main update function 
-  It checks if the vehicle is a boat, if it is armed, and then 
-  it gets the control values from the RC or internal control of the vehicle and passes 
-  them to the control allocation function
+Main update function 
+It checks if the vehicle is a boat, if it is armed, and then 
+it gets the control values from the RC or internal control of the vehicle and passes 
+them to the control allocation function
 --]]
 function update()
 
   -- Check if the vehicle is a boat
   local vehicle_type = param:get('SCR_USER5')
   if not (vehicle_type == 1) then
-    gcs:send_text(4, string.format("Not a boat, exiting this lua script."))
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("Not a boat, exiting this lua script."))
     return
   end
 
   -- Check if the system was already started before running this function
-  if not SYSTEM_STARTED:init('ROVER_SYSTEM_SYSTEM_STARTED') then
-    gcs:send_text(6, 'ROVER_SYSTEM_SYSTEM_STARTED is not set yet, not running control allocation yet ...')
-    return update, 2000
+  if not SYSTEM_STARTED:init('BATT_SOC_SYSSTART') then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, 'BATT_SOC_SYSSTART is not set yet, not running control allocation ...')
+    return update, 1000
   end
 
   -- Check if armed to begin control allocation safely
   if not arming:is_armed() then
-    gcs:send_text(4, string.format("BOAT - disarmed, waiting for arming."))
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("BOAT - disarmed, waiting for arming."))
 
     -- Get the trim values for the RC channels
     TRIM3 = param:get('RC3_TRIM')
