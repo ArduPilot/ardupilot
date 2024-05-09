@@ -86,6 +86,9 @@ void UtilRPI::_get_board_type_using_peripheral_base()
             _linux_board_version = LINUX_BOARD_TYPE::ALLWINNWER_H616;
             printf("AllWinner-H616 \r\n");
         break;
+        default:
+            printf("Unknown board \n\r");
+            printf("Peripheral base address is %x\n", base);
     }
 
     return ;
