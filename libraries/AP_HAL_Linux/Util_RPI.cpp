@@ -62,6 +62,11 @@ void UtilRPI::_get_board_type_using_peripheral_base()
             _linux_board_version = LINUX_BOARD_TYPE::UNKNOWN_BOARD;
             printf("Cannot detect board-type \r\n");
         break;
+        case 0x10:
+            _linux_board_version = LINUX_BOARD_TYPE::RPI_5;
+            printf("RPI 5 \r\n");
+            printf("Peripheral base address is %x\n", base);
+        break;
         case 0x20000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_ZERO_1;
             printf("RPI Zero / 1 \r\n");
