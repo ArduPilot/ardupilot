@@ -418,7 +418,7 @@ void Mode::navigate_to_waypoint()
 {
     // apply speed nudge from pilot
     // calc_speed_nudge's "desired_speed" argument should be negative when vehicle is reversing
-    // AR_WPNav nudge_speed_max argu,ent should always be positive even when reversing
+    // AR_WPNav nudge_speed_max argument should always be positive even when reversing
     const float calc_nudge_input_speed = g2.wp_nav.get_speed_max() * (g2.wp_nav.get_reversed() ? -1.0 : 1.0);
     const float nudge_speed_max = calc_speed_nudge(calc_nudge_input_speed, g2.wp_nav.get_reversed());
     g2.wp_nav.set_nudge_speed_max(fabsf(nudge_speed_max));
