@@ -20,6 +20,32 @@
 
 #include "AP_BattMonitor_ESC.h"
 
+const AP_Param::GroupInfo AP_BattMonitor_ESC::var_info[] = {
+
+    // Param indexes must be between 36 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+
+    // @Param: ESC_MASK
+    // @DisplayName: ESC mask
+    // @Description: If 0 all connected ESCs will be used. If non-zero, only those selected in will be used.
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
+    // @User: Standard
+    AP_GROUPINFO("ESC_MASK", 36, AP_BattMonitor_ESC, _mask, 0),
+
+    // Param indexes must be between 36 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+
+    AP_GROUPEND
+};
+
+// constructor. This incorporates initialisation as well.
+AP_BattMonitor_ESC::AP_BattMonitor_ESC(AP_BattMonitor &mon,
+                                       AP_BattMonitor::BattMonitor_State &mon_state,
+                                       AP_BattMonitor_Params &params):
+    AP_BattMonitor_Backend(mon, mon_state, params)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    _state.var_info = var_info;
+};
+
 void AP_BattMonitor_ESC::init(void)
 {
 }
@@ -34,9 +60,15 @@ void AP_BattMonitor_ESC::read(void)
     float current_sum = 0;
     float temperature_sum = 0;
     uint32_t highest_ms = 0;
-     _state.consumed_mah = delta_mah;
+    _state.consumed_mah = delta_mah;
 
+    const bool all_enabled = _mask == 0;
     for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
+        if (!all_enabled && ((_mask & (1U<<i)) == 0)) {
+            // Only include ESCs set in mask
+            continue;
+        }
+
         int16_t  temperature_cdeg;
         float voltage;
         float current;
