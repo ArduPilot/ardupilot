@@ -79,7 +79,8 @@ extern const AP_HAL::HAL& hal;
 ///////////////////// PUBLIC INTERFACE /////////////////////
 ////////////////////////////////////////////////////////////
 
-CompassCalibrator::CompassCalibrator()
+CompassCalibrator::CompassCalibrator() :
+    _sample_buffer(nullptr)
 {
     set_status(Status::NOT_STARTED);
 }
