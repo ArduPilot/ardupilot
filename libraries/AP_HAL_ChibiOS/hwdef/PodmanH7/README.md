@@ -32,7 +32,7 @@ This flight controller have 3 SPI and 5 UART Ports.
 
 ## Pinout
 
-![PodmanH7 Board](PodmanH7-pinout.svg "PodmanH7")
+![PodmanH7 Board](PodmanH7-pinout.png "PodmanH7")
 On each connector the red dot indicates pin 1.
 
 ## UART Mapping
