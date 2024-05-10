@@ -76,12 +76,18 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS", AP_GPS),
+
+    // @Group: EAHRS
+    // @Path: ../libraries/AP_ExternalAHRS/AP_ExternalAHRS.cpp
+    GOBJECTPTR(eahrs, "EAHRS", AP_ExternalAHRS),
     
     AP_VAREND
 };
 
 void ReplayVehicle::load_parameters(void)
 {
+    eahrs = &AP::externalAHRS();
+
     AP_Param::check_var_info();
 
     StorageManager::erase();
@@ -239,6 +245,7 @@ void Replay::setup()
         ::printf("open(%s): %m\n", filename);
         exit(1);
     }
+    _vehicle.eahrs = &AP::externalAHRS();
 }
 
 void Replay::loop()
