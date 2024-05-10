@@ -290,10 +290,6 @@ bool AP_ExternalAHRS_MicroStrain7::pre_arm_check(char *failure_msg, uint8_t fail
         hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "missing 3D GPS fix on either GPS");
         return false;
     }
-    if (!filter_state_healthy(FilterState(filter_status.state))) {
-        hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "filter not healthy");
-        return false;
-    }
 
     return true;
 }
