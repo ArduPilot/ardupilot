@@ -542,6 +542,14 @@ class Board:
         if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED):
             ctx.fatal("Failed to created ap_romfs_embedded.h")
 
+        ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+
+        # Allow lua to load from ROMFS if any lua files are added
+        for file in ctx.env.ROMFS_FILES:
+            if file[0].startswith("scripts") and file[0].endswith(".lua"):
+                ctx.env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
+                break
+
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
 def add_dynamic_boards_chibios():
@@ -776,14 +784,6 @@ class sitl(Board):
             for f in os.listdir('ROMFS/scripts'):
                 if fnmatch.fnmatch(f, "*.lua"):
                     env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
-
-        if len(env.ROMFS_FILES) > 0:
-            # Allow lua to load from ROMFS if any lua files are added
-            for file in env.ROMFS_FILES:
-                if file[0].startswith("scripts") and file[0].endswith(".lua"):
-                    env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
-                    break
-            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
@@ -1357,13 +1357,6 @@ class linux(Board):
             env.DEFINES.update(
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
-        if len(env.ROMFS_FILES) > 0:
-            # Allow lua to load from ROMFS if any lua files are added
-            for file in env.ROMFS_FILES:
-                if file[0].startswith("scripts") and file[0].endswith(".lua"):
-                    env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_LUA']
-                    break
-            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
 
     def build(self, bld):
         super(linux, self).build(bld)
