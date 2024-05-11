@@ -2613,14 +2613,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.embed_bootloader(f)
 
-        if len(self.romfs) > 0:
-            # Allow lua to load from ROMFS if any lua files are added
-            for file in self.romfs.keys():
-                if file.startswith("scripts") and file.endswith(".lua"):
-                    f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_LUA 1\n')
-                    break
-            f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
-
         if self.mcu_series.startswith('STM32F1'):
             f.write('''
 /*
