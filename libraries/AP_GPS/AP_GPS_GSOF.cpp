@@ -157,7 +157,8 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
 }
 
 bool
-AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
+AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const
+{
     switch(com_port) {
         case static_cast<uint8_t>(HW_Port::COM1):
         case static_cast<uint8_t>(HW_Port::COM2):
@@ -168,7 +169,8 @@ AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
 }
 
 void
-AP_GPS_GSOF::pack_state_data() {
+AP_GPS_GSOF::pack_state_data() 
+{
     // TODO should we pack time data if there is no fix?
     state.time_week_ms = pos_time.time_week_ms;
     state.time_week = pos_time.time_week;

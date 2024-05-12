@@ -7,20 +7,34 @@
 
 #include <AP_GSOF/AP_GSOF.h>
 
+#include <cstdio>
+#include <cstdlib>
+
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 
 TEST(AP_GSOF, incomplete_packet)
 {
     AP_GSOF gsof;
-    EXPECT_FALSE(gsof.parse(0));
+    EXPECT_FALSE(gsof.parse(0, 5));
 }
 
 TEST(AP_GSOF, packet1)
 {
-    // 02084072580000010a1e02e0680909009400000218000000000000000000000000000000000000000000000000080d000000000000000000000000000910000000000000000000000000000000000c260000000000000000000000000000000000000000000000000000000000000000000000000000a503
+    FILE* fp = std::fopen("libraries/AP_GSOF/tests/gsof_gps.dat", "rb");
+    EXPECT_NE(fp, nullptr);
     AP_GSOF gsof;
-    EXPECT_FALSE(gsof.parse(0));
+    char c = 0;
+    bool parsed = false;
+    while (c != EOF) {
+        c = fgetc (fp);
+        parsed |= gsof.parse((uint8_t)c, 5);
+    }
+    
+    EXPECT_TRUE(parsed);
+
+    fclose(fp);
+
 }
 
 AP_GTEST_MAIN()
