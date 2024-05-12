@@ -175,7 +175,7 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 GSOF_VEL_LEN,
                 vel_flags,
                 gsof_pack_float(d->speed_2d()),
-                gsof_pack_float(d->heading()),
+                gsof_pack_float(d->ground_track_rad()),
                 // Trimble API has ambiguous direction here.
                 // Intentionally narrow from double.
                 gsof_pack_float(static_cast<float>(d->speedD))
