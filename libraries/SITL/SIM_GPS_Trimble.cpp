@@ -31,17 +31,6 @@ void GPS_Trimble::publish(const GPS_Data *d)
             // TODO magic number until SITL supports GPS bootcount based on GPSN_ENABLE
             const uint8_t bootcount = 17;
 
-            // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Position%20flags%201
-            enum class POS_FLAGS_1 : uint8_t {
-                NEW_POSITION = 1U << 0,
-                CLOCK_FIX_CALULATED = 1U << 1,
-                HORIZ_FROM_THIS_POS = 1U << 2,
-                HEIGHT_FROM_THIS_POS = 1U << 3,
-                RESERVED_4 = 1U << 4,
-                LEAST_SQ_POSITION = 1U << 5,
-                RESERVED_6 = 1U << 6,
-                POSITION_L1_PSEUDORANGES = 1U << 7
-            };
             const uint8_t pos_flags_1 {
                 uint8_t(POS_FLAGS_1::NEW_POSITION) |
                 uint8_t(POS_FLAGS_1::CLOCK_FIX_CALULATED) |
@@ -50,18 +39,6 @@ void GPS_Trimble::publish(const GPS_Data *d)
                 uint8_t(POS_FLAGS_1::RESERVED_4) |
                 uint8_t(POS_FLAGS_1::LEAST_SQ_POSITION) |
                 uint8_t(POS_FLAGS_1::POSITION_L1_PSEUDORANGES)
-            };
-
-            // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Position%20flags%202
-            enum class POS_FLAGS_2 : uint8_t {
-                DIFFERENTIAL_POS = 1U << 0,
-                DIFFERENTIAL_POS_PHASE_RTK = 1U << 1,
-                POSITION_METHOD_FIXED_PHASE = 1U << 2,
-                OMNISTAR_ACTIVE = 1U << 3,
-                DETERMINED_WITH_STATIC_CONSTRAINT = 1U << 4,
-                NETWORK_RTK = 1U << 5,
-                DITHERED_RTK = 1U << 6,
-                BEACON_DGNSS = 1U << 7,
             };
 
             // Simulate a GPS without RTK in SIM since there is no RTK SIM params.
@@ -144,17 +121,6 @@ void GPS_Trimble::publish(const GPS_Data *d)
             // use the smaller packet by ignoring local coordinate system
             constexpr uint8_t GSOF_VEL_LEN = 0x0D;
 
-            // https://receiverhelp.trimble.com/oem-gnss/GSOFmessages_Flags.html#Velocity%20flags
-            enum class VEL_FIELDS : uint8_t {
-                VALID = 1U << 0,
-                CONSECUTIVE_MEASUREMENTS = 1U << 1,
-                HEADING_VALID = 1U << 2,
-                RESERVED_3 = 1U << 3,
-                RESERVED_4 = 1U << 4,
-                RESERVED_5 = 1U << 5,
-                RESERVED_6 = 1U << 6,
-                RESERVED_7 = 1U << 7,
-            };
             uint8_t vel_flags {0};
             if(d->have_lock) {
                 vel_flags |= uint8_t(VEL_FIELDS::VALID);
