@@ -329,6 +329,9 @@ AP_HW_Holybro-UM982-G4               5402
 AP_HW_Holybro-UM960-H7               5403
 AP_HW_Holybro-PERIPH-H7              5404
 
+#IDs 5501-5599 reserved for MATEKSYS
+AP_HW_MATEKH743SE                    5501
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
