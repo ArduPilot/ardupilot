@@ -1,5 +1,9 @@
 ArduPilot Plane Release Notes:
 ------------------------------
+Release 4.5.2 14th May 2024
+
+No changes from 4.5.2-beta1
+------------------------------------------------------------------
 Release 4.5.2-beta1 29th April 2024
 
 Changes from 4.5.1
