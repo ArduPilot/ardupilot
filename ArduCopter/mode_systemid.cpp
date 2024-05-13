@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AP_Math/control.h>
 
 #if MODE_SYSTEMID_ENABLED == ENABLED
 
@@ -129,8 +130,7 @@ bool ModeSystemId::init(bool ignore_checks)
         }
         Vector3f curr_pos;
         curr_pos = inertial_nav.get_position_neu_cm();
-        target_pos.x = curr_pos.x;
-        target_pos.y = curr_pos.y;
+        target_pos = curr_pos.xy();
     }
 
     att_bf_feedforward = attitude_control->get_bf_feedforward();
@@ -428,11 +428,18 @@ bool ModeSystemId::is_poscontrol_axis_type() const
 {
     bool ret = false;
 
-    if ((AxisType)axis.get() == AxisType::DISTURB_POS_LAT || (AxisType)axis.get() == AxisType::DISTURB_POS_LONG
-         || (AxisType)axis.get() == AxisType::DISTURB_VEL_LAT || (AxisType)axis.get() == AxisType::DISTURB_VEL_LONG
-         || (AxisType)axis.get() == AxisType::INPUT_LOITER_LAT || (AxisType)axis.get() == AxisType::INPUT_LOITER_LONG) {
-        ret = true;
-    }
+    switch ((AxisType)axis.get()) {
+        case AxisType::DISTURB_POS_LAT:
+        case AxisType::DISTURB_POS_LONG:
+        case AxisType::DISTURB_VEL_LAT:
+        case AxisType::DISTURB_VEL_LONG:
+        case AxisType::INPUT_LOITER_LAT:
+        case AxisType::INPUT_LOITER_LONG:
+            ret = true;
+            break;
+        default:
+            break;
+        }
 
     return ret;
 }

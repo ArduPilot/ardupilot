@@ -3,7 +3,7 @@
 #include "Copter.h"
 #include <AP_Math/chirp.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
-#include <AP_Math/control.h>
+
 class Parameters;
 class ParametersG2;
 
