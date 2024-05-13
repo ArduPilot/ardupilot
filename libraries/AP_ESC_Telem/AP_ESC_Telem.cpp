@@ -468,6 +468,15 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
         telemdata.usage_s = new_data.usage_s;
     }
 
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::EDT2_STATUS) {
+        telemdata.edt2_status = merge_edt2_status(telemdata.edt2_status, new_data.edt2_status);
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::EDT2_STRESS) {
+        telemdata.edt2_stress = merge_edt2_stress(telemdata.edt2_stress, new_data.edt2_stress);
+    }
+#endif
+
     telemdata.count++;
     telemdata.types |= data_mask;
     telemdata.last_update_ms = AP_HAL::millis();
@@ -499,6 +508,63 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
 #endif
 }
 
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+
+// The following is based on https://github.com/bird-sanctuary/extended-dshot-telemetry.
+// For the following part we explain the bits of Extended DShot Telemetry v2 status telemetry:
+// - bits 0-3: the "stress level"
+// - bit 5: the "error" bit   (e.g. the stall event in Bluejay)
+// - bit 6: the "warning" bit (e.g. the desync event in Bluejay)
+// - bit 7: the "alert" bit   (e.g. the demag event in Bluejay)
+
+// Since logger can read out telemetry values less frequently than they are updated,
+// it makes sense to aggregate these status bits, and to collect the maximum observed stress level.
+// To reduce the logging rate of the EDT2 messages, we will try to log them only once a new frame comes.
+// To track this, we are going to (ab)use bit 15 of the field: 1 means there is something to write.
+
+// EDTv2 also features separate "stress" messages.
+// These come more frequently, and are scaled differently (the allowed range is from 0 to 255),
+// so we have to log them separately.
+
+constexpr uint16_t EDT2_TELEM_UPDATED = 0x8000U;
+constexpr uint16_t EDT2_STRESS_0F_MASK = 0xfU;
+constexpr uint16_t EDT2_STRESS_FF_MASK = 0xffU;
+constexpr uint16_t EDT2_ERROR_MASK = 0x20U;
+constexpr uint16_t EDT2_WARNING_MASK = 0x40U;
+constexpr uint16_t EDT2_ALERT_MASK = 0x80U;
+constexpr uint16_t EDT2_ALL_BITS = EDT2_ERROR_MASK | EDT2_WARNING_MASK | EDT2_ALERT_MASK;
+
+#define EDT2_HAS_NEW_DATA(status) bool((status) & EDT2_TELEM_UPDATED)
+#define EDT2_STRESS_FROM_STATUS(status) uint8_t((status) & EDT2_STRESS_0F_MASK)
+#define EDT2_ERROR_BIT_FROM_STATUS(status) bool((status) & EDT2_ERROR_MASK)
+#define EDT2_WARNING_BIT_FROM_STATUS(status) bool((status) & EDT2_WARNING_MASK)
+#define EDT2_ALERT_BIT_FROM_STATUS(status) bool((status) & EDT2_ALERT_MASK)
+#define EDT2_STRESS_FROM_STRESS(stress) uint8_t((stress) & EDT2_STRESS_FF_MASK)
+
+uint16_t AP_ESC_Telem::merge_edt2_status(uint16_t old_status, uint16_t new_status)
+{
+    if (EDT2_HAS_NEW_DATA(old_status)) {
+        new_status = uint16_t(
+            (old_status & ~EDT2_STRESS_0F_MASK) | // old status except for the stress is preserved
+            (new_status & EDT2_ALL_BITS) | // all new status bits are included
+            MAX(old_status & EDT2_STRESS_0F_MASK, new_status & EDT2_STRESS_0F_MASK) // the stress is maxed out
+        );
+    }
+    return EDT2_TELEM_UPDATED | new_status;
+}
+
+uint16_t AP_ESC_Telem::merge_edt2_stress(uint16_t old_stress, uint16_t new_stress)
+{
+    if (EDT2_HAS_NEW_DATA(old_stress)) {
+        new_stress = uint16_t(
+            MAX(old_stress & EDT2_STRESS_FF_MASK, new_stress & EDT2_STRESS_FF_MASK) // the stress is maxed out
+        );
+    }
+    return EDT2_TELEM_UPDATED | new_stress;
+}
+
+#endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+
 void AP_ESC_Telem::update()
 {
 #if HAL_LOGGING_ENABLED
@@ -507,7 +573,7 @@ void AP_ESC_Telem::update()
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         const volatile AP_ESC_Telem_Backend::RpmData &rpmdata = _rpm_data[i];
-        const volatile AP_ESC_Telem_Backend::TelemetryData &telemdata = _telem_data[i];
+        volatile AP_ESC_Telem_Backend::TelemetryData &telemdata = _telem_data[i];
         // Push received telemetry data into the logging system
         if (logger && logger->logging_enabled()) {
             if (telemdata.last_update_ms != _last_telem_log_ms[i]
@@ -544,6 +610,51 @@ void AP_ESC_Telem::update()
                 _last_telem_log_ms[i] = telemdata.last_update_ms;
                 _last_rpm_log_us[i] = rpmdata.last_update_us;
             }
+
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            // Write an EDTv2 message, if there is any update
+            uint16_t edt2_status = telemdata.edt2_status;
+            uint16_t edt2_stress = telemdata.edt2_stress;
+            if (EDT2_HAS_NEW_DATA(edt2_status | edt2_stress)) {
+                // Could probably be faster/smaller with bitmasking, but not sure
+                uint8_t status = 0;
+                if (EDT2_HAS_NEW_DATA(edt2_stress)) {
+                    status |= uint8_t(log_Edt2_Status::HAS_STRESS_DATA);
+                }
+                if (EDT2_HAS_NEW_DATA(edt2_status)) {
+                    status |= uint8_t(log_Edt2_Status::HAS_STATUS_DATA);
+                }
+                if (EDT2_ALERT_BIT_FROM_STATUS(edt2_status)) {
+                    status |= uint8_t(log_Edt2_Status::ALERT_BIT);
+                }
+                if (EDT2_WARNING_BIT_FROM_STATUS(edt2_status)) {
+                    status |= uint8_t(log_Edt2_Status::WARNING_BIT);
+                }
+                if (EDT2_ERROR_BIT_FROM_STATUS(edt2_status)) {
+                    status |= uint8_t(log_Edt2_Status::ERROR_BIT);
+                }
+                // An EDT2 status message is:
+                //   id: starts from 0
+                //   stress: the current stress which comes from edt2_stress
+                //   max_stress: the maximum stress which comes from edt2_status
+                //   status: the status bits which come from both
+                const struct log_Edt2 pkt_edt2{
+                    LOG_PACKET_HEADER_INIT(uint8_t(LOG_EDT2_MSG)),
+                    time_us     : now_us64,
+                    instance    : i,
+                    stress      : EDT2_STRESS_FROM_STRESS(edt2_stress),
+                    max_stress  : EDT2_STRESS_FROM_STATUS(edt2_status),
+                    status      : status,
+                };
+                if (AP::logger().WriteBlock_first_succeed(&pkt_edt2, sizeof(pkt_edt2))) {
+                    // Only clean the telem_updated bits if the write succeeded.
+                    // This is important because, if rate limiting is enabled,
+                    // the log-on-change behavior may lose a lot of entries
+                    telemdata.edt2_status &= ~EDT2_TELEM_UPDATED;
+                    telemdata.edt2_stress &= ~EDT2_TELEM_UPDATED;
+                }
+            }
+#endif // AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
         }
     }
 #endif  // HAL_LOGGING_ENABLED
@@ -608,4 +719,4 @@ AP_ESC_Telem &esc_telem()
 
 };
 
-#endif
+#endif // HAL_WITH_ESC_TELEM
