@@ -453,7 +453,11 @@ void AP_IOMCU::read_telem()
         TelemetryData t {
             .temperature_cdeg = int16_t(telem->temperature_cdeg[i]),
             .voltage = float(telem->voltage_cvolts[i]) * 0.01,
-            .current = float(telem->current_camps[i]) * 0.01
+            .current = float(telem->current_camps[i]) * 0.01,
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            .edt2_status = telem->edt2_status[i],
+            .edt2_stress = telem->edt2_stress[i],
+#endif
         };
         update_telem_data(esc_group * 4 + i, t, telem->types[i]);
     }
