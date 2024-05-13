@@ -644,8 +644,7 @@ void AC_PosControl::update_xy_controller()
 
     const Vector3f &curr_pos = _inav.get_position_neu_cm();
     Vector3f comb_pos = curr_pos;
-    comb_pos.x += _disturb_pos.x;
-    comb_pos.y += _disturb_pos.y;
+    comb_pos.xy() += _disturb_pos;
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos);
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
@@ -657,8 +656,7 @@ void AC_PosControl::update_xy_controller()
 
     const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
     Vector2f comb_vel = curr_vel;
-    comb_vel.x += _disturb_vel.x;
-    comb_vel.y += _disturb_vel.y;
+    comb_vel += _disturb_vel;
     Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), comb_vel, _dt, _limit_vector.xy());
     
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
