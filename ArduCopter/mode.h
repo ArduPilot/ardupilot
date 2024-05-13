@@ -1653,8 +1653,8 @@ private:
         DISTURB_POS_LONG = 15,  // longitudinal body axis measured position is being excited
         DISTURB_VEL_LAT = 16,   // lateral body axis measured velocity is being excited
         DISTURB_VEL_LONG = 17,  // longitudinal body axis measured velocity is being excited
-        INPUT_LOITER_LAT = 18,  // lateral body axis commanded velocity is being excited
-        INPUT_LOITER_LONG = 19, // longitudinal body axis commanded velocity is being excited
+        INPUT_VEL_LAT = 18,     // lateral body axis commanded velocity is being excited
+        INPUT_VEL_LONG = 19,    // longitudinal body axis commanded velocity is being excited
     };
 
     AP_Int8 axis;               // Controls which axis are being excited. Set to non-zero to display other parameters

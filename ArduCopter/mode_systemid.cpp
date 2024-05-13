@@ -332,12 +332,12 @@ void ModeSystemId::run()
                     disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
                     pos_control->set_disturb_vel_cms(disturb_state);
                     break;
-                case AxisType::INPUT_LOITER_LAT:
+                case AxisType::INPUT_VEL_LAT:
                     input_vel.x = 0.0f;
                     input_vel.y = waveform_sample * 100.0f;
                     input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
                     break;
-                case AxisType::INPUT_LOITER_LONG:
+                case AxisType::INPUT_VEL_LONG:
                     input_vel.x = waveform_sample * 100.0f;
                     input_vel.y = 0.0f;
                     input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
@@ -433,8 +433,8 @@ bool ModeSystemId::is_poscontrol_axis_type() const
         case AxisType::DISTURB_POS_LONG:
         case AxisType::DISTURB_VEL_LAT:
         case AxisType::DISTURB_VEL_LONG:
-        case AxisType::INPUT_LOITER_LAT:
-        case AxisType::INPUT_LOITER_LONG:
+        case AxisType::INPUT_VEL_LAT:
+        case AxisType::INPUT_VEL_LONG:
             ret = true;
             break;
         default:
