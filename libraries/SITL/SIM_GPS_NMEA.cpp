@@ -79,13 +79,13 @@ void GPS_NMEA::publish(const GPS_Data *d)
 
     const float speed_mps = d->speed_2d();
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
-    const auto heading_rad = d->heading();
+    const auto ground_track_deg = degrees(d->ground_track_rad());
 
     //$GPVTG,133.18,T,120.79,M,0.11,N,0.20,K,A*24
     nmea_printf("$GPVTG,%.2f,T,%.2f,M,%.2f,N,%.2f,K,A",
                      tstring,
-                     heading_rad,
-                     heading_rad,
+                     ground_track_deg,
+                     ground_track_deg,
                      speed_knots,
                      speed_knots * KNOTS_TO_METERS_PER_SECOND * 3.6);
 
@@ -95,7 +95,7 @@ void GPS_NMEA::publish(const GPS_Data *d)
                      lat_string,
                      lng_string,
                      speed_knots,
-                     heading_rad,
+                     ground_track_deg,
                      dstring);
 
     if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
@@ -112,7 +112,7 @@ void GPS_NMEA::publish(const GPS_Data *d)
                     d->altitude,
                     wrap_360(d->yaw_deg),
                     d->pitch_deg,
-                    heading_rad,
+                    ground_track_deg,
                     speed_mps,
                     d->roll_deg,
                     d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
