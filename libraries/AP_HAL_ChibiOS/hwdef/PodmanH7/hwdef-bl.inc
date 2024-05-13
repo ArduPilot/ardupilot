@@ -23,10 +23,6 @@ PA14 JTCK-SWCLK SWD
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
-# this is the pin that senses USB being connected. It is an input pin
-# setup as OPENDRAIN
-PA9 VBUS INPUT OPENDRAIN
-
 include serial.inc
 
 # Add CS pins to ensure they are high in bootloader
