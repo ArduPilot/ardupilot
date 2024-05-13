@@ -43,7 +43,7 @@ On each connector the red dot indicates pin 1.
  - SERIAL3 -> UART4 (Optical Flow)
  - SERIAL4 -> UART8 (GPS)
  - SERIAL5 -> UART7 (GPS2)
- - SERIAL6 -> UART1 (GPS2)
+ - SERIAL6 -> UART1 (COMPUTER)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
