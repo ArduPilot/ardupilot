@@ -643,6 +643,7 @@ void AC_PosControl::update_xy_controller()
     // Position Controller
 
     const Vector3f &curr_pos = _inav.get_position_neu_cm();
+    // determine the combined position of the actual position and the disturbance from system ID mode
     Vector3f comb_pos = curr_pos;
     comb_pos.xy() += _disturb_pos;
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos);
@@ -655,6 +656,7 @@ void AC_PosControl::update_xy_controller()
     // Velocity Controller
 
     const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
+    // determine the combined velocity of the actual velocity and the disturbance from system ID mode
     Vector2f comb_vel = curr_vel;
     comb_vel += _disturb_vel;
     Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), comb_vel, _dt, _limit_vector.xy());
