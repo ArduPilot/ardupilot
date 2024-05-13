@@ -7,7 +7,7 @@ listed on the
 
 This FCU is taking advantage of hardware features as much as possible to improve efficiency.
 Built-in voltage and current sensors.
-This flight controller have 3 SPI and 5 UART Ports.
+This flight controller have 3 SPI and 6 UART Ports.
 
 ## Features
 
@@ -22,7 +22,7 @@ This flight controller have 3 SPI and 5 UART Ports.
  - 14x PWM outputs DShot capable (14 PWM protocols as well as DShot)
  - 1x RC input (SBUS and PPM signals)
  - 5x UARTs/serial for GPS and other peripherals,
- - USART2, USART3, UART4, UART8, UART7 and OTG1 have full DMA (RX and TX).
+ - USART2, USART3, UART4, UART8, UART7, USART1 and OTG1 have full DMA (RX and TX).
  - 2 I2C ports for external compass, airspeed, etc.
  - I2C_ORDER: I2C2 I2C1
  - microSDCard for logging, etc.
@@ -43,6 +43,7 @@ On each connector the red dot indicates pin 1.
  - SERIAL3 -> UART4 (Optical Flow)
  - SERIAL4 -> UART8 (GPS)
  - SERIAL5 -> UART7 (GPS2)
+ - SERIAL6 -> UART1 (GPS2)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
@@ -368,18 +369,18 @@ the type of power brick which is connected.
    </tr>
    <tr>
    <td>2 (blk)</td>
-   <td>ADC IN(4)</td>
-   <td>up to +3.3V</td>
+   <td>TX (OUT)</td>
+   <td>+3.3V</td>
    </tr>
    <tr>
    <td>3 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
+   <td>RX (IN)</td>
+   <td>+3.3V</td>
    </tr>
    <tr>
    <td>4 (blk)</td>
-   <td>GPIO(94)</td>
-   <td>+3.3V</td>
+   <td>ADC IN(4)</td>
+   <td>up to +3.3V</td>
    </tr>
    <tr>
    <td>5 (blk)</td>
@@ -559,7 +560,6 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
  - PWM4 53
  - PWM5 54
  - PWM6 55
- - GPIO 94
 
 ## Compass
 
