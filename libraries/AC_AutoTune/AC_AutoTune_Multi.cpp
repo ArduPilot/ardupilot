@@ -1049,7 +1049,9 @@ void AC_AutoTune_Multi::updating_angle_p_up(float &tune_p, float tune_p_max, flo
 #if HAL_LOGGING_ENABLED
 void AC_AutoTune_Multi::Log_AutoTune()
 {
-    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+    switch (tune_type) {
+    case SP_DOWN:
+    case SP_UP:
         switch (axis) {
         case AxisType::ROLL:
             Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
@@ -1064,7 +1066,9 @@ void AC_AutoTune_Multi::Log_AutoTune()
             Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max);
             break;
         }
-    } else {
+        break;
+    
+    default:
         switch (axis) {
         case AxisType::ROLL:
             Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
@@ -1079,6 +1083,7 @@ void AC_AutoTune_Multi::Log_AutoTune()
             Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max);
             break;
         }
+        break;
     }
 
 }
@@ -1230,7 +1235,9 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     attitude_control->use_sqrt_controller(false);
     // hold current attitude
 
-    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+    switch (tune_type) {
+    case SP_DOWN:
+    case SP_UP:
         // step angle targets on first iteration
         if (twitch_first_iter) {
             twitch_first_iter = false;
@@ -1253,7 +1260,9 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
         } else {
             attitude_control->input_rate_bf_roll_pitch_yaw_cds(0.0, 0.0, 0.0);
         }
-    } else {
+        break;
+    
+    default:
         // Testing rate P and D gains so will set body-frame rate targets.
         // Rate controller will use existing body-frame rates and convert to motor outputs
         // for all axes except the one we override here.
@@ -1272,6 +1281,7 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
             attitude_control->input_rate_step_bf_roll_pitch_yaw_cds(0.0f, 0.0f, dir_sign * target_rate + start_rate);
             break;
         }
+        break;
     }
 
     // capture this iteration's rotation rate and lean angle
