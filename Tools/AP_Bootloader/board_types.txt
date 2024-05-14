@@ -275,6 +275,7 @@ AP_HW_BlitzF7Mini                    1163
 AP_HW_BlitzF7                        1164
 AP_HW_MicoAir743                     1166
 AP_HW_BlitzH7Wing                    1168
+AP_HW_SDMODELH7V2                    1167
 
 AP_HW_JHEMCUF405WING                 1169
 AP_HW_MatekG474                      1170
