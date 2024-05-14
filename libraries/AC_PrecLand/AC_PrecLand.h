@@ -88,6 +88,9 @@ public:
     // process a LANDING_TARGET mavlink message
     void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms);
 
+    // get the start altitude for precision landing control
+    float get_start_alti();
+
     // State of the Landing Target Location
     enum class TargetState: uint8_t {
         TARGET_NEVER_SEEN = 0,
@@ -206,6 +209,7 @@ private:
     AP_Float                    _sensor_min_alt;     // PrecLand minimum height required for detecting target
     AP_Float                    _sensor_max_alt;     // PrecLand maximum height the sensor can detect target
     AP_Int16                    _options;            // Bitmask for extra options
+    AP_Float                    _start_alt;          // start altotude for precision-landing
     AP_Enum<Rotation>           _orient;             // Orientation of camera/sensor
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called

@@ -190,6 +190,15 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER),
 
+    // @Param: START_ALT
+    // @DisplayName: Starting Altitude of Precision Landing
+    // @Description: Starting Altitude of Precision Landing
+    // @Range: 1000 50000
+    // @Increment: 100
+    // @Units: cm
+    // @User: Advanced
+    AP_GROUPINFO("START_ALT", 19, AC_PrecLand, _start_alt, 1000.0f),
+
     AP_GROUPEND
 };
 
@@ -819,6 +828,9 @@ void AC_PrecLand::Write_Precland()
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 #endif
+
+// Added by argosdyne
+float AC_PrecLand::get_start_alti() { return _start_alt; }
 
 // singleton instance
 AC_PrecLand *AC_PrecLand::_singleton;
