@@ -148,6 +148,11 @@ void AP_Networking_ChibiOS::link_up_cb(void *p)
     if (driver->frontend.get_dhcp_enabled()) {
         dhcp_start(driver->thisif);
     }
+# if LWIP_AUTOIP
+    if(driver->frontend.get_autoip_enabled()) {
+        autoip_start(driver->thisif);
+    }
+#endif // LWIP_AUTOIP
 #endif
 }
 
@@ -158,6 +163,11 @@ void AP_Networking_ChibiOS::link_down_cb(void *p)
     if (driver->frontend.get_dhcp_enabled()) {
         dhcp_stop(driver->thisif);
     }
+# if LWIP_AUTOIP
+    if(driver->frontend.get_autoip_enabled()) {
+        autoip_stop(driver->thisif);
+    }
+#endif // LWIP_AUTOIP
 #endif
 }
 

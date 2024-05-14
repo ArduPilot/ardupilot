@@ -70,6 +70,20 @@ public:
 #endif
     }
 
+
+    // returns true if AUTOIP is enabled
+    bool get_autoip_enabled() const
+    {
+#if AP_NETWORKING_AUTOIP_AVAILABLE
+        return option_is_set(OPTION::AUTOIP);
+#else
+        // AUTOIP is not available from our scope but could be enabled/controlled
+        // by the OS which is the case on Linux builds, including SITL
+        // TODO: ask the OS if link local IPv4 addressing is enabled
+        return false;
+#endif
+    }
+
     // Sets DHCP to be enabled or disabled
     void set_dhcp_enable(const bool enable)
     {
@@ -155,6 +169,7 @@ public:
 
     enum class OPTION {
         PPP_ETHERNET_GATEWAY=(1U<<0),
+        AUTOIP=(1u<<1)
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
