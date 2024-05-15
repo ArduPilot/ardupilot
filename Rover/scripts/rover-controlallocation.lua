@@ -86,9 +86,7 @@ function mapTo360(angle)
   end
 end
 
-function mapError(wp_bearing, yaw)
-
-  local resultante = yaw - wp_bearing
+function mapError(resultante)
 
   if resultante == 0 then
 
@@ -110,6 +108,7 @@ end
 
 local function CtrlAlocacaonovo(t, s)
 
+  
   local aloc = 450
 
   
@@ -139,7 +138,6 @@ local function CtrlAlocacaonovo(t, s)
   
 end
 
-local steering_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
 
 local rudder_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)
 local throttle_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)
@@ -287,7 +285,8 @@ function Point_to_line_distance(px, py, psi, x0, y0, x1, y1)
 
   local distancia = haversine_distance(px, py, nearest_x, nearest_y)
   local bearing_to_wp = calculate_bearing(px, py, x1, y1)
-  local angle_difference = (bearing_to_wp - psi + 360) % 360
+  --local angle_difference = (bearing_to_wp - psi + 360) % 360
+  local angle_difference = (bearing_to_wp - psi/2 + 360) % 360
 
   local orientacao = point_relative_to_vector(x0,y0,x1,y1,px,py)
 
@@ -382,13 +381,14 @@ function add_polars(r1, theta1, r2, theta2)
 end
 
 
+local steering_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
 
 
 function update_simple_setpoints()
 
   local wp_bearing = vehicle:get_wp_bearing_deg()
   local vh_yaw = mapTo360(ahrs:get_yaw()*180.0/3.1415)
-  local steering_error = mapError(wp_bearing,vh_yaw)
+  local steering_error = mapError(vh_yaw - wp_bearing)
 
   --steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
   throttle = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE))
@@ -402,13 +402,15 @@ end
 
 
 
-local newsteering_pid = PID:new(0.01, 0.00, 0.8, 0.8, -0.8, 0.9, -0.9)  
+
+
+
+local newsteering_pid = PID:new(0.002, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  
 
 
 function update_disturbed_setpoints()
 
   local distance,newsteering_error = update_mission_setpoints()
-
   --steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
   throttle = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE))
 
