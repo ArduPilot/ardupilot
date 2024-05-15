@@ -11,7 +11,7 @@ All the other scripts must look for BATT_SOC_SYSSTART parameter to be set before
 function system_start()
     -- Check if it was all set at first so we can skip this function
     if SYSTEM_STARTED == 1 then
-        gcs:send_text(MAV_SEVERITY.CRITICAL, 'System already started')
+        gcs:send_text(MAV_SEVERITY.NOTICE, 'System already started')
         return
     end
 
@@ -33,11 +33,11 @@ function system_start()
     local system_started_param = Parameter()
     system_started_param:init('BATT_SOC_SYSSTART')
     SYSTEM_STARTED = system_started_param:get()
-    gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("SYSTEM STARTED was set with value = %d", SYSTEM_STARTED))
+    gcs:send_text(MAV_SEVERITY.NOTICE, string.format("SYSTEM STARTED was set with value = %d", SYSTEM_STARTED))
 
     -- Run the system start function faster if we were not able to set the parameter
     if SYSTEM_STARTED == 1 then
-        gcs:send_text(MAV_SEVERITY.CRITICAL, 'System started properly')
+        gcs:send_text(MAV_SEVERITY.NOTICE, 'System started properly')
         return
     else
         return system_start, 100
