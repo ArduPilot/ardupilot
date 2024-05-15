@@ -288,7 +288,7 @@ protected:
     void update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const;
 
     // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
-    uint16_t get_gimbal_device_flags() const;
+    virtual uint16_t get_gimbal_device_flags() const;
 
     // sent warning to GCS
     void send_warning_to_GCS(const char* warning_str);
