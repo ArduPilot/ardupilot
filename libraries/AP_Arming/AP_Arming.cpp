@@ -1635,7 +1635,10 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  opendroneid_checks(report)
 #endif
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
-        & crashdump_checks(report)
+        &  crashdump_checks(report)
+#endif
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+        &  notch_checks(report)
 #endif
         &  serial_protocol_checks(report)
         &  estop_checks(report);
@@ -1724,6 +1727,17 @@ bool AP_Arming::crashdump_checks(bool report)
     return false;
 }
 #endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
+bool AP_Arming::notch_checks(bool report)
+{
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+    if (!AP::vehicle()->pre_arm_check_notches()) {
+        check_failed(ARMING_CHECK_NOTCHES, report, "Notch bandwidth too high");
+        return false;
+    }
+#endif
+    return true;
+}
 
 bool AP_Arming::mandatory_checks(bool report)
 {
