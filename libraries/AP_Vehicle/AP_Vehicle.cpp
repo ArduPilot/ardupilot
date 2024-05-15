@@ -1111,6 +1111,41 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
 }
 #endif
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+/// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
+bool AP_Vehicle::pre_arm_check_notches() const
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    AP_Motors* motors = AP::motors();
+#else  // APM_BUILD_Rover
+    AP_MotorsUGV *motors = AP::motors_ugv();
+#endif
+    const uint8_t nmotors = motors == nullptr ? 1 : __builtin_popcount(motors->get_motor_mask());
+
+    for (auto &notch : ins.harmonic_notches) {
+        if (!notch.params.enabled() || notch.params.hasOption(HarmonicNotchFilterParams::Options::DisableNotchPreArm)) {
+            continue;
+        }
+        float nsources = 1.0f;
+        if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+            if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateBLHeli
+                || notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateThrottle) {
+                nsources = nmotors;
+            }
+            else if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+                nsources = 3;
+            }
+        }
+
+        if (notch.params.bandwidth_hz() > notch.params.center_freq_hz() / sqrtf(nsources)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+#endif
+
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
 AP_Vehicle *AP_Vehicle::get_singleton()
