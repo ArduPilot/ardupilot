@@ -3389,7 +3389,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 #endif
     }
 
-    // refuse reboot when armed:
+    // refuse shutdown/reboot when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
         const uint32_t magic_force_reboot_value = 20190226;
@@ -3397,6 +3397,18 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             return MAV_RESULT_FAILED;
         }
     }
+
+#if AP_BATTERY_ENABLED
+    // Check if shutdown is requested
+    if (is_equal(packet.param1, 2.0f)) {
+        // If the battery monitor in use doesn't support shutdown
+        if (!AP::battery().shutdown()){
+            return MAV_RESULT_FAILED;
+        }
+
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif
 
     if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
         // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader

@@ -85,12 +85,17 @@ public:
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     virtual uint32_t get_mavlink_fault_bitmask() const { return 0; }
 
-    // logging functions 
+    // logging functions
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
 
     // set desired MPPT powered state (enabled/disabled)
     virtual void mppt_set_powered_state(bool power_on) {};
+
+    // returns true if the battery can be shutdown with shutdown()
+    virtual bool can_shutdown() { return false; };
+    // shuts the battery down if supported
+    virtual bool shutdown() { return false; };
 
     // Update an ESC telemetry channel's power information
     void update_esc_telem_outbound();

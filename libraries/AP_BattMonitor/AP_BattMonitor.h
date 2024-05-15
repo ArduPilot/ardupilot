@@ -275,6 +275,15 @@ public:
     // sends powering off mavlink broadcasts and sets notify flag
     void checkPoweringOff(void);
 
+    // returns true if all connected batteries can be shutdown by the AP
+    bool can_shutdown(void) const;
+    // returns true if the battery has the capability to be shutdown by the AP
+    bool can_shutdown(uint8_t instance) const;
+    // attempts to shut down all batteries that support doing so
+    bool shutdown(void);
+    // attempts to shut down a battery (if supported)
+    bool shutdown(uint8_t instance);
+
     // reset battery remaining percentage
     bool reset_remaining_mask(uint16_t battery_mask, float percentage);
     bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
