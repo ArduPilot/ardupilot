@@ -405,7 +405,7 @@ end
 
 
 
-local newsteering_pid = PID:new(0.002, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  
+local newsteering_pid = PID:new(0.001, 0.03, 0.0, 0.9, -0.9, 0.9, -0.9)  
 
 
 function update_disturbed_setpoints()
