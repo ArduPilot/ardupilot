@@ -267,6 +267,7 @@ AP_HW_ORAQF405PRO                    1155
 AP_HW_FOXEERF405_V2                  1157
 AP_HW_BlitzF7Mini                    1163
 AP_HW_BlitzF7                        1164
+AP_HW_SDMODELH7V2                    1167
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
