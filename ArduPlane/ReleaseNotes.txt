@@ -1,5 +1,31 @@
 ArduPilot Plane Release Notes:
 ------------------------------
+
+Release 4.5.3-beta1 16th May 2024
+
+Changes from 4.5.2
+
+1) Board specific enhancements and bug fixes
+
+- correct default GPS port on MambaH743v4
+- added SDMODELV2
+- added iFlight Blitz H7 Pro
+- added BLITZ Wing H743
+- added highres IMU sampling on Pixhawk6X
+
+2) System level minor enhancements and bug fixes
+
+- fixed rare crash bug in lua scripting on script fault handling
+- fixed Neopixel pulse proportions to work with more LED variants
+- fixed timeout in lua rangefinder drivers
+- workaround hardware issue in IST8310 compass
+- allow FIFO rate logging for highres IMU sampling
+
+3) Plane specific changes
+
+- fixed cancelling of FWD_GAIN setting for tiltrotors
+
+------------------------------------------------------------------
 Release 4.5.2 14th May 2024
 
 No changes from 4.5.2-beta1
