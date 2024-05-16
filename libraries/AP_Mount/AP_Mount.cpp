@@ -263,6 +263,7 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 }
 
 // set angle target in degrees
+// roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
