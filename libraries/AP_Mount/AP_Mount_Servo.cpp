@@ -140,14 +140,23 @@ bool AP_Mount_Servo::has_pan_control() const
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // no feedback from gimbal so simply report targets
-    // mnt_target.angle_rad always holds latest angle targets
-
-    // ensure yaw target is in body-frame with limits applied
-    const float yaw_bf = constrain_float(mnt_target.angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+    // No feedback from gimbal so simply report demanded servo angles (which is
+    // not the same as target angles).
+    float roll_rad = 0.0f;
+    float pitch_rad = 0.0f;
+    float yaw_rad = 0.0f;
+    if (has_roll_control()) {
+        roll_rad = constrain_float(_angle_bf_output_rad.x, radians(_params.roll_angle_min), radians(_params.roll_angle_max));
+    }
+    if (has_pitch_control()) {
+        pitch_rad = constrain_float(_angle_bf_output_rad.y, radians(_params.pitch_angle_min), radians(_params.pitch_angle_max));
+    }
+    if (has_pan_control()) {
+        yaw_rad = constrain_float(_angle_bf_output_rad.z, radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+    }
 
     // convert to quaternion
-    att_quat.from_euler(Vector3f{mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, yaw_bf});
+    att_quat.from_euler(roll_rad, pitch_rad, yaw_rad);
     return true;
 }
 
