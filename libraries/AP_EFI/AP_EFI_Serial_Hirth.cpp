@@ -205,6 +205,7 @@ void AP_EFI_Serial_Hirth::send_request()
 bool AP_EFI_Serial_Hirth::send_target_values(uint16_t thr)
 {
     uint8_t computed_checksum = 0;
+    throttle_to_hirth = 0;
 
     // clear buffer
     memset(raw_data, 0, ARRAY_SIZE(raw_data));
@@ -214,15 +215,15 @@ bool AP_EFI_Serial_Hirth::send_target_values(uint16_t thr)
     thr = linearise_throttle(thr);
 #endif
 
-    const uint16_t throttle = thr * THROTTLE_POSITION_FACTOR;
+    throttle_to_hirth = thr * THROTTLE_POSITION_FACTOR;
 
     uint8_t idx = 0;
 
     // set Quantity + Code + "20 bytes of records to set" + Checksum
     computed_checksum += raw_data[idx++] = QUANTITY_SET_VALUE;
     computed_checksum += raw_data[idx++] = requested_code = CODE_SET_VALUE;
-    computed_checksum += raw_data[idx++] = throttle & 0xFF;
-    computed_checksum += raw_data[idx++] = (throttle >> 8) & 0xFF;
+    computed_checksum += raw_data[idx++] = throttle_to_hirth & 0xFF;
+    computed_checksum += raw_data[idx++] = (throttle_to_hirth >> 8) & 0xFF;
 
     // checksum calculation
     raw_data[QUANTITY_SET_VALUE - 1] = (256 - computed_checksum);
@@ -309,10 +310,7 @@ void AP_EFI_Serial_Hirth::decode_data()
         // EFI3 log
         internal_state.ignition_voltage = record1->battery_voltage * VOLTAGE_RESOLUTION;
 
-        engine_temperature_sensor_status = (record1->sensor_ok & 0x01) != 0;
-        air_temperature_sensor_status = (record1->sensor_ok & 0x02) != 0;
-        air_pressure_sensor_status = (record1->sensor_ok & 0x04) != 0;
-        throttle_sensor_status = (record1->sensor_ok & 0x08) != 0;
+        sensor_status = record1->sensor_ok;
 
         // resusing mavlink variables as required for Hirth
         // add in ADC voltage of MAP sensor > convert to MAP in kPa
@@ -344,10 +342,7 @@ void AP_EFI_Serial_Hirth::decode_data()
         struct Record3 *record3 = (Record3*)raw_data;
 
         // EFI3 Log
-        CHT_1_error_excess_temperature_status = (record3->error_excess_temperature_bitfield & 0x0007) != 0;
-        CHT_2_error_excess_temperature_status = (record3->error_excess_temperature_bitfield & 0x0038) != 0;
-        EGT_1_error_excess_temperature_status = (record3->error_excess_temperature_bitfield & 0x01C0) != 0;
-        EGT_2_error_excess_temperature_status = (record3->error_excess_temperature_bitfield & 0x0E00) != 0;
+        error_excess_temperature = record3->error_excess_temperature_bitfield;
 
         // ECYL log
         internal_state.cylinder_status.cylinder_head_temperature = C_TO_KELVIN(record3->excess_temperature_1);
@@ -369,36 +364,28 @@ void AP_EFI_Serial_Hirth::log_status(void)
     // @LoggerMessage: EFIS
     // @Description: Electronic Fuel Injection data - Hirth specific Status information
     // @Field: TimeUS: Time since system startup
-    // @Field: ETS1: Status of EGT1 excess temperature error
-    // @Field: ETS2: Status of EGT2 excess temperature error
-    // @Field: CTS1: Status of CHT1 excess temperature error
-    // @Field: CTS2: Status of CHT2 excess temperature error
-    // @Field: ETSS: Status of Engine temperature sensor
-    // @Field: ATSS: Status of Air temperature sensor
-    // @Field: APSS: Status of Air pressure sensor
-    // @Field: TSS: Status of Temperature sensor
-    // @Field: CRCF: CRC failure count
-    // @Field: AckF: ACK failure count
+    // @Field: EET: Error Excess Temperature Bitfield
+    // @FieldBitmaskEnum: EET: AP_EFI_Serial_Hirth:::Error_Excess_Temp_Bitfield
+    // @Field: FLAG: Sensor Status Bitfield
+    // @FieldBitmaskEnum: FLAG: AP_EFI_Serial_Hirth:::Sensor_Status_Bitfield
+    // @Field: CRF: CRC failure count
+    // @Field: AKF: ACK failure count
     // @Field: Up: Uptime between 2 messages
-    // @Field: ThrO: Throttle output as received by the engine
+    // @Field: ThO: Throttle output as received by the engine
+    // @Field: ThM: Modified throttle_to_hirth output sent to the engine
     AP::logger().WriteStreaming("EFIS",
-                                "TimeUS,ETS1,ETS2,CTS1,CTS2,ETSS,ATSS,APSS,TSS,CRCF,AckF,Up,ThrO",
-                                "s------------",
-                                "F------------",
-                                "QBBBBBBBBIIIf",
+                                "TimeUS,EET,FLAG,CRF,AKF,Up,ThO,ThM",
+                                "s-------",
+                                "F-------",
+                                "QHBIIIfH",
                                 AP_HAL::micros64(),
-                                uint8_t(EGT_1_error_excess_temperature_status),
-                                uint8_t(EGT_2_error_excess_temperature_status),
-                                uint8_t(CHT_1_error_excess_temperature_status),
-                                uint8_t(CHT_2_error_excess_temperature_status),
-                                uint8_t(engine_temperature_sensor_status),
-                                uint8_t(air_temperature_sensor_status),
-                                uint8_t(air_pressure_sensor_status),
-                                uint8_t(throttle_sensor_status),
+                                uint16_t(error_excess_temperature),
+                                uint8_t(sensor_status),
                                 uint32_t(crc_fail_cnt),
                                 uint32_t(ack_fail_cnt),
                                 uint32_t(uptime),
-                                float(internal_state.throttle_out));
+                                float(internal_state.throttle_out),
+                                uint16_t(throttle_to_hirth));
 }
 #endif // HAL_LOGGING_ENABLED
 
