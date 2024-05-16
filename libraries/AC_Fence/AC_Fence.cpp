@@ -229,7 +229,8 @@ void AC_Fence::update()
 #ifdef AC_FENCE_DEBUG
     static uint32_t last_msg_count = 0;
     if (get_enabled_fences() && last_msg_count++ % 10 == 0) {
-        print_fence_message("fences active", get_enabled_fences());
+        print_fence_message("active", get_enabled_fences());
+        print_fence_message("breached", get_breaches());
     }
 #endif
 }
@@ -632,10 +633,13 @@ bool AC_Fence::auto_enable_fence_floor()
 // inclusions zones
 bool AC_Fence::check_fence_polygon()
 {
+    if (!(get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
+        // not enabled; no breach
+        return false;
+    }
+
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
-    const bool breached = ((_configured_fences & AC_FENCE_TYPE_POLYGON) &&
-                           _poly_loader.breached());
-    if (breached) {
+    if (_poly_loader.breached()) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
