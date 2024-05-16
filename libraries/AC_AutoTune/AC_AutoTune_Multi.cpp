@@ -1232,7 +1232,6 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     // hold current attitude
 
     if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
         // step angle targets on first iteration
         if (twitch_first_iter) {
             twitch_first_iter = false;
@@ -1251,7 +1250,9 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
                 // request yaw to 20deg
                 attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, 0.0f, dir_sign * target_angle);
                 break;
-            }
+            } 
+        } else {
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
         }
     } else {
         attitude_control->input_rate_bf_roll_pitch_yaw_2(0.0f, 0.0f, 0.0f);
