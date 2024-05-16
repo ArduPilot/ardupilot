@@ -24,6 +24,7 @@ Changes from 4.5.2
 3) Copter specific changes
 
 - fixed speed constraint during avoidance backoff
+- zero D_FF during autotune twitch
 
 ------------------------------------------------------------------
 Release 4.5.2 14th May 2024
