@@ -84,6 +84,7 @@ public:
     void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
 
     // set angle target in degrees
+    // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
     void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
 
