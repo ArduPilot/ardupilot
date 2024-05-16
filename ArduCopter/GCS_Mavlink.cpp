@@ -860,9 +860,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
     switch (packet.command) {
     case MAV_CMD_DO_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
-        if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
+        if (((MAV_MOUNT_MODE)packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
+            (copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
             !copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_yaw_angle_rate((float)packet.param3, 0.0f);
+            // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
+            // equivalent to an offset to the current yaw demand.
+            copter.flightmode->auto_yaw.set_yaw_angle_offset(packet.param3);
         }
         break;
     default:
@@ -1131,11 +1134,12 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
+            (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
             !copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_yaw_angle_rate(
-                mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
-                0.0f);
-
+            // Per the handler in AP_Mount, MOUNT_CONTROL yaw angle is in body frame, which is
+            // equivalent to an offset to the current yaw demand.
+            const float yaw_offset_d = mavlink_msg_mount_control_get_input_c(&msg) * 0.01f;
+            copter.flightmode->auto_yaw.set_yaw_angle_offset(yaw_offset_d);
             break;
         }
     }
