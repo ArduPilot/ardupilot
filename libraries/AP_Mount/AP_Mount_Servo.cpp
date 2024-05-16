@@ -119,6 +119,18 @@ void AP_Mount_Servo::update()
     move_servo(_pan_idx,  degrees(_angle_bf_output_rad.z)*10, _params.yaw_angle_min*10, _params.yaw_angle_max*10);
 }
 
+// returns true if this mount can control its roll
+bool AP_Mount_Servo::has_roll_control() const
+{
+    return SRV_Channels::function_assigned(_roll_idx) && roll_range_valid();
+}
+
+// returns true if this mount can control its tilt
+bool AP_Mount_Servo::has_pitch_control() const
+{
+    return SRV_Channels::function_assigned(_tilt_idx) && pitch_range_valid();
+}
+
 // returns true if this mount can control its pan (required for multicopters)
 bool AP_Mount_Servo::has_pan_control() const
 {
