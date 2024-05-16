@@ -39,6 +39,9 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
+    uint16_t get_gimbal_device_flags() const override;
+
 private:
 
     // update body-frame angle outputs from earth-frame targets

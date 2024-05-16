@@ -139,6 +139,22 @@ bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
     return true;
 }
 
+// helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
+uint16_t AP_Mount_Servo::get_gimbal_device_flags() const
+{
+    uint16_t flags = AP_Mount_Backend::get_gimbal_device_flags();
+    // per get_attitude_quaternion() above, angles are all body frame, so clear all the LOCK flags...
+    const uint16_t mask = ~(GIMBAL_DEVICE_FLAGS_ROLL_LOCK  |
+                            GIMBAL_DEVICE_FLAGS_PITCH_LOCK |
+                            GIMBAL_DEVICE_FLAGS_YAW_LOCK   |
+                            GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME);
+    flags &= mask;
+    // and set the YAW_IN_VEHICLE_FRAME flag
+    flags |= GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME;
+
+    return flags;
+}
+
 // private methods
 
 // update body-frame angle outputs from earth-frame angle targets
