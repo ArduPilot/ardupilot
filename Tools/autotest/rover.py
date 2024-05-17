@@ -6811,6 +6811,31 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
         )
 
+    def FenceClearAndPrearm(self):
+        '''check that clearing the fence makes prearm fail again'''
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            'FENCE_TYPE': 6,    # circle + polygon
+            'FENCE_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.assert_prearm_failure("Fences invalid", other_prearm_failures_fatal=False, timeout=60)
+        here = self.mav.location()
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                [ # over the top of the vehicle
+                    self.offset_location_ne(here, -50, -50), # bl
+                    self.offset_location_ne(here, -50, 50), # br
+                    self.offset_location_ne(here, 50, 50), # tr
+                    self.offset_location_ne(here, 50, -50), # tl,
+                ]
+            ]
+        )
+        self.wait_ready_to_arm()
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        self.assert_prearm_failure("Fences invalid", other_prearm_failures_fatal=False, timeout=60)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6900,6 +6925,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.RTL_SPEED,
             self.MissionRetransfer,
             self.FenceFullAndPartialTransfer,
+            self.FenceClearAndPrearm,
         ])
         return ret
 
