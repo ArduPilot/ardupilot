@@ -274,7 +274,7 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
         return true;
     }
 
-    if (! _poly_loader.loaded()) {
+    if (_poly_loader.total_fence_count() == 0) {
         fail_msg = "Fences invalid";
         return false;
     }

@@ -140,12 +140,6 @@ public:
         return _num_loaded_inclusion_boundaries != 0;
     }
 
-    // loaded - returns true if the fences have been loaded from
-    // storage and are available for use
-    bool loaded() const WARN_IF_UNUSED {
-        return _load_time_ms != 0;
-    };
-
     // maximum number of fence points we can store in eeprom
     uint16_t max_items() const;
 
