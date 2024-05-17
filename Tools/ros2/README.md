@@ -13,6 +13,14 @@ For example `ardurover` SITL may be launched with:
 ros2 launch ardupilot_sitl sitl.launch.py command:=ardurover model:=rover
 ```
 
+Other launch files are included with many arguments.
+Some common arguments are exposed and forwarded to the underlying process.
+
+For example, MAVProxy can be launched, and you can enable the `console` and `map`.
+```bash
+ros2 launch ardupilot_sitl sitl_mavproxy.launch.py map:=True console:=True 
+```
+
 #### `ardupilot_dds_test`
 
 A `colcon` package for testing communication between `micro_ros_agent` and the

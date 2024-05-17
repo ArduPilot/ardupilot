@@ -635,25 +635,34 @@ void AP_IOMCU_FW::telem_update()
     uint32_t now_ms = AP_HAL::millis();
 
     for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
+        struct page_dshot_telem &dshot_i = dshot_telem[i];
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = (i * 4 + j);
             if (esc_id >= IOMCU_MAX_TELEM_CHANNELS) {
                 continue;
             }
-            dshot_telem[i].error_rate[j] = uint16_t(roundf(hal.rcout->get_erpm_error_rate(esc_id) * 100.0));
+            dshot_i.error_rate[j] = uint16_t(roundf(hal.rcout->get_erpm_error_rate(esc_id) * 100.0));
 #if HAL_WITH_ESC_TELEM
             const volatile AP_ESC_Telem_Backend::TelemetryData& telem = esc_telem.get_telem_data(esc_id);
             // if data is stale then set to zero to avoid phantom data appearing in mavlink
             if (now_ms - telem.last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS) {
-                dshot_telem[i].voltage_cvolts[j] = 0;
-                dshot_telem[i].current_camps[j] = 0;
-                dshot_telem[i].temperature_cdeg[j] = 0;
+                dshot_i.voltage_cvolts[j] = 0;
+                dshot_i.current_camps[j] = 0;
+                dshot_i.temperature_cdeg[j] = 0;
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+                dshot_i.edt2_status[j] = 0;
+                dshot_i.edt2_stress[j] = 0;
+#endif
                 continue;
             }
-            dshot_telem[i].voltage_cvolts[j] = uint16_t(roundf(telem.voltage * 100));
-            dshot_telem[i].current_camps[j] = uint16_t(roundf(telem.current * 100));
-            dshot_telem[i].temperature_cdeg[j] = telem.temperature_cdeg;
-            dshot_telem[i].types[j] = telem.types;
+            dshot_i.voltage_cvolts[j] = uint16_t(roundf(telem.voltage * 100));
+            dshot_i.current_camps[j] = uint16_t(roundf(telem.current * 100));
+            dshot_i.temperature_cdeg[j] = telem.temperature_cdeg;
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            dshot_i.edt2_status[j] = uint8_t(telem.edt2_status);
+            dshot_i.edt2_stress[j] = uint8_t(telem.edt2_stress);
+#endif
+            dshot_i.types[j] = telem.types;
 #endif
         }
     }

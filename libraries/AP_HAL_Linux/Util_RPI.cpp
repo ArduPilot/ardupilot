@@ -62,25 +62,29 @@ void UtilRPI::_get_board_type_using_peripheral_base()
             _linux_board_version = LINUX_BOARD_TYPE::UNKNOWN_BOARD;
             printf("Cannot detect board-type \r\n");
         break;
+        case 0x10:
+            _linux_board_version = LINUX_BOARD_TYPE::RPI_5;
+            printf("RPI 5 \r\n");
+        break;
         case 0x20000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_ZERO_1;
             printf("RPI Zero / 1 \r\n");
-            printf("Peripheral base address is %x\n", base);
         break;
         case 0x3f000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_2_3_ZERO2;
             printf("RPI 2, 3 or Zero-2 \r\n");
-            printf("Peripheral base address is %x\n", base);
         break;
         case 0xfe000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_4;
             printf("RPI 4 \r\n");
-            printf("Peripheral base address is %x\n", base);
         break;
         case 0x40000000:
             _linux_board_version = LINUX_BOARD_TYPE::ALLWINNWER_H616;
             printf("AllWinner-H616 \r\n");
         break;
+        default:
+            printf("Unknown board \n\r");
+            printf("Peripheral base address is %x\n", base);
     }
 
     return ;

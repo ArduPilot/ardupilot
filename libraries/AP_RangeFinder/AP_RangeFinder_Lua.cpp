@@ -48,16 +48,11 @@ bool AP_RangeFinder_Lua::handle_script_msg(float dist_m) {
 
     WITH_SEMAPHORE(_sem);
 
-    // Time out on incoming data; if we don't get new data in 500ms, dump it
-    if (now - _state_pending.last_reading_ms > AP_RANGEFINDER_LUA_TIMEOUT_MS) {
-        set_status(_state_pending, RangeFinder::Status::NoData);
-    } else {
-        _state_pending.last_reading_ms = now;
-        _state_pending.distance_m = dist_m;
-        _state_pending.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
-        _state_pending.voltage_mv = 0;
-        update_status(_state_pending);
-    }
+    _state_pending.last_reading_ms = now;
+    _state_pending.distance_m = dist_m;
+    _state_pending.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
+    _state_pending.voltage_mv = 0;
+    update_status(_state_pending);
 
     return true;
 }
@@ -66,6 +61,12 @@ bool AP_RangeFinder_Lua::handle_script_msg(float dist_m) {
 void AP_RangeFinder_Lua::update(void)
 {
     WITH_SEMAPHORE(_sem);
+
+    // Time out on incoming data
+    if (_state_pending.status != RangeFinder::Status::NotConnected &&
+            AP_HAL::millis() - _state_pending.last_reading_ms > AP_RANGEFINDER_LUA_TIMEOUT_MS) {
+        set_status(_state_pending, RangeFinder::Status::NoData);
+    }
     state = _state_pending;
 }
 
