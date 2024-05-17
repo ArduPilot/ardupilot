@@ -57,7 +57,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @DisplayName: Throttle stick behavior
     // @Description: Bitmask containing various throttle stick options. TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick.
     // @User: Standard
-    // @Values: 0:None,1:Feedback from mid stick,2:High throttle cancels landing,4:Disarm on land detection
     // @Bitmask: 0:Feedback from mid stick,1:High throttle cancels landing,2:Disarm on land detection
     GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
 
@@ -76,7 +75,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:VELX,2:VELY,4:VELZ,8:VELYAW,16:POSX,32:POSY,64:POSZ,128:POSYAW,15:Vel only,51:XY only,204:ZYaw only,240:Pos only,255:All
     // @Bitmask: 0:VELX,1:VELY,2:VELZ,3:VELYAW,4:POSX,5:POSY,6:POZ,7:POSYAW
     GSCALAR(gcs_pid_mask, "GCS_PID_MASK",     0),
 
@@ -262,7 +260,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: DIS_MASK
     // @DisplayName: Disable output mask
     // @Description: Mask for disabling (setting to zero) one or more of the 4 output axis in mode Velocity or Loiter
-    // @Values: 0:All enabled,1:Right,2:Front,4:Down,8:Yaw,3:Down and Yaw only,12:Front & Right only
     // @Bitmask: 0:Right,1:Front,2:Down,3:Yaw
     // @User: Standard
     GSCALAR(dis_mask, "DIS_MASK", 0),
@@ -810,7 +807,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe options bitmask
     // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 (default) disables all options.
-    // @Values: 0:Disabled, 16:Continue if in pilot controlled modes on GCS failsafe
     // @Bitmask: 4:Continue if in pilot controlled modes on GCS failsafe
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, (float)Blimp::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL),
