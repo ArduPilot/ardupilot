@@ -221,6 +221,10 @@ def process_vehicle(vehicle):
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
 
+        if (getattr(p, 'Values', None) is not None and
+                getattr(p, 'Bitmask', None) is not None):
+            error("Both @Values and @Bitmask present")
+
         vehicle.params.append(p)
     current_file = None
     debug("Processed %u params" % len(vehicle.params))
