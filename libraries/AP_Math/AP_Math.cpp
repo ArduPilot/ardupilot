@@ -339,7 +339,6 @@ uint16_t get_random16(void)
 }
 
 
-#if AP_SIM_ENABLED
 // generate a random float between -1 and 1, for use in SITL
 float rand_float(void)
 {
@@ -359,7 +358,6 @@ Vector3f rand_vec3f(void)
         rand_float()
     };
 }
-#endif
 
 /*
   return true if two rotations are equivalent
