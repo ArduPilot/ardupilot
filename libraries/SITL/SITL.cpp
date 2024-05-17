@@ -81,12 +81,20 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: deg
     // @User: Advanced
     AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
+
     // @Param: WIND_TURB
     // @DisplayName: Simulated Wind variation
     // @Description: Allows you to emulate random wind variations in sim
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
+
+    // @Param: WIND_TC
+    // @DisplayName: Wind variation time constant
+    // @Description: this controls the time over which wind changes take effect
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("WIND_TC",       12, SIM,  wind_change_tc,  5),
 
     // @Group: SERVO_
     // @Path: ./ServoModel.cpp

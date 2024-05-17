@@ -349,6 +349,7 @@ public:
     AP_Float wind_direction;
     AP_Float wind_turbulance;
     AP_Float wind_dir_z;
+    AP_Float wind_change_tc;
     AP_Int8  wind_type; // enum WindLimitType
     AP_Float wind_type_alt;
     AP_Float wind_type_coef;
