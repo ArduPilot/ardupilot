@@ -8035,8 +8035,10 @@ Also, ignores heartbeats not from our target system'''
             if m.get_srcSystem() == self.sysid_thismav():
                 return m
 
-    def wait_ekf_happy(self, timeout=45, require_absolute=True):
+    def wait_ekf_happy(self, require_absolute=True, **kwargs):
         """Wait for EKF to be happy"""
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = 45
 
         """ if using SITL estimates directly """
         if (int(self.get_parameter('AHRS_EKF_TYPE')) == 10):
@@ -8056,7 +8058,7 @@ Also, ignores heartbeats not from our target system'''
                                mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
                                mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS)
             error_bits |= mavutil.mavlink.ESTIMATOR_GPS_GLITCH
-        self.wait_ekf_flags(required_value, error_bits, timeout=timeout)
+        WaitAndMaintainEKFFlags(self, required_value, error_bits, **kwargs).run()
 
     def wait_ekf_flags(self, required_value, error_bits, **kwargs):
         WaitAndMaintainEKFFlags(self, required_value, error_bits, **kwargs).run()
