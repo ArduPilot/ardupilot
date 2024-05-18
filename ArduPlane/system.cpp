@@ -142,6 +142,7 @@ void Plane::init_ardupilot()
     if (g2.oneshot_mask != 0) {
         hal.rcout->set_output_mode(g2.oneshot_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
     }
+    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
     set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
 
