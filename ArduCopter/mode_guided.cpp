@@ -7,6 +7,7 @@
  */
 
 static Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
+bool guided_pos_xy_vel_z_target;            // true if xy axis controlled by pos controller and z axis by vel controller
 bool guided_pos_terrain_alt;                // true if guided_pos_target_cm.z is an alt above terrain
 static Vector3f guided_vel_target_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
 static Vector3f guided_accel_target_cmss;   // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
@@ -50,7 +51,9 @@ bool ModeGuided::init(bool ignore_checks)
 // run - runs the guided controller
 // should be called at 100hz or more
 void ModeGuided::run()
+
 {
+
     // run pause control if the vehicle is paused
     if (_paused) {
         pause_control_run();
@@ -571,7 +574,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 }
 
 // set_destination_posvelaccel - set guided mode position, velocity and acceleration target
-bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool pos_vel_bool)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -582,7 +585,6 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
         return false;
     }
 #endif
-
     // check we are in velocity control mode
     if (guided_mode != SubMode::PosVelAccel) {
         posvelaccel_control_start();
@@ -594,6 +596,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     update_time_ms = millis();
     guided_pos_target_cm = destination.topostype();
     guided_pos_terrain_alt = false;
+    guided_pos_xy_vel_z_target = pos_vel_bool;
     guided_vel_target_cms = velocity;
     guided_accel_target_cmss = acceleration;
 
@@ -909,7 +912,11 @@ void ModeGuided::posvelaccel_control_run()
     }
 
     float pz = guided_pos_target_cm.z;
-    pos_control->input_pos_vel_accel_z(pz, guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+    if (guided_pos_xy_vel_z_target) {
+        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+    } else {
+        pos_control->input_pos_vel_accel_z(pz, guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
+    }
     guided_pos_target_cm.z = pz;
 
     // run position controllers
