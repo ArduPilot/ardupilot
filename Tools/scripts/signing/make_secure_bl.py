@@ -7,12 +7,6 @@ import sys
 import os
 import base64
 
-try:
-    import monocypher
-except ImportError:
-    print("Please install monocypher with: python3 -m pip install pymonocypher")
-    sys.exit(1)
-
 # get command line arguments
 from argparse import ArgumentParser
 parser = ArgumentParser(description='make_secure_bl')
