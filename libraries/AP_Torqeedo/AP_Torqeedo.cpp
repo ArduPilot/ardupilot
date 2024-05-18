@@ -252,9 +252,15 @@ void AP_Torqeedo::thread_main()
             }
         }
 
-        // if not healthy and auto reset is true, toggle the on/off pin to try to wake or reset the motor
-        if (!healthy() && _auto_reset)
-            press_on_off_button(); // High for 500ms and low for 1s
+        // if not healthy, auto reset is true, and ArduPilot has been started for at least 5 seconds, 
+        // toggle the on/off pin to try to wake or reset the motor
+        if (!healthy() && _auto_reset) {
+            // Get the number of milliseconds since boot
+            uint32_t boot_time_ms = AP_HAL::millis();
+            if (boot_time_ms > 5000) {
+                press_on_off_button(); // High for 500ms and low for 1s
+            }
+        }
 
         // log high level status and motor speed
         log_TRQD(log_update);
