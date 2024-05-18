@@ -204,6 +204,9 @@ private:
     // send ESC telemetry
     void update_esc_telem(float rpm, float voltage, float current_amps, float esc_tempC, float motor_tempC);
 
+    // set the on/off pin to on momentarily to wake the motor or clear an error state
+    void press_on_off_button();
+
     // parameters
     AP_Enum<ConnectionType> _type;      // connector type used (0:disabled, 1:tiller connector, 2: motor connector)
     AP_Int8 _pin_onoff;     // Pin number connected to Torqeedo's on/off pin. -1 to disable turning motor on/off from autopilot
@@ -212,7 +215,8 @@ private:
     AP_Int8 _motor_power;   // motor power (0 ~ 100).  only applied when using motor connection
     AP_Float _slew_time;    // slew rate specified as the minimum number of seconds required to increase the throttle from 0 to 100%.  A value of zero disables the limit
     AP_Float _dir_delay;    // direction change delay.  output will remain at zero for this many seconds when transitioning between forward and backwards rotation
-
+    AP_Int8 _auto_reset;    // whether to auto reset the motor if it goes into an error state (0:disabled, 1:enabled)
+    
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
     bool _initialised;              // true once driver has been initialised
