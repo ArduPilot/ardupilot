@@ -635,6 +635,7 @@ bool AC_Fence::check_fence_polygon()
 {
     if (!(get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
         // not enabled; no breach
+        clear_breach(AC_FENCE_TYPE_POLYGON);
         return false;
     }
 
