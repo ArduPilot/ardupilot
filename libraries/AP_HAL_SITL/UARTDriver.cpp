@@ -268,7 +268,9 @@ void UARTDriver::_flush(void)
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
     const auto _txspace = txspace();
-    if (_txspace < size) {
+    if (_txspace < size && latencyQueueWrite.empty()) {
+        // If we're using a latecy queue, we don't actually care about txspace
+        // at this point, as we're not going to write to the device yet.
         size = _txspace;
     }
     if (size <= 0) {
