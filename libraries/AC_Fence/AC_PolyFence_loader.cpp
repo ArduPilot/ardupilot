@@ -493,12 +493,14 @@ bool AC_PolyFence_loader::index_eeprom()
     if (!count_eeprom_fences()) {
         return false;
     }
+
+    void_index();
+
     if (_eeprom_fence_count == 0) {
+        _num_fences = 0;
         _load_attempted = false;
         return true;
     }
-
-    void_index();
 
     Debug("Fence: Allocating %u bytes for index",
           (unsigned)(_eeprom_fence_count*sizeof(FenceIndex)));
