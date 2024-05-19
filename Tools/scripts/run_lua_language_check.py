@@ -12,6 +12,7 @@ import os
 import pathlib
 import json
 import shutil
+import platform
 from urllib.parse import unquote
 
 
@@ -64,6 +65,29 @@ if __name__ == '__main__':
     if os.path.exists(logs) and len(os.listdir(logs)) != 0:
         raise Exception("lualogs not empty")
 
+    install_path = (ap_root / "lua-language-server").resolve()
+
+    # See if there is a new version (only try on Linux)
+    if platform.system() == "Linux":
+        from github_release_downloader import check_and_download_updates, GitHubRepo
+        import re
+        asset_re = re.compile(r".*linux-x64\.tar\.gz")
+        check_and_download_updates(
+            GitHubRepo("LuaLS", "lua-language-server"),
+            assets_mask=asset_re,
+            downloads_dir=ap_root,
+        )
+        for filename in os.listdir(ap_root):
+            if asset_re.match(filename):
+                pack_path = (ap_root / filename).resolve()
+                shutil.unpack_archive(pack_path, install_path)
+                os.remove(pack_path)
+
+    run_path = (install_path / "bin/lua-language-server")
+    if not os.path.isfile(run_path):
+        # Try and use version from path
+        run_path = "lua-language-server"
+
     # Can't get the lua-language-server to find docs outside of workspace, so just copy in and then delete
     docs_check_path = (pathlib.Path(os.getcwd()) / check_path).resolve()
     if os.path.isfile(docs_check_path):
@@ -78,7 +102,7 @@ if __name__ == '__main__':
         shutil.copyfile(docs, docs_copy)
 
     # Run check
-    os.system("lua-language-server --configpath %s --logpath %s --check %s" % (setup, logs, check_path))
+    os.system("%s --configpath %s --logpath %s --check %s" % (run_path, setup, logs, check_path))
 
     if docs_copy is not None:
         # remove copy of docs
@@ -93,9 +117,10 @@ if __name__ == '__main__':
         data = json.load(f)
         f.close()
 
-        # Print output
-        for key, value in data.items():
-            errors += print_failures(key, value)
+        if len(data) > 0:
+            # Print output if there are any errors
+            for key, value in data.items():
+                errors += print_failures(key, value)
 
     # Remove output
     shutil.rmtree(logs)
