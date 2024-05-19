@@ -36,26 +36,16 @@ jobs:
           sudo apt-get -y install lua-check
           ./Tools/scripts/run_luacheck.sh
 
-      - name: Setup language server
+      - name: Language server check
         shell: bash
         run: |
-          sudo apt install -y curl
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /github/home/.bashrc
-          source ~/.bashrc
-          brew install lua-language-server
+          python -m pip install github-release-downloader
+          python ./Tools/scripts/run_lua_language_check.py
 
       - name: Generate docs md
         shell: bash
         run: |
-          source ~/.bashrc
           ./Tools/scripts/generate_lua_docs.sh
-
-      - name: Language server check
-        shell: bash
-        run: |
-          source ~/.bashrc
-          python ./Tools/scripts/run_lua_language_check.py
 
       - name: copy docs
         run: |
