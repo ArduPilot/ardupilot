@@ -40,8 +40,8 @@ public:
     // returns true if battery monitor provides consumed energy info
     bool has_consumed_energy() const override { return true; }
 
-    // returns true if battery monitor provides current info
-    bool has_current() const override { return false; }
+    // returns true if battery monitor provides current info (or capacity)
+    bool has_current() const override { return true; }
 
     void init(void) override {}
 
