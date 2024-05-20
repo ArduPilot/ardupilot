@@ -50,7 +50,7 @@ protected:
     void backup_gains_and_initialise() override;
 
     // load gains
-    void load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel, float rate_fltt, float rate_flte, float smax);
+    void load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel, float rate_fltt, float rate_flte, float smax, float max_rate);
 
     // switch to use original gains
     void load_orig_gains() override;
@@ -176,7 +176,7 @@ private:
     float angle_lim_neg_rpy_cd() const override;
 
     // initialize dwell test or angle dwell test variables
-    void dwell_test_init(float start_frq, float stop_frq, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);
+    void dwell_test_init(float start_frq, float stop_frq, float amplitude, float filt_freq, FreqRespInput freq_resp_input, FreqRespCalcType calc_type, AC_AutoTune_FreqResp::ResponseType resp_type, AC_AutoTune_FreqResp::InputType waveform_input_type);
 
     // dwell test used to perform frequency dwells for rate gains
     void dwell_test_run(sweep_info &test_data);
@@ -248,6 +248,7 @@ private:
     FreqRespInput test_freq_resp_input;
     uint8_t num_dwell_cycles;
     float test_start_freq;
+    float tgt_attitude;
     
     float    pre_calc_cycles;                       // number of cycles to complete before running frequency response calculations
     float    command_out;                           // test axis command output
