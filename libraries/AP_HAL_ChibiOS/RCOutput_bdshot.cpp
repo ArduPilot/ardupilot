@@ -755,12 +755,12 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
     uint16_t value = (encodederpm & 0x000001ffU);               // 9bits
 #if HAL_WITH_ESC_TELEM
     uint8_t normalized_chan = chan;
-#endif
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {
         normalized_chan = chan + chan_offset;
     }
 #endif
+#endif // HAL_WITH_ESC_TELEM: one can possibly imagine a FC with IOMCU but with ESC_TELEM compiled out...
 
     if (!(value & 0x100U) && (_dshot_esc_type == DSHOT_ESC_BLHELI_EDT || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S)) {
         switch (expo) {
@@ -796,9 +796,27 @@ bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t c
             break;
         case 0b100:  // Debug 1
         case 0b101:  // Debug 2
-        case 0b110:  // Stress level
-        case 0b111:  // Status
             return false;
+            break;
+        case 0b110: { // Stress level
+    #if HAL_WITH_ESC_TELEM && AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            TelemetryData t {
+                .edt2_stress = value
+            };
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::EDT2_STRESS);
+    #endif
+            return false;
+            }
+            break;
+        case 0b111: { // Status
+    #if HAL_WITH_ESC_TELEM && AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            TelemetryData t {
+                .edt2_status = value
+            };
+            update_telem_data(normalized_chan, t, AP_ESC_Telem_Backend::TelemetryType::EDT2_STATUS);
+    #endif
+            return false;
+            }
             break;
         default:     // eRPM
             break;

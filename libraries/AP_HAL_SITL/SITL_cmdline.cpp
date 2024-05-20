@@ -14,6 +14,7 @@
 #include <SITL/SIM_Helicopter.h>
 #include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_Glider.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_BalanceBot.h>
@@ -38,6 +39,8 @@
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
+#include <SITL/SIM_StratoBlimp.h>
+
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -142,6 +145,7 @@ static const struct {
     { "djix",               MultiCopter::create },
     { "cwx",                MultiCopter::create },
     { "hexa",               MultiCopter::create },
+    { "hexax",              MultiCopter::create },
     { "hexa-cwx",           MultiCopter::create },
     { "hexa-dji",           MultiCopter::create },
     { "octa",               MultiCopter::create },
@@ -170,6 +174,7 @@ static const struct {
     { "last_letter",        last_letter::create },
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
+    { "glider",             Glider::create },
     { "plane",              Plane::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
@@ -183,6 +188,9 @@ static const struct {
     { "JSON",               JSON::create },
     { "blimp",              Blimp::create },
     { "novehicle",          NoVehicle::create },
+#if AP_SIM_STRATOBLIMP_ENABLED
+    { "stratoblimp",        StratoBlimp::create },
+#endif
 };
 
 void SITL_State::_set_signal_handlers(void) const

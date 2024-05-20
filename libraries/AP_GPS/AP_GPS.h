@@ -197,7 +197,7 @@ public:
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
         float ground_speed;                 ///< ground speed in m/s
-        float ground_course;                ///< ground course in degrees
+        float ground_course;                ///< ground course in degrees, wrapped 0-360
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
         uint32_t gps_yaw_time_ms;           ///< timestamp of last GPS yaw reading
         bool  gps_yaw_configured;           ///< GPS is configured to provide yaw
@@ -594,7 +594,7 @@ public:
 #if GPS_MOVING_BASELINE
     // methods used by UAVCAN GPS driver and AP_Periph for moving baseline
     void inject_MBL_data(uint8_t* data, uint16_t length);
-    void get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading);
+    bool get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading) WARN_IF_UNUSED;
     bool get_RTCMV3(const uint8_t *&bytes, uint16_t &len);
     void clear_RTCMV3();
 #endif // GPS_MOVING_BASELINE

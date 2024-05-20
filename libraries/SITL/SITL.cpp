@@ -37,6 +37,9 @@
   #endif
 #endif // SFML_JOYSTICK
 
+#include "SIM_StratoBlimp.h"
+#include "SIM_Glider.h"
+
 extern const AP_HAL::HAL& hal;
 
 #ifndef SIM_RATE_HZ_DEFAULT
@@ -84,7 +87,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
-    AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+
+    // @Group: SERVO_
+    // @Path: ./ServoModel.cpp
+    AP_SUBGROUPINFO(servo, "SERVO_", 16, SIM, ServoParams),
+
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery voltage
@@ -175,9 +182,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
-#if AP_SIM_SHIP_ENABLED
-    AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
-#endif
+    AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
 #if HAL_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
@@ -537,7 +542,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Range: 10 100
     AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
 #endif
-    
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
@@ -548,6 +553,11 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 // user settable parameters for the barometers
 const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("RND",      1, SIM::BaroParm,  noise, 0.2f),
+    // @Param: BARO_DRIFT
+    // @DisplayName: Baro altitude drift
+    // @Description: Barometer altitude drifts at this rate
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("DRIFT",    2, SIM::BaroParm,  drift, 0),
     AP_GROUPINFO("DISABLE",  3, SIM::BaroParm,  disable, 0),
     AP_GROUPINFO("GLITCH",   4, SIM::BaroParm,  glitch, 0),
@@ -1185,6 +1195,29 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPEND
 };
 
+// user settable parameters for the physics models
+const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
+
+#if AP_SIM_SHIP_ENABLED
+    // @Group: SHIP_
+    // @Path: ./SIM_Ship.cpp
+    AP_SUBGROUPINFO(shipsim, "SHIP_", 1, SIM::ModelParm, ShipSim),
+#endif
+#if AP_SIM_STRATOBLIMP_ENABLED
+    // @Group: SB_
+    // @Path: ./SIM_StratoBlimp.cpp
+    AP_SUBGROUPPTR(stratoblimp_ptr, "SB_",  2, SIM::ModelParm, StratoBlimp),
+#endif
+
+#if AP_SIM_GLIDER_ENABLED
+    // @Group: GLD_
+    // @Path: ./SIM_Glider.cpp
+    AP_SUBGROUPPTR(glider_ptr, "GLD_",  3, SIM::ModelParm, Glider),
+#endif
+
+    AP_GROUPEND
+};
+    
 const Location post_origin {
     518752066,
     146487830,
@@ -1195,6 +1228,11 @@ const Location post_origin {
 /* report SITL state via MAVLink SIMSTATE*/
 void SIM::simstate_send(mavlink_channel_t chan) const
 {
+    if (stop_MAVLink_sim_state) {
+        // Sim only MAVLink messages disabled to give more relaistic data rates
+        return;
+    }
+
     float yaw;
 
     // convert to same conventions as DCM
@@ -1220,6 +1258,11 @@ void SIM::simstate_send(mavlink_channel_t chan) const
 /* report SITL state via MAVLink SIM_STATE */
 void SIM::sim_state_send(mavlink_channel_t chan) const
 {
+    if (stop_MAVLink_sim_state) {
+        // Sim only MAVLink messages disabled to give more relaistic data rates
+        return;
+    }
+
     // convert to same conventions as DCM
     float yaw = state.yawDeg;
     if (yaw > 180) {

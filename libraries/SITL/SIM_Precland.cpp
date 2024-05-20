@@ -150,7 +150,7 @@ void SIM_Precland::update(const Location &loc)
          */
         auto *sitl = AP::sitl();
         Location shiploc;
-        if (sitl != nullptr && sitl->shipsim.get_location(shiploc) && !shiploc.is_zero()) {
+        if (sitl != nullptr && sitl->models.shipsim.get_location(shiploc) && !shiploc.is_zero()) {
             shiploc.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
             device_center = shiploc;
         }

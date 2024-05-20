@@ -9,7 +9,9 @@
 
 // 22 is enough for the rc_input page in one transfer
 #define PKT_MAX_REGS 22
+// The number of channels that can be propagated - due to SBUS_OUT is higher than the physical channels
 #define IOMCU_MAX_RC_CHANNELS 16
+// The actual number of output channels
 #define IOMCU_MAX_CHANNELS 8
 #define IOMCU_MAX_TELEM_CHANNELS 4
 
@@ -155,17 +157,17 @@ struct page_rc_input {
   data for mixing on FMU failsafe
  */
 struct page_mixing {
-    uint16_t servo_min[IOMCU_MAX_CHANNELS];
-    uint16_t servo_max[IOMCU_MAX_CHANNELS];
-    uint16_t servo_trim[IOMCU_MAX_CHANNELS];
-    uint8_t servo_function[IOMCU_MAX_CHANNELS];
-    uint8_t servo_reversed[IOMCU_MAX_CHANNELS];
+    uint16_t servo_min[IOMCU_MAX_RC_CHANNELS];
+    uint16_t servo_max[IOMCU_MAX_RC_CHANNELS];
+    uint16_t servo_trim[IOMCU_MAX_RC_CHANNELS];
+    uint8_t servo_function[IOMCU_MAX_RC_CHANNELS];
+    uint8_t servo_reversed[IOMCU_MAX_RC_CHANNELS];
 
     // RC input arrays are in AETR order
     uint16_t rc_min[4];
     uint16_t rc_max[4];
     uint16_t rc_trim[4];
-    uint8_t rc_reversed[IOMCU_MAX_CHANNELS];
+    uint8_t rc_reversed[IOMCU_MAX_RC_CHANNELS];
     uint8_t rc_channel[4];
 
     // gain for elevon and vtail mixing, x1000
@@ -221,4 +223,9 @@ struct page_dshot_telem {
     uint16_t  current_camps[4];
     uint16_t  temperature_cdeg[4];
     uint16_t  types[4];
+// if EDTv2 needs to be disabled, IOMCU firmware should be recompiled too, this is the reason
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+    uint8_t   edt2_status[4];
+    uint8_t   edt2_stress[4];
+#endif
 };

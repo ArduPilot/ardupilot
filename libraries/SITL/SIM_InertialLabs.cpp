@@ -39,11 +39,12 @@ void InertialLabs::send_packet(void)
     pkt.gyro_data_hr.x = fdm.pitchRate*1.0e5;
     pkt.gyro_data_hr.z = -fdm.yawRate*1.0e5;
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere((fdm.altitude+rand_float()*0.25) * 0.001, sigma, delta, theta);
-    pkt.baro_data.pressure_pa2 = SSL_AIR_PRESSURE * delta * 0.5;
+    float p, t_K;
+    AP_Baro::get_pressure_temperature_for_alt_amsl(fdm.altitude+rand_float()*0.25, p, t_K);
+
+    pkt.baro_data.pressure_pa2 = p;
     pkt.baro_data.baro_alt = fdm.altitude;
-    pkt.temperature = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
+    pkt.temperature = KELVIN_TO_C(t_K);
 
     pkt.mag_data.x = (fdm.bodyMagField.y / NTESLA_TO_MGAUSS)*0.1;
     pkt.mag_data.y = (fdm.bodyMagField.x / NTESLA_TO_MGAUSS)*0.1;

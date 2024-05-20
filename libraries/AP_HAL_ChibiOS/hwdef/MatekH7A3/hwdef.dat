@@ -8,7 +8,7 @@ MCU STM32H7xx STM32H7A3xx
 APJ_BOARD_ID AP_HW_MatekH7A3
 
 # crystal frequency, setup to use external oscillator
-OSCILLATOR_HZ 8000000
+OSCILLATOR_HZ 16000000
 
 FLASH_SIZE_KB 2048
 env OPTIMIZE -Os
@@ -159,7 +159,7 @@ SPIDEV dataflash SPI2 DEVID1 FLASH_CS   MODE3 32*MHZ  32*MHZ
 
 define HAL_LOGGING_DATAFLASH_ENABLED 1
 define HAL_OS_FATFS_IO 1
-define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25N01GV
+define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX
 
 
 # ----------------- I2C compass & Baro -----------------

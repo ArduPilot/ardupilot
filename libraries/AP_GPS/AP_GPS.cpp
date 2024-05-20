@@ -980,7 +980,7 @@ void AP_GPS::update_instance(uint8_t instance)
 
 
 #if GPS_MOVING_BASELINE
-void AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading)
+bool AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading)
 {
     for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
         if (drivers[i] &&
@@ -991,8 +991,10 @@ void AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float 
            relPosD = state[i].relPosD;
            accHeading = state[i].accHeading;
            timestamp = state[i].relposheading_ts;
+           return true;
         }
     }
+    return false;
 }
 
 bool AP_GPS::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)

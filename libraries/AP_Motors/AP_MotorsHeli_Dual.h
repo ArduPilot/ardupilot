@@ -56,6 +56,11 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
+#if HAL_LOGGING_ENABLED
+    // Blade angle logging - called at 10 Hz
+    void Log_Write(void) override;
+#endif
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -76,8 +81,8 @@ protected:
     const char* _get_frame_string() const override { return "HELI_DUAL"; }
 
     //  objects we depend upon
-    AP_MotorsHeli_Swash _swashplate1 { CH_1, CH_2, CH_3, CH_7 }; // swashplate1
-    AP_MotorsHeli_Swash _swashplate2 { CH_4, CH_5, CH_6, CH_8 }; // swashplate2
+    AP_MotorsHeli_Swash _swashplate1 { CH_1, CH_2, CH_3, CH_7, 1U }; // swashplate1
+    AP_MotorsHeli_Swash _swashplate2 { CH_4, CH_5, CH_6, CH_8, 2U }; // swashplate2
 
     // internal variables
     float _oscillate_angle = 0.0f;                  // cyclic oscillation angle, used by servo_test function

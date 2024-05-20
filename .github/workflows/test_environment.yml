@@ -33,9 +33,9 @@ jobs:
           - os: ubuntu
             name: jammy
           - os: ubuntu
-            name: lunar
-          - os: ubuntu
             name: mantic
+          - os: ubuntu
+            name: noble
           - os: archlinux
             name: latest
           - os: debian

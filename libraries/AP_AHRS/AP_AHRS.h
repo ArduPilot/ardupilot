@@ -141,10 +141,11 @@ public:
      */
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const {
-        return state.EAS2TAS;
-    }
+    float get_EAS2TAS(void) const;
 
+    // get air density / sea level density - decreases as altitude climbs
+    float get_air_density_ratio(void) const;
+    
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const;

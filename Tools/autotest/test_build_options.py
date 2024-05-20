@@ -147,7 +147,7 @@ class TestBuildOptions(object):
                     if f.define not in ret:
                         continue
 
-                    print("%s requires %s" % (option.define, f.define), file=sys.stderr)
+                    # print("%s requires %s" % (option.define, f.define), file=sys.stderr)
                     added_one = True
                     ret[option.define] = 0
                     break

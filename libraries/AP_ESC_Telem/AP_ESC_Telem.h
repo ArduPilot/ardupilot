@@ -118,6 +118,12 @@ private:
     static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const uint32_t timeout_us);
     static bool was_rpm_data_ever_reported (const volatile AP_ESC_Telem_Backend::RpmData &instance);
 
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+    // helpers that aggregate data in EDTv2 messages
+    static uint16_t merge_edt2_status(uint16_t old_status, uint16_t new_status);
+    static uint16_t merge_edt2_stress(uint16_t old_stress, uint16_t new_stress);
+#endif
+
     // rpm data
     volatile AP_ESC_Telem_Backend::RpmData _rpm_data[ESC_TELEM_MAX_ESCS];
     // telemetry data

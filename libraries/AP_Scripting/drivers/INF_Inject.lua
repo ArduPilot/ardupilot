@@ -34,11 +34,30 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 8), 'could not add p
 --]]
 EFI_INF_ENABLE = bind_add_param("ENABLE", 1, 1)
 
+--[[
+  // @Param: EFI_INF_OPTIONS
+  // @DisplayName: EFI INF-Inject options
+  // @Description: EFI INF driver options
+  // @Bitmask: 0:EnableLogging
+  // @User: Standard
+--]]
+EFI_INF_OPTIONS = bind_add_param("OPTIONS", 2, 0)
+
+local OPTION_LOGGING = (1<<0)
+
+--[[
+   return true if an option is enabled
+--]]
+local function option_enabled(option)
+   return (EFI_INF_OPTIONS:get() & option) ~= 0
+end
+
 if EFI_INF_ENABLE:get() ~= 1 then
    return
 end
 
 local EFI_FUEL_DENS = bind_param("EFI_FUEL_DENS")
+local SCR_VM_I_COUNT = bind_param("SCR_VM_I_COUNT")
 
 local uart = serial:find_serial(0) -- first scripting serial
 if not uart then
@@ -53,11 +72,37 @@ if not efi_backend then
    return
 end
 
+--[[
+   we need a bit more time in this driver
+--]]
+if SCR_VM_I_COUNT:get() < 50000 then
+   gcs:send_text(MAV_SEVERITY.INFO, "EFI_INF: raising SCR_VM_I_COUNT to 50000")
+   SCR_VM_I_COUNT:set_and_save(50000)
+end
+
 local state = {}
 state.last_read_us = uint32_t(0)
 state.chk0 = 0
 state.chk1 = 0
 state.total_fuel_g = 0.0
+
+local file_handle = nil
+
+--[[
+   log a set of bytes
+--]]
+local function log_bytes(s)
+   if not file_handle then
+      file_handle = io.open("INF_Inject.log", "w")
+   end
+   if file_handle then
+      local magic = 0x7fe53b04
+      local now_ms = millis():toint()
+      local hdr = string.pack("<III", magic, now_ms, string.len(s))
+      file_handle:write(hdr)
+      file_handle:write(s)
+   end
+end
 
 local function read_bytes(n)
    local ret = ""
@@ -66,6 +111,9 @@ local function read_bytes(n)
       state.chk0 = state.chk0 ~ b
       state.chk1 = state.chk1 ~ state.chk0
       ret = ret .. string.char(b)
+   end
+   if option_enabled(OPTION_LOGGING) then
+      log_bytes(ret)
    end
    return ret
 end
@@ -94,12 +142,12 @@ local function check_input()
    end
 
    local tus = micros()
-   state.chk0 = 0
-   state.chk1 = 0
 
    -- sync on header start
    local header_ok = false
    while n_bytes >= packet_size and not header_ok do
+      state.chk0 = 0
+      state.chk1 = 0
       local header0 = string.unpack("<B", read_bytes(1))
       n_bytes = n_bytes - 1
       if header0 == 0xB5 then
@@ -161,10 +209,12 @@ local function check_input()
    local chk0 = state.chk0
    local chk1 = state.chk1
    state.check0, state.check1 = string.unpack("<BB", read_bytes(2))
+
    --[[
-      we accept 0 or the right value for check1 as some devices always send 0 for chk1
+      the device will sometimes use 0 for the 2nd 8 bits of the checksum
+      we will accept these packets, relying on the other header checks
    --]]
-   local checksum_ok = chk0 == state.check0 and (0x00 == state.check1 or chk1 == state.check1)
+   local checksum_ok = chk0 == state.check0 and (chk1 == state.check1 or state.check1 == 0)
    if not checksum_ok then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("chksum wrong (0x%02x,0x%02x) (0x%02x,0x%02x)", chk0, chk1, state.check0, state.check1))
       return false
