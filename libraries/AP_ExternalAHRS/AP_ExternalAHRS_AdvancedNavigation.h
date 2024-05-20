@@ -107,6 +107,12 @@ public:
     // check for new data
     void update() override;
 
+protected:
+    uint8_t num_gps_sensors(void) const override
+    {
+        return 1;
+    }
+
 private:
     AP_ExternalAHRS_AdvancedNavigation_Decoder _decoder;
     AP_DAL &dal;
