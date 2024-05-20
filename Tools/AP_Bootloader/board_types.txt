@@ -316,6 +316,15 @@ AP_HW_AIRVOLUTE_DCS2                 5200
 AP_HW_AOCODA-RC-H743DUAL             5210
 AP_HW_AOCODA-RC-F405V3               5211
 
+# IDs 5220-5239 reserved for UAV-DEV GmbH
+AP_HW_UAV-DEV-HAT-H7                 5220
+AP_HW_UAV-DEV-NucPilot-H7            5221
+AP_HW_UAV-DEV-M10S-L4                5222
+AP_HW_UAV-DEV-F9P-G4                 5223
+AP_HW_UAV-DEV-UM982-G4               5224
+AP_HW_UAV-DEV-M20D-G4                5225
+AP_HW_UAV-DEV-Sensorboard-G4         5226
+
 #IDs 5301-5399 reserved for Sierra Aerospace
 AP_HW_Sierra-TrueNavPro-G4           5301
 AP_HW_Sierra-TrueNavIC               5302
