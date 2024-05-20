@@ -1015,7 +1015,10 @@ void AP_Mount::convert_params()
     // convert MNT_TYPE to MNT1_TYPE
     int8_t mnt_type = 0;
     IGNORE_RETURN(AP_Param::get_param_by_index(this, 19, AP_PARAM_INT8, &mnt_type));
-    if (mnt_type > 0) {
+    if (mnt_type == 0) {
+        // if the mount was not previously set, no need to perform the upgrade logic
+        return;
+    } else if (mnt_type > 0) {
         int8_t stab_roll = 0;
         int8_t stab_pitch = 0;
         IGNORE_RETURN(AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &stab_roll));
@@ -1025,8 +1028,9 @@ void AP_Mount::convert_params()
             // conversion is still done even if HAL_MOUNT_SERVO_ENABLED is false
             mnt_type = 7;  // (int8_t)Type::BrushlessPWM;
         }
+        // if the mount was previously set, then we need to save the upgraded mount type
+        _params[0].type.set_and_save(mnt_type);
     }
-    _params[0].type.set_and_save(mnt_type);
 
     // convert MNT_JSTICK_SPD to MNT1_RC_RATE
     int8_t jstick_spd = 0;
