@@ -132,26 +132,9 @@ AP_ExternalAHRS_AdvancedNavigation::AP_ExternalAHRS_AdvancedNavigation(AP_Extern
     set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
                         uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
-
-
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_AdvancedNavigation::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
         AP_HAL::panic("Failed to start ExternalAHRS update thread");
     }
-
-    uint32_t tstart = AP_HAL::millis();
-
-    while (!_last_device_info_pkt_ms)
-    {
-        const uint32_t tnow = AP_HAL::millis();
-        if (tnow - tstart >= AN_TIMEOUT)
-        {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ExternalAHRS: Advanced Navigation Device Unresponsive");
-            tstart = tnow;
-        }
-        hal.scheduler->delay(50);
-    }
-
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised: %s", get_name());
 }
 
 void AP_ExternalAHRS_AdvancedNavigation::update()
@@ -162,6 +145,34 @@ void AP_ExternalAHRS_AdvancedNavigation::update()
 void AP_ExternalAHRS_AdvancedNavigation::update_thread(void)
 {
     _uart->begin(_baudrate);
+
+    uint32_t tstart = AP_HAL::millis();
+
+    // Ensure device is responsive by requesting its information.
+    while (!_last_device_info_pkt_ms)
+    {
+        const uint32_t tnow = AP_HAL::millis();
+        if (tnow - tstart >= AN_TIMEOUT)
+        {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ExternalAHRS: Advanced Navigation Device Unresponsive");
+            if (!request_data())
+            {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ExternalAHRS: Request Data Error");
+            }
+            tstart = tnow;
+        }
+
+        // Sleep the scheduler
+        hal.scheduler->delay_microseconds(1000);
+
+        // Collect the requested packets from the UART manager
+        // This will still process all received packets like normal and feed data out. This ensures that it won't fail completely if the TX fails.
+        if (!get_packets()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ExternalAHRS: Error Receiving Initialization Packets");
+        }
+    }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised: %s", get_name());
 
     while (true) {
         // Request data. If error occurs notify.
@@ -229,10 +240,11 @@ bool AP_ExternalAHRS_AdvancedNavigation::request_device_information(void)
 
 bool AP_ExternalAHRS_AdvancedNavigation::request_data(void)
 {
-
     // Update device info every 20 secs
-    if ((AP_HAL::millis() - _last_device_info_pkt_ms > 20000) || (_last_device_info_pkt_ms == 0)) {
-        request_device_information();
+    if ((AP_HAL::millis() - _last_device_info_pkt_ms > 20000) || !_last_device_info_pkt_ms) {
+        if (!request_device_information()) {
+            return false;
+        }
     }
 
     // Don't send a packet request unless the device is healthy
@@ -607,9 +619,9 @@ bool AP_ExternalAHRS_AdvancedNavigation::set_filter_options(bool gnss_en, vehicl
     options_packet.permanent = permanent;
     options_packet.vehicle_type = vehicle_type;
     options_packet.internal_gnss_enabled = gnss_en;
-    options_packet.magnetometers_enabled = true;
+    options_packet.magnetometers_enabled = false;
     options_packet.atmospheric_altitude_enabled = true;
-    options_packet.velocity_heading_enabled = true;
+    options_packet.velocity_heading_enabled = false;
     options_packet.reversing_detection_enabled = false;
     options_packet.motion_analysis_enabled = false;
     options_packet.automatic_magnetic_calibration_enabled = true;

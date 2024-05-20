@@ -297,6 +297,7 @@ private:
         uint32_t serial_2;
         uint32_t serial_3;
     };
+
     struct PACKED AN_STATUS{
         union {
             uint16_t r;
@@ -529,13 +530,13 @@ private:
 
     void update_thread();
     bool get_packets(void);
+    bool request_device_information(void);
     bool request_data(void);
     bool sendPacketRequest(void);
     bool get_gnss_capability(void) const;
     bool get_baro_capability(void) const;
     bool set_filter_options(bool gnss_en, vehicle_type_e vehicle_type, bool permanent = false);
     bool set_filter_options(AN_FILTER_OPTIONS options_packet);
-    bool request_device_information();
     bool send_airspeed_aiding(void);
     float get_airspeed_error(float airspeed);
     float get_pressure_error(void);
