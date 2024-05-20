@@ -120,12 +120,27 @@ public:
 
     // get the roll angular velocity limit in radians/s
     float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max); }
+    // get the roll angular velocity limit in degrees/s
+    float get_ang_vel_roll_max_degs() const { return _ang_vel_roll_max; }
+
+    // set the roll angular velocity limit in degrees/s
+    void set_ang_vel_roll_max_degs(float vel_roll_max) { _ang_vel_roll_max.set(vel_roll_max); }
 
     // get the pitch angular velocity limit in radians/s
     float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max); }
+    // get the pitch angular velocity limit in degrees/s
+    float get_ang_vel_pitch_max_degs() const { return _ang_vel_pitch_max; }
+
+    // set the pitch angular velocity limit in degrees/s
+    void set_ang_vel_pitch_max_degs(float vel_pitch_max) { _ang_vel_pitch_max.set(vel_pitch_max); }
 
     // get the yaw angular velocity limit in radians/s
     float get_ang_vel_yaw_max_rads() const { return radians(_ang_vel_yaw_max); }
+    // get the yaw angular velocity limit in degrees/s
+    float get_ang_vel_yaw_max_degs() const { return _ang_vel_yaw_max; }
+
+    // set the yaw angular velocity limit in degrees/s
+    void set_ang_vel_yaw_max_degs(float vel_yaw_max) { _ang_vel_yaw_max.set(vel_yaw_max); }
 
     // get the slew yaw rate limit in deg/s
     float get_slew_yaw_max_degs() const;
