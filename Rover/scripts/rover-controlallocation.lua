@@ -10,6 +10,8 @@
 --| '7' # WingSail
 --| '8' # Walking_Height
 --@return number|nil
+
+
 local CONTROL_OUTPUT_THROTTLE = 3
 local CONTROL_OUTPUT_YAW = 4
 
@@ -68,7 +70,7 @@ local function isempty(s)
   return s == nil or s == ''
 end
 
-function mapToUnid(value)
+function MapToUnid(value)
   if value < -1 then
       return  -1
   elseif value > 1 then
@@ -78,7 +80,7 @@ function mapToUnid(value)
   end
 end
 
-function mapTo360(angle)
+function MapTo360(angle)
   if angle < 0 then
       return angle + 360
   else
@@ -86,7 +88,7 @@ function mapTo360(angle)
   end
 end
 
-function mapError(resultante)
+function MapError(resultante)
 
   if resultante == 0 then
 
@@ -151,6 +153,8 @@ function not_armed()
       gcs:send_text(4, string.format("ROVER - desarmado "))
 
 
+
+
       local PWM0_TRIM_VALUE = param:get('SERVO1_TRIM')
       local PWM1_TRIM_VALUE = param:get('SERVO2_TRIM')
       local PWM2_TRIM_VALUE = param:get('SERVO3_TRIM')
@@ -166,7 +170,7 @@ function not_armed()
       SRV_Channels:set_output_pwm_chan_timeout(3,PWM3_TRIM_VALUE,3000)
 end
 
-function manual_mode()
+function Manual_mode()
 
   local rc3_pwm = 0
   local rc1_pwm = 0
@@ -184,7 +188,7 @@ function manual_mode()
   
 end
 
-function point_relative_to_vector(p0x, p0y, p1x, p1y, rx, ry)
+function Point_relative_to_vector(p0x, p0y, p1x, p1y, rx, ry)
   -- Calcula as componentes do vetor AB
   local vx = p1x - p0x
   local vy = p1y - p0y
@@ -204,56 +208,81 @@ end
 
 
 -- Função para converter graus para radianos
-function to_radians(mdegrees)
+function To_radians(mdegrees)
   return mdegrees * math.pi / 180.0
 end
 
-function to_degrees(mradians)
+function To_degrees(mradians)
   return mradians * 180 / math.pi
 end
 
-function vector_magnitude(x, y)
+function Vector_magnitude(x, y)
   return math.sqrt(x^2 + y^2)
 end
 
-function dot_product(u_x, u_y, v_x, v_y)
+function Dot_product(u_x, u_y, v_x, v_y)
   return u_x * v_x + u_y * v_y
 end
 
-function calculate_angle(u_x, u_y, v_x, v_y)
-  local dot = dot_product(u_x, u_y, v_x, v_y)
-  local mag_u = vector_magnitude(u_x, u_y)
-  local mag_v = vector_magnitude(v_x, v_y)
+function Calculate_angle(u_x, u_y, v_x, v_y)
+  local dot = Dot_product(u_x, u_y, v_x, v_y)
+  local mag_u = Vector_magnitude(u_x, u_y)
+  local mag_v = Vector_magnitude(v_x, v_y)
   local cos_theta = dot / (mag_u * mag_v)
   local angle = math.acos(cos_theta)  -- Resultado em radianos
   return angle
 end
 
-local function  calculate_correction_angle(p0x, p0y, p1x, p1y, rx, ry)
+function  Calculate_correction_angle(p0x, p0y, p1x, p1y, rx, ry)
   local dxwp = p1x - p0x
   local dywp = p1y - p0y
   local dx_r_wp = p1x - rx
   local dy_r_wp = p1y - ry
 
-  local angle = calculate_angle(dxwp, dywp, dx_r_wp, dy_r_wp)
+  local angle = Calculate_angle(dxwp, dywp, dx_r_wp, dy_r_wp)
+
+  return angle
+end
+
+
+function To_cartesian(r, theta)
+  local x = r * math.cos(theta)
+  local y = r * math.sin(theta)
+  return x, y
+end
+
+function To_polar(x, y)
+  local r = math.sqrt(x^2 + y^2)
+  local theta = math.atan(y, x)
+  return r, theta
+end
+
+function Add_polars(r1, theta1, r2, theta2)
+  local x1, y1 = To_cartesian(r1, theta1)
+  local x2, y2 = To_cartesian(r2, theta2)
+
+  local x_total = x1 + x2
+  local y_total = y1 + y2
+
+  return To_polar(x_total, y_total)
 end
 
 -- Calcula a orientação de um vetor dado
-local function calculate_bearing(lat1, lon1, lat2, lon2)
-  local radLat1, radLon1 = to_radians(lat1), to_radians(lon1)
-  local radLat2, radLon2 = to_radians(lat2), to_radians(lon2)
+function Calculate_bearing(lat1, lon1, lat2, lon2)
+  local radLat1, radLon1 = To_radians(lat1), To_radians(lon1)
+  local radLat2, radLon2 = To_radians(lat2), To_radians(lon2)
   local dLon = radLon2 - radLon1
   local y = math.sin(dLon) * math.cos(radLat2)
   local x = math.cos(radLat1) * math.sin(radLat2) - math.sin(radLat1) * math.cos(radLat2) * math.cos(dLon)
   local bearing = math.atan(y, x)
-  return (to_degrees(bearing) + 360) % 360  -- Normaliza o resultado para (0, 360)
+  return (To_degrees(bearing) + 360) % 360  -- Normaliza o resultado para (0, 360)
 end
 
 -- Função Haversine para calcular distância entre dois pontos geográficos
-function haversine_distance(lat1, lon1, lat2, lon2)
+function Haversine_distance(lat1, lon1, lat2, lon2)
   local R = 6371000 -- Raio da Terra em metros
-  local radLat1, radLon1 = to_radians(lat1), to_radians(lon1)
-  local radLat2, radLon2 = to_radians(lat2), to_radians(lon2)
+  local radLat1, radLon1 = To_radians(lat1), To_radians(lon1)
+  local radLat2, radLon2 = To_radians(lat2), To_radians(lon2)
   local deltaLat = radLat2 - radLat1
   local deltaLon = radLon2 - radLon1
 
@@ -283,12 +312,12 @@ function Point_to_line_distance(px, py, psi, x0, y0, x1, y1)
         nearest_y = y0 + t * dy
     end
 
-  local distancia = haversine_distance(px, py, nearest_x, nearest_y)
-  local bearing_to_wp = calculate_bearing(px, py, x1, y1)
+  local distancia = Haversine_distance(px, py, nearest_x, nearest_y)
+  local bearing_to_wp = Calculate_bearing(px, py, x1, y1)
   --local angle_difference = (bearing_to_wp - psi + 360) % 360
   local angle_difference = (bearing_to_wp - psi/2 + 360) % 360
 
-  local orientacao = point_relative_to_vector(x0,y0,x1,y1,px,py)
+  local orientacao = Point_relative_to_vector(x0,y0,x1,y1,px,py)
 
   return distancia, orientacao*angle_difference
 
@@ -297,7 +326,7 @@ end
 
 
 
-function update_mission_setpoints()
+function Update_mission_setpoints()
 
   local mission_state = mission:state()
   --[[
@@ -349,7 +378,7 @@ function update_mission_setpoints()
   local myx = mylocation:lat()/1e7
   local myy = mylocation:lng()/1e7
 
-  local vh_yaw = mapTo360(to_degrees(ahrs:get_yaw()))
+  local vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
 
 
   local dist, ang = Point_to_line_distance(myx, myy, vh_yaw, last_wpx, last_wpy, current_wpx, current_wpy)
@@ -358,37 +387,16 @@ function update_mission_setpoints()
   
 end
 
-function to_cartesian(r, theta)
-  local x = r * math.cos(theta)
-  local y = r * math.sin(theta)
-  return x, y
-end
-
-function to_polar(x, y)
-  local r = math.sqrt(x^2 + y^2)
-  local theta = math.atan(y, x)
-  return r, theta
-end
-
-function add_polars(r1, theta1, r2, theta2)
-  local x1, y1 = to_cartesian(r1, theta1)
-  local x2, y2 = to_cartesian(r2, theta2)
-
-  local x_total = x1 + x2
-  local y_total = y1 + y2
-
-  return to_polar(x_total, y_total)
-end
 
 
 local steering_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
 
 
-function update_simple_setpoints()
+function Update_simple_setpoints()
 
   local wp_bearing = vehicle:get_wp_bearing_deg()
-  local vh_yaw = mapTo360(ahrs:get_yaw()*180.0/3.1415)
-  local steering_error = mapError(vh_yaw - wp_bearing)
+  local vh_yaw = MapTo360(ahrs:get_yaw()*180.0/3.1415)
+  local steering_error = MapError(vh_yaw - wp_bearing)
 
   --steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
   throttle = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE))
@@ -402,15 +410,12 @@ end
 
 
 
-
-
-
 local newsteering_pid = PID:new(0.001, 0.03, 0.0, 0.9, -0.9, 0.9, -0.9)  
 
 
 function update_disturbed_setpoints()
 
-  local distance,newsteering_error = update_mission_setpoints()
+  local distance,newsteering_error = Update_mission_setpoints()
   --steering = vehicle:get_control_output(CONTROL_OUTPUT_YAW)
   throttle = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE))
 
@@ -446,7 +451,7 @@ function update() -- this is the loop which periodically runs
 
   if vehicle:get_mode()== 0 then
 
-    manual_mode()
+    Manual_mode()
     return update, 200
 
   else
@@ -460,13 +465,13 @@ function update() -- this is the loop which periodically runs
     local newsteering, newthrottle
 
     if mission_state == 0 then
-      steering, throttle = update_simple_setpoints()
+      steering, throttle = Update_simple_setpoints()
       local testtarget = vehicle:get_wp_distance_m()
       local testbearing = vehicle:get_wp_bearing_deg()
       newsteering, newthrottle =steering, throttle
 
     else
-      steering, throttle = update_simple_setpoints()
+      steering, throttle = Update_simple_setpoints()
       newsteering, newthrottle = update_disturbed_setpoints()
       
       

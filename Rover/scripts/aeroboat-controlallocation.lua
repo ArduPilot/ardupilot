@@ -13,6 +13,42 @@ CONTROL_OUTPUT_YAW = 4
 TRIM3 = 1500
 TRIM1 = 1500
 SYSTEM_STARTED = Parameter()
+local desired_yaw = -1.0
+
+local PID = {}
+
+function PID:new(p_gain, i_gain, d_gain, i_max, i_min, pid_max, pid_min)
+  local obj = {
+      P = p_gain or 0,
+      I = i_gain or 0,
+      D = d_gain or 0,
+      integrator = 0,
+      last_error = 0,
+      i_max = i_max or 0,
+      i_min = i_min or 0,
+      pid_max = pid_max or 1,
+      pid_min = pid_min or -1
+  }
+  setmetatable(obj, self)
+  self.__index = self
+  return obj
+end
+
+
+function PID:compute(setpoint, pv)
+  local error = setpoint - pv
+  local deriv = (error - self.last_error) / 0.2
+  self.integrator = self.integrator + error * 0.2
+  self.integrator = math.max(math.min(self.integrator, self.i_max), self.i_min)
+  
+  local output = math.min(math.max(self.P * error + self.I * self.integrator + self.D * deriv,self.pid_min),self.pid_max)
+  self.last_error = error
+  
+  return output
+end
+
+local steering_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
+
 
 -- Severity for logging in GCS
 MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -77,6 +113,42 @@ local function new_control_allocation(t, s)
   
 end -- new_control_allocation function
 
+
+function MapError(resultante)
+
+  if resultante == 0 then
+
+    return 0
+
+  elseif math.abs(resultante) < 180 then
+    
+    return -resultante
+
+  else 
+
+    return (math.abs(resultante)/(resultante+0.001))*(360-math.abs(resultante))
+
+  end
+
+end
+
+function MapTo360(angle)
+  if angle < 0 then
+      return angle + 360
+  else
+      return angle
+  end
+end
+
+-- Função para converter graus para radianos
+function To_radians(mdegrees)
+  return mdegrees * math.pi / 180.0
+end
+
+function To_degrees(mradians)
+  return mradians * 180 / math.pi
+end
+
 --[[ 
 Main update function 
 It checks if the vehicle is a boat, if it is armed, and then 
@@ -102,17 +174,19 @@ function update()
   if not arming:is_armed() then
     gcs:send_text(MAV_SEVERITY.INFO, string.format("BOAT - disarmed, waiting for arming."))
 
+    desired_yaw = -1.0
+
     -- Get the trim values for the RC channels
     TRIM3 = param:get('RC3_TRIM')
     TRIM1 = param:get('RC1_TRIM')
 
     -- Send the PWM trim (neutral) values to the servo outputs
-    local pwm0_trim_value = tonumber(param:get('SERVO1_TRIM')) or 0
-    local pwm1_trim_value = tonumber(param:get('SERVO2_TRIM')) or 0
-    local pwm2_trim_value = tonumber(param:get('SERVO3_TRIM')) or 0
-    local pwm3_trim_value = tonumber(param:get('SERVO4_TRIM')) or 0
-    local pwm4_trim_value = tonumber(param:get('SERVO5_TRIM')) or 0
-    local pwm5_trim_value = tonumber(param:get('SERVO6_TRIM')) or 0
+    local pwm0_trim_value = tonumber(param:get('SERVO1_TRIM')) or 1500
+    local pwm1_trim_value = tonumber(param:get('SERVO2_TRIM')) or 1500
+    local pwm2_trim_value = tonumber(param:get('SERVO3_TRIM')) or 1500
+    local pwm3_trim_value = tonumber(param:get('SERVO4_TRIM')) or 1500
+    local pwm4_trim_value = tonumber(param:get('SERVO5_TRIM')) or 1500
+    local pwm5_trim_value = tonumber(param:get('SERVO6_TRIM')) or 1500
     SRV_Channels:set_output_pwm_chan_timeout(0, pwm0_trim_value, 3000)
     SRV_Channels:set_output_pwm_chan_timeout(1, pwm1_trim_value, 3000)
     SRV_Channels:set_output_pwm_chan_timeout(2, pwm2_trim_value, 3000)
@@ -129,24 +203,54 @@ function update()
   local rc3_pwm = 0
   local rc1_pwm = 0
 
+ 
+
   if vehicle:get_mode() == 0 then -- Manual mode
     -- Get the trim values for the RC channels
     TRIM3 = param:get('RC3_TRIM')
     TRIM1 = param:get('RC1_TRIM')
     -- Get the RC PWM values
-    rc3_pwm = tonumber(rc:get_pwm(3)) or 0
-    rc1_pwm = tonumber(rc:get_pwm(1)) or 0
+    rc3_pwm = tonumber(rc:get_pwm(3)) or 1500
+    rc1_pwm = tonumber(rc:get_pwm(1)) or 1500
     -- Transform the RC PWM values to the desired control values and send to allocation
     throttle = (TRIM3 - rc3_pwm) / 450
     steering = (rc1_pwm - TRIM1) / 450
     new_control_allocation(throttle, steering)
 
     return update, 200
+
+
+  -- ROVER_MODE_STEERING
+  elseif vehicle:get_mode()==3 then
+
+    if desired_yaw == -1 then
+      desired_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+    end
+
+    TRIM3 = param:get('RC3_TRIM')
+    rc3_pwm = tonumber(rc:get_pwm(3)) or 1500
+    throttle = (TRIM3 - rc3_pwm) / 450
+
+    TRIM1 = param:get('RC1_TRIM')
+    rc1_pwm = tonumber(rc:get_pwm(1)) or 1500
+    local addsteering = (rc1_pwm - TRIM1) / 450
+
+    desired_yaw = desired_yaw + 0.1*addsteering
+    local vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+    local steering_error = MapError(vh_yaw - desired_yaw)
+  
+    local mysteering = steering_pid:compute(0,-steering_error)
+
+    new_control_allocation(throttle, mysteering)
+
+    return update, 200
+  
+
   else -- Autonomous mode
     -- Set the mode to 10 (Auto) if not already
-    if vehicle:get_mode() < 10 then 
-      vehicle:set_mode(10)
-    end
+    -- if vehicle:get_mode() < 10 then 
+    --   vehicle:set_mode(10)
+    -- end
 
     -- Get the control outputs from the vehicle and pass into control allocation
     steering = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_YAW)) or 0
