@@ -4121,9 +4121,13 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
 #if AP_GPS_ENABLED
+#if AP_MAVLINK_MSG_HIL_GPS_ENABLED
+    case MAVLINK_MSG_ID_HIL_GPS:
+        send_received_message_deprecation_warning("HIL_GPS");
+        FALLTHROUGH;
+#endif
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
     case MAVLINK_MSG_ID_GPS_INPUT:
-    case MAVLINK_MSG_ID_HIL_GPS:
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         AP::gps().handle_msg(chan, msg);
         break;
