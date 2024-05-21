@@ -4599,10 +4599,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     m.climb < climb_tolerance):
                 break
 
-    def fly_guided_move_global_relative_alt(self, lat, lon, alt):
-        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                       blocking=True)
-
+    def send_set_position_target_global_int(self, lat, lon, alt):
         self.mav.mav.set_position_target_global_int_send(
             0, # timestamp
             1, # target system_id
@@ -4621,6 +4618,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             0, # yaw
             0, # yawrate
         )
+
+    def fly_guided_move_global_relative_alt(self, lat, lon, alt):
+        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                       blocking=True)
+
+        self.send_set_position_target_global_int(lat, lon, alt)
 
         tstart = self.get_sim_time()
         while True:
@@ -11345,6 +11348,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl(force=True)
 
+    def GuidedForceArm(self):
+        '''ensure Guided acts appropriately when force-armed'''
+        self.set_parameters({
+            "EK3_SRC2_VELXY": 5,
+            "SIM_GPS_DISABLE": 1,
+        })
+        self.load_default_params_file("copter-optflow.parm")
+        self.reboot_sitl()
+        self.delay_sim_time(30)
+        self.change_mode('GUIDED')
+        self.arm_vehicle(force=True)
+        self.takeoff(20, mode='GUIDED')
+        location = self.offset_location_ne(self.sim_location(), metres_north=0, metres_east=-300)
+        self.progress("Ensure we don't move for 10 seconds")
+        tstart = self.get_sim_time()
+        startpos = self.sim_location_int()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                break
+            self.send_set_position_target_global_int(int(location.lat*1e7), int(location.lng*1e7), 10)
+            dist = self.get_distance_int(startpos, self.sim_location_int())
+            if dist > 10:
+                raise NotAchievedException("Wandered too far from start position")
+            self.delay_sim_time(1)
+
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11431,6 +11463,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AutoRTL,
             self.EK3_OGN_HGT_MASK,
             self.FarOrigin,
+            self.GuidedForceArm,
         ])
         return ret
 
