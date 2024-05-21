@@ -253,6 +253,7 @@ class ExtractFeatures(object):
             ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotation::init'),
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
+            ('AP_MAVLINK_MSG_HIL_GPS_ENABLED', r'mavlink_msg_hil_gps_decode'),
         ]
 
     def progress(self, msg):
