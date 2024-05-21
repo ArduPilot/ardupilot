@@ -4160,6 +4160,45 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=180)
 
+    def CatapultTakeoff(self):
+        '''Test that a catapult takeoff works correctly'''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+        })
+
+        # Record desired target speed.
+        speed_cruise = self.get_parameter("AIRSPEED_CRUISE")
+
+        # Load and start mission.
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we're midway through the climb.
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+
+        # Ensure that by then the aircraft does not overspeed.
+        self.wait_airspeed(speed_cruise-2, speed_cruise+2, minimum_duration=2, timeout=4)
+
+        # Wait for landing waypoint.
+        self.wait_current_waypoint(11, timeout=1200)
+        self.wait_disarmed(120)
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -5426,6 +5465,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AHRS_ORIENTATION,
             self.AHRSTrim,
             self.LandingDrift,
+            self.CatapultTakeoff,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
@@ -5474,4 +5514,5 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
+            "CatapultTakeoff": "Known bug. See https://github.com/ArduPilot/ardupilot/issues/27147",
         }
