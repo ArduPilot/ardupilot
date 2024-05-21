@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 
+import fnmatch
 import os
 import re
-import fnmatch
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import chibios_hwdef  # noqa
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_Linux/hwdef/scripts'))
+import linux_hwdef  # noqa
 
 '''
 list of boards for build_binaries.py and custom build server
@@ -12,8 +18,9 @@ AP_FLAKE8_CLEAN
 
 
 class Board(object):
-    def __init__(self, name):
+    def __init__(self, name, hwdef_filepath=None, hwdef_class=None):
         self.name = name
+        self.hwdef_filepath = hwdef_filepath
         self.is_ap_periph = False
         self.toolchain = 'arm-eabi-none'  # FIXME: try to remove this?
         self.autobuild_targets = [
@@ -25,6 +32,24 @@ class Board(object):
             'Rover',
             'Sub',
         ]
+        self._HWDef = None
+        self.HWDef_class = hwdef_class
+
+    def __str__(self):
+        return f"Board: {self.name}"
+
+    def HWDef(self):
+        '''return a HWDef object which is persistent in this object
+        (see libraries/AP_HAL/script/hwdef.py) for this board.  If it
+        has not been created it will be.
+        '''
+        if self._HWDef is None:
+            if self.HWDef_class is None:
+                raise ValueError(f"No hwdefclass associated with {self.name}")
+            self._HWDef = self.HWDef_class()
+            self._HWDef.process_file(self.hwdef_filepath)
+
+        return self._HWDef
 
 
 def in_blacklist(blacklist, b):
@@ -64,8 +89,14 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux':
-            self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
+        for (haldir, hwdef_class) in [
+                ('AP_HAL_ChibiOS', chibios_hwdef.ChibiOSHWDef),
+                ('AP_HAL_Linux', linux_hwdef.LinuxHWDef)
+        ]:
+            self.hwdef_dir.append({
+                "directory": os.path.join(realpath, haldir, "hwdef"),
+                "hwdef_class": hwdef_class,
+            })
 
     def __init__(self):
         self.set_hwdef_dir()
@@ -77,9 +108,9 @@ class BoardList(object):
         ]
 
         for hwdef_dir in self.hwdef_dir:
-            self.add_hwdefs_from_hwdef_dir(hwdef_dir)
+            self.add_hwdefs_from_hwdef_dir(hwdef_dir["directory"], hwdef_class=hwdef_dir["hwdef_class"])
 
-    def add_hwdefs_from_hwdef_dir(self, hwdef_dir):
+    def add_hwdefs_from_hwdef_dir(self, hwdef_dir, hwdef_class=None):
         for adir in os.listdir(hwdef_dir):
             if adir is None:
                 continue
@@ -97,7 +128,7 @@ class BoardList(object):
             # places we can't afford to be slow.
             text = self.read_hwdef(filepath)
 
-            board = Board(adir)
+            board = Board(adir, hwdef_filepath=filepath, hwdef_class=hwdef_class)
             self.boards.append(board)
             board_toolchain_set = False
             for line in text:

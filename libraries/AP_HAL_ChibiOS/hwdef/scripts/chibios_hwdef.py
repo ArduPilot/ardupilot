@@ -72,12 +72,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         # list of all pins in config file order
         self.allpins = []
 
-        # list of configs by type
-        self.bytype = {}
-
-        # list of alt configs by type
-        self.alttype = {}
-
         # list of configs by label
         self.bylabel = {}
 
@@ -118,6 +112,9 @@ class ChibiOSHWDef(hwdef.HWDef):
 
         # list of shared up timers
         self.shared_up = []
+
+        # additional serial port information:
+        self.serial_purpose = {}
 
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
@@ -176,13 +173,6 @@ class ChibiOSHWDef(hwdef.HWDef):
                     self.error("Unknown pin function %s for MCU %s" % (s, mcu))
                 return alt_map[s]
         return None
-
-    def have_type_prefix(self, ptype):
-        '''return True if we have a peripheral starting with the given peripheral type'''
-        for t in list(self.bytype.keys()) + list(self.alttype.keys()):
-            if t.startswith(ptype):
-                return True
-        return False
 
     def get_ADC1_chan(self, mcu, pin):
         '''return ADC1 channel for an analog pin'''
@@ -623,37 +613,6 @@ class ChibiOSHWDef(hwdef.HWDef):
                 str += " PWM%u" % self.extra_value('PWM', type=int)
             return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type,
                                       str)
-
-    def get_config(self, name, column=0, required=True, default=None, type=None, spaces=False, aslist=False):
-        '''get a value from config dictionary'''
-        if name not in self.config:
-            if required and default is None:
-                self.error("missing required value %s in hwdef.dat" % name)
-            return default
-        if aslist:
-            return self.config[name]
-        if len(self.config[name]) < column + 1:
-            if not required:
-                return None
-            self.error("missing required value %s in hwdef.dat (column %u)" %
-                       (name, column))
-        if spaces:
-            ret = ' '.join(self.config[name][column:])
-        else:
-            ret = self.config[name][column]
-
-        if type is not None:
-            if type == int and ret.startswith('0x'):
-                try:
-                    ret = int(ret, 16)
-                except Exception:
-                    self.error("Badly formed config value %s (got %s)" % (name, ret))
-            else:
-                try:
-                    ret = type(ret)
-                except Exception:
-                    self.error("Badly formed config value %s (got %s)" % (name, ret))
-        return ret
 
     def get_mcu_config(self, name, required=False):
         '''get a value from the mcu dictionary'''
@@ -1677,6 +1636,28 @@ INCLUDE common.ld
             return default
         return p.extra_value(name, type=str, default=default)
 
+    def get_UART_ORDER(self):
+        '''get UART_ORDER from SERIAL_ORDER option'''
+        if self.get_config('UART_ORDER', required=False, aslist=True) is not None:
+            self.error('Please convert UART_ORDER to SERIAL_ORDER')
+        serial_order = self.get_config('SERIAL_ORDER', required=False, aslist=True)
+        if serial_order is None:
+            return None
+        if self.is_bootloader_fw():
+            # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
+            return serial_order
+        map = [0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        while len(serial_order) < 4:
+            serial_order += ['EMPTY']
+        uart_order = []
+        for i in range(len(serial_order)):
+            uart_order.append(serial_order[map[i]])
+        return uart_order
+
+    def get_serial_purpose(self):
+        '''returns a dict mapping from serial number (0 is USB) to textual description of purpose'''
+        return self.serial_purpose
+
     def write_UART_config(self, f):
         '''write UART config defines'''
         serial_list = self.get_config('SERIAL_ORDER', required=False, aslist=True)
@@ -2391,6 +2372,23 @@ Please run: Tools/scripts/build_bootloaders.py %s
         (USB_VID, USB_PID) = self.get_USB_IDs()
         self.env_vars['USBID'] = '0x%04x/0x%04x' % (USB_VID, USB_PID)
 
+    def serial_has_cts_rts(self, serial):
+        '''returns true if serial "serial" has CTS/RTS pins associated'''
+        uart_order = self.get_config('SERIAL_ORDER', required=True, aslist=True)
+        uart_name = uart_order[serial]
+        have_cts = False
+        have_rts = False
+
+        for t in self.bytype.values():
+            for pin in t:
+                if pin.label == f"{uart_name}_CTS":
+                    have_cts = True
+                elif pin.label == f"{uart_name}_RTS":
+                    have_rts = True
+                if have_rts and have_cts:
+                    return True
+        return False
+
     def write_peripheral_enable(self, f):
         '''write peripheral enable lines'''
         f.write('// peripherals enabled\n')
@@ -2872,6 +2870,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if p is None and line.find('ALT(') != -1:
             self.error("ALT() invalid for %s" % a[0])
 
+        if a[0] == 'SERIAL_PURPOSE':
+            self.process_line_serial_purpose(a[1:])
+            return
+
         if a[0] == 'DEFAULTGPIO':
             self.default_gpio = a[1:]
             return
@@ -2958,6 +2960,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
             raise ValueError("AP_PERIPH may only have value 1")
 
         super(ChibiOSHWDef, self).process_line_env(line, depth, a)
+
+    def process_line_serial_purpose(self, args):
+        # eg. "SERIAL_PURPOSE 0 USB"
+        self.serial_purpose[args[0]] = args[1]
 
     def process_file(self, filename, depth=0):
         '''process a hwdef.dat file'''
