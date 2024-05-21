@@ -47,7 +47,7 @@ function PID:compute(setpoint, pv)
   return output
 end
 
-local steering_pid = PID:new(0.05, 0.01, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
+local steering_pid = PID:new(0.5, 0.00, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
 
 
 -- Severity for logging in GCS
@@ -235,11 +235,11 @@ function update()
     rc1_pwm = tonumber(rc:get_pwm(1)) or 1500
     local addsteering = (rc1_pwm - TRIM1) / 450
 
-    desired_yaw = desired_yaw + 0.1*addsteering
+    desired_yaw = MapTo360(desired_yaw + 5*addsteering)
     local vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
-    local steering_error = MapError(vh_yaw - desired_yaw)
+    local steering_error = MapError(desired_yaw - vh_yaw)
   
-    local mysteering = steering_pid:compute(0,-steering_error)
+    local mysteering = steering_pid:compute(0,steering_error)
 
     new_control_allocation(throttle, mysteering)
 
