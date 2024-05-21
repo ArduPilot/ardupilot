@@ -69,7 +69,13 @@ if __name__ == '__main__':
 
     # See if there is a new version (only try on Linux)
     if platform.system() == "Linux":
-        from github_release_downloader import check_and_download_updates, GitHubRepo
+        try:
+            from github_release_downloader import check_and_download_updates, GitHubRepo
+        except ImportError:
+            print("Import github-release-downloader failed")
+            print("Install with: python3 -m pip install github-release-downloader")
+            sys.exit(0)
+
         import re
         asset_re = re.compile(r".*linux-x64\.tar\.gz")
         check_and_download_updates(
