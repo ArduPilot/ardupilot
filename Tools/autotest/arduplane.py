@@ -4371,6 +4371,349 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=180)
 
+    def TakeoffAuto1(self):
+        '''Test the behaviour of an AUTO takeoff, pt1.
+
+        Conditions:
+        - ARSPD_USE=1
+        - TKOFF_TYPE=0
+        - TKOFF_THR_MAX < THR_MAX
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 1.0,
+            "THR_MAX": 100.0,
+            "TKOFF_THR_MAX": 80.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+        })
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we're midway through the climb.
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+
+        # Ensure that by then the aircraft still goes at max allowed throttle.
+        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+
+        # Wait for landing waypoint.
+        self.wait_current_waypoint(11, timeout=1200)
+        self.wait_disarmed(120)
+
+    def TakeoffAuto2(self):
+        '''Test the behaviour of an AUTO takeoff, pt2.
+
+        Conditions:
+        - ARSPD_USE=1
+        - TKOFF_MODE=0
+        - TKOFF_THR_MAX > THR_MAX
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 0.0,
+            "THR_MAX": 80.0,
+            "TKOFF_THR_MAX": 100.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+        })
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we're midway through the climb.
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+
+        # Ensure that by then the aircraft still goes at max allowed throttle.
+        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+
+        # Wait for landing waypoint.
+        self.wait_current_waypoint(11, timeout=1200)
+        self.wait_disarmed(120)
+
+    def TakeoffAuto3(self):
+        '''Test the behaviour of an AUTO takeoff, pt3.
+
+        Conditions:
+        - ARSPD_USE=1
+        - TKOFF_MODE=1
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 1.0,
+            "THR_MAX": 80.0,
+            "THR_MIN": 0.0,
+            "TKOFF_MODE": 1.0,
+            "TKOFF_THR_MAX": 100.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "TKOFF_THR_MAX_T": 3.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+        })
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Ensure that TKOFF_THR_MAX_T is respected.
+        self.delay_sim_time(self.get_parameter("TKOFF_THR_MAX_T")-1)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")-1))
+
+        # Ensure that after that the aircraft does not go full throttle anymore.
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX")-10, operator.lt)
+
+        # Wait for landing waypoint.
+        self.wait_current_waypoint(11, timeout=1200)
+        self.wait_disarmed(120)
+
+    def TakeoffAuto4(self):
+        '''Test the behaviour of an AUTO takeoff, pt4.
+
+        Conditions:
+        - ARSPD_USE=0
+        - TKOFF_MODE=1
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 0.0,
+            "THR_MAX": 80.0,
+            "THR_MIN": 0.0,
+            "TKOFF_MODE": 1.0,
+            "TKOFF_THR_MAX": 100.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "TKOFF_THR_MAX_T": 3.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+        })
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Ensure that TKOFF_THR_MAX_T is respected.
+        self.delay_sim_time(self.get_parameter("TKOFF_THR_MAX_T")-1)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-10, operator.ge)
+
+        # Ensure that after that the aircraft still goes to maximum throttle.
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-10, operator.ge)
+
+        # Wait for landing waypoint.
+        self.wait_current_waypoint(11, timeout=1200)
+        self.wait_disarmed(120)
+
+    def TakeoffTakeoff1(self):
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt1.
+
+        Conditions:
+        - ARSPD_USE=1
+        - TKOFF_MODE=0
+        - TKOFF_THR_MAX < THR_MAX
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 1.0,
+            "THR_MAX": 100.0,
+            "TKOFF_LVL_ALT": 30.0,
+            "TKOFF_ALT": 100.0,
+            "TKOFF_MODE": 0.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TKOFF_THR_MAX": 80.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+
+        # Check whether we're still at max throttle past TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+
+        # Wait for the takeoff to complete.
+        target_alt = self.get_parameter("TKOFF_ALT")
+        self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        self.fly_home_land_and_disarm()
+
+    def TakeoffTakeoff2(self):
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt2.
+
+        Conditions:
+        - ARSPD_USE=1
+        - TKOFF_MODE=1
+        - TKOFF_THR_MAX < THR_MAX
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 1.0,
+            "THR_MAX": 100.0,
+            "TKOFF_LVL_ALT": 80.0,
+            "TKOFF_ALT": 150.0,
+            "TKOFF_MODE": 1.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TKOFF_THR_MAX": 80.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+
+        # Check whether we've receded from max throttle past TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MIN"))-1, operator.ge)
+
+        # Wait for the takeoff to complete.
+        target_alt = self.get_parameter("TKOFF_ALT")
+        self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        self.fly_home_land_and_disarm()
+
+    def TakeoffTakeoff3(self):
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt3.
+
+        This is the same as case #1, but with disabled airspeed sensor.
+
+        Conditions:
+        - ARSPD_USE=0
+        - TKOFF_MODE=0
+        - TKOFF_THR_MAX < THR_MAX
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "ARSPD_USE": 0.0,
+            "THR_MAX": 100.0,
+            "TKOFF_LVL_ALT": 30.0,
+            "TKOFF_ALT": 100.0,
+            "TKOFF_MODE": 0.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TKOFF_THR_MAX": 80.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+
+        # Check whether we're still at max throttle past TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
+        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+
+        # Wait for the takeoff to complete.
+        target_alt = self.get_parameter("TKOFF_ALT")
+        self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        self.fly_home_land_and_disarm()
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -5712,6 +6055,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AHRS_ORIENTATION,
             self.AHRSTrim,
             self.LandingDrift,
+            self.TakeoffAuto1,
+            self.TakeoffAuto2,
+            self.TakeoffAuto3,
+            self.TakeoffAuto4,
+            self.TakeoffTakeoff1,
+            self.TakeoffTakeoff2,
+            self.TakeoffTakeoff3,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
