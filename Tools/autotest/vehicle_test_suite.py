@@ -5569,6 +5569,10 @@ class TestSuite(ABC):
         """Setup a simulated RC control to a PWM value"""
         self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
+    def set_servo(self, chan, pwm):
+        """Replicate the functionality of MAVProxy: servo set <ch> <pwm>"""
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=chan, p2=pwm)
+
     def location_offset_ne(self, location, north, east):
         '''move location in metres'''
         print("old: %f %f" % (location.lat, location.lng))
