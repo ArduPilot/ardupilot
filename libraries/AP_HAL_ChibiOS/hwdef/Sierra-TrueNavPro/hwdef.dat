@@ -98,9 +98,8 @@ define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define HAL_PERIPH_GPS_PORT_DEFAULT 0
-
-# minimal GPS drivers to reduce flash usage
-include ../include/minimal_GPS.inc
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_UBLOX_ENABLED 1
 
 # GPS PPS
 PA15 GPS_PPS_IN INPUT
