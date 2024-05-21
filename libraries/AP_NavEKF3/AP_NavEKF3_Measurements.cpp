@@ -685,8 +685,10 @@ void NavEKF3_core::readGpsData()
         gpsDataNew.lat = gpsloc.lat;
         gpsDataNew.lng = gpsloc.lng;
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
+            // the height adjustment to match GPS is being achieved by adjusting the origin height
             gpsDataNew.hgt = (ftype)((double)0.01 * (double)gpsloc.alt - ekfGpsRefHgt);
         } else {
+            // the height adjustment to match GPS is being achieved by adjusting the measurements
             gpsDataNew.hgt = 0.01 * (gpsloc.alt - EKF_origin.alt);
         }
         storedGPS.push(gpsDataNew);
