@@ -348,42 +348,39 @@ void Plane::airbrake_update(void)
 }
 
 /*
-  setup servos for idle mode
+  setup servos for idle wiggle mode
   Idle mode is used during balloon launch to keep servos still, apart
   from occasional wiggle to prevent freezing up
  */
-void Plane::set_servos_idle(void)
+void ModeAuto::wiggle_servos()
 {
+    // This is only active while in AUTO running NAV_ALTITUDE_WAIT with wiggle_time > 0
+    if (wiggle.last_ms == 0) {
+        return;
+    }
+
     int16_t servo_value;
     // move over full range for 2 seconds
-    if (auto_state.idle_wiggle_stage != 0) {
-        auto_state.idle_wiggle_stage += 2;
+    if (wiggle.stage != 0) {
+        wiggle.stage += 2;
     }
-    if (auto_state.idle_wiggle_stage == 0) {
+    if (wiggle.stage == 0) {
         servo_value = 0;
-    } else if (auto_state.idle_wiggle_stage < 50) {
-        servo_value = auto_state.idle_wiggle_stage * (4500 / 50);
-    } else if (auto_state.idle_wiggle_stage < 100) {
-        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
-    } else if (auto_state.idle_wiggle_stage < 150) {
-        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
-    } else if (auto_state.idle_wiggle_stage < 200) {
-        servo_value = (auto_state.idle_wiggle_stage-200) * (4500 / 50);        
+    } else if (wiggle.stage < 50) {
+        servo_value = wiggle.stage * (4500 / 50);
+    } else if (wiggle.stage < 100) {
+        servo_value = (100 - wiggle.stage) * (4500 / 50);        
+    } else if (wiggle.stage < 150) {
+        servo_value = (100 - wiggle.stage) * (4500 / 50);        
+    } else if (wiggle.stage < 200) {
+        servo_value = (wiggle.stage-200) * (4500 / 50);        
     } else {
-        auto_state.idle_wiggle_stage = 0;
+        wiggle.stage = 0;
         servo_value = 0;
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
-
-    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
-    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleLeft);
-    SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleRight);
 
 }
 

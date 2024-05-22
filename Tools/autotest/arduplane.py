@@ -3013,7 +3013,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if m.relative_alt/1000.0 > max_alt:
                 max_alt = m.relative_alt/1000.0
 
-        self.install_message_hook(record_maxalt)
+        self.install_message_hook_context(record_maxalt)
 
         self.fly_mission_waypoints(num_wp-1, mission_timeout=600)
 
@@ -3104,7 +3104,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm(240)
 
     def fly_external_AHRS(self, sim, eahrs_type, mission):
-        """Fly with external AHRS (VectorNav)"""
+        """Fly with external AHRS"""
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
@@ -3227,6 +3227,55 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def InertialLabsEAHRS(self):
         '''Test InertialLabs EAHRS support'''
         self.fly_external_AHRS("ILabs", 5, "ap1.txt")
+
+    def GpsSensorPreArmEAHRS(self):
+        '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
+        self.customise_SITL_commandline(["--serial4=sim:MicroStrain7"])
+
+        self.set_parameters({
+            "EAHRS_TYPE": 7,
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "GPS1_TYPE": 0, # Disabled (simulate user setup error)
+            "GPS2_TYPE": 0, # Disabled (simulate user setup error)
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+            "EAHRS_SENSORS": 13, # GPS is enabled
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5)
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+
+        self.assert_prearm_failure("ExternalAHRS: Incorrect number", # Cut short due to message limits.
+                                   timeout=30,
+                                   other_prearm_failures_fatal=False)
+
+        self.set_parameters({
+            "EAHRS_TYPE": 7,
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "GPS1_TYPE": 1, # Auto
+            "GPS2_TYPE": 21, # EARHS
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+            "EAHRS_SENSORS": 13, # GPS is enabled
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5)
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+        # Check prearm success with MicroStrain when the first GPS is occupied by another GPS.
+        # This supports the use case of comparing MicroStrain dual antenna to another GPS.
+        self.wait_ready_to_arm()
 
     def get_accelvec(self, m):
         return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
@@ -3896,6 +3945,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "plane-ice" : "needs ICE control channel for ignition",
             "quadplane-ice" : "needs ICE control channel for ignition",
             "quadplane-can" : "needs CAN periph",
+            "stratoblimp" : "not expected to fly normally",
+            "glider" : "needs balloon lift",
         }
         for frame in sorted(vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
@@ -3917,7 +3968,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(defaults), ],
+                [],
+                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
@@ -5343,6 +5395,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
             self.DeadreckoningNoAirSpeed,
             self.EKFlaneswitch,

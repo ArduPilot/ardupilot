@@ -19,6 +19,7 @@
 #endif
 
 #include "NotchFilter.h"
+#include <AP_Logger/AP_Logger.h>
 
 const static float NOTCH_MAX_SLEW       = 0.05f;
 const static float NOTCH_MAX_SLEW_LOWER = 1.0f - NOTCH_MAX_SLEW;
@@ -45,13 +46,11 @@ template <class T>
 void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB)
 {
     // check center frequency is in the allowable range
+    initialised = false;
     if ((center_freq_hz > 0.5 * bandwidth_hz) && (center_freq_hz < 0.5 * sample_freq_hz)) {
         float A, Q;
-        initialised = false;    // force center frequency change
         calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, A, Q);
         init_with_A_and_Q(sample_freq_hz, center_freq_hz, A, Q);
-    } else {
-        initialised = false;
     }
 }
 
@@ -134,6 +133,15 @@ void NotchFilter<T>::reset()
 {
     need_reset = true;
 }
+
+#if HAL_LOGGING_ENABLED
+// return the frequency to log for the notch
+template <class T>
+float NotchFilter<T>::logging_frequency() const
+{
+    return initialised ? _center_freq_hz : AP::logger().quiet_nanf();
+}
+#endif
 
 /*
    instantiate template classes

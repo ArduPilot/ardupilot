@@ -19,7 +19,11 @@ import subprocess
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
-    tmp_str = bldnode.find_node('include_dirs').read()
+    include_dirs_node = bldnode.find_node('include_dirs')
+    if include_dirs_node is None:
+        _dynamic_env_data['include_dirs'] = []
+        return
+    tmp_str = include_dirs_node.read()
     tmp_str = tmp_str.replace(';\n','')
     tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
     # split, coping with separator
@@ -257,8 +261,13 @@ def sign_firmware(image, private_keyfile):
     try:
         import monocypher
     except ImportError:
-        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
         return None
+
+    if monocypher.__version__ != "3.1.3.2":
+        Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+        return None
+
     try:
         key = open(private_keyfile, 'r').read()
     except Exception as ex:

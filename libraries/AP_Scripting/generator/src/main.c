@@ -367,6 +367,7 @@ struct method_alias {
   char *alias;
   int line;
   int num_args;
+  int num_ret;
   enum alias_type type;
   char *dependency;
 };
@@ -887,6 +888,12 @@ void handle_manual(struct userdata *node, enum alias_type type) {
       error(ERROR_SINGLETON, "Expected number of args for manual method %s %s", node->name, name);
     }
     alias->num_args = atoi(num_args);
+
+    char *num_ret = next_token();
+    if (num_ret == NULL) {
+      error(ERROR_SINGLETON, "Expected number of returns for manual method %s %s", node->name, name);
+    }
+    alias->num_ret = atoi(num_ret);
   }
 
   char *depends_keyword = next_token();
@@ -2608,6 +2615,12 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
   }
 }
 
+void emit_docs_return_type(struct type type, int nullable) {
+  // AP_Objects can be nil
+  nullable |= (type.type == TYPE_AP_OBJECT);
+  emit_docs_type(type, "---@return", (nullable == 0) ? "\n" : "|nil\n");
+}
+
 void emit_docs_method(const char *name, const char *method_name, struct method *method) {
 
   fprintf(docs, "-- desc\n");
@@ -2632,18 +2645,14 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
 
   // return type
   if ((method->flags & TYPE_FLAGS_NULLABLE) == 0) {
-    emit_docs_type(method->return_type, "---@return", "\n");
+    emit_docs_return_type(method->return_type, FALSE);
   }
 
   arg = method->arguments;
   // nulable and refences returns
   while (arg != NULL) {
     if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
-      if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
-        emit_docs_type(arg->type, "---@return", "|nil\n");
-      } else {
-        emit_docs_type(arg->type, "---@return", "\n");
-      }
+      emit_docs_return_type(arg->type, arg->type.flags & TYPE_FLAGS_NULLABLE);
     }
     arg = arg->next;
   }
@@ -2687,6 +2696,12 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
       if (emit_creation) {
         // creation function
+        if (node->creation != NULL) {
+          for (int i = 0; i < node->creation_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+        }
+
         fprintf(docs, "---@return %s\n", name);
         fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
         if (node->creation == NULL) {
@@ -2768,7 +2783,17 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
       } else if (alias->type == ALIAS_TYPE_MANUAL) {
           // Cant do a great job, don't know types or return
-          fprintf(docs, "-- desc\nfunction %s:%s(", name, alias->alias);
+          fprintf(docs, "-- desc\n");
+
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+
+          for (int i = 0; i < alias->num_ret; ++i) {
+            fprintf(docs, "---@return UNKNOWN\n");
+          }
+
+          fprintf(docs, "function %s:%s(", name, alias->alias);
           for (int i = 0; i < alias->num_args; ++i) {
             fprintf(docs, "param%i", i+1);
             if (i < alias->num_args-1) {
@@ -2927,6 +2952,9 @@ int main(int argc, char **argv) {
 
   // for set_and_print_new_error_message deprecate warning
   fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
+  fprintf(source, "\n");
+  // the generated source uses the Scehduler singleton:
+  fprintf(source, "#include <AP_Scheduler/AP_Scheduler.h>\n");
 
   fprintf(source, "extern const AP_HAL::HAL& hal;\n");
 
@@ -3053,7 +3081,17 @@ int main(int argc, char **argv) {
     while(alias) {
       if (alias->type == ALIAS_TYPE_MANUAL) {
           // Cant do a great job, don't know types or return
-          fprintf(docs, "-- desc\nfunction %s(", alias->alias);
+          fprintf(docs, "-- desc\n");
+
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+
+          for (int i = 0; i < alias->num_ret; ++i) {
+            fprintf(docs, "---@return UNKNOWN\n");
+          }
+
+          fprintf(docs, "function %s(", alias->alias);
           for (int i = 0; i < alias->num_args; ++i) {
             fprintf(docs, "param%i", i+1);
             if (i < alias->num_args-1) {

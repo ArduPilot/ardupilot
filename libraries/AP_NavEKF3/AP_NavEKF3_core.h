@@ -886,6 +886,9 @@ private:
     // Determine if we are flying or on the ground
     void detectFlight();
 
+    // set the default yaw source
+    void setYawSource();
+
     // Set inertial navigation aiding mode
     void setAidingMode();
 

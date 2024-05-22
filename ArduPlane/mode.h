@@ -233,6 +233,8 @@ public:
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
+    bool verify_altitude_wait(const AP_Mission::Mission_Command& cmd);
+
     void run() override;
 
 protected:
@@ -249,6 +251,12 @@ private:
         uint32_t time_start_ms;
     } nav_delay;
 
+    // wiggle state and timer for NAV_ALTITUDE_WAIT
+    void wiggle_servos();
+    struct {
+        uint8_t stage;
+        uint32_t last_ms;
+    } wiggle;
 };
 
 

@@ -35,10 +35,11 @@ void AP_BattMonitor_Torqeedo::read(void)
     }
 
     // get voltage, current, temp and remaining capacity percentage
+    // assumes battery monitor instance matches torqeedo instance
     float volts;
     float current_amps;
     float temp_C;
-    if (torqeedo->get_batt_info(volts, current_amps, temp_C, remaining_pct)) {
+    if (torqeedo->get_batt_info(_state.instance, volts, current_amps, temp_C, remaining_pct)) {
         have_info = true;
         _state.voltage = volts;
         _state.current_amps = current_amps;
@@ -56,9 +57,10 @@ void AP_BattMonitor_Torqeedo::read(void)
     }
 
     // read battery pack capacity
+    // assumes battery monitor instance matches torqeedo instance
     if (!have_capacity) {
         uint16_t batt_capacity_ah;
-        if (torqeedo->get_batt_capacity_Ah(batt_capacity_ah)) {
+        if (torqeedo->get_batt_capacity_Ah(_state.instance, batt_capacity_ah)) {
             have_capacity = true;
             if (batt_capacity_ah * 1000 != _params._pack_capacity) {
                 _params._pack_capacity.set_and_notify(batt_capacity_ah * 1000);

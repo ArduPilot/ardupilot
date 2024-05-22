@@ -956,7 +956,7 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
         // immediately update AP_Notify recording flag
         AP_Notify::flags.video_recording = true;
     } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
-#if HAL_RCINPUT_WITH_AP_RADIO
+#if AP_RADIO_ENABLED
         AP_Radio *radio = AP_Radio::get_singleton();
         if (radio) {
             radio->set_wifi_channel(m.value);

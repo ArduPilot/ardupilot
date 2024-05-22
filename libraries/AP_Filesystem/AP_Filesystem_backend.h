@@ -87,7 +87,9 @@ public:
     virtual AP_Filesystem_Backend::FormatStatus get_format_status() const { return FormatStatus::NOT_STARTED; }
 
     /*
-      load a full file. Use delete to free the data
+      Load a file's contents into memory. Returned object must be `delete`d to
+      free the data. The data is guaranteed to be null-terminated such that it
+      can be treated as a string.
      */
     virtual FileData *load_file(const char *filename);
 

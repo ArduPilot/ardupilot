@@ -93,17 +93,17 @@ public:
 
     // PAGE_SERVO values
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];    // size has to account for virtual channels via SBUS_OUT
     } reg_servo;
 
     // PAGE_DIRECT_PWM values
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     } reg_direct_pwm;
 
     // PAGE_FAILSAFE_PWM
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     } reg_failsafe_pwm;
 
     // output rates

@@ -263,7 +263,7 @@ void ModeFlowHold::run()
     // Flow Hold State Machine
     switch (flowhold_state) {
 
-    case AltHold_MotorStopped:
+    case AltHoldModeState::MotorStopped:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->reset_yaw_target_and_rate();
@@ -271,7 +271,7 @@ void ModeFlowHold::run()
         flow_pi_xy.reset_I();
         break;
 
-    case AltHold_Takeoff:
+    case AltHoldModeState::Takeoff:
         // set motors to full range
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -287,16 +287,16 @@ void ModeFlowHold::run()
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
-    case AltHold_Landed_Ground_Idle:
+    case AltHoldModeState::Landed_Ground_Idle:
         attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
-    case AltHold_Landed_Pre_Takeoff:
+    case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
-    case AltHold_Flying:
+    case AltHoldModeState::Flying:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
