@@ -259,6 +259,9 @@ private:
     AP_Int8 txt_resolution;
     AP_Int8 font_index;
 #endif
+#if HAL_WITH_ESC_TELEM
+    AP_Int8 esc_index;
+#endif
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t instance,VoltageType  type,uint8_t x, uint8_t y);
