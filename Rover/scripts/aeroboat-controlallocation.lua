@@ -157,6 +157,7 @@ them to the control allocation function
 --]]
 function update()
 
+
   -- Check if the vehicle is a boat
   local vehicle_type = param:get('SCR_USER5')
   if not (vehicle_type == 1) then
@@ -203,7 +204,7 @@ function update()
   local rc3_pwm = 0
   local rc1_pwm = 0
 
- 
+   
 
   if vehicle:get_mode() == 0 then -- Manual mode
     -- Get the trim values for the RC channels
@@ -234,14 +235,50 @@ function update()
     TRIM1 = param:get('RC1_TRIM')
     rc1_pwm = tonumber(rc:get_pwm(1)) or 1500
     local addsteering = (rc1_pwm - TRIM1) / 450
+    
+    local k1 = param:get('SCR_USER4')
 
-    desired_yaw = MapTo360(desired_yaw + 5*addsteering)
+    desired_yaw = MapTo360(desired_yaw + k1*addsteering)
     local vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
     local steering_error = MapError(desired_yaw - vh_yaw)
-  
+
+    steering_pid.P = param:get('SCR_USER3')
     local mysteering = steering_pid:compute(0,steering_error)
 
     new_control_allocation(throttle, mysteering)
+
+    return update, 200
+
+  elseif vehicle:get_mode()==4 then
+
+    if desired_yaw == -1 then
+      desired_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+    end
+
+    local mysteering, vh_yaw, steering_error = 0,0,0
+
+    TRIM3 = param:get('RC3_TRIM')
+    rc3_pwm = tonumber(rc:get_pwm(3)) or 1500
+    throttle = (TRIM3 - rc3_pwm) / 450
+
+    TRIM1 = param:get('RC1_TRIM')
+    rc1_pwm = tonumber(rc:get_pwm(1)) or 1500
+    steering = (rc1_pwm - TRIM1) / 450
+
+    if math.abs(steering) > 0.05 then
+
+      desired_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+      new_control_allocation(throttle, steering)
+
+    else
+
+      vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+      steering_error = MapError(desired_yaw - vh_yaw)
+      mysteering = steering_pid:compute(0,steering_error)
+      new_control_allocation(throttle, mysteering)
+
+      
+    end
 
     return update, 200
   
