@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_Backend_Serial.h"
 
 #if HAL_MOUNT_SIYI_ENABLED
 
@@ -29,18 +29,15 @@
 
 #define AP_MOUNT_SIYI_PACKETLEN_MAX     38  // maximum number of bytes in a packet sent to or received from the gimbal
 
-class AP_Mount_Siyi : public AP_Mount_Backend
+class AP_Mount_Siyi : public AP_Mount_Backend_Serial
 {
 
 public:
     // Constructor
-    using AP_Mount_Backend::AP_Mount_Backend;
+    using AP_Mount_Backend_Serial::AP_Mount_Backend_Serial;
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Siyi);
-
-    // init - performs any required initialisation for this instance
-    void init() override;
 
     // update mount position - should be called periodically
     void update() override;
@@ -293,8 +290,6 @@ private:
     void check_firmware_version() const;
 
     // internal variables
-    AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
-    bool _initialised;                              // true once the driver has been initialised
     bool _got_hardware_id;                          // true once hardware id ha been received
 
     FirmwareVersion _fw_version;                    // firmware version (for reporting for GCS)
