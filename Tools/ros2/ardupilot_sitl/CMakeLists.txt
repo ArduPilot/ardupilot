@@ -79,6 +79,12 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/config/
 )
 
+# Install additional autotest model params.
+install(DIRECTORY
+  ${ARDUPILOT_ROOT}/Tools/autotest/models
+  DESTINATION share/${PROJECT_NAME}/config/
+)
+
 # Install Python package.
 ament_python_install_package(${PROJECT_NAME}
   PACKAGE_DIR src/${PROJECT_NAME}
