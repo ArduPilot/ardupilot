@@ -414,11 +414,14 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::Pos:
         destination = Location(guided_pos_target_cm.tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         return true;
-    default:
-        return false;
+    case SubMode::Angle:
+    case SubMode::TakeOff:
+    case SubMode::Accel:
+    case SubMode::VelAccel:
+    case SubMode::PosVelAccel:
+        break;
     }
 
-    // should never get here but just in case
     return false;
 }
 
