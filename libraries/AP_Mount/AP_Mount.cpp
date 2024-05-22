@@ -62,6 +62,9 @@ void AP_Mount::init()
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
+    // keep track of number of serial instances for initialisation
+    uint8_t serial_instance = 0;
+
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         switch (get_mount_type(instance)) {
@@ -98,8 +101,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         case Type::SToRM32_serial:
-            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
+            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif
 
@@ -122,8 +126,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
         case Type::Siyi:
-            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
+            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_SIYI_ENABLED
 
@@ -146,8 +151,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_VIEWPRO_ENABLED
         // check for Xacti gimbal
         case Type::Viewpro:
-            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance);
+            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_VIEWPRO_ENABLED
         }
