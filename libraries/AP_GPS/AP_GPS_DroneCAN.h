@@ -56,7 +56,7 @@ public:
     static void handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
     static void handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
 #endif
-    static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
+    static bool inter_instance_pre_arm_checks(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
 
     bool get_error_codes(uint32_t &error_codes) const override { error_codes = error_code; return seen_status; };
