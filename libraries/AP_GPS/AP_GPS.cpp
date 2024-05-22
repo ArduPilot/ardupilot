@@ -1808,18 +1808,17 @@ bool AP_GPS::prepare_for_arming(void) {
     return all_passed;
 }
 
-bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
+{
+    // the DroneCAN class has additional checks for DroneCAN-specific
+    // parameters:
 #if AP_GPS_DRONECAN_ENABLED
-        const auto type = params[i].type;
-        if (type == GPS_TYPE_UAVCAN ||
-            type == GPS_TYPE_UAVCAN_RTK_BASE ||
-            type == GPS_TYPE_UAVCAN_RTK_ROVER) {
-            if (!AP_GPS_DroneCAN::backends_healthy(failure_msg, failure_msg_len)) {
-                return false;
-            }
-        }
+    if (!AP_GPS_DroneCAN::inter_instance_pre_arm_checks(failure_msg, failure_msg_len)) {
+        return false;
+    }
 #endif
+
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if (is_rtk_rover(i)) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
