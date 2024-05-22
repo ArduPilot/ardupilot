@@ -74,7 +74,7 @@ void AdNav::update()
 void AdNav::receive_packets(){
     ssize_t bytes_received = 0;
     an_packet_t* an_packet;
-    
+
     if ((bytes_received = read_from_autopilot((char*) an_decoder_pointer(&_an_decoder), an_decoder_size(&_an_decoder))) > 0)
     {
         an_decoder_increment(&_an_decoder, bytes_received);
@@ -85,7 +85,7 @@ void AdNav::receive_packets(){
                 // If we have been sent a periods packet
                 case AN_PACKET_ID_PACKET_PERIODS:
                     send_acknowledge(an_packet_crc(an_packet), AN_PACKET_ID_PACKET_PERIODS);
-                    packet_periods_packet_t packet_periods;                    
+                    packet_periods_packet_t packet_periods;
                     decode_packet_periods_packet(&packet_periods, an_packet);
                     _packet_period_us = packet_periods.packet_periods->period * 1.0e3;
                     break;
@@ -135,7 +135,7 @@ void AdNav::send_acknowledge(uint16_t crc, uint8_t id){
  */
 void AdNav::send_device_info_pkt(){
     device_information_packet_t dev_info;
-    
+
     memset(&dev_info, 0, sizeof(dev_info));
     dev_info.device_id = 26; // Certus
 
@@ -181,7 +181,7 @@ void AdNav::send_state_pkt(){
     Function to send a Velocity Standard Deviation Packet.
  */
 void AdNav::send_vel_sd_pkt(){
-    // FDM Does not contain any Velocity SD Information so send 0's instead. 
+    // FDM Does not contain any Velocity SD Information so send 0's instead.
     velocity_standard_deviation_packet_t vel_sd;
     memset(&vel_sd, 0, sizeof(vel_sd));
     send_packet(encode_velocity_standard_deviation_packet(&vel_sd));
@@ -197,10 +197,10 @@ void AdNav::send_raw_sensors_pkt(){
     raw_sensors_packet_t raw_sensors;
     memset(&raw_sensors, 0, sizeof(raw_sensors));
 
-    raw_sensors.accelerometers[0] = fdm.xAccel; 
-    raw_sensors.accelerometers[1] = fdm.yAccel; 
+    raw_sensors.accelerometers[0] = fdm.xAccel;
+    raw_sensors.accelerometers[1] = fdm.yAccel;
     raw_sensors.accelerometers[2] = fdm.zAccel;
-    raw_sensors.gyroscopes[0] = radians(fdm.rollRate); 
+    raw_sensors.gyroscopes[0] = radians(fdm.rollRate);
     raw_sensors.gyroscopes[1] = radians(fdm.pitchRate);
     raw_sensors.gyroscopes[2] = radians(fdm.yawRate);
     raw_sensors.magnetometers[0] = fdm.bodyMagField[0];
@@ -208,10 +208,10 @@ void AdNav::send_raw_sensors_pkt(){
     raw_sensors.magnetometers[2] = fdm.bodyMagField[2];
     raw_sensors.imu_temperature = 25; //fixed
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(fdm.altitude * 0.001f, sigma, delta, theta);
-    raw_sensors.pressure = SSL_AIR_PRESSURE * delta * 0.001 + rand_float() * 0.01; // 500 ft fixed
-    raw_sensors.pressure_temperature = 25; // fixed
+    float pressure, temp_k;
+    AP_Baro::get_pressure_temperature_for_alt_amsl(fdm.altitude+rand_float()*0.25, pressure, temp_k);
+    raw_sensors.pressure = pressure;
+    raw_sensors.pressure_temperature = KELVIN_TO_C(temp_k);
 
     send_packet(encode_raw_sensors_packet(&raw_sensors));
 }
@@ -243,7 +243,7 @@ void AdNav::send_raw_gnss_pkt(){
     raw_gnss.position_standard_deviation[1] = 0.8;
     raw_gnss.position_standard_deviation[2] = 1.2;
 
-    send_packet(encode_raw_gnss_packet(&raw_gnss));   
+    send_packet(encode_raw_gnss_packet(&raw_gnss));
 }
 
 /*
