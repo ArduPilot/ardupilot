@@ -103,7 +103,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: ASSIST_SPEED
     // @DisplayName: Quadplane assistance speed
-    // @Description: This is the speed below which the quad motors will provide stability and lift assistance in fixed wing modes. Zero means no assistance except during transition. Note that if this is set to zero then other Q_ASSIST features are also disabled. A higher value will lead to more false positives which can waste battery. A lower value will result in less false positive, but will result in assistance taking longer to trigger. If unsure then set to 3 m/s below the minimum airspeed you will fly at. If you don't have an airspeed sensor then use 5 m/s below the minimum airspeed you fly at. If you want to disable the arming check Q_ASSIST_SPEED then set to -1.
+    // @Description: This is the speed below which the quad motors will provide stability and lift assistance in fixed wing modes. The default value of 0 disables assistance but will generate a pre-arm failure to encourage users to set this parameter to -1, or a positive, non-zero value. If this is set to -1 then all Q_ASSIST features are disabled except during transitions. A high non-zero,positive value will lead to more false positives which can waste battery. A lower value will result in less false positive, but will result in assistance taking longer to trigger. If unsure then set to 3 m/s below the minimum airspeed you will fly at. If you don't have an airspeed sensor then use 5 m/s below the minimum airspeed you fly at.
     // @Units: m/s
     // @Range: 0 100
     // @Increment: 0.1
@@ -231,7 +231,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     
     // @Param: ASSIST_ANGLE
     // @DisplayName: Quadplane assistance angle
-    // @Description: This is the angular error in attitude beyond which the quadplane VTOL motors will provide stability assistance. This will only be used if Q_ASSIST_SPEED is also non-zero. Assistance will be given if the attitude is outside the normal attitude limits by at least 5 degrees and the angular error in roll or pitch is greater than this angle for at least Q_ASSIST_DELAY seconds. Set to zero to disable angle assistance.
+    // @Description: This is the angular error in attitude beyond which the quadplane VTOL motors will provide stability assistance. This will only be used if Q_ASSIST_SPEED is also positive and non-zero. Assistance will be given if the attitude is outside the normal attitude limits by at least 5 degrees and the angular error in roll or pitch is greater than this angle for at least Q_ASSIST_DELAY seconds. Set to zero to disable angle assistance.
     // @Units: deg
     // @Range: 0 90
     // @Increment: 1

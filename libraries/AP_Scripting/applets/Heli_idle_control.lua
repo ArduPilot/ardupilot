@@ -1,4 +1,6 @@
 -- idle_control.lua: a closed loop control throttle control while on ground idle (trad-heli)
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
 
 local PARAM_TABLE_KEY = 73
 local PARAM_TABLE_PREFIX = 'IDLE_'

@@ -2,6 +2,11 @@
    example script to test lua socket API
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: redundant-parameter
+---@diagnostic disable: undefined-field
+
 PARAM_TABLE_KEY = 47
 PARAM_TABLE_PREFIX = "WEB_"
 

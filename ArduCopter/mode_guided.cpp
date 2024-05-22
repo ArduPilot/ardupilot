@@ -456,6 +456,13 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         return true;
     }
 
+    // set position target and zero velocity and acceleration
+    Vector3f pos_target_f;
+    bool terrain_alt;
+    if (!wp_nav->get_vector_NEU(dest_loc, pos_target_f, terrain_alt)) {
+        return false;
+    }
+
     // if configured to use position controller for position control
     // ensure we are in position control mode
     if (guided_mode != SubMode::Pos) {
@@ -464,13 +471,6 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
-
-    // set position target and zero velocity and acceleration
-    Vector3f pos_target_f;
-    bool terrain_alt;
-    if (!wp_nav->get_vector_NEU(dest_loc, pos_target_f, terrain_alt)) {
-        return false;
-    }
 
     // initialise terrain following if needed
     if (terrain_alt) {

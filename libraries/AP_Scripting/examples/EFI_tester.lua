@@ -3,6 +3,10 @@
    this can be used with a loopback cable between CAN1 and CAN2 to test CAN EFI Drivers
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: missing-parameter
+
+
 local driver2 = CAN.get_device2(25)
 if not driver2 then
    gcs:send_text(0,string.format("EFISIM: Failed to load CAN driver"))

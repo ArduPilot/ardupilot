@@ -5,7 +5,7 @@
 --The "mission1.txt" file containing the mission items should be placed in the directory above the "scripts" directory. 
 --In case of placing it on SD Card, mission1.txt file should be placed in the APM directory root.
 
-
+---@diagnostic disable: param-type-mismatch
 
 local function read_mission(file_name)
 

@@ -36,6 +36,17 @@ jobs:
           sudo apt-get -y install lua-check
           ./Tools/scripts/run_luacheck.sh
 
+      - name: Language server check
+        shell: bash
+        run: |
+          python -m pip install github-release-downloader
+          python ./Tools/scripts/run_lua_language_check.py
+
+      - name: Generate docs md
+        shell: bash
+        run: |
+          ./Tools/scripts/generate_lua_docs.sh
+
       - name: copy docs
         run: |
           PATH="/github/home/.local/bin:$PATH"
@@ -53,3 +64,10 @@ jobs:
         run: |
           PATH="/github/home/.local/bin:$PATH"
           python ./libraries/AP_Scripting/tests/docs_check.py "./libraries/AP_Scripting/docs/docs.lua" "./libraries/AP_Scripting/docs/current_docs.lua"
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: Docs
+          path: ScriptingDocs.md
+          retention-days: 7

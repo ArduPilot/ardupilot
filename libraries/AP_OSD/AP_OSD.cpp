@@ -230,6 +230,22 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     AP_GROUPINFO("_W_SNR", 34, AP_OSD, warn_snr, 0),
 #endif
 
+#if HAL_OSD_SIDEBAR_ENABLE
+    // @Param: _SB_H_OFS
+    // @DisplayName: Sidebar horizontal offset
+    // @Description: Extends the spacing between the sidebar elements by this amount of columns. Positive values increases the width to the right of the screen.
+    // @Range: 0 20
+    // @User: Standard
+    AP_GROUPINFO("_SB_H_OFS", 35, AP_OSD, sidebar_h_offset, 0),
+
+    // @Param: _SB_V_EXT
+    // @DisplayName: Sidebar vertical extension
+    // @Description: Increase of vertical length of the sidebar itens by this amount of lines. Applied equally both above and below the default setting.
+    // @Range: 0 10
+    // @User: Standard
+    AP_GROUPINFO("_SB_V_EXT", 36, AP_OSD, sidebar_v_ext, 0),
+#endif // HAL_OSD_SIDEBAR_ENABLE
+
 #endif //osd enabled
 #if OSD_PARAM_ENABLED
     // @Group: 5_

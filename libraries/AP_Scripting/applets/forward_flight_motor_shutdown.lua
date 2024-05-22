@@ -5,6 +5,8 @@
 -- slew up and down times allow to configure how fast the motors are disabled and re-enabled
 
 -- luacheck: only 0
+---@diagnostic disable: cast-local-type
+
 
 -- Config
 

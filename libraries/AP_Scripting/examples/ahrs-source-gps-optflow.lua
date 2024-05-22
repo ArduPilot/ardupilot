@@ -27,6 +27,8 @@
 --
 -- When the 2nd auxiliary switch (300/Scripting1) is pulled high automatic source selection uses these thresholds:
 -- luacheck: only 0
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
 
 local rangefinder_rotation = 25     -- check downward (25) facing lidar
 local source_prev = 0               -- previous source, defaults to primary source

@@ -8,6 +8,9 @@
     https://github.com/sparkfun/SparkFun_Particle_Sensor_SN-GCJA5_Arduino_Library
 ]]--
 
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-global
+
 -- search for a index without a file, this stops us overwriting from a previous run
 local index = 0
 local file_name

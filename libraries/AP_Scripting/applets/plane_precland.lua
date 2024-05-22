@@ -5,6 +5,8 @@
  for development of a custom solution
 --]]
 
+---@diagnostic disable: param-type-mismatch
+
 local PARAM_TABLE_KEY = 12
 local PARAM_TABLE_PREFIX = "PLND_"
 

@@ -435,47 +435,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.context_push()
 
-        ex = None
-        try:
+        self.set_parameters({
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 4,
+        })
 
-            self.set_parameters({
-                "PLND_ENABLED": 1,
-                "PLND_TYPE": 4,
-            })
+        self.set_analog_rangefinder_parameters()
 
-            self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
 
-            self.reboot_sitl()
+        num_wp = self.load_mission("copter_loiter_to_alt.txt")
 
-            num_wp = self.load_mission("copter_loiter_to_alt.txt")
+        self.change_mode('LOITER')
 
-            self.change_mode('LOITER')
+        self.install_terrain_handlers_context()
+        self.wait_ready_to_arm()
 
-            self.install_terrain_handlers_context()
-            self.wait_ready_to_arm()
+        self.arm_vehicle()
 
-            self.arm_vehicle()
+        self.change_mode('AUTO')
 
-            self.change_mode('AUTO')
+        self.set_rc(3, 1550)
 
-            self.set_rc(3, 1550)
+        self.wait_current_waypoint(2)
 
-            self.wait_current_waypoint(2)
+        self.set_rc(3, 1500)
 
-            self.set_rc(3, 1500)
+        self.wait_waypoint(0, num_wp-1, timeout=500)
 
-            self.wait_waypoint(0, num_wp-1, timeout=500)
-
-            self.wait_disarmed()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.wait_disarmed()
 
         self.context_pop()
         self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
 
     # Tests all actions and logic behind the radio failsafe
     def ThrottleFailsafe(self, side=60, timeout=360):
@@ -2768,6 +2759,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Auto mission completed: passed!")
 
+    def set_origin(self, loc, timeout=60):
+        '''set the GPS global origin to loc'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get non-zero lat")
+            target_system = 1
+            self.mav.mav.set_gps_global_origin_send(
+                target_system,
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                int(loc.alt * 1e3)
+            )
+            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+            self.progress("gpi=%s" % str(gpi))
+            if gpi.lat != 0:
+                break
+
+    def FarOrigin(self):
+        '''fly a mission far from the vehicle origin'''
+        # Fly mission #1
+        self.set_parameters({
+            "SIM_GPS_DISABLE": 1,
+        })
+        self.reboot_sitl()
+        nz = mavutil.location(-43.730171, 169.983118, 1466.3, 270)
+        self.set_origin(nz)
+        self.set_parameters({
+            "SIM_GPS_DISABLE": 0,
+        })
+        self.progress("# Load copter_mission")
+        # load the waypoint count
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        if not num_wp:
+            raise NotAchievedException("load copter_mission failed")
+
+        self.fly_loaded_mission(num_wp)
+
+        self.progress("Auto mission completed: passed!")
+
     def fly_loaded_mission(self, num_wp):
         '''fly mission loaded on vehicle.  FIXME: get num_wp from vehicle'''
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
@@ -4568,10 +4599,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     m.climb < climb_tolerance):
                 break
 
-    def fly_guided_move_global_relative_alt(self, lat, lon, alt):
-        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                       blocking=True)
-
+    def send_set_position_target_global_int(self, lat, lon, alt):
         self.mav.mav.set_position_target_global_int_send(
             0, # timestamp
             1, # target system_id
@@ -4590,6 +4618,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             0, # yaw
             0, # yawrate
         )
+
+    def fly_guided_move_global_relative_alt(self, lat, lon, alt):
+        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                       blocking=True)
+
+        self.send_set_position_target_global_int(lat, lon, alt)
 
         tstart = self.get_sim_time()
         while True:
@@ -5139,13 +5173,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.run_cmd_do_set_mode("ACRO")
         self.wait_disarmed()
 
-    def test_mount_pitch(self, despitch, despitch_tolerance, mount_mode, timeout=10, hold=0):
+    def constrained_mount_pitch(self, pitch_angle_deg, mount_instance=1):
+        PITCH_MIN = self.get_parameter("MNT%u_PITCH_MIN" % mount_instance)
+        PITCH_MAX = self.get_parameter("MNT%u_PITCH_MAX" % mount_instance)
+        return min(max(pitch_angle_deg, PITCH_MIN), PITCH_MAX)
+
+    def test_mount_pitch(self, despitch, despitch_tolerance, mount_mode, timeout=10, hold=0, constrained=True):
         tstart = self.get_sim_time()
         success_start = 0
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException("Mount pitch not achieved")
+
+            # We expect to achieve the desired pitch angle unless constrained by mount limits
+            if constrained:
+                despitch = self.constrained_mount_pitch(despitch)
 
             '''retrieve latest angles from GIMBAL_DEVICE_ATTITUDE_STATUS'''
             mount_roll, mount_pitch, mount_yaw = self.get_mount_roll_pitch_yaw_deg()
@@ -5291,17 +5334,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Testing RC rate control")
             self.set_parameter('MNT1_RC_RATE', 10)
             self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            # Note that we don't constrain the desired angle in the following so that we don't
+            # timeout due to fetching Mount pitch limit params.
             self.set_rc(12, 1300)
-            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(-20, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(-20, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
             self.set_rc(12, 1700)
-            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
 
             self.progress("Reverting to angle mode")
             self.set_parameter('MNT1_RC_RATE', 0)
@@ -11303,6 +11348,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl(force=True)
 
+    def GuidedForceArm(self):
+        '''ensure Guided acts appropriately when force-armed'''
+        self.set_parameters({
+            "EK3_SRC2_VELXY": 5,
+            "SIM_GPS_DISABLE": 1,
+        })
+        self.load_default_params_file("copter-optflow.parm")
+        self.reboot_sitl()
+        self.delay_sim_time(30)
+        self.change_mode('GUIDED')
+        self.arm_vehicle(force=True)
+        self.takeoff(20, mode='GUIDED')
+        location = self.offset_location_ne(self.sim_location(), metres_north=0, metres_east=-300)
+        self.progress("Ensure we don't move for 10 seconds")
+        tstart = self.get_sim_time()
+        startpos = self.sim_location_int()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                break
+            self.send_set_position_target_global_int(int(location.lat*1e7), int(location.lng*1e7), 10)
+            dist = self.get_distance_int(startpos, self.sim_location_int())
+            if dist > 10:
+                raise NotAchievedException("Wandered too far from start position")
+            self.delay_sim_time(1)
+
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11388,6 +11462,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CompassMot,
             self.AutoRTL,
             self.EK3_OGN_HGT_MASK,
+            self.FarOrigin,
+            self.GuidedForceArm,
         ])
         return ret
 

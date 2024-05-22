@@ -224,7 +224,7 @@ public:
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
-    // returns false if Absolute aiding and GPS is being used or if the origin is already set
+    // returns false if the origin has already been set
     bool setOriginLLH(const Location &loc);
 
     // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty

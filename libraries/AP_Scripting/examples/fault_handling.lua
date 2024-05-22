@@ -2,6 +2,9 @@
    example script to test fault handling with pcall
 --]]
 
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-field
+
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 gcs:send_text(MAV_SEVERITY.INFO, "Loading fault test")

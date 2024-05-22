@@ -2615,6 +2615,16 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
   }
 }
 
+void emit_docs_param_type(struct type type, const char *prefix, const char *suffix) {
+  if (type.type == TYPE_UINT32_T) {
+    // we will try and convert int and numbers to uint32
+    fprintf(docs, "%s uint32_t_ud|integer|number%s", prefix, suffix);
+    return;
+  }
+
+  emit_docs_type(type, prefix, suffix);
+}
+
 void emit_docs_return_type(struct type type, int nullable) {
   // AP_Objects can be nil
   nullable |= (type.type == TYPE_AP_OBJECT);
@@ -2636,7 +2646,7 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
     if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0) {
       char *param_name = (char *)allocate(20);
       sprintf(param_name, "---@param param%i", count);
-      emit_docs_type(arg->type, param_name, "\n");
+      emit_docs_param_type(arg->type, param_name, "\n");
       free(param_name);
       count++;
     }
@@ -2679,7 +2689,9 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
 
     fprintf(docs, "-- desc\n");
-    fprintf(docs, "---@class %s\n", name);
+    if (is_userdata) {
+      fprintf(docs, "---@class %s\n", name);
+    }
 
     // enums
     if (node->enums != NULL) {
@@ -2736,7 +2748,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set field\n");
-              emit_docs_type(field->type, "---@param value", "\n");
+              emit_docs_param_type(field->type, "---@param value", "\n");
               fprintf(docs, "function %s:%s(value) end\n\n", name, field->rename ? field->rename : field->name);
             }
           } else {
@@ -2750,7 +2762,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set array field\n");
               fprintf(docs, "---@param index integer\n");
-              emit_docs_type(field->type, "---@param value", "\n");
+              emit_docs_param_type(field->type, "---@param value", "\n");
               fprintf(docs, "function %s:%s(index, value) end\n\n", name, field->rename ? field->rename : field->name);
             }
           }

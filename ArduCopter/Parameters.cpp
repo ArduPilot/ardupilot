@@ -73,7 +73,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: Throttle stick behavior
     // @Description: Bitmask containing various throttle stick options. TX with sprung throttle can set PILOT_THR_BHV to "1" so motor feedback when landed starts from mid-stick instead of bottom of stick.
     // @User: Standard
-    // @Values: 0:None,1:Feedback from mid stick,2:High throttle cancels landing,4:Disarm on land detection
     // @Bitmask: 0:Feedback from mid stick,1:High throttle cancels landing,2:Disarm on land detection
     GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
 
@@ -92,7 +91,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Roll,2:Pitch,4:Yaw,8:AccelZ
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:AccelZ
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
@@ -938,7 +936,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe options bitmask
     // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 (default) disables all options.
-    // @Values: 0:Disabled, 1:Continue if in Auto on RC failsafe only, 2:Continue if in Auto on GCS failsafe only, 3:Continue if in Auto on RC and/or GCS failsafe, 4:Continue if in Guided on RC failsafe only, 8:Continue if landing on any failsafe, 16:Continue if in pilot controlled modes on GCS failsafe, 19:Continue if in Auto on RC and/or GCS failsafe and continue if in pilot controlled modes on GCS failsafe
     // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe, 5:Release Gripper
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, (float)Copter::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL),

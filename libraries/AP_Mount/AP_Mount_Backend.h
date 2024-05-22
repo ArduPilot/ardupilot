@@ -84,6 +84,7 @@ public:
     void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
 
     // set angle target in degrees
+    // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
     void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
 
@@ -242,6 +243,14 @@ protected:
         RCTARGETING_LOCK_FROM_PREVMODE = (1U << 0), // RC_TARGETING mode's lock/follow state maintained from previous mode
     };
     bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
+
+    // returns true if user has configured a valid roll angle range
+    // allows user to disable roll even on 3-axis gimbal
+    bool roll_range_valid() const { return (_params.roll_angle_min < _params.roll_angle_max); }
+
+    // returns true if user has configured a valid pitch angle range
+    // allows user to disable pitch even on 3-axis gimbal
+    bool pitch_range_valid() const { return (_params.pitch_angle_min < _params.pitch_angle_max); }
 
     // returns true if user has configured a valid yaw angle range
     // allows user to disable yaw even on 3-axis gimbal

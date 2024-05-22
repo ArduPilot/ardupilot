@@ -1353,8 +1353,7 @@ bool AP_Param::load(void)
         return false;
     }
 
-    AP_Param *ap;
-    ap = this;
+    AP_Param *ap = this;
     if (idx != 0) {
         ap = (AP_Param *)((ptrdiff_t)ap) - (idx*sizeof(float));
     }
@@ -1967,8 +1966,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
 
     // find the new variable in the variable structures
     enum ap_var_type ptype;
-    AP_Param *ap2;
-    ap2 = find(&info->new_name[0], &ptype);
+    AP_Param *ap2 = find(&info->new_name[0], &ptype);
     if (ap2 == nullptr) {
         DEV_PRINTF("Unknown conversion '%s'\n", info->new_name);
         return;

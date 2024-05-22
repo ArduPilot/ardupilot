@@ -4225,6 +4225,7 @@ class TestSuite(ABC):
 
         tstart = self.get_sim_time_cached()
         pass_start = None
+        last_debug = 0
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
@@ -4240,8 +4241,14 @@ class TestSuite(ABC):
                     if pass_start is None:
                         pass_start = now
                         continue
-                    if now - pass_start < minimum_duration:
+                    delta = now - pass_start
+                    if now - last_debug >= 1:
+                        last_debug = now
+                        self.progress(f"Good field values ({delta:.2f}s/{minimum_duration}s)")
+                    if delta < minimum_duration:
                         continue
+                else:
+                    self.progress("Reached field values")
                 return m
             pass_start = None
 
