@@ -7,7 +7,6 @@
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,20 +26,6 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...) do { if (AP_MOUNT_VIEWPRO_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Viewpro: " fmt, ## args); } } while (0)
 
 const char* AP_Mount_Viewpro::send_text_prefix = "Viewpro:";
-
-// init - performs any required initialisation for this instance
-void AP_Mount_Viewpro::init()
-{
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
-    if (_uart == nullptr) {
-        return;
-    }
-
-    _initialised = true;
-    AP_Mount_Backend::init();
-}
 
 // update mount position - should be called periodically
 void AP_Mount_Viewpro::update()
