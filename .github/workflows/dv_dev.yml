@@ -15,7 +15,7 @@ jobs:
         board: [
             # sitl, # For simulation
             # CubeOrangePlus-bdshot, # Legacy support
-            CubeOrangePlus-bdshot-ODID, # CubeOrangePlus with bdshot and ODID enabled
+            CubeOrangePlus-dv, # CubeOrangePlus with bdshot and ODID enabled
             # CubeOrange-ODID, # For my obsolete devkit
         ]
 
@@ -47,8 +47,8 @@ jobs:
         run: |
           PATH="/github/home/.local/bin:$PATH"
           ./Tools/scripts/build_bootloaders.py ${{ matrix.board }}
-          # ./waf configure --board ${{ matrix.board }}
-          # ./waf build --target bin/arducopter
+          ./waf configure --board ${{ matrix.board }}
+          ./waf build --target bin/arducopter
 
       - name: ccache stats ${{ matrix.board }}
         shell: bash
