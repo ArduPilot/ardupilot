@@ -34,7 +34,7 @@
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options);
 
     ~lua_scripts();
 
@@ -60,7 +60,6 @@ public:
 private:
 
     void create_sandbox(lua_State *L);
-    void repl_cleanup(void);
 
     typedef struct script_info {
        int lua_ref;          // reference to the loaded script object
@@ -82,20 +81,6 @@ private:
 
     // reschedule the script for execution. It is assumed the script is not in the list already
     void reschedule_script(script_info *script);
-
-    // REPL stuff
-    struct AP_Scripting::terminal_s &terminal;
-    void doREPL(lua_State *L);
-    void l_print(lua_State *L);
-    void terminal_print(const char *str);
-    int loadline(lua_State *L);
-    int multiline(lua_State *L);
-    int addreturn(lua_State *L);
-    int pushline(lua_State *L, int firstline);
-    int incomplete(lua_State *L, int status);
-    const char * get_prompt(lua_State *L, int firstline);
-    int docall(lua_State *L, int narg, int nres) const;
-    int sandbox_ref;
 
     script_info *scripts; // linked list of scripts to be run, sorted by next run time (soonest first)
 
