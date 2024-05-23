@@ -934,6 +934,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_comman
             direction,
             true);
         return MAV_RESULT_ACCEPTED;
+    case 2: {
+        // relative-to-vehicle-heading
+        // start by turning angle and direction into a relative yaw:
+        const float relative_angle = wrap_180(direction * target_angle);
+        copter.flightmode->auto_yaw.set_vehicle_heading_yaw(relative_angle, rate_degs);
+        return MAV_RESULT_ACCEPTED;
+    }
     default:
         return MAV_RESULT_FAILED;
     }

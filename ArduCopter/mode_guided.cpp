@@ -344,12 +344,16 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     // if configured to use wpnav for position control
     if (use_wpnav_for_position_control()) {
         // ensure we are in position control mode
+        bool init_yaw = !option_is_enabled(Option::PreserveYaw);
         if (guided_mode != SubMode::WP) {
             wp_control_start();
+            init_yaw = true;
         }
 
         // set yaw state
-        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        if (init_yaw) {
+            set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        }
 
         // no need to check return status because terrain data is not used
         wp_nav->set_wp_destination(destination, terrain_alt);
@@ -362,10 +366,13 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         return true;
     }
 
+    bool init_yaw = !option_is_enabled(Option::PreserveYaw);
+
     // if configured to use position controller for position control
     // ensure we are in position control mode
     if (guided_mode != SubMode::Pos) {
         pos_control_start();
+        init_yaw = true;
     }
 
     // initialise terrain following if needed
@@ -386,8 +393,10 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         pos_control->set_pos_offset_z_cm(0.0);
     }
 
-    // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    if (init_yaw) {
+        // set yaw state
+        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    }
 
     // set position target and zero velocity and acceleration
     guided_pos_target_cm = destination.topostype();
@@ -439,8 +448,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // if using wpnav for position control
     if (use_wpnav_for_position_control()) {
+        bool init_yaw = !option_is_enabled(Option::PreserveYaw);
         if (guided_mode != SubMode::WP) {
             wp_control_start();
+            init_yaw = true;
         }
 
         if (!wp_nav->set_wp_destination_loc(dest_loc)) {
@@ -450,8 +461,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
             return false;
         }
 
-        // set yaw state
-        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        if (init_yaw) {
+            // set yaw state
+            set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+        }
 
 #if HAL_LOGGING_ENABLED
         // log target
@@ -469,14 +482,19 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         return false;
     }
 
+    bool init_yaw = !option_is_enabled(Option::PreserveYaw);
+
     // if configured to use position controller for position control
     // ensure we are in position control mode
     if (guided_mode != SubMode::Pos) {
         pos_control_start();
+        init_yaw = true;
     }
 
-    // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    if (init_yaw) {
+        // set yaw state
+        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    }
 
     // initialise terrain following if needed
     if (terrain_alt) {
@@ -589,13 +607,18 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     }
 #endif
 
+    bool init_yaw = !option_is_enabled(Option::PreserveYaw);
+
     // check we are in velocity control mode
     if (guided_mode != SubMode::PosVelAccel) {
         posvelaccel_control_start();
+        init_yaw = true;
     }
 
-    // set yaw state
-    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    if (init_yaw) {
+        // set yaw state
+        set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+    }
 
     update_time_ms = millis();
     guided_pos_target_cm = destination.topostype();

@@ -325,6 +325,7 @@ public:
                            bool relative_angle);
 
         void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+        void set_vehicle_heading_yaw(float relative_angle, float turn_rate_ds);
 
         bool reached_fixed_yaw_target();
 
@@ -365,6 +366,7 @@ public:
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
+        float _look_ahead_yaw_offset;  // added to vehicle CoG to produce _look_ahead_yaw
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _yaw_angle_cd;
@@ -1135,7 +1137,8 @@ private:
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
         WPNavUsedForPosControl = (1U << 6),
-        AllowWeatherVaning = (1U << 7)
+        AllowWeatherVaning = (1U << 7),
+        PreserveYaw = (1U << 8),
     };
 
     // returns true if the Guided-mode-option is set (see GUID_OPTIONS)

@@ -16,6 +16,7 @@ float Mode::AutoYaw::look_ahead_yaw()
     // Commanded Yaw to automatically look ahead.
     if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
         _look_ahead_yaw = degrees(atan2f(vel.y,vel.x));
+        _look_ahead_yaw += _look_ahead_yaw_offset;
     }
     return _look_ahead_yaw;
 }
@@ -82,6 +83,7 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
         _look_ahead_yaw = copter.ahrs.yaw_sensor * 0.01;  // cdeg -> deg
+        _look_ahead_yaw_offset = 0.0;
         break;
 
     case Mode::RESETTOARMEDYAW:
@@ -132,6 +134,14 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
 
     // set yaw mode
     set_mode(Mode::FIXED);
+}
+
+// set_vehicle_heading_yaw - sets the yaw look at heading to be relative to vehicle travel
+void Mode::AutoYaw::set_vehicle_heading_yaw(float relative_angle, float turn_rate_ds)
+{
+    // currently ignores turn rate
+    _look_ahead_yaw_offset = relative_angle;
+    set_mode(Mode::LOOK_AHEAD);
 }
 
 // set_fixed_yaw - sets the yaw look at heading for auto mode
