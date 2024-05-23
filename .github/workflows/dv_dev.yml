@@ -1,0 +1,41 @@
+name: BOM
+
+on: [push]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ardupilot/ardupilot/ardupilot-dev-chibios:latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      
+      - name: ccache cache files
+        uses: actions/cache@v3
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          . .github/workflows/ccache.env
+
+      - name: build copter
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl
+          ./waf build --target bin/arducopter
+          ccache -s
+          ccache -z
