@@ -97,6 +97,12 @@ void ModeGuided::run()
     }
  }
 
+// returns true if the Guided-mode-option is set (see GUID_OPTIONS)
+bool ModeGuided::option_is_enabled(Option option) const
+{
+    return (copter.g2.guided_options.get() & (uint32_t)option) != 0;
+}
+
 bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
     // always allow arming from the ground station or scripting
@@ -105,13 +111,13 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     }
 
     // optionally allow arming from the transmitter
-    return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
+    return option_is_enabled(Option::AllowArmingFromTX);
 };
 
 #if WEATHERVANE_ENABLED == ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
-    return (copter.g2.guided_options.get() & (uint32_t)Options::AllowWeatherVaning) != 0;
+    return option_is_enabled(Option::AllowWeatherVaning);
 }
 #endif
 
@@ -607,25 +613,25 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
 // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
 bool ModeGuided::set_attitude_target_provides_thrust() const
 {
-    return ((copter.g2.guided_options.get() & uint32_t(Options::SetAttitudeTarget_ThrustAsThrust)) != 0);
+    return option_is_enabled(Option::SetAttitudeTarget_ThrustAsThrust);
 }
 
 // returns true if GUIDED_OPTIONS param specifies position should be controlled (when velocity and/or acceleration control is active)
 bool ModeGuided::stabilizing_pos_xy() const
 {
-    return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizePositionXY)) != 0);
+    return !option_is_enabled(Option::DoNotStabilizePositionXY);
 }
 
 // returns true if GUIDED_OPTIONS param specifies velocity should  be controlled (when acceleration control is active)
 bool ModeGuided::stabilizing_vel_xy() const
 {
-    return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizeVelocityXY)) != 0);
+    return !option_is_enabled(Option::DoNotStabilizeVelocityXY);
 }
 
 // returns true if GUIDED_OPTIONS param specifies waypoint navigation should be used for position control (allow path planning to be used but updates must be slower)
 bool ModeGuided::use_wpnav_for_position_control() const
 {
-    return ((copter.g2.guided_options.get() & uint32_t(Options::WPNavUsedForPosControl)) != 0);
+    return option_is_enabled(Option::WPNavUsedForPosControl);
 }
 
 // Sets guided's angular target submode: Using a rotation quaternion, angular velocity, and climbrate or thrust (depends on user option)
@@ -1009,7 +1015,7 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeGuided::use_pilot_yaw(void) const
 {
-    return (copter.g2.guided_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    return !option_is_enabled(Option::IgnorePilotYaw);
 }
 
 // Guided Limit code

@@ -1127,7 +1127,7 @@ protected:
 private:
 
     // enum for GUID_OPTIONS parameter
-    enum class Options : int32_t {
+    enum class Option : uint32_t {
         AllowArmingFromTX   = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw      = (1U << 2),
@@ -1137,6 +1137,9 @@ private:
         WPNavUsedForPosControl = (1U << 6),
         AllowWeatherVaning = (1U << 7)
     };
+
+    // returns true if the Guided-mode-option is set (see GUID_OPTIONS)
+    bool option_is_enabled(Option option) const;
 
     // wp controller
     void wp_control_start();
