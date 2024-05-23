@@ -1,1 +1,1 @@
-sim_vehicle.py  -L SEParnaiba -S 4 --mcast -f rover-skid --console --add-param-file nrover.param
+sim_vehicle.py  -L SEParnaiba -S 5 --mcast -f rover-skid --console --add-param-file nrover.param

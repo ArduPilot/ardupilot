@@ -8,6 +8,10 @@
 --| '7' # WingSail
 --| '8' # Walking_Height
 --@return number|nil
+package.path = package.path .. ';./scripts/modules/?.lua'
+local PID = require("pid")
+local funcs = require("functions")
+
 CONTROL_OUTPUT_THROTTLE = 3
 CONTROL_OUTPUT_YAW = 4
 TRIM3 = 1500
@@ -15,39 +19,8 @@ TRIM1 = 1500
 SYSTEM_STARTED = Parameter()
 local desired_yaw = -1.0
 
-local PID = {}
 
-function PID:new(p_gain, i_gain, d_gain, i_max, i_min, pid_max, pid_min)
-  local obj = {
-      P = p_gain or 0,
-      I = i_gain or 0,
-      D = d_gain or 0,
-      integrator = 0,
-      last_error = 0,
-      i_max = i_max or 0,
-      i_min = i_min or 0,
-      pid_max = pid_max or 1,
-      pid_min = pid_min or -1
-  }
-  setmetatable(obj, self)
-  self.__index = self
-  return obj
-end
-
-
-function PID:compute(setpoint, pv)
-  local error = setpoint - pv
-  local deriv = (error - self.last_error) / 0.2
-  self.integrator = self.integrator + error * 0.2
-  self.integrator = math.max(math.min(self.integrator, self.i_max), self.i_min)
-  
-  local output = math.min(math.max(self.P * error + self.I * self.integrator + self.D * deriv,self.pid_min),self.pid_max)
-  self.last_error = error
-  
-  return output
-end
-
-local steering_pid = PID:new(0.5, 0.00, 0.0, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
+local steering_pid = PID:new(0.25, 0.001, 0.01, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
 
 
 -- Severity for logging in GCS
@@ -114,48 +87,13 @@ local function new_control_allocation(t, s)
 end -- new_control_allocation function
 
 
-function MapError(resultante)
-
-  if resultante == 0 then
-
-    return 0
-
-  elseif math.abs(resultante) < 180 then
-    
-    return -resultante
-
-  else 
-
-    return (math.abs(resultante)/(resultante+0.001))*(360-math.abs(resultante))
-
-  end
-
-end
-
-function MapTo360(angle)
-  if angle < 0 then
-      return angle + 360
-  else
-      return angle
-  end
-end
-
--- Função para converter graus para radianos
-function To_radians(mdegrees)
-  return mdegrees * math.pi / 180.0
-end
-
-function To_degrees(mradians)
-  return mradians * 180 / math.pi
-end
-
 --[[ 
 Main update function 
 It checks if the vehicle is a boat, if it is armed, and then 
 it gets the control values from the RC or internal control of the vehicle and passes 
 them to the control allocation function
 --]]
-function update()
+local function update()
 
 
   -- Check if the vehicle is a boat
@@ -225,7 +163,7 @@ function update()
   elseif vehicle:get_mode()==3 then
 
     if desired_yaw == -1 then
-      desired_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+      desired_yaw = funcs:map_to_360(funcs:to_degrees(ahrs:get_yaw()))
     end
 
     TRIM3 = param:get('RC3_TRIM')
@@ -238,11 +176,13 @@ function update()
     
     local k1 = param:get('SCR_USER4')
 
-    desired_yaw = MapTo360(desired_yaw + k1*addsteering)
-    local vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
-    local steering_error = MapError(desired_yaw - vh_yaw)
+    desired_yaw = funcs:map_to_360(desired_yaw + k1*addsteering)
+    local vh_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
+    local steering_error = funcs:map_error(desired_yaw - vh_yaw)
 
     steering_pid.P = param:get('SCR_USER3')
+    steering_pid.I = param:get('SCR_USER2')
+    steering_pid.D = param:get('SCR_USER1')
     local mysteering = steering_pid:compute(0,steering_error)
 
     new_control_allocation(throttle, mysteering)
@@ -252,7 +192,7 @@ function update()
   elseif vehicle:get_mode()==4 then
 
     if desired_yaw == -1 then
-      desired_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+      desired_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
     end
 
     local mysteering, vh_yaw, steering_error = 0,0,0
@@ -267,13 +207,13 @@ function update()
 
     if math.abs(steering) > 0.05 then
 
-      desired_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
+      desired_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
       new_control_allocation(throttle, steering)
 
     else
 
-      vh_yaw = MapTo360(To_degrees(ahrs:get_yaw()))
-      steering_error = MapError(desired_yaw - vh_yaw)
+      vh_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
+      steering_error = funcs:map_error(desired_yaw - vh_yaw)
       mysteering = steering_pid:compute(0,steering_error)
       new_control_allocation(throttle, mysteering)
 
