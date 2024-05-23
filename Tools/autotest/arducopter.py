@@ -4599,12 +4599,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     m.climb < climb_tolerance):
                 break
 
-    def send_set_position_target_global_int(self, lat, lon, alt):
+    def send_set_position_target_global_int_loc(self, loc):
+        self.send_set_position_target_global_int(
+            int(loc.lat*1e7),
+            int(loc.lng*1e7),
+            loc.alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+        )
+
+    def send_set_position_target_global_int(
+            self,
+            lat,
+            lon,
+            alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT):
         self.mav.mav.set_position_target_global_int_send(
             0, # timestamp
             1, # target system_id
             1, # target component id
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            frame,
             MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # mask specifying use-only-lat-lon-alt
             lat, # lat
             lon, # lon
@@ -9576,6 +9589,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self.context_pop()
 
+    def MAV_CMD_CONDITION_YAW_heading_relative(self):
+        '''check relative-to-CoG yaw'''
+        self.takeoff(10, mode='GUIDED')
+        self.progress("First make sure it cancelsan absolute yaw")
+        for heading in 30, 60:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                p1=heading,     # target angle
+                p2=360,  # degrees/second
+                p3=1,          # -1 is counter-clockwise, 1 clockwise
+                p4=0,          # 1 for relative, 0 for absolute
+            )
+            self.wait_heading(heading, minimum_duration=5)
+
+        here = self.mav.location()
+        t = self.offset_location_ne(here, 2000, 0)
+
+        self.do_reposition(t, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+
+        # reposition cancels the condition-yaw:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=heading,     # target angle
+            p2=360,  # degrees/second
+            p3=1,          # -1 is counter-clockwise, 1 clockwise
+            p4=0,          # 1 for relative, 0 for absolute
+        )
+        self.wait_heading(60, minimum_duration=10)
+
+        self.progress("switch to yaw-looks-ahead")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=0,     # target angle
+            p2=360,  # degrees/second
+            p3=1,          # -1 is counter-clockwise, 1 clockwise
+            p4=2,          # 1 for relative, 0 for absolute, 2 for heading-relative
+        )
+        self.wait_heading(0, minimum_duration=10)
+
+        # turn on preserve-yaw
+        self.set_parameter("GUID_OPTIONS", 256)
+
+        self.progress("Now point 45-degrees to right of vehicle heading")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            p1=45,     # target angle
+            p2=360,  # degrees/second
+            p3=1,          # -1 is counter-clockwise, 1 clockwise
+            p4=2,          # 1 for relative, 0 for absolute, 2 for heading-relative
+        )
+        self.wait_heading(45, minimum_duration=10)
+
+        self.progress("Heading east, checking yaw remains 45-degrees-to-heading")
+        here = self.mav.location()
+        t = self.offset_location_ne(here, 0, 2000)
+
+        self.send_set_position_target_global_int_loc(t)
+        self.wait_heading(135, minimum_duration=10)
+
+        self.progress("Heading east, checking yaw remains 45-degrees-to-heading")
+        here = self.mav.location()
+        t = self.offset_location_ne(here, 0, -2000)
+
+        self.send_set_position_target_global_int_loc(t)
+        self.wait_heading(315, minimum_duration=10)
+
+        self.do_RTL()
+
     def GroundEffectCompensation_touchDownExpected(self):
         '''Test EKF's handling of touchdown-expected'''
         self.zero_throttle()
@@ -10415,6 +10496,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.NavDelay,
              self.GuidedSubModeChange,
              self.MAV_CMD_CONDITION_YAW,
+             self.MAV_CMD_CONDITION_YAW_heading_relative,
              self.LoiterToAlt,
              self.PayloadPlaceMission,
              self.PrecisionLoiterCompanion,
