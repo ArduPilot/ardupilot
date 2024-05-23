@@ -13,8 +13,9 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         board: [
-            sitl,  # GCC
+            sitl,
             CubeOrangePlus-bdshot,
+            CubeOrange-ODID,
         ]
 
     steps:
@@ -37,6 +38,8 @@ jobs:
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
+          ccache -s
+          ccache -z
 
       - name: build copter ${{ matrix.board }}
         shell: bash
@@ -44,21 +47,22 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board ${{ matrix.board }}
           ./waf build --target bin/arducopter
+          # ccache -s
+          # ccache -z
+
+      - name: ccache stats ${{ matrix.board }}
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
           ccache -s
           ccache -z
 
-      # - name: build copter CubeOrange
-      #   shell: bash
-      #   run: |
-      #     PATH="/github/home/.local/bin:$PATH"
-      #     ./waf configure --board CubeOrangePlus-bdshot
-      #     ./waf build copter
-      #     ccache -s
-      #     ccache -z
-
       - name: Archive build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.board }}
-          path: build/${{ matrix.board }}/bin
+          path: |
+            build/${{ matrix.board }}/bin/arducopter
+            build/${{ matrix.board }}/bin/arducopter.apj
           retention-days: 7
+          compression-level: 0
