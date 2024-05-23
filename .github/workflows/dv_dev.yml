@@ -1,4 +1,4 @@
-name: BOM
+name: DV dev
 
 on: [push]
 
@@ -8,7 +8,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ardupilot/ardupilot/ardupilot-dev-chibios:latest
+    container: ardupilot/ardupilot-dev-chibios
 
     steps:
       - uses: actions/checkout@v4
