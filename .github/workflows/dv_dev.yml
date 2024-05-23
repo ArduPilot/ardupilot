@@ -9,6 +9,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: ardupilot/ardupilot-dev-chibios
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        board: [
+            sitl,  # GCC
+            CubeOrangePlus-bdshot,
+        ]
 
     steps:
       - uses: actions/checkout@v4
@@ -31,20 +38,27 @@ jobs:
         run: |
           . .github/workflows/ccache.env
 
-      - name: build copter sitl
+      - name: build copter ${{ matrix.board }}
         shell: bash
         run: |
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl
-          ./waf build copter
+          ./waf configure --board ${{ matrix.board }}
+          ./waf build --target bin/arducopter
           ccache -s
           ccache -z
 
-      - name: build copter CubeOrange
-        shell: bash
-        run: |
-          PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board CubeOrangePlus-bdshot
-          ./waf build copter
-          ccache -s
-          ccache -z
+      # - name: build copter CubeOrange
+      #   shell: bash
+      #   run: |
+      #     PATH="/github/home/.local/bin:$PATH"
+      #     ./waf configure --board CubeOrangePlus-bdshot
+      #     ./waf build copter
+      #     ccache -s
+      #     ccache -z
+
+      - name: Archive build
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build
+          retention-days: 7
