@@ -226,6 +226,12 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms[i].transform.translation.y = -1 * offset[1];
         msg.transforms[i].transform.translation.z = -1 * offset[2];
 
+        // Ensure rotation is normalised
+        msg.transforms[i].transform.rotation.x = 0.0;
+        msg.transforms[i].transform.rotation.y = 0.0;
+        msg.transforms[i].transform.rotation.z = 0.0;
+        msg.transforms[i].transform.rotation.w = 1.0;
+
         msg.transforms_size++;
     }
 
@@ -337,6 +343,11 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
+    } else {
+        msg.pose.orientation.x = 0.0;
+        msg.pose.orientation.y = 0.0;
+        msg.pose.orientation.z = 0.0;
+        msg.pose.orientation.w = 1.0;
     }
 }
 
@@ -416,6 +427,11 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
+    } else {
+        msg.pose.orientation.x = 0.0;
+        msg.pose.orientation.y = 0.0;
+        msg.pose.orientation.z = 0.0;
+        msg.pose.orientation.w = 1.0;
     }
 }
 
@@ -435,6 +451,11 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
         msg.orientation.y = orientation[1];
         msg.orientation.z = orientation[2];
         msg.orientation.w = orientation[3];
+    } else {
+        msg.orientation.x = 0.0;
+        msg.orientation.y = 0.0;
+        msg.orientation.z = 0.0;
+        msg.orientation.w = 1.0;
     }
     msg.orientation_covariance[0] = -1;
 
