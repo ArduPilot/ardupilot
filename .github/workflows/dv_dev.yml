@@ -46,6 +46,7 @@ jobs:
         shell: bash
         run: |
           PATH="/github/home/.local/bin:$PATH"
+          ./Tools/scripts/build_bootloaders.py ${{ matrix.board }}
           ./waf configure --board ${{ matrix.board }}
           ./waf build --target bin/arducopter
           # ccache -s
