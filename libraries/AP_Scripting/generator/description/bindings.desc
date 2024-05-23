@@ -715,6 +715,24 @@ singleton AC_PrecLand method target_acquired boolean
 singleton AC_PrecLand method get_last_valid_target_ms uint32_t
 singleton AC_PrecLand method get_target_velocity boolean Vector2f'Null
 singleton AC_PrecLand method get_target_location boolean Location'Null
+singleton AC_PrecLand method handle_msg void mavlink_landing_target_t uint32_t'skip_check
+
+userdata mavlink_landing_target_t depends AC_PRECLAND_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
+userdata mavlink_landing_target_t field time_usec uint32_t'skip_check read write
+userdata mavlink_landing_target_t field angle_x float'skip_check read write
+userdata mavlink_landing_target_t field angle_y float'skip_check read write
+userdata mavlink_landing_target_t field distance float'skip_check read write
+userdata mavlink_landing_target_t field size_x float'skip_check read write
+userdata mavlink_landing_target_t field size_y float'skip_check read write
+userdata mavlink_landing_target_t field target_num uint8_t'skip_check read write
+userdata mavlink_landing_target_t field frame uint8_t'skip_check read write
+userdata mavlink_landing_target_t field x float'skip_check read write
+userdata mavlink_landing_target_t field y float'skip_check read write
+userdata mavlink_landing_target_t field z float'skip_check read write
+userdata mavlink_landing_target_t field q'array int(ARRAY_SIZE(ud->q)) float'skip_check read write
+userdata mavlink_landing_target_t field type uint8_t'skip_check read write
+userdata mavlink_landing_target_t field position_valid uint8_t'skip_check read write
+-- above line is added by Pramod
 
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
