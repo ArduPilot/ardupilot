@@ -13,9 +13,10 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         board: [
-            sitl,
-            CubeOrangePlus-bdshot,
-            CubeOrange-ODID,
+            sitl, # For simulation
+            CubeOrangePlus-bdshot, # Legacy support
+            CubeOrangePlus-bdshot-ODID, # CubeOrangePlus with bdshot and ODID enabled
+            CubeOrange-ODID, # For my obsolete devkit
         ]
 
     steps:
