@@ -609,15 +609,13 @@ def get_ap_periph_boards():
                     list_ap.append(d)
                     continue
                 # process any include lines:
-                m = re.match(r"include\s+([^\s]*)", content)
-                if m is None:
-                    continue
-                include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
-                with open(include_path, "r") as g:
-                    content = g.read()
-                    if 'AP_PERIPH' in content:
-                        list_ap.append(d)
-                        continue
+                for m in re.finditer(r"^include\s+([^\s]*)", content, re.MULTILINE):
+                    include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
+                    with open(include_path, "r") as g:
+                        content = g.read()
+                        if 'AP_PERIPH' in content:
+                            list_ap.append(d)
+                            break
 
     list_ap = list(set(list_ap))
     return list_ap
