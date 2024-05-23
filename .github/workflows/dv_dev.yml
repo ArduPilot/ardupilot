@@ -31,11 +31,20 @@ jobs:
         run: |
           . .github/workflows/ccache.env
 
-      - name: build copter
+      - name: build copter sitl
         shell: bash
         run: |
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl
-          ./waf build --target bin/arducopter
+          ./waf build copter
+          ccache -s
+          ccache -z
+
+      - name: build copter CubeOrange
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board CubeOrangePlus-bdshot
+          ./waf build copter
           ccache -s
           ccache -z
