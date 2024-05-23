@@ -164,7 +164,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 - Run the microROS agent
   ```console
   cd ardupilot/libraries/AP_DDS
-  ros2 run micro_ros_agent micro_ros_agent udp4 -p 2019 -r dds_xrce_profile.xml
+  ros2 run micro_ros_agent micro_ros_agent udp4 -p 2019
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
@@ -184,7 +184,7 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```console
   cd ardupilot/libraries/AP_DDS
   # assuming we are using tty/pts/2 for DDS Application
-  ros2 run micro_ros_agent micro_ros_agent serial -b 115200  -r dds_xrce_profile.xml -D /dev/pts/2
+  ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```console
@@ -318,11 +318,11 @@ If the message is custom for ardupilot, first create the ROS message in `Tools/r
 Then, build ardupilot_msgs with colcon.
 Finally, copy the IDL folder from the install directory into the source tree.
 
-### Rules for adding topics and services to `dds_xrce_profile.xml`
+### Rules for adding topics and services
 
 Topics and services available from `AP_DDS` are automatically mapped into ROS 2
-provided a few rules are followed when defining the entries in
-`dds_xrce_profile.xml`.
+provided a few rules are followed when defining the entries in the
+topic and service tables.
 
 #### ROS 2 message and service interface types
 
@@ -363,7 +363,9 @@ The table below provides example mappings for topics and services
 | ap/navsat/navsat0 | rt/ap/navsat/navsat0 |
 | ap/arm_motors | rq/ap/arm_motorsRequest, rr/ap/arm_motorsReply |
 
-Refer to existing mappings in [`dds_xrce_profile.xml`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/dds_xrce_profile.xml) for additional details.
+Refer to existing mappings in [`AP_DDS_Topic_Table`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/AP_DDS_Topic_Table.h)
+and [`AP_DDS_Service_Table`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/AP_DDS_Service_Table.h)
+for additional details.
 
 ### Development Requirements
 
@@ -412,7 +414,7 @@ Then run the Micro ROS agent
 cd /path/to/ros2_ws
 source install/setup.bash
 cd src/ardupilot/libraries/AP_DDS
-ros2 run micro_ros_agent micro_ros_agent serial -b 115200  -r dds_xrce_profile.xml -D /dev/serial/by-id/usb-ArduPilot_Pixhawk6X_210028000151323131373139-if02
+ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/serial/by-id/usb-ArduPilot_Pixhawk6X_210028000151323131373139-if02
 ```
 
 If connection fails, instead of running the Micro ROS agent, debug the stream

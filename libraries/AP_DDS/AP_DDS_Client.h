@@ -213,6 +213,12 @@ public:
     //! @brief Parameter storage
     static const struct AP_Param::GroupInfo var_info[];
 
+    //! @brief Enum used to mark a topic as a data reader or writer
+    enum class Topic_rw : uint8_t {
+        DataReader = 0,
+        DataWriter = 1,
+    };
+
     //! @brief Convenience grouping for a single "channel" of data
     struct Topic_table {
         const uint8_t topic_id;
@@ -220,11 +226,18 @@ public:
         const uint8_t sub_id;    // added sub_id fields to avoid confusion
         const uxrObjectId dw_id;
         const uxrObjectId dr_id; // added dr_id fields to avoid confusion
-        const char* topic_profile_label;
-        const char* dw_profile_label;
-        const char* dr_profile_label;
+        const Topic_rw topic_rw;
+        const char* topic_name;
+        const char* type_name;
+        const uxrQoS_t qos;
     };
     static const struct Topic_table topics[];
+
+    //! @brief Enum used to mark a service as a requester or replier
+    enum class Service_rr : uint8_t {
+        Requester = 0,
+        Replier = 1,
+    };
 
     //! @brief Convenience grouping for a single "channel" of services
     struct Service_table {
@@ -234,11 +247,26 @@ public:
         //! @brief Reply ID for the service
         const uint8_t rep_id;
 
-        //! @brief Profile Label for the service requester
-        const char* req_profile_label;
+        //! @brief Service is requester or replier
+        const Service_rr service_rr;
 
-        //! @brief Profile Label for the service replier
-        const char* rep_profile_label;
+        //! @brief Service name as it appears in ROS
+        const char* service_name;
+
+        //! @brief Service requester message type
+        const char* request_type;
+
+        //! @brief Service replier message type
+        const char* reply_type;
+
+        //! @brief Service requester topic name
+        const char* request_topic_name;
+
+        //! @brief Service replier topic name
+        const char* reply_topic_name;
+
+        //! @brief QoS for the service
+        const uxrQoS_t qos;
     };
     static const struct Service_table services[];
 };
