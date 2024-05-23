@@ -7725,12 +7725,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     m.climb < climb_tolerance):
                 break
 
-    def send_set_position_target_global_int(self, lat, lon, alt):
+    def send_set_position_target_global_int_loc(self, loc):
+        frame, alt = self.mav_frame_and_alt_m(loc)
+        self.send_set_position_target_global_int(
+            int(loc.lat*1e7),
+            int(loc.lng*1e7),
+            alt,
+            frame=frame,
+        )
+
+    def send_set_position_target_global_int(
+            self,
+            lat,
+            lon,
+            alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT):
         self.mav.mav.set_position_target_global_int_send(
             0, # timestamp
             1, # target system_id
             1, # target component id
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            frame,
             MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # mask specifying use-only-lat-lon-alt
             lat, # lat
             lon, # lon
@@ -18860,6 +18874,118 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self.context_pop()
 
+    def MAV_CMD_CONDITION_YAW_heading_relative(self):
+        '''check relative-to-CoG yaw'''
+        def condition_yaw(angle, direction=1, relative=2, rate=360, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                p1=angle,      # target angle
+                p2=rate,       # degrees/second
+                p3=direction,  # -1 is counter-clockwise, 1 clockwise, 0 shortest
+                p4=relative,   # 1 for relative, 0 for absolute, 2 for heading-relative
+                want_result=want_result,
+            )
+
+        def send_local_target_south(metres):
+            pos = self.assert_receive_message('LOCAL_POSITION_NED')
+            self.send_position_target_local_ned(pos.x - metres, pos.y, -pos.z)
+
+        self.takeoff(10, mode='GUIDED')
+
+        self.progress("Check invalid parameters are rejected")
+        nan = float('nan')
+        for (angle, relative) in [
+                (nan, 0),
+                (nan, 2),
+                (-1, 0),
+                (361, 2),
+                (45, 0.5),
+                (45, 1.9),
+                (45, 3),
+                (45, 256),
+                (45, nan),
+        ]:
+            condition_yaw(angle, relative=relative, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+        self.progress("First make sure it cancels an absolute yaw")
+        for heading in 30, 60:
+            condition_yaw(heading, relative=0)
+            self.wait_heading(heading, minimum_duration=5)
+
+        here = self.get_location()
+        t = self.offset_location_ne(here, 2000, 0)
+
+        self.progress("Reposition north cancels the condition-yaw")
+        self.send_do_reposition(t)
+        self.wait_heading(0, minimum_duration=5)
+
+        condition_yaw(60, relative=0)
+        self.wait_heading(60, minimum_duration=10)
+
+        self.progress("switch to yaw-looks-ahead")
+        condition_yaw(0)
+        self.wait_heading(0, minimum_duration=10)
+
+        # turn on preserve-yaw
+        self.set_parameter("GUID_OPTIONS", 256)
+
+        self.progress("Now point 45-degrees to right of vehicle heading")
+        condition_yaw(45)
+        self.wait_heading(45, minimum_duration=10)
+
+        self.progress("Heading east, checking yaw remains 45-degrees-to-heading")
+        here = self.get_location()
+        t = self.offset_location_ne(here, 0, 2000)
+
+        self.send_set_position_target_global_int_loc(t)
+        self.wait_heading(135, minimum_duration=10)
+
+        self.progress("Heading west, checking yaw remains 45-degrees-to-heading")
+        here = self.get_location()
+        t = self.offset_location_ne(here, 0, -2000)
+
+        self.send_set_position_target_global_int_loc(t)
+        self.wait_heading(315, minimum_duration=10)
+
+        self.progress("Counter-clockwise: point 45-degrees to left of vehicle heading")
+        condition_yaw(45, direction=-1)
+        self.wait_heading(225, minimum_duration=10)
+
+        self.progress("Shortest direction: 270-degrees offset is 90-degrees to the left")
+        condition_yaw(270, direction=0)
+        self.wait_heading(180, minimum_duration=10)
+
+        self.progress("Check the requested turn rate is honoured")
+        turn_rate = 10  # degrees/second
+        tstart = self.get_sim_time()
+        condition_yaw(0, rate=turn_rate)
+        self.wait_heading(270, timeout=60)
+        elapsed = self.get_sim_time() - tstart
+        # 85 degrees (90 less the wait_heading accuracy) at 10 deg/s
+        # is 8.5 seconds; the vehicle's slew limit would take ~1.5s
+        self.progress("Took %.1fs to turn 90 degrees at %u deg/s" % (elapsed, turn_rate))
+        if elapsed < 7:
+            raise NotAchievedException("Turned too fast (%.1fs)" % elapsed)
+        self.wait_heading(270, minimum_duration=5)
+
+        self.progress("Local position targets preserve the heading-relative yaw")
+        condition_yaw(45)
+        self.wait_heading(315, minimum_duration=5)
+        send_local_target_south(2000)
+        self.wait_heading(225, minimum_duration=10)
+
+        self.progress("Without preserve-yaw a new target cancels the offset")
+        # with look-ahead as the default yaw behaviour the default mode
+        # is the same yaw mode the offset was applied in
+        self.set_parameters({
+            "GUID_OPTIONS": 0,
+            "WP_YAW_BEHAVIOR": 3,  # face along GPS course
+        })
+        send_local_target_south(2000)
+        self.wait_heading(180, minimum_duration=10)
+
+        self.do_RTL()
+
     def GroundEffectCompensation_touchDownExpected(self):
         '''Test EKF's handling of touchdown-expected'''
         self.zero_throttle()
@@ -20163,6 +20289,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.NavDelayTakeoffAbsTime,
             self.NavDelay,
             self.MAV_CMD_CONDITION_YAW,
+            self.MAV_CMD_CONDITION_YAW_heading_relative,
             self.SetModesViaAuxSwitch,
             self.AuxSwitchOptions,
             self.PowerOff,
