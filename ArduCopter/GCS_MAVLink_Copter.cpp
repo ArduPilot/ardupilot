@@ -647,6 +647,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_comman
             true);
         return MAV_RESULT_ACCEPTED;
     }
+    if (is_equal(packet.param4, 2.0f)) {
+        // relative to vehicle direction of travel.  As for relative
+        // offsets, direction 0 (shortest) is treated as clockwise;
+        // wrapping then makes it the shortest equivalent offset
+        const float relative_angle = wrap_180(direction >= 0 ? target_angle : -target_angle);
+        copter.flightmode->auto_yaw.set_vehicle_heading_yaw_rad(radians(relative_angle), radians(rate_degs));
+        return MAV_RESULT_ACCEPTED;
+    }
 
     return MAV_RESULT_FAILED;
 }
