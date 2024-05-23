@@ -81,12 +81,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Install DDS profile.
-install(FILES
-  ${ARDUPILOT_ROOT}/libraries/AP_DDS/dds_xrce_profile.xml
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
 # Install additional default params.
 install(DIRECTORY
   config/default_params

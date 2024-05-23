@@ -74,13 +74,6 @@ def micro_ros_agent_serial(device_dir):
         LaunchDescriptionSource(mra_ld),
         launch_arguments={
             "transport": "serial",
-            "refs": PathJoinSubstitution(
-                [
-                    FindPackageShare("ardupilot_sitl"),
-                    "config",
-                    "dds_xrce_profile.xml",
-                ]
-            ),
             "baudrate": "115200",
             "device": str(tty0),
         }.items(),
@@ -97,13 +90,6 @@ def micro_ros_agent_udp():
         LaunchDescriptionSource(mra_ld),
         launch_arguments={
             "transport": "udp4",
-            "refs": PathJoinSubstitution(
-                [
-                    FindPackageShare("ardupilot_sitl"),
-                    "config",
-                    "dds_xrce_profile.xml",
-                ]
-            ),
         }.items(),
     )
     yield ld, mra_actions
