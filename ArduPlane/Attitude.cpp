@@ -448,6 +448,10 @@ void Plane::stabilize()
 }
 
 
+/*
+ * Set the throttle output.
+ * This is called by TECS-enabled flight modes, e.g. AUTO, GUIDED, etc.
+*/
 void Plane::calc_throttle()
 {
     if (aparm.throttle_cruise <= 1) {
@@ -458,6 +462,7 @@ void Plane::calc_throttle()
         return;
     }
 
+    // Read the TECS throttle output and set it to the throttle channel.
     float commanded_throttle = TECS_controller.get_throttle_demand();
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, commanded_throttle);
 }

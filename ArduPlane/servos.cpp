@@ -499,47 +499,72 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
 #endif // #if AP_BATTERY_WATT_MAX_ENABLED
 
 /*
-  Apply min/max limits to throttle
+  Apply min/max safety limits to throttle.
  */
 float Plane::apply_throttle_limits(float throttle_in)
 {
-    // convert 0 to 100% (or -100 to +100) into PWM
+    // Pull the base throttle limits.
+    // These are usually set to map the ESC operating range.
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
 
 #if AP_ICENGINE_ENABLED
-    // apply idle governor
+    // Apply idle governor.
     g2.ice_control.update_idle_governor(min_throttle);
 #endif
 
+    // If reverse thrust is enabled not allowed right now, the minimum throttle must not fall below 0.
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
         min_throttle = 0;
     }
 
-    const bool use_takeoff_throttle_max =
+    // Query the conditions where TKOFF_THR_MAX applies.
+    const bool use_takeoff_throttle =
 #if HAL_QUADPLANE_ENABLED
         quadplane.in_transition() ||
 #endif
         (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
         (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
 
-    if (use_takeoff_throttle_max) {
+    if (use_takeoff_throttle) {
         if (aparm.takeoff_throttle_max != 0) {
+            // Replace max throttle with the takeoff max throttle setting.
+            // This is typically done to protect against long intervals of large power draw.
+            // Or (in contrast) to give some extra throttle during the initial climb.
             max_throttle = aparm.takeoff_throttle_max.get();
         }
+        // Do not allow min throttle to go below a lower threshold.
+        // This is typically done to protect against premature stalls close to the ground.
+        if (aparm.takeoff_mode.get() == 0 || !ahrs.using_airspeed_sensor()) {
+            // Use a constant max throttle throughout the takeoff or when airspeed readings are not available.
+            min_throttle = MAX(min_throttle, aparm.takeoff_throttle_max.get());
+        } else if (aparm.takeoff_mode.get() == 1) { // Use a throttle range through the takeoff.
+            if (aparm.takeoff_throttle_min.get() != 0) { // This is enabled by TKOFF_MODE==1.
+                min_throttle = MAX(min_throttle, aparm.takeoff_throttle_min.get());
+            }
+        }
     } else if (landing.is_flaring()) {
+        // Allow throttle cutoff when flaring.
+        // This is to allow the aircraft to bleed speed faster and land with a shut off thruster.
         min_throttle = 0;
     }
 
-    // compensate for battery voltage drop
+    // Compensate the limits for battery voltage drop.
+    // This relaxes the limits when the battery is getting depleted.
     g2.fwd_batt_cmp.apply_min_max(min_throttle, max_throttle);
 
 #if AP_BATTERY_WATT_MAX_ENABLED
-    // apply watt limiter
+    // Ensure that the power draw limits are not exceeded.
     throttle_watt_limiter(min_throttle, max_throttle);
 #endif
 
+    // Do a sanity check on them. Constrain down if necessary.
+    min_throttle = MIN(min_throttle, max_throttle);
+
+    // Let TECS know about the updated throttle limits.
+    TECS_controller.set_throttle_min(0.01f*min_throttle);
+    TECS_controller.set_throttle_max(0.01f*max_throttle);
     return constrain_float(throttle_in, min_throttle, max_throttle);
 }
 
