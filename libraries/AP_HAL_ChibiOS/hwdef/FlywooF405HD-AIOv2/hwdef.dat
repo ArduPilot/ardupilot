@@ -1,0 +1,15 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for FLYWOOF405HD_AIOv2 hardware.
+# thanks to betaflight for pin information
+
+include ../FlywooF405S-AIO/hwdef.dat
+
+#undefine items to be changed
+undef APJ_BOARD_ID
+
+# board ID for firmware load
+APJ_BOARD_ID 1180
+
+# GPIOs
+PB5  PINIO1 OUTPUT GPIO(81) LOW
