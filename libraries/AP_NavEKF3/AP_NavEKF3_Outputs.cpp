@@ -555,42 +555,18 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
 {
     // prepare flags
     uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-    if (filterStatus.flags.gps_glitching) {
-        flags |= (1<<15);
-    }
+    flags |= filterStatus.flags.attitude ? EKF_ATTITUDE : 0;
+    flags |= filterStatus.flags.horiz_vel ? EKF_VELOCITY_HORIZ : 0;
+    flags |= filterStatus.flags.vert_vel ? EKF_VELOCITY_VERT : 0;
+    flags |= filterStatus.flags.horiz_pos_rel ? EKF_POS_HORIZ_REL : 0;
+    flags |= filterStatus.flags.horiz_pos_abs ? EKF_POS_HORIZ_ABS : 0;
+    flags |= filterStatus.flags.vert_pos ? EKF_POS_VERT_ABS : 0;
+    flags |= filterStatus.flags.terrain_alt ? EKF_POS_VERT_AGL : 0;
+    flags |= filterStatus.flags.const_pos_mode ? EKF_CONST_POS_MODE : 0;
+    flags |= filterStatus.flags.pred_horiz_pos_rel ? EKF_PRED_POS_HORIZ_REL : 0;
+    flags |= filterStatus.flags.pred_horiz_pos_abs ? EKF_PRED_POS_HORIZ_ABS : 0;
+    flags |= filterStatus.flags.initalized ? EKF_UNINITIALIZED : 0;
+    flags |= filterStatus.flags.gps_glitching ? (1<<15) : 0;
 
     // get variances
     float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
