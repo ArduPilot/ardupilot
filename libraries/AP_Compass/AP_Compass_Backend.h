@@ -74,6 +74,7 @@ public:
         DEVTYPE_AK09918 = 0x14,
         DEVTYPE_AK09915 = 0x15,
     	DEVTYPE_QMC5883P = 0x16,
+        DEVTYPE_BMM350 = 0x17,
     };
 
 #if AP_COMPASS_MSP_ENABLED
