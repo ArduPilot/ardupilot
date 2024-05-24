@@ -134,6 +134,14 @@ public:
         _pitch_max_limit = pitch_limit;
     }
 
+    // set minimum throttle override, [-1, -1] range
+    // it is applicable for one control cycle only
+    void set_throttle_min(const float thr_min);
+
+    // set minimum throttle override, [0, -1] range
+    // it is applicable for one control cycle only
+    void set_throttle_max(const float thr_max);
+
     // force use of synthetic airspeed for one loop
     void use_synthetic_airspeed(void) {
         _use_synthetic_airspeed_once = true;
@@ -360,6 +368,9 @@ private:
     // Maximum and minimum floating point throttle limits
     float _THRmaxf;
     float _THRminf;
+    // Maximum and minimum throttle safety limits, set externally, typically by servos.cpp:apply_throttle_limits()
+    float _THRmaxf_ext = 1.0f;
+    float _THRminf_ext = -1.0f;
 
     // Maximum and minimum floating point pitch limits
     float _PITCHmaxf;
@@ -419,6 +430,9 @@ private:
     // need to reset on next loop
     bool _need_reset;
 
+    // Checks if we reset at the beginning of takeoff.
+    bool _flag_have_reset_after_takeoff;
+
     float _SKE_weighting;
 
     AP_Int8 _use_synthetic_airspeed;
@@ -458,6 +472,9 @@ private:
     // Update Demanded Throttle Non-Airspeed
     void _update_throttle_without_airspeed(int16_t throttle_nudge, float pitch_trim_deg);
 
+    // Constrain throttle demand and record clipping
+    void constrain_throttle();
+
     // get integral gain which is flight_stage dependent
     float _get_i_gain(void);
 
@@ -478,4 +495,7 @@ private:
 
     // current time constant
     float timeConstant(void) const;
+
+    // Update the allowable throttle range.
+    void _update_throttle_limits();
 };
