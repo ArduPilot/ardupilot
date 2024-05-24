@@ -132,9 +132,7 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
             SNR:       data19 or buffer[15]
             Velocity:  data20 data 21 or buffer[16] buffer [17]
         */
-
         reading_m = UINT16_VALUE(buffer[13], buffer[14]) * 0.01;
-
         const uint8_t snr = buffer[15];
 
         /* Validate the Data */
@@ -181,6 +179,27 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
     }
 
     return has_data;
+}
+
+/*
+    Logging Function
+    Write rangefinder packet for logging
+*/
+void AP_RangeFinder_Ainstein_LRD1_Pro::Log_LRD1_Pro(
+    uint16_t s_24, uint16_t s_60, uint16_t s_int,
+    uint8_t snr_24, uint8_t snr_60, uint8_t snr_int) const
+{
+    const struct log_LRD1 pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_LRD1_MSG),
+        time_us : AP_HAL::micros64(),
+        dist_24_cm : s_24,
+        dist_60_cm : s_60,
+        dist_int_cm : s_int,
+        snr_24 : snr_24,
+        snr_60 : snr_60,
+        snr_int : snr_int,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 bool AP_RangeFinder_Ainstein_LRD1_Pro::check_radar_reading(float &reading_m)
