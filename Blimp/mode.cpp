@@ -172,7 +172,6 @@ void Mode::get_pilot_input(Vector3f &pilot, float &yaw)
     // fetch pilot inputs
     pilot.y = channel_right->get_control_in() / float(RC_SCALE);
     pilot.x = channel_front->get_control_in() / float(RC_SCALE);
-    //TODO: need to make this channel_up instead, and then have it .negative. before being sent to pilot.z -> this is "throttle" channel, so higher = up.
     pilot.z = -channel_up->get_control_in() / float(RC_SCALE);
     yaw = channel_yaw->get_control_in() / float(RC_SCALE);
 }

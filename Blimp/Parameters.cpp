@@ -208,12 +208,13 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
 
-    // @Param: MAX_VEL_XY
+    // @Param: MAX_VEL_X Y
     // @DisplayName: Max XY Velocity
     // @Description: Sets the maximum XY velocity, in m/s
     // @Range: 0.2 5
     // @User: Standard
-    GSCALAR(max_vel_xy, "MAX_VEL_XY", 0.5),
+    GSCALAR(max_vel_x, "MAX_VEL_X", 0.5),
+    GSCALAR(max_vel_y, "MAX_VEL_Y", 0.5),
 
     // @Param: MAX_VEL_Z
     // @DisplayName: Max Z Velocity
@@ -229,12 +230,13 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Standard
     GSCALAR(max_vel_yaw, "MAX_VEL_YAW", 0.5),
 
-    // @Param: MAX_POS_XY
+    // @Param: MAX_POS_X Y
     // @DisplayName: Max XY Position change
     // @Description: Sets the maximum XY position change, in m/s
     // @Range: 0.1 5
     // @User: Standard
-    GSCALAR(max_pos_xy, "MAX_POS_XY", 0.2),
+    GSCALAR(max_pos_x, "MAX_POS_X", 0.2),
+    GSCALAR(max_pos_y, "MAX_POS_Y", 0.2),
 
     // @Param: MAX_POS_Z
     // @DisplayName: Max Z Position change
@@ -249,6 +251,16 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Range: 0.1 5
     // @User: Standard
     GSCALAR(max_pos_yaw, "MAX_POS_YAW", 0.3),
+
+    // @Param: MAX_MAN_THR
+    // @DisplayName: Max Throttle in Manual Mode
+    // @Description: Sets the maximum throttle output from manual mode. Note that this will be on top of FINS_THR_MAX.
+    // @Range: 0.1 1
+    // @User: Standard
+    GSCALAR(max_man_thr, "MAX_MAN_THR", 1),
+
+    //Streamrate factor, not an actual rate
+    GSCALAR(stream_rate, "STREAM_RATE", 1000),
 
     // @Param: SIMPLE_MODE
     // @DisplayName: Simple mode
@@ -266,7 +278,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Param: PID_DZ
     // @DisplayName: Deadzone for the position PIDs
-    // @Description: Output 0 thrust signal when blimp is within this distance (in meters) of the target position. Warning: If this param is greater than MAX_POS_XY param then the blimp won't move at all in the XY plane in Loiter mode as it does not allow more than a second's lag. Same for the other axes.
+    // @Description: Output 0 thrust signal when blimp is within this distance (in meters) of the target position. Warning: If this param is greater than MAX_POS_X multiplied by LAG then the blimp won't move at all in the X axis in Loiter mode. Same for the other axes.
     // @Units: m
     // @Range: 0.1 1
     // @User: Standard
@@ -279,7 +291,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Range: 50 490
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
+    GSCALAR(rc_speed, "RC_SPEED", RC_FAST_SPEED),
 
     // variables not in the g class which contain EEPROM saved variables
 
@@ -398,348 +410,744 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Path: Fins.cpp
     GOBJECTPTR(motors, "FINS_", Fins),
 
-    // @Param: VELXY_P
-    // @DisplayName: Velocity (horizontal) P gain
-    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
+    // @Group: LOIT_
+    // @Path: Loiter.cpp
+    GOBJECTPTR(loiter, "LOIT_", Loiter),
 
-    // @Param: VELXY_I
-    // @DisplayName: Velocity (horizontal) I gain
-    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
+    // @Param: VELX_P
+    // @DisplayName: X axis velocity controller P gain
+    // @Description: X axis velocity controller P gain.  Corrects in proportion to the difference between the desired X velocity vs actual X velocity
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
 
-    // @Param: VELXY_D
-    // @DisplayName: Velocity (horizontal) D gain
-    // @Description: Velocity (horizontal) D gain.  Corrects short-term changes in velocity
-    // @Range: 0.00 1.00
-    // @Increment: 0.001
-    // @User: Advanced
-
-    // @Param: VELXY_IMAX
-    // @DisplayName: Velocity (horizontal) integrator maximum
-    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-
-    // @Param: VELXY_FLTE
-    // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: VELXY_FLTD
-    // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: VELXY_FF
-    // @DisplayName: Velocity (horizontal) feed forward gain
-    // @Description: Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration
-    // @Range: 0 6
-    // @Increment: 0.01
-    // @User: Advanced
-    GOBJECT(pid_vel_xy, "VELXY_", AC_PID_2D),
-
-    // @Param: VELZ_P
-    // @DisplayName: Velocity (vertical) P gain
-    // @Description: Velocity (vertical) P gain.  Converts the difference between desired and actual velocity to a target acceleration
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: VELZ_I
-    // @DisplayName: Velocity (vertical) I gain
-    // @Description: Velocity (vertical) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: VELZ_D
-    // @DisplayName: Velocity (vertical) D gain
-    // @Description: Velocity (vertical) D gain.  Corrects short-term changes in velocity
-    // @Range: 0.00 1.00
-    // @Increment: 0.001
-    // @User: Advanced
-
-    // @Param: VELZ_IMAX
-    // @DisplayName: Velocity (vertical) integrator maximum
-    // @Description: Velocity (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-
-    // @Param: VELZ_FLTE
-    // @DisplayName: Velocity (vertical) input filter
-    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: VELZ_FLTD
-    // @DisplayName: Velocity (vertical) input filter
-    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for D term
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: VELZ_FF
-    // @DisplayName: Velocity (vertical) feed forward gain
-    // @Description: Velocity (vertical) feed forward gain.  Converts the difference between desired velocity to a target acceleration
-    // @Range: 0 6
-    // @Increment: 0.01
-    // @User: Advanced
-    GOBJECT(pid_vel_z, "VELZ_", AC_PID_Basic),
-
-    // @Param: VELYAW_P
-    // @DisplayName: Velocity (yaw) P gain
-    // @Description: Velocity (yaw) P gain.  Converts the difference between desired and actual velocity to a target acceleration
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: VELYAW_I
-    // @DisplayName: Velocity (yaw) I gain
-    // @Description: Velocity (yaw) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: VELYAW_D
-    // @DisplayName: Velocity (yaw) D gain
-    // @Description: Velocity (yaw) D gain.  Corrects short-term changes in velocity
-    // @Range: 0.00 1.00
-    // @Increment: 0.001
-    // @User: Advanced
-
-    // @Param: VELYAW_IMAX
-    // @DisplayName: Velocity (yaw) integrator maximum
-    // @Description: Velocity (yaw) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-
-    // @Param: VELYAW_FLTE
-    // @DisplayName: Velocity (yaw) input filter
-    // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for P and I terms
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: VELYAW_FF
-    // @DisplayName: Velocity (yaw) feed forward gain
-    // @Description: Velocity (yaw) feed forward gain.  Converts the difference between desired velocity to a target acceleration
-    // @Range: 0 6
-    // @Increment: 0.01
-    // @User: Advanced
-    GOBJECT(pid_vel_yaw, "VELYAW_", AC_PID_Basic),
-
-    // @Param: POSXY_P
-    // @DisplayName: Position (horizontal) P gain
-    // @Description: Position (horizontal) P gain.  Converts the difference between desired and actual position to a target velocity
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: POSXY_I
-    // @DisplayName: Position (horizontal) I gain
-    // @Description: Position (horizontal) I gain.  Corrects long-term difference between desired and actual position to a target velocity
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: POSXY_D
-    // @DisplayName: Position (horizontal) D gain
-    // @Description: Position (horizontal) D gain.  Corrects short-term changes in position
-    // @Range: 0.00 1.00
-    // @Increment: 0.001
-    // @User: Advanced
-
-    // @Param: POSXY_IMAX
-    // @DisplayName: Position (horizontal) integrator maximum
-    // @Description: Position (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-
-    // @Param: POSXY_FLTE
-    // @DisplayName: Position (horizontal) input filter
-    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: POSXY_FLTD
-    // @DisplayName: Position (horizontal) input filter
-    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: POSXY_FF
-    // @DisplayName: Position (horizontal) feed forward gain
-    // @Description: Position (horizontal) feed forward gain.  Converts the difference between desired position to a target velocity
-    // @Range: 0 6
-    // @Increment: 0.01
-    // @User: Advanced
-    GOBJECT(pid_pos_xy, "POSXY_", AC_PID_2D),
-
-    // @Param: POSZ_P
-    // @DisplayName: Position (vertical) P gain
-    // @Description: Position (vertical) P gain.  Converts the difference between desired and actual position to a target velocity
-    // @Range: 0.1 6.0
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: POSZ_I
-    // @DisplayName: Position (vertical) I gain
-    // @Description: Position (vertical) I gain.  Corrects long-term difference between desired and actual position to a target velocity
-    // @Range: 0.02 1.00
-    // @Increment: 0.01
-    // @User: Advanced
-
-    // @Param: POSZ_D
-    // @DisplayName: Position (vertical) D gain
-    // @Description: Position (vertical) D gain.  Corrects short-term changes in position
-    // @Range: 0.00 1.00
-    // @Increment: 0.001
-    // @User: Advanced
-
-    // @Param: POSZ_IMAX
-    // @DisplayName: Position (vertical) integrator maximum
-    // @Description: Position (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
-    // @Range: 0 4500
-    // @Increment: 10
-    // @Units: cm/s/s
-    // @User: Advanced
-
-    // @Param: POSZ_FLTE
-    // @DisplayName: Position (vertical) input filter
-    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: POSZ_FLTD
-    // @DisplayName: Position (vertical) input filter
-    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for D term
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
-    // @Param: POSZ_FF
-    // @DisplayName: Position (vertical) feed forward gain
-    // @Description: Position (vertical) feed forward gain.  Converts the difference between desired position to a target velocity
-    // @Range: 0 6
-    // @Increment: 0.01
-    // @User: Advanced
-    GOBJECT(pid_pos_z, "POSZ_", AC_PID_Basic),
-
-    // @Param: POSYAW_P
-    // @DisplayName: Position (yaw) axis controller P gain
-    // @Description: Position (yaw) axis controller P gain.
-    // @Range: 0.0 3.0
+    // @Param: VELX_I
+    // @DisplayName: X axis velocity controller I gain
+    // @Description: X axis velocity controller I gain.  Corrects long-term difference in desired X velocity vs actual X velocity
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
 
+    // @Param: VELX_IMAX
+    // @DisplayName: X axis velocity controller I gain maximum
+    // @Description: X axis velocity controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELX_D
+    // @DisplayName: X axis velocity controller D gain
+    // @Description: X axis velocity controller D gain.  Compensates for short-term change in desired X velocity vs actual X velocity
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELX_FF
+    // @DisplayName: X axis velocity controller feed forward
+    // @Description: X axis velocity controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELX_FLTT
+    // @DisplayName: X axis velocity controller target frequency in Hz
+    // @Description: X axis velocity controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELX_FLTE
+    // @DisplayName: X axis velocity controller error frequency in Hz
+    // @Description: X axis velocity controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELX_FLTD
+    // @DisplayName: X axis velocity controller derivative frequency in Hz
+    // @Description: X axis velocity controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELX_SMAX
+    // @DisplayName: X axis velocity slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: VELX_PDMX
+    // @DisplayName: X axis velocity controller PD sum maximum
+    // @Description: X axis velocity controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: VELX_D_FF
+    // @DisplayName: X axis velocity derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: VELX_NTF
+    // @DisplayName: X axis velocity target notch filter index
+    // @Description: X axis velocity target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: VELX_NEF
+    // @DisplayName: X axis velocity error notch filter index
+    // @Description: X axis velocity error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_vel_x, "VELX_", AC_PID),
+
+    // @Param: VELY_P
+    // @DisplayName: Y axis velocity controller P gain
+    // @Description: Y axis velocity controller P gain.  Corrects in proportion to the difference between the desired Y velocity vs actual Y velocity
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VELY_I
+    // @DisplayName: Y axis velocity controller I gain
+    // @Description: Y axis velocity controller I gain.  Corrects long-term difference in desired Y velocity vs actual Y velocity
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELY_IMAX
+    // @DisplayName: Y axis velocity controller I gain maximum
+    // @Description: Y axis velocity controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELY_D
+    // @DisplayName: Y axis velocity controller D gain
+    // @Description: Y axis velocity controller D gain.  Compensates for short-term change in desired Y velocity vs actual Y velocity
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELY_FF
+    // @DisplayName: Y axis velocity controller feed forward
+    // @Description: Y axis velocity controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELY_FLTT
+    // @DisplayName: Y axis velocity controller target frequency in Hz
+    // @Description: Y axis velocity controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELY_FLTE
+    // @DisplayName: Y axis velocity controller error frequency in Hz
+    // @Description: Y axis velocity controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELY_FLTD
+    // @DisplayName: Y axis velocity controller derivative frequency in Hz
+    // @Description: Y axis velocity controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELY_SMAX
+    // @DisplayName: Y axis velocity slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: VELY_PDMX
+    // @DisplayName: Y axis velocity controller PD sum maximum
+    // @Description: Y axis velocity controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: VELY_D_FF
+    // @DisplayName: Y axis velocity derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: VELY_NTF
+    // @DisplayName: Y axis velocity target notch filter index
+    // @Description: Y axis velocity target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: VELY_NEF
+    // @DisplayName: Y axis velocity error notch filter index
+    // @Description: Y axis velocity error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_vel_y, "VELY_", AC_PID),
+
+    // @Param: VELZ_P
+    // @DisplayName: Z axis velocity controller P gain
+    // @Description: Z axis velocity controller P gain.  Corrects in proportion to the difference between the desired Z velocity vs actual Z velocity
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VELZ_I
+    // @DisplayName: Z axis velocity controller I gain
+    // @Description: Z axis velocity controller I gain.  Corrects long-term difference in desired Z velocity vs actual Z velocity
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELZ_IMAX
+    // @DisplayName: Z axis velocity controller I gain maximum
+    // @Description: Z axis velocity controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELZ_D
+    // @DisplayName: Z axis velocity controller D gain
+    // @Description: Z axis velocity controller D gain.  Compensates for short-term change in desired Z velocity vs actual Z velocity
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELZ_FF
+    // @DisplayName: Z axis velocity controller feed forward
+    // @Description: Z axis velocity controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELZ_FLTT
+    // @DisplayName: Z axis velocity controller target frequency in Hz
+    // @Description: Z axis velocity controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELZ_FLTE
+    // @DisplayName: Z axis velocity controller error frequency in Hz
+    // @Description: Z axis velocity controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELZ_FLTD
+    // @DisplayName: Z axis velocity controller derivative frequency in Hz
+    // @Description: Z axis velocity controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELZ_SMAX
+    // @DisplayName: Z axis velocity slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: VELZ_PDMX
+    // @DisplayName: Z axis velocity controller PD sum maximum
+    // @Description: Z axis velocity controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: VELZ_D_FF
+    // @DisplayName: Z axis velocity derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: VELZ_NTF
+    // @DisplayName: Z axis velocity target notch filter index
+    // @Description: Z axis velocity target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: VELZ_NEF
+    // @DisplayName: Z axis velocity error notch filter index
+    // @Description: Z axis velocity error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_vel_z, "VELZ_", AC_PID),
+
+    // @Param: VELYAW_P
+    // @DisplayName: Yaw axis velocity controller P gain
+    // @Description: Yaw axis velocity controller P gain.  Corrects in proportion to the difference between the desired Yaw velocity vs actual Yaw velocity
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: VELYAW_I
+    // @DisplayName: Yaw axis velocity controller I gain
+    // @Description: Yaw axis velocity controller I gain.  Corrects long-term difference in desired Yaw velocity vs actual Yaw velocity
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELYAW_IMAX
+    // @DisplayName: Yaw axis velocity controller I gain maximum
+    // @Description: Yaw axis velocity controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: VELYAW_D
+    // @DisplayName: Yaw axis velocity controller D gain
+    // @Description: Yaw axis velocity controller D gain.  Compensates for short-term change in desired Yaw velocity vs actual Yaw velocity
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELYAW_FF
+    // @DisplayName: Yaw axis velocity controller feed forward
+    // @Description: Yaw axis velocity controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: VELYAW_FLTT
+    // @DisplayName: Yaw axis velocity controller target frequency in Hz
+    // @Description: Yaw axis velocity controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELYAW_FLTE
+    // @DisplayName: Yaw axis velocity controller error frequency in Hz
+    // @Description: Yaw axis velocity controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELYAW_FLTD
+    // @DisplayName: Yaw axis velocity controller derivative frequency in Hz
+    // @Description: Yaw axis velocity controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: VELYAW_SMAX
+    // @DisplayName: Yaw axis velocity slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: VELYAW_PDMX
+    // @DisplayName: Yaw axis velocity controller PD sum maximum
+    // @Description: Yaw axis velocity controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: VELYAW_D_FF
+    // @DisplayName: Yaw axis velocity derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: VELYAW_NTF
+    // @DisplayName: Yaw axis velocity target notch filter index
+    // @Description: Yaw axis velocity target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: VELYAW_NEF
+    // @DisplayName: Yaw axis velocity error notch filter index
+    // @Description: Yaw axis velocity error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_vel_yaw, "VELYAW_", AC_PID),
+
+    // @Param: POSX_P
+    // @DisplayName: X axis position controller P gain
+    // @Description: X axis position controller P gain.  Corrects in proportion to the difference between the desired X position vs actual X position
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: POSX_I
+    // @DisplayName: X axis position controller I gain
+    // @Description: X axis position controller I gain.  Corrects long-term difference in desired X position vs actual X position
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSX_IMAX
+    // @DisplayName: X axis position controller I gain maximum
+    // @Description: X axis position controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSX_D
+    // @DisplayName: X axis position controller D gain
+    // @Description: X axis position controller D gain.  Compensates for short-term change in desired X position vs actual X position
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSX_FF
+    // @DisplayName: X axis position controller feed forward
+    // @Description: X axis position controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSX_FLTT
+    // @DisplayName: X axis position controller target frequency in Hz
+    // @Description: X axis position controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSX_FLTE
+    // @DisplayName: X axis position controller error frequency in Hz
+    // @Description: X axis position controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSX_FLTD
+    // @DisplayName: X axis position controller derivative frequency in Hz
+    // @Description: X axis position controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSX_SMAX
+    // @DisplayName: X axis position slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: POSX_PDMX
+    // @DisplayName: X axis position controller PD sum maximum
+    // @Description: X axis position controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: POSX_D_FF
+    // @DisplayName: X axis position derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: POSX_NTF
+    // @DisplayName: X axis position target notch filter index
+    // @Description: X axis position target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: POSX_NEF
+    // @DisplayName: X axis position error notch filter index
+    // @Description: X axis position error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_pos_x, "POSX_", AC_PID),
+ 
+    // @Param: POSY_P
+    // @DisplayName: Y axis position controller P gain
+    // @Description: Y axis position controller P gain.  Corrects in proportion to the difference between the desired Y position vs actual Y position
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: POSY_I
+    // @DisplayName: Y axis position controller I gain
+    // @Description: Y axis position controller I gain.  Corrects long-term difference in desired Y position vs actual Y position
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSY_IMAX
+    // @DisplayName: Y axis position controller I gain maximum
+    // @Description: Y axis position controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSY_D
+    // @DisplayName: Y axis position controller D gain
+    // @Description: Y axis position controller D gain.  Compensates for short-term change in desired Y position vs actual Y position
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSY_FF
+    // @DisplayName: Y axis position controller feed forward
+    // @Description: Y axis position controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSY_FLTT
+    // @DisplayName: Y axis position controller target frequency in Hz
+    // @Description: Y axis position controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSY_FLTE
+    // @DisplayName: Y axis position controller error frequency in Hz
+    // @Description: Y axis position controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSY_FLTD
+    // @DisplayName: Y axis position controller derivative frequency in Hz
+    // @Description: Y axis position controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSY_SMAX
+    // @DisplayName: Y axis position slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: POSY_PDMX
+    // @DisplayName: Y axis position controller PD sum maximum
+    // @Description: Y axis position controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: POSY_D_FF
+    // @DisplayName: Y axis position derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: POSY_NTF
+    // @DisplayName: Y axis position target notch filter index
+    // @Description: Y axis position target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: POSY_NEF
+    // @DisplayName: Y axis position error notch filter index
+    // @Description: Y axis position error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_pos_y, "POSY_", AC_PID),
+
+    // @Param: POSZ_P
+    // @DisplayName: Z axis position controller P gain
+    // @Description: Z axis position controller P gain.  Corrects in proportion to the difference between the desired Z position vs actual Z position
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: POSZ_I
+    // @DisplayName: Z axis position controller I gain
+    // @Description: Z axis position controller I gain.  Corrects long-term difference in desired Z position vs actual Z position
+    // @Range: 0.01 2.0
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSZ_IMAX
+    // @DisplayName: Z axis position controller I gain maximum
+    // @Description: Z axis position controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: POSZ_D
+    // @DisplayName: Z axis position controller D gain
+    // @Description: Z axis position controller D gain.  Compensates for short-term change in desired Z position vs actual Z position
+    // @Range: 0.0 0.05
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSZ_FF
+    // @DisplayName: Z axis position controller feed forward
+    // @Description: Z axis position controller feed forward
+    // @Range: 0 0.5
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: POSZ_FLTT
+    // @DisplayName: Z axis position controller target frequency in Hz
+    // @Description: Z axis position controller target frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSZ_FLTE
+    // @DisplayName: Z axis position controller error frequency in Hz
+    // @Description: Z axis position controller error frequency in Hz
+    // @Range: 0 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSZ_FLTD
+    // @DisplayName: Z axis position controller derivative frequency in Hz
+    // @Description: Z axis position controller derivative frequency in Hz
+    // @Range: 5 100
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: POSZ_SMAX
+    // @DisplayName: Z axis position slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: POSZ_PDMX
+    // @DisplayName: Z axis position controller PD sum maximum
+    // @Description: Z axis position controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: POSZ_D_FF
+    // @DisplayName: Z axis position derivative feedforward gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: POSZ_NTF
+    // @DisplayName: Z axis position target notch filter index
+    // @Description: Z axis position target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: POSZ_NEF
+    // @DisplayName: Z axis position error notch filter index
+    // @Description: Z axis position error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+    GOBJECT(pid_pos_z, "POSZ_", AC_PID),
+
+    // @Param: POSYAW_P
+    // @DisplayName: Yaw axis position controller P gain
+    // @Description: Yaw axis position controller P gain.  Corrects in proportion to the difference between the desired Yaw position vs actual Yaw position
+    // @Range: 0.01 0.5
+    // @Increment: 0.005
+    // @User: Standard
+
     // @Param: POSYAW_I
-    // @DisplayName: Position (yaw) axis controller I gain
-    // @Description: Position (yaw) axis controller I gain.
-    // @Range: 0.0 3.0
+    // @DisplayName: Yaw axis position controller I gain
+    // @Description: Yaw axis position controller I gain.  Corrects long-term difference in desired Yaw position vs actual Yaw position
+    // @Range: 0.01 2.0
     // @Increment: 0.01
     // @User: Standard
 
     // @Param: POSYAW_IMAX
-    // @DisplayName: Position (yaw) axis controller I gain maximum
-    // @Description: Position (yaw) axis controller I gain maximum.
-    // @Range: 0 4000
-    // @Increment: 10
-    // @Units: d%
+    // @DisplayName: Yaw axis position controller I gain maximum
+    // @Description: Yaw axis position controller I gain maximum.  Constrains the maximum that the I term will output
+    // @Range: 0 1
+    // @Increment: 0.01
     // @User: Standard
 
     // @Param: POSYAW_D
-    // @DisplayName: Position (yaw) axis controller D gain
-    // @Description: Position (yaw) axis controller D gain.
-    // @Range: 0.001 0.1
+    // @DisplayName: Yaw axis position controller D gain
+    // @Description: Yaw axis position controller D gain.  Compensates for short-term change in desired Yaw position vs actual Yaw position
+    // @Range: 0.0 0.05
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: POSYAW_FF
-    // @DisplayName: Position (yaw) axis controller feed forward
-    // @Description: Position (yaw) axis controller feed forward
+    // @DisplayName: Yaw axis position controller feed forward
+    // @Description: Yaw axis position controller feed forward
     // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
 
     // @Param: POSYAW_FLTT
-    // @DisplayName: Position (yaw) target frequency filter in Hz
-    // @Description: Position (yaw) target frequency filter in Hz
-    // @Range: 1 50
+    // @DisplayName: Yaw axis position controller target frequency in Hz
+    // @Description: Yaw axis position controller target frequency in Hz
+    // @Range: 5 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
 
     // @Param: POSYAW_FLTE
-    // @DisplayName: Position (yaw) error frequency filter in Hz
-    // @Description: Position (yaw) error frequency filter in Hz
-    // @Range: 1 100
+    // @DisplayName: Yaw axis position controller error frequency in Hz
+    // @Description: Yaw axis position controller error frequency in Hz
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
 
     // @Param: POSYAW_FLTD
-    // @DisplayName: Position (yaw) derivative input filter in Hz
-    // @Description: Position (yaw) derivative input filter in Hz
-    // @Range: 1 100
+    // @DisplayName: Yaw axis position controller derivative frequency in Hz
+    // @Description: Yaw axis position controller derivative frequency in Hz
+    // @Range: 5 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
 
     // @Param: POSYAW_SMAX
-    // @DisplayName: Yaw slew rate limit
-    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains.
+    // @DisplayName: Yaw axis position slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
     // @User: Advanced
 
     // @Param: POSYAW_PDMX
-    // @DisplayName: Position (yaw) axis controller PD sum maximum
-    // @Description: Position (yaw) axis controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
-    // @Range: 0 4000
-    // @Increment: 10
-    // @Units: d%
-    // @User: Advanced
+    // @DisplayName: Yaw axis position controller PD sum maximum
+    // @Description: Yaw axis position controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
 
     // @Param: POSYAW_D_FF
-    // @DisplayName: Position (yaw) Derivative FeedForward Gain
+    // @DisplayName: Yaw axis position derivative feedforward gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
-    // @Range: 0 0.1
-    // @Increment: 0.001
+    // @Range: 0 0.02
+    // @Increment: 0.0001
     // @User: Advanced
 
     // @Param: POSYAW_NTF
-    // @DisplayName: Position (yaw) Target notch filter index
-    // @Description: Position (yaw) Target notch filter index
+    // @DisplayName: Yaw axis position target notch filter index
+    // @Description: Yaw axis position target notch filter index
     // @Range: 1 8
     // @User: Advanced
 
     // @Param: POSYAW_NEF
-    // @DisplayName: Position (yaw) Error notch filter index
-    // @Description: Position (yaw) Error notch filter index
+    // @DisplayName: Yaw axis position error notch filter index
+    // @Description: Yaw axis position error notch filter index
     // @Range: 1 8
     // @User: Advanced
-
     GOBJECT(pid_pos_yaw, "POSYAW_", AC_PID),
 
     // @Group:
