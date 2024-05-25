@@ -207,7 +207,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .type_name = "sensor_msgs::msg::dds_::Joy_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
-            .reliability = UXR_RELIABILITY_RELIABLE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
             .history = UXR_HISTORY_KEEP_LAST,
             .depth = 5,
         },
@@ -223,7 +223,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .type_name = "tf2_msgs::msg::dds_::TFMessage_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
-            .reliability = UXR_RELIABILITY_RELIABLE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
             .history = UXR_HISTORY_KEEP_LAST,
             .depth = 5,
         },
@@ -239,7 +239,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .type_name = "geometry_msgs::msg::dds_::TwistStamped_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
-            .reliability = UXR_RELIABILITY_RELIABLE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
             .history = UXR_HISTORY_KEEP_LAST,
             .depth = 5,
         },
@@ -255,7 +255,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .type_name = "ardupilot_msgs::msg::dds_::GlobalPosition_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
-            .reliability = UXR_RELIABILITY_RELIABLE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
             .history = UXR_HISTORY_KEEP_LAST,
             .depth = 5,
         },
