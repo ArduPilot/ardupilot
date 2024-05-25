@@ -128,6 +128,9 @@ class ChibiOSHWDef(object):
         # list of shared up timers
         self.shared_up = []
 
+        # boolean indicating whether we have read and processed self.hwdef
+        self.processed_hwdefs = False
+
     def is_int(self, str):
         '''check if a string is an integer'''
         try:
@@ -3155,7 +3158,35 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.add_firmware_defaults_from_file(f, "defaults_iofirmware.h", "IOMCU Firmware")
 
+    def is_periph_fw_unprocessed_file(self, hwdef):
+        '''helper/recursion function for is_periph_fw_unprocessed'''
+        with open(hwdef, "r") as f:
+            content = f.read()
+            if 'AP_PERIPH' in content:
+                return True
+            # process any include lines:
+            for m in re.finditer(r"^include\s+([^\s]*)", content, re.MULTILINE):
+                include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
+                if self.is_periph_fw_unprocessed_file(include_path):
+                    return True
+
+    def is_periph_fw_unprocessed(self):
+        '''it takes ~2 seconds to process all hwdefs.  This is a shortcut to
+        make things much faster in the case we are filtering boards to
+        just peripherals.  Note that this parsing is very coarse -
+        AP_PERIPH could be in a comment or part of a define
+        (e.g. AP_PERIPH_GPS_SUPPORT), for example, and this method
+        will still return True.  Also can't "undef" AP_PERIPH - if we
+        ever see the string we return true.
+        '''
+        for hwdef in self.hwdef:
+            if self.is_periph_fw_unprocessed_file(hwdef):
+                return True
+        return False
+
     def is_periph_fw(self):
+        if not self.processed_hwdefs:
+            raise ValueError("Need to process_hwdefs() first")
         return int(self.env_vars.get('AP_PERIPH', 0)) != 0
 
     def is_normal_fw(self):
@@ -3202,11 +3233,14 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.romfs_add('defaults.parm', filepath)
 
-    def run(self):
-
-        # process input file
+    def process_hwdefs(self):
         for fname in self.hwdef:
             self.process_file(fname)
+        self.processed_hwdefs = True
+
+    def run(self):
+        # process input file
+        self.process_hwdefs()
 
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")
