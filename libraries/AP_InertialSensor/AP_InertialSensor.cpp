@@ -1933,13 +1933,25 @@ void AP_InertialSensor::update(void)
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_gyro_healthy[i] && _use(i)) {
-                _primary_gyro = i;
+                _first_healthy_gyro = i;
+#if AP_AHRS_ENABLED
+                // ask AHRS for the true primary, might just be us though
+                _primary_gyro = AP::ahrs().get_primary_gyro_index();
+#else
+                _primary_gyro = _first_healthy_gyro;
+#endif
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_accel_healthy[i] && _use(i)) {
-                _primary_accel = i;
+                _first_healthy_accel = i;
+#if AP_AHRS_ENABLED
+                // ask AHRS for the true primary, might just be us though
+                _primary_accel = AP::ahrs().get_primary_accel_index();
+#else
+                _primary_accel = _first_healthy_accel;
+#endif
                 break;
             }
         }
@@ -2749,8 +2761,8 @@ void AP_InertialSensor::send_uart_data(void)
     data.length = sizeof(data);
     data.timestamp_us = AP_HAL::micros();
 
-    get_delta_angle(get_primary_gyro(), data.delta_angle, data.delta_angle_dt);
-    get_delta_velocity(get_primary_accel(), data.delta_velocity, data.delta_velocity_dt);
+    get_delta_angle(get_first_healthy_gyro(), data.delta_angle, data.delta_angle_dt);
+    get_delta_velocity(get_first_healthy_accel(), data.delta_velocity, data.delta_velocity_dt);
 
     data.counter = uart.counter++;
     data.crc = crc_xmodem((const uint8_t *)&data, sizeof(data)-sizeof(uint16_t));

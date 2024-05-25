@@ -222,8 +222,8 @@ public:
 
     bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
-    uint8_t get_primary_accel(void) const { return _primary_accel; }
-    uint8_t get_primary_gyro(void) const { return _primary_gyro; }
+    uint8_t get_first_healthy_accel(void) const { return _primary_accel; }
+    uint8_t get_first_healthy_gyro(void) const { return _primary_gyro; }
 
     // get the gyro filter rate in Hz
     uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
@@ -659,6 +659,10 @@ private:
     // primary accel and gyro
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
+
+    // first_healthy accel and gyro
+    uint8_t _first_healthy_gyro;
+    uint8_t _first_healthy_accel;
 
     // mask of accels and gyros which we will be actively using
     // and this should wait for in wait_for_sample()
