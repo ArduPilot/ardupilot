@@ -1949,16 +1949,27 @@ void AP_InertialSensor::update(void)
             }
         }
 
+#if AP_AHRS_ENABLED
+        // ask AHRS for the true primary, might just be us though
+        _primary_gyro = AP::ahrs().get_primary_gyro_index();
+        _primary_accel = AP::ahrs().get_primary_accel_index();
+#endif
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_gyro_healthy[i] && _use(i)) {
                 _first_usable_gyro = i;
+#if !AP_AHRS_ENABLED
+                _primary_gyro = _first_usable_gyro;
+#endif
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_accel_healthy[i] && _use(i)) {
                 _first_usable_accel = i;
+#if !AP_AHRS_ENABLED
+                _primary_accel = _first_usable_accel;
+#endif
                 break;
             }
         }
