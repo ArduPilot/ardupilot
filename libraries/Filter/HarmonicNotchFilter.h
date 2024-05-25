@@ -114,6 +114,7 @@ public:
         EnableOnAllIMUs = 1<<3,
         TripleNotch = 1<<4,
         TreatLowAsMin = 1<<5,
+        DisableNotchPreArm = 1<<6,
     };
 
     HarmonicNotchFilterParams(void);
