@@ -659,9 +659,13 @@ private:
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
     bool _accel_id_ok[INS_MAX_INSTANCES];
 
-    // primary accel and gyro
+    // first usable gyro and accel
     uint8_t _first_usable_gyro;
     uint8_t _first_usable_accel;
+
+    // primary accel and gyro
+    uint8_t _primary_gyro;
+    uint8_t _primary_accel;
 
     // mask of accels and gyros which we will be actively using
     // and this should wait for in wait_for_sample()
