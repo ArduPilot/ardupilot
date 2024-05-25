@@ -12,6 +12,10 @@ import json
 _board_classes = {}
 _board = None
 
+# modify our search path:
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import chibios_hwdef
+
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
         super(BoardMeta, cls).__init__(name, bases, dct)
@@ -603,19 +607,9 @@ def get_ap_periph_boards():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
-            with open(hwdef, "r") as f:
-                content = f.read()
-                if 'AP_PERIPH' in content:
-                    list_ap.append(d)
-                    continue
-                # process any include lines:
-                for m in re.finditer(r"^include\s+([^\s]*)", content, re.MULTILINE):
-                    include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
-                    with open(include_path, "r") as g:
-                        content = g.read()
-                        if 'AP_PERIPH' in content:
-                            list_ap.append(d)
-                            break
+            ch = chibios_hwdef.ChibiOSHWDef(hwdef=[hwdef], quiet=True)
+            if ch.is_periph_fw_unprocessed():
+                list_ap.append(d)
 
     list_ap = list(set(list_ap))
     return list_ap
