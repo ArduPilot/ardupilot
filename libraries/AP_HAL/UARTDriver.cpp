@@ -179,6 +179,11 @@ bool AP_HAL::UARTDriver::flow_control_enabled(enum flow_control flow_control_set
     return false;
 }
 
+uint8_t AP_HAL::UARTDriver::get_parity(void)
+{
+    return AP_HAL::UARTDriver::parity;
+}
+
 #if HAL_UART_STATS_ENABLED
 // Take cumulative bytes and return the change since last call
 uint32_t AP_HAL::UARTDriver::StatsTracker::ByteTracker::update(uint32_t bytes)

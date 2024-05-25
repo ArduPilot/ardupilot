@@ -46,6 +46,7 @@ extern SerialUSBDriver SDU2;
 extern const SerialUSBConfig serusbcfg2;
 #endif //HAL_HAVE_DUAL_USB_CDC
 uint32_t get_usb_baud(uint16_t endpoint_id);
+uint8_t get_usb_parity(uint16_t endpoint_id);
 #endif
 #define USB_DESC_MAX_STRLEN 100
 void setup_usb_strings(void);
