@@ -354,6 +354,10 @@ private:
 
     // reference to backend
     AP_ADSB_Backend *_backend[ADSB_MAX_INSTANCES];
+
+    // Per backend params
+    static const struct AP_Param::GroupInfo *_backend_var_info[ADSB_MAX_INSTANCES];
+
 };
 
 namespace AP {

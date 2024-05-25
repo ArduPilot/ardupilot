@@ -62,6 +62,9 @@ extern const AP_HAL::HAL& hal;
 
 AP_ADSB *AP_ADSB::_singleton;
 
+// Per backend params
+const AP_Param::GroupInfo *AP_ADSB::_backend_var_info[ADSB_MAX_INSTANCES];
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
@@ -176,6 +179,10 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
+    // @Group: 
+    // @Path: AP_ADSB_Sagetech_MSX.cpp
+    AP_SUBGROUPVARPTR(_backend[0], "", 16, AP_ADSB, _backend_var_info[0]),
+
     AP_GROUPEND
 };
 
@@ -228,6 +235,11 @@ void AP_ADSB::init(void)
             }
             // success
             detected_num_instances = i+1;
+
+            // If backend has loaded params load saved values from eeprom
+            if (_backend_var_info[i]) {
+                AP_Param::load_object_from_eeprom(_backend[i], _backend_var_info[i]);
+            }
         }
     }
 

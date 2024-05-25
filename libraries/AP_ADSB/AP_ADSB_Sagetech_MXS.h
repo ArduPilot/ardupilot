@@ -30,7 +30,8 @@
 
 class AP_ADSB_Sagetech_MXS : public AP_ADSB_Backend {
 public:
-    using AP_ADSB_Backend::AP_ADSB_Backend;
+    // constructor.
+    AP_ADSB_Sagetech_MXS(AP_ADSB &frontend, uint8_t instance);
 
     /**
      * @brief Performs required initialization for this instance
@@ -59,6 +60,8 @@ public:
      * @return false 
      */
     static bool detect();
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
@@ -223,8 +226,6 @@ private:
     uint8_t convert_sg_emitter_type_to_adsb(const sg_emitter_t sgEmitterType) const;
 
     void auto_config_operating();
-    void auto_config_installation();
-    void auto_config_flightid();
     void handle_ack(const sg_ack_t ack);
 
     struct {
@@ -265,6 +266,9 @@ private:
     void populate_op_altitude(const struct AP_ADSB::Loc &loc);
     void populate_op_climbrate(const struct AP_ADSB::Loc &loc);
     void populate_op_airspeed_and_heading(const struct AP_ADSB::Loc &loc);
+
+    // Params
+    AP_Float _targetreq_rate;
 
 };
 #endif // HAL_ADSB_SAGETECH_MXS_ENABLED
