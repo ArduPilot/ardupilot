@@ -132,7 +132,7 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
  */
 void AP_DroneCAN_Serial::Port::init(void)
 {
-    baudrate = state.baud;
+    baudrate = AP_SerialManager::map_baudrate(state.baud);
     begin(baudrate, 0, 0);
 }
 
