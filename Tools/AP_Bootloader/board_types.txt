@@ -279,6 +279,7 @@ AP_HW_SDMODELH7V2                    1167
 
 AP_HW_JHEMCUF405WING                 1169
 AP_HW_MatekG474                      1170
+AP_HW_2RAWH743                       1173
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
