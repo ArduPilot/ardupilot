@@ -105,12 +105,12 @@ private:
     const uint32_t sequence_disarmed_bad_gps = DEFINE_COLOUR_SEQUENCE_SLOW(BLUE);
 
     uint8_t last_step;
-    enum rgb_source_t {
+    enum class Source {
         standard = 0,
         mavlink = 1,
         obc = 2,
         traffic_light = 3,
     };
-    rgb_source_t rgb_source() const;
+    Source rgb_source() const;
 
 };
