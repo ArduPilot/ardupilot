@@ -81,7 +81,7 @@ void ModeLoiter::precision_loiter_xy()
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void ModeLoiter::run()
+void ModeLoiter::run1()
 {
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
