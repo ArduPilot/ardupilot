@@ -1,0 +1,77 @@
+#
+# Inertial data and orientation in body frame with fused location.
+#
+# Fields marked as optional should be set to NaN if the corresponding value is unknown.
+#
+
+#
+# Global network synchronized timestamp, if known.
+# Set to zero if the timestamp is not known.
+#
+uavcan.Timestamp timestamp
+
+#
+# Geo location [angular degree].
+#
+float64 longitude                   # required
+float64 latitude                    # required
+
+#
+# Height estimates [meter].
+#
+float32 height_ellipsoid            # Above ellipsoid (required)
+float32 height_msl                  # Above the mean sea level (required)
+float32 height_agl                  # Above ground level (provided by radar altimeter or LIDAR) (optional)
+float32 height_baro                 # Barometric height (optional)
+
+#
+# Atmospheric pressure adjusted to sea level [hectopascal].
+#
+float16 qnh_hpa                     # optional
+
+#
+# Rotation quaternion between the NED frame and the body frame.
+# Zero rotation corresponds to the following orientation:
+#   X facing north
+#   Y facing east
+#   Z facing down
+#
+float32[4] orientation_xyzw
+
+#
+# Column order:
+#   longitude                                   [meter^2]
+#   latitude                                    [meter^2]
+#   height (MSL or ellipsoid, whichever worse)  [meter^2]
+#   roll angle                                  [radian^2]
+#   pitch angle                                 [radian^2]
+#   yaw angle                                   [radian^2]
+#
+float16[<=36] pose_covariance
+
+#
+# Linear velocity in the body frame, X-Y-Z [meter/second].
+#
+float32[3] linear_velocity_body
+
+#
+# Angular velocity in the body frame, roll-pitch-yaw [radian/second].
+#
+float32[3] angular_velocity_body
+
+#
+# Low resolution estimate of the linear acceleration in the body frame [(meter/second)^2].
+# This estimate should be properly downsampled in order to avoid aliasing effects.
+#
+float16[3] linear_acceleration_body
+
+#
+# Column order:
+#   X velocity      [(meter/second)^2]
+#   Y velocity      [(meter/second)^2]
+#   Z velocity      [(meter/second)^2]
+#   roll velocity   [(radian/second)^2]
+#   pitch velocity  [(radian/second)^2]
+#   yaw velocity    [(radian/second)^2]
+#
+float16[<=36] velocity_covariance

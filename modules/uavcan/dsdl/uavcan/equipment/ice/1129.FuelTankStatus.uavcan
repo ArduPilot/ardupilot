@@ -1,0 +1,39 @@
+#
+# Generic fuel tank status message.
+# All fields are required unless stated otherwise. Unpopulated optional fields should be set to NaN.
+#
+
+#
+# Reserved for future use.
+#
+void9
+
+#
+# The estimated amount of fuel.
+# The reported values can be either measured directly using appropriate sensors,
+# or they can be estimated by fusing the data provided by various sensors.
+# For example, a Kalman filter can be used to fuse the data from fuel level sensors and flow sensors.
+# All fields are required.
+#
+uint7 available_fuel_volume_percent     # Unit: percent, from 0% to 100%
+float32 available_fuel_volume_cm3       # Unit: centimeter^3
+
+#
+# Estimate of the current fuel consumption rate.
+# The flow can be negative if the fuel is being transferred between the tanks or during refueling.
+# This field is required.
+# Unit: (centimeter^3)/minute
+#
+float32 fuel_consumption_rate_cm3pm
+
+#
+# Fuel temperature.
+# This field is optional, set to NaN if not provided.
+# Unit: kelvin
+#
+float16 fuel_temperature
+
+#
+# The ID of the current fuel tank.
+#
+uint8 fuel_tank_id

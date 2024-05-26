@@ -1,0 +1,10 @@
+#
+# DroneCAN version of MAVLink OPEN_DRONE_ID_ARM_STATUS
+# see MAVLink XML for detailed description
+#
+uint8 ODID_ARM_STATUS_GOOD_TO_ARM = 0
+uint8 ODID_ARM_STATUS_FAIL_GENERIC = 1
+uint8 status
+
+uint8[<=50] error
+

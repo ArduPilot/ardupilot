@@ -1250,6 +1250,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
+    AP_GROUPINFO("Landing_altitude", 9, ParametersG2, pre_landing_altitude, LAND_RANGEFINDER_MIN_ALT_CM),
 
     AP_GROUPEND
 };

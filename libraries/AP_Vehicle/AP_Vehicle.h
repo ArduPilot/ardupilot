@@ -67,6 +67,7 @@
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <Filter/LowPassFilter.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_KAIYECAN/AP_KAIYECAN.h>
 #include <Filter/AP_Filter.h>
 
 class AP_DDS_Client;
@@ -399,6 +400,10 @@ protected:
 
 #if AP_KDECAN_ENABLED
     AP_KDECAN kdecan;
+#endif
+
+#if AP_KAIYECAN_ENABLED
+    AP_KAIYECAN kayecan;
 #endif
 
 #if AP_FENCE_ENABLED

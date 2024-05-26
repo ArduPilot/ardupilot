@@ -2242,7 +2242,7 @@ AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
     if (!hal.util->was_watchdog_reset()) {
         hal.util->persistent_data.safety_state = safety_state;
     }
-    return safety_state;
+    return AP_HAL::Util::SAFETY_ARMED;//safety_state;
 }
 
 /*

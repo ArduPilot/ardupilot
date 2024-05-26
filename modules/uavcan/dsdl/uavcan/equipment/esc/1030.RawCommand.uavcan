@@ -1,0 +1,7 @@
+#
+# Raw ESC command normalized into [-8192, 8191]; negative values indicate reverse rotation.
+# The ESC should normalize the setpoint into its effective input range.
+# Non-zero setpoint value below minimum should be interpreted as min valid setpoint for the given motor.
+#
+
+int14[<=20] cmd

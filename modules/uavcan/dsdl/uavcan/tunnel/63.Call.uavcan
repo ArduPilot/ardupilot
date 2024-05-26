@@ -1,0 +1,16 @@
+#
+# This service carries arbitrary data in the format of the specified high-level protocol.
+# The data will be delivered to the specified node only (not broadcast), and the addressed node
+# will be required to respond (although the response may be empty, if the chosen protocol allows so).
+# The specified protocol applies both to the request and to the response. The channelID allows for
+# additional routing between the source and target nodes.
+#
+
+Protocol protocol
+uint8 channel_id
+
+uint8[<=60] buffer    # TAO rules apply
+
+---
+
+uint8[<=60] buffer    # TAO rules apply

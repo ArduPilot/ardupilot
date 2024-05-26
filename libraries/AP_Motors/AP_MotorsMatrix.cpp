@@ -18,7 +18,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
-
+int16_t motors_store[12] = {0};
 // init
 void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
@@ -177,7 +177,8 @@ void AP_MotorsMatrix::output_to_motors()
     // convert output to PWM and send to each motor
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            rc_write(i, output_to_pwm(_actuator[i]));
+            motors_store[i] = output_to_pwm(_actuator[i]);
+            rc_write(i,motors_store[i]);
         }
     }
 }

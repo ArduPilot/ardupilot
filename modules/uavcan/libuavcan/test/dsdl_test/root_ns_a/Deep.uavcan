@@ -1,0 +1,8 @@
+#
+# Info for all battery packs of the primary power supply.
+#
+
+bool c
+uint8[<20] str
+A[<2] a
+B[2] b

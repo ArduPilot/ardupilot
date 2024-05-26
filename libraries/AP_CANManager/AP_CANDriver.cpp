@@ -22,6 +22,7 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_KAIYECAN/AP_KAIYECAN.h>
 
 
 // table of user settable CAN bus parameters

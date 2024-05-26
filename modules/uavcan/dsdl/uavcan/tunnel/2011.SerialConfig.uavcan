@@ -1,0 +1,9 @@
+#
+# This message carries baudrate for tunnel channel_id
+
+# The channelID allows for additional routing between the source and target nodes.
+uint8 channel_id
+
+uint32 baud
+
+uint24 options

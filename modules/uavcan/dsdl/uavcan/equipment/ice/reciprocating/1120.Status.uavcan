@@ -1,0 +1,199 @@
+#
+# Generic status message of a piston engine control system.
+#
+# All integer fields are required unless stated otherwise.
+# All floating point fields are optional unless stated otherwise; unknown/unapplicable fields should be set to NaN.
+#
+
+#
+# Abstract engine state. The flags defined below can provide further elaboration.
+# This is a required field.
+#
+uint2 state
+#
+# The engine is not running. This is the default state.
+# Next states: STARTING, FAULT
+#
+uint2 STATE_STOPPED = 0
+#
+# The engine is starting. This is a transient state.
+# Next states: STOPPED, RUNNING, FAULT
+#
+uint2 STATE_STARTING = 1
+#
+# The engine is running normally.
+# Some error flags may be set to indicate non-fatal issues, e.g. overheating.
+# Next states: STOPPED, FAULT
+#
+uint2 STATE_RUNNING = 2
+#
+# The engine can no longer function.
+# The error flags may contain additional information about the nature of the fault.
+# Next states: STOPPED.
+#
+uint2 STATE_FAULT = 3
+
+#
+# General status flags.
+# Note that not all flags are required. Those that aren't are prepended with a validity flag, which is, obviously,
+# always required; when the validity flag is set, it is assumed that the relevant flags are set correctly.
+# If the validity flag is cleared, then the state of the relevant flags should be ignored.
+# All unused bits must be cleared.
+#
+uint30 flags
+#
+# General error. This flag is required, and it can be used to indicate an error condition
+# that does not fit any of the other flags.
+# Note that the vendor may also report additional status information via the vendor specific status code
+# field of the NodeStatus message.
+#
+uint30 FLAG_GENERAL_ERROR                       = 1
+#
+# Error of the crankshaft sensor. This flag is optional.
+#
+uint30 FLAG_CRANKSHAFT_SENSOR_ERROR_SUPPORTED   = 2
+uint30 FLAG_CRANKSHAFT_SENSOR_ERROR             = 4
+#
+# Temperature levels. These flags are optional; either none of them or all of them are supported.
+#
+uint30 FLAG_TEMPERATURE_SUPPORTED               = 8
+uint30 FLAG_TEMPERATURE_BELOW_NOMINAL           = 16      # Under-temperature warning
+uint30 FLAG_TEMPERATURE_ABOVE_NOMINAL           = 32      # Over-temperature warning
+uint30 FLAG_TEMPERATURE_OVERHEATING             = 64      # Critical overheating
+uint30 FLAG_TEMPERATURE_EGT_ABOVE_NOMINAL       = 128     # Exhaust gas over-temperature warning
+#
+# Fuel pressure. These flags are optional; either none of them or all of them are supported.
+#
+uint30 FLAG_FUEL_PRESSURE_SUPPORTED             = 256
+uint30 FLAG_FUEL_PRESSURE_BELOW_NOMINAL         = 512     # Under-pressure warning
+uint30 FLAG_FUEL_PRESSURE_ABOVE_NOMINAL         = 1024    # Over-pressure warning
+#
+# Detonation warning. This flag is optional.
+# This warning is cleared immediately after broadcasting is done if detonation is no longer happening.
+#
+uint30 FLAG_DETONATION_SUPPORTED                = 2048
+uint30 FLAG_DETONATION_OBSERVED                 = 4096    # Detonation condition observed warning
+#
+# Misfire warning. This flag is optional.
+# This warning is cleared immediately after broadcasting is done if misfire is no longer happening.
+#
+uint30 FLAG_MISFIRE_SUPPORTED                   = 8192
+uint30 FLAG_MISFIRE_OBSERVED                    = 16384   # Misfire condition observed warning
+#
+# Oil pressure. These flags are optional; either none of them or all of them are supported.
+#
+uint30 FLAG_OIL_PRESSURE_SUPPORTED              = 32768
+uint30 FLAG_OIL_PRESSURE_BELOW_NOMINAL          = 65536   # Under-pressure warning
+uint30 FLAG_OIL_PRESSURE_ABOVE_NOMINAL          = 131072  # Over-pressure warning
+#
+# Debris warning. This flag is optional.
+#
+uint30 FLAG_DEBRIS_SUPPORTED                    = 262144
+uint30 FLAG_DEBRIS_DETECTED                     = 524288  # Detection of debris warning
+
+#
+# Reserved space
+#
+void16
+
+#
+# Engine load estimate.
+# Unit: percent.
+# Range: [0, 127].
+#
+uint7 engine_load_percent
+
+#
+# Engine speed.
+# Unit: revolutions per minute.
+#
+uint17 engine_speed_rpm
+
+#
+# Spark dwell time.
+# Unit: millisecond.
+#
+float16 spark_dwell_time_ms
+
+#
+# Atmospheric (barometric) pressure.
+# Unit: kilopascal.
+#
+float16 atmospheric_pressure_kpa
+
+#
+# Engine intake manifold pressure.
+# Unit: kilopascal.
+#
+float16 intake_manifold_pressure_kpa
+
+#
+# Engine intake manifold temperature.
+# Unit: kelvin.
+#
+float16 intake_manifold_temperature
+
+#
+# Engine coolant temperature.
+# Unit: kelvin.
+#
+float16 coolant_temperature
+
+#
+# Oil pressure.
+# Unit: kilopascal.
+#
+float16 oil_pressure
+
+#
+# Oil temperature.
+# Unit: kelvin.
+#
+float16 oil_temperature
+
+#
+# Fuel pressure.
+# Unit: kilopascal.
+#
+float16 fuel_pressure
+
+#
+# Instant fuel consumption estimate.
+# The estimated value should be low-pass filtered in order to prevent aliasing effects.
+# Unit: (centimeter^3)/minute.
+#
+float32 fuel_consumption_rate_cm3pm
+
+#
+# Estimate of the consumed fuel since the start of the engine.
+# This variable MUST be reset when the engine is stopped.
+# Unit: centimeter^3.
+#
+float32 estimated_consumed_fuel_volume_cm3
+
+#
+# Throttle position.
+# Unit: percent.
+#
+uint7 throttle_position_percent
+
+#
+# The index of the publishing ECU.
+#
+uint6 ecu_index
+
+#
+# Spark plug activity report.
+# Can be used during pre-flight tests of the spark subsystem.
+#
+uint3 spark_plug_usage
+#
+uint3 SPARK_PLUG_SINGLE         = 0
+uint3 SPARK_PLUG_FIRST_ACTIVE   = 1
+uint3 SPARK_PLUG_SECOND_ACTIVE  = 2
+uint3 SPARK_PLUG_BOTH_ACTIVE    = 3
+
+#
+# Per-cylinder status information.
+#
+CylinderStatus[<=16] cylinder_status

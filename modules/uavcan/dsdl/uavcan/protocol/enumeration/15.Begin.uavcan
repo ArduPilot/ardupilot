@@ -1,0 +1,28 @@
+#
+# This service instructs the node to begin the process of automated enumeration.
+#
+
+#
+# The node will automatically leave enumeration mode upon expiration of this timeout.
+#
+uint16 TIMEOUT_CANCEL   = 0     # Stop enumeration immediately
+uint16 TIMEOUT_INFINITE = 65535 # Do not stop until explicitly requested
+uint16 timeout_sec              # [Seconds]
+
+#
+# Name of the parameter to enumerate, e.g. ESC index.
+# If the name is left empty, the node will infer the parameter name automatically (autodetect).
+# It is highly recommended to always use autodetection in order to avoid dependency on hard-coded parameter names,
+# and also allow the enumeratee to possibly enumerate multiple different parameters at once.
+# The rule of thumb is to always leave this parameter empty unless you really know what you're doing.
+#
+uint8[<=92] parameter_name
+
+---
+
+uint8 ERROR_OK                  = 0     # Success
+uint8 ERROR_INVALID_MODE        = 1     # The node cannot perform enumeration in its current operating mode
+uint8 ERROR_INVALID_PARAMETER   = 2     # The node cannot enumerate on the requested parameter, or it doesn't exist
+uint8 ERROR_UNSUPPORTED         = 3     # The node cannot perform enumeration in its current configuration
+uint8 ERROR_UNKNOWN             = 255   # Generic error
+uint8 error

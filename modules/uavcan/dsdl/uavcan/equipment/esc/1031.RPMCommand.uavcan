@@ -1,0 +1,8 @@
+#
+# Simple RPM setpoint.
+# The ESC should automatically clamp the setpoint according to the minimum and maximum supported RPM;
+# for example, given a ESC that operates in the range 100 to 10000 RPM, a setpoint of 1 RPM will be clamped to 100 RPM.
+# Negative values indicate reverse rotation.
+#
+
+int18[<=20] rpm

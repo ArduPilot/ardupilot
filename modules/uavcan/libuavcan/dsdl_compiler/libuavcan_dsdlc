@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+#
+# UAVCAN DSDL compiler for libuavcan
+# Supported Python versions: 3.2+, 2.7.
+#
+# Copyright (C) 2014 Pavel Kirienko <pavel.kirienko@gmail.com>
+#
+
+from __future__ import division, absolute_import, print_function, unicode_literals
+import os, sys, logging, argparse
+
+# This trickery allows to use the compiler even if pyuavcan is not installed in the system.
+# This is extremely important, as it makes the compiler (and therefore libuavcan in general)
+# totally dependency-free, except for the Python interpreter itself.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOCAL_PYUAVCAN_DIR = os.path.join(SCRIPT_DIR, 'pyuavcan')
+RUNNING_FROM_SRC_DIR = os.path.isdir(LOCAL_PYUAVCAN_DIR)
+if RUNNING_FROM_SRC_DIR:
+    #print('Running from the source directory')
+    sys.path.insert(0, SCRIPT_DIR)
+    sys.path.insert(0, LOCAL_PYUAVCAN_DIR)
+
+def configure_logging(verbosity):
+    fmt = '%(message)s'
+    level = { 0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG }.get(verbosity or 0, logging.DEBUG)
+    logging.basicConfig(stream=sys.stderr, level=level, format=fmt)
+
+def die(text):
+    print(text, file=sys.stderr)
+    exit(1)
+
+DEFAULT_OUTDIR = 'dsdlc_generated'
+
+DESCRIPTION = '''UAVCAN DSDL compiler for libuavcan.
+Takes an input directory that contains an hierarchy of DSDL
+definitions and converts it into compatible hierarchy of C++ types for libuavcan.
+This script can be used directly from the source directory, no installation required!
+Supported Python versions: 3.2+, 2.7.
+'''
+
+argparser = argparse.ArgumentParser(description=DESCRIPTION)
+argparser.add_argument('source_dir', nargs='+', help='source directory with DSDL definitions')
+argparser.add_argument('--verbose', '-v', action='count', help='verbosity level (-v, -vv)')
+argparser.add_argument('--outdir', '-O', default=DEFAULT_OUTDIR, help='output directory, default %s' % DEFAULT_OUTDIR)
+argparser.add_argument('--incdir', '-I', default=[], action='append', help=
+'''nested type namespaces, one path per argument. Can be also specified through the environment variable
+UAVCAN_DSDL_INCLUDE_PATH, where the path entries are separated by colons ":"''')
+args = argparser.parse_args()
+
+configure_logging(args.verbose)
+
+try:
+    extra_incdir = os.environ['UAVCAN_DSDL_INCLUDE_PATH'].split(':')
+    logging.info('Additional include directories: %s', extra_incdir)
+    args.incdir += extra_incdir
+except KeyError:
+    pass
+
+from libuavcan_dsdl_compiler import run as dsdlc_run
+try:
+    dsdlc_run(args.source_dir, args.incdir, args.outdir)
+except Exception as ex:
+    logging.error('Compiler failure', exc_info=True)
+    die(str(ex))

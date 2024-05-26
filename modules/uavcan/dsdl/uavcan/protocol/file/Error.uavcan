@@ -1,0 +1,18 @@
+#
+# Nested type.
+# File operation result code.
+#
+
+int16 OK                = 0
+int16 UNKNOWN_ERROR     = 32767
+
+int16 NOT_FOUND         = 2
+int16 IO_ERROR          = 5
+int16 ACCESS_DENIED     = 13
+int16 IS_DIRECTORY      = 21 # I.e. attempt to read/write on a path that points to a directory
+int16 INVALID_VALUE     = 22 # E.g. file name is not valid for the target file system
+int16 FILE_TOO_LARGE    = 27
+int16 OUT_OF_SPACE      = 28
+int16 NOT_IMPLEMENTED   = 38
+
+int16 value

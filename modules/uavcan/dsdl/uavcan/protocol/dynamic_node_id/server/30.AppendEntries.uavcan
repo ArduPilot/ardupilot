@@ -1,0 +1,44 @@
+#
+# THIS DEFINITION IS SUBJECT TO CHANGE.
+#
+# This type is a part of the Raft consensus algorithm.
+# Please refer to the specification for details.
+#
+
+#
+# Given min election timeout and cluster size, the maximum recommended request interval can be derived as follows:
+#
+#   max recommended request interval = (min election timeout) / 2 requests / (cluster size - 1)
+#
+# The equation assumes that the Leader requests one Follower at a time, so that there's at most one pending call
+# at any moment. Such behavior is optimal as it creates uniform bus load, but it is actually implementation-specific.
+# Obviously, request interval can be lower than that if needed, but higher values are not recommended as they may
+# cause Followers to initiate premature elections in case of intensive frame losses or delays.
+#
+# Real timeout is randomized in the range (MIN, MAX], according to the Raft paper.
+#
+uint16 DEFAULT_MIN_ELECTION_TIMEOUT_MS = 2000
+uint16 DEFAULT_MAX_ELECTION_TIMEOUT_MS = 4000
+
+#
+# Refer to the Raft paper for explanation.
+#
+uint32 term
+uint32 prev_log_term
+uint8 prev_log_index
+uint8 leader_commit
+
+#
+# Worst-case replication time per Follower can be computed as:
+#
+#   worst replication time = (127 log entries) * (2 trips of next_index) * (request interval per Follower)
+#
+Entry[<=1] entries
+
+---
+
+#
+# Refer to the Raft paper for explanation.
+#
+uint32 term
+bool success

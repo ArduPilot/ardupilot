@@ -702,6 +702,8 @@ public:
     AP_Float pldp_range_finder_minimum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
+
+    AP_Float pre_landing_altitude;
 };
 
 extern const AP_Param::Info        var_info[];

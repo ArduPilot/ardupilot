@@ -1,0 +1,12 @@
+environment:
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      PYTHON: "3.7"
+
+stack: python %PYTHON%
+
+build: off
+branches:
+  except:
+    - gh-pages
+    - master

@@ -1,0 +1,17 @@
+#
+# This message may be published periodically to inform network participants that the system has encountered
+# an unrecoverable fault and is not capable of further operation.
+#
+# Nodes that are expected to react to this message should wait for at least MIN_MESSAGES subsequent messages
+# with any reason text from any sender published with the interval no higher than MAX_INTERVAL_MS before
+# undertaking any emergency actions.
+#
+
+uint8 MIN_MESSAGES = 3
+
+uint16 MAX_INTERVAL_MS = 500
+
+#
+# Short description that would fit a single CAN frame.
+#
+uint8[<=7] reason_text

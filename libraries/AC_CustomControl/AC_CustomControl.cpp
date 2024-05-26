@@ -4,10 +4,11 @@
 
 #if AP_CUSTOMCONTROL_ENABLED
 
-
 #include "AC_CustomControl_Backend.h"
 // #include "AC_CustomControl_Empty.h"
 #include "AC_CustomControl_PID.h"
+#include "AC_CustomControl_INDI.h"
+#include "AC_CustomControl_ADRC.h"
 #include <GCS_MAVLink/GCS.h>
 
 // table of user settable parameters
@@ -32,6 +33,12 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
 
     // parameters for PID controller
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AC_CustomControl, _backend_var_info[1]),
+
+    // parameters for INDI controller
+    AP_SUBGROUPVARPTR(_backend, "3_", 8, AC_CustomControl, _backend_var_info[2]),
+
+    // parameters for ADRC controller
+    AP_SUBGROUPVARPTR(_backend, "4_", 9, AC_CustomControl, _backend_var_info[3]),
 
     AP_GROUPEND
 };
@@ -62,6 +69,14 @@ void AC_CustomControl::init(void)
             _backend = new AC_CustomControl_PID(*this, _ahrs, _att_control, _motors, _dt);
             _backend_var_info[get_type()] = AC_CustomControl_PID::var_info;
             break;
+        case CustomControlType::CONT_INDI:
+            _backend = new AC_CustomControl_INDI(*this, _ahrs, _att_control, _motors, _dt);
+            _backend_var_info[get_type()] = AC_CustomControl_INDI::var_info;
+            break;
+        case CustomControlType::CONT_ADRC:
+            _backend = new AC_CustomControl_ADRC(*this, _ahrs, _att_control, _motors, _dt);
+            _backend_var_info[get_type()] = AC_CustomControl_ADRC::var_info;
+            break;
         default:
             return;
     }
@@ -78,7 +93,7 @@ void AC_CustomControl::update(void)
         Vector3f motor_out_rpy;
 
         motor_out_rpy = _backend->update();
-
+        //  gcs().send_text(MAV_SEVERITY_INFO, "AC_CustomControl update");
         motor_set(motor_out_rpy);
     }
 }

@@ -1,0 +1,39 @@
+#
+# Cylinder state information.
+# This is a nested data type.
+#
+# All unknown parameters should be set to NaN.
+#
+
+#
+# Cylinder ignition timing.
+# Units: angular degrees of the crankshaft.
+#
+float16 ignition_timing_deg
+
+#
+# Fuel injection time.
+# Units: millisecond.
+#
+float16 injection_time_ms
+
+#
+# Cylinder head temperature (CHT).
+# Units: kelvin.
+#
+float16 cylinder_head_temperature
+
+#
+# Exhaust gas temperature (EGT).
+# Set to NaN if this cylinder is not equipped with an EGT sensor.
+# Set this field to the same value for all cylinders if there is a single shared EGT sensor.
+# Units: kelvin.
+#
+float16 exhaust_gas_temperature
+
+#
+# Estimated lambda coefficient.
+# This parameter is mostly useful for monitoring and tuning purposes.
+# Unit: dimensionless ratio
+#
+float16 lambda_coefficient

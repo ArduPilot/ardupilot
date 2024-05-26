@@ -1,0 +1,9 @@
+#
+# Gimbal operating mode
+#
+
+uint8 COMMAND_MODE_ANGULAR_VELOCITY        = 0
+uint8 COMMAND_MODE_ORIENTATION_FIXED_FRAME = 1
+uint8 COMMAND_MODE_ORIENTATION_BODY_FRAME  = 2
+uint8 COMMAND_MODE_GEO_POI                 = 3
+uint8 command_mode

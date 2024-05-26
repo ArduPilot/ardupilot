@@ -1,0 +1,29 @@
+language: cpp
+compiler: gcc
+env:
+  global:
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    - secure: "nCQtEBd5gQ9zirHNQVpzB0Q8aVKmMuTrlHfZCK5ZOpFItD9zP0YwqUTcw6y8T+14CceY6Go/D+fgeMYR3QmYc2CW0vXMwgBYOFQuPYEef7455ZPdt6wdr4lnyP/B+fj4cWZ4WhV+hMigl2Ly4xaFH6msm+PlIHOdjdaXo3ko0LI="
+  matrix:
+    - TARGET=native
+    - TARGET=lpc11c24
+    - TARGET=stm32
+    - TARGET=kinetis
+addons:
+  coverity_scan:
+    project:
+      name: "UAVCAN/libuavcan"
+      description: "UAVCAN in C++"
+    notification_email: pavel.kirienko@gmail.com
+    build_command_prepend: "rm -rf build &> /dev/null || true; mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug"
+    build_command: "make --ignore-errors"
+    branch_pattern: coverity_scan
+before_install:
+    - ./bootstrap.sh
+before_script: "mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DCONTINUOUS_INTEGRATION_BUILD=1"
+script:
+    - if [ "${COVERITY_SCAN_BRANCH}" != 1 ] && [ "${TARGET}" == "native" ]; then make && make ARGS=-VV test; fi
+    - if [ "${COVERITY_SCAN_BRANCH}" != 1 ] && [ "${TARGET}" == "lpc11c24" ]; then cd "$TRAVIS_BUILD_DIR/libuavcan_drivers/lpc11c24/test_olimex_lpc_p11c24" && make all; fi
+    - if [ "${COVERITY_SCAN_BRANCH}" != 1 ] && [ "${TARGET}" == "stm32" ]; then echo "TODO STM32 test environment is not configured"; fi
+    - if [ "${COVERITY_SCAN_BRANCH}" != 1 ] && [ "${TARGET}" == "kinetis" ]; then echo "TODO Kinetis test environment is not configured"; fi

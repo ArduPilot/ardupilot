@@ -72,6 +72,8 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include <AC_CustomControl/AC_ADRC/AC_ADRC.h>
+#include <AC_CustomControl/AC_CustomControl_ADRC.h>
 
 // Configuration
 #include "defines.h"
@@ -231,7 +233,7 @@ public:
     friend class _AutoTakeoff;
 
     friend class PayloadPlace;
-
+     
     Copter(void);
 
 private:
@@ -494,7 +496,9 @@ private:
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
-
+#if CUSTOMCONTROL_ADRC_ENABLED
+    AC_CustomControl_ADRC* adrc_con;
+#endif
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
 #endif
@@ -859,6 +863,7 @@ private:
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
     void Log_Video_Stabilisation();
+    void Log_fasile(uint8_t pos, uint8_t vel, uint8_t acce, float errn, float errx);
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
 #endif

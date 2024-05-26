@@ -1,0 +1,21 @@
+#
+# Nested type.
+# GNSS ECEF high resolution position and velocity.
+#
+# ECEF is an acronym for Earth-Centered-Earth-Fixed, which is a cartesian
+# coordinate system which rotates with the earth. The origin (0,0,0) is
+# located at the center of the earth. The x-axis is a vector pointing from
+# the origin with positive direction towards 0 degrees latitude and
+# longitude (equator, at the prime meridian). The z-axis is a vector
+# pointing from the origin towards the north-pole. The y-axis completes a
+# right-handed coordinate system.
+#
+
+float32[3] velocity_xyz            # XYZ velocity in m/s
+
+int36[3] position_xyz_mm           # XYZ-axis coordinates in mm
+
+void6                              # Aligns the following array at byte boundary
+
+float16[<=36] covariance           # Position and velocity covariance in the ECEF frame. Units are m^2 for position,
+                                   # (m/s)^2 for velocity, and m^2/s for position/velocity.

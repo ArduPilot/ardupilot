@@ -1,0 +1,9 @@
+#
+# Magnetic field readings, in Gauss, in body frame.
+# SI units are avoided because of float16 range limitations.
+#
+
+uint8 sensor_id
+
+float16[3] magnetic_field_ga
+float16[<=9] magnetic_field_covariance

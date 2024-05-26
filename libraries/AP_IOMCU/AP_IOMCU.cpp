@@ -343,7 +343,7 @@ void AP_IOMCU::thread_main(void)
         // update failsafe pwm
         if (pwm_out.failsafe_pwm_set != pwm_out.failsafe_pwm_sent) {
             uint8_t set = pwm_out.failsafe_pwm_set;
-            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_RC_CHANNELS, pwm_out.failsafe_pwm)) {
+            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.failsafe_pwm)) {
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
@@ -369,7 +369,7 @@ void AP_IOMCU::send_servo_out()
         if (rate.sbus_rate_hz == 0) {
             n = MIN(n, 8);
         } else {
-            n = MIN(n, IOMCU_MAX_RC_CHANNELS);
+            n = MIN(n, IOMCU_MAX_CHANNELS);
         }
         uint32_t now = AP_HAL::micros();
         if (now - last_servo_out_us >= 2000 || AP_BoardConfig::io_dshot()) {
@@ -786,7 +786,7 @@ bool AP_IOMCU::modify_register(uint8_t page, uint8_t offset, uint16_t clearbits,
 
 void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
 {
-    if (chan >= IOMCU_MAX_RC_CHANNELS) {    // could be SBUS out
+    if (chan >= IOMCU_MAX_CHANNELS) {
         return;
     }
     if (chan >= pwm_out.num_channels) {
@@ -1107,7 +1107,7 @@ bool AP_IOMCU::check_crc(void)
 void AP_IOMCU::set_failsafe_pwm(uint16_t chmask, uint16_t period_us)
 {
     bool changed = false;
-    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
         if (chmask & (1U<<i)) {
             if (pwm_out.failsafe_pwm[i] != period_us) {
                 pwm_out.failsafe_pwm[i] = period_us;
@@ -1186,7 +1186,7 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
 #define MIX_UPDATE(a,b) do { if ((a) != (b)) { a = b; changed = true; }} while (0)
 
     // update mixing structure, checking for changes
-    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
         const SRV_Channel *c = SRV_Channels::srv_channel(i);
         if (!c) {
             continue;

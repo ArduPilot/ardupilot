@@ -1,0 +1,8 @@
+# Max bit len 16 bits
+@union          # 3 bits
+Empty         z
+uint5         a
+uint5         b # Conflicting with a
+uint13        c
+bool[<=9]     d # 4 bit length field + 9 bit payload
+NestedInUnion e

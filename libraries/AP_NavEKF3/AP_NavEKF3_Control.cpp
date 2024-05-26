@@ -209,24 +209,6 @@ void NavEKF3_core::updateStateIndexLim()
     }
 }
 
-// set the default yaw source
-void NavEKF3_core::setYawSource()
-{
-    AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if (wasLearningCompass_ms > 0) {
-        // can't use compass while it is being calibrated
-        if (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS) {
-            yaw_source = AP_NavEKF_Source::SourceYaw::NONE;
-        } else if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
-            yaw_source = AP_NavEKF_Source::SourceYaw::GPS;
-        }
-    }
-    if (yaw_source != yaw_source_last) {
-        yaw_source_last = yaw_source;
-        yaw_source_reset = true;
-    }
-}
-
 // Set inertial navigation aiding mode
 void NavEKF3_core::setAidingMode()
 {
@@ -235,8 +217,6 @@ void NavEKF3_core::setAidingMode()
 
     // Save the previous status so we can detect when it has changed
     PV_AidingModePrev = PV_AidingMode;
-
-    setYawSource();
 
     // Check that the gyro bias variance has converged
     checkGyroCalStatus();
@@ -603,8 +583,9 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 // return true if we should use the compass
 bool NavEKF3_core::use_compass(void) const
 {
-    if ((yaw_source_last != AP_NavEKF_Source::SourceYaw::COMPASS) &&
-        (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
+    if ((yaw_source != AP_NavEKF_Source::SourceYaw::COMPASS) &&
+        (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
         // not using compass as a yaw source
         return false;
     }
@@ -617,13 +598,14 @@ bool NavEKF3_core::use_compass(void) const
 // are we using (aka fusing) a non-compass yaw?
 bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
-    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-        yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+        yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
@@ -633,7 +615,7 @@ bool NavEKF3_core::using_noncompass_for_yaw(void) const
 bool NavEKF3_core::using_extnav_for_yaw() const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+    if (frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
@@ -703,8 +685,9 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
-    if (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-        (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
+    if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+        (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
         const Vector3F delAngBiasVarVec { P[10][10], P[11][11], P[12][12] };

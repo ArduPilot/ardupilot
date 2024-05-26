@@ -64,6 +64,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_KAIYECAN/AP_KAIYECAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Landing/AP_Landing_config.h>
 
@@ -5180,7 +5181,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
-    case MAV_CMD_SET_CAMERA_SOURCE:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_CAMERA_TRACK_POINT:
@@ -6636,14 +6636,14 @@ void GCS::passthru_timer(void)
     uint8_t buf[64];
 
     // read from port1, and write to port2
-    int16_t nbytes = _passthru.port1->read_locked(buf, MIN(sizeof(buf),_passthru.port2->txspace()), lock_key);
+    int16_t nbytes = _passthru.port1->read_locked(buf, sizeof(buf), lock_key);
     if (nbytes > 0) {
         _passthru.last_port1_data_ms = AP_HAL::millis();
         _passthru.port2->write_locked(buf, nbytes, lock_key);
     }
 
     // read from port2, and write to port1
-    nbytes = _passthru.port2->read_locked(buf, MIN(sizeof(buf),_passthru.port1->txspace()), lock_key);
+    nbytes = _passthru.port2->read_locked(buf, sizeof(buf), lock_key);
     if (nbytes > 0) {
         _passthru.port1->write_locked(buf, nbytes, lock_key);
     }

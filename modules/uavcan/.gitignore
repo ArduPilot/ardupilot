@@ -1,0 +1,30 @@
+# Build outputs
+*.o
+*.d
+lib*.so
+lib*.so.*
+*.a
+build*/
+.dep
+__pycache__
+*.pyc
+
+# Eclipse
+.metadata
+.settings
+.project
+.cproject
+.pydevproject
+.gdbinit
+
+# vsstudio code
+.vscode
+
+# vagrant
+.vagrant
+
+# libuavcan DSDL compiler default output directory
+dsdlc_generated
+
+# Log files
+*.log

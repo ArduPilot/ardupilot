@@ -98,7 +98,10 @@ void AP_BattMonitor_SMBus::read_full_charge_capacity(void)
 // which will only be read if we know the full charge capacity (accounting for battery degradation)
 void AP_BattMonitor_SMBus::read_remaining_capacity(void)
 {
-    int32_t capacity = _params._pack_capacity;
+    if (read_word(BATTMONITOR_SMBUS_FULL_CHARGE_CAPACITY, _full_charge_capacity)) {
+        _full_charge_capacity *= get_capacity_scaler();
+    }
+    int32_t capacity = _full_charge_capacity;// _params._pack_capacity;
 
     if (capacity <= 0) {
         return;

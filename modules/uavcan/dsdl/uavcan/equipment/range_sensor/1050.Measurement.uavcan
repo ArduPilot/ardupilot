@@ -1,0 +1,25 @@
+#
+# Generic narrow-beam range sensor data.
+#
+
+uavcan.Timestamp timestamp
+
+uint8 sensor_id
+
+uavcan.CoarseOrientation beam_orientation_in_body_frame
+
+float16 field_of_view                # Radians
+
+uint5 SENSOR_TYPE_UNDEFINED = 0
+uint5 SENSOR_TYPE_SONAR     = 1
+uint5 SENSOR_TYPE_LIDAR     = 2
+uint5 SENSOR_TYPE_RADAR     = 3
+uint5 sensor_type
+
+uint3 READING_TYPE_UNDEFINED   = 0   # Range is unknown
+uint3 READING_TYPE_VALID_RANGE = 1   # Range field contains valid distance
+uint3 READING_TYPE_TOO_CLOSE   = 2   # Range field contains min range for the sensor
+uint3 READING_TYPE_TOO_FAR     = 3   # Range field contains max range for the sensor
+uint3 reading_type
+
+float16 range                        # Meters

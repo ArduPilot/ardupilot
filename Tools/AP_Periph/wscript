@@ -82,6 +82,7 @@ def build(bld):
                      'AP_FETtecOneWire',
                      'GCS_MAVLink',
                      'AP_Relay'
+                     'AP_KAIYECAN',
                      ]
 
     bld.ap_stlib(

@@ -1,0 +1,21 @@
+#
+# Nested type.
+# Single actuator command.
+#
+
+uint8 actuator_id
+
+#
+# Whether the units are linear or angular depends on the actuator type.
+#
+uint8 COMMAND_TYPE_UNITLESS     = 0     # [-1, 1]
+uint8 COMMAND_TYPE_POSITION     = 1     # meter or radian
+uint8 COMMAND_TYPE_FORCE        = 2     # Newton or Newton metre
+uint8 COMMAND_TYPE_SPEED        = 3     # meter per second or radian per second
+uint8 COMMAND_TYPE_PWM          = 4     # PWM microsecond signal
+uint8 command_type
+
+#
+# Value of the above type
+#
+float16 command_value

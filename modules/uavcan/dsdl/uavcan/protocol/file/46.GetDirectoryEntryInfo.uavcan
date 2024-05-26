@@ -1,0 +1,21 @@
+#
+# This service can be used to retrieve a remote directory listing, one entry per request.
+#
+# The client should query each entry independently, iterating 'entry_index' from 0 until the last entry is passed,
+# in which case the server will report that there is no such entry (via the fields 'entry_type' and 'error').
+#
+# The entry_index shall be applied to the ordered list of directory entries (e.g. alphabetically ordered). The exact
+# sorting criteria does not matter as long as it provides the same ordering for subsequent service calls.
+#
+
+uint32 entry_index
+
+Path directory_path
+
+---
+
+Error error
+
+EntryType entry_type
+
+Path entry_full_path  # Ignored/Empty if such entry does not exist.

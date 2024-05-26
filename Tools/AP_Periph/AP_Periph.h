@@ -15,6 +15,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_KAIYECAN/AP_KAIYECAN.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
@@ -306,7 +307,11 @@ public:
 #if AP_KDECAN_ENABLED
     AP_KDECAN kdecan;
 #endif
-    
+
+#if AP_KAIYECAN_ENABLED
+    AP_KAIYECAN kayecan;
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
     ESC_APD_Telem *apd_esc_telem[APD_ESC_INSTANCES];
     void apd_esc_telem_update();

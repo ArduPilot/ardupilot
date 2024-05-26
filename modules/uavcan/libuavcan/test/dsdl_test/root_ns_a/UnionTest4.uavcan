@@ -1,0 +1,6 @@
+# A union of four items; tag 2 bits wide, total length 1 byte
+@union          # 2 bits
+Empty first     # Tag value 0
+uint5 second    # Tag value 1
+uint6 third     # Tag value 2
+int2  fourth    # Tag value 3

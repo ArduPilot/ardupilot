@@ -1,0 +1,25 @@
+#
+# Inertial data and orientation in body frame.
+#
+
+uavcan.Timestamp timestamp
+
+#
+# Normalized quaternion
+#
+float16[4] orientation_xyzw
+void4
+float16[<=9] orientation_covariance
+
+#
+# rad/sec
+#
+float16[3] angular_velocity
+void4
+float16[<=9] angular_velocity_covariance
+
+#
+# m/s^2
+#
+float16[3] linear_acceleration
+float16[<=9] linear_acceleration_covariance

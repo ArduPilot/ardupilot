@@ -31,6 +31,8 @@ def build(bld):
             'AP_OSD',
             'AC_AutoTune',
             'AP_KDECAN',
+            'AP_ADRC',
+            'AP_KAIYECAN',
         ],
     )
 
@@ -47,3 +49,19 @@ def build(bld):
         use=vehicle + '_libs',
         defines=['FRAME_CONFIG=HELI_FRAME'],
         )
+
+    # bld(
+    #     # build libcanard headers
+    #     source=bld.path.ant_glob("modules/DroneCAN/DSDL/uavcan/equipment/sinemotion/*.uavcan"),
+    #     rule="python3 ${SRCROOT}/modules/uavcan/libuavcan/dsdl_compiler/libuavcan_dsdlc --outdir ${BUILDROOT}/modules/DroneCAN/libcanard/dsdlc_generated ${SRCROOT}/modules/DroneCAN/DSDL/uavcan",
+    #     group='dynamic_sources',
+    # )
+
+
+    # bld(
+    #     source=bld.path.ant_glob("modules/DroneCAN/DSDL/custom/*.uavcan"),
+    #     rule="python3 ${SRCROOT}/modules/uavcan/libuavcan/dsdl_compiler/libuavcan_dsdlc --outdir ${BUILDROOT}/modules/uavcan/include/dsdlc_generated ${SRCROOT}/modules/DroneCAN/DSDL/custom",
+    #     group='dynamic_sources',
+    # )
+
+

@@ -1,0 +1,9 @@
+bool TRUE     = true
+bool NOT_TRUE = false * true
+uint64 BIG    = (1 << 64) - 1
+float64 FLOAT_CONSTANT = 3.14
+uint8[<128] string_request
+---
+float64 FLOAT_CONSTANT = 1.79769313486231570815e+308
+root_ns_b.SuperIntelligentShadeOfBlue blue
+uint8[<128] string_response

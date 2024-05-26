@@ -1,0 +1,6 @@
+[submodule "dsdl"]
+	path = dsdl
+	url = https://github.com/dronecan/DSDL
+[submodule "libuavcan/dsdl_compiler/pyuavcan"]
+	path = libuavcan/dsdl_compiler/pyuavcan
+	url = https://github.com/dronecan/pydronecan

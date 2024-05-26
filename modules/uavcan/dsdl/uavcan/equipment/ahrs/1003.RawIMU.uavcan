@@ -1,0 +1,48 @@
+#
+# Raw IMU data with timestamps.
+#
+# THIS DEFINITION MAY BE CHANGED IN A NON-BACKWARD-COMPATIBLE WAY IN THE FUTURE.
+#
+
+#
+# Data acquisition timestamp in the bus shared time base.
+#
+uavcan.Timestamp timestamp
+
+#
+# Integration interval, seconds.
+# Set to a non-positive value if the integrated samples are not available
+# (in this case, only the latest point samples will be valid).
+#
+float32 integration_interval
+
+#
+# Angular velocity samples in radian/second.
+# The samples are represented in the body frame, the axes are ordered as follows:
+#   1. angular velocity around X (roll rate)
+#   2. angular velocity around Y (pitch rate)
+#   3. angular velocity around Z (yaw rate)
+#
+float16[3] rate_gyro_latest                 # Latest sample, radian/second
+float32[3] rate_gyro_integral               # Integrated samples, radian/second
+
+#
+# Linear acceleration samples in meter/(second^2).
+# The samples are represented in the body frame, the axes are ordered as follows:
+#   1. linear acceleration along X (forward positive)
+#   2. linear acceleration along Y (right positive)
+#   3. linear acceleration along Z (down positive)
+#
+float16[3] accelerometer_latest             # Latest sample, meter/(second^2)
+float32[3] accelerometer_integral           # Integrated samples, meter/(second^2)
+
+#
+# Covariance matrix. The diagonal entries are ordered as follows:
+#   1. roll rate                (radian^2)/(second^2)
+#   2. pitch rate               (radian^2)/(second^2)
+#   3. yaw rate                 (radian^2)/(second^2)
+#   4. forward acceleration     (meter^2)/(second^4)
+#   5. rightward acceleration   (meter^2)/(second^4)
+#   6. downward acceleration    (meter^2)/(second^4)
+#
+float16[<=36] covariance

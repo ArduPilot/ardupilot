@@ -235,14 +235,12 @@ bool AP_ExternalAHRS::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) 
         hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: Invalid backend");
         return false;
     }
-    if (!backend->pre_arm_check(failure_msg, failure_msg_len)) {
-        return false;
-    }
+
     if (!state.have_origin) {
         hal.util->snprintf(failure_msg, failure_msg_len, "ExternalAHRS: No origin");
-	    return false;
+        return false;
     }
-    return true;
+    return backend->pre_arm_check(failure_msg, failure_msg_len);
 }
 
 /*

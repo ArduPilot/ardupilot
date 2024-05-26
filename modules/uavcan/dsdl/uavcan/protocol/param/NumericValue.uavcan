@@ -1,0 +1,13 @@
+#
+# Numeric-only value.
+#
+# This is a union, which means that this structure can contain either one of the fields below.
+# The structure is prefixed with tag - a selector value that indicates which particular field is encoded.
+#
+
+@union                          # Tag is 2 bits long.
+
+Empty empty                     # Empty field, used to represent an undefined value.
+
+int64   integer_value
+float32 real_value

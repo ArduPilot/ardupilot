@@ -47,9 +47,12 @@ public:
 	virtual ~AC_AttitudeControl_Multi() {}
 
     // pid accessors
-    AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    AP_Int8 alt_pid_active;
+    AP_Int8 alt_pid_mask;
+
+    AC_PID& get_rate_roll_pid() override { return (alt_pid_active && (alt_pid_mask&1))?_pid2_rate_roll:_pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return (alt_pid_active && (alt_pid_mask&2))?_pid2_rate_pitch:_pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return (alt_pid_active && (alt_pid_mask&4))?_pid2_rate_yaw:_pid_rate_yaw; }
     const AC_PID& get_rate_roll_pid() const override { return _pid_rate_roll; }
     const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
@@ -83,6 +86,11 @@ public:
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
+
+    // enable/disable alternative rate control
+    void set_alt_rate_control(bool enable) override {
+        alt_pid_active.set(enable);
+    }
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -142,6 +150,10 @@ protected:
             .srtau     = 1.0
         }
     };
+    
+    AP_ADRC                _pid2_rate_roll;
+    AP_ADRC                _pid2_rate_pitch;
+    AP_ADRC                _pid2_rate_yaw;
 
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)

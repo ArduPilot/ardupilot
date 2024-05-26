@@ -26,6 +26,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_KAIYECAN/AP_KAIYECAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include <AP_EFI/AP_EFI_NWPMU.h>

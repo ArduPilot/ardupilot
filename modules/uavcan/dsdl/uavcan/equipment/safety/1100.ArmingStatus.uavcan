@@ -1,0 +1,9 @@
+#
+# This message represents the system arming status.
+# Some nodes may refuse to operate unless the system is fully armed.
+#
+
+uint8 STATUS_DISARMED           = 0
+uint8 STATUS_FULLY_ARMED        = 255
+
+uint8 status

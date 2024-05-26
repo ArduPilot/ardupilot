@@ -1,0 +1,6 @@
+#
+# Body sideslip in radians.
+#
+
+float16 sideslip_angle          # Radians
+float16 sideslip_angle_variance # Radians^2

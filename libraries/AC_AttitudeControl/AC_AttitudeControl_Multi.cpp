@@ -317,12 +317,21 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
 
+    AP_SUBGROUPINFO(_pid2_rate_roll,  "RA2_RLL_",  50, AC_AttitudeControl_Multi, AP_ADRC),
+    AP_SUBGROUPINFO(_pid2_rate_pitch, "RA2_PIT_",  51, AC_AttitudeControl_Multi, AP_ADRC),
+    AP_SUBGROUPINFO(_pid2_rate_yaw,   "RA2_YAW_",  52, AC_AttitudeControl_Multi, AP_ADRC),
+    AP_GROUPINFO("ALT_ACTIVE", 53, AC_AttitudeControl_Multi, alt_pid_active, 0),
+    AP_GROUPINFO("ALT_MASK",   54, AC_AttitudeControl_Multi, alt_pid_mask, 7),
+
     AP_GROUPEND
 };
 
 AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) :
     AC_AttitudeControl(ahrs, aparm, motors),
-    _motors_multi(motors)
+    _motors_multi(motors),
+    _pid2_rate_roll(100, _dt),
+    _pid2_rate_pitch(100, _dt),
+    _pid2_rate_yaw(10, _dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 

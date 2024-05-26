@@ -1,0 +1,59 @@
+#
+# GNSS navigation solution with uncertainty.
+# This message is deprecated. Use the newer 1063.Fix2.uavcan message.
+#
+
+uavcan.Timestamp timestamp         # Global network-synchronized time, if available, otherwise zero
+
+#
+# Time solution.
+# Time standard (GPS, UTC, TAI, etc) is defined in the field below.
+#
+uavcan.Timestamp gnss_timestamp
+
+#
+# Time standard used in the GNSS timestamp field.
+#
+uint3 GNSS_TIME_STANDARD_NONE = 0  # Time is unknown
+uint3 GNSS_TIME_STANDARD_TAI  = 1
+uint3 GNSS_TIME_STANDARD_UTC  = 2
+uint3 GNSS_TIME_STANDARD_GPS  = 3
+uint3 gnss_time_standard
+
+void5   # Reserved space
+
+#
+# If known, the number of leap seconds allows to perform conversions between some time standards.
+#
+uint8 NUM_LEAP_SECONDS_UNKNOWN = 0
+uint8 num_leap_seconds
+
+#
+# Position and velocity solution
+#
+int37 longitude_deg_1e8            # Longitude degrees multiplied by 1e8 (approx. 1 mm per LSB)
+int37 latitude_deg_1e8             # Latitude degrees multiplied by 1e8 (approx. 1 mm per LSB on equator)
+int27 height_ellipsoid_mm          # Height above ellipsoid in millimeters
+int27 height_msl_mm                # Height above mean sea level in millimeters
+
+float16[3] ned_velocity            # NED frame (north-east-down) in meters per second
+
+#
+# Fix status
+#
+uint6 sats_used
+
+uint2 STATUS_NO_FIX    = 0
+uint2 STATUS_TIME_ONLY = 1
+uint2 STATUS_2D_FIX    = 2
+uint2 STATUS_3D_FIX    = 3
+uint2 status
+
+#
+# Precision
+#
+float16 pdop
+
+void4
+float16[<=9] position_covariance   # m^2
+float16[<=9] velocity_covariance   # (m/s)^2

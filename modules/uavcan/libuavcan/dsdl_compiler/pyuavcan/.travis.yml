@@ -1,0 +1,20 @@
+language: python
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+  - "3.7"
+install:
+  - pip install flake8 mock
+before_script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+script: python -m unittest discover test
+deploy:
+  provider: pypi
+  user: uavcan
+  password:
+    secure: ikyq1z79JCE6ARRAHCykX75XSvUvqIoFA2bwb6GAk2yhn/GmAWTW8V114Xpi/dtD9BRCPo3nhyUyzcUutzovmKhnbjdj2+iEbenZd1j8vckRzanOiVniQeEPbAr/lQX46T+S1U1krAgfWfzg+x0sX6+grYQjVJwWDO+ueJrSBTjx1hjgBYl6hu5WJLladQ5kIfjEx29s2eFo6LzCuQ15fCSGojGlAsVZ6VjYBnxMRgRhNXAJmbBJ1F5+hIvpS5LrsP4oUUjpzM9MvSmD3fVoByxrJedAT2KbIP2vH7v7puVP03IF823KjHL0SRS6DLFo/bxTReW0Nd4i0KUdlVAm3WOkQOLMgM3G0tEwW+wO/o/LNgqXtdAFpEOIkzJOBBbT+IW8WX+38/LwYobZ+4DQldHCAfOylK9g/znDQQsye8HAVSA5Gu1IHAAHgbJlstODFQoxUqDZv5l3Qd6vksjwhumF2hIayAJMsKEtgefBMVi8vI0Mv3nSIT01rGGMpf/WemSnesm0UNs3zOiNzkNW235i08Jo/ugoFoiETQcPIXh9PhVkO+FFagtzIqlsIqhP/70Jif8aPdeLwi1lbwdB90jsU1cEIrfBchmUzwWJn42lr/RYY+979Bk91/69EaqyO8h8YKXyQeUNEeFWI/w+OpaAELV8IAhNUEhf7pOOHkc=
+  on:
+    tags: true
+    repo: UAVCAN/pyuavcan
+  distributions: bdist_wheel
+  skip_cleanup: true

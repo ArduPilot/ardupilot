@@ -33,9 +33,10 @@ void Copter::arm_motors_check()
     }
 
     int16_t yaw_in = channel_yaw->get_control_in();
-
+    int16_t pitch_in = channel_pitch->get_control_in();
+    int16_t roll_in = channel_roll->get_control_in();
     // full right
-    if (yaw_in > 4000) {
+    if (yaw_in > 4000 && pitch_in > 4000 && roll_in < -4000) {
 
         // increase the arming counter to a maximum of 1 beyond the auto trim counter
         if (arming_counter <= AUTO_TRIM_DELAY) {

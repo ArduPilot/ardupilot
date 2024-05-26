@@ -1,0 +1,23 @@
+#
+# Read file from a remote node.
+# 
+# There are two possible outcomes of a successful service call:
+#  1. Data array size equals its capacity. This means that the end of the file is not reached yet.
+#  2. Data array size is less than its capacity, possibly zero. This means that the end of file is reached.
+# 
+# Thus, if the client needs to fetch the entire file, it should repeatedly call this service while increasing the
+# offset, until incomplete data is returned.
+#
+# If the object pointed by 'path' cannot be read (e.g. it is a directory or it does not exist), appropriate error code
+# will be returned, and data array will be empty.
+#
+
+uint40 offset
+
+Path path
+
+---
+
+Error error
+
+uint8[<=256] data

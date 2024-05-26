@@ -1,0 +1,41 @@
+#
+# support for CUAV Smart Battery on UAVCAN
+#
+
+float32 temperature                 # The surface temperature of the battery
+float32 voltage                     # The total voltage of the battery
+float32[<=15] voltage_cell          # Battery individual cell voltages
+uint8 cell_count                    # Number of cells
+float32 current                     # The current flowing through the sense resistor
+float32 average_current             # The average current flowing through the sense resistor
+float32 average_power               # The average power of the current discharge
+float32 available_energy            # The predicted charge or energy remaining in the battery
+float32 remaining_capacity          # The compensated battery capacity remaining
+float32 full_charge_capacity        # The compensated capacity of the battery when fully charged
+float32 design_capacity             # The design capacity of the battery
+uint16 average_time_to_empty        # The predicted remaining battery life at the present rate of discharge, in minutes
+uint16 average_time_to_full         # The predicted remaining time until the battery reaches full charge, in minutes
+uint7 state_of_health               # Health of the battery
+uint7 state_of_charge               # Percent of the full charge [0, 100]
+uint7 max_error                     # max error, expected margin of error in % in the state-of-charge calculation with a range of 1 to 100%
+uint16 serial_number                # serial number of the battery pack
+uint16 manufacture_date             # manufacture date, part of serial number of the battery pack
+uint16 cycle_count                  # number of discharge cycles the battery has experienced
+uint16 over_discharge_count         # Number of battery overdischarge
+float32 passed_charge               # The amount of charge passing through the sense resistor
+float32 nominal_voltage             # Nominal voltage of the battery pack
+bool is_powering_off                # Power off event imminent indication, false if unknown
+uint16 interface_error              # interface error counter
+
+uint11 STATUS_FLAG_IN_USE       = 1     # The battery is currently used as a power supply
+uint11 STATUS_FLAG_CHARGING     = 2     # Charger is active
+uint11 STATUS_FLAG_CHARGED      = 4     # Charging complete, but the charger is still active
+uint11 STATUS_FLAG_TEMP_HOT     = 8     # Battery temperature is above normal
+uint11 STATUS_FLAG_TEMP_COLD    = 16    # Battery temperature is below normal
+uint11 STATUS_FLAG_OVERLOAD     = 32    # Safe operating area violation
+uint11 STATUS_FLAG_BAD_BATTERY  = 64    # This battery should not be used anymore (e.g. low SOH)
+uint11 STATUS_FLAG_NEED_SERVICE = 128   # This battery requires maintenance (e.g. balancing, full recharge)
+uint11 STATUS_FLAG_BMS_ERROR    = 256   # Battery management system/controller error, smart battery interface error
+uint11 STATUS_FLAG_RESERVED_A   = 512   # Keep zero
+uint11 STATUS_FLAG_RESERVED_B   = 1024  # Keep zero
+uint11 status_flags

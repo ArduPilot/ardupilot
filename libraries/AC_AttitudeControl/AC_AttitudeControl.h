@@ -11,6 +11,7 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 #include <AP_Vehicle/AP_MultiCopter.h>
+#include <AP_ADRC/AP_ADRC.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
@@ -410,6 +411,9 @@ public:
     // get the value of the PD scale that was used in the last loop, for logging
     const Vector3f &get_PD_scale_logging(void) const { return _pd_scale_used; }
 
+    // enable/disable alternative rate control
+    virtual void set_alt_rate_control(bool enable) {}
+    
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -1,0 +1,6 @@
+#
+# Static temperature.
+#
+
+float16 static_temperature              # Kelvin
+float16 static_temperature_variance     # Kelvin^2

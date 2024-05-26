@@ -1,0 +1,36 @@
+#
+# Auxilary Single battery info.
+#
+# This message is to be used in conjunction with uavcan/equipment/power/1092.BatteryInfo.uavcan
+
+# Please ensure that this message is sent before the BatteryInfo which doesn't
+# include the timestamp. The following fields should contain the timestamp of the last current measurement.
+uavcan.Timestamp timestamp
+
+# Battery individual cell voltages
+# length of following field also used as cell count
+float16[<=255] voltage_cell          # [Volt]
+
+# Number of Charge/Discharge Cycles
+# A charge cycle is defined as a complete discharge and charge.
+# IE when the system uses all of the battery's available energy capacity.
+# Please note that this value doesn't mean that the cycle count should be incremented at every charge.
+# For example, if half of a battery's charge is used in one run,
+# and then recharged fully that is half of a cycle. If the same thing occurs again
+# then the charge cycle count would be incremented once, not twice.
+uint16 cycle_count
+
+# Number of times the battery was discharged over the rated capacity
+uint16 over_discharge_count
+
+# Max instantaneous current draw since last message
+float16 max_current                 # [Ampere]
+
+# Nominal voltage of the battery pack
+# the nominal Voltage can be used for conversion between Wh and Ah
+# if the value of this field is 0, the conversion should be omitted.
+float16 nominal_voltage             # [Volt]
+
+bool is_powering_off                # Power off event imminent indication, false if unknown
+
+uint8 battery_id                    # Identifies the battery within this vehicle, e.g. 0 - primary battery

@@ -1,0 +1,8 @@
+#
+# Nested type.
+# Energy and capacity are expressed in watt hours (Joules are infeasible because of range limitations).
+# Unknown values should be represented as NAN.
+#
+
+float32 scalar
+B[2] vector

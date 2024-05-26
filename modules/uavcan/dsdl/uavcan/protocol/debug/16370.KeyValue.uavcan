@@ -1,0 +1,14 @@
+#
+# Generic named parameter (key/value pair).
+#
+
+#
+# Integers are exactly representable in the range (-2^24, 2^24) which is (-16'777'216, 16'777'216).
+#
+float32 value
+
+#
+# Tail array optimization is enabled, so if key length does not exceed 3 characters, the whole
+# message can fit into one CAN frame. The message always fits into one CAN FD frame.
+#
+uint8[<=58] key

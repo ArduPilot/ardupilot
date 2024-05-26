@@ -1,0 +1,9 @@
+#
+# Global timestamp in microseconds, 7 bytes.
+#
+# Use this data type for timestamp fields in messages, like follows:
+#   uavcan.Timestamp timestamp
+#
+
+uint56 UNKNOWN = 0
+truncated uint56 usec     # Microseconds

@@ -1,0 +1,4 @@
+# This should be 13 bits long
+void2                # 2 bits
+uint2[4] array       # 8 bits
+void3                # 3 bits

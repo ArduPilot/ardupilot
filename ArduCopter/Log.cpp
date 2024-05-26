@@ -225,6 +225,31 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float t
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
+struct PACKED log_fasile {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  position;     // parameter we are tuning, e.g. 39 is CH6_CIRCLE_RATE
+    uint8_t  velocity;  // normalized value used inside tuning() function
+    uint8_t  accelerate;    // tuning minimum value
+    float    error_min;    // tuning maximum value
+    float    error_max;    // tuning maximum value
+};
+
+void Copter::Log_fasile(uint8_t pos, uint8_t vel, uint8_t acce, float errn, float errx)
+{
+    struct log_fasile pkt_err = {
+        LOG_PACKET_HEADER_INIT(LOG_FAILSE_MSG),
+        time_us        : AP_HAL::micros64(),
+        position      : pos,
+        velocity   : vel,
+        accelerate     : acce,
+        error_min     : errn,
+        error_max    : errx
+    };
+
+    logger.WriteBlock(&pkt_err, sizeof(pkt_err));
+}
+
 void Copter::Log_Video_Stabilisation()
 {
     if (!should_log(MASK_LOG_VIDEO_STABILISATION)) {
@@ -423,6 +448,11 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
 
+    // {LOG_FAILSE_MSG, sizeof(log_fasile),
+    // "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
+       { LOG_FAILSE_MSG , sizeof(log_fasile),
+       "FASI", "QBBBff", "TimeUS,Position,Velocity,Accelerate,ErrorMin,ErrorMax","s----", "F----" },
+
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
 // @Field: TimeUS: Time since system startup
@@ -481,6 +511,7 @@ const struct LogStructure Copter::log_structure[] = {
       "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
+
     
 // @LoggerMessage: HELI
 // @Description: Helicopter related messages 
@@ -558,7 +589,9 @@ const struct LogStructure Copter::log_structure[] = {
 
     { LOG_GUIDED_ATTITUDE_TARGET_MSG, sizeof(log_Guided_Attitude_Target),
       "GUIA",  "QBffffffff",    "TimeUS,Type,Roll,Pitch,Yaw,RollRt,PitchRt,YawRt,Thrust,ClimbRt", "s-dddkkk-n", "F-000000-0" , true },
+    
 };
+
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {

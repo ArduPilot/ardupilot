@@ -194,6 +194,9 @@ void Copter::tuning()
 
     case TUNING_POS_CONTROL_ANGLE_MAX:
         pos_control->set_lean_angle_max_cd(tuning_value * 100.0);
+        #if CUSTOMCONTROL_ADRC_ENABLED
+        //  adrc_con->get_rate_roll_cont().WC(tuning_value);
+#endif
         break;
     }
 }

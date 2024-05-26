@@ -1,0 +1,17 @@
+#
+# Get transport statistics.
+#
+
+---
+
+#
+# UAVCAN transport layer statistics.
+#
+uint48 transfers_tx             # Number of transmitted transfers.
+uint48 transfers_rx             # Number of received transfers.
+uint48 transfer_errors          # Number of errors detected in the UAVCAN transport layer.
+
+#
+# CAN bus statistics, for each interface independently.
+#
+CANIfaceStats[<=3] can_iface_stats

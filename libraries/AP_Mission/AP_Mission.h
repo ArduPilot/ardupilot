@@ -288,13 +288,6 @@ public:
         float focus_value;
     };
 
-    // MAV_CMD_SET_CAMERA_SOURCE support
-    struct PACKED set_camera_source_Command {
-        uint8_t instance;
-        uint8_t primary_source;
-        uint8_t secondary_source;
-    };
-
     // MAV_CMD_VIDEO_START_CAPTURE support
     struct PACKED video_start_capture_Command {
         uint8_t video_stream_id;
@@ -394,9 +387,6 @@ public:
 
         // MAV_CMD_SET_CAMERA_FOCUS support
         set_camera_focus_Command set_camera_focus;
-
-        // MAV_CMD_SET_CAMEARA_SOURCE support
-        set_camera_source_Command set_camera_source;
 
         // MAV_CMD_VIDEO_START_CAPTURE support
         video_start_capture_Command video_start_capture;

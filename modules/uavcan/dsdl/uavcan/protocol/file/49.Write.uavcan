@@ -1,0 +1,26 @@
+#
+# Write into a remote file.
+# The server shall place the contents of the field 'data' into the file pointed by 'path' at the offset specified by
+# the field 'offset'.
+#
+# When writing a file, the client should repeatedly call this service with data while advancing offset until the file
+# is written completely. When write is complete, the client shall call the service one last time, with the offset
+# set to the size of the file and with the data field empty, which will signal the server that the write operation is
+# complete.
+#
+# When the write operation is complete, the server shall truncate the resulting file past the specified offset.
+#
+# Server implementation advice:
+# It is recommended to implement proper handling of concurrent writes to the same file from different clients, for
+# example by means of creating a staging area for uncompleted writes (like FTP servers do).
+#
+
+uint40 offset
+
+Path path
+
+uint8[<=192] data
+
+---
+
+Error error

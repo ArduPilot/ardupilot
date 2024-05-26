@@ -1,0 +1,11 @@
+#
+# Nested type.
+#
+# File system path in UTF8.
+#
+# The only valid separator is forward slash.
+#
+
+uint8 SEPARATOR = '/'
+
+uint8[<=200] path

@@ -62,8 +62,7 @@ public:
     //  target and error are filtered
     //  the derivative is then calculated and filtered
     //  the integral is then updated based on the setting of the limit flag
-    float update_all(float target, float measurement, float dt, bool limit = false, float boost = 1.0f);
-
+    virtual float update_all(float target, float measurement, float dt, bool limit = false, float boost = 1.0f);
     //  update_error - set error input to PID controller and calculate outputs
     //  target is set to zero and error is set and filtered
     //  the derivative then is calculated and filtered
@@ -143,7 +142,7 @@ public:
     // return current slew rate of slew limiter. Will return 0 if SMAX is zero
     float get_slew_rate(void) const { return _slew_limiter.get_slew_rate(); }
 
-    const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
+    virtual const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
     void set_notch_sample_rate(float);
 

@@ -1,0 +1,15 @@
+#
+# Volz servo feedback.
+#
+uint8 actuator_id # Unique actuator ID (1..15)
+
+float16 actual_position # Actual servo position in radians
+
+uint8 current # Current: unsigned, 8-bit value, one count = 0.025 A
+
+uint8 voltage # Supply voltage: unsigned, 8-bit value, one count = 0.2 V
+
+uint8 motor_pwm # Motor PWM: unsigned, 8-bit value, 0 = 0% Motor power, 255 = 100% Motor Power
+
+uint8 motor_temperature # Motor temperature: unsigned 8-bit value, 0 = -50C, 255 = sensor error, one count = one degree
+

@@ -650,6 +650,11 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(relay,                 "RELAY", AP_Relay),
 #endif
 
+#if AP_KAIYECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../libraries/AP_KDECAN/AP_KDECAN.cpp
+    GOBJECT(kayecan, "KAI_",   AP_KAIYECAN),
+#endif
     AP_VAREND
 };
 

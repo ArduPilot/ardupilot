@@ -77,16 +77,15 @@ protected:
     struct {
         uint16_t week;
         uint32_t tow_ms;
-        // 1-sigma position uncertainty in the NED local-level frame [meters].
-        Vector3f ned_position_uncertainty;
+        float horizontal_position_accuracy;
+        float vertical_position_accuracy;
         int32_t lon;
         int32_t lat;
         int32_t hae_altitude;
         float ned_velocity_north;
         float ned_velocity_east;
         float ned_velocity_down;
-        // 1-sigma velocity uncertainties in the NED local-level frame.
-        Vector3f ned_velocity_uncertainty;
+        float speed_accuracy;
         // 4x1 vector representation of the quaternion describing the orientation of the device with respect to the NED local-level frame.
         // NED [Qw, Qx, Qy, Qz]
         Quaternion attitude_quat;

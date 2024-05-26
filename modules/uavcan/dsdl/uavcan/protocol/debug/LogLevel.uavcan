@@ -1,0 +1,9 @@
+#
+# Log message severity
+#
+
+uint3 DEBUG    = 0
+uint3 INFO     = 1
+uint3 WARNING  = 2
+uint3 ERROR    = 3
+uint3 value

@@ -1,0 +1,10 @@
+#
+# This thing is only needed for testing
+#
+
+uint8 seq
+uint8 sysid
+uint8 compid
+uint8 msgid
+
+uint8[<256] payload

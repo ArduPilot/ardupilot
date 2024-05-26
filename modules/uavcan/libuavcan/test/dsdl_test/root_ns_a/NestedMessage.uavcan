@@ -1,0 +1,5 @@
+
+float32 VALUE  =  2  +(  2  *2)
+bool BOOLEAN = true + false
+int2 field
+EmptyMessage empty

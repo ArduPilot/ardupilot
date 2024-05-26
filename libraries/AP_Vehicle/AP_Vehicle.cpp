@@ -251,6 +251,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../Filter/AP_Filter.cpp
     AP_SUBGROUPINFO(filters, "FILT", 26, AP_Vehicle, AP_Filters),
 #endif
+
+#if AP_KAIYECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../AP_KDECAN/AP_KDECAN.cpp
+    AP_SUBGROUPINFO(kayecan, "KAI_",  27, AP_Vehicle, AP_KAIYECAN),
+#endif
     AP_GROUPEND
 };
 
@@ -413,6 +419,10 @@ void AP_Vehicle::setup()
 
 #if AP_KDECAN_ENABLED
     kdecan.init();
+#endif
+
+#if AP_KAIYECAN_ENABLED
+    kayecan.init();
 #endif
 
 #if AP_AIS_ENABLED

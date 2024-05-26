@@ -100,7 +100,7 @@ void AP_KDECAN_Driver::handle_frame(AP_HAL::CANFrame &frame)
     }
 #endif
 
-    if (id.destination_id != AUTOPILOT_NODE_ID || id.source_id < ESC_NODE_ID_FIRST) {
+        if (id.destination_id != AUTOPILOT_NODE_ID || id.source_id < ESC_NODE_ID_FIRST) {
         // not for us or invalid id (0 and 1 are invalid)
         return;
     }
@@ -216,7 +216,7 @@ void AP_KDECAN_Driver::loop()
 #endif
 
         const uint32_t now_ms = AP_HAL::millis();
-
+        
         // This should run at 400Hz
         {
             WITH_SEMAPHORE(_output.sem);
@@ -234,9 +234,9 @@ void AP_KDECAN_Driver::loop()
         }
 
         for (uint8_t i=0; i<ARRAY_SIZE(_output.pwm); i++) {
-            if ((_init.detected_bitmask & (1UL<<i)) != 0) {
-                send_packet_uint16(SET_PWM_OBJ_ADDR, (i + ESC_NODE_ID_FIRST), 1, pwm[i]);
-            }
+        if ((_init.detected_bitmask & (1UL<<i)) != 0) {
+        send_packet_uint16(SET_PWM_OBJ_ADDR, (i + ESC_NODE_ID_FIRST), 1, pwm[i]);
+        }
         }
 
 #if HAL_WITH_ESC_TELEM
@@ -255,7 +255,7 @@ void AP_KDECAN_Driver::loop()
             } else {
                 broadcast_esc_info_next_interval_ms = 1000;
             }
-
+            
             if (send_packet(ESC_INFO_OBJ_ADDR, BROADCAST_NODE_ID, 100)) {
                 _init.detected_bitmask_ms = now_ms;
             }

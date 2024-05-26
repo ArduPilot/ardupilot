@@ -1,0 +1,28 @@
+#
+# Get the implementation details of a given data type.
+#
+# Request is interpreted as follows:
+#  - If the field 'name' is empty, the fields 'kind' and 'id' will be used to identify the data type.
+#  - If the field 'name' is non-empty, it will be used to identify the data type; the
+#    fields 'kind' and 'id' will be ignored.
+#
+
+uint16 id                   # Ignored if 'name' is non-empty
+DataTypeKind kind           # Ignored if 'name' is non-empty
+
+uint8[<=80] name            # Full data type name, e.g. "uavcan.protocol.GetDataTypeInfo"
+
+---
+
+uint64 signature            # Data type signature; valid only if the data type is known (see FLAG_KNOWN)
+
+uint16 id                   # Valid only if the data type is known (see FLAG_KNOWN)
+DataTypeKind kind           # Ditto
+
+uint8 FLAG_KNOWN      = 1   # This data type is defined
+uint8 FLAG_SUBSCRIBED = 2   # Subscribed to messages of this type
+uint8 FLAG_PUBLISHING = 4   # Publishing messages of this type
+uint8 FLAG_SERVING    = 8   # Providing service of this type
+uint8 flags
+
+uint8[<=80] name            # Full data type name

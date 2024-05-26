@@ -1,0 +1,13 @@
+#
+# Nested type.
+# Represents the type of the file system entry (e.g. file or directory).
+# If such entry does not exist, 'flags' must be set to zero.
+#
+
+uint8 FLAG_FILE      = 1        # Excludes FLAG_DIRECTORY
+uint8 FLAG_DIRECTORY = 2        # Excludes FLAG_FILE
+uint8 FLAG_SYMLINK   = 4        # Link target is either FLAG_FILE or FLAG_DIRECTORY
+uint8 FLAG_READABLE  = 8
+uint8 FLAG_WRITEABLE = 16
+
+uint8 flags
