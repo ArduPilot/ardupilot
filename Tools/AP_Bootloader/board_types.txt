@@ -65,11 +65,11 @@ Reserved "NXP ucans32k146"             34
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
 
-# NOTE: the full range from 1000 to 1999 (inclusive) is reserved for
+# NOTE: the full range from 1000 to 19999 (inclusive) is reserved for
 # use by the ArduPilot bootloader. Do not allocate IDs in this range
 # except via changes to the ArduPilot code
 
-# Do not allocate IDs in the range 1000 to 1999 except via a PR
+# Do not allocate IDs in the range 1000 to 19999 except via a PR
 # against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
 
 # values starting with AP_ are implemented in the ArduPilot bootloader
@@ -227,7 +227,7 @@ AP_HW_YJUAV_A6                       1113
 AP_HW_YJUAV_A6Nano                   1114
 AP_HW_ACNS_CM4PILOT                  1115
 AP_HW_ACNS_F405AIO                   1116
-AP_HW_BLITZF7                        1117
+AP_HW_BLITZF7AIO                     1117
 AP_HW_RADIX2HD                       1118
 AP_HW_HEEWING_F405                   1119
 AP_HW_PodmanH7                       1120
@@ -264,6 +264,21 @@ AP_HW_BotBloxSwitch                  1148
 AP_HW_MatekH7A3                      1149
 AP_HW_MicoAir405v2                   1150
 AP_HW_ORAQF405PRO                    1155
+AP_HW_CBU_StampH743                  1156
+AP_HW_FOXEERF405_V2                  1157
+AP_HW_CSKY405                        1158
+AP_HW_NxtPX4v2                       1159
+AP_HW_PixPilot-V6PRO                 1160
+AP_HW_MicoAir405Mini                 1161
+AP_HW_BlitzH7Pro                     1162
+AP_HW_BlitzF7Mini                    1163
+AP_HW_BlitzF7                        1164
+AP_HW_MicoAir743                     1166
+AP_HW_BlitzH7Wing                    1168
+AP_HW_SDMODELH7V2                    1167
+
+AP_HW_JHEMCUF405WING                 1169
+AP_HW_MatekG474                      1170
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
@@ -280,7 +295,15 @@ AP_HW_VIMDRONES_PERIPH               1407
 
 AP_HW_PIXHAWK6X_PERIPH               1408
 AP_HW_CUBERED_PERIPH                 1409
+AP_HW_RadiolinkPIX6                  1410
 
+AP_HW_JHEMCU-H743HD                  1411
+
+AP_HW_LongbowF405                    1422
+
+AP_HW_MountainEagleH743              1444
+
+AP_HW_SakuraRC-H743                  2714
 
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
@@ -302,8 +325,22 @@ AP_HW_Sierra-TrueFlow                5307
 AP_HW_Sierra-TrueNavIC-Pro           5308
 AP_HW_Sierra-F1-Pro                  5309
 
+#IDs 5401-5499 reserved for holybro
+AP_HW_Holybro-PMU-F4                 5401
+AP_HW_Holybro-UM982-G4               5402
+AP_HW_Holybro-UM960-H7               5403
+AP_HW_Holybro-PERIPH-H7              5404
+
+#IDs 5501-5599 reserved for MATEKSYS
+AP_HW_MATEKH743SE                    5501
+
 # IDs 6000-6099 reserved for SpektreWorks
+
+# IDs 6600-6699 reserved for Eagle Eye Drones
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+
+# do not allocate board IDs above 10,000 for non-ODID boards.
+# do not allocate board IDs above 19,999 in this file.
