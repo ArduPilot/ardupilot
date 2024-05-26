@@ -325,4 +325,36 @@ TEST(NotchFilterTest, HarmonicNotchTest4)
     fclose(f);
 }
 
+/*
+  show phase lag versus attenuation
+ */
+TEST(NotchFilterTest, HarmonicNotchTest5)
+{
+    const float min_attenuation = 0;
+    const float max_attenuation = 50;
+    const uint16_t steps = 200;
+
+    const char *csv_file = "harmonicnotch_test5.csv";
+    FILE *f = fopen(csv_file, "w");
+    fprintf(f, "Attenuation(dB),Lag(10Hz),Lag(20Hz),Lag(30Hz),Lag(40Hz),Lag(50Hz),Lag(60Hz),Lag(70Hz)\n");
+
+    for (uint16_t i=0; i<steps; i++) {
+        const float test_freq[7] { 10, 20, 30, 40, 50, 60, 70 };
+        float phase_lags[7];
+        float attenuations[7];
+        const float test_attenuation = min_attenuation + i*(max_attenuation-min_attenuation)/steps;
+        for (uint8_t F = 0; F < ARRAY_SIZE(test_freq); F++) {
+            test_one_filter(60, test_attenuation, 60, test_freq[F], 50, 1, 0,
+                            phase_lags[F],
+                            attenuations[F]);
+        }
+        fprintf(f, "%.3f,%f,%f,%f,%f,%f,%f,%f\n",
+                test_attenuation,
+                phase_lags[0], phase_lags[1], phase_lags[2],
+                phase_lags[3], phase_lags[4], phase_lags[5],
+                phase_lags[6]);
+    }
+    fclose(f);
+}
+
 AP_GTEST_MAIN()
