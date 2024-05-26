@@ -237,6 +237,9 @@ private:
     HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_motor_ms and _last_received_ms
     uint32_t _last_log_TRQD_ms;     // system time (in millis) that TRQD was last logged
 
+    // reset/wake
+    uint32_t _last_reset_ms;        // system time (in millis) since hard reset/wake button was last pressed
+
     // message parsing members
     ParseState _parse_state;        // current state of parsing
     bool _parse_escape_received;    // true if the escape character has been received so we must XOR the next byte

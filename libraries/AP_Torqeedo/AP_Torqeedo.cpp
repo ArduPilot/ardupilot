@@ -36,6 +36,7 @@
 #define TORQEEDO_BATT_TIMEOUT_MS    5000    // battery info timeouts after 5 seconds
 #define TORQEEDO_REPLY_TIMEOUT_MS   25      // stop waiting for replies after 25ms
 #define TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS   10000   // errors reported to user at no less than once every 10 seconds
+#define TORQEEDO_MIN_RESET_INTERVAL_MS 10000    // minimum time between hard resets/wake
 
 extern const AP_HAL::HAL& hal;
 
@@ -149,17 +150,13 @@ bool AP_Torqeedo::init_internals()
     _uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
     _uart->set_unbuffered_writes(true);
 
-    // if using tiller connection set on/off pin OFF (modified for manual press to power on)
+    // if using tiller connection initialize on/off pin to OFF
     if (_type == ConnectionType::TYPE_TILLER) {
         if (_pin_onoff > -1) {
             hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
-            // hal.gpio->write(_pin_onoff, 1);
-            // hal.scheduler->delay(500);
             hal.gpio->write(_pin_onoff, 0);
         } else {
             // use serial port's RTS pin
-            // _uart->set_RTS_pin(true);
-            // hal.scheduler->delay(500);
             _uart->set_RTS_pin(false);
         }
     }
@@ -252,13 +249,14 @@ void AP_Torqeedo::thread_main()
             }
         }
 
-        // if not healthy, auto reset is true, and ArduPilot has been started for at least 5 seconds, 
-        // toggle the on/off pin to try to wake or reset the motor
+        // if not healthy and auto reset is enabled,
+        // toggle the on/off pin to try to hard wake or reset the motor
         if (!healthy() && _auto_reset) {
-            // Get the number of milliseconds since boot
-            uint32_t boot_time_ms = AP_HAL::millis();
-            if (boot_time_ms > 5000) {
-                press_on_off_button(); // High for 500ms and low for 1s
+            const uint32_t now_ms = AP_HAL::millis();
+            // only reset if not reset recently (to avoid infinite reset loop)
+            if ((now_ms - _last_reset_ms > TORQEEDO_MIN_RESET_INTERVAL_MS)) {
+                press_on_off_button();
+                _last_reset_ms = now_ms;
             }
         }
 
@@ -1170,20 +1168,17 @@ void AP_Torqeedo::update_esc_telem(float rpm, float voltage, float current_amps,
 // set the on/off pin to on momentarily to wake the motor or clear an error state
 void AP_Torqeedo::press_on_off_button()
 {
-    // if using tiller connection set on/off pin low (modified for manual press to power on)
     if (_type == ConnectionType::TYPE_TILLER) {
         if (_pin_onoff > -1) {
             hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
             hal.gpio->write(_pin_onoff, 1);
             hal.scheduler->delay(500);
             hal.gpio->write(_pin_onoff, 0);
-            hal.scheduler->delay(1000);
         } else {
             // use serial port's RTS pin to turn on battery
             _uart->set_RTS_pin(true);
             hal.scheduler->delay(500);
             _uart->set_RTS_pin(false);
-            hal.scheduler->delay(1000);
         }
     }
 }
