@@ -83,6 +83,14 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     AP_GROUPEND
 };
 
+static void initialize(geometry_msgs_msg_Quaternion& q)
+{
+    q.x = 0.0;
+    q.y = 0.0;
+    q.z = 0.0;
+    q.w = 1.0;
+}
+
 AP_DDS_Client::~AP_DDS_Client()
 {
     // close transport
@@ -232,11 +240,8 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms[i].transform.translation.y = -1 * offset[1];
         msg.transforms[i].transform.translation.z = -1 * offset[2];
 
-        // Ensure rotation is normalised
-        msg.transforms[i].transform.rotation.x = 0.0;
-        msg.transforms[i].transform.rotation.y = 0.0;
-        msg.transforms[i].transform.rotation.z = 0.0;
-        msg.transforms[i].transform.rotation.w = 1.0;
+        // Ensure rotation is initialized.
+        initialize(msg.transforms[i].transform.rotation);
 
         msg.transforms_size++;
     }
@@ -350,10 +355,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     } else {
-        msg.pose.orientation.x = 0.0;
-        msg.pose.orientation.y = 0.0;
-        msg.pose.orientation.z = 0.0;
-        msg.pose.orientation.w = 1.0;
+        initialize(msg.pose.orientation);
     }
 }
 
@@ -434,10 +436,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     } else {
-        msg.pose.orientation.x = 0.0;
-        msg.pose.orientation.y = 0.0;
-        msg.pose.orientation.z = 0.0;
-        msg.pose.orientation.w = 1.0;
+        initialize(msg.pose.orientation);
     }
 }
 
