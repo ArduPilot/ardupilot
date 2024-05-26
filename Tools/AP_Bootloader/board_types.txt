@@ -283,6 +283,7 @@ AP_HW_JHEMCUF405WING                 1169
 AP_HW_MatekG474                      1170
 AP_HW_PhenixH7_lite                  1171
 AP_HW_PhenixH7_Pro                   1172
+AP_HW_2RAWH743                       1173
 
 AP_HW_FlywooF405HD_AIOv2             1180
 
