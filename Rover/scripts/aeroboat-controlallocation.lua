@@ -20,23 +20,24 @@ SYSTEM_STARTED = Parameter()
 local desired_yaw = -1.0
 
 
-local steering_pid = PID:new(0.25, 0.001, 0.01, 0.8, -0.8, 0.8, -0.8)  -- Configure os ganhos como necessários
+local steering_pid = PID:new(0.25, 0.001, 0.01, 0.8, -0.8, 0.8, -0.8) -- Configure os ganhos como necessários
 
 
 -- Severity for logging in GCS
-MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
+MAV_SEVERITY = { EMERGENCY = 0, ALERT = 1, CRITICAL = 2, ERROR = 3, WARNING = 4, NOTICE = 5, INFO = 6, DEBUG = 7 }
+-- Rover driving modes
+DRIVING_MODES = { MANUAL = 0, STEERING = 3, HOLD = 4, AUTO = 10, GUIDED = 15 }
 
---[[ 
-Control Allocation Function 
-It basically calculates the norm of the desired control vector (t,s) 
+--[[
+Control Allocation Function
+It basically calculates the norm of the desired control vector (t,s)
 and then splits it into the right and left side
 --]]
 local function new_control_allocation(t, s)
-
   -- Calculating the norm of each component on the desired control vector (t,s)
   local aloc = 400
 
-  local hip = math.sqrt(t*t + s*s) + 0.0001
+  local hip = math.sqrt(t * t + s * s) + 0.0001
 
   local nTa = aloc * t / hip
   local nSa = aloc * s / hip
@@ -61,41 +62,38 @@ local function new_control_allocation(t, s)
 
   -- Setting the PWM outputs based on the control allocation directions
   if naloc_right >= 0 then
-    SRV_Channels:set_output_pwm_chan_timeout(1, 2*naloc_right + pwm1_trim_value, 300)
-    SRV_Channels:set_output_pwm_chan_timeout(2, 2*naloc_right + pwm2_trim_value, 300)
+    SRV_Channels:set_output_pwm_chan_timeout(1, 2 * naloc_right + pwm1_trim_value, 300)
+    SRV_Channels:set_output_pwm_chan_timeout(2, 2 * naloc_right + pwm2_trim_value, 300)
     SRV_Channels:set_output_pwm_chan_timeout(4, pwm4_trim_value, 300)
   end
 
   if naloc_right < 0 then
     SRV_Channels:set_output_pwm_chan_timeout(1, pwm1_trim_value, 300)
     SRV_Channels:set_output_pwm_chan_timeout(2, pwm2_trim_value, 300)
-    SRV_Channels:set_output_pwm_chan_timeout(4, pwm4_trim_value - 2*naloc_right, 300)
+    SRV_Channels:set_output_pwm_chan_timeout(4, pwm4_trim_value - 2 * naloc_right, 300)
   end
 
   if naloc_left >= 0 then
-    SRV_Channels:set_output_pwm_chan_timeout(0, 2*naloc_left + pwm0_trim_value, 300)
-    SRV_Channels:set_output_pwm_chan_timeout(3, 2*naloc_left + pwm3_trim_value, 300)
+    SRV_Channels:set_output_pwm_chan_timeout(0, 2 * naloc_left + pwm0_trim_value, 300)
+    SRV_Channels:set_output_pwm_chan_timeout(3, 2 * naloc_left + pwm3_trim_value, 300)
     SRV_Channels:set_output_pwm_chan_timeout(5, pwm5_trim_value, 300)
   end
 
   if naloc_left < 0 then
     SRV_Channels:set_output_pwm_chan_timeout(0, pwm0_trim_value, 300)
     SRV_Channels:set_output_pwm_chan_timeout(3, pwm3_trim_value, 300)
-    SRV_Channels:set_output_pwm_chan_timeout(5, pwm5_trim_value - 2*naloc_left, 300)
+    SRV_Channels:set_output_pwm_chan_timeout(5, pwm5_trim_value - 2 * naloc_left, 300)
   end
-  
 end -- new_control_allocation function
 
 
---[[ 
-Main update function 
-It checks if the vehicle is a boat, if it is armed, and then 
-it gets the control values from the RC or internal control of the vehicle and passes 
+--[[
+Main update function
+It checks if the vehicle is a boat, if it is armed, and then
+it gets the control values from the RC or internal control of the vehicle and passes
 them to the control allocation function
 --]]
 local function update()
-
-
   -- Check if the vehicle is a boat
   local vehicle_type = param:get('SCR_USER5')
   if not (vehicle_type == 1) then
@@ -137,14 +135,12 @@ local function update()
   end
 
   -- Create the input control variables
-  local steering = 0 --vehicle:get_control_output(CONTROL_OUTPUT_YAW)
-  local throttle = 0 --vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)
+  local steering = 0
+  local throttle = 0
   local rc3_pwm = 0
   local rc1_pwm = 0
 
-   
-
-  if vehicle:get_mode() == 0 then -- Manual mode
+  if vehicle:get_mode() == DRIVING_MODES.MANUAL then
     -- Get the trim values for the RC channels
     TRIM3 = param:get('RC3_TRIM')
     TRIM1 = param:get('RC1_TRIM')
@@ -157,11 +153,7 @@ local function update()
     new_control_allocation(throttle, steering)
 
     return update, 200
-
-
-  -- ROVER_MODE_STEERING
-  elseif vehicle:get_mode()==3 then
-
+  elseif vehicle:get_mode() == DRIVING_MODES.STEERING then
     if desired_yaw == -1 then
       desired_yaw = funcs:map_to_360(funcs:to_degrees(ahrs:get_yaw()))
     end
@@ -173,29 +165,27 @@ local function update()
     TRIM1 = param:get('RC1_TRIM')
     rc1_pwm = tonumber(rc:get_pwm(1)) or 1500
     local addsteering = (rc1_pwm - TRIM1) / 450
-    
+
     local k1 = param:get('SCR_USER4')
 
-    desired_yaw = funcs:map_to_360(desired_yaw + k1*addsteering)
-    local vh_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
+    desired_yaw = funcs:map_to_360(desired_yaw + k1 * addsteering)
+    local vh_yaw = funcs:map_to_360(funcs:to_degrees(ahrs:get_yaw()))
     local steering_error = funcs:map_error(desired_yaw - vh_yaw)
 
     steering_pid.P = param:get('SCR_USER3')
     steering_pid.I = param:get('SCR_USER2')
     steering_pid.D = param:get('SCR_USER1')
-    local mysteering = steering_pid:compute(0,steering_error)
+    local mysteering = steering_pid:compute(0, steering_error)
 
     new_control_allocation(throttle, mysteering)
 
     return update, 200
-
-  elseif vehicle:get_mode()==4 then
-
+  elseif vehicle:get_mode() == DRIVING_MODES.AUTO or vehicle:get_mode() == DRIVING_MODES.GUIDED then
     if desired_yaw == -1 then
-      desired_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
+      desired_yaw = funcs:map_to_360(funcs:to_degrees(ahrs:get_yaw()))
     end
 
-    local mysteering, vh_yaw, steering_error = 0,0,0
+    local mysteering, vh_yaw, steering_error = 0, 0, 0
 
     TRIM3 = param:get('RC3_TRIM')
     rc3_pwm = tonumber(rc:get_pwm(3)) or 1500
@@ -206,38 +196,25 @@ local function update()
     steering = (rc1_pwm - TRIM1) / 450
 
     if math.abs(steering) > 0.05 then
-
-      desired_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
+      desired_yaw = funcs:map_to_360(funcs:to_degrees(ahrs:get_yaw()))
       new_control_allocation(throttle, steering)
-
     else
-
-      vh_yaw = funcs:map_to_360(To_degrees(ahrs:get_yaw()))
+      vh_yaw = funcs:map_to_360(funcs:to_degrees(ahrs:get_yaw()))
       steering_error = funcs:map_error(desired_yaw - vh_yaw)
-      mysteering = steering_pid:compute(0,steering_error)
+      mysteering = steering_pid:compute(0, steering_error)
       new_control_allocation(throttle, mysteering)
-
-      
     end
 
     return update, 200
-  
-
-  else -- Autonomous mode
-    -- Set the mode to 10 (Auto) if not already
-    -- if vehicle:get_mode() < 10 then 
-    --   vehicle:set_mode(10)
-    -- end
-
+  else
     -- Get the control outputs from the vehicle and pass into control allocation
     steering = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_YAW)) or 0
     throttle = tonumber(vehicle:get_control_output(CONTROL_OUTPUT_THROTTLE)) or 0
     --gcs:send_text(4, string.format("t,s = %f ; %f",  throttle, steering))
-    new_control_allocation(throttle,steering)
+    new_control_allocation(throttle, steering)
 
     return update, 200
   end
-
-end -- update function
+end                 -- update function
 
 return update, 3000 -- run immediately before starting to reschedule
