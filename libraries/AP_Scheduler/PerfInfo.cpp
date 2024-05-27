@@ -40,7 +40,7 @@ void AP::PerfInfo::ignore_this_loop()
 // allocate the array of task statistics for use by @SYS/tasks.txt
 void AP::PerfInfo::allocate_task_info(uint8_t num_tasks)
 {
-    _task_info = new TaskInfo[num_tasks];
+    _task_info = NEW_NOTHROW TaskInfo[num_tasks];
     if (_task_info == nullptr) {
         DEV_PRINTF("Unable to allocate scheduler TaskInfo\n");
         _num_tasks = 0;
