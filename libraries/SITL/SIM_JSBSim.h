@@ -44,7 +44,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new JSBSim(frame_str);
+        return NEW_NOTHROW JSBSim(frame_str);
     }
 
 private:

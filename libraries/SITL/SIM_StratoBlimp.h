@@ -40,7 +40,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new StratoBlimp(frame_str);
+        return NEW_NOTHROW StratoBlimp(frame_str);
     }
 
     static const struct AP_Param::GroupInfo var_info[];

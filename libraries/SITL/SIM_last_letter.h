@@ -44,7 +44,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new last_letter(frame_str);
+        return NEW_NOTHROW last_letter(frame_str);
     }
 
 private:
