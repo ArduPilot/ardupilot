@@ -171,7 +171,7 @@ void AP_OSD_MSP::setup_defaults(void)
 
 AP_OSD_Backend *AP_OSD_MSP::probe(AP_OSD &osd)
 {
-    AP_OSD_MSP *backend = new AP_OSD_MSP(osd);
+    AP_OSD_MSP *backend = NEW_NOTHROW AP_OSD_MSP(osd);
     if (!backend) {
         return nullptr;
     }
