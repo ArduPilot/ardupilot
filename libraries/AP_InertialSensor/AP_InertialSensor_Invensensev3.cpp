@@ -207,7 +207,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev3::probe(AP_InertialSens
     }
 
     AP_InertialSensor_Invensensev3 *sensor =
-        new AP_InertialSensor_Invensensev3(imu, std::move(_dev), _rotation);
+        NEW_NOTHROW AP_InertialSensor_Invensensev3(imu, std::move(_dev), _rotation);
     if (!sensor || !sensor->hardware_init()) {
         delete sensor;
         return nullptr;

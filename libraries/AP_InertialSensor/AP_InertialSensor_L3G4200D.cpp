@@ -146,7 +146,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::probe(AP_InertialSensor &
         return nullptr;
     }
     AP_InertialSensor_L3G4200D *sensor
-        = new AP_InertialSensor_L3G4200D(imu, std::move(dev_gyro), std::move(dev_accel));
+        = NEW_NOTHROW AP_InertialSensor_L3G4200D(imu, std::move(dev_gyro), std::move(dev_accel));
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;

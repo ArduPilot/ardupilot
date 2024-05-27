@@ -349,7 +349,7 @@ void AP_InertialSensor_TCal::update_accel_learning(const Vector3f &accel, float 
         return;
     }
     if (learn == nullptr && hal.scheduler->is_system_initialized()) {
-        learn = new Learn(*this, temperature);
+        learn = NEW_NOTHROW Learn(*this, temperature);
         if (learn) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
                           instance()+1,

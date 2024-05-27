@@ -20,7 +20,7 @@ AP_InertialSensor_SITL::AP_InertialSensor_SITL(AP_InertialSensor &imu, const uin
  */
 AP_InertialSensor_Backend *AP_InertialSensor_SITL::detect(AP_InertialSensor &_imu, const uint16_t sample_rates[])
 {
-    AP_InertialSensor_SITL *sensor = new AP_InertialSensor_SITL(_imu, sample_rates);
+    AP_InertialSensor_SITL *sensor = NEW_NOTHROW AP_InertialSensor_SITL(_imu, sample_rates);
     if (sensor == nullptr) {
         return nullptr;
     }
