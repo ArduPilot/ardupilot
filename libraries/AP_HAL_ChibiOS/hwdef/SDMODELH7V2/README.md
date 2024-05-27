@@ -25,11 +25,11 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL0 -> USB
  - SERIAL1 -> UART1 (Telem1) (MSP DisplayPort)(DMA Capable)
  - SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not useable by ArduPilot)
- - SERIAL3 -> UART3 (GPS)(DMA Capable)
+ - SERIAL3 -> UART3 (RCin)(DMA Capable)
  - SERIAL4 -> UART4 (GPS)
  - SERIAL5 -> not available
- - SERIAL6 -> UART6 (RX6 in RCinput, ALT config to use as UART input)
- - SERIAL7 -> UART7 RX pin only, ESC telem)(DMA Capable)
+ - SERIAL6 -> UART6 (TELEM)
+ - SERIAL7 -> UART7 (RX pin only, ESC telem)(DMA Capable)
 
 ## RC Input
 
