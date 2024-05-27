@@ -389,6 +389,21 @@ def mag_observation(P,state,R_to_body,i,ib):
 
     return
 
+# fusion of a 2D range measurement to a known beacon position
+def rng2d_observation(P,state,px,py):
+    range = symbols("range", real=True) # horizontal range from beacon to body frame origin (m)
+    obs_var = symbols("R_RNG", real=True) # range measurement noise variance (m^2)
+    pbx, pby = symbols("bcn_pn bcn_pe", real=True)  # beacon NE position (m)
+    observation = sqrt((px-pbx)*(px-pbx)+(py-pby)*(py-pby))
+
+    equations = generate_observation_equations(P,state,observation,obs_var)
+
+    rng2d_code_generator = CodeGenerator("./generated/rng2d_generated.cpp")
+    write_equations_to_file(equations,rng2d_code_generator,1)
+    rng2d_code_generator.close()
+
+    return
+
 # airspeed fusion
 def tas_observation(P,state,vx,vy,vz,wx,wy):
     obs_var = symbols("R_TAS", real=True) # true airspeed measurement noise variance
@@ -693,6 +708,8 @@ def generate_code():
     body_frame_velocity_observation(P,state,R_to_body,vx,vy,vz)
     print('Generating body frame acceleration observation code ...')
     body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
+    print('Generating 2D range to beacon onservation code ...')
+    rng2d_observation(P,state,px,py)
     print('Generating yaw estimator code ...')
     yaw_estimator()
     print('Code generation finished!')

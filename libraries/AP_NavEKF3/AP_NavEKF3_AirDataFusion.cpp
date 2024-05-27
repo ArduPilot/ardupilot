@@ -242,6 +242,9 @@ void NavEKF3_core::SelectBetaDragFusion()
 
     // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead reckoning
     bool is_dead_reckoning = ((imuSampleTime_ms - lastGpsPosPassTime_ms) > frontend->deadReckonDeclare_ms) &&
+#if EK3_FEATURE_BEACON_FUSION
+                             ((imuSampleTime_ms - rngBcn.lastPassTime_ms) > frontend->deadReckonDeclare_ms) &&
+#endif
                              ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
     const bool noYawSensor = !use_compass() && !using_noncompass_for_yaw();
     const bool f_required = (noYawSensor && (frontend->_betaMask & (1<<1))) || is_dead_reckoning;
