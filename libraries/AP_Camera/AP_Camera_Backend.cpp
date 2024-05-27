@@ -5,12 +5,13 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Mount/AP_Mount.h>
 
+#if 0
+    #define debug(fmt, args ...) do { hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+#else
+    #define debug(fmt, args ...)
+#endif
+
 #if AP_CAMERA_JSON_INFO_ENABLED
-
-#ifndef AP_CAMERA_JSON_INFO_DEBUG
-#define AP_CAMERA_JSON_INFO_DEBUG 1
-#endif // AP_CAMERA_JSON_INFO_DEBUG
-
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #endif // AP_CAMERA_JSON_INFO_ENABLED
@@ -461,7 +462,7 @@ AP_JSON::value * AP_Camera_Backend::_load_mount_msg_json(const char* json_filena
     char* romfs_json_path = nullptr;
     int alloc = asprintf(&romfs_json_path, "@ROMFS/mav_msg_def/AP_Camera/%s", json_filename);
     if (alloc < 0) {
-        ::printf("AP_Camera: json load bad alloc\n");
+        debug("json load bad alloc");
         return nullptr;
     }
 
@@ -471,10 +472,10 @@ AP_JSON::value * AP_Camera_Backend::_load_mount_msg_json(const char* json_filena
     struct stat st;
     if (AP::FS().stat(json_path, &st) != 0) {
         // not in local storage, so try full ROMFS path
-        ::printf("AP_Camera: failed to load '%s'\n", json_path);
+        debug("failed to load '%s'", json_path);
         json_path = romfs_json_path;
         if (AP::FS().stat(json_path, &st) != 0) {
-            ::printf("AP_Camera: failed to load '%s'\n", json_path);
+            debug("failed to load '%s'", json_path);
             json_path = nullptr;
         }
     }
@@ -483,7 +484,7 @@ AP_JSON::value * AP_Camera_Backend::_load_mount_msg_json(const char* json_filena
     if (json_path) {
         obj = AP_JSON::load_json(json_path);
         if (obj == nullptr) {
-            ::printf("AP_Camera: failed to parse '%s'\n", json_path);
+            debug("failed to parse '%s'", json_path);
         }
     }
 
@@ -550,24 +551,22 @@ void AP_Camera_Backend::init_video_stream_information_from_json()
 err:
     delete obj;
 
-#if AP_CAMERA_JSON_INFO_DEBUG
     if (video_stream_info.is_valid) {
-        ::printf("AP_Camera: Loaded video_stream_info from '%s'\n", filename);
-        ::printf("    video_stream_info.msg.stream_id=%u\n", video_stream_info.msg.stream_id);
-        ::printf("    video_stream_info.msg.count=%u\n", video_stream_info.msg.count);
-        ::printf("    video_stream_info.msg.type=%u\n", video_stream_info.msg.type);
-        ::printf("    video_stream_info.msg.flags=%u\n", video_stream_info.msg.flags);
-        ::printf("    video_stream_info.msg.framerate=%f\n", video_stream_info.msg.framerate);
-        ::printf("    video_stream_info.msg.resolution_h=%u\n", video_stream_info.msg.resolution_h);
-        ::printf("    video_stream_info.msg.resolution_v=%u\n", video_stream_info.msg.resolution_v);
-        ::printf("    video_stream_info.msg.bitrate=%u\n", video_stream_info.msg.bitrate);
-        ::printf("    video_stream_info.msg.rotation=%u\n", video_stream_info.msg.rotation);
-        ::printf("    video_stream_info.msg.hfov=%u\n", video_stream_info.msg.hfov);
+        debug("Loaded video_stream_info from '%s'", filename);
+        debug("    video_stream_info.msg.stream_id=%" PRIu8, video_stream_info.msg.stream_id);
+        debug("    video_stream_info.msg.count=%" PRIu8 "", video_stream_info.msg.count);
+        debug("    video_stream_info.msg.type=%" PRIu8 "", video_stream_info.msg.type);
+        debug("    video_stream_info.msg.flags=%" PRIu16 "", video_stream_info.msg.flags);
+        debug("    video_stream_info.msg.framerate=%f", video_stream_info.msg.framerate);
+        debug("    video_stream_info.msg.resolution_h=%" PRIu16 "", video_stream_info.msg.resolution_h);
+        debug("    video_stream_info.msg.resolution_v=%" PRIu16 "", video_stream_info.msg.resolution_v);
+        debug("    video_stream_info.msg.bitrate=%" PRIu32 "", video_stream_info.msg.bitrate);
+        debug("    video_stream_info.msg.rotation=%" PRIu16 "", video_stream_info.msg.rotation);
+        debug("    video_stream_info.msg.hfov=%" PRIu16 "", video_stream_info.msg.hfov);
 
-        ::printf("    video_stream_info.msg.name='%s'\n", video_stream_info.msg.name);
-        ::printf("    video_stream_info.msg.uri='%s'\n", video_stream_info.msg.uri);
+        debug("    video_stream_info.msg.name='%s'", video_stream_info.msg.name);
+        debug("    video_stream_info.msg.uri='%s'", video_stream_info.msg.uri);
     }
-#endif // AP_CAMERA_JSON_INFO_DEBUG
 }
 
 void AP_Camera_Backend::init_camera_information_from_json()
@@ -607,25 +606,23 @@ void AP_Camera_Backend::init_camera_information_from_json()
 err:
     delete obj;
 
-#if AP_CAMERA_JSON_INFO_DEBUG
     if (camera_info.is_valid) {
-        ::printf("AP_Camera: Loaded camera_info from '%s'\n", filename);
-        ::printf("    camera_info.msg.time_boot_ms=%u\n", camera_info.msg.time_boot_ms);
-        ::printf("    camera_info.msg.vendor_name='%s'\n", camera_info.msg.vendor_name);
-        ::printf("    camera_info.msg.model_name='%s'\n", camera_info.msg.model_name);
-        ::printf("    camera_info.msg.firmware_version=%u\n", camera_info.msg.firmware_version);
-        ::printf("    camera_info.msg.focal_length=%f\n", camera_info.msg.focal_length);
-        ::printf("    camera_info.msg.sensor_size_h=%f\n", camera_info.msg.sensor_size_h);
-        ::printf("    camera_info.msg.sensor_size_v=%f\n", camera_info.msg.sensor_size_v);
-        ::printf("    camera_info.msg.resolution_h=%u\n", camera_info.msg.resolution_h);
-        ::printf("    camera_info.msg.resolution_v=%u\n", camera_info.msg.resolution_v);
-        ::printf("    camera_info.msg.lens_id=%u\n", camera_info.msg.lens_id);
-        ::printf("    camera_info.msg.flags=%u\n", camera_info.msg.flags);
-        ::printf("    camera_info.msg.cam_definition_version=%u\n", camera_info.msg.cam_definition_version);
-        ::printf("    camera_info.msg.cam_definition_uri='%s'\n", camera_info.msg.cam_definition_uri);
-        ::printf("    camera_info.msg.gimbal_device_id=%u\n", camera_info.msg.gimbal_device_id);
+        debug("Loaded camera_info from '%s'", filename);
+        debug("    camera_info.msg.time_boot_ms=%" PRIu32, camera_info.msg.time_boot_ms);
+        debug("    camera_info.msg.vendor_name='%s'", camera_info.msg.vendor_name);
+        debug("    camera_info.msg.model_name='%s'", camera_info.msg.model_name);
+        debug("    camera_info.msg.firmware_version=%" PRIu32, camera_info.msg.firmware_version);
+        debug("    camera_info.msg.focal_length=%f", camera_info.msg.focal_length);
+        debug("    camera_info.msg.sensor_size_h=%f", camera_info.msg.sensor_size_h);
+        debug("    camera_info.msg.sensor_size_v=%f", camera_info.msg.sensor_size_v);
+        debug("    camera_info.msg.resolution_h=%" PRIu16, camera_info.msg.resolution_h);
+        debug("    camera_info.msg.resolution_v=%" PRIu16, camera_info.msg.resolution_v);
+        debug("    camera_info.msg.lens_id=%" PRIu8, camera_info.msg.lens_id);
+        debug("    camera_info.msg.flags=%" PRIu32, camera_info.msg.flags);
+        debug("    camera_info.msg.cam_definition_version=%" PRIu16, camera_info.msg.cam_definition_version);
+        debug("    camera_info.msg.cam_definition_uri='%s'", camera_info.msg.cam_definition_uri);
+        debug("    camera_info.msg.gimbal_device_id=%" PRIu8, camera_info.msg.gimbal_device_id);
     }
-#endif // AP_CAMERA_JSON_INFO_DEBUG
 }
 
 #endif // AP_CAMERA_JSON_INFO_ENABLED
