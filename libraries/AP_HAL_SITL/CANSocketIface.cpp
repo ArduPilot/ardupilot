@@ -217,11 +217,11 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     const SITL::SIM::CANTransport can_type = _sitl->can_transport[_self_index];
     switch (can_type) {
     case SITL::SIM::CANTransport::MulticastUDP:
-        transport = new CAN_Multicast();
+        transport = NEW_NOTHROW CAN_Multicast();
         break;
     case SITL::SIM::CANTransport::SocketCAN:
 #if HAL_CAN_WITH_SOCKETCAN
-        transport = new CAN_SocketCAN();
+        transport = NEW_NOTHROW CAN_SocketCAN();
 #endif
         break;
     }

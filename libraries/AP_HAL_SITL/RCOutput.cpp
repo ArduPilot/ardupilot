@@ -101,7 +101,7 @@ void RCOutput::push(void)
     SITL::SIM *sitl = AP::sitl();
     if (sitl && sitl->esc_telem) {
         if (esc_telem == nullptr) {
-            esc_telem = new AP_ESC_Telem_SITL;
+            esc_telem = NEW_NOTHROW AP_ESC_Telem_SITL;
         }
         if (esc_telem != nullptr) {
             esc_telem->update();
