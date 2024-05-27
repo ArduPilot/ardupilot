@@ -39,7 +39,7 @@ void ScriptingCANSensor::handle_frame(AP_HAL::CANFrame &frame)
 ScriptingCANBuffer* ScriptingCANSensor::add_buffer(uint32_t buffer_len)
 {
     WITH_SEMAPHORE(sem);
-    ScriptingCANBuffer *new_buff = new ScriptingCANBuffer(*this, buffer_len);
+    ScriptingCANBuffer *new_buff = NEW_NOTHROW ScriptingCANBuffer(*this, buffer_len);
     if (buffer_list == nullptr) {
         buffer_list = new_buff;
     } else {

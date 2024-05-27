@@ -259,7 +259,7 @@ void AP_Scripting::thread(void) {
         _restart = false;
         _init_failed = false;
 
-        lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options);
+        lua_scripts *lua = NEW_NOTHROW lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options);
         if (lua == nullptr || !lua->heap_allocated()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "Unable to allocate memory");
             _init_failed = true;
@@ -340,7 +340,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
 
     if (mission_data == nullptr) {
         // load buffer
-        mission_data = new ObjectBuffer<struct AP_Scripting::scripting_mission_cmd>(mission_cmd_queue_size);
+        mission_data = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::scripting_mission_cmd>(mission_cmd_queue_size);
         if (mission_data != nullptr && mission_data->get_size() == 0) {
             delete mission_data;
             mission_data = nullptr;
