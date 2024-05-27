@@ -405,7 +405,7 @@ void AP_BattMonitor_DroneCAN::mppt_set_powered_state(bool power_on)
     request.disable = !request.enable;
 
     if (mppt_outputenable_client == nullptr) {
-        mppt_outputenable_client = new Canard::Client<mppt_OutputEnableResponse>{_ap_dronecan->get_canard_iface(), mppt_outputenable_res_cb};
+        mppt_outputenable_client = NEW_NOTHROW Canard::Client<mppt_OutputEnableResponse>{_ap_dronecan->get_canard_iface(), mppt_outputenable_res_cb};
         if (mppt_outputenable_client == nullptr) {
             return;
         }
