@@ -72,20 +72,20 @@ void AP_Mount::init()
             break;
 #if HAL_MOUNT_SERVO_ENABLED
         case Type::Servo:
-            _backends[instance] = new AP_Mount_Servo(*this, _params[instance], true, instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Servo(*this, _params[instance], true, instance);
             _num_instances++;
             break;
 #endif
 #if HAL_SOLO_GIMBAL_ENABLED
         case Type::SoloGimbal:
-            _backends[instance] = new AP_Mount_SoloGimbal(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
         case Type::Alexmos:
-            _backends[instance] = new AP_Mount_Alexmos(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Alexmos(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif
@@ -93,7 +93,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
         case Type::SToRM32:
-            _backends[instance] = new AP_Mount_SToRM32(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_SToRM32(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif
@@ -101,7 +101,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         case Type::SToRM32_serial:
-            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance, serial_instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_SToRM32_serial(*this, _params[instance], instance, serial_instance);
             _num_instances++;
             serial_instance++;
             break;
@@ -110,7 +110,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
         case Type::Gremsy:
-            _backends[instance] = new AP_Mount_Gremsy(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Gremsy(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_MOUNT_GREMSY_ENABLED
@@ -118,7 +118,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)
         case Type::BrushlessPWM:
-            _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
             break;
 #endif
@@ -126,7 +126,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
         case Type::Siyi:
-            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance, serial_instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Siyi(*this, _params[instance], instance, serial_instance);
             _num_instances++;
             serial_instance++;
             break;
@@ -135,7 +135,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_SCRIPTING_ENABLED
         // check for Scripting gimbal
         case Type::Scripting:
-            _backends[instance] = new AP_Mount_Scripting(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Scripting(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
@@ -143,7 +143,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_XACTI_ENABLED
         // check for Xacti gimbal
         case Type::Xacti:
-            _backends[instance] = new AP_Mount_Xacti(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Xacti(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_MOUNT_XACTI_ENABLED
@@ -151,7 +151,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_VIEWPRO_ENABLED
         // check for Xacti gimbal
         case Type::Viewpro:
-            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance, serial_instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Viewpro(*this, _params[instance], instance, serial_instance);
             _num_instances++;
             serial_instance++;
             break;
