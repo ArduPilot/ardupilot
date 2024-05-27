@@ -108,25 +108,25 @@ void AP_ExternalAHRS::init(void)
 
 #if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
     case DevType::VecNav:
-        backend = new AP_ExternalAHRS_VectorNav(this, state);
+        backend = NEW_NOTHROW AP_ExternalAHRS_VectorNav(this, state);
         return;
 #endif
 
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
     case DevType::MicroStrain5:
-        backend = new AP_ExternalAHRS_MicroStrain5(this, state);
+        backend = NEW_NOTHROW AP_ExternalAHRS_MicroStrain5(this, state);
         return;
 #endif
 
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
     case DevType::MicroStrain7:
-        backend = new AP_ExternalAHRS_MicroStrain7(this, state);
+        backend = NEW_NOTHROW AP_ExternalAHRS_MicroStrain7(this, state);
         return;
 #endif
 
 #if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
     case DevType::InertialLabs:
-        backend = new AP_ExternalAHRS_InertialLabs(this, state);
+        backend = NEW_NOTHROW AP_ExternalAHRS_InertialLabs(this, state);
         return;
 #endif
 
