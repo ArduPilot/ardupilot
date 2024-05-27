@@ -89,7 +89,7 @@ AP_Compass_Backend *AP_Compass_IST8308::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
         return nullptr;
     }
 
-    AP_Compass_IST8308 *sensor = new AP_Compass_IST8308(std::move(dev), force_external, rotation);
+    AP_Compass_IST8308 *sensor = NEW_NOTHROW AP_Compass_IST8308(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

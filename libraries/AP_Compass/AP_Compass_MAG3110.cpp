@@ -93,7 +93,7 @@ AP_Compass_Backend *AP_Compass_MAG3110::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_MAG3110 *sensor = new AP_Compass_MAG3110(std::move(dev));
+    AP_Compass_MAG3110 *sensor = NEW_NOTHROW AP_Compass_MAG3110(std::move(dev));
     if (!sensor || !sensor->init(rotation)) {
         delete sensor;
         return nullptr;
