@@ -174,32 +174,32 @@ void AP_TemperatureSensor::init()
         switch (get_type(instance)) {
 #if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
             case AP_TemperatureSensor_Params::Type::TSYS01:
-                drivers[instance] = new AP_TemperatureSensor_TSYS01(*this, _state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_TSYS01(*this, _state[instance], _params[instance]);
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
             case AP_TemperatureSensor_Params::Type::MCP9600:
-                drivers[instance] = new AP_TemperatureSensor_MCP9600(*this, _state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_MCP9600(*this, _state[instance], _params[instance]);
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
             case AP_TemperatureSensor_Params::Type::MAX31865:
-                drivers[instance] = new AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_TSYS03_ENABLED
             case AP_TemperatureSensor_Params::Type::TSYS03:
-                drivers[instance] = new AP_TemperatureSensor_TSYS03(*this, _state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_TSYS03(*this, _state[instance], _params[instance]);
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_ANALOG_ENABLED
             case AP_TemperatureSensor_Params::Type::ANALOG:
-                drivers[instance] = new AP_TemperatureSensor_Analog(*this, _state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_Analog(*this, _state[instance], _params[instance]);
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
             case AP_TemperatureSensor_Params::Type::DRONECAN:
-                drivers[instance] = new AP_TemperatureSensor_DroneCAN(*this, _state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_DroneCAN(*this, _state[instance], _params[instance]);
                 break;
 #endif
             case AP_TemperatureSensor_Params::Type::NONE:
