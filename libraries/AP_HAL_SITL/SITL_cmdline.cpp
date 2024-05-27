@@ -384,13 +384,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_SPEEDUP", speedup};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             sim_rate_hz = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_RATE_HZ", sim_rate_hz};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_RATE_HZ=%f\n", sim_rate_hz);
             break;
         case 'C':
@@ -513,7 +513,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 exit(1);
             }
             temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }
