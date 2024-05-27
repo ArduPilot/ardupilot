@@ -128,7 +128,7 @@ TEST(ekf_imu_buffer, one_element_case)
     struct element {
         uint8_t value;
     };
-    ekf_imu_buffer *b = new ekf_imu_buffer(sizeof(element));
+    ekf_imu_buffer *b = NEW_NOTHROW ekf_imu_buffer(sizeof(element));
     b->init(1);  // 1 element
     EXPECT_EQ(b->is_filled(), false);
     EXPECT_EQ(b->get_oldest_index(), b->get_youngest_index());
@@ -157,7 +157,7 @@ TEST(ekf_imu_buffer, is_filled)
     struct element {
         uint8_t value;
     };
-    ekf_imu_buffer *b = new ekf_imu_buffer(sizeof(element));
+    ekf_imu_buffer *b = NEW_NOTHROW ekf_imu_buffer(sizeof(element));
     b->init(4);  // 4 elements
     const element e { 34 };
 
