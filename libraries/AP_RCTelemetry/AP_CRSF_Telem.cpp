@@ -900,6 +900,61 @@ void AP_CRSF_Telem::calc_battery()
     _telem_pending = true;
 }
 
+
+uint16_t AP_CRSF_Telem::get_altitude_packed()
+{
+    int32_t altitude_dm = get_nav_alt_m(Location::AltFrame::ABOVE_HOME) * 10;
+
+    enum : int32_t {
+        ALT_MIN_DM = 10000,                     // minimum altitude in dm
+        ALT_THRESHOLD_DM = 0x8000 - ALT_MIN_DM, // altitude of precision changing in dm
+        ALT_MAX_DM = 0x7ffe * 10 - 5,           // maximum altitude in dm
+    };
+
+    if (altitude_dm < -ALT_MIN_DM) { // less than minimum altitude
+        return 0; // minimum
+    }
+    if (altitude_dm > ALT_MAX_DM) { // more than maximum
+        return 0xFFFEU; // maximum
+    }
+    if(altitude_dm < ALT_THRESHOLD_DM) { //dm-resolution range
+        return uint16_t(altitude_dm + ALT_MIN_DM);
+    }
+    return uint16_t((altitude_dm + 5) / 10) | uint16_t(0x8000); // meter-resolution range
+}
+
+int8_t AP_CRSF_Telem::get_vertical_speed_packed()
+{
+    float vspeed = get_vspeed_ms();
+    float vertical_speed_cm_s = vspeed * 100.0f;
+    const int16_t Kl = 100; // linearity constant;
+    const float Kr = .026f; // range constant;
+    int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
+    return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_baro_vario()
+{
+    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
+
+    _telem_size = sizeof(BaroVarioFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BARO_VARIO;
+
+    _telem_pending = true;
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_vario()
+{
+    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem_size = sizeof(VarioFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
+
+    _telem_pending = true;
+}
+
 // prepare gps data
 void AP_CRSF_Telem::calc_gps()
 {
@@ -917,6 +972,9 @@ void AP_CRSF_Telem::calc_gps()
 
     _telem_pending = true;
 }
+
+
+
 
 // prepare attitude data
 void AP_CRSF_Telem::calc_attitude()
@@ -1537,3 +1595,6 @@ namespace AP {
 };
 
 #endif
+
+
+

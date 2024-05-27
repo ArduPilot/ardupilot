@@ -242,6 +242,8 @@ private:
     enum SensorType {
         HEARTBEAT,
         PARAMETERS,
+        BARO_VARIO,
+        VARIO,
         ATTITUDE,
         VTX_PARAMETERS,
         BATTERY,
@@ -265,6 +267,10 @@ private:
     void calc_parameter_ping();
     void calc_heartbeat();
     void calc_battery();
+    uint16_t get_altitude_packed();
+    int8_t get_vertical_speed_packed();
+    void calc_baro_vario();
+    void calc_vario();
     void calc_gps();
     void calc_attitude();
     void calc_flight_mode();
