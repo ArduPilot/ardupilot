@@ -144,7 +144,7 @@ void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
     if (_obstacles == nullptr) {
-        _obstacles = new AP_Avoidance::Obstacle[_obstacles_max];
+        _obstacles = NEW_NOTHROW AP_Avoidance::Obstacle[_obstacles_max];
 
         if (_obstacles == nullptr) {
             // dynamic RAM allocation of _obstacles[] failed, disable gracefully
