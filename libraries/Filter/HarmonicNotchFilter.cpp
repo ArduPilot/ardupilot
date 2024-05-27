@@ -205,7 +205,7 @@ void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harm
     _harmonics = harmonics;
 
     if (_num_filters > 0) {
-        _filters = new NotchFilter<T>[_num_filters];
+        _filters = NEW_NOTHROW NotchFilter<T>[_num_filters];
         if (_filters == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to allocate %u bytes for notch filter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
             _num_filters = 0;
@@ -231,7 +231,7 @@ void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
       note that we rely on the semaphore in
       AP_InertialSensor_Backend.cpp to make this thread safe
      */
-    auto filters = new NotchFilter<T>[total_notches];
+    auto filters = NEW_NOTHROW NotchFilter<T>[total_notches];
     if (filters == nullptr) {
         _alloc_has_failed = true;
         return;
