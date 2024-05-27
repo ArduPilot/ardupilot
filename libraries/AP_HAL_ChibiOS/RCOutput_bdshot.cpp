@@ -101,7 +101,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             if (group.dma_ch[i].stream_id == group.dma_up_stream_id) {
                 group.bdshot.ic_dma_handle[i] = group.dma_handle;
             } else {
-                group.bdshot.ic_dma_handle[i] = new Shared_DMA(group.dma_ch[i].stream_id, SHARED_DMA_NONE,
+                group.bdshot.ic_dma_handle[i] = NEW_NOTHROW Shared_DMA(group.dma_ch[i].stream_id, SHARED_DMA_NONE,
                                                 FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_allocate, void, Shared_DMA *),
                                                 FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_deallocate, void, Shared_DMA *));
             }
@@ -165,7 +165,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
                 group.bdshot.ic_dma_handle[i] = group.dma_handle;
             } else {
                 // we can use the next channel
-                group.bdshot.ic_dma_handle[i] = new Shared_DMA(group.dma_ch[curr_chan].stream_id, SHARED_DMA_NONE,
+                group.bdshot.ic_dma_handle[i] = NEW_NOTHROW Shared_DMA(group.dma_ch[curr_chan].stream_id, SHARED_DMA_NONE,
                                             FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_allocate, void, Shared_DMA *),
                                             FUNCTOR_BIND_MEMBER(&RCOutput::bdshot_ic_dma_deallocate, void, Shared_DMA *));
             }

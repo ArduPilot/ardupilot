@@ -134,7 +134,7 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
             AP_HAL::panic("Failed to create bus thread %s", name);
         }
     }
-    DeviceBus::callback_info *callback = new DeviceBus::callback_info;
+    DeviceBus::callback_info *callback = NEW_NOTHROW DeviceBus::callback_info;
     if (callback == nullptr) {
         return nullptr;
     }

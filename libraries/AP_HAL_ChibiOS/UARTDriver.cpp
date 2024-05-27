@@ -414,7 +414,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 // we only allow for sharing of the TX DMA channel, not the RX
                 // DMA channel, as the RX side is active all the time, so
                 // cannot be shared
-                dma_handle = new Shared_DMA(sdef.dma_tx_stream_id,
+                dma_handle = NEW_NOTHROW Shared_DMA(sdef.dma_tx_stream_id,
                                             SHARED_DMA_NONE,
                                             FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void, Shared_DMA *),
                                             FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void, Shared_DMA *));
