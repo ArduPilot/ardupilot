@@ -791,8 +791,8 @@ bool AP_DDS_Client::init_session()
     }
 
     // setup reliable stream buffers
-    input_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
-    output_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
+    input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
