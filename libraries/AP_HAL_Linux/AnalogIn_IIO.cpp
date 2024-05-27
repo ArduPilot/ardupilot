@@ -129,5 +129,5 @@ void AnalogIn_IIO::init()
 
 
 AP_HAL::AnalogSource* AnalogIn_IIO::channel(int16_t pin) {
-    return new AnalogSource_IIO(pin, 0.0f, IIO_VOLTAGE_SCALING);
+    return NEW_NOTHROW AnalogSource_IIO(pin, 0.0f, IIO_VOLTAGE_SCALING);
 }

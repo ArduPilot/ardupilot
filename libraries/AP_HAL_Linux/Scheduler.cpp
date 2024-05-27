@@ -408,7 +408,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
 */
 bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
-    Thread *thread = new Thread{(Thread::task_t)proc};
+    Thread *thread = NEW_NOTHROW Thread{(Thread::task_t)proc};
     if (!thread) {
         return false;
     }

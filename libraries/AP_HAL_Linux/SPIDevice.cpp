@@ -503,7 +503,7 @@ SPIDeviceManager::_create_device(SPIBus &b, SPIDesc &desc) const
     // Ensure bus is open
     b.open(desc.subdev);
 
-    auto dev = AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(b, desc));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(b, desc));
     if (!dev) {
         return nullptr;
     }
