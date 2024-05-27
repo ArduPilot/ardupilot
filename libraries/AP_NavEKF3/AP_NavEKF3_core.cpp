@@ -137,10 +137,12 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #endif
-    // Note: range beacon data is read one beacon at a time and can arrive at a high rate
+
 #if EK3_FEATURE_BEACON_FUSION
-    if(dal.beacon() && !rngBcn.storedRange.init(imu_buffer_length+1)) {
-        return false;
+    for (auto &sr : rngBcn.storedRange) {
+        if(!sr.init(imu_buffer_length+1)) {
+            return false;
+        }
     }
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -403,7 +405,9 @@ void NavEKF3_core::InitialiseVariables()
 #endif
     storedOutput.reset();
 #if EK3_FEATURE_BEACON_FUSION
-    rngBcn.storedRange.reset();
+    for (auto &sr : rngBcn.storedRange) {
+        sr.reset();
+    }
 #endif
 #if EK3_FEATURE_BODY_ODOM
     storedBodyOdm.reset();

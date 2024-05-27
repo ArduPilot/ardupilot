@@ -371,6 +371,9 @@ public:
     // degraded by vibration
     bool isVibrationAffected() const;
 
+    // Write a range measurement and 1-sigma uncertainty in metres to a location.
+    void writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index);
+
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const;
 
@@ -466,6 +469,10 @@ private:
         JammingExpected         = (1<<0),
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
+        DisableRangeFusion  = (1<<3),
+        DisableSetLatLng    = (1<<4),
+        RangeToLocHgtOffset = (1<<5),
+        LimitRngToLocUpdate = (1<<6),
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
@@ -510,6 +517,9 @@ private:
     const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
     const uint16_t deadReckonDeclare_ms = 1000;    // Time without equivalent position or velocity observation to constrain drift before dead reckoning is declared (msec)
     const uint16_t gpsNoFixTimeout_ms = 2000;      // Time without a fix required to reset GPS alignment checks when EK3_OPTIONS bit 0 is set (msec)
+    const uint16_t altPosSwitchTimeout_ms = 30000; // Time without a GPS or external nav system fix but with velocity aiding before the backup position source, eg range to beacon, will be used (msec)
+    const float baroDriftRate = 0.05f;             // Rate of baro height drift used to set process noise for height offset estimator (m/s)
+    const float rngToLocHgtOfsDriftRate = 0.2f;    // Rate of change of vehicle height error used to drive process noise for estimation of height offset from range to location measurements (m/s)
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
@@ -585,4 +595,6 @@ private:
 
     // position, velocity and yaw source control
     AP_NavEKF_Source sources;
+
+    HAL_Semaphore _write_mutex;
 };
