@@ -2536,6 +2536,14 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
 #endif
 }
 
+// Write range measurements from a known location for processing by the navigation EKF. Cannot be used together with AP_Beacon functionality.
+void AP_AHRS::writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    EKF3.writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
+#endif
+}
+
 // get speed limit and XY navigation gain scale factor
 void AP_AHRS::getControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
