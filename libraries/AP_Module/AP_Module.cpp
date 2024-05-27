@@ -55,7 +55,7 @@ void AP_Module::module_scan(const char *path)
         void *s = dlsym(m, hook_names[i]);
         if (s != nullptr) {
             // found a hook in this module, add it to the list
-            struct hook_list *h = new hook_list;
+            struct hook_list *h = NEW_NOTHROW hook_list;
             if (h == nullptr) {
                 AP_HAL::panic("Failed to allocate hook for %s", hook_names[i]);
             }
