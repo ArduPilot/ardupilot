@@ -89,7 +89,7 @@ AP_InertialSensor_ADIS1647x::probe(AP_InertialSensor &imu,
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_ADIS1647x(imu, std::move(dev), rotation, drdy_gpio);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_ADIS1647x(imu, std::move(dev), rotation, drdy_gpio);
 
     if (!sensor) {
         return nullptr;

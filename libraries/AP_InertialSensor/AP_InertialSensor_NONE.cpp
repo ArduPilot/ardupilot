@@ -26,7 +26,7 @@ AP_InertialSensor_NONE::AP_InertialSensor_NONE(AP_InertialSensor &imu, const uin
  */
 AP_InertialSensor_Backend *AP_InertialSensor_NONE::detect(AP_InertialSensor &_imu, const uint16_t sample_rates[])
 {
-    AP_InertialSensor_NONE *sensor = new AP_InertialSensor_NONE(_imu, sample_rates);
+    AP_InertialSensor_NONE *sensor = NEW_NOTHROW AP_InertialSensor_NONE(_imu, sample_rates);
     if (sensor == nullptr) {
 
         return nullptr;
