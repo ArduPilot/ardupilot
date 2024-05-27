@@ -4,6 +4,8 @@
 
 #include "Location.h"
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
@@ -527,3 +529,5 @@ void Location::linearly_interpolate_alt(const Location &point1, const Location &
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }
+
+#endif // HAL_BOOTLOADER_BUILD
