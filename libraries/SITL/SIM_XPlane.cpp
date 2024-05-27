@@ -125,7 +125,7 @@ XPlane::XPlane(const char *frame_str) :
  */
 void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dref)
 {
-    struct DRef *d = new struct DRef;
+    struct DRef *d = NEW_NOTHROW struct DRef;
     if (d == nullptr) {
         AP_HAL::panic("out of memory for DRef %s", name);
     }
@@ -151,7 +151,7 @@ void XPlane::add_dref(const char *name, DRefType type, const AP_JSON::value &dre
 void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value &d)
 {
     if (strncmp(label, "axis", 4) == 0) {
-        struct JoyInput *j = new struct JoyInput;
+        struct JoyInput *j = NEW_NOTHROW struct JoyInput;
         if (j == nullptr) {
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }
@@ -164,7 +164,7 @@ void XPlane::add_joyinput(const char *label, JoyType type, const AP_JSON::value 
         joyinputs = j;
     }
     if (strncmp(label, "button", 6) == 0) {
-        struct JoyInput *j = new struct JoyInput;
+        struct JoyInput *j = NEW_NOTHROW struct JoyInput;
         if (j == nullptr) {
             AP_HAL::panic("out of memory for JoyInput %s", label);
         }

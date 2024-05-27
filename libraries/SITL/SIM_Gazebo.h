@@ -43,7 +43,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Gazebo(frame_str);
+        return NEW_NOTHROW Gazebo(frame_str);
     }
 
     /*  Create and set in/out socket for Gazebo simulator */

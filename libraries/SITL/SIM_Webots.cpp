@@ -290,7 +290,7 @@ bool Webots::parse_sensors(const char *json)
 bool Webots::connect_sockets(void)
 {
     if (!sim_sock) {
-        sim_sock = new SocketAPM_native(false);
+        sim_sock = NEW_NOTHROW SocketAPM_native(false);
         if (!sim_sock) {
             AP_HAL::panic("Out of memory for sensors socket");
         }

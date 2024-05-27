@@ -36,7 +36,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Plane(frame_str);
+        return NEW_NOTHROW Plane(frame_str);
     }
 
 protected:

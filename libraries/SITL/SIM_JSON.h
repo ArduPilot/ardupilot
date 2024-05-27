@@ -36,7 +36,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new JSON(frame_str);
+        return NEW_NOTHROW JSON(frame_str);
     }
 
     /*  Create and set in/out socket for JSON generic simulator */

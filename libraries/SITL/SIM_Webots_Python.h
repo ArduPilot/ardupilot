@@ -43,7 +43,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new WebotsPython(frame_str);
+        return NEW_NOTHROW WebotsPython(frame_str);
     }
 
     /*  Create and set in/out socket for Webots simulator */

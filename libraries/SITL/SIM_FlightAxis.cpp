@@ -592,7 +592,7 @@ void FlightAxis::socket_creator(void)
             pthread_cond_wait(&sockcond2, &sockmtx);
         }
         pthread_mutex_unlock(&sockmtx);
-        auto *sck = new SocketAPM_native(false);
+        auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
             usleep(500);
             continue;

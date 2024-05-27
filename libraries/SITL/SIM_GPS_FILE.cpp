@@ -50,7 +50,7 @@ void GPS_FILE::publish(const GPS_Data *d)
             ::lseek(fd[instance], -sizeof(header), SEEK_CUR);
             return;
         }
-        buf = new uint8_t[header.n];
+        buf = NEW_NOTHROW uint8_t[header.n];
         if (buf != nullptr && ::read(fd[instance], buf, header.n) == ssize_t(header.n)) {
             write_to_autopilot((const char *)buf, header.n);
             delete[] buf;
