@@ -80,7 +80,7 @@ void SITL_State::_sitl_setup()
         // setup some initial values
         _update_airspeed(0);
         if (enable_gimbal) {
-            gimbal = new SITL::Gimbal(_sitl->state);
+            gimbal = NEW_NOTHROW SITL::Gimbal(_sitl->state);
         }
 
         sitl_model->set_buzzer(&_sitl->buzzer_sim);

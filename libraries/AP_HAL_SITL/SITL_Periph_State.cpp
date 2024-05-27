@@ -112,7 +112,7 @@ void SITL_State::init(int argc, char * const argv[]) {
 
     printf("Running Instance: %d\n", _instance);
 
-    sitl_model = new SimMCast("");
+    sitl_model = NEW_NOTHROW SimMCast("");
 
     _sitl = AP::sitl();
 
