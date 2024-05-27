@@ -276,7 +276,6 @@ class Board:
                     '-Werror=implicit-fallthrough',
                 ]
             env.CXXFLAGS += [
-                '-fcheck-new',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
             ]
