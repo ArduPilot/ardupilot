@@ -361,54 +361,54 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_DECA:
         case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
         default:
-            motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
-            motors = new AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsTri(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTri::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
         case AP_Motors::MOTOR_FRAME_SINGLE:
-            motors = new AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsSingle::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_COAX:
-            motors = new AP_MotorsCoax(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsCoax(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsCoax::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TAILSITTER:
-            motors = new AP_MotorsTailsitter(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsTailsitter(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsTailsitter::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING:
 #if AP_SCRIPTING_ENABLED
-            motors = new AP_MotorsMatrix_6DoF_Scripting(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsMatrix_6DoF_Scripting(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_6DoF_Scripting::var_info;
 #endif // AP_SCRIPTING_ENABLED
             break;
         case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
 #if AP_SCRIPTING_ENABLED
-            motors = new AP_MotorsMatrix_Scripting_Dynamic(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsMatrix_Scripting_Dynamic(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
 #endif // AP_SCRIPTING_ENABLED
             break;
 #else // FRAME_CONFIG == HELI_FRAME
         case AP_Motors::MOTOR_FRAME_HELI_DUAL:
-            motors = new AP_MotorsHeli_Dual(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsHeli_Dual(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsHeli_Dual::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;
 
         case AP_Motors::MOTOR_FRAME_HELI_QUAD:
-            motors = new AP_MotorsHeli_Quad(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsHeli_Quad(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsHeli_Quad::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;
             
         case AP_Motors::MOTOR_FRAME_HELI:
         default:
-            motors = new AP_MotorsHeli_Single(copter.scheduler.get_loop_rate_hz());
+            motors = NEW_NOTHROW AP_MotorsHeli_Single(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsHeli_Single::var_info;
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_HELI);
             break;
@@ -427,15 +427,15 @@ void Copter::allocate_motors(void)
 #if FRAME_CONFIG != HELI_FRAME
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
 #if AP_SCRIPTING_ENABLED
-        attitude_control = new AC_AttitudeControl_Multi_6DoF(*ahrs_view, aparm, *motors);
+        attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi_6DoF(*ahrs_view, aparm, *motors);
         attitude_control_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
 #endif // AP_SCRIPTING_ENABLED
     } else {
-        attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors);
+        attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors);
         attitude_control_var_info = AC_AttitudeControl_Multi::var_info;
     }
 #else
-    attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors);
+    attitude_control = NEW_NOTHROW AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors);
     attitude_control_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
@@ -443,30 +443,30 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(attitude_control, attitude_control_var_info);
         
-    pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
+    pos_control = NEW_NOTHROW AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (pos_control == nullptr) {
         AP_BoardConfig::allocation_error("PosControl");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
 #if AP_OAPATHPLANNER_ENABLED
-    wp_nav = new AC_WPNav_OA(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    wp_nav = NEW_NOTHROW AC_WPNav_OA(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
 #else
-    wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    wp_nav = NEW_NOTHROW AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
 #endif
     if (wp_nav == nullptr) {
         AP_BoardConfig::allocation_error("WPNav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    loiter_nav = NEW_NOTHROW AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (loiter_nav == nullptr) {
         AP_BoardConfig::allocation_error("LoiterNav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
 #if MODE_CIRCLE_ENABLED == ENABLED
-    circle_nav = new AC_Circle(inertial_nav, *ahrs_view, *pos_control);
+    circle_nav = NEW_NOTHROW AC_Circle(inertial_nav, *ahrs_view, *pos_control);
     if (circle_nav == nullptr) {
         AP_BoardConfig::allocation_error("CircleNav");
     }
