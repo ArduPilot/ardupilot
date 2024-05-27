@@ -30,7 +30,7 @@ HAL_Semaphore test_iface_sem;
 
 void canard_allocate_sem_take(CanardPoolAllocator *allocator) {
     if (allocator->semaphore == nullptr) {
-        allocator->semaphore = new HAL_Semaphore;
+        allocator->semaphore = NEW_NOTHROW HAL_Semaphore;
         if (allocator->semaphore == nullptr) {
             // out of memory
             CANARD_ASSERT(0);

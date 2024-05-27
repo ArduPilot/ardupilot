@@ -343,7 +343,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     uint8_t uid_len = sizeof(uavcan_protocol_HardwareVersion::unique_id);
     uint8_t unique_id[sizeof(uavcan_protocol_HardwareVersion::unique_id)];
 
-    mem_pool = new uint32_t[_pool_size/sizeof(uint32_t)];
+    mem_pool = NEW_NOTHROW uint32_t[_pool_size/sizeof(uint32_t)];
     if (mem_pool == nullptr) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to allocate memory pool\n\r");
         return;
