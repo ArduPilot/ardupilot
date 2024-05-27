@@ -547,7 +547,7 @@ void AP_Baro::init(void)
 #if !AP_TEST_DRONECAN_DRIVERS
     // use dronecan instances instead of SITL instances
     for(uint8_t i = 0; i < sitl->baro_count; i++) {
-        ADD_BACKEND(new AP_Baro_SITL(*this));
+        ADD_BACKEND(NEW_NOTHROW AP_Baro_SITL(*this));
     }
 #endif
 #endif
@@ -562,7 +562,7 @@ void AP_Baro::init(void)
 #if AP_BARO_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
     if (serial_port >= 0) {
-        ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
+        ADD_BACKEND(NEW_NOTHROW AP_Baro_ExternalAHRS(*this, serial_port));
     }
 #endif
 
@@ -716,7 +716,7 @@ void AP_Baro::init(void)
     }
     for (uint8_t i=0; i<8; i++) {
         if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(new AP_Baro_MSP(*this, i));
+            ADD_BACKEND(NEW_NOTHROW AP_Baro_MSP(*this, i));
         }
     }
 #endif
