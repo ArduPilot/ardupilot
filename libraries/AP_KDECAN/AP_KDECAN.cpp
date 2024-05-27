@@ -63,7 +63,7 @@ void AP_KDECAN::init()
 
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if (CANSensor::get_driver_type(i) == AP_CAN::Protocol::KDECAN) {
-            _driver = new AP_KDECAN_Driver();
+            _driver = NEW_NOTHROW AP_KDECAN_Driver();
             return;
         }
     }
