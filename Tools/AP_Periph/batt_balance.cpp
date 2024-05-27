@@ -80,7 +80,7 @@ void AP_Periph_FW::batt_balance_update()
 
     // allocate cell sources if needed
     if (battery_balance.cells == nullptr) {
-        battery_balance.cells = new AP_HAL::AnalogSource*[ncell];
+        battery_balance.cells = NEW_NOTHROW AP_HAL::AnalogSource*[ncell];
         if (battery_balance.cells == nullptr) {
             return;
         }
@@ -98,8 +98,8 @@ void AP_Periph_FW::batt_balance_update()
 
     // allocate space for the packet. This is a large
     // packet that won't fit on the stack, so dynamically allocate
-    auto *pkt = new ardupilot_equipment_power_BatteryInfoAux;
-    uint8_t *buffer = new uint8_t[ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_MAX_SIZE];
+    auto *pkt = NEW_NOTHROW ardupilot_equipment_power_BatteryInfoAux;
+    uint8_t *buffer = NEW_NOTHROW uint8_t[ARDUPILOT_EQUIPMENT_POWER_BATTERYINFOAUX_MAX_SIZE];
     if (pkt == nullptr || buffer == nullptr) {
         delete pkt;
         delete [] buffer;

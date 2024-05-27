@@ -79,7 +79,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
         return;
     }
     if (uart_monitor.buffer == nullptr) {
-        uart_monitor.buffer = new ByteBuffer(1024);
+        uart_monitor.buffer = NEW_NOTHROW ByteBuffer(1024);
         if (uart_monitor.buffer == nullptr) {
             return;
         }
