@@ -1083,7 +1083,7 @@ void AP_Vehicle::check_motor_noise()
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()
 {
-    dds_client = new AP_DDS_Client();
+    dds_client = NEW_NOTHROW AP_DDS_Client();
     if (dds_client == nullptr) {
         return false;
     }
