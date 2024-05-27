@@ -303,7 +303,7 @@ void AP_IOMCU_FW::init()
     thread_ctx = chThdGetSelfX();
 
 #if AP_HAL_SHARED_DMA_ENABLED
-    tx_dma_handle = new ChibiOS::Shared_DMA(STM32_UART_USART2_TX_DMA_STREAM, SHARED_DMA_NONE,
+    tx_dma_handle = NEW_NOTHROW ChibiOS::Shared_DMA(STM32_UART_USART2_TX_DMA_STREAM, SHARED_DMA_NONE,
                         FUNCTOR_BIND_MEMBER(&AP_IOMCU_FW::tx_dma_allocate, void, Shared_DMA *),
                         FUNCTOR_BIND_MEMBER(&AP_IOMCU_FW::tx_dma_deallocate, void, Shared_DMA *));
     tx_dma_handle->lock();
