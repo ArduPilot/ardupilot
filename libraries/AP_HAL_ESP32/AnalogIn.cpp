@@ -348,7 +348,7 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
 
     for (uint8_t j = 0; j < ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(ardupin,gpioAdcPin, scaler,0.0f,1);
+            _channels[j] = NEW_NOTHROW AnalogSource(ardupin,gpioAdcPin, scaler,0.0f,1);
 
             if (ardupin != ANALOG_INPUT_NONE) {
                 DEV_PRINTF("AnalogIn: channel:%d attached to ardupin:%d at adc1_offset:%d on gpio:%d\n",\

@@ -159,7 +159,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     if (bus >= ARRAY_SIZE(i2c_bus_desc)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
 }
 
