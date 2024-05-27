@@ -49,7 +49,7 @@ AP_Mount_Xacti::AP_Mount_Xacti(class AP_Mount &frontend, class AP_Mount_Params &
 void AP_Mount_Xacti::init()
 {
     // instantiate parameter queue, return on failure so init fails
-    _set_param_int32_queue = new ObjectArray<SetParamQueueItem>(XACTI_SET_PARAM_QUEUE_SIZE);
+    _set_param_int32_queue = NEW_NOTHROW ObjectArray<SetParamQueueItem>(XACTI_SET_PARAM_QUEUE_SIZE);
     if (_set_param_int32_queue == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s init failed", send_text_prefix);
         return;
