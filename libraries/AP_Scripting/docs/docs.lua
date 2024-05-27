@@ -2819,6 +2819,13 @@ gps.GPS_OK_FIX_2D = enum_integer
 gps.NO_FIX = enum_integer
 gps.NO_GPS = enum_integer
 
+-- get yaw from GPS in degrees
+---@param instance integer -- instance number
+---@return number|nil -- yaw in degrees
+---@return number|nil -- yaw accuracy in degrees
+---@return uint32_t_ud|nil -- time in milliseconds of last yaw reading
+function gps:gps_yaw_deg(instance) end
+
 --  Returns nil or the instance number of the first GPS that has not been fully configured. If all GPS’s have been configured this returns nil.
 ---@return integer|nil
 function gps:first_unconfigured_gps() end
