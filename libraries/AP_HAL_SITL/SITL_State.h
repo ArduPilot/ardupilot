@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -40,7 +41,7 @@ public:
         "tcp:7",
         "tcp:8",
     };
-    std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
+    ObjectArray<struct AP_Param::defaults_table_struct> cmdline_param{100};
 
     /* parse a home location string */
     static bool parse_home(const char *home_str,

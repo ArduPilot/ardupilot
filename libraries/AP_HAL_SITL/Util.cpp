@@ -160,8 +160,11 @@ enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
 
 void HALSITL::Util::set_cmdline_parameters()
 {
-    for (auto param: sitlState->cmdline_param) {
-        AP_Param::set_default_by_name(param.name, param.value);
+    for (uint16_t i=0; i<sitlState->cmdline_param.available(); i++) {
+        const auto param = sitlState->cmdline_param[i];
+        if (param != nullptr) {
+            AP_Param::set_default_by_name(param->name, param->value);
+        }
     }
 }
 #endif
