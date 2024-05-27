@@ -67,7 +67,7 @@ void AP_Torqeedo::init()
             break;
         case ConnectionType::TYPE_TILLER:
         case ConnectionType::TYPE_MOTOR:
-            _backends[instance] = new AP_Torqeedo_TQBus(_params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Torqeedo_TQBus(_params[instance], instance);
             break;
         }
     }
