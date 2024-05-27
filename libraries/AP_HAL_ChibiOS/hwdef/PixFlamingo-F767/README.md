@@ -55,8 +55,8 @@ Contact dheeranlabs@gmail.com for sales
 |  1   |    VCC   |  +5V  |
 |  2   | UART_TX6 | +3.3V |
 |  3   | UART_RX6 | +3.3V |
-|  4   |    CTS   | +3.3V |
-|  5   |    RTS   | +3.3V |
+|  4   |     X    |   X   |
+|  5   |     X    |   X   |
 |  6   |    GND   |  GND  |
 
 **GPS1**
@@ -70,7 +70,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   | I2C2_SDA | +3.3V |
 |  6   |    GND   |  GND  |
 
-**GPS2**
+**SERIAL5**
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -78,8 +78,17 @@ Contact dheeranlabs@gmail.com for sales
 |  2   | UART_TX7 | +3.3V |
 |  3   | UART_RX7 | +3.3V |
 |  4   |     X    |   X   |
-|  5   |     X    |   X   |
-|  6   |    GND   |  GND  |
+|  5   |    GND   |  GND  |
+
+**SERIAL6, GPIO**
+
+| Pin  |  Signal  | Volt  |
+| :--: |  :-----: | :---: |
+|  1   |    VCC   |  +5V  |
+|  2   | USART_TX2| +3.3V |
+|  3   | USART_RX2| +3.3V |
+|  4   |   GPIO   | +3.3V |
+|  5   |    GND   |  GND  |
 
 
 **SAFETY**
@@ -103,7 +112,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
  - SERIAL2 -> UART6 (TELEM2) with DMA Enabled
  - SERIAL3 -> UART1 (GPS1) Tx(NODMA), Rx(DMA Enabled)
  - SERIAL4 -> EMPTY
- - SERIAL5 -> UART7 (GPS2) NODMA
+ - SERIAL5 -> UART7 (User) NODMA
  - SERIAL6 -> USART2 (User) NODMA
 
 ## RC Input
