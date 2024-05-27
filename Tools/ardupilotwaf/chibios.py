@@ -162,7 +162,11 @@ def check_elf_symbols(task):
     # we use string find on these symbols, so this catches all types of throw
     # calls this should catch all uses of exceptions unless the compiler
     # manages to inline them
-    blacklist = ['std::__throw']
+    blacklist = ['std::__throw',
+                 'operator new[](unsigned int)',
+                 'operator new[](unsigned long)',
+                 'operator new(unsigned int)',
+                 'operator new(unsigned long)']
 
     nmout = subprocess.getoutput("%s -C %s" % (task.env.get_flat('NM'), elfpath))
     for b in blacklist:
