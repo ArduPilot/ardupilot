@@ -85,7 +85,7 @@ AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* 
                     //it up as DroneCAN type
                     return nullptr;
                 }
-                prx->drivers[i] = new AP_Proximity_DroneCAN(*prx, prx->state[i], prx->params[i]);
+                prx->drivers[i] = NEW_NOTHROW AP_Proximity_DroneCAN(*prx, prx->state[i], prx->params[i]);
                 driver = (AP_Proximity_DroneCAN*)prx->drivers[i];
                 if (driver == nullptr) {
                     break;
