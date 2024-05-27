@@ -214,9 +214,9 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS1::probe(AP_InertialSensor &_
     }
 
     AP_InertialSensor_LSM9DS1 *sensor =
-        new AP_InertialSensor_LSM9DS1(_imu,std::move(dev),
-                                      LSM9DS1_DRY_XG_PIN,
-                                      rotation);
+        NEW_NOTHROW AP_InertialSensor_LSM9DS1(_imu,std::move(dev),
+                                              LSM9DS1_DRY_XG_PIN,
+                                              rotation);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;
