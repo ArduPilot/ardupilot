@@ -70,8 +70,8 @@ void setup()
 void loop()
 {
     // setup (unfortunately must be done here as we cannot create a global AC_PID object)
-    AC_PID *pid = new AC_PID(TEST_P, TEST_I, TEST_D, 0.0f, TEST_IMAX * 100.0f, 0.0f, 0.0f, TEST_FILTER);
-    // AC_HELI_PID *heli_pid= new AC_HELI_PID(TEST_P, TEST_I, TEST_D, TEST_INITIAL_FF, TEST_IMAX * 100, 0.0f, 0.0f, TEST_FILTER);
+    AC_PID *pid = NEW_NOTHROW AC_PID(TEST_P, TEST_I, TEST_D, 0.0f, TEST_IMAX * 100.0f, 0.0f, 0.0f, TEST_FILTER);
+    // AC_HELI_PID *heli_pid= NEW_NOTHROW AC_HELI_PID(TEST_P, TEST_I, TEST_D, TEST_INITIAL_FF, TEST_IMAX * 100, 0.0f, 0.0f, TEST_FILTER);
 
     // display PID gains
     hal.console->printf("P %f  I %f  D %f  imax %f\n", (double)pid->kP(), (double)pid->kI(), (double)pid->kD(), (double)pid->imax());

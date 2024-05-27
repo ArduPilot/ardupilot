@@ -162,7 +162,7 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
 
     if (_notch_T_filter != 0) {
         if (_target_notch == nullptr) {
-            _target_notch = new NotchFilterFloat();
+            _target_notch = NEW_NOTHROW NotchFilterFloat();
         }
         AP_Filter* filter = AP::filters().get_filter(_notch_T_filter);
         if (filter != nullptr && !filter->setup_notch_filter(*_target_notch, sample_rate)) {
@@ -174,7 +174,7 @@ void AC_PID::set_notch_sample_rate(float sample_rate)
 
     if (_notch_E_filter != 0) {
         if (_error_notch == nullptr) {
-            _error_notch = new NotchFilterFloat();
+            _error_notch = NEW_NOTHROW NotchFilterFloat();
         }
         AP_Filter* filter = AP::filters().get_filter(_notch_E_filter);
         if (filter != nullptr && !filter->setup_notch_filter(*_error_notch, sample_rate)) {
