@@ -289,126 +289,126 @@ void AP_Notify::add_backends(void)
                 // select the most appropriate built in LED driver type
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-                ADD_BACKEND(new Led_Sysfs("rgb_led0", "rgb_led2", "rgb_led1"));
+                ADD_BACKEND(NEW_NOTHROW Led_Sysfs("rgb_led0", "rgb_led2", "rgb_led1"));
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-                ADD_BACKEND(new RCOutputRGBLedInverted(12, 13, 14));
+                ADD_BACKEND(NEW_NOTHROW RCOutputRGBLedInverted(12, 13, 14));
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
-                ADD_BACKEND(new RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE));
+                ADD_BACKEND(NEW_NOTHROW RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE));
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-                ADD_BACKEND(new DiscoLED());
+                ADD_BACKEND(NEW_NOTHROW DiscoLED());
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-                ADD_BACKEND(new NavigatorLED());
+                ADD_BACKEND(NEW_NOTHROW NavigatorLED());
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-            ADD_BACKEND(new AP_BoardLED2());
+            ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #if AP_NOTIFY_EXTERNALLED_ENABLED
-                ADD_BACKEND(new ExternalLED()); // despite the name this is a built in set of onboard LED's
+                ADD_BACKEND(NEW_NOTHROW ExternalLED()); // despite the name this is a built in set of onboard LED's
 #endif
 
 #if defined(HAL_HAVE_PIXRACER_LED)
-                ADD_BACKEND(new PixRacerLED());
+                ADD_BACKEND(NEW_NOTHROW PixRacerLED());
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
   #if AP_NOTIFY_VRBOARD_LED_ENABLED
-                ADD_BACKEND(new VRBoard_LED());
+                ADD_BACKEND(NEW_NOTHROW VRBoard_LED());
   #else
-                ADD_BACKEND(new AP_BoardLED());
+                ADD_BACKEND(NEW_NOTHROW AP_BoardLED());
   #endif
 #elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
-                ADD_BACKEND(new AP_BoardLED2());
+                ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
 #endif
                 break;
 #if AP_NOTIFY_TOSHIBALED_ENABLED
             case Notify_LED_ToshibaLED_I2C_Internal:
-                ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
+                ADD_BACKEND(NEW_NOTHROW ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_INTERNAL));
                 break;
             case Notify_LED_ToshibaLED_I2C_External:
-                ADD_BACKEND(new ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
+                ADD_BACKEND(NEW_NOTHROW ToshibaLED_I2C(TOSHIBA_LED_I2C_BUS_EXTERNAL));
                 break;
 #endif
 #if AP_NOTIFY_NCP5623_ENABLED
             case Notify_LED_NCP5623_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
-                    ADD_BACKEND(new NCP5623(b));
+                    ADD_BACKEND(NEW_NOTHROW NCP5623(b));
                 }
                 break;
             case Notify_LED_NCP5623_I2C_Internal:
                 FOREACH_I2C_INTERNAL(b) {
-                    ADD_BACKEND(new NCP5623(b));
+                    ADD_BACKEND(NEW_NOTHROW NCP5623(b));
                 }
                 break;
 #endif
 #if AP_NOTIFY_PCA9685_ENABLED
             case Notify_LED_PCA9685LED_I2C_External:
-                ADD_BACKEND(new PCA9685LED_I2C());
+                ADD_BACKEND(NEW_NOTHROW PCA9685LED_I2C());
                 break;
 #endif
 #if AP_NOTIFY_NEOPIXEL_ENABLED
             case Notify_LED_NeoPixel:
             case Notify_LED_NeoPixelRGB:
-                ADD_BACKEND(new NeoPixel());
+                ADD_BACKEND(NEW_NOTHROW NeoPixel());
                 break;
 #endif
 #if AP_NOTIFY_PROFILED_ENABLED
             case Notify_LED_ProfiLED:
-                ADD_BACKEND(new ProfiLED());
+                ADD_BACKEND(NEW_NOTHROW ProfiLED());
                 break;
 #endif
 #if AP_NOTIFY_PROFILED_SPI_ENABLED
             case Notify_LED_ProfiLED_SPI:
-                ADD_BACKEND(new ProfiLED_SPI());
+                ADD_BACKEND(NEW_NOTHROW ProfiLED_SPI());
                 break;
 #endif
 #if AP_NOTIFY_OREOLED_ENABLED
             case Notify_LED_OreoLED:
                 if (_oreo_theme) {
-                    ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
+                    ADD_BACKEND(NEW_NOTHROW OreoLED_I2C(0, _oreo_theme));
                 }
                 break;
 #endif
 #if AP_NOTIFY_DRONECAN_LED_ENABLED
             case Notify_LED_DroneCAN:
-                ADD_BACKEND(new DroneCAN_RGB_LED());
+                ADD_BACKEND(NEW_NOTHROW DroneCAN_RGB_LED());
                 break;
 #endif // AP_NOTIFY_DRONECAN_LED_ENABLED
 #if AP_NOTIFY_SCRIPTING_LED_ENABLED
             case Notify_LED_Scripting:
-                ADD_BACKEND(new ScriptingLED());
+                ADD_BACKEND(NEW_NOTHROW ScriptingLED());
                 break;
 #endif
 #if AP_NOTIFY_DSHOT_LED_ENABLED
             case Notify_LED_DShot:
-                ADD_BACKEND(new DShotLED());
+                ADD_BACKEND(NEW_NOTHROW DShotLED());
                 break;
 #endif
 #if AP_NOTIFY_LP5562_ENABLED
             case Notify_LED_LP5562_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
-                    ADD_BACKEND(new LP5562(b, 0x30));
+                    ADD_BACKEND(NEW_NOTHROW LP5562(b, 0x30));
                 }
                 break;
             case Notify_LED_LP5562_I2C_Internal:
                 FOREACH_I2C_INTERNAL(b) {
-                    ADD_BACKEND(new LP5562(b, 0x30));
+                    ADD_BACKEND(NEW_NOTHROW LP5562(b, 0x30));
                 }
                 break;
 #endif
 #if AP_NOTIFY_IS31FL3195_ENABLED
             case Notify_LED_IS31FL3195_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
-                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                    ADD_BACKEND(NEW_NOTHROW IS31FL3195(b, 0x54));
                 }
                 break;
             case Notify_LED_IS31FL3195_I2C_Internal:
                 FOREACH_I2C_INTERNAL(b) {
-                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                    ADD_BACKEND(NEW_NOTHROW IS31FL3195(b, 0x54));
                 }
                 break;
 #endif
 #if AP_NOTIFY_DISCRETE_RGB_ENABLED
             case Notify_LED_DiscreteRGB:
-                ADD_BACKEND(new DiscreteRGBLed(DISCRETE_RGB_RED_PIN,
+                ADD_BACKEND(NEW_NOTHROW DiscreteRGBLed(DISCRETE_RGB_RED_PIN,
                                                DISCRETE_RGB_GREEN_PIN,
                                                DISCRETE_RGB_BLUE_PIN,
                                                DISCRETE_RGB_POLARITY));
@@ -419,14 +419,14 @@ void AP_Notify::add_backends(void)
 
 #if HAL_DISPLAY_ENABLED
     // Always try and add a display backend
-    ADD_BACKEND(new Display());
+    ADD_BACKEND(NEW_NOTHROW Display());
 #endif
 
 // ChibiOS noise makers
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    ADD_BACKEND(new Buzzer());
+    ADD_BACKEND(NEW_NOTHROW Buzzer());
 #if AP_NOTIFY_TONEALARM_ENABLED
-    ADD_BACKEND(new AP_ToneAlarm());
+    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
 #endif
 
 // Linux noise makers
@@ -444,17 +444,17 @@ void AP_Notify::add_backends(void)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    ADD_BACKEND(new Buzzer());
+    ADD_BACKEND(NEW_NOTHROW Buzzer());
 
   #else // other linux
-    ADD_BACKEND(new AP_ToneAlarm());
+    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
   #endif
 
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    ADD_BACKEND(new AP_ToneAlarm());
-    ADD_BACKEND(new Buzzer());
+    ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
+    ADD_BACKEND(NEW_NOTHROW Buzzer());
 #ifdef WITH_SITL_RGBLED
-    ADD_BACKEND(new SITL_SFML_LED());
+    ADD_BACKEND(NEW_NOTHROW SITL_SFML_LED());
 #endif
 #endif // Noise makers
 
