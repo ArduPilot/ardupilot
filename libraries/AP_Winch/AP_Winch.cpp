@@ -79,10 +79,10 @@ void AP_Winch::init()
     case WinchType::NONE:
         break;
     case WinchType::PWM:
-        backend = new AP_Winch_PWM(config);
+        backend = NEW_NOTHROW AP_Winch_PWM(config);
         break;
     case WinchType::DAIWA:
-        backend = new AP_Winch_Daiwa(config);
+        backend = NEW_NOTHROW AP_Winch_Daiwa(config);
         break;
     default:
         break;
