@@ -794,6 +794,8 @@ class sitl(Board):
 
         if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
+            # can't do symbol checking on cygwin due to exception usage in system libraries
+            env.CHECK_SYMBOLS = False
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             print("Disabling SLP for clang++")
