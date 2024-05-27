@@ -43,7 +43,7 @@ void AP_Networking::test_UDP_client(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP_client: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(true);
+    auto *sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP_client: failed to create socket");
         return;
@@ -75,7 +75,7 @@ void AP_Networking::test_TCP_client(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_client: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(false);
+    auto *sock = NEW_NOTHROW SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_client: failed to create socket");
         return;
@@ -107,7 +107,7 @@ void AP_Networking::test_TCP_discard(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(false);
+    auto *sock = NEW_NOTHROW SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_discard: failed to create socket");
         return;

@@ -96,7 +96,7 @@ bool AP_Networking_PPP::init()
         return false;
     }
 
-    pppif = new netif;
+    pppif = NEW_NOTHROW netif;
     if (pppif == nullptr) {
         return false;
     }

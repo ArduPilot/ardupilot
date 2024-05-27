@@ -148,26 +148,26 @@ void AP_Networking::init()
         /*
           when we are a PPP/Ethernet gateway we bring up the ethernet first
          */
-        backend = new AP_Networking_ChibiOS(*this);
-        backend_PPP = new AP_Networking_PPP(*this);
+        backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
+        backend_PPP = NEW_NOTHROW AP_Networking_PPP(*this);
     }
 #endif
 
 
 #if AP_NETWORKING_BACKEND_PPP
     if (backend == nullptr && AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_PPP, 0)) {
-        backend = new AP_Networking_PPP(*this);
+        backend = NEW_NOTHROW AP_Networking_PPP(*this);
     }
 #endif
 
 #if AP_NETWORKING_BACKEND_CHIBIOS
     if (backend == nullptr) {
-        backend = new AP_Networking_ChibiOS(*this);
+        backend = NEW_NOTHROW AP_Networking_ChibiOS(*this);
     }
 #endif
 #if AP_NETWORKING_BACKEND_SITL
     if (backend == nullptr) {
-        backend = new AP_Networking_SITL(*this);
+        backend = NEW_NOTHROW AP_Networking_SITL(*this);
     }
 #endif
 
