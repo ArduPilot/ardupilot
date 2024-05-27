@@ -618,7 +618,7 @@ bool AP_Spektrum_Telem::get_telem_data(uint8_t* data)
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_Spektrum_Telem object then try to allocate one
-        new AP_Spektrum_Telem();
+        NEW_NOTHROW AP_Spektrum_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init();
