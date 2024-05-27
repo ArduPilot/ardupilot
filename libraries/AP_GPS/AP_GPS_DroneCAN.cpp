@@ -170,14 +170,14 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     // initialise the backend based on the UAVCAN Moving baseline selection
     switch (_gps.get_type(_state.instance)) {
         case AP_GPS::GPS_TYPE_UAVCAN:
-            backend = new AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_NORMAL);
+            backend = NEW_NOTHROW AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_NORMAL);
             break;
 #if GPS_MOVING_BASELINE
         case AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE:
-            backend = new AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_BASE);
+            backend = NEW_NOTHROW AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_BASE);
             break;
         case AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER:
-            backend = new AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_ROVER);
+            backend = NEW_NOTHROW AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_ROVER);
             break;
 #endif
         default:
@@ -214,7 +214,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         }
 #if GPS_MOVING_BASELINE
         if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
-            backend->rtcm3_parser = new RTCM3_Parser;
+            backend->rtcm3_parser = NEW_NOTHROW RTCM3_Parser;
             if (backend->rtcm3_parser == nullptr) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
             }
@@ -822,7 +822,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
         if (_rtcm_stream.buf == nullptr) {
             // give enough space for a full round from a NTRIP server with all
             // constellations
-            _rtcm_stream.buf = new ByteBuffer(2400);
+            _rtcm_stream.buf = NEW_NOTHROW ByteBuffer(2400);
             if (_rtcm_stream.buf == nullptr) {
                 return;
             }
