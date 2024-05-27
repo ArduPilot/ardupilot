@@ -22,12 +22,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#if defined(__CYGWIN__) || defined(__CYGWIN64__)
-#include <windows.h>
-#include <time.h>
-#include <mmsystem.h>
-#endif
-
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Param/AP_Param.h>
@@ -561,18 +555,21 @@ float Aircraft::rangefinder_range() const
     return altitude;
 }
 
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+extern "C" { uint32_t timeGetTime(); }
+#endif
 
 // potentially replace this with a call to AP_HAL::Util::get_hw_rtc
 uint64_t Aircraft::get_wall_time_us() const
 {
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
-    static DWORD tPrev;
+    static uint32_t tPrev;
     static uint64_t last_ret_us;
     if (tPrev == 0) {
         tPrev = timeGetTime();
         return 0;
     }
-    DWORD now = timeGetTime();
+    uint32_t now = timeGetTime();
     last_ret_us += (uint64_t)((now - tPrev)*1000UL);
     tPrev = now;
     return last_ret_us;
