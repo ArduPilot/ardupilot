@@ -55,7 +55,7 @@ void OpticalFlow_Onboard::init()
         return;
     }
 
-    _videoin = new VideoIn;
+    _videoin = NEW_NOTHROW VideoIn;
     const char* device_path = HAL_OPTFLOW_ONBOARD_VDEV_PATH;
     memtype = V4L2_MEMORY_MMAP;
     nbufs = HAL_OPTFLOW_ONBOARD_NBUFS;
@@ -75,12 +75,12 @@ void OpticalFlow_Onboard::init()
     }
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-    _pwm = new PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
+    _pwm = NEW_NOTHROW PWM_Sysfs_Bebop(BEBOP_CAMV_PWM);
     _pwm->init();
     _pwm->set_freq(BEBOP_CAMV_PWM_FREQ);
     _pwm->enable(true);
 
-    _camerasensor = new CameraSensor_Mt9v117(HAL_OPTFLOW_ONBOARD_SUBDEV_PATH,
+    _camerasensor = NEW_NOTHROW CameraSensor_Mt9v117(HAL_OPTFLOW_ONBOARD_SUBDEV_PATH,
                                              hal.i2c_mgr->get_device(0, 0x5D),
                                              MT9V117_QVGA,
                                              BEBOP_GPIO_CAMV_NRST,
@@ -146,7 +146,7 @@ void OpticalFlow_Onboard::init()
     _videoin->prepare_capture();
 
     /* Use px4 algorithm for optical flow */
-    _flow = new Flow_PX4(_width, _bytesperline,
+    _flow = NEW_NOTHROW Flow_PX4(_width, _bytesperline,
                          HAL_FLOW_PX4_MAX_FLOW_PIXEL,
                          HAL_FLOW_PX4_BOTTOM_FLOW_FEATURE_THRESHOLD,
                          HAL_FLOW_PX4_BOTTOM_FLOW_VALUE_THRESHOLD);
@@ -170,7 +170,7 @@ void OpticalFlow_Onboard::init()
         AP_HAL::panic("OpticalFlow_Onboard: failed to create thread");
     }
 
-    _gyro_ring_buffer = new ObjectBuffer<GyroSample>(OPTICAL_FLOW_GYRO_BUFFER_LEN);
+    _gyro_ring_buffer = NEW_NOTHROW ObjectBuffer<GyroSample>(OPTICAL_FLOW_GYRO_BUFFER_LEN);
     if (_gyro_ring_buffer != nullptr && _gyro_ring_buffer->get_size() == 0) {
         // allocation failed
         delete _gyro_ring_buffer;
