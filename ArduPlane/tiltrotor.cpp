@@ -142,7 +142,7 @@ void Tiltrotor::setup()
         }
     }
 
-    transition = new Tiltrotor_Transition(quadplane, motors, *this);
+    transition = NEW_NOTHROW Tiltrotor_Transition(quadplane, motors, *this);
     if (!transition) {
         AP_BoardConfig::allocation_error("tiltrotor transition");
     }

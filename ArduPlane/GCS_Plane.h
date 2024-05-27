@@ -25,7 +25,7 @@ protected:
 
     GCS_MAVLINK_Plane *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
-        return new GCS_MAVLINK_Plane(params, uart);
+        return NEW_NOTHROW GCS_MAVLINK_Plane(params, uart);
     }
 
     AP_GPS::GPS_Status min_status_for_gps_healthy() const override {
