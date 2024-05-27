@@ -45,6 +45,9 @@ class Board:
         cfg.load('toolchain')
         cfg.load('cxx_checks')
 
+        # check elf symbols by default
+        cfg.env.CHECK_SYMBOLS = True
+
         env = waflib.ConfigSet.ConfigSet()
         def srcpath(path):
             return cfg.srcnode.make_node(path).abspath()
@@ -1283,6 +1286,9 @@ class linux(Board):
         if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
+
+        # can't do symbol checking on Linux due to exception usage in libc++
+        env.CHECK_SYMBOLS = False
 
         env.BOARD_CLASS = "LINUX"
 

@@ -1,12 +1,13 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils
+from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
-from waflib.TaskGen import before_method, feature
+from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
 from collections import OrderedDict
+import subprocess
 
 import ap_persistent
 
@@ -258,6 +259,55 @@ def ap_common_vehicle_libraries(bld):
 
 _grouped_programs = {}
 
+class check_elf_symbols(Task.Task):
+    color='CYAN'
+    always_run = True
+    def keyword(self):
+        return "checking symbols"
+
+    def run(self):
+        '''
+        check for disallowed symbols in elf file, such as C++ exceptions
+        '''
+        elfpath = self.inputs[0].abspath()
+
+        if not self.env.CHECK_SYMBOLS:
+            # checking symbols disabled on this build
+            return
+
+        if not self.env.vehicle_binary or self.env.SIM_ENABLED:
+            # we only want to check symbols for vehicle binaries, allowing examples
+            # to use C++ exceptions. We also allow them in simulator builds
+            return
+
+        # we use string find on these symbols, so this catches all types of throw
+        # calls this should catch all uses of exceptions unless the compiler
+        # manages to inline them
+        blacklist = ['std::__throw',
+                     'operator new[](unsigned int)',
+                     'operator new[](unsigned long)',
+                     'operator new(unsigned int)',
+                     'operator new(unsigned long)']
+
+        nmout = subprocess.getoutput("%s -C %s" % (self.env.get_flat('NM'), elfpath))
+        for b in blacklist:
+            if nmout.find(b) != -1:
+                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+
+
+@feature('post_link')
+@after_method('process_source')
+def post_link(self):
+    '''
+    setup tasks to run after link stage
+    '''
+    self.link_task.always_run = True
+
+    link_output = self.link_task.outputs[0]
+
+    check_elf_task = self.create_task('check_elf_symbols', src=link_output)
+    check_elf_task.set_run_after(self.link_task)
+    
 @conf
 def ap_program(bld,
                program_groups='bin',
@@ -279,7 +329,7 @@ def ap_program(bld,
     if use_legacy_defines:
         kw['defines'].extend(get_legacy_defines(bld.path.name, bld))
 
-    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
+    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES + ['post_link']
 
     program_groups = Utils.to_list(program_groups)
 
