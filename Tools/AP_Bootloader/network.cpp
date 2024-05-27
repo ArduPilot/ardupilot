@@ -554,7 +554,7 @@ void BL_Network::net_request_trampoline(void *ctx)
  */
 void BL_Network::web_server(void)
 {
-    auto *listen_socket = new SocketAPM(0);
+    auto *listen_socket = NEW_NOTHROW SocketAPM(0);
     listen_socket->bind("0.0.0.0", 80);
     listen_socket->listen(20);
 
@@ -573,7 +573,7 @@ void BL_Network::web_server(void)
             continue;
         }
         // a new thread for each connection to allow for AJAX
-        auto *req = new req_context;
+        auto *req = NEW_NOTHROW req_context;
         req->driver = this;
         req->sock = sock;
         thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
@@ -601,7 +601,7 @@ void BL_Network::init()
 
     macInit();
 
-    thisif = new netif;
+    thisif = NEW_NOTHROW netif;
 
     net_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(2048),
                                          "network",

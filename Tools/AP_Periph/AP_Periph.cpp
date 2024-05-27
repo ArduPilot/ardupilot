@@ -268,7 +268,7 @@ void AP_Periph_FW::init()
     for (uint8_t i = 0; i < ESC_NUMBERS; i++) {
         const uint8_t port = g.esc_serial_port[i];
         if (port < SERIALMANAGER_NUM_PORTS) { // skip bad ports
-            apd_esc_telem[i] = new ESC_APD_Telem (hal.serial(port), g.pole_count[i]);
+            apd_esc_telem[i] = NEW_NOTHROW ESC_APD_Telem (hal.serial(port), g.pole_count[i]);
         }
     }
 #endif

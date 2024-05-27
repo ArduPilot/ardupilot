@@ -1622,15 +1622,15 @@ void AP_Periph_FW::can_start()
 
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        can_iface_periph[i] = new ChibiOS::CANIface();
+        can_iface_periph[i] = NEW_NOTHROW ChibiOS::CANIface();
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        can_iface_periph[i] = new HALSITL::CANIface();
+        can_iface_periph[i] = NEW_NOTHROW HALSITL::CANIface();
 #endif
         instances[i].iface = can_iface_periph[i];
         instances[i].index = i;
 #if HAL_PERIPH_CAN_MIRROR
         if ((g.can_mirror_ports & (1U << i)) != 0) {
-            instances[i].mirror_queue = new ObjectBuffer<AP_HAL::CANFrame> (HAL_PERIPH_CAN_MIRROR_QUEUE_SIZE);
+            instances[i].mirror_queue = NEW_NOTHROW ObjectBuffer<AP_HAL::CANFrame> (HAL_PERIPH_CAN_MIRROR_QUEUE_SIZE);
         }
 #endif //HAL_PERIPH_CAN_MIRROR
 #if HAL_NUM_CAN_IFACES >= 2

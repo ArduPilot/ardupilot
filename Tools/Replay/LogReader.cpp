@@ -61,71 +61,71 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 
     // map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
-        msgparser[f.type] = new LR_MsgHandler_PARM(formats[f.type]);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_PARM(formats[f.type]);
     } else if (streq(name, "RFRH")) {
-        msgparser[f.type] = new LR_MsgHandler_RFRH(formats[f.type]);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RFRH(formats[f.type]);
     } else if (streq(name, "RFRF")) {
-        msgparser[f.type] = new LR_MsgHandler_RFRF(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RFRF(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "RFRN")) {
-        msgparser[f.type] = new LR_MsgHandler_RFRN(formats[f.type]);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RFRN(formats[f.type]);
     } else if (streq(name, "REV2")) {
-        msgparser[f.type] = new LR_MsgHandler_REV2(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_REV2(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RSO2")) {
-        msgparser[f.type] = new LR_MsgHandler_RSO2(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RSO2(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RWA2")) {
-        msgparser[f.type] = new LR_MsgHandler_RWA2(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RWA2(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "REV3")) {
-        msgparser[f.type] = new LR_MsgHandler_REV3(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_REV3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RSO3")) {
-        msgparser[f.type] = new LR_MsgHandler_RSO3(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RSO3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RWA3")) {
-        msgparser[f.type] = new LR_MsgHandler_RWA3(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RWA3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "REY3")) {
-        msgparser[f.type] = new LR_MsgHandler_REY3(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_REY3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RISH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RISH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RISH(formats[f.type]);
 	} else if (streq(name, "RISI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RISI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RISI(formats[f.type]);
     } else if (streq(name, "RASH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RASH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RASH(formats[f.type]);
 	} else if (streq(name, "RASI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RASI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RASI(formats[f.type]);
 	} else if (streq(name, "RBRH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RBRH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBRH(formats[f.type]);
 	} else if (streq(name, "RBRI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RBRI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBRI(formats[f.type]);
 	} else if (streq(name, "RRNH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RRNH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RRNH(formats[f.type]);
 	} else if (streq(name, "RRNI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RRNI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RRNI(formats[f.type]);
 	} else if (streq(name, "RGPH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RGPH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RGPH(formats[f.type]);
 	} else if (streq(name, "RGPI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RGPI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RGPI(formats[f.type]);
     } else if (streq(name, "RGPJ")) {
-        msgparser[f.type] = new LR_MsgHandler_RGPJ(formats[f.type]);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RGPJ(formats[f.type]);
 	} else if (streq(name, "RMGH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RMGH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RMGH(formats[f.type]);
 	} else if (streq(name, "RMGI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RMGI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RMGI(formats[f.type]);
 	} else if (streq(name, "RBCH")) {
-	    msgparser[f.type] = new LR_MsgHandler_RBCH(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBCH(formats[f.type]);
 	} else if (streq(name, "RBCI")) {
-	    msgparser[f.type] = new LR_MsgHandler_RBCI(formats[f.type]);
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBCI(formats[f.type]);
     } else if (streq(name, "RVOH")) {
-        msgparser[f.type] = new LR_MsgHandler_RVOH(formats[f.type]);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RVOH(formats[f.type]);
     } else if (streq(name, "ROFH")) {
-        msgparser[f.type] = new LR_MsgHandler_ROFH(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_ROFH(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "REPH")) {
-        msgparser[f.type] = new LR_MsgHandler_REPH(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_REPH(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RSLL")) {
-        msgparser[f.type] = new LR_MsgHandler_RSLL(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RSLL(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "REVH")) {
-        msgparser[f.type] = new LR_MsgHandler_REVH(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_REVH(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "RWOH")) {
-        msgparser[f.type] = new LR_MsgHandler_RWOH(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RWOH(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "RBOH")) {
-        msgparser[f.type] = new LR_MsgHandler_RBOH(formats[f.type], ekf2, ekf3);
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBOH(formats[f.type], ekf2, ekf3);
 	} else {
         // debug("  No parser for (%s)\n", name);
     }
