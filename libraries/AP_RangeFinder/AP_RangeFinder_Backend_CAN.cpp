@@ -45,7 +45,7 @@ AP_RangeFinder_Backend_CAN::AP_RangeFinder_Backend_CAN(
 {
     AP_Param::setup_object_defaults(this, var_info);
     state.var_info = var_info;
-    multican_rangefinder = new MultiCAN{FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Backend_CAN::handle_frame, bool, AP_HAL::CANFrame &), can_type, driver_name};
+    multican_rangefinder = NEW_NOTHROW MultiCAN{FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Backend_CAN::handle_frame, bool, AP_HAL::CANFrame &), can_type, driver_name};
     if (multican_rangefinder == nullptr) {
         AP_BoardConfig::allocation_error("Failed to create rangefinder multican");
     }

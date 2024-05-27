@@ -62,7 +62,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus,
                                                                   RangeFinder::Type rftype)
 {
     AP_RangeFinder_PulsedLightLRF *sensor
-        = new AP_RangeFinder_PulsedLightLRF(bus, _state, _params, rftype);
+        = NEW_NOTHROW AP_RangeFinder_PulsedLightLRF(bus, _state, _params, rftype);
     if (!sensor ||
         !sensor->init()) {
         delete sensor;
