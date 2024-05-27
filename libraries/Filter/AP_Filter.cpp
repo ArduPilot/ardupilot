@@ -117,7 +117,7 @@ void AP_Filters::update()
                 break;
             case AP_Filter::FilterType::FILTER_NOTCH:
                 if (filters[i] == nullptr) {
-                    filters[i] = new AP_NotchFilter_params();
+                    filters[i] = NEW_NOTHROW AP_NotchFilter_params();
                     backend_var_info[i] = AP_NotchFilter_params::var_info;
                     update = true;
                 }
