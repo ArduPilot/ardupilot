@@ -138,13 +138,13 @@ void AP_VisualOdom::init()
         break;
 #if AP_VISUALODOM_MAV_ENABLED
     case VisualOdom_Type::MAV:
-        _driver = new AP_VisualOdom_MAV(*this);
+        _driver = NEW_NOTHROW AP_VisualOdom_MAV(*this);
         break;
 #endif
 #if AP_VISUALODOM_INTELT265_ENABLED
     case VisualOdom_Type::IntelT265:
     case VisualOdom_Type::VOXL:
-        _driver = new AP_VisualOdom_IntelT265(*this);
+        _driver = NEW_NOTHROW AP_VisualOdom_IntelT265(*this);
         break;
 #endif
     }
