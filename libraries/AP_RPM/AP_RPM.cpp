@@ -75,39 +75,39 @@ void AP_RPM::init(void)
         case RPM_TYPE_PWM:
         case RPM_TYPE_PIN:
             // PWM option same as PIN option, for upgrade
-            drivers[i] = new AP_RPM_Pin(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_Pin(*this, i, state[i]);
             break;
 #endif  // AP_RPM_PIN_ENABLED
 #if AP_RPM_ESC_TELEM_ENABLED
         case RPM_TYPE_ESC_TELEM:
-            drivers[i] = new AP_RPM_ESC_Telem(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_ESC_Telem(*this, i, state[i]);
             break;
 #endif  // AP_RPM_ESC_TELEM_ENABLED
 #if AP_RPM_EFI_ENABLED
         case RPM_TYPE_EFI:
-            drivers[i] = new AP_RPM_EFI(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_EFI(*this, i, state[i]);
             break;
 #endif  // AP_RPM_EFI_ENABLED
 #if AP_RPM_GENERATOR_ENABLED
         case RPM_TYPE_GENERATOR:
-            drivers[i] = new AP_RPM_Generator(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_Generator(*this, i, state[i]);
             break;
 #endif  // AP_RPM_GENERATOR_ENABLED
 #if AP_RPM_HARMONICNOTCH_ENABLED
         // include harmonic notch last
         // this makes whatever process is driving the dynamic notch appear as an RPM value
         case RPM_TYPE_HNTCH:
-            drivers[i] = new AP_RPM_HarmonicNotch(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_HarmonicNotch(*this, i, state[i]);
             break;
 #endif  // AP_RPM_HARMONICNOTCH_ENABLED
 #if AP_RPM_DRONECAN_ENABLED
         case RPM_TYPE_DRONECAN:
-            drivers[i] = new AP_RPM_DroneCAN(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_DroneCAN(*this, i, state[i]);
             break;
 #endif // AP_RPM_DRONECAN_ENABLED
 #if AP_RPM_SIM_ENABLED
         case RPM_TYPE_SITL:
-            drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
+            drivers[i] = NEW_NOTHROW AP_RPM_SITL(*this, i, state[i]);
             break;
 #endif  // AP_RPM_SIM_ENABLED
         }
