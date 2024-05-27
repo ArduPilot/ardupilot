@@ -286,7 +286,7 @@ void AP_Motors::set_frame_string(const char * str) {
         return;
     }
     const size_t len = strlen(str)+1;
-    custom_frame_string = new char[len];
+    custom_frame_string = NEW_NOTHROW char[len];
     if (custom_frame_string != nullptr) {
         strncpy(custom_frame_string, str, len);
     }
