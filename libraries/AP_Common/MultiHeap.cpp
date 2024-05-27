@@ -40,7 +40,7 @@ bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps)
         // don't allow double allocation
         return false;
     }
-    heaps = new void*[max_heaps];
+    heaps = NEW_NOTHROW void*[max_heaps];
     if (heaps == nullptr) {
         return false;
     }
