@@ -120,7 +120,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps,
 
 #if GPS_MOVING_BASELINE
     if (role == AP_GPS::GPS_ROLE_MB_BASE && !mb_use_uart2()) {
-        rtcm3_parser = new RTCM3_Parser;
+        rtcm3_parser = NEW_NOTHROW RTCM3_Parser;
         if (rtcm3_parser == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "u-blox %d: failed RTCMv3 parser allocation", state.instance + 1);
         }

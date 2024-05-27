@@ -633,7 +633,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     case GPS_TYPE_MAV:
 #if AP_GPS_MAV_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
-        return new AP_GPS_MAV(*this, params[instance], state[instance], nullptr);
+        return NEW_NOTHROW AP_GPS_MAV(*this, params[instance], state[instance], nullptr);
 #endif //AP_GPS_MAV_ENABLED
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
@@ -648,17 +648,17 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #if HAL_MSP_GPS_ENABLED
     case GPS_TYPE_MSP:
         dstate->auto_detected_baud = false; // specified, not detected
-        return new AP_GPS_MSP(*this, params[instance], state[instance], nullptr);
+        return NEW_NOTHROW AP_GPS_MSP(*this, params[instance], state[instance], nullptr);
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
         dstate->auto_detected_baud = false; // specified, not detected
-        return new AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
+        return NEW_NOTHROW AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
 #endif
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
         dstate->auto_detected_baud = false; // specified, not detected
-        return new AP_GPS_GSOF(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], _port[instance]);
 #endif //AP_GPS_GSOF_ENABLED
     default:
         break;
@@ -712,16 +712,16 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
     case GPS_TYPE_SBF_DUAL_ANTENNA:
-        return new AP_GPS_SBF(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_SBF(*this, params[instance], state[instance], _port[instance]);
 #endif //AP_GPS_SBF_ENABLED
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
-        return new AP_GPS_NOVA(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], _port[instance]);
 #endif //AP_GPS_NOVA_ENABLED
 
 #if HAL_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-        return new AP_GPS_SITL(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], _port[instance]);
 #endif  // HAL_SIM_GPS_ENABLED
 
     default:
@@ -746,7 +746,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
              (_baudrates[dstate->current_baud] >= 115200 && option_set(DriverOptions::UBX_Use115200)) ||
              _baudrates[dstate->current_baud] == 230400) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            return new AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], GPS_ROLE_NORMAL);
+            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
 
         const uint32_t ublox_mb_required_baud = option_set(DriverOptions::UBX_MBUseUart2)?230400:460800;
@@ -760,31 +760,31 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             } else {
                 role = GPS_ROLE_MB_ROVER;
             }
-            return new AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], role);
+            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], role);
         }
 #endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
-            return new AP_GPS_SBP2(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_SBP2(*this, params[instance], state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP2_ENABLED
 #if AP_GPS_SBP_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            return new AP_GPS_SBP(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_SBP(*this, params[instance], state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP_ENABLED
 #if AP_GPS_SIRF_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-            return new AP_GPS_SIRF(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_SIRF(*this, params[instance], state[instance], _port[instance]);
         }
 #endif
 #if AP_GPS_ERB_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
-            return new AP_GPS_ERB(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_ERB(*this, params[instance], state[instance], _port[instance]);
         }
 #endif // AP_GPS_ERB_ENABLED
 #if AP_GPS_NMEA_ENABLED
@@ -796,7 +796,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #endif
                     type == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-            return new AP_GPS_NMEA(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_NMEA(*this, params[instance], state[instance], _port[instance]);
         }
 #endif //AP_GPS_NMEA_ENABLED
     }
@@ -1618,7 +1618,7 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
         return false;
     }
     if (rtcm.parsers[chan] == nullptr) {
-        rtcm.parsers[chan] = new RTCM3_Parser();
+        rtcm.parsers[chan] = NEW_NOTHROW RTCM3_Parser();
         if (rtcm.parsers[chan] == nullptr) {
             return false;
         }
