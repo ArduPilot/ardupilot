@@ -49,62 +49,62 @@ extern const AP_HAL::HAL& hal;
 void AP_RCProtocol::init()
 {
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
-    backend[AP_RCProtocol::PPMSUM] = new AP_RCProtocol_PPMSum(*this);
+    backend[AP_RCProtocol::PPMSUM] = NEW_NOTHROW AP_RCProtocol_PPMSum(*this);
 #endif
 #if AP_RCPROTOCOL_IBUS_ENABLED
-    backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
+    backend[AP_RCProtocol::IBUS] = NEW_NOTHROW AP_RCProtocol_IBUS(*this);
 #endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
-    backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
+    backend[AP_RCProtocol::SBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, true, 100000);
 #endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
-    backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
+    backend[AP_RCProtocol::FASTSBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
 #if AP_RCPROTOCOL_DSM_ENABLED
-    backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+    backend[AP_RCProtocol::DSM] = NEW_NOTHROW AP_RCProtocol_DSM(*this);
 #endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
-    backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+    backend[AP_RCProtocol::SUMD] = NEW_NOTHROW AP_RCProtocol_SUMD(*this);
 #endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
-    backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+    backend[AP_RCProtocol::SRXL] = NEW_NOTHROW AP_RCProtocol_SRXL(*this);
 #endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
-    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
+    backend[AP_RCProtocol::SBUS_NI] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, false, 100000);
 #endif
 #if AP_RCPROTOCOL_SRXL2_ENABLED
-    backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
+    backend[AP_RCProtocol::SRXL2] = NEW_NOTHROW AP_RCProtocol_SRXL2(*this);
 #endif
 #if AP_RCPROTOCOL_CRSF_ENABLED
-    backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+    backend[AP_RCProtocol::CRSF] = NEW_NOTHROW AP_RCProtocol_CRSF(*this);
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
-    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
+    backend[AP_RCProtocol::FPORT2] = NEW_NOTHROW AP_RCProtocol_FPort2(*this, true);
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
-    backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+    backend[AP_RCProtocol::ST24] = NEW_NOTHROW AP_RCProtocol_ST24(*this);
 #endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
-    backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
+    backend[AP_RCProtocol::FPORT] = NEW_NOTHROW AP_RCProtocol_FPort(*this, true);
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
-    backend[AP_RCProtocol::DRONECAN] = new AP_RCProtocol_DroneCAN(*this);
+    backend[AP_RCProtocol::DRONECAN] = NEW_NOTHROW AP_RCProtocol_DroneCAN(*this);
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
-    backend[AP_RCProtocol::GHST] = new AP_RCProtocol_GHST(*this);
+    backend[AP_RCProtocol::GHST] = NEW_NOTHROW AP_RCProtocol_GHST(*this);
 #endif
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
-    backend[AP_RCProtocol::MAVLINK_RADIO] = new AP_RCProtocol_MAVLinkRadio(*this);
+    backend[AP_RCProtocol::MAVLINK_RADIO] = NEW_NOTHROW AP_RCProtocol_MAVLinkRadio(*this);
 #endif
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
-    backend[AP_RCProtocol::JOYSTICK_SFML] = new AP_RCProtocol_Joystick_SFML(*this);
+    backend[AP_RCProtocol::JOYSTICK_SFML] = NEW_NOTHROW AP_RCProtocol_Joystick_SFML(*this);
 #endif
 #if AP_RCPROTOCOL_UDP_ENABLED
-    const auto UDP_backend = new AP_RCProtocol_UDP(*this);
+    const auto UDP_backend = NEW_NOTHROW AP_RCProtocol_UDP(*this);
     backend[AP_RCProtocol::UDP] = UDP_backend;
 #endif
 #if AP_RCPROTOCOL_FDM_ENABLED
-    const auto FDM_backend = new AP_RCProtocol_FDM(*this);;
+    const auto FDM_backend = NEW_NOTHROW AP_RCProtocol_FDM(*this);;
     backend[AP_RCProtocol::FDM] = FDM_backend;
 #if AP_RCPROTOCOL_UDP_ENABLED
     // the UDP-Packed16Bit backend gives way to the FDM backend:
@@ -112,7 +112,7 @@ void AP_RCProtocol::init()
 #endif  // AP_RCPROTOCOL_UDP_ENABLED
 #endif  // AP_RCPROTOCOL_FDM_ENABLED
 #if AP_RCPROTOCOL_RADIO_ENABLED
-    backend[AP_RCProtocol::RADIO] = new AP_RCProtocol_Radio(*this);
+    backend[AP_RCProtocol::RADIO] = NEW_NOTHROW AP_RCProtocol_Radio(*this);
 #endif
 }
 
