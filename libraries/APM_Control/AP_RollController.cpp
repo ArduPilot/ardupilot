@@ -313,7 +313,7 @@ void AP_RollController::convert_pid()
 void AP_RollController::autotune_start(void)
 {
     if (autotune == nullptr) {
-        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_ROLL, aparm, rate_pid);
+        autotune = NEW_NOTHROW AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_ROLL, aparm, rate_pid);
         if (autotune == nullptr) {
             if (!failed_autotune_alloc) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed roll allocation");
