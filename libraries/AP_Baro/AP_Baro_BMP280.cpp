@@ -60,7 +60,7 @@ AP_Baro_Backend *AP_Baro_BMP280::probe(AP_Baro &baro,
         return nullptr;
     }
 
-    AP_Baro_BMP280 *sensor = new AP_Baro_BMP280(baro, std::move(dev));
+    AP_Baro_BMP280 *sensor = NEW_NOTHROW AP_Baro_BMP280(baro, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
