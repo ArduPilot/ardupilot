@@ -26,7 +26,7 @@
 AP_OpticalFlow_MAV *AP_OpticalFlow_MAV::detect(AP_OpticalFlow &_frontend)
 {
     // we assume mavlink messages will be sent into this driver
-    AP_OpticalFlow_MAV *sensor = new AP_OpticalFlow_MAV(_frontend);
+    AP_OpticalFlow_MAV *sensor = NEW_NOTHROW AP_OpticalFlow_MAV(_frontend);
     return sensor;
 }
 
