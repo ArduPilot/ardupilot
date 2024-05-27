@@ -172,7 +172,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         }
 
         // try to instantiate
-        yawEstimator = new EKFGSF_yaw();
+        yawEstimator = NEW_NOTHROW EKFGSF_yaw();
         if (yawEstimator == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 IMU%uGSF: allocation failed",(unsigned)imu_index);
             return false;

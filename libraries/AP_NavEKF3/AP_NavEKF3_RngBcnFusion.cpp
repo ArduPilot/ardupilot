@@ -43,7 +43,7 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     auto *beacon = AP::dal().beacon();
     if (beacon != nullptr) {
         const uint8_t count = beacon->count();
-        fusionReport = new BeaconFusion::FusionReport[count];
+        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
         if (fusionReport != nullptr) {
             numFusionReports = count;
         }
