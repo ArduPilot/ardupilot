@@ -167,7 +167,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
         // can only have one
         return nullptr;
     }
-    _view = new AP_AHRS_View(*this, rotation, pitch_trim_deg);
+    _view = NEW_NOTHROW AP_AHRS_View(*this, rotation, pitch_trim_deg);
     return _view;
 }
 
