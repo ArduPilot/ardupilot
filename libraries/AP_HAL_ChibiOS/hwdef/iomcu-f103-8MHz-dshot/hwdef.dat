@@ -4,3 +4,8 @@
 MCU STM32F103 STM32F103xB
 
 include ../iomcu-f103-dshot/hwdef.inc
+
+undef OSCILLATOR_HZ
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
