@@ -83,7 +83,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         return -1;
     }
     struct rfile &r = file[idx];
-    r.str = new ExpandingString;
+    r.str = NEW_NOTHROW ExpandingString;
     if (r.str == nullptr) {
         errno = ENOMEM;
         return -1;
@@ -229,7 +229,7 @@ void *AP_Filesystem_Sys::opendir(const char *pathname)
         errno = ENOENT;
         return nullptr;
     }
-    DirReadTracker *dtracker = new DirReadTracker;
+    DirReadTracker *dtracker = NEW_NOTHROW DirReadTracker;
     if (dtracker == nullptr) {
         errno = ENOMEM;
         return nullptr;

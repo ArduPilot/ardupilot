@@ -706,7 +706,7 @@ void *AP_Filesystem_FATFS::opendir(const char *pathdir)
     CHECK_REMOUNT_NULL();
 
     debug("Opendir %s", pathdir);
-    struct DIR_Wrapper *ret = new DIR_Wrapper;
+    struct DIR_Wrapper *ret = NEW_NOTHROW DIR_Wrapper;
     if (!ret) {
         return nullptr;
     }

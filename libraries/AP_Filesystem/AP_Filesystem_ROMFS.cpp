@@ -245,7 +245,7 @@ bool AP_Filesystem_ROMFS::set_mtime(const char *filename, const uint32_t mtime_s
 */
 FileData *AP_Filesystem_ROMFS::load_file(const char *filename)
 {
-    FileData *fd = new FileData(this);
+    FileData *fd = NEW_NOTHROW FileData(this);
     if (!fd) {
         return nullptr;
     }

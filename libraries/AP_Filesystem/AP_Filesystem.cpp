@@ -208,7 +208,7 @@ AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
     }
 
     const Backend &backend = backend_by_path(pathname);
-    DirHandle *h = new DirHandle;
+    DirHandle *h = NEW_NOTHROW DirHandle;
     if (!h) {
         return nullptr;
     }
