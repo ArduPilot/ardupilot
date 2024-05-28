@@ -10,7 +10,7 @@ import base64
 try:
     import monocypher
 except ImportError:
-    print("Please install monocypher with: python3 -m pip install pymonocypher")
+    print("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
     sys.exit(1)
 
 # get command line arguments
