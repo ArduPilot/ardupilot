@@ -38,30 +38,7 @@
 #define AN_GNSS_PACKET_RATE 5
 #define AN_AIRSPEED_AIDING_FREQUENCY 20
 
-#define an_packet_pointer(packet) packet->header
-#define an_packet_size(packet) (packet->length + AN_PACKET_HEADER_SIZE)*sizeof(uint8_t)
-#define an_packet_crc(packet) ((packet->header[4]<<8) | packet->header[3])
-
 extern const AP_HAL::HAL &hal;
-
-/*
-    Packet for requesting a Advanced Navigation Device to send its
-    device information (ANPP Packet 3) a single time.
-        0x9a-0xd1   - Header see ANPP Documentation for more info
-        0x03        - Request Packet 3 (Device Info Packet)
-*/
-static const uint8_t request_an_info[] {0x9a, 0x01, 0x01, 0x93, 0xd1, 0x03};
-
-/*
-    Packet for requesting a Advanced Navigation Device to set its
-    Packet Timer Period to 1000Hz
-        0xa0-0x6c   - Header see ANPP Documentation for more info
-        0x01        - True - Permanent effect
-        0x01        - True - UTC Sync
-        0xe8,0x03   - Packet Timer Period ms (uint16_t) (1000Hz)
-*/
-static const uint8_t timer_period_1000_hz[] {0xa0, 0xb4, 0x04, 0x3c, 0x6c, 0x01, 0x01, 0xe8, 0x03};
-
 
 /*
  * Function to decode ANPP Packets from raw buffer in the decoder structure
@@ -70,19 +47,17 @@ static const uint8_t timer_period_1000_hz[] {0xa0, 0xb4, 0x04, 0x3c, 0x6c, 0x01,
 int AP_ExternalAHRS_AdvancedNavigation_Decoder::decode_packet(uint8_t* out_buffer, size_t buf_size)
 {
     uint16_t decode_iterator = 0;
-    uint8_t header_lrc, length;
-    uint16_t crc;
 
     // Iterate through buffer until no more headers could be in buffer
     while (decode_iterator + AN_PACKET_HEADER_SIZE <= _buffer_length) {
-        header_lrc = _buffer[decode_iterator++];
+        const uint8_t header_lrc = _buffer[decode_iterator++];
 
         // Is this the start of a valid header?
         if (header_lrc == calculate_header_lrc(&_buffer[decode_iterator])) {
             decode_iterator++; // skip ID as it is unused (-Werror=unused-but-set-variable)
-            length = _buffer[decode_iterator++];
-            crc = _buffer[decode_iterator++];
-            crc |= _buffer[decode_iterator++] << 8;
+            const uint8_t length = _buffer[decode_iterator++];
+            const uint16_t crc = _buffer[decode_iterator] | (_buffer[decode_iterator + 1] << 8);
+            decode_iterator += 2;
 
             // If the packet length is over the edge of the buffer
             if (decode_iterator + length > _buffer_length) {
@@ -198,7 +173,7 @@ void AP_ExternalAHRS_AdvancedNavigation::update_thread(void)
         hal.scheduler->delay_microseconds(1000);
 
         // Send Aiding data to the device
-        if (option_is_set(AP_ExternalAHRS::OPTIONS::AN_ARSP_AID)) {
+        if (option_is_set(AP_ExternalAHRS::OPTIONS::ARSP_AID)) {
             if (!send_airspeed_aiding()) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ExternalAHRS: Unable to send airspeed aiding.");
             }
@@ -240,15 +215,24 @@ bool AP_ExternalAHRS_AdvancedNavigation::get_packets(void)
     return true;
 }
 
+bool AP_ExternalAHRS_AdvancedNavigation::request_device_information(void)
+{
+    /*
+        Packet for requesting a Advanced Navigation Device to send its
+        device information (ANPP Packet 3) a single time.
+            0x9a-0xd1   - Header see ANPP Documentation for more info
+            0x03        - Request Packet 3 (Device Info Packet)
+    */
+    const uint8_t request_an_info[] {0x9a, 0x01, 0x01, 0x93, 0xd1, 0x03};
+    return !(_uart->txspace() < sizeof(request_an_info) || _uart->write(request_an_info, sizeof(request_an_info)) != sizeof(request_an_info));
+}
+
 bool AP_ExternalAHRS_AdvancedNavigation::request_data(void)
 {
 
     // Update device info every 20 secs
     if ((AP_HAL::millis() - _last_device_info_pkt_ms > 20000) || (_last_device_info_pkt_ms == 0)) {
-        if (_uart->txspace() < sizeof(request_an_info)) {
-            return false;
-        }
-        _uart->write(request_an_info, sizeof(request_an_info));
+        request_device_information();
     }
 
     // Don't send a packet request unless the device is healthy
@@ -514,8 +498,16 @@ void AP_ExternalAHRS_AdvancedNavigation::send_status_report(GCS_MAVLINK &link) c
  */
 bool AP_ExternalAHRS_AdvancedNavigation::sendPacketRequest()
 {
-    // Set the device to use a period timer of 1000Hz
-    // See ANPP Packet Rates for more info
+    /*
+    Packet for requesting a Advanced Navigation Device to set its
+    Packet Timer Period to 1000Hz
+        0xa0-0x6c   - Header see ANPP Documentation for more info
+        0x01        - True - Permanent effect
+        0x01        - True - UTC Sync
+        0xe8,0x03   - Packet Timer Period ms (uint16_t) (1000Hz)
+    */
+    const uint8_t timer_period_1000_hz[] {0xa0, 0xb4, 0x04, 0x3c, 0x6c, 0x01, 0x01, 0xe8, 0x03};
+
     if (_uart->txspace() < sizeof(timer_period_1000_hz)) {
         return false;
     }
@@ -697,6 +689,15 @@ float AP_ExternalAHRS_AdvancedNavigation::get_pressure_error(void)
     return (0.5*(sq(20+airspeed_err_20ms()))) - (0.5*sq(20));
 }
 
+void AP_ExternalAHRS_AdvancedNavigation::send_ack_text(const char* packet_name, uint8_t result)
+{
+    if (result) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS: Acknowledgement of %s Failure: Code %d", packet_name, result);
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS: Acknowledgement of %s success", packet_name);
+}
+
 void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
 {
     // get current time
@@ -705,6 +706,28 @@ void AP_ExternalAHRS_AdvancedNavigation::handle_packet()
 
     // Update depending on received packet.
     switch (_msg.packet.id) {
+    case packet_id_acknowledge: {
+        // const char* packet_prefix;
+        switch (_msg.packet.payload.acknowledge.id_acknowledged){
+            case packet_id_acknowledge:
+                return;
+            case packet_id_filter_options:
+                send_ack_text("Filter Options", _msg.packet.payload.acknowledge.result);
+                return;
+            case packet_id_packet_periods:
+                send_ack_text("Packet Periods", _msg.packet.payload.acknowledge.result);
+                return;
+            case packet_id_packet_timer_period:
+                send_ack_text("Packet Timer Period", _msg.packet.payload.acknowledge.result);
+                return;
+            default:
+                char buffer [15];
+                snprintf(buffer, sizeof(buffer), "Packet %d", _msg.packet.payload.acknowledge.id_acknowledged);
+                send_ack_text(buffer, _msg.packet.payload.acknowledge.result);
+                return;
+        }
+        break;
+    }
     case packet_id_device_information: {
         _last_device_info_pkt_ms = now;
         _device_id = _msg.packet.payload.device_info.device_id;

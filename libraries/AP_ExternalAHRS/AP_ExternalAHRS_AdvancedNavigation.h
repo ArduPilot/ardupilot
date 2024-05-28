@@ -452,6 +452,7 @@ private:
 
         union payload {
             uint8_t raw_packet[AN_MAXIMUM_PACKET_SIZE];
+            AN_ACKNOWLEDGE acknowledge;
             AN_DEVICE_INFO device_info;
             AN_SYSTEM_STATE system_state;
             AN_VELOCITY_STANDARD_DEVIATION velocity_standard_deviation;
@@ -534,9 +535,11 @@ private:
     bool get_baro_capability(void) const;
     bool set_filter_options(bool gnss_en, vehicle_type_e vehicle_type, bool permanent = false);
     bool set_filter_options(AN_FILTER_OPTIONS options_packet);
+    bool request_device_information();
     bool send_airspeed_aiding(void);
     float get_airspeed_error(float airspeed);
     float get_pressure_error(void);
+    void send_ack_text(const char* packet_name, uint8_t result);
     void handle_packet();
 };
 

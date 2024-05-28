@@ -74,7 +74,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @DisplayName: External AHRS options
     // @Description: External AHRS options bitmask
     // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.
-    // @Bitmask: 1:Provide airspeed aiding to Advanced Navigation device from airspeed sensors.
+    // @Bitmask: 1:Provide airspeed aiding to ExternalAHRS device from airspeed sensors.
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
 
@@ -142,7 +142,7 @@ void AP_ExternalAHRS::init(void)
 #if AP_EXTERNAL_AHRS_ADNAV_ENABLED
     case DevType::AdNav:
         backend = new AP_ExternalAHRS_AdvancedNavigation(this, state);
-        break;
+        return;
 #endif
     }
 
