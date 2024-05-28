@@ -686,7 +686,7 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         break;
     }
     case MOTOR_FRAME_TYPE_H: {
-        // H frame set-up - same as X but motors spin in opposite directiSons
+        // H frame set-up - same as X but motors spin in opposite directions
         _frame_type_string = "H";
         static const AP_MotorsMatrix::MotorDef motors[] {
             {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
