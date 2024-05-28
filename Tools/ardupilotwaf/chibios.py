@@ -235,7 +235,7 @@ def sign_firmware(image, private_keyfile):
     try:
         import monocypher
     except ImportError:
-        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
         return None
     try:
         key = open(private_keyfile, 'r').read()
