@@ -1,6 +1,9 @@
 Antenna Tracker Release Notes:
 ------------------------------
+Release 4.5.3 28th May 2024
 
+No changes from 4.5.3-beta1
+------------------------------------------------------------------
 Release 4.5.3-beta1 16th May 2024
 
 Changes from 4.5.2
