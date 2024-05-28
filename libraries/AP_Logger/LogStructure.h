@@ -461,6 +461,21 @@ struct PACKED log_RFND {
 };
 
 /*
+  rangefinder - Logging LRD1 Radar Alt
+*/
+struct PACKED log_LRD1
+{
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  uint16_t dist_24_cm;  // Distance from 24GHz Freq (>5m)
+  uint16_t dist_60_cm;  // Distance from 60GHz Freq (<5m)
+  uint16_t dist_int_cm; // Distance from integrating 24 and 60 Ghz
+  uint8_t snr_24;       // Signal to Noise Ratio 24 Ghz
+  uint8_t snr_60;       // Signal to Noise Ratio 60 Ghz
+  uint8_t snr_int;      // Signal to Noise Ratio Integrated signal
+};
+
+/*
   terrain log structure
  */
 struct PACKED log_TERRAIN {
@@ -1253,6 +1268,8 @@ LOG_STRUCTURE_FROM_CAMERA \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
+    { LOG_LRD1_MSG, sizeof(log_LRD1), \
+      "LRD1", "QCCCBBB", "TimeUS,Dis24,Dis60,DisInt,Snr24,Snr60,SnrInt", "smmm---", "FBBB---", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
@@ -1374,6 +1391,7 @@ enum LogMessages : uint8_t {
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
+    LOG_LRD1_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
