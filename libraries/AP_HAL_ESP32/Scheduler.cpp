@@ -549,9 +549,9 @@ void Scheduler::print_main_loop_rate(void)
     if (AP_HAL::millis64() - last_run > 10000) {
         last_run = AP_HAL::millis64();
         // null pointer in here...
-        //const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
-        //const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
-        //hal.console->printf("loop_rate: actual: %uHz, expected: %uHz\n",
+        const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
+        const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
+        hal.console->printf("loop_rate: actual: %fHz, expected: %uHz\n", actual_loop_rate, expected_loop_rate);
     }
 }
 
