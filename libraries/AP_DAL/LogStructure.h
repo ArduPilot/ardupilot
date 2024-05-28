@@ -38,7 +38,8 @@
     LOG_RSLL_MSG, \
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
-    LOG_RBOH_MSG
+    LOG_RBOH_MSG, \
+    LOG_RRLT_MSG
 
 // Replay Data Structures
 struct log_RFRH {
@@ -369,6 +370,19 @@ struct log_RBOH {
     uint8_t _end;
 };
 
+// @LoggerMessage: RRLT
+// @Description: Replay range to location data
+struct log_RRLT {
+    float range;
+    float uncertainty;
+    int32_t lat;
+    int32_t lng;
+    int32_t alt;
+    uint32_t timeStamp_ms;
+    uint8_t index;
+    uint8_t _end;
+};
+
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
 #define LOG_STRUCTURE_FROM_DAL        \
@@ -435,4 +449,6 @@ struct log_RBOH {
     { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \
       "RWOH", "ffIffff", "DA,DT,TS,PX,PY,PZ,R", "-------", "-------" }, \
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
-      "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" },
+      "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
+    { LOG_RRLT_MSG, RLOG_SIZE(RRLT),                                   \
+      "RRLT", "ffiiiIB", "Range,Uncertainty,Lat,Lon,Alt,TS,Idx", "--DUm-#", "--GGB--" },

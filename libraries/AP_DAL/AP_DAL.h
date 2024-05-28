@@ -86,6 +86,7 @@ public:
 
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
+    void log_writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index);
 
     enum class StateMask {
         ARMED = (1U<<0),
@@ -328,6 +329,7 @@ public:
     void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_RRLT &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
@@ -354,6 +356,7 @@ private:
     struct log_RWOH _RWOH;
     struct log_RBOH _RBOH;
     struct log_RSLL _RSLL;
+    struct log_RRLT _RRLT;
 
     // cached variables for speed:
     uint32_t _micros;
