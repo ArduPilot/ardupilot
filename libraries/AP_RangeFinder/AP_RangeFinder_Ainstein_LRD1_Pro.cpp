@@ -189,15 +189,15 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         {
             state.status = RangeFinder::Status::Good;
         }
-    }
 
-    /* Logging Point Start */
-    #if HAL_LOGGING_ENABLED
-    if(has_data){
-        Log_LRD1_Pro(reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, snr_24, snr_60, snr_Int);
+        /* Logging Point Start */
+#if HAL_LOGGING_ENABLED
+        if (has_data)
+        {
+            Log_LRD1_Pro(reading_24Gz_cm, reading_60Gz_cm, reading_Int_cm, snr_24, snr_60, snr_Int);
+        }
+#endif
     }
-    #endif
-
     return has_data;
 }
 
