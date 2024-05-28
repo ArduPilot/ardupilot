@@ -131,14 +131,13 @@ void GCS_MAVLINK::handle_request_data_stream(const mavlink_message_t &msg)
     mavlink_request_data_stream_t packet;
     mavlink_msg_request_data_stream_decode(&msg, &packet);
 
-    int16_t freq = 0;     // packet frequency
+    int16_t freq = 0;     // stop sending
 
-    if (packet.start_stop == 0)
-        freq = 0;                     // stop sending
-    else if (packet.start_stop == 1)
+    if (packet.start_stop == 1) {
         freq = packet.req_message_rate;                     // start sending
-    else
+    } else if (packet.start_stop > 1) {
         return;
+    }
 
     // if stream_id is still NUM_STREAMS at the end of this switch
     // block then either we set stream rates for all streams, or we
