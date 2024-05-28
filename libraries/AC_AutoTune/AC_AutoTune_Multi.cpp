@@ -1097,38 +1097,6 @@ void AC_AutoTune_Multi::Log_AutoTuneDetails()
     Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
 }
 
-float AC_AutoTune_Multi::target_angle_max_rp_cd() const
-{
-    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MAX_RP_SCALE;
-}
-
-float AC_AutoTune_Multi::target_angle_max_y_cd() const
-{
-    // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
-    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MAX_Y_SCALE;
-}
-
-float AC_AutoTune_Multi::target_angle_min_rp_cd() const
-{
-    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MIN_RP_SCALE;
-}
-
-float AC_AutoTune_Multi::target_angle_min_y_cd() const
-{
-    // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
-    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MIN_Y_SCALE;
-}
-
-float AC_AutoTune_Multi::angle_lim_max_rp_cd() const
-{
-    return attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_ABORT_RP_SCALE;
-}
-
-float AC_AutoTune_Multi::angle_lim_neg_rpy_cd() const
-{
-    return attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_NEG_RP_SCALE;
-}
-
 // @LoggerMessage: ATUN
 // @Description: Copter/QuadPlane AutoTune
 // @Vehicles: Copter, Plane
@@ -1183,6 +1151,38 @@ void AC_AutoTune_Multi::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds
         rate_cds*0.01f);
 }
 #endif  // HAL_LOGGING_ENABLED
+
+float AC_AutoTune_Multi::target_angle_max_rp_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MAX_RP_SCALE;
+}
+
+float AC_AutoTune_Multi::target_angle_max_y_cd() const
+{
+    // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MAX_Y_SCALE;
+}
+
+float AC_AutoTune_Multi::target_angle_min_rp_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MIN_RP_SCALE;
+}
+
+float AC_AutoTune_Multi::target_angle_min_y_cd() const
+{
+    // Aircraft with small lean angle will generally benefit from proportional smaller yaw twitch size
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_TARGET_ANGLE_MIN_Y_SCALE;
+}
+
+float AC_AutoTune_Multi::angle_lim_max_rp_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_ABORT_RP_SCALE;
+}
+
+float AC_AutoTune_Multi::angle_lim_neg_rpy_cd() const
+{
+    return attitude_control->lean_angle_max_cd() * AUTOTUNE_ANGLE_NEG_RP_SCALE;
+}
 
 void AC_AutoTune_Multi::twitch_test_init()
 {
