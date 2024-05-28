@@ -12,7 +12,7 @@ firmware doesn't match any of the public keys in the bootloader.
 To generate a public/private key pair, run the following command:
 
 ```
-  python3 -m pip install pymonocypher
+  python3 -m pip install pymonocypher==3.1.3.2
   Tools/scripts/signing/generate_keys.py NAME
 ```
 
