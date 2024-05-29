@@ -2224,9 +2224,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
+            # The EKF_STATUS_REPORT does not tell us when the good to align check passes, so the minimum time
+            # value of 3.0 seconds is an arbitrary value set on inspection of dataflash logs from this test
             self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
-            if self.get_sim_time() < (t_enabled+9):
-                raise NotAchievedException("GPS use re-started too quickly after jamming")
+            time_since_jamming_stopped = self.get_sim_time() - t_enabled
+            if time_since_jamming_stopped < 3:
+                raise NotAchievedException("GPS use re-started %f sec after jamming stopped" % time_since_jamming_stopped)
             self.set_rc(3, 1000)
             self.fly_home_land_and_disarm()
             self.progress("max-divergence: %fm" % (self.max_divergence,))
