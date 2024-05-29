@@ -234,7 +234,8 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
             auto &gps = dal.gps();
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS
+                && gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
@@ -348,7 +349,8 @@ bool NavEKF3_core::getLLH(Location &loc) const
 bool NavEKF3_core::getGPSLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
-    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+    if (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS &&
+        gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
         loc = gps.location(selected_gps);
         return true;
     }
