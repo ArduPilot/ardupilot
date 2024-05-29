@@ -101,5 +101,4 @@ python -m pip install --user -U argparse pyserial pexpect future lxml
 python -m pip install --user -U intelhex
 python -m pip install --user -U numpy
 python -m pip install --user -U edn_format
-python -m pip install --user -U empy
-
+python -m pip install --user -U empy==3.3.4
