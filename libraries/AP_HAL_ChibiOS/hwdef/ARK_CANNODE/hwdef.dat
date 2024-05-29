@@ -69,9 +69,6 @@ define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
-
 # use pixracer style 3-LED indicators
 define HAL_HAVE_PIXRACER_LED
 
@@ -122,6 +119,7 @@ define HAL_PERIPH_ENABLE_NOTIFY
 define CAN_APP_NODE_NAME "org.ardupilot.ARK_CANNODE"
 
 # enable ESC control
+define HAL_SERIAL_ESC_COMM_ENABLED 1
 define HAL_SUPPORT_RCOUT_SERIAL 1
 define HAL_WITH_ESC_TELEM 1
 define AP_SERIALLED_ENABLED 1
@@ -130,3 +128,6 @@ define AP_SERIALLED_ENABLED 1
 define HAL_PERIPH_ENABLE_RANGEFINDER
 # disable rangefinder by default
 define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
+
+define HAL_RCIN_THREAD_ENABLED 1
+define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1

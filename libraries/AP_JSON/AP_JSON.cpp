@@ -72,7 +72,7 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
 
     char *start = strchr(buf, '{');
     if (!start) {
-        ::printf("Invalid json %s", filename);
+        ::printf("Invalid json %s\n", filename);
         delete[] buf;
         return nullptr;
     }
@@ -89,13 +89,13 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
 
     AP_JSON::value *obj = new AP_JSON::value;
     if (obj == nullptr) {
-        ::printf("Invalid allocate json for %s", filename);
+        ::printf("Invalid allocate json for %s\n", filename);
         delete[] buf;
         return nullptr;
     }
     std::string err = AP_JSON::parse(*obj, start);
     if (!err.empty()) {
-        ::printf("parse failed for json %s", filename);
+        ::printf("parse failed for json %s\n", filename);
         delete obj;
         delete[] buf;
         return nullptr;

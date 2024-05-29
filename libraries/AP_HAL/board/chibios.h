@@ -18,13 +18,6 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_20
 #endif
 
-#ifndef HAL_GPIO_LED_ON
-#define HAL_GPIO_LED_ON           0
-#endif
-#ifndef HAL_GPIO_LED_OFF
-#define HAL_GPIO_LED_OFF          1
-#endif
-
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
 #endif

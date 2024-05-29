@@ -214,7 +214,7 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
       Q_ASSIST_SPEED really should be enabled for all quadplanes except tailsitters
      */
     if (check_enabled(ARMING_CHECK_PARAMETERS) &&
-        is_zero(plane.quadplane.assist_speed) &&
+        is_zero(plane.quadplane.assist.speed) &&
         !plane.quadplane.tailsitter.enabled()) {
         check_failed(display_failure,"Q_ASSIST_SPEED is not set");
         ret = false;
@@ -437,7 +437,7 @@ bool AP_Arming_Plane::mission_checks(bool report)
 {
     // base checks
     bool ret = AP_Arming::mission_checks(report);
-    if (plane.mission.get_landing_sequence_start() > 0 && plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
+    if (plane.mission.contains_item(MAV_CMD_DO_LAND_START) && plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
         ret = false;
         check_failed(ARMING_CHECK_MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
     }

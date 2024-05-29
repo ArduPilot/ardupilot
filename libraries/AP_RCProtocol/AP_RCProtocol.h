@@ -81,6 +81,18 @@ public:
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         MAVLINK_RADIO = 15,
 #endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+        JOYSTICK_SFML = 16,
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+        UDP = 17,
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+        FDM = 18,
+#endif
+#if AP_RCPROTOCOL_RADIO_ENABLED
+        RADIO = 19,
+#endif
         NONE    //last enum always is None
     };
 
@@ -115,6 +127,12 @@ public:
     void disable_for_pulses(enum rcprotocol_t protocol) {
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
+
+// in the case we've disabled most backends then the "return true" in
+// the following method can never be reached, and the compiler gets
+// annoyed at that.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-unreachable"
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
@@ -168,11 +186,24 @@ public:
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
         case MAVLINK_RADIO:
 #endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+        case JOYSTICK_SFML:
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+        case UDP:
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+        case FDM:
+#endif
+#if AP_RCPROTOCOL_RADIO_ENABLED
+        case RADIO:
+#endif
         case NONE:
             return false;
         }
         return false;
     }
+#pragma GCC diagnostic pop
 
     uint8_t num_channels();
     uint16_t read(uint8_t chan);

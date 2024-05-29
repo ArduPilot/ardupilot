@@ -127,10 +127,10 @@ public:
     // parameters for example.
     void notify_no_such_mode(uint8_t mode_number);
 
+#if AP_SCHEDULER_ENABLED
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
-#if AP_SCHEDULER_ENABLED
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
 #endif
 
@@ -289,6 +289,11 @@ public:
      */
     virtual bool get_rate_ef_targets(Vector3f& rate_ef_targets) const { return false; }
 
+#if AP_AHRS_ENABLED
+    virtual bool set_home_to_current_location(bool lock) WARN_IF_UNUSED { return false; }
+    virtual bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED { return false; }
+#endif
+
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -305,8 +310,10 @@ protected:
     AP_CANManager can_mgr;
 #endif
 
+#if AP_SCHEDULER_ENABLED
     // main loop scheduler
     AP_Scheduler scheduler;
+#endif
 
     // IMU variables
     // Integration time; time last loop took to run
@@ -456,7 +463,9 @@ protected:
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
+#if AP_SCHEDULER_ENABLED
     static const struct AP_Scheduler::Task scheduler_tasks[];
+#endif
 
 #if OSD_ENABLED
     void publish_osd_info();
@@ -490,14 +499,16 @@ protected:
 
 private:
 
+#if AP_SCHEDULER_ENABLED
     // delay() callback that processing MAVLink packets
     static void scheduler_delay_callback();
+#endif
 
     // if there's been a watchdog reset, notify the world via a
     // statustext:
     void send_watchdog_reset_statustext();
 
-#if AP_INERTIALSENSOR_ENABLED
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // update the harmonic notch for throttle based notch
     void update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch);
 
@@ -506,7 +517,7 @@ private:
 
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
-#endif
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
     // decimation for 1Hz update
     uint8_t one_Hz_counter;
@@ -514,7 +525,9 @@ private:
 
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     uint32_t _last_notch_update_ms[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS]; // last time update_dynamic_notch() was run
+#endif
 
     static AP_Vehicle *_singleton;
 

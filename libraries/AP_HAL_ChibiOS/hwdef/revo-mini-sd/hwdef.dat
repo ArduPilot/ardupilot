@@ -1,6 +1,6 @@
 # Revo-mini target with I2C and SD card support
 
-AUTOBUILD_TARGETS
+
 
 include ../revo-mini-i2c/hwdef.dat
 
@@ -19,8 +19,4 @@ define HAL_OS_FATFS_IO 1
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
-
-define HAL_GYROFFT_ENABLED 0
-
-# save some flash
-include ../include/save_some_flash.inc
+AUTOBUILD_TARGETS None

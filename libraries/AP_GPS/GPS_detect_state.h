@@ -25,28 +25,39 @@
   specific type that it handles.
  */
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_NMEA_ENABLED
 struct NMEA_detect_state {
     uint8_t step;
     uint8_t ck;
 };
+#endif
 
+#if AP_GPS_SIRF_ENABLED
 struct SIRF_detect_state {
     uint16_t checksum;
     uint8_t step, payload_length, payload_counter;
 };
+#endif
 
+#if AP_GPS_UBLOX_ENABLED
 struct UBLOX_detect_state {
     uint8_t payload_length, payload_counter;
     uint8_t step;
     uint8_t ck_a, ck_b;
 };
+#endif
 
+#if AP_GPS_ERB_ENABLED
 struct ERB_detect_state {
     uint8_t payload_length, payload_counter;
     uint8_t step;
     uint8_t ck_a, ck_b;
 };
+#endif
 
+#if AP_GPS_SBP_ENABLED
 struct SBP_detect_state {
     enum {
         WAITING = 0,
@@ -63,8 +74,9 @@ struct SBP_detect_state {
     uint16_t crc;
     uint8_t heartbeat_buff[4];
 };
+#endif
 
-
+#if AP_GPS_SBP2_ENABLED
 struct SBP2_detect_state {
     enum {
         WAITING = 0,
@@ -81,3 +93,4 @@ struct SBP2_detect_state {
     uint16_t crc;
     uint8_t heartbeat_buff[4];
 };
+#endif

@@ -129,6 +129,9 @@ PB1 AUX_ADC2 ADC1 SCALE(1)
 # And the analog input for airspeed (rarely used these days).
 PC5 PRESSURE_SENS ADC1 SCALE(2)
 
+# Servo rail analog input
+PF13 FMU_SERVORAIL_VCC_SENS ADC2 SCALE(2) 
+
 # RSSI Analog Input
 PC0 RSSI_IN ADC1
 
@@ -263,9 +266,6 @@ define HAL_OS_FATFS_IO 1
 
 # Control Zero has a TriColor LED, Red, Green, Blue
 define HAL_HAVE_PIXRACER_LED
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
 
 # LED setup for PixracerLED driver
 PB4 LED_R OUTPUT HIGH GPIO(0)

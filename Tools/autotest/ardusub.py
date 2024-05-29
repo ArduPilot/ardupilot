@@ -1,13 +1,15 @@
 '''
 Dive ArduSub in SITL
 
+Depth of water is 50m, the ground is flat
+Parameters are in-code defaults plus default_params/sub.parm
+
 AP_FLAKE8_CLEAN
 '''
 
 from __future__ import print_function
 import os
 import sys
-import time
 
 from pymavlink import mavutil
 
@@ -202,6 +204,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.context_pop()
 
+        # restart SITL RF driver
+        self.reboot_sitl()
+
         if ex:
             raise ex
 
@@ -262,6 +267,157 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(4)
         self.wait_statustext('rangefinder target is', check_context=True)
         self.watch_distance_maintained()
+
+        self.disarm_vehicle()
+        self.context_pop()
+
+    def prepare_synthetic_seafloor_test(self, sea_floor_depth):
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN_CM": 10,
+            "RNGFND1_MAX_CM": 3000,
+            "SCR_USER1": 2,                 # Configuration bundle
+            "SCR_USER2": sea_floor_depth,   # Depth in meters
+            "SCR_USER3": 101,               # Output log records
+        })
+
+        self.install_example_script_context("sub_test_synthetic_seafloor.lua")
+
+        # Reboot to enable scripting.
+        self.reboot_sitl()
+        self.set_rc_default()
+        self.wait_ready_to_arm()
+
+    def watch_true_distance_maintained(self, match_distance, delta=0.3, timeout=5.0, final_waypoint=0):
+        """Watch and wait for the rangefinder reading to be maintained"""
+
+        def get_true_distance():
+            """Return the True distance from the simulated range finder"""
+            m_true = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=3.0)
+            if m_true is None:
+                return m_true
+            idx_tr = m_true.text.find('#TR#')
+            if idx_tr < 0:
+                return None
+            return float(m_true.text[(idx_tr+4):(idx_tr+12)])
+
+        tstart = self.get_sim_time_cached()
+        self.progress('Distance to be watched: %.2f (+/- %.2f)' % (match_distance, delta))
+        max_delta = 0.0
+
+        while True:
+            timed_out = self.get_sim_time_cached() - tstart > timeout
+            # If final_waypoint>0 then timeout is failure, otherwise success
+            if timed_out and final_waypoint > 0:
+                raise NotAchievedException(
+                    "Mission not complete: want waypoint %i, only made it to waypoint %i" %
+                    (final_waypoint, self.mav.waypoint_current()))
+            if timed_out:
+                self.progress('Distance hold done. Max delta:%.2fm' % max_delta)
+                return
+
+            true_distance = get_true_distance()
+            if true_distance is None:
+                continue
+            match_delta = abs(true_distance - match_distance)
+            if match_delta > max_delta:
+                max_delta = match_delta
+            if match_delta > delta:
+                raise NotAchievedException(
+                    "Distance not maintained: want %.2f (+/- %.2f) got=%.2f (%.2f)" %
+                    (match_distance, delta, true_distance, match_delta))
+            if final_waypoint > 0:
+                if self.mav.waypoint_current() >= final_waypoint:
+                    self.progress('Distance hold during mission done. Max delta:%.2fm' % max_delta)
+                    return
+
+    def SimTerrainSurftrak(self):
+        """Move at a constant height above synthetic sea floor"""
+
+        sea_floor_depth = 50    # Depth of sea floor at location of test
+        match_distance = 15     # Desired sub distance from sea floor
+        start_altitude = -sea_floor_depth+match_distance
+        end_altitude = start_altitude - 10
+        validation_delta = 1.5  # Largest allowed distance between sub height and desired height
+
+        self.context_push()
+        self.prepare_synthetic_seafloor_test(sea_floor_depth)
+        self.change_mode('MANUAL')
+        self.arm_vehicle()
+
+        # Dive to match_distance off the bottom in preparation for the mission
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(1)
+
+        # Turn on surftrak and move around
+        self.change_mode(21)
+
+        # Go south over the ridge.
+        self.reach_heading_manual(180)
+        self.set_rc(Joystick.Forward, 1650)
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=60)
+        self.set_rc(Joystick.Forward, 1500)
+
+        # Shift west a bit
+        self.reach_heading_manual(270)
+        self.set_rc(Joystick.Forward, 1650)
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=5)
+        self.set_rc(Joystick.Forward, 1500)
+
+        # Go south over the plateau
+        self.reach_heading_manual(180)
+        self.set_rc(Joystick.Forward, 1650)
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=60)
+
+        # The mission ends at end_altitude. Do a check to insure that the sub is at this altitude
+        self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
+                           relative=False, timeout=1)
+
+        self.set_rc(Joystick.Forward, 1500)
+
+        self.disarm_vehicle()
+        self.context_pop()
+
+    def SimTerrainMission(self):
+        """Mission at a constant height above synthetic sea floor"""
+
+        sea_floor_depth = 50    # Depth of sea floor at location of test
+        match_distance = 15     # Desired sub distance from sea floor
+        start_altitude = -sea_floor_depth+match_distance
+        end_altitude = start_altitude - 10
+        validation_delta = 1.5  # Largest allowed distance between sub height and desired height
+
+        self.context_push()
+        self.prepare_synthetic_seafloor_test(sea_floor_depth)
+
+        # The synthetic seafloor has an east-west ridge south of the sub.
+        # The mission contained in terrain_mission.txt instructs the sub
+        # to remain at 15m above the seafloor and travel south over the
+        # ridge. Then the sub moves west and travels north over the ridge.
+        filename = "terrain_mission.txt"
+        self.load_mission(filename)
+
+        self.change_mode('MANUAL')
+        self.arm_vehicle()
+
+        # Dive to match_distance off the bottom in preparation for the mission
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(1)
+
+        self.change_mode('AUTO')
+        self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=500.0, final_waypoint=4)
+
+        # The mission ends at end_altitude. Do a check to insure that the sub is at this altitude.
+        self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
+                           relative=False, timeout=1)
 
         self.disarm_vehicle()
         self.context_pop()
@@ -477,39 +633,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.change_mode('MANUAL')
         self.disarm_vehicle()
 
-    def reboot_sitl(self):
-        """Reboot SITL instance and wait it to reconnect."""
-        # our battery is reset to full on reboot.  So reduce it to 10%
-        # and wait for it to go above 50.
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_BATTERY_RESET,
-            p1=65535,   # battery mask
-            p2=10,      # percentage
-        )
-        self.run_cmd_reboot()
-        tstart = time.time()
-        while True:
-            if time.time() - tstart > 30:
-                raise NotAchievedException("Did not detect reboot")
-            # ask for the message:
-            batt = None
-            try:
-                self.send_cmd(
-                    mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
-                    p1=mavutil.mavlink.MAVLINK_MSG_ID_BATTERY_STATUS,
-                )
-                batt = self.mav.recv_match(type='BATTERY_STATUS',
-                                           blocking=True,
-                                           timeout=1)
-            except ConnectionResetError:
-                pass
-            self.progress("Battery: %s" % str(batt))
-            if batt is None:
-                continue
-            if batt.battery_remaining > 50:
-                break
-        self.initialise_after_reboot_sitl()
-
     def DoubleCircle(self):
         '''Test entering circle twice'''
         self.change_mode('CIRCLE')
@@ -522,13 +645,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def default_parameter_list(self):
         ret = super(AutoTestSub, self).default_parameter_list()
         ret["FS_GCS_ENABLE"] = 0  # FIXME
-        return ret
-
-    def disabled_tests(self):
-        ret = super(AutoTestSub, self).disabled_tests()
-        ret.update({
-            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
-        })
         return ret
 
     def MAV_CMD_NAV_LOITER_UNLIM(self):
@@ -563,7 +679,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def MAV_CMD_DO_CHANGE_SPEED(self):
         '''ensure vehicle changes speeds when DO_CHANGE_SPEED received'''
         items = [
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -3),  # Dive so we have constrat drag
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -3),  # Dive so we have constant drag
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, -1),
             (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
         ]
@@ -621,6 +737,88 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
 
+    def TerrainMission(self):
+        """Mission using surface tracking"""
+
+        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
+            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+
+        filename = "terrain_mission.txt"
+        self.progress("Executing mission %s" % filename)
+        self.load_mission(filename)
+        self.set_rc_default()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_waypoint(1, 4, max_dist=5)
+        self.delay_sim_time(3)
+
+        # Expect sub to hover at final altitude
+        self.assert_altitude(-36.0)
+
+        self.disarm_vehicle()
+        self.progress("Mission OK")
+
+    def wait_ekf_happy_const_pos(self, timeout=45):
+        # All of these must be set for arming to happen in constant position mode:
+        required_value = (mavutil.mavlink.EKF_ATTITUDE |
+                          mavutil.mavlink.EKF_VELOCITY_HORIZ |
+                          mavutil.mavlink.EKF_VELOCITY_VERT |
+                          mavutil.mavlink.EKF_POS_VERT_ABS |
+                          mavutil.mavlink.EKF_CONST_POS_MODE)
+
+        # None of these bits must be set for arming to happen:
+        error_bits = mavutil.mavlink.EKF_UNINITIALIZED
+
+        self.wait_ekf_flags(required_value, error_bits, timeout=timeout)
+
+    def wait_ready_to_arm_const_pos(self, timeout=120):
+        self.progress("Waiting for ready to arm (constant position mode)")
+        start = self.get_sim_time()
+        self.wait_ekf_happy_const_pos(timeout=timeout)
+        armable_time = self.get_sim_time() - start
+        self.progress("Took %u seconds to become armable" % armable_time)
+        self.total_waiting_to_arm_time += armable_time
+        self.waiting_to_arm_count += 1
+
+    def collected_msgs(self, msg_type):
+        c = self.context_get()
+        if msg_type not in c.collections:
+            raise NotAchievedException("Not collecting (%s)" % str(msg_type))
+        return c.collections[msg_type]
+
+    def SetGlobalOrigin(self):
+        """Test SET_GPS_GLOBAL_ORIGIN mav msg"""
+        self.context_push()
+        self.set_parameters({
+            'GPS1_TYPE': 0,             # Disable the GPS
+            'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to a GPS
+        })
+        self.reboot_sitl()
+
+        # Wait for the EKF to be happy in constant position mode
+        self.wait_ready_to_arm_const_pos()
+
+        if self.current_onboard_log_contains_message('ORGN'):
+            raise NotAchievedException("Found unexpected ORGN message")
+
+        self.context_collect('GPS_GLOBAL_ORIGIN')
+
+        # This should set the EKF origin, write an ORGN msg to df and a GPS_GLOBAL_ORIGIN msg to MAVLink
+        self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
+        self.delay_sim_time(1)
+
+        if not self.current_onboard_log_contains_message('ORGN'):
+            raise NotAchievedException("Did not find expected ORGN message")
+
+        num_mavlink_origin_msgs = len(self.collected_msgs('GPS_GLOBAL_ORIGIN'))
+        if num_mavlink_origin_msgs != 1:
+            raise NotAchievedException("Expected 1 GPS_GLOBAL_ORIGIN message, found %d" % num_mavlink_origin_msgs)
+
+        self.context_pop()
+
+        # restart GPS driver
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -629,6 +827,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.DiveManual,
             self.AltitudeHold,
             self.Surftrak,
+            self.SimTerrainSurftrak,
+            self.SimTerrainMission,
             self.RngfndQuality,
             self.PositionHold,
             self.ModeChanges,
@@ -644,6 +844,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
+            self.TerrainMission,
+            self.SetGlobalOrigin,
         ])
 
         return ret

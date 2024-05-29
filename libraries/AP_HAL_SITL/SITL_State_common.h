@@ -14,6 +14,7 @@
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
 #include <SITL/SIM_Vicon.h>
+#include <SITL/SIM_RF_Ainstein_LR_D1.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
@@ -52,6 +53,8 @@
 #include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
 
+#include <SITL/SIM_ELRS.h>
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -87,7 +90,7 @@ public:
 
     // create a simulated serial device; type of device is given by
     // name parameter
-    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg);
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
 
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
@@ -122,6 +125,8 @@ public:
     SITL::Vicon *vicon;
 #endif
 
+    // simulated Ainstein LR-D1 rangefinder:
+    SITL::RF_Ainstein_LR_D1 *ainsteinlrd1;
     // simulated Benewake tf02 rangefinder:
     SITL::RF_Benewake_TF02 *benewake_tf02;
     // simulated Benewake tf03 rangefinder:
@@ -227,6 +232,9 @@ public:
 
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
+
+    // Simulated ELRS radio
+    SITL::ELRS *elrs;
 
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor

@@ -10,7 +10,7 @@
  * TODO: "channel 7 option" to lock onto "pointed at" target
  * TODO: do better in terms of loitering around the moving point; may need a PID?  Maybe use loiter controller somehow?
  * TODO: extrapolate target vehicle position using its velocity and acceleration
- * TODO: ensure AC_AVOID_ENABLED is true because we rely on it velocity limiting functions
+ * TODO: ensure AP_AVOIDANCE_ENABLED is true because we rely on it velocity limiting functions
  */
 
 // initialise follow mode

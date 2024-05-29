@@ -186,7 +186,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &copter.ServoRelayEvents,      update_events, 50,  75,  60),
 #endif
-    SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,             accumulate,    50,  90,  63),
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  69),
 #endif
@@ -273,6 +272,22 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Copter::_failsafe_priorities[7];
 
+
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if MODE_GUIDED_ENABLED == ENABLED
+// set target location (for use by external control and scripting)
+bool Copter::set_target_location(const Location& target_loc)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    return mode_guided.set_destination(target_loc);
+}
+#endif //MODE_GUIDED_ENABLED == ENABLED
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED == ENABLED
 // start takeoff to given altitude (for use by scripting)
@@ -288,17 +303,6 @@ bool Copter::start_takeoff(float alt)
         return true;
     }
     return false;
-}
-
-// set target location (for use by scripting)
-bool Copter::set_target_location(const Location& target_loc)
-{
-    // exit if vehicle is not in Guided mode or Auto-Guided mode
-    if (!flightmode->in_guided_mode()) {
-        return false;
-    }
-
-    return mode_guided.set_destination(target_loc);
 }
 
 // set target position (for use by scripting)
@@ -522,9 +526,11 @@ void Copter::loop_rate_logging()
         Log_Write_Attitude();
         Log_Write_PIDS(); // only logs if PIDS bitmask is set
     }
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     if (should_log(MASK_LOG_FTN_FAST)) {
         AP::ins().write_notch_log_messages();
     }
+#endif
     if (should_log(MASK_LOG_IMU_FAST)) {
         AP::ins().Write_IMU();
     }
@@ -764,7 +770,9 @@ void Copter::update_altitude()
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
         if (!should_log(MASK_LOG_FTN_FAST)) {
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
             AP::ins().write_notch_log_messages();
+#endif
 #if HAL_GYROFFT_ENABLED
             gyro_fft.write_log_messages();
 #endif

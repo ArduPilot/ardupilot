@@ -37,6 +37,7 @@ static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
+static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_PING_MS = 500;
 
 // Define the subscriber data members, which are static class scope.
@@ -65,7 +66,7 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @Range: 1 65535
     // @RebootRequired: True
     // @User: Standard
-    AP_GROUPINFO("_PORT", 2, AP_DDS_Client, udp.port, 2019),
+    AP_GROUPINFO("_UDP_PORT", 2, AP_DDS_Client, udp.port, 2019),
 
     // @Group: _IP
     // @Path: ../AP_Networking/AP_Networking_address.cpp
@@ -225,6 +226,12 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms[i].transform.translation.y = -1 * offset[1];
         msg.transforms[i].transform.translation.z = -1 * offset[2];
 
+        // Ensure rotation is normalised
+        msg.transforms[i].transform.rotation.x = 0.0;
+        msg.transforms[i].transform.rotation.y = 0.0;
+        msg.transforms[i].transform.rotation.z = 0.0;
+        msg.transforms[i].transform.rotation.w = 1.0;
+
         msg.transforms_size++;
     }
 
@@ -336,6 +343,11 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
+    } else {
+        msg.pose.orientation.x = 0.0;
+        msg.pose.orientation.y = 0.0;
+        msg.pose.orientation.z = 0.0;
+        msg.pose.orientation.w = 1.0;
     }
 }
 
@@ -415,6 +427,11 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
+    } else {
+        msg.pose.orientation.x = 0.0;
+        msg.pose.orientation.y = 0.0;
+        msg.pose.orientation.z = 0.0;
+        msg.pose.orientation.w = 1.0;
     }
 }
 
@@ -434,6 +451,11 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
         msg.orientation.y = orientation[1];
         msg.orientation.z = orientation[2];
         msg.orientation.w = orientation[3];
+    } else {
+        msg.orientation.x = 0.0;
+        msg.orientation.y = 0.0;
+        msg.orientation.z = 0.0;
+        msg.orientation.w = 1.0;
     }
     msg.orientation_covariance[0] = -1;
 
@@ -457,6 +479,24 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
     update_topic(msg.clock);
+}
+
+void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    Location ekf_origin;
+    // LLA is WGS-84 geodetic coordinate.
+    // Altitude converted from cm to m.
+    if (ahrs.get_origin(ekf_origin)) {
+        msg.position.latitude = ekf_origin.lat * 1E-7;
+        msg.position.longitude = ekf_origin.lng * 1E-7;
+        msg.position.altitude = ekf_origin.alt * 0.01;
+    }
 }
 
 /*
@@ -648,7 +688,7 @@ void AP_DDS_Client::main_loop(void)
     //! @todo check for request to stop task
     while (true) {
         if (comm == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: transport invalid, exiting");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
             return;
         }
 
@@ -656,17 +696,17 @@ void AP_DDS_Client::main_loop(void)
         const uint64_t ping_timeout_ms{1000};
         const uint8_t ping_max_attempts{10};
         if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: No ping response, exiting");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
             return;
         }
 
         // create session
         if (!init_session() || !create()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: Creation Requests failed");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
             return;
         }
         connected = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Initialization passed");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
         populate_static_transforms(tx_static_transforms_topic);
         write_static_transforms();
@@ -705,7 +745,7 @@ void AP_DDS_Client::main_loop(void)
 
             if (num_pings_missed > 2) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
-                              "DDS Client: No ping response, disconnecting");
+                              "%s No ping response, disconnecting", msg_prefix);
                 connected = false;
             }
         }
@@ -1040,6 +1080,20 @@ void AP_DDS_Client::write_clock_topic()
     }
 }
 
+void AP_DDS_Client::write_gps_global_origin_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&gps_global_origin_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)].dw_id, &ub, topic_size);
+        const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &gps_global_origin_topic);
+        if (!success) {
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1091,6 +1145,12 @@ void AP_DDS_Client::update()
         update_topic(clock_topic);
         last_clock_time_ms = cur_time_ms;
         write_clock_topic();
+    }
+
+    if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
+        update_topic(gps_global_origin_topic);
+        last_gps_global_origin_time_ms = cur_time_ms;
+        write_gps_global_origin_topic();
     }
 
     status_ok = uxr_run_session_time(&session, 1);

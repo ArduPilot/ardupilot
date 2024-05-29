@@ -11,6 +11,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <Filter/Filter.h>
 #include "AP_Logger.h"
 
 #if HAL_LOGGER_FENCE_ENABLED
@@ -581,6 +582,8 @@ bool AP_Logger_Backend::Write_VER()
     pkt._APJ_BOARD_ID = APJ_BOARD_ID;
 #endif
     pkt.build_type = fwver.vehicle_type;
+    pkt.filter_version = AP_FILTER_VERSION;
+
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 

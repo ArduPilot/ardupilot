@@ -79,5 +79,8 @@ define DISCRETE_RGB_GREEN_PIN 2
 define DISCRETE_RGB_BLUE_PIN 4
 define DISCRETE_RGB_POLARITY true
 
+define HAL_RCIN_THREAD_ENABLED 1
+define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1
+
 # don't build on firmware.ardupilot.org
 AUTOBUILD_TARGETS None

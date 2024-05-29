@@ -29,6 +29,15 @@ bool AP_ExternalControl_Copter::set_linear_velocity_and_yaw_rate(const Vector3f 
     return true;
 }
 
+bool AP_ExternalControl_Copter::set_global_position(const Location& loc)
+{
+    // Check if copter is ready for external control and returns false if it is not.
+    if (!ready_for_external_control()) {
+        return false;
+    }
+    return copter.set_target_location(loc);
+}
+
 bool AP_ExternalControl_Copter::ready_for_external_control()
 {
     return copter.flightmode->in_guided_mode() && copter.motors->armed();

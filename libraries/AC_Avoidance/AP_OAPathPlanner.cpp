@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_ENABLED
+
 #include "AP_OAPathPlanner.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -432,3 +436,5 @@ AP_OAPathPlanner *ap_oapathplanner()
 }
 
 }
+
+#endif  // AP_OAPATHPLANNER_ENABLED

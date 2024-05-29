@@ -126,10 +126,8 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
 
 # minimal drivers to reduce flash usage
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
 
-AUTOBUILD_TARGETS Copter

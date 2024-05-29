@@ -18,7 +18,8 @@
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:rds02uf --speedup=1
 
 param set SERIAL5_PROTOCOL 9
-param set RNGFND1_TYPE 36
+param set RNGFND1_TYPE 43
+module load graph
 graph RANGEFINDER.distance
 graph GLOBAL_POSITION_INT.relative_alt/1000-RANGEFINDER.distance
 reboot

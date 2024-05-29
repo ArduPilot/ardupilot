@@ -20,8 +20,6 @@ FLASH_SIZE_KB 2048
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-define HAL_BUILD_AP_PERIPH
-
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 128
 FLASH_BOOTLOADER_LOAD_KB 128
@@ -131,15 +129,8 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 # ---------------------------------------------------------------------------------------------
 # AP_Periph - boiler-plate configurations that all HW AP-Periph need
 # ---------------------------------------------------------------------------------------------
-define DISABLE_SERIAL_ESC_COMM TRUE
-define HAL_NO_RCIN_THREAD
 #define HAL_NO_GPIO_IRQ
-define HAL_DISABLE_LOOP_DELAY
 define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS
-
-
-define PERIPH_FW TRUE
-#define NO_DATAFLASH TRUE
 
 #################################
 # AP_Periph - configurations specific to this App

@@ -211,7 +211,6 @@ void ModeQRTL::update_target_altitude()
     Location loc = plane.next_WP_loc;
     loc.alt += alt*100;
     plane.set_target_altitude_location(loc);
-    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
 
 // only nudge during approach

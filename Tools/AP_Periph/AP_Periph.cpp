@@ -35,6 +35,13 @@
 #define HAL_PERIPH_HWESC_SERIAL_PORT 3
 #endif
 
+// not only will the code not compile without features this enables,
+// but it forms part of a series of measures to give a robust recovery
+// mechanism on AP_Periph if a bad flash occurs.
+#ifndef AP_CHECK_FIRMWARE_ENABLED
+#error AP_CHECK_FIRMWARE_ENABLED must be enabled
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 AP_Periph_FW periph;
@@ -142,13 +149,14 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
+    gps.set_default_type_for_gps1(HAL_GPS1_TYPE_DEFAULT);
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE && g.gps_port >= 0) {
         serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
 #if HAL_LOGGING_ENABLED
         #define MASK_LOG_GPS (1<<2)
         gps.set_log_gps_bit(MASK_LOG_GPS);
 #endif
-        gps.init(serial_manager);
+        gps.init();
     }
 #endif
 
@@ -200,7 +208,7 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) && (HAL_USE_I2C == TRUE)
     const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
     if (pins_enabled) {
         ChibiOS::I2CBus::set_bus_to_floating(0);
@@ -219,15 +227,20 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-    if (rangefinder.get_type(0) != RangeFinder::Type::NONE) {
-        if (g.rangefinder_port >= 0) {
+    bool have_rangefinder = false;
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        if ((rangefinder.get_type(i) != RangeFinder::Type::NONE) && (g.rangefinder_port[i] >= 0)) {
             // init uart for serial rangefinders
-            auto *uart = hal.serial(g.rangefinder_port);
+            auto *uart = hal.serial(g.rangefinder_port[i]);
             if (uart != nullptr) {
-                uart->begin(g.rangefinder_baud);
-                serial_manager.set_protocol_and_baud(g.rangefinder_port, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
+                uart->begin(g.rangefinder_baud[i]);
+                serial_manager.set_protocol_and_baud(g.rangefinder_port[i], AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud[i]);
+                have_rangefinder = true;
             }
         }
+    }
+    if (have_rangefinder) {
+        // Can only call rangefinder init once, subsequent inits are blocked
         rangefinder.init(ROTATION_NONE);
     }
 #endif
@@ -411,7 +424,14 @@ void AP_Periph_FW::update()
         hal.serial(0)->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
 #endif
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-        hal.serial(0)->printf("RNG %u %ucm\n", rangefinder.num_sensors(), rangefinder.distance_cm_orient(ROTATION_NONE));
+        hal.serial(0)->printf("Num RNG sens %u\n", rangefinder.num_sensors());
+        for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+            AP_RangeFinder_Backend *backend = rangefinder.get_backend(i);
+            if (backend == nullptr) {
+                continue;
+            }
+            hal.serial(0)->printf("RNG %u %ucm\n", i, uint16_t(backend->distance()*100));
+        }
 #endif
         hal.scheduler->delay(1);
 #endif

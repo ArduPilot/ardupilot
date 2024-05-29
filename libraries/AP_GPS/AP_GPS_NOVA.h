@@ -26,7 +26,7 @@
 class AP_GPS_NOVA : public AP_GPS_Backend
 {
 public:
-    AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
@@ -39,8 +39,6 @@ private:
 
     bool parse(uint8_t temp);
     bool process_message();
-    uint32_t CRC32Value(uint32_t icrc);
-    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     static const uint8_t NOVA_PREAMBLE1 = 0xaa;
     static const uint8_t NOVA_PREAMBLE2 = 0x44;

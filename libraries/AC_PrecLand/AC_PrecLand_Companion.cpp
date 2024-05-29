@@ -11,23 +11,12 @@ void AC_PrecLand_Companion::init()
 {
     // set healthy
     _state.healthy = true;
-    _have_los_meas = false;
 }
 
 // retrieve updates from sensor
 void AC_PrecLand_Companion::update()
 {
     _have_los_meas = _have_los_meas && AP_HAL::millis()-_los_meas_time_ms <= 1000;
-}
-
-// provides a unit vector towards the target in body frame
-//  returns same as have_los_meas()
-bool AC_PrecLand_Companion::get_los_body(Vector3f& ret) {
-    if (have_los_meas()) {
-        ret = _los_meas_body;
-        return true;
-    }
-    return false;
 }
 
 void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)

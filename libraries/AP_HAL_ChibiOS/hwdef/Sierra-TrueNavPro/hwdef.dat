@@ -36,10 +36,8 @@ MAIN_STACK 0x300
 PROCESS_STACK 0xA00
 
 # save memory
-define HAL_DISABLE_LOOP_DELAY
 define HAL_NO_MONITOR_THREAD
 define HAL_USE_ADC FALSE
-define HAL_NO_RCIN_THREAD
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 256
@@ -100,9 +98,8 @@ define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define HAL_PERIPH_GPS_PORT_DEFAULT 0
-
-# minimal GPS drivers to reduce flash usage
-include ../include/minimal_GPS.inc
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_UBLOX_ENABLED 1
 
 # GPS PPS
 PA15 GPS_PPS_IN INPUT
@@ -114,3 +111,5 @@ define CAN_APP_NODE_NAME "in.sierraaerospace.TrueNavPro"
 
 # Enable GPS LDO
 PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1

@@ -46,10 +46,12 @@ protected:
     void handle_mount_message(const mavlink_message_t &msg) override;
 #endif
 
+    void handle_message_set_attitude_target(const mavlink_message_t &msg);
+    void handle_message_set_position_target_global_int(const mavlink_message_t &msg);
+    void handle_message_set_position_target_local_ned(const mavlink_message_t &msg);
+
     void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     void send_nav_controller_output() const override;
     uint64_t capabilities() const override;
 

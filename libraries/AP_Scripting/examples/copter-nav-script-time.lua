@@ -12,6 +12,9 @@
 -- "arg2" specifies the height (e.g. North-South) in meters
 -- Once the vehicle completes the square or the timeout expires the mission will continue and the vehicle should RTL home
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+
 local running = false
 local last_id = -1          -- unique id used to detect if a new NAV_SCRIPT_TIME command has started
 local start_loc             -- vehicle's location when command starts (South-West corner of square)

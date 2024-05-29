@@ -78,12 +78,6 @@ public:
    // User parameters for inputs into scripts 
    AP_Float _user[6];
 
-    struct terminal_s {
-        int output_fd;
-        off_t input_offset;
-        bool session;
-    } terminal;
-
     enum class SCR_DIR {
         ROMFS = 1 << 0,
         SCRIPTS = 1 << 1,
@@ -145,9 +139,6 @@ public:
     HAL_Semaphore mavlink_command_block_list_sem;
 
 private:
-
-    bool repl_start(void);
-    void repl_stop(void);
 
     void thread(void); // main script execution thread
 

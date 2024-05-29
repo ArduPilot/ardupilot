@@ -61,6 +61,8 @@ public:
      */
     Vector2f get_ground_speed_adjustment(const Location &loc, float &yaw_rate);
 
+    bool get_location(Location &loc) const;
+
 private:
 
     AP_Int8 enable;

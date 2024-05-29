@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_DIJKSTRA_ENABLED
+
 #include "AP_OADijkstra.h"
 #include "AP_OAPathPlanner.h"
 
@@ -1011,3 +1015,5 @@ bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vec
 }
 #endif // AP_FENCE_ENABLED
 
+
+#endif  // AP_OAPATHPLANNER_DIJKSTRA_ENABLED

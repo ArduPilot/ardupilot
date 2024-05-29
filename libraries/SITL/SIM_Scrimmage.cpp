@@ -106,7 +106,7 @@ void Scrimmage::recv_fdm(const struct sitl_input &input)
 
 
     // velocity relative to air mass, in earth frame TODO
-    velocity_air_ef = velocity_ef;
+    velocity_air_ef = velocity_ef - wind_ef;
 
     // velocity relative to airmass in body frame TODO
     velocity_air_bf = dcm.transposed() * velocity_air_ef;

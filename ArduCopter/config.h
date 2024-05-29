@@ -29,7 +29,7 @@
 #include "APM_Config.h"
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
-
+#include <AC_Avoidance/AC_Avoidance_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -74,32 +74,12 @@
  # define RANGEFINDER_ENABLED ENABLED
 #endif
 
-#ifndef RANGEFINDER_HEALTH_MAX
- # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
-#endif
-
-#ifndef RANGEFINDER_TIMEOUT_MS
-# define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
-#endif
-
 #ifndef RANGEFINDER_FILT_DEFAULT
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
-#endif
-
-#ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
- # define RANGEFINDER_TILT_CORRECTION ENABLED
-#endif
-
-#ifndef RANGEFINDER_GLITCH_ALT_CM
- # define RANGEFINDER_GLITCH_ALT_CM  200      // amount of rangefinder change to be considered a glitch
-#endif
-
-#ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
- # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -195,7 +175,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED AP_FOLLOW_ENABLED
+#if AP_FOLLOW_ENABLED && AP_AVOIDANCE_ENABLED
+#define MODE_FOLLOW_ENABLED ENABLED
+#else
+#define MODE_FOLLOW_ENABLED DISABLED
+#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -378,6 +362,9 @@
 #ifndef LAND_DETECTOR_ACCEL_MAX
 # define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
 #endif
+#ifndef LAND_DETECTOR_VEL_Z_MAX
+# define LAND_DETECTOR_VEL_Z_MAX              1.0f    // vehicle vertical velocity must be under 1m/s
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Flight mode definitions
@@ -430,7 +417,7 @@
 #endif
 
 #ifndef RTL_ALT_MIN
- # define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
+ # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
 #endif
 
 #ifndef RTL_CLIMB_MIN_DEFAULT
@@ -557,16 +544,8 @@
 // Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
-#ifndef AC_AVOID_ENABLED
- #define AC_AVOID_ENABLED   ENABLED
-#endif
-
-#ifndef AC_OAPATHPLANNER_ENABLED
- #define AC_OAPATHPLANNER_ENABLED   ENABLED
-#endif
-
-#if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED
-  #error Follow Mode relies on AC_AVOID which is disabled
+#if MODE_FOLLOW_ENABLED && !AP_AVOIDANCE_ENABLED
+  #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
 #endif
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED

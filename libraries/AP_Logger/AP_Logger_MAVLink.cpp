@@ -577,13 +577,6 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
         return false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // deliberately fail 10% of the time in SITL:
-    if ((rand() % 100 + 1) < 10) {
-        return false;
-    }
-#endif
-    
 #if DF_MAVLINK_DISABLE_INTERRUPTS
     void *istate = hal.scheduler->disable_interrupts_save();
 #endif

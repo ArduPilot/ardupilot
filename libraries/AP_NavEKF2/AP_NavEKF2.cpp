@@ -643,7 +643,7 @@ bool NavEKF2::InitialiseFilter(void)
 
         // don't allow more filters than IMUs
         uint8_t mask = (1U<<ins.get_accel_count())-1;
-        _imuMask.set(_imuMask.get() & mask);
+        _imuMask.set_and_default(_imuMask.get() & mask);
         
         // count IMUs from mask
         num_cores = __builtin_popcount(_imuMask);

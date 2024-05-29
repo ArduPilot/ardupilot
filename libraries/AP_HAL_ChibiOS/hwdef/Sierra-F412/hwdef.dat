@@ -85,12 +85,8 @@ PA0 VSENSE ADC1 SCALE(2)
 define HAL_NO_GPIO_IRQ
 
 # avoid RCIN thread to save memory
-define HAL_NO_RCIN_THREAD
 define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 define DMA_RESERVE_SIZE 0
-define PERIPH_FW TRUE
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN1_RX CAN1
@@ -100,7 +96,6 @@ PA12 CAN1_TX CAN1
 define HAL_CAN_DEFAULT_NODE_ID 0
 
 define HAL_NO_MONITOR_THREAD
-define HAL_BUILD_AP_PERIPH
 define HAL_DEVICE_THREAD_STACK 768
 
 # disable dual GPS and GPS blending to save flash space

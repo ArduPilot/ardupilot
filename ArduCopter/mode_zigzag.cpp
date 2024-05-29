@@ -170,12 +170,12 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             if (ab_dest == Destination::A) {
                 // store point A
                 dest_A = curr_pos;
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: point A stored");
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: point A stored", name());
                 LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_A);
             } else {
                 // store point B
                 dest_B = curr_pos;
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: point B stored");
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: point B stored", name());
                 LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_B);
             }
             // if both A and B have been stored advance state
@@ -203,10 +203,10 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     spray(true);
                     reach_wp_time_ms = 0;
                     if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
+                        gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), (ab_dest == Destination::A) ? "A" : "B");
                     } else {
                         line_count++;
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
+                        gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s (line %d/%d)", name(), (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
                     }
                 }
             }
@@ -228,7 +228,7 @@ void ModeZigZag::move_to_side()
                 current_terr_alt = terr_alt;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
         }
     }
@@ -251,7 +251,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
             loiter_nav->init_target();
         }
         is_auto = false;
-        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
+        gcs().send_text(MAV_SEVERITY_INFO, "%s: manual control", name());
     }
 }
 
@@ -326,7 +326,7 @@ void ModeZigZag::manual_control()
     // althold state machine
     switch (althold_state) {
 
-    case AltHold_MotorStopped:
+    case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
@@ -334,7 +334,7 @@ void ModeZigZag::manual_control()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
         break;
 
-    case AltHold_Takeoff:
+    case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
@@ -353,18 +353,18 @@ void ModeZigZag::manual_control()
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
-    case AltHold_Landed_Ground_Idle:
+    case AltHoldModeState::Landed_Ground_Idle:
         attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
-    case AltHold_Landed_Pre_Takeoff:
+    case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
-    case AltHold_Flying:
+    case AltHoldModeState::Flying:
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -542,7 +542,7 @@ void ModeZigZag::run_auto()
                 stage = AUTO;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
         }
     } else {

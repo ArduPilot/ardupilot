@@ -124,3 +124,5 @@ define HAL_USE_ADC FALSE
 
 include ../include/minimize_features.inc
 
+# This is a board that's not really intended for anything other than copter
+AUTOBUILD_TARGETS Copter

@@ -62,6 +62,9 @@ void AP_Mount::init()
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
+    // keep track of number of serial instances for initialisation
+    uint8_t serial_instance = 0;
+
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         switch (get_mount_type(instance)) {
@@ -98,8 +101,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         case Type::SToRM32_serial:
-            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
+            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif
 
@@ -122,8 +126,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
         case Type::Siyi:
-            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
+            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_SIYI_ENABLED
 
@@ -146,8 +151,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_VIEWPRO_ENABLED
         // check for Xacti gimbal
         case Type::Viewpro:
-            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance);
+            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_VIEWPRO_ENABLED
         }
@@ -249,7 +255,7 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     backend->set_mode(mode);
 }
 
-// set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+// set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
 // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
 void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 {
@@ -263,6 +269,7 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 }
 
 // set angle target in degrees
+// roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
@@ -355,6 +362,12 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if (isnan(pitch_angle_deg) && isnan(yaw_angle_deg) && isnan(pitch_rate_degs) && isnan(yaw_rate_degs)) {
+        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -496,6 +509,12 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
         const float pitch_rate_degs = degrees(packet.pitch_rate);
         const float yaw_rate_degs = degrees(packet.yaw_rate);
         backend->set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    // if neither angles nor rates were provided set the RC_TARGETING yaw lock state
+    if (isnan(packet.pitch) && isnan(packet.yaw) && isnan(packet.pitch_rate) && isnan(packet.yaw_rate)) {
+        backend->set_yaw_lock(flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 }
@@ -833,6 +852,19 @@ bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
     return backend->set_lens(lens);
 }
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+// primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8_t secondary_source)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_camera_source(primary_source, secondary_source);
+}
+#endif
+
 // send camera information message to GCS
 void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
 {
@@ -871,6 +903,16 @@ bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) con
         return false;
     }
     return backend->get_rangefinder_distance(distance_m);
+}
+
+// enable/disable rangefinder.  Returns true on success
+bool AP_Mount::set_rangefinder_enable(uint8_t instance, bool enable)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_rangefinder_enable(enable);
 }
 
 AP_Mount_Backend *AP_Mount::get_primary() const
@@ -979,7 +1021,10 @@ void AP_Mount::convert_params()
     // convert MNT_TYPE to MNT1_TYPE
     int8_t mnt_type = 0;
     IGNORE_RETURN(AP_Param::get_param_by_index(this, 19, AP_PARAM_INT8, &mnt_type));
-    if (mnt_type > 0) {
+    if (mnt_type == 0) {
+        // if the mount was not previously set, no need to perform the upgrade logic
+        return;
+    } else if (mnt_type > 0) {
         int8_t stab_roll = 0;
         int8_t stab_pitch = 0;
         IGNORE_RETURN(AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &stab_roll));
@@ -989,8 +1034,9 @@ void AP_Mount::convert_params()
             // conversion is still done even if HAL_MOUNT_SERVO_ENABLED is false
             mnt_type = 7;  // (int8_t)Type::BrushlessPWM;
         }
+        // if the mount was previously set, then we need to save the upgraded mount type
+        _params[0].type.set_and_save(mnt_type);
     }
-    _params[0].type.set_and_save(mnt_type);
 
     // convert MNT_JSTICK_SPD to MNT1_RC_RATE
     int8_t jstick_spd = 0;

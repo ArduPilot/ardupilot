@@ -5,7 +5,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_RTC/AP_RTC.h>
 
 extern const AP_HAL::HAL& hal;
@@ -31,18 +30,6 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'7','8'}, "ZR30"},
         {{'7','A'}, "ZT30"},
 };
-
-// init - performs any required initialisation for this instance
-void AP_Mount_Siyi::init()
-{
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
-    if (_uart != nullptr) {
-        _initialised = true;
-    }
-    AP_Mount_Backend::init();
-}
 
 // update mount position - should be called periodically
 void AP_Mount_Siyi::update()
@@ -956,6 +943,64 @@ bool AP_Mount_Siyi::set_lens(uint8_t lens)
         case 8:
             cam_image_type = CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE; // 8
             break;
+    }
+
+    // send desired image type to camera
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
+}
+
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+// primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+bool AP_Mount_Siyi::set_camera_source(uint8_t primary_source, uint8_t secondary_source)
+{
+    // only supported on ZT30.  sanity check lens values
+    if (_hardware_model != HardwareModel::ZT30) {
+        return false;
+    }
+
+    // maps primary and secondary source to siyi camera image type
+    CameraImageType cam_image_type;
+    switch (primary_source) {
+    case 0: // Default (RGB)
+        FALLTHROUGH;
+    case 1: // RGB
+        switch (secondary_source) {
+        case 0: // RGB + Default (None)
+            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL;                // 3
+            break;
+        case 2: // PIP RGB+IR
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE;  // 0
+            break;
+        case 4: // PIP RGB+RGB_WIDEANGLE
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL;  // 2
+            break;
+        default:
+            return false;
+        }
+        break;
+    case 2: // IR
+        switch (secondary_source) {
+        case 0: // IR + Default (None)
+            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_ZOOM;                // 7
+            break;
+        default:
+            return false;
+        }
+        break;
+    case 4: // RGB_WIDEANGLE
+        switch (secondary_source) {
+        case 0: // RGB_WIDEANGLE + Default (None)
+            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL;           // 5
+            break;
+        case 2: // PIP RGB_WIDEANGLE+IR
+            cam_image_type = CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM;  // 1
+            break;
+        default:
+            return false;
+        }
+        break;
+    default:
+        return false;
     }
 
     // send desired image type to camera

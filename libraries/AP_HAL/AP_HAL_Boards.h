@@ -52,14 +52,14 @@
 */
 #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
-#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51   5016
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52   5017
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51   5016
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52   5017
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
 
 #define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
 #define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
@@ -163,10 +163,6 @@
 #define HAL_NUM_CAN_IFACES 0
 #endif
 
-#ifndef HAL_RCINPUT_WITH_AP_RADIO
-#define HAL_RCINPUT_WITH_AP_RADIO 0
-#endif
-
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU 0
 #endif
@@ -177,6 +173,19 @@
 
 #ifndef HAL_WITH_IO_MCU_DSHOT
 #define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
+#endif
+
+#ifndef HAL_REQUIRES_BDSHOT_SUPPORT
+#define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
+#endif
+
+// support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
+// can in principle arrive, either from servo outputs or from IOMCU
+
+// if not desired, set to 0 - and if IOMCU has bidirectional DShot enabled, recompile it too,
+// otherwise the communication to IOMCU breaks!
+#ifndef AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+#define AP_EXTENDED_DSHOT_TELEM_V2_ENABLED HAL_REQUIRES_BDSHOT_SUPPORT
 #endif
 
 // this is used as a general mechanism to make a 'small' build by
@@ -211,8 +220,8 @@
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #endif
 
-#ifndef HAL_GPS_TYPE_DEFAULT
-#define HAL_GPS_TYPE_DEFAULT 1
+#ifndef HAL_GPS1_TYPE_DEFAULT
+#define HAL_GPS1_TYPE_DEFAULT 1
 #endif
 
 #ifndef HAL_CAN_DRIVER_DEFAULT
@@ -302,11 +311,7 @@
 #endif
 
 #ifndef HAL_SERIAL_ESC_COMM_ENABLED
-#ifdef DISABLE_SERIAL_ESC_COMM
-#define HAL_SERIAL_ESC_COMM_ENABLED 0
-#else
 #define HAL_SERIAL_ESC_COMM_ENABLED 1
-#endif
 #endif
 
 #ifndef AP_BOOTLOADER_FLASHING_ENABLED
@@ -367,3 +372,13 @@
 #ifndef HAL_ENABLE_SENDING_STATS
 #define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
 #endif
+
+#ifndef HAL_GPIO_LED_ON
+#define HAL_GPIO_LED_ON 0
+#endif
+
+#ifdef HAL_GPIO_LED_OFF
+#error "HAL_GPIO_LED_OFF must not be defined, it is implicitly !HAL_GPIO_LED_ON"
+#endif
+
+#define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)

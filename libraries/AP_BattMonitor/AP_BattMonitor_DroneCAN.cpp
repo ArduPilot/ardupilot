@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_DroneCAN, _curr_mult, 1.0),
 
-    // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+    // Param indexes must be between 30 and 35 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
 };

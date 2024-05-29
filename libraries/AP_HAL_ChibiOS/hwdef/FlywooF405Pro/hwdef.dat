@@ -120,7 +120,6 @@ PA9 TIM1_CH2 TIM1 PWM(9) GPIO(58) # M9
 
 PC14 LED0 OUTPUT LOW GPIO(90)
 define HAL_GPIO_A_LED_PIN 90
-define HAL_GPIO_LED_OFF 1
 
 # Dataflash setup
 SPIDEV dataflash SPI3 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
@@ -153,4 +152,4 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 define HAL_FRAME_TYPE_DEFAULT 12
 
 include ../include/minimize_fpv_osd.inc
-AUTOBUILD_TARGETS Copter
+

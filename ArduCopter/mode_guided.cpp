@@ -97,6 +97,12 @@ void ModeGuided::run()
     }
  }
 
+// returns true if the Guided-mode-option is set (see GUID_OPTIONS)
+bool ModeGuided::option_is_enabled(Option option) const
+{
+    return (copter.g2.guided_options.get() & (uint32_t)option) != 0;
+}
+
 bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
     // always allow arming from the ground station or scripting
@@ -105,13 +111,13 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     }
 
     // optionally allow arming from the transmitter
-    return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
+    return option_is_enabled(Option::AllowArmingFromTX);
 };
 
 #if WEATHERVANE_ENABLED == ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
-    return (copter.g2.guided_options.get() & (uint32_t)Options::AllowWeatherVaning) != 0;
+    return option_is_enabled(Option::AllowWeatherVaning);
 }
 #endif
 
@@ -313,14 +319,11 @@ void ModeGuided::angle_control_start()
 
     // initialise targets
     guided_angle_state.update_time_ms = millis();
-    guided_angle_state.attitude_quat.initialise();
+    guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
     guided_angle_state.ang_vel.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
     guided_angle_state.yaw_rate_cds = 0.0f;
     guided_angle_state.use_yaw_rate = false;
-
-    // pilot always controls yaw
-    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 }
 
 // set_destination - sets guided mode's target destination
@@ -459,6 +462,13 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         return true;
     }
 
+    // set position target and zero velocity and acceleration
+    Vector3f pos_target_f;
+    bool terrain_alt;
+    if (!wp_nav->get_vector_NEU(dest_loc, pos_target_f, terrain_alt)) {
+        return false;
+    }
+
     // if configured to use position controller for position control
     // ensure we are in position control mode
     if (guided_mode != SubMode::Pos) {
@@ -467,13 +477,6 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
-
-    // set position target and zero velocity and acceleration
-    Vector3f pos_target_f;
-    bool terrain_alt;
-    if (!wp_nav->get_vector_NEU(dest_loc, pos_target_f, terrain_alt)) {
-        return false;
-    }
 
     // initialise terrain following if needed
     if (terrain_alt) {
@@ -610,25 +613,25 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
 // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
 bool ModeGuided::set_attitude_target_provides_thrust() const
 {
-    return ((copter.g2.guided_options.get() & uint32_t(Options::SetAttitudeTarget_ThrustAsThrust)) != 0);
+    return option_is_enabled(Option::SetAttitudeTarget_ThrustAsThrust);
 }
 
 // returns true if GUIDED_OPTIONS param specifies position should be controlled (when velocity and/or acceleration control is active)
 bool ModeGuided::stabilizing_pos_xy() const
 {
-    return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizePositionXY)) != 0);
+    return !option_is_enabled(Option::DoNotStabilizePositionXY);
 }
 
 // returns true if GUIDED_OPTIONS param specifies velocity should  be controlled (when acceleration control is active)
 bool ModeGuided::stabilizing_vel_xy() const
 {
-    return !((copter.g2.guided_options.get() & uint32_t(Options::DoNotStabilizeVelocityXY)) != 0);
+    return !option_is_enabled(Option::DoNotStabilizeVelocityXY);
 }
 
 // returns true if GUIDED_OPTIONS param specifies waypoint navigation should be used for position control (allow path planning to be used but updates must be slower)
 bool ModeGuided::use_wpnav_for_position_control() const
 {
-    return ((copter.g2.guided_options.get() & uint32_t(Options::WPNavUsedForPosControl)) != 0);
+    return option_is_enabled(Option::WPNavUsedForPosControl);
 }
 
 // Sets guided's angular target submode: Using a rotation quaternion, angular velocity, and climbrate or thrust (depends on user option)
@@ -800,7 +803,7 @@ void ModeGuided::velaccel_control_run()
     }
 
     bool do_avoid = false;
-#if AC_AVOID_ENABLED
+#if AP_AVOIDANCE_ENABLED
     // limit the velocity for obstacle/fence avoidance
     copter.avoid.adjust_velocity(guided_vel_target_cms, pos_control->get_pos_xy_p().kP(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
     do_avoid = copter.avoid.limits_active();
@@ -939,7 +942,7 @@ void ModeGuided::angle_control_run()
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
-        guided_angle_state.attitude_quat.initialise();
+        guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
         guided_angle_state.ang_vel.zero();
         climb_rate_cms = 0.0f;
         if (guided_angle_state.use_thrust) {
@@ -963,8 +966,8 @@ void ModeGuided::angle_control_run()
     }
 
     // TODO: use get_alt_hold_state
-    // landed with positive desired climb rate, takeoff
-    if (copter.ap.land_complete && (guided_angle_state.climb_rate_cms > 0.0f)) {
+    // landed with positive desired climb rate or thrust, takeoff
+    if (copter.ap.land_complete && positive_thrust_or_climbrate) {
         zero_throttle_and_relax_ac();
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
@@ -1012,7 +1015,7 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeGuided::use_pilot_yaw(void) const
 {
-    return (copter.g2.guided_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    return !option_is_enabled(Option::IgnorePilotYaw);
 }
 
 // Guided Limit code

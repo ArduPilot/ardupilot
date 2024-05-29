@@ -5,6 +5,7 @@
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_EFI/AP_EFI_config.h>
+#include <AC_Avoidance/AP_OADatabase.h>
 
 MAV_TYPE GCS_Rover::frame_type() const
 {
@@ -123,11 +124,11 @@ void GCS_MAVLINK_Rover::send_servo_out()
 {
     float motor1, motor3;
     if (rover.g2.motors.have_skid_steering()) {
-        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
-        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
+        motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) * 0.001f);
+        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) * 0.001f);
     } else {
         motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_steering) / 4500.0f);
-        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) / 100.0f);
+        motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
     }
     mavlink_msg_rc_channels_scaled_send(
         chan,
@@ -380,6 +381,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         rover.g2.windvane.send_wind(chan);
         break;
 
+#if AP_OADATABASE_ENABLED
     case MSG_ADSB_VEHICLE: {
         AP_OADatabase *oadb = AP::oadatabase();
         if (oadb != nullptr) {
@@ -391,6 +393,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
         }
         break;
     }
+#endif
 
     default:
         return GCS_MAVLINK::try_send_message(id);
@@ -651,14 +654,6 @@ MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlin
     }
 
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
-}
-
-bool GCS_MAVLINK_Rover::set_home_to_current_location(bool _lock) {
-    return rover.set_home_to_current_location(_lock);
-}
-
-bool GCS_MAVLINK_Rover::set_home(const Location& loc, bool _lock) {
-    return rover.set_home(loc, _lock);
 }
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)

@@ -103,7 +103,6 @@ PB5 LED0 OUTPUT LOW GPIO(90)
 define HAL_GPIO_A_LED_PIN 90
 # LED strip
 PB6 TIM4_CH1 TIM4 PWM(5) GPIO(56) # M7
-define HAL_GPIO_LED_OFF 1
 
 # Dataflash setup
 SPIDEV dataflash SPI2 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
@@ -140,7 +139,6 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
-# This is a whoop AIO board, not really suitable for anything other than copter
-AUTOBUILD_TARGETS Copter
 
 include ../include/minimize_fpv_osd.inc
+AUTOBUILD_TARGETS Copter

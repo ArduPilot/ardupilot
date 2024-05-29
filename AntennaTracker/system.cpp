@@ -30,7 +30,7 @@ void Tracker::init_ardupilot()
 
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     ahrs.init();
     ahrs.set_fly_forward(false);
@@ -116,7 +116,12 @@ bool Tracker::set_home_eeprom(const Location &temp)
     return true;
 }
 
-bool Tracker::set_home(const Location &temp)
+bool Tracker::set_home_to_current_location(bool lock)
+{
+    return set_home(AP::gps().location(), lock);
+}
+
+bool Tracker::set_home(const Location &temp, bool lock)
 {
     // check EKF origin has been set
     Location ekf_origin;

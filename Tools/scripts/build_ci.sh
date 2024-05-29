@@ -327,9 +327,11 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ "$t" == "CubeOrange-SOHW" ]; then
+    if [ "$t" == "SOHW" ]; then
         echo "Building CubeOrange-SOHW"
-        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --vehicle plane --simclass Plane --board CubeOrange
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter
+        echo "Building 6X-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board Pixhawk6X --vehicle plane --simclass Plane --frame plane-3d
         continue
     fi
 
@@ -420,7 +422,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building signed firmwares"
         sudo apt-get update
         sudo apt-get install -y python3-dev
-        python3 -m pip install pymonocypher
+        python3 -m pip install pymonocypher==3.1.3.2
         ./Tools/scripts/signing/generate_keys.py testkey
         $waf configure --board CubeOrange-ODID --signed-fw --private-key testkey_private_key.dat
         $waf copter

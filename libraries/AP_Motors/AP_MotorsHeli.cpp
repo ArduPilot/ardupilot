@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -598,3 +599,27 @@ AP_MotorsHeli_RSC::RotorControlState AP_MotorsHeli::get_rotor_control_state() co
     // Should be unreachable, but needed to keep the compiler happy
     return AP_MotorsHeli_RSC::RotorControlState::STOP;
 }
+
+// Update _heliflags.rotor_runup_complete value writing log event on state change
+void AP_MotorsHeli::set_rotor_runup_complete(bool new_value)
+{
+#if HAL_LOGGING_ENABLED
+    if (!_heliflags.rotor_runup_complete && new_value) {
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
+    } else if (_heliflags.rotor_runup_complete && !new_value && !_heliflags.in_autorotation) {
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
+    }
+#endif
+    _heliflags.rotor_runup_complete = new_value;
+}
+
+#if HAL_LOGGING_ENABLED
+// Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion
+float AP_MotorsHeli::get_cyclic_angle_scaler(void) const {
+    // We want to use the collective min-max to angle relationship to calculate the cyclic input to angle relationship
+    // First we scale the collective angle range by it's min-max output. Recall that we assume that the maximum possible
+    // collective range is 1000, hence the *1e-3.
+    // The factor 2.0 accounts for the fact that we scale the servo outputs from 0 ~ 1 to -1 ~ 1
+    return ((float)(_collective_max-_collective_min))*1e-3 * (_collective_max_deg.get() - _collective_min_deg.get()) * 2.0;
+}
+#endif

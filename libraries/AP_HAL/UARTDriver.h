@@ -4,6 +4,7 @@
 
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
@@ -102,9 +103,13 @@ public:
         FLOW_CONTROL_DISABLE=0,
         FLOW_CONTROL_ENABLE=1,
         FLOW_CONTROL_AUTO=2,
+        FLOW_CONTROL_RTS_DE=3, // RTS pin is used as a driver enable (used in RS-485)
     };
     virtual void set_flow_control(enum flow_control flow_control_setting) {};
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
+
+    // Return true if flow control is currently enabled
+    bool flow_control_enabled() { return flow_control_enabled(get_flow_control()); }
 
     virtual void configure_parity(uint8_t v){};
     virtual void set_stop_bits(int n){};
@@ -152,9 +157,27 @@ public:
     virtual bool is_dma_enabled() const { return false; }
 
 #if HAL_UART_STATS_ENABLED
+    // Helper to keep track of data usage since last call
+    struct StatsTracker {
+        class ByteTracker {
+        public:
+            // Take cumulative bytes and return the change since last call
+            uint32_t update(uint32_t bytes);
+        private:
+            uint32_t last_bytes;
+        };
+        ByteTracker tx;
+        ByteTracker rx;
+    };
+
     // request information on uart I/O for this uart, for @SYS/uarts.txt
-    virtual void uart_info(ExpandingString &str) {}
+    virtual void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) {}
+
+#if HAL_LOGGING_ENABLED
+    // Log stats for this instance
+    void log_stats(const uint8_t inst, StatsTracker &stats, const uint32_t dt_ms);
 #endif
+#endif // HAL_UART_STATS_ENABLED
 
     /*
       software control of the CTS/RTS pins if available. Return false if
@@ -220,7 +243,16 @@ protected:
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
-    
+
+    // Helper to check if flow control is enabled given the passed setting
+    bool flow_control_enabled(enum flow_control flow_control_setting) const;
+
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    virtual uint32_t get_total_tx_bytes() const { return 0; }
+    virtual uint32_t get_total_rx_bytes() const { return 0; }
+#endif
+
 private:
     // option bits for port
     uint16_t _last_options;

@@ -6,7 +6,7 @@
 
 #include "AP_Logger_File.h"
 #include "AP_Logger_Flash_JEDEC.h"
-#include "AP_Logger_W25N01GV.h"
+#include "AP_Logger_W25NXX.h"
 #include "AP_Logger_MAVLink.h"
 
 #include <AP_InternalError/AP_InternalError.h>
@@ -1567,7 +1567,10 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
      */
     static const char *log_content_filenames[] = {
         "@SYS/uarts.txt",
+#ifdef HAL_DEBUG_BUILD
+        // logging dma.txt has a performance impact
         "@SYS/dma.txt",
+#endif
         "@SYS/memory.txt",
         "@SYS/threads.txt",
         "@SYS/timers.txt",

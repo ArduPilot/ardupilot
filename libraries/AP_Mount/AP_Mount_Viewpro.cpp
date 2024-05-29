@@ -7,7 +7,6 @@
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,19 +26,6 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...) do { if (AP_MOUNT_VIEWPRO_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Viewpro: " fmt, ## args); } } while (0)
 
 const char* AP_Mount_Viewpro::send_text_prefix = "Viewpro:";
-
-// init - performs any required initialisation for this instance
-void AP_Mount_Viewpro::init()
-{
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
-    if (_uart != nullptr) {
-        _initialised = true;
-    }
-
-    AP_Mount_Backend::init();
-}
 
 // update mount position - should be called periodically
 void AP_Mount_Viewpro::update()
@@ -573,22 +559,23 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
 }
 
 // send camera command, affected image sensor and value (e.g. zoom speed)
-bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value)
+bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value, LRFCommand lrf_cmd)
 {
     // fill in 2 bytes containing sensor, zoom speed, operation command and LRF
     // bit0~2: sensor
     // bit3~5: zoom speed
     // bit6~12: operation command no
-    // bit13~15: LRF command (unused)
+    // bit13~15: LRF command
     const uint16_t sensor_id = (uint16_t)img_sensor;
     const uint16_t zoom_speed = ((uint16_t)value & 0x07) << 3;
     const uint16_t operation_cmd = ((uint16_t)cmd & 0x7F) << 6;
+    const uint16_t rangefinder_cmd = ((uint16_t)lrf_cmd & 0x07) << 13;
 
     // fill in packet
     const C1Packet c1_packet {
         .content = {
             frame_id: FrameId::C1,
-            sensor_zoom_cmd_be:  htobe16(sensor_id | zoom_speed | operation_cmd)
+            sensor_zoom_cmd_be:  htobe16(sensor_id | zoom_speed | operation_cmd | rangefinder_cmd)
         }
     };
 
@@ -702,8 +689,8 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             unused2to8 : {0, 0, 0, 0, 0, 0, 0},
-            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             roll_be: htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
@@ -862,6 +849,47 @@ bool AP_Mount_Viewpro::set_lens(uint8_t lens)
     return send_camera_command(new_image_sensor, CameraCommand::NO_ACTION, 0);
 }
 
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+// primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+bool AP_Mount_Viewpro::set_camera_source(uint8_t primary_source, uint8_t secondary_source)
+{
+    // maps primary and secondary source to viewpro image sensor
+    ImageSensor new_image_sensor;
+    switch (primary_source) {
+    case 0: // Default (RGB)
+        FALLTHROUGH;
+    case 1: // RGB
+        switch (secondary_source) {
+        case 0: // RGB + Default (None)
+            new_image_sensor = ImageSensor::EO1;
+            break;
+        case 2: // PIP RGB+IR
+            new_image_sensor = ImageSensor::EO1_IR_PIP;
+            break;
+        default:
+            return false;
+        }
+        break;
+    case 2: // IR
+        switch (secondary_source) {
+        case 0: // IR + Default (None)
+            new_image_sensor = ImageSensor::IR;
+            break;
+        case 1: // PIP IR+RGB
+            new_image_sensor = ImageSensor::IR_EO1_PIP;
+            break;
+        default:
+            return false;
+        }
+        break;
+    default:
+        return false;
+    }
+
+    // send desired image type to camera
+    return send_camera_command(new_image_sensor, CameraCommand::NO_ACTION, 0);
+}
+
 // send camera information message to GCS
 void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
 {
@@ -937,6 +965,12 @@ bool AP_Mount_Viewpro::get_rangefinder_distance(float& distance_m) const
 
     distance_m = _rangefinder_dist_m;
     return true;
+}
+
+// enable/disable rangefinder.  Returns true on success
+bool AP_Mount_Viewpro::set_rangefinder_enable(bool enable)
+{
+    return send_camera_command(ImageSensor::NO_ACTION, CameraCommand::NO_ACTION, 0, enable ? LRFCommand::CONTINUOUS_RANGING_START : LRFCommand::STOP_RANGING);
 }
 
 #endif // HAL_MOUNT_VIEWPRO_ENABLED

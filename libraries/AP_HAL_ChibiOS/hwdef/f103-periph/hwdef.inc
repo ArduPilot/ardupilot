@@ -64,13 +64,11 @@ define PORT_INT_REQUIRED_STACK 64
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
 define HAL_NO_RCOUT_THREAD
-define HAL_NO_RCIN_THREAD
 
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
 
 define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
 
@@ -80,7 +78,6 @@ MAIN_STACK 0x200
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN_RX CAN

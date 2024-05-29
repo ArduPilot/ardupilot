@@ -104,6 +104,8 @@ brand_map = {
     "SPRacingH7" : ("Seriously Pro Racing", "H7 Extreme"),
     "SkystarsH7HD" : ("Skystars", "H743 HD"),
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
+    "MicoAir405v2" : ("MicoAir F405 v2.1", "MicoAir"),
+    "MicoAir405Mini" : ("MicoAir F405 Mini", "MicoAir"),
 }
 
 class Firmware():

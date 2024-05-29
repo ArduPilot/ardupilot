@@ -2,6 +2,8 @@
  script implementing pre-arm check that batteries are well balanced
 --]]
 
+---@diagnostic disable: param-type-mismatch
+
 local MAX_CELL_DEVIATION = 0.2
 
 local auth_id = arming:get_aux_auth_id()
