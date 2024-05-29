@@ -21,7 +21,7 @@ jobs:
           HOME: ${{ runner.workspace }}/ardupilot
         run: |
           bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
-          bash --login -c "python -m pip install empy pexpect"
+          bash --login -c "python -m pip install empy==3.3.4 pexpect"
           bash --login -c "python -m pip install dronecan --upgrade"
       - name: Build SITL
         env:
