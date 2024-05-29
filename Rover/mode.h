@@ -12,22 +12,23 @@ public:
     // Auto Pilot modes
     // ----------------
     enum class Number : uint8_t {
-        MANUAL       = 0,
-        ACRO         = 1,
-        STEERING     = 3,
-        HOLD         = 4,
-        LOITER       = 5,
-        FOLLOW       = 6,
-        SIMPLE       = 7,
-#if MODE_DOCK_ENABLED == ENABLED
-        DOCK         = 8,
+        MANUAL         = 0,
+        ACRO           = 1,
+        STEERING       = 3,
+        HOLD           = 4,
+        LOITER         = 5,
+        FOLLOW         = 6,
+        SIMPLE         = 7,
+#if MODE_DOCK_ENABLED  == ENABLED
+        DOCK           = 8,
 #endif
-        CIRCLE       = 9,
-        AUTO         = 10,
-        RTL          = 11,
-        SMART_RTL    = 12,
-        GUIDED       = 15,
-        INITIALISING = 16,
+        CIRCLE         = 9,
+        AUTO           = 10,
+        RTL            = 11,
+        SMART_RTL      = 12,
+        GUIDED         = 15,
+        INITIALISING   = 16,
+        HEADING_LOITER = 17,
     };
 
     // Constructor
@@ -616,6 +617,38 @@ public:
 
     Number mode_number() const override { return Number::LOITER; }
     const char *name4() const override { return "LOIT"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    // attributes of the mode
+    bool is_autopilot_mode() const override { return true; }
+
+    // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override { return _desired_yaw_cd * 0.01f; }
+    float nav_bearing() const override { return _desired_yaw_cd * 0.01f; }
+    float crosstrack_error() const override { return 0.0f; }
+
+    // return desired location
+    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+
+protected:
+
+    bool _enter() override;
+
+    Location _destination;      // target location to hold position around
+    float _desired_speed;       // desired speed (ramped down from initial speed to zero)
+};
+
+class ModeHeadingLoiter : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::HEADING_LOITER; }
+    const char *name4() const override { return "HLOI"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
