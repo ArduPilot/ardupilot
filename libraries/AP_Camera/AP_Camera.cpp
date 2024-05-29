@@ -2,6 +2,7 @@
 
 #if AP_CAMERA_ENABLED
 
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -430,6 +431,44 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
+}
+
+// send a mavlink message; returns false if there was not space to
+// send the message, true otherwise
+bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message msg_id)
+{
+    const auto chan = link.get_chan();
+
+    switch (msg_id) {
+    case MSG_CAMERA_FEEDBACK:
+        CHECK_PAYLOAD_SIZE2(CAMERA_FEEDBACK);
+        send_feedback(chan);
+        break;
+    case MSG_CAMERA_INFORMATION:
+        CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
+        send_camera_information(chan);
+        break;
+    case MSG_CAMERA_SETTINGS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_SETTINGS);
+        send_camera_settings(chan);
+        break;
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    case MSG_CAMERA_FOV_STATUS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_FOV_STATUS);
+        send_camera_fov_status(chan);
+        break;
+#endif
+    case MSG_CAMERA_CAPTURE_STATUS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_CAPTURE_STATUS);
+        send_camera_capture_status(chan);
+        break;
+
+    default:
+        // should not reach this; should only be called for specific IDs
+        break;
+    }
+
+    return true;
 }
 
 // set camera trigger distance in a mission
