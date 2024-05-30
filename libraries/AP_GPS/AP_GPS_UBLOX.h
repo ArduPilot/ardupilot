@@ -906,7 +906,7 @@ private:
     static const config_list config_L5_ovrd_ena[];
     static const config_list config_L5_ovrd_dis[];
     // scratch space for GNSS config
-    static config_list config_GNSS[UBLOX_MAX_GNSS_CONFIG_BLOCKS*3];
+    config_list* config_GNSS;
 };
 
 #endif
