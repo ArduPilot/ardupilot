@@ -10,9 +10,10 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 np.set_printoptions(precision=6, suppress=True)
 
-connect_string = 'udpin:0.0.0.0:14551'
+# connect_string = 'udpin:0.0.0.0:14551'
+connect_string = '/dev/ttyACM0'
 # Create the connection
-master = mavutil.mavlink_connection(connect_string)
+master = mavutil.mavlink_connection(connect_string, baud=57600)
 # Wait a heartbeat before sending commands
 master.wait_heartbeat()
 
@@ -46,12 +47,9 @@ while not stop_read:
 
         stop_read = np.all(param_indexes)
 
-        # print('name: %s\tvalue: %d' % (message['param_id'],
-        #                                message['param_value']))
     except Exception as error:
         print(error)
         break
-        # sys.exit(0)
 
     time.sleep(0.01)
 
@@ -63,18 +61,33 @@ assert params_df.index.is_monotonic_increasing
 params_df = params_df.set_index("param_id", drop=True)
 params_df.sort_index(inplace=True)
 
-# pd.options.display.float_format = '{:.6f}'.format
-# print(params_df[params_df["param_id"] == "GPS_POS1_X"])
+# Round paramever values as mission planner does. It simplifies diffing.
+params_df["param_value"] = np.round(params_df["param_value"], decimals=6)
 
-params_df.to_csv("some_params.csv", header=None)
-params_df["param_value"].to_csv("some_params.param", header=None)
+# params_df.to_csv("cube_orange_default_params.csv", header=None)
+params_df["param_value"].to_csv("cube_orange_default_params.param", header=False)
 
 # %%
+# Get single param.
 
+master.mav.param_request_read_send(
+    master.target_system, master.target_component,
+    b'ACRO_RP_EXPO',
+    -1
+)
 
-KDV01_green_first_flyable = pd.read_csv("KDV01_green_first_flyable.param")
+message = master.recv_match(type='PARAM_VALUE', blocking=True).to_dict()
 
-KDV01_green_first_flyable = KDV01_green_first_flyable.set_index(KDV01_green_first_flyable.keys()[0], drop=True)
-KDV01_green_first_flyable.sort_index(inplace=True)
+print(message)
 
-KDV01_green_first_flyable.to_csv("KDV01_green_first_flyable___.param", header=None)
+# %%
+# Sorts parameter list from mission planner
+
+file_name = "KDV01_005_green_CUBEPLUS_20240409.param"
+
+params_df = pd.read_csv(file_name, header=None)
+
+params_df = params_df.set_index(params_df.keys()[0], drop=True)
+params_df.sort_index(inplace=True)
+
+params_df.to_csv(file_name.replace(".param", "") + "_sorted.param", header=False)
