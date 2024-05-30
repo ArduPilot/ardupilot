@@ -144,10 +144,15 @@ define HAL_PARACHUTE_ENABLED 0
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc
+#only enable BMP280 Baro
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+undef define AP_BARO_BMP280_ENABLED
+define AP_BARO_BMP280_ENABLED 1
 
 # disable SMBUS battery monitors to save flash
 undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
+
 
 # setup for OSD
 define HAL_OSD_TYPE_DEFAULT 1
@@ -159,6 +164,6 @@ define HAL_WITH_MSP_DISPLAYPORT 1
 undef HAL_MSP_ENABLED
 define HAL_MSP_ENABLED 1
 
-# need to probe external baros even 'though we're minimised:
+# need to probe external baros even 'though we're minimised to allow custom build options:
 undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
 define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
