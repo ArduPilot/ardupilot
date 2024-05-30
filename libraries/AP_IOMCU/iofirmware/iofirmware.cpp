@@ -91,7 +91,7 @@ static void setup_tx_dma(hal_uart_driver* uart)
     dmaStreamSetMode(uart->dmatx, uart->dmatxmode    | STM32_DMA_CR_DIR_M2P |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     // enable transmission complete interrupt
-    uart->usart->SR = ~USART_SR_TC;
+    uart->usart->SR &= ~USART_SR_TC;
     uart->usart->CR1 |= USART_CR1_TCIE;
 
     dmaStreamEnable(uart->dmatx);
