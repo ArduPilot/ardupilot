@@ -1535,16 +1535,15 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (auto &group : pwm_group_list) {
         if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
+            dmaStreamFreeI(group.dma);
 #if defined(STM32F1)
             // leaving the peripheral running on IOMCU plays havoc with the UART that is
             // also sharing this channel, we only turn it off rather than resetting so
             // that we don't have to worry about line modes etc
             if (group.pwm_started && group.dma_handle->is_shared()) {
-                group.pwm_drv->tim->CR1   = 0;
-                group.pwm_drv->tim->DIER  = 0;
+                bdshot_disable_pwm_f1(group);
             }
 #endif
-            dmaStreamFreeI(group.dma);
             group.dma = nullptr;
             chSysUnlock();
         }
