@@ -235,7 +235,10 @@ void AP_IrisOrca::thread_main()
             if (_actuator_state.errors != 0) {
                 // send sleep command if in error state to attempt to clear the error
                 send_actuator_sleep_cmd();
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Error %i", _actuator_state.errors);
+                if (now_ms - _last_error_report_ms > IRISORCA_ERROR_REPORT_INTERVAL_MAX_MS) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Error %i", _actuator_state.errors);
+                    _last_error_report_ms = now_ms;
+                }
                 continue;
             }
             
@@ -515,7 +518,7 @@ void AP_IrisOrca::send_actuator_sleep_cmd()
         WITH_SEMAPHORE(_last_healthy_sem);
         _last_send_actuator_ms = AP_HAL::millis();
 
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Actuator sleep command sent");
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Actuator sleep command sent");
     }
 }
 
