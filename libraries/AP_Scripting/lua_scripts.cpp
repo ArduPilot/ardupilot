@@ -68,6 +68,9 @@ void lua_scripts::print_error(MAV_SEVERITY severity) {
         return;
     }
     last_print_ms = AP_HAL::millis();
+    if (strlen(error_msg_buf) > 44) {
+        error_msg_buf[45] = 0;
+    }
     GCS_SEND_TEXT(severity, "Lua: %s", error_msg_buf);
     error_msg_buf_sem.give();
 }

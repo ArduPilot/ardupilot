@@ -380,6 +380,7 @@ bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
     lua_scripts::get_last_error_semaphore()->take_blocking();
     const char *error_buf = lua_scripts::get_last_error_message();
     if (error_buf != nullptr) {
+        buflen = buflen < 44 ? buflen : 43;
         hal.util->snprintf(buffer, buflen, "Scripting: %s", error_buf);
         lua_scripts::get_last_error_semaphore()->give();
         return false;
