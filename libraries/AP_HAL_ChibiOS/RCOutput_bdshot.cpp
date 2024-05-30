@@ -230,6 +230,11 @@ void RCOutput::bdshot_ic_dma_deallocate(Shared_DMA *ctx)
             chSysLock();
             if (group.bdshot.ic_dma_handle[icuch] == ctx && group.bdshot.ic_dma[icuch] != nullptr) {
                 dmaStreamFreeI(group.bdshot.ic_dma[icuch]);
+#if defined(STM32F1)
+                if (group.bdshot.ic_dma_handle[icuch]->is_shared()) {
+                    bdshot_disable_pwm_f1(group);
+                }
+#endif
                 group.bdshot.ic_dma[icuch] = nullptr;
             }
             chSysUnlock();
