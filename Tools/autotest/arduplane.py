@@ -3745,7 +3745,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def FenceMinAltAutoEnableAbort(self):
         '''Tests autoenablement of the alt min fence and fences on arming'''
         self.set_parameters({
-            "FENCE_TYPE": 9,     # Set fence type to min alt and max alt
+            "FENCE_TYPE": 8,     # Set fence type to min alt
             "FENCE_ACTION": 1,   # Set action to RTL
             "FENCE_ALT_MIN": 25,
             "FENCE_ALT_MAX": 100,
@@ -3760,11 +3760,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        # max alt fence should now be enabled
-        self.assert_fence_enabled()
 
         self.takeoff(alt=50, mode='TAKEOFF')
         self.change_mode("FBWA")
+        # min alt fence should now be enabled
+        self.assert_fence_enabled()
         self.set_rc(3, 1100)    # lower throttle
 
         self.progress("Waiting for RTL")
@@ -3788,6 +3788,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1200)
         # self.set_rc(3, 1600)    # raise throttle
         self.wait_altitude(30, 40, timeout=200, relative=True)
+        # min alt fence should now be re-enabled
+        self.assert_fence_enabled()
 
         self.change_mode("AUTO")
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
