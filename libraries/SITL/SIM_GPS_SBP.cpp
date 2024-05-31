@@ -111,6 +111,7 @@ void GPS_SBP::publish(const GPS_Data *d)
         sbp_send_message(SBP_DOPS_MSGTYPE, 0x2222, sizeof(dops),
                           (uint8_t*)&dops);
 
+        hb = {};
         hb.protocol_major = 0; //Sends protocol version 0
         sbp_send_message(SBP_HEARTBEAT_MSGTYPE, 0x2222, sizeof(hb),
                           (uint8_t*)&hb);
