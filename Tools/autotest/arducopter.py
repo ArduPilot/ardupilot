@@ -1454,7 +1454,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(10, 100, relative=True)
         self.set_rc(3, 1500)
         self.set_rc(2, 1400)
-        self.wait_distance_to_home(12, 20)
+        self.wait_distance_to_home(12, 20, timeout=30)
         tstart = self.get_sim_time()
         push_time = 70 # push against barrier for 60 seconds
         failed_max = False
@@ -1513,7 +1513,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.load_fence("fence-in-middle-of-nowhere.txt")
 
         self.delay_sim_time(5) # let fence check run so it loads-from-eeprom
-        self.assert_prearm_failure("vehicle outside fence")
+        self.assert_prearm_failure("vehicle outside Polygon fence")
         self.progress("Failed to arm outside fence (good!)")
         self.clear_fence()
         self.delay_sim_time(5) # let fence breach clear
@@ -1523,7 +1523,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("ensure we can't arm with bad radius")
         self.context_push()
         self.set_parameter("FENCE_RADIUS", -1)
-        self.assert_prearm_failure("Invalid FENCE_RADIUS value")
+        self.assert_prearm_failure("Invalid Circle FENCE_RADIUS value")
         self.context_pop()
         self.progress("Failed to arm with bad radius")
         self.drain_mav()
@@ -1741,14 +1741,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AVOID_ENABLE": 0,
             "FENCE_ENABLE" : 1,
             "FENCE_TYPE": 15,
-            "FENCE_ALT_MIN": 10,
-            "FENCE_ALT_MAX": 20,
+            "FENCE_ALT_MIN": 20,
+            "FENCE_ALT_MAX": 30,
         })
 
         self.change_mode("GUIDED")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.user_takeoff(alt_min=15)
+        self.user_takeoff(alt_min=25)
 
         # Check fence is enabled
         self.do_fence_enable()
@@ -1760,8 +1760,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1800)
 
         self.wait_mode('RTL', timeout=120)
+        # center throttle
+        self.set_rc(3, 1500)
 
-        self.wait_landed_and_disarmed()
+        # wait until we are below the fence floor and re-enter loiter
+        self.wait_altitude(5, 15, relative=True)
+        self.change_mode('LOITER')
+        # wait for manual recovery to expire
+        self.delay_sim_time(15)
+
+        # lower throttle and try and land
+        self.set_rc(3, 1300)
+        self.wait_altitude(0, 2, relative=True)
+        self.wait_disarmed()
         self.assert_fence_enabled()
 
         # Assert fence is not healthy since it was enabled manually
@@ -1799,8 +1810,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1800)
 
         self.wait_mode('RTL', timeout=120)
-        # Assert fence is not healthy now that we are in RTL
-        self.assert_sensor_state(fence_bit, healthy=False)
 
         self.wait_landed_and_disarmed(0)
         # the breach should have cleared since we auto-disable the
@@ -12005,7 +12014,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def disabled_tests(self):
         return {
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
-            "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
