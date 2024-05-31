@@ -54,6 +54,10 @@ void ModeAuto::_exit()
         }
 #endif
         if (restart) {
+#if AP_FENCE_ENABLED
+            // no longer landing to re-enable the possiblity of the fence floor
+            plane.fence.reset_fence_floor_enable();
+#endif
             plane.landing.restart_landing_sequence();
         }
     }
