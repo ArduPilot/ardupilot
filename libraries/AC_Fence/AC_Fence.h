@@ -73,7 +73,7 @@ public:
     uint8_t enable_configured(bool value) { return enable(value, _configured_fences, true); }
 
     /// auto_enabled - automaticaly enable/disable fence depending of flight status
-    AutoEnable auto_enabled() { return static_cast<AutoEnable>(_auto_enabled.get()); }
+    AutoEnable auto_enabled() const { return static_cast<AutoEnable>(_auto_enabled.get()); }
 
     /// enable_floor - allows fence floor to be enabled/disabled. Note this does not update the eeprom saved value
     void enable_floor();
@@ -84,20 +84,16 @@ public:
     /// auto_enable_fence_on_takeoff - auto enables the fence. Called after takeoff conditions met
     void auto_enable_fence_after_takeoff();
 
-    /// auto_disable_fence_for_landing - auto disables respective fence. Called prior to landing.
-    void auto_disable_fence_for_landing();
-
     /// auto_enable_fences_on_arming - auto enables all applicable fences on arming
     void auto_enable_fence_on_arming();
 
     /// auto_disable_fences_on_disarming - auto disables all applicable fences on disarming
     void auto_disable_fence_on_disarming();
 
+    uint8_t get_auto_disable_fences(void) const;
+
     /// auto_enable_fence_floor - auto enables fence floor once desired altitude has been reached.
     bool auto_enable_fence_floor();
-
-    /// reset_fence_floor_enable - auto disables the fence floor if below the desired altitude.
-    bool reset_fence_floor_enable();
 
     /// enabled - returns whether fencing is enabled or not
     bool enabled() const { return _enabled_fences; }
@@ -119,7 +115,8 @@ public:
     ///
 
     /// check - returns the fence type that has been breached (if any)
-    uint8_t check();
+    /// disabled_fences can be used to disable fences for certain conditions (e.g. landing)
+    uint8_t check(bool disable_auto_fence = false);
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
     bool check_destination_within_fence(const class Location& loc);
@@ -252,7 +249,6 @@ private:
     float           _circle_breach_distance;    // distance beyond the circular fence
 
     // other internal variables
-    bool            _floor_disabled_for_landing;  // fence floor is disabled for landing
     uint8_t         _auto_enable_mask = AC_FENCE_ALL_FENCES;  // fences that can be auto-enabled or auto-disabled
     float           _home_distance;         // distance from home in meters (provided by main code)
     float           _curr_alt;
