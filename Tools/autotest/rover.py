@@ -6881,10 +6881,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ]),
         ])
 
-        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False)
+        self.assert_prearm_failure('vehicle outside Polygon fence', other_prearm_failures_fatal=False)
         self.reboot_sitl()
 
-        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+        self.assert_prearm_failure('vehicle outside Polygon fence', other_prearm_failures_fatal=False, timeout=120)
 
         self.progress("Ensure we can arm when a polyfence fence is cleared when we've previously been in breach")
         self.clear_fence()
@@ -6900,7 +6900,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ]),
         ])
         self.reboot_sitl()
-        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+        self.assert_prearm_failure('vehicle outside Polygon fence', other_prearm_failures_fatal=False, timeout=120)
         self.clear_fence()
         self.wait_ready_to_arm()
 
@@ -6914,11 +6914,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, 20), # tl,
             ]),
         ])
-        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+        self.assert_prearm_failure('vehicle outside Polygon fence', other_prearm_failures_fatal=False, timeout=120)
         self.set_parameter('FENCE_TYPE', 2)
         self.wait_ready_to_arm()
         self.set_parameter('FENCE_TYPE', 6)
-        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+        self.assert_prearm_failure('vehicle outside Polygon fence', other_prearm_failures_fatal=False, timeout=120)
 
     def OpticalFlow(self):
         '''lightly test OpticalFlow'''

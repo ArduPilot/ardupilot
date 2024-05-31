@@ -1601,7 +1601,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.delay_sim_time(2) # Allow breach to propagate
             self.assert_fence_enabled()
 
-            self.try_arm(False, "vehicle outside fence")
+            self.try_arm(False, "vehicle outside Min Alt fence")
             self.do_fence_disable()
             self.set_parameter("FENCE_ALT_MIN", default_fence_alt_min)
 
@@ -1620,7 +1620,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.do_fence_enable()
             self.assert_fence_enabled()
             self.delay_sim_time(2) # Allow breach to propagate
-            self.try_arm(False, "vehicle outside fence")
+            self.try_arm(False, "vehicle outside Polygon fence")
             self.do_fence_disable()
             self.clear_fence()
 
@@ -1640,7 +1640,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.do_fence_enable()
             self.assert_fence_enabled()
             self.delay_sim_time(2) # Allow breach to propagate
-            self.try_arm(False, "vehicle outside fence")
+            self.try_arm(False, "vehicle outside Polygon fence")
             self.do_fence_disable()
             self.clear_fence()
 
@@ -3742,6 +3742,49 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.set_current_waypoint(0, check_afterwards=False)
             self.set_rc(3, 1000)    # lower throttle
 
+    def FenceMinAltEnableAutoland(self):
+        '''Tests autolanding when alt min fence is enabled'''
+        self.set_parameters({
+            "FENCE_TYPE": 12,     # Set fence type to min alt and max alt
+            "FENCE_ACTION": 1,   # Set action to RTL
+            "FENCE_ALT_MIN": 20,
+            "FENCE_AUTOENABLE": 0,
+            "FENCE_ENABLE" : 1,
+            "RTL_AUTOLAND" : 2,
+        })
+
+        # Grab Home Position
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.homeloc = self.mav.location()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.takeoff(alt=50, mode='TAKEOFF')
+        self.change_mode("FBWA")
+        self.set_rc(3, 1100)    # lower throttle
+
+        self.progress("Waiting for RTL")
+        tstart = self.get_sim_time()
+        mode = "RTL"
+        while not self.mode_is(mode, drain_mav=False):
+            self.mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
+                self.mav.flightmode, mode, self.get_altitude(relative=True)))
+            if (self.get_sim_time_cached() > tstart + 120):
+                raise WaitModeTimeout("Did not change mode")
+        self.progress("Got mode %s" % mode)
+        # switch to FBWA
+        self.change_mode("FBWA")
+        self.set_rc(3, 1500)    # raise throttle
+        self.wait_altitude(25, 35, timeout=50, relative=True)
+        self.set_rc(3, 1000)    # lower throttle
+        # Now check we can land
+        self.fly_home_land_and_disarm()
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+        self.set_current_waypoint(0, check_afterwards=False)
+        self.set_rc(3, 1000)    # lower throttle
+
     def FenceMinAltAutoEnableAbort(self):
         '''Tests autoenablement of the alt min fence and fences on arming'''
         self.set_parameters({
@@ -5776,6 +5819,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.FenceRetRally,
             self.FenceAltCeilFloor,
             self.FenceMinAltAutoEnable,
+            self.FenceMinAltEnableAutoland,
             self.FenceMinAltAutoEnableAbort,
             self.FenceAutoEnableDisableSwitch,
             self.FenceEnableDisableSwitch,
