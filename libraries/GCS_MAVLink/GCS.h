@@ -1144,9 +1144,10 @@ public:
     void enable_high_latency_connections(bool enabled);
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
+    virtual uint8_t sysid_this_mav() const = 0;
+
 protected:
 
-    virtual uint8_t sysid_this_mav() const = 0;
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;
