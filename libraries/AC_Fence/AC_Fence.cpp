@@ -248,11 +248,6 @@ uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
 
     // fences that were manually changed are no longer eligible for auto-enablement or disablement
     if (update_auto_mask) {
-        // if we are explicitly enabling or disabling the alt min fence and it was auto-enabled then make sure
-        // it doesn't get re-enabled or disabled
-        if (fence_types & _auto_enable_mask & AC_FENCE_TYPE_ALT_MIN) {
-            _floor_disabled_for_landing = !value;
-        }
         _auto_enable_mask &= ~fences;
     }
 
@@ -328,49 +323,30 @@ void AC_Fence::auto_disable_fence_on_disarming(void)
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
 {
-    switch(auto_enabled()) {
-        case AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF:
-        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
-        case AC_Fence::AutoEnable::ONLY_WHEN_ARMED: {
-            // auto-enable fences that aren't currently auto-enabled
-            if (_auto_enable_mask & AC_FENCE_TYPE_ALT_MIN) {
-                _floor_disabled_for_landing = false;
-            }
-            const uint8_t fences = enable(true, _auto_enable_mask, false);
-            print_fence_message("auto-enabled", fences);
-            break;
-        }
-        default:
-            // fence does not auto-enable in other takeoff conditions
-            break;
+    if (auto_enabled() != AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF) {
+        return;
     }
+
+    const uint8_t fences = enable(true, _auto_enable_mask, false);
+    print_fence_message("auto-enabled", fences);
 }
 
-/*
-  called when performing an auto landing
- */
-void AC_Fence::auto_disable_fence_for_landing(void)
+// return fences that should be auto-disabled when requested
+uint8_t AC_Fence::get_auto_disable_fences(void) const
 {
+    uint8_t auto_disable = 0;
     switch (auto_enabled()) {
-        case AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF: {
-            // disable only those fences which are allowed to be disabled
-            if (_auto_enable_mask & _enabled_fences & AC_FENCE_TYPE_ALT_MIN) {
-                _floor_disabled_for_landing = true;
-            }
-            const uint8_t fences = enable(false, _auto_enable_mask & _enabled_fences, false);
-            print_fence_message("auto-disabled", fences);
+        case AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF:
+            auto_disable = _auto_enable_mask;
             break;
-        }
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
         case AC_Fence::AutoEnable::ONLY_WHEN_ARMED:
-            enable(false, AC_FENCE_TYPE_ALT_MIN, false);
-            _floor_disabled_for_landing = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Min Alt fence auto-disabled");
+            auto_disable = _auto_enable_mask & AC_FENCE_TYPE_ALT_MIN;
             break;
         default:
-            // fence does not auto-disable in other landing conditions
             break;
     }
+    return auto_disable;
 }
 
 uint8_t AC_Fence::present() const
@@ -609,9 +585,11 @@ bool AC_Fence::check_fence_alt_min()
 bool AC_Fence::auto_enable_fence_floor()
 {
     // altitude fence check
-    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)
-        || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)
-        || (!_enabled && (auto_enabled() != AC_Fence::AutoEnable::ONLY_WHEN_ARMED))) {
+    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)       // not configured
+        || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)   // already enabled
+        || !(_auto_enable_mask & AC_FENCE_TYPE_ALT_MIN)     // has been manually disabled
+        || (!_enabled && (auto_enabled() == AC_Fence::AutoEnable::ALWAYS_DISABLED
+            || auto_enabled() == AutoEnable::ENABLE_ON_AUTO_TAKEOFF))) {
         // not enabled
         return false;
     }
@@ -621,33 +599,9 @@ bool AC_Fence::auto_enable_fence_floor()
     _curr_alt = -alt; // translate Down to Up
 
     // check if we are over the altitude fence
-    if (!floor_enabled() && !_floor_disabled_for_landing && _curr_alt >= _alt_min + _margin) {
+    if (!floor_enabled() && _curr_alt >= _alt_min + _margin) {
         enable(true, AC_FENCE_TYPE_ALT_MIN, false);
         gcs().send_text(MAV_SEVERITY_NOTICE, "Min Alt fence enabled (auto enable)");
-        return true;
-    } 
-
-    return false;
-}
-
-/// reset fence floor auto-enablement 
-bool AC_Fence::reset_fence_floor_enable()
-{
-    // altitude fence check
-    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN) || (!_enabled && !_auto_enabled)) {
-        // not enabled
-        return false;
-    }
-
-    float alt;
-    AP::ahrs().get_relative_position_D_home(alt);
-    _curr_alt = -alt; // translate Down to Up
-
-    // check if we are under the altitude fence
-    if ((floor_enabled() || _floor_disabled_for_landing) && _curr_alt <= _alt_min - _margin) {
-        enable(false, AC_FENCE_TYPE_ALT_MIN, false);
-        _floor_disabled_for_landing = false;
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Min Alt fence disabled (auto disable)");
         return true;
     } 
 
@@ -728,41 +682,53 @@ bool AC_Fence::check_fence_circle()
 
 
 /// check - returns bitmask of fence types breached (if any)
-uint8_t AC_Fence::check()
+uint8_t AC_Fence::check(bool disable_auto_fences)
 {
     uint8_t ret = 0;
+    uint8_t disabled_fences = disable_auto_fences ? get_auto_disable_fences() : 0;
+    uint8_t fences_to_disable = disabled_fences & _enabled_fences;
 
     // clear any breach from a non-enabled fence
     clear_breach(~_configured_fences);
+    // clear any breach from disabled fences
+    clear_breach(fences_to_disable);
+
+    // report on any fences that were auto-disabled
+    if (fences_to_disable) {
+        print_fence_message("auto-disabled", fences_to_disable);
+    }
 
     // return immediately if disabled
     if ((!enabled() && !_auto_enabled && !(_configured_fences & AC_FENCE_TYPE_ALT_MIN)) || !_configured_fences) {
         return 0;
     }
 
+    // disable the (temporarily) disabled fences
+    enable(false, disabled_fences, false);
+
     // maximum altitude fence check
-    if (check_fence_alt_max()) {
+    if (!(disabled_fences & AC_FENCE_TYPE_ALT_MAX) && check_fence_alt_max()) {
         ret |= AC_FENCE_TYPE_ALT_MAX;
     }
 
     // minimum altitude fence check, do this before auto-disabling (e.g. because falling)
     // so that any action can be taken
-    if (floor_enabled() && check_fence_alt_min()) {
+    if (!(disabled_fences & AC_FENCE_TYPE_ALT_MIN) && check_fence_alt_min()) {
         ret |= AC_FENCE_TYPE_ALT_MIN;
     }
 
-    // auto enable floor unless auto enable has been set (which means other behaviour is required)
-    if (auto_enabled() != AutoEnable::ENABLE_ON_AUTO_TAKEOFF && (_configured_fences & AC_FENCE_TYPE_ALT_MIN)) {
+    // auto enable floor unless auto enable on auto takeoff has been set (which means other behaviour is required)
+    if (!(disabled_fences & AC_FENCE_TYPE_ALT_MIN)) {
         auto_enable_fence_floor();
     }
 
     // circle fence check
-    if (check_fence_circle()) {
+    if (!(disabled_fences & AC_FENCE_TYPE_CIRCLE) && check_fence_circle()) {
         ret |= AC_FENCE_TYPE_CIRCLE;
     }
 
     // polygon fence check
-    if (check_fence_polygon()) {
+    if (!(disabled_fences & AC_FENCE_TYPE_POLYGON) && check_fence_polygon()) {
         ret |= AC_FENCE_TYPE_POLYGON;
     }
 
@@ -937,7 +903,6 @@ void AC_Fence::disable_floor() {}
 void AC_Fence::update() {}
 
 void AC_Fence::auto_enable_fence_after_takeoff() {}
-void AC_Fence::auto_disable_fence_for_landing() {}
 void AC_Fence::auto_enable_fence_on_arming() {}
 void AC_Fence::auto_disable_fence_on_disarming() {}
 
@@ -947,7 +912,7 @@ uint8_t AC_Fence::get_enabled_fences() const { return 0; }
 
 bool AC_Fence::pre_arm_check(const char* &fail_msg) const  { return true; }
 
-uint8_t AC_Fence::check() { return 0; }
+uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
 bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
 float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
 void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }
