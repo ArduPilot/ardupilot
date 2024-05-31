@@ -96,6 +96,9 @@ public:
     /// auto_enable_fence_floor - auto enables fence floor once desired altitude has been reached.
     bool auto_enable_fence_floor();
 
+    /// reset_fence_floor_enable - auto disables the fence floor if below the desired altitude.
+    bool reset_fence_floor_enable();
+
     /// enabled - returns whether fencing is enabled or not
     bool enabled() const { return _enabled_fences; }
 

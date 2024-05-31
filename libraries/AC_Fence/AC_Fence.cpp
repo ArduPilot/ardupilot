@@ -609,7 +609,9 @@ bool AC_Fence::check_fence_alt_min()
 bool AC_Fence::auto_enable_fence_floor()
 {
     // altitude fence check
-    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN) || !_enabled) {
+    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)
+        || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)
+        || (!_enabled && (auto_enabled() != AC_Fence::AutoEnable::ONLY_WHEN_ARMED))) {
         // not enabled
         return false;
     }
@@ -620,8 +622,32 @@ bool AC_Fence::auto_enable_fence_floor()
 
     // check if we are over the altitude fence
     if (!floor_enabled() && !_floor_disabled_for_landing && _curr_alt >= _alt_min + _margin) {
-        enable(true, AC_FENCE_TYPE_ALT_MIN);
+        enable(true, AC_FENCE_TYPE_ALT_MIN, false);
         gcs().send_text(MAV_SEVERITY_NOTICE, "Min Alt fence enabled (auto enable)");
+        return true;
+    } 
+
+    return false;
+}
+
+/// reset fence floor auto-enablement 
+bool AC_Fence::reset_fence_floor_enable()
+{
+    // altitude fence check
+    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN) || (!_enabled && !_auto_enabled)) {
+        // not enabled
+        return false;
+    }
+
+    float alt;
+    AP::ahrs().get_relative_position_D_home(alt);
+    _curr_alt = -alt; // translate Down to Up
+
+    // check if we are under the altitude fence
+    if ((floor_enabled() || _floor_disabled_for_landing) && _curr_alt <= _alt_min - _margin) {
+        enable(false, AC_FENCE_TYPE_ALT_MIN, false);
+        _floor_disabled_for_landing = false;
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Min Alt fence disabled (auto disable)");
         return true;
     } 
 
