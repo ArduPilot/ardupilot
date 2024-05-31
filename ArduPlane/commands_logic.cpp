@@ -434,10 +434,6 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         // if we were in an abort we need to explicitly move out of the abort state, as it's sticky
         set_flight_stage(AP_FixedWing::FlightStage::LAND);
     }
-
-#if AP_FENCE_ENABLED
-    plane.fence.auto_disable_fence_for_landing();
-#endif
 }
 
 #if HAL_QUADPLANE_ENABLED
