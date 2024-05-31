@@ -480,11 +480,6 @@ void ModeAuto::land_start()
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AP_FENCE_ENABLED
-    // disable the fence on landing
-    copter.fence.auto_disable_fence_for_landing();
-#endif
-
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
 
