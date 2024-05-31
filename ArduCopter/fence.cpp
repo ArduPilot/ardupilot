@@ -10,8 +10,12 @@ void Copter::fence_check()
 {
     const uint8_t orig_breaches = fence.get_breaches();
 
+    bool is_in_landing = flightmode->mode_number() == Mode::Number::LAND
+                         || flightmode->mode_number() == Mode::Number::RTL
+                         || flightmode->mode_number() == Mode::Number::SMART_RTL;
+
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check();
+    const uint8_t new_breaches = fence.check(is_in_landing);
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
     // fence pre-arm check actually checks if any fence has been breached 
