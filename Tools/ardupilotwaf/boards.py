@@ -4,6 +4,7 @@ from collections import OrderedDict
 import re
 import sys, os
 import fnmatch
+import platform
 
 import waflib
 from waflib import Utils
@@ -45,8 +46,8 @@ class Board:
         cfg.load('toolchain')
         cfg.load('cxx_checks')
 
-        # check elf symbols by default
-        cfg.env.CHECK_SYMBOLS = True
+        # don't check elf symbols by default
+        cfg.env.CHECK_SYMBOLS = False
 
         env = waflib.ConfigSet.ConfigSet()
         def srcpath(path):
@@ -751,6 +752,11 @@ class sitl(Board):
             'SITL',
         ]
 
+        # wrap malloc to ensure memory is zeroed
+        # don't do this on MacOS as ld doesn't support --wrap
+        if platform.system() != 'Darwin':
+            env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
@@ -794,8 +800,6 @@ class sitl(Board):
 
         if Utils.unversioned_sys_platform() == 'cygwin':
             env.CXXFLAGS += ['-DCYGWIN_BUILD']
-            # can't do symbol checking on cygwin due to exception usage in system libraries
-            env.CHECK_SYMBOLS = False
 
         if 'clang++' in cfg.env.COMPILER_CXX:
             print("Disabling SLP for clang++")
@@ -1007,6 +1011,8 @@ class esp32(Board):
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
 
+        # wrap malloc to ensure memory is zeroed
+        env.LINKFLAGS += ['-Wl,--wrap,malloc']
 
         env.INCLUDES += [
                 cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
@@ -1260,6 +1266,16 @@ class chibios(Board):
             cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
             env.HAVE_INTEL_HEX = False
 
+        if cfg.options.enable_new_checking:
+            env.CHECK_SYMBOLS = True
+        else:
+            # disable new checking on ChibiOS by default to save flash
+            # we enable it in a CI test to catch incorrect usage
+            env.CXXFLAGS += [
+                "-DNEW_NOTHROW=new",
+                "-fcheck-new", # rely on -fcheck-new ensuring nullptr checks
+                ]
+
     def build(self, bld):
         super(chibios, self).build(bld)
         bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
@@ -1289,9 +1305,6 @@ class linux(Board):
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
 
-        # can't do symbol checking on Linux due to exception usage in libc++
-        env.CHECK_SYMBOLS = False
-
         env.BOARD_CLASS = "LINUX"
 
         env.DEFINES.update(
@@ -1318,6 +1331,9 @@ class linux(Board):
         env.AP_LIBRARIES += [
             'AP_HAL_Linux',
         ]
+
+        # wrap malloc to ensure memory is zeroed
+        env.LINKFLAGS += ['-Wl,--wrap,malloc']
 
         if cfg.options.force_32bit:
             env.DEFINES.update(
