@@ -4065,6 +4065,21 @@ bool QuadPlane::in_transition(void) const
 }
 
 /*
+  return true if we are in a fwd transition for a SLT quadplane
+  and in an auto-throttle mode
+ */
+bool QuadPlane::in_slt_fwd_transition(void) const
+{
+    if (!in_transition() || tiltrotor.enabled() || tailsitter.enabled()) {
+        return false;
+    }
+    if (!plane.control_mode->does_auto_throttle()) {
+        return false;
+    }
+    return transition->in_fwd_transition();
+}
+
+/*
   calculate current stopping distance for a quadplane in fixed wing flight
  */
 float QuadPlane::stopping_distance(float ground_speed_squared) const
@@ -4552,6 +4567,15 @@ void SLT_Transition::set_last_fw_pitch()
 {
     last_fw_mode_ms = AP_HAL::millis();
     last_fw_nav_pitch_cd = plane.nav_pitch_cd;
+}
+
+/*
+  return true if in a forward transition
+ */
+bool SLT_Transition::in_fwd_transition() const
+{
+    return transition_state == TRANSITION_AIRSPEED_WAIT ||
+        transition_state == TRANSITION_TIMER;
 }
 
 void SLT_Transition::force_transition_complete() {

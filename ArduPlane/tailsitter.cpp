@@ -1034,4 +1034,12 @@ bool Tailsitter_Transition::allow_weathervane()
     return !tailsitter.in_vtol_transition() && (vtol_limit_start_ms == 0);
 }
 
+/*
+  return true if in a forward transition
+ */
+bool Tailsitter_Transition::in_fwd_transition() const
+{
+    return transition_state == TRANSITION_ANGLE_WAIT_FW;
+}
+
 #endif  // HAL_QUADPLANE_ENABLED
