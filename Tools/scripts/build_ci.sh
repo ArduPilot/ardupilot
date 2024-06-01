@@ -345,6 +345,18 @@ for t in $CI_BUILD_TARGET; do
         $waf bootloader
         continue
     fi
+
+    if [ "$t" == "new-check" ]; then
+        echo "Building Pixhawk6X with new check"
+        $waf configure --board Pixhawk6X --enable-new-checking
+        $waf clean
+        $waf
+        echo "Building Pixhawk6X-PPPGW with new check"
+        $waf configure --board Pixhawk6X-PPPGW --enable-new-checking
+        $waf clean
+        $waf AP_Periph
+        continue
+    fi
     
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
