@@ -106,6 +106,7 @@ void SITL_State::_usage(void)
            "\t--serial7 device         set device string for SERIAL7\n"
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
+           "\t--uartA device           alias for --serial0 (do not use)\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -305,7 +306,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"enable-fgview",   false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
-        {"uartA",           true,   0, CMDLINE_UARTA},
+        // {"uartA",           true,   0, CMDLINE_UARTA}, // alias for serial0
         {"uartB",           true,   0, CMDLINE_UARTB},
         {"uartC",           true,   0, CMDLINE_UARTC},
         {"uartD",           true,   0, CMDLINE_UARTD},
@@ -316,6 +317,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartI",           true,   0, CMDLINE_UARTI},
         {"uartJ",           true,   0, CMDLINE_UARTJ},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
+        {"uartA",           true,   0, CMDLINE_SERIAL0}, // for MissionPlanner compatibility
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
         {"serial3",         true,   0, CMDLINE_SERIAL3},
