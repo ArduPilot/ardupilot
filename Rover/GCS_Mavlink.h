@@ -4,7 +4,7 @@
 
   // set 0 in 4.6, remove feature in 4.7:
 #ifndef AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
-#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 1
+#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 0
 #endif
 
 #include "defines.h"
