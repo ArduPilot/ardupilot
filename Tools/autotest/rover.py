@@ -6997,6 +6997,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def disabled_tests(self):
         return {
             "SlewRate": "got timing report failure on CI",
+            "MAV_CMD_NAV_SET_YAW_SPEED": "compiled out of code by default",
         }
 
     def rc_defaults(self):
