@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AP_RCTelemetry_config.h"
+
+#if HAL_CRSF_TELEM_ENABLED
+
 #include "AP_CRSF_Telem.h"
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -30,7 +34,7 @@
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CRSF_TELEM_ENABLED
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -1270,7 +1274,7 @@ void AP_CRSF_Telem::calc_parameter() {
 
     _pending_request.frame_type = 0;
     _telem_pending = true;
-#endif
+#endif  // OSD_PARAM_ENABLED
 }
 
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
@@ -1420,7 +1424,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     _pending_request.frame_type = 0;
     _telem_pending = true;
 }
-#endif
+#endif  // HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
 
 // write parameter information back into AP - assumes we already know the encoding for floats
 void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write_frame)
@@ -1490,7 +1494,7 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
     default:
         break;
     }
-#endif
+#endif  // OSD_PARAM_ENABLED
 }
 
 // get status text data
@@ -1649,4 +1653,4 @@ namespace AP {
     }
 };
 
-#endif
+#endif  // HAL_CRSF_TELEM_ENABLED
