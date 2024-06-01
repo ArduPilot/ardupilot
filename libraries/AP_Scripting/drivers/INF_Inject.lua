@@ -267,6 +267,8 @@ local function check_input()
 
    gcs:send_named_float('VOL_SRV', state.vol_svr)
    gcs:send_named_float('VOL_PUMP', state.vol_pump)
+   gcs:send_named_float('AMP_PUMP', state.amp_pump)
+   gcs:send_named_float('PWM_OUT2', state.PWM_OUT2)
    gcs:send_named_float('INF_ETEMP', state.tmp_env)
    gcs:send_named_float('INF_TEMP1', state.tmp0)
    gcs:send_named_float('INF_TEMP2', state.tmp1)
@@ -343,7 +345,7 @@ end
    send throttle commands
 --]]
 local function update_throttle()
-   if EFI_INF_THR_HZ:get() <= 0 or not efi_device_id then
+   if EFI_INF_THR_HZ:get() <= 0 then
       return
    end
    local now_ms = millis()
@@ -361,7 +363,11 @@ end
    send ignition commands
 --]]
 local function update_ignition()
-   local sw_pos = rc:get_aux_cached(EFI_INF_IGN_AUX:get())
+   local aux_fn = EFI_INF_IGN_AUX:get()
+   if not aux_fn then
+      return
+   end
+   local sw_pos = rc:get_aux_cached(aux_fn)
    if not sw_pos then
       return
    end
@@ -395,8 +401,10 @@ local function update()
    if check_input() then
       update_EFI()
    end
-   update_throttle()
-   update_ignition()
+   if efi_device_id then
+      update_throttle()
+      update_ignition()
+   end
    return update, 10
 end
 
