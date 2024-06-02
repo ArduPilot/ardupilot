@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!-- MESSAGE IDs 150 - 240: Space for custom messages in individual projectname_messages.xml files -->
+<mavlink>
+  <include>common.xml</include>
+  <messages>
+    <message id="17150" name="ARRAY_TEST_0">
+      <description>Array test #0.</description>
+      <field type="uint8_t" name="v1">Stub field</field>
+      <field type="int8_t[4]" name="ar_i8">Value array</field>
+      <field type="uint8_t[4]" name="ar_u8">Value array</field>
+      <field type="uint16_t[4]" name="ar_u16">Value array</field>
+      <field type="uint32_t[4]" name="ar_u32">Value array</field>
+    </message>
+    <message id="17151" name="ARRAY_TEST_1">
+      <description>Array test #1.</description>
+      <field type="uint32_t[4]" name="ar_u32">Value array</field>
+    </message>
+    <message id="17153" name="ARRAY_TEST_3">
+      <description>Array test #3.</description>
+      <field type="uint8_t" name="v">Stub field</field>
+      <field type="uint32_t[4]" name="ar_u32">Value array</field>
+    </message>
+    <message id="17154" name="ARRAY_TEST_4">
+      <description>Array test #4.</description>
+      <field type="uint32_t[4]" name="ar_u32">Value array</field>
+      <field type="uint8_t" name="v">Stub field</field>
+    </message>
+    <message id="17155" name="ARRAY_TEST_5">
+      <description>Array test #5.</description>
+      <field type="char[5]" name="c1">Value array</field>
+      <field type="char[5]" name="c2">Value array</field>
+    </message>
+    <message id="17156" name="ARRAY_TEST_6">
+      <description>Array test #6.</description>
+      <field type="uint8_t" name="v1">Stub field</field>
+      <field type="uint16_t" name="v2">Stub field</field>
+      <field type="uint32_t" name="v3">Stub field</field>
+      <field type="uint32_t[2]" name="ar_u32">Value array</field>
+      <field type="int32_t[2]" name="ar_i32">Value array</field>
+      <field type="uint16_t[2]" name="ar_u16">Value array</field>
+      <field type="int16_t[2]" name="ar_i16">Value array</field>
+      <field type="uint8_t[2]" name="ar_u8">Value array</field>
+      <field type="int8_t[2]" name="ar_i8">Value array</field>
+      <field type="char[32]" name="ar_c">Value array</field>
+      <field type="double[2]" name="ar_d">Value array</field>
+      <field type="float[2]" name="ar_f">Value array</field>
+    </message>
+    <message id="17157" name="ARRAY_TEST_7">
+      <description>Array test #7.</description>
+      <field type="double[2]" name="ar_d">Value array</field>
+      <field type="float[2]" name="ar_f">Value array</field>
+      <field type="uint32_t[2]" name="ar_u32">Value array</field>
+      <field type="int32_t[2]" name="ar_i32">Value array</field>
+      <field type="uint16_t[2]" name="ar_u16">Value array</field>
+      <field type="int16_t[2]" name="ar_i16">Value array</field>
+      <field type="uint8_t[2]" name="ar_u8">Value array</field>
+      <field type="int8_t[2]" name="ar_i8">Value array</field>
+      <field type="char[32]" name="ar_c">Value array</field>
+    </message>
+    <message id="17158" name="ARRAY_TEST_8">
+      <description>Array test #8.</description>
+      <field type="uint32_t" name="v3">Stub field</field>
+      <field type="double[2]" name="ar_d">Value array</field>
+      <field type="uint16_t[2]" name="ar_u16">Value array</field>
+    </message>
+  </messages>
+</mavlink>

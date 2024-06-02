@@ -36,7 +36,6 @@ protected:
         uint8_t new_byte;
     } _passthrough;
 
-    uint32_t calc_gps_latlng(bool &send_latitude);
     static uint8_t calc_sensor_id(const uint8_t physical_id);
 
     struct {

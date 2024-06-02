@@ -91,7 +91,10 @@ void gcs_out_of_space_to_send(mavlink_channel_t chan);
     }
 #define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
 
-#define GCS_MAVLINK_NUM_STREAM_RATES 10
+//OW
+//#define GCS_MAVLINK_NUM_STREAM_RATES 10
+#define GCS_MAVLINK_NUM_STREAM_RATES 11
+//OWEND
 class GCS_MAVLINK_Parameters
 {
 public:
@@ -233,6 +236,9 @@ public:
         STREAM_EXTRA3,
         STREAM_PARAMS,
         STREAM_ADSB,
+//OW
+        STREAM_FRSKYPASSTHROUGH,
+//OWEND
         NUM_STREAMS
     };
 
@@ -306,6 +312,9 @@ public:
     void send_extended_sys_state() const;
     void send_local_position() const;
     void send_vfr_hud();
+//OW
+    void send_frsky_passthrough_array();
+//OWEND
     void send_vibration() const;
     void send_gimbal_device_attitude_status() const;
     void send_named_float(const char *name, float value) const;

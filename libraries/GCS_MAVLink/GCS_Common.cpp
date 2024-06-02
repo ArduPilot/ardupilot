@@ -55,6 +55,9 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+//OW
+#include <AP_Frsky_Telem/AP_Frsky_SPort_Protocol.h>
+//OWEND
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -909,6 +912,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT, MSG_NAV_CONTROLLER_OUTPUT},
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
+//OW
+        { MAVLINK_MSG_ID_FRSKY_PASSTHROUGH_ARRAY, MSG_FRSKY_PASSTHROUGH_ARRAY},
+//OWEND
         { MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,      MSG_SERVO_OUTPUT_RAW},
         { MAVLINK_MSG_ID_RC_CHANNELS,           MSG_RC_CHANNELS},
         { MAVLINK_MSG_ID_RC_CHANNELS_RAW,       MSG_RC_CHANNELS_RAW},
@@ -2896,6 +2902,33 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_alt(),
         vfr_hud_climbrate());
 }
+
+//OW
+// this is tentative, just demo
+// we probably want some timing, some packets do not need to be send so often
+// maybe we also want to make which packets are send dependent on which streams are enabled
+// or vice versa, modify the streams depending on whether frsky passthorugh is send
+// one also could make it dependent on which rate is higher
+
+void GCS_MAVLINK::send_frsky_passthrough_array()
+{
+    uint8_t count = 0;
+    uint8_t packet_buf[MAVLINK_MSG_FRSKY_PASSTHROUGH_ARRAY_FIELD_PACKET_BUF_LEN] = {0}; // max 40 packets!
+
+    AP_Frsky_SPort_Protocol* pt = AP::frsky_sport_protocol();
+    if (pt == nullptr) return;
+
+    pt->assemble_array(packet_buf, &count, 21, AP_HAL::millis());
+
+    if (count == 0) return;
+
+    mavlink_msg_frsky_passthrough_array_send(
+        chan,
+        AP_HAL::millis(), // time since system boot
+        count,
+        packet_buf);
+}
+//OWEND
 
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
@@ -5646,6 +5679,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(VFR_HUD);
         send_vfr_hud();
         break;
+
+//OW
+    case MSG_FRSKY_PASSTHROUGH_ARRAY:
+        CHECK_PAYLOAD_SIZE(FRSKY_PASSTHROUGH_ARRAY);
+        //CHECK_PAYLOAD_SIZE(TUNNEL);
+        send_frsky_passthrough_array();
+        break;
+//OWEND
 
     case MSG_VIBRATION:
         CHECK_PAYLOAD_SIZE(VIBRATION);

@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- Loweheiser contact info: -->
+  <!-- company URL: https://www.loweheiser.com/ -->
+  <!-- company LinkeIn: https://www.linkedin.com/company/loweheiser -->
+  <!-- email contact: info@loweheiser.com -->
+  <!-- mavlink ID range: 10150 - 10199 -->
+  <include>minimal.xml</include>
+  <enums>
+    <enum name="MAV_CMD">
+      <!-- Loweheiser specific MAV_CMD_* commands -->
+      <entry name="MAV_CMD_LOWEHEISER_SET_STATE" value="10151">
+        <description>Set Loweheiser desired states</description>
+        <param index="1">EFI Index</param>
+        <param index="2">Desired Engine/EFI State (0: Power Off, 1:Running)</param>
+        <param index="3">Desired Governor State (0:manual throttle, 1:Governed throttle)</param>
+        <param index="4">Manual throttle level, 0% - 100%</param>
+        <param index="5">Electronic Start up (0:Off, 1:On)</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+    </enum>
+  </enums>
+  <messages>
+    <message id="10151" name="LOWEHEISER_GOV_EFI">
+      <description>Composite EFI and Governor data from Loweheiser equipment.  This message is created by the EFI unit based on its own data and data received from a governor attached to that EFI unit.</description>
+      <!-- Generator fields -->
+      <field type="float" name="volt_batt" units="V">Generator Battery voltage.</field>
+      <field type="float" name="curr_batt" units="A">Generator Battery current.</field>
+      <field type="float" name="curr_gen" units="A">Current being produced by generator.</field>
+      <field type="float" name="curr_rot" units="A">Load current being consumed by the UAV (sum of curr_gen and curr_batt)</field>
+      <field type="float" name="fuel_level" units="l">Generator fuel remaining in litres.</field>
+      <field type="float" name="throttle" units="%">Throttle Output.</field>
+      <field type="uint32_t" name="runtime" units="s">Seconds this generator has run since it was rebooted.</field>
+      <field type="int32_t" name="until_maintenance" units="s">Seconds until this generator requires maintenance.  A negative value indicates maintenance is past due.</field>
+      <field type="float" name="rectifier_temp" units="degC">The Temperature of the rectifier.</field>
+      <field type="float" name="generator_temp" units="degC">The temperature of the mechanical motor, fuel cell core or generator.</field>
+      <!-- EFI fields -->
+      <field type="float" name="efi_batt" units="V"> EFI Supply Voltage.</field>
+      <field type="float" name="efi_rpm" units="rpm">Motor RPM.</field>
+      <field type="float" name="efi_pw" units="ms">Injector pulse-width in miliseconds.</field>
+      <field type="float" name="efi_fuel_flow">Fuel flow rate in litres/hour.</field>
+      <field type="float" name="efi_fuel_consumed" units="l">Fuel consumed.</field>
+      <field type="float" name="efi_baro" units="kPa">Atmospheric pressure.</field>
+      <field type="float" name="efi_mat" units="degC">Manifold Air Temperature.</field>
+      <field type="float" name="efi_clt" units="degC">Cylinder Head Temperature.</field>
+      <field type="float" name="efi_tps" units="%">Throttle Position.</field>
+      <field type="float" name="efi_exhaust_gas_temperature" units="degC">Exhaust gas temperature.</field>
+      <!-- Status fields -->
+      <field type="uint8_t" name="efi_index" instance="true">EFI index.</field>
+      <field type="uint16_t" name="generator_status">Generator status.</field>
+      <field type="uint16_t" name="efi_status">EFI status.</field>
+    </message>
+  </messages>
+</mavlink>

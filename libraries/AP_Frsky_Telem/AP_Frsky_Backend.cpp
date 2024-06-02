@@ -8,6 +8,11 @@ extern const AP_HAL::HAL& hal;
 
 bool AP_Frsky_Backend::init()
 {
+//OW
+    _protocol = AP::frsky_sport_protocol();
+    if (!_protocol) return false;
+//OWEND
+
     // if SPort Passthrough is using external data then it will
     // override this to do nothing:
     return init_serial_port();
@@ -43,47 +48,14 @@ void AP_Frsky_Backend::loop(void)
 }
 
 /*
- * get vertical speed from ahrs, if not available fall back to baro climbrate, units is m/s
- * for FrSky D and SPort protocols
- */
-float AP_Frsky_Backend::get_vspeed_ms(void)
-{
-
-    {
-        // release semaphore as soon as possible
-        AP_AHRS &_ahrs = AP::ahrs();
-        Vector3f v;
-        WITH_SEMAPHORE(_ahrs.get_semaphore());
-        if (_ahrs.get_velocity_NED(v)) {
-            return -v.z;
-        }
-    }
-
-    auto &_baro = AP::baro();
-    WITH_SEMAPHORE(_baro.get_semaphore());
-    return _baro.get_climb_rate();
-}
-
-/*
  * prepare altitude between vehicle and home location data
  * for FrSky D and SPort protocols
  */
 void AP_Frsky_Backend::calc_nav_alt(void)
 {
-    _SPort_data.vario_vspd = (int32_t)(get_vspeed_ms()*100); //convert to cm/s
+    _SPort_data.vario_vspd = (int32_t)(_protocol->get_vspeed_ms()*100); // convert to cm/s
 
-    Location loc;
-    float current_height = 0; // in centimeters above home
-
-    AP_AHRS &_ahrs = AP::ahrs();
-    WITH_SEMAPHORE(_ahrs.get_semaphore());
-    if (_ahrs.get_location(loc)) {
-        current_height = loc.alt*0.01f;
-        if (!loc.relative_alt) {
-            // loc.alt has home altitude added, remove it
-            current_height -= _ahrs.get_home().alt*0.01f;
-        }
-    }
+    float current_height = _protocol->get_current_height_cm(); // in centimeters above home
 
     _SPort_data.alt_nav_meters = float_to_uint16(current_height);
     _SPort_data.alt_nav_cm = float_to_uint16((current_height - _SPort_data.alt_nav_meters) * 100);
@@ -140,23 +112,4 @@ void AP_Frsky_Backend::calc_gps_position(void)
     }
 
     _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS
-}
-
-/*
- * prepare rpm data
- * for FrSky D and SPort protocols
- */
-bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
-{
-    const AP_RPM* rpm = AP::rpm();
-    if (rpm == nullptr) {
-        return false;
-    }
-
-    float rpm_value;
-    if (!rpm->get_rpm(instance, rpm_value)) {
-        return false;
-    }
-    value = static_cast<int32_t>(roundf(rpm_value));
-    return true;
 }

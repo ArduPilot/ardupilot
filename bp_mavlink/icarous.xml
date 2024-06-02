@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- ICAROUS message definitions                                     -->
+  <!-- https://github.com/nasa/icarous                                 -->
+  <!-- email contacts: Swee Balachandran: swee.balachandran@nianet.org -->
+  <!--                 Cesar Munoz: cesar.a.munoz@nasa.gov             -->
+  <!-- mavlink ID range 42000 - 42099                                  -->
+  <enums>
+    <enum name="ICAROUS_TRACK_BAND_TYPES">
+      <entry name="ICAROUS_TRACK_BAND_TYPE_NONE" value="0"/>
+      <entry name="ICAROUS_TRACK_BAND_TYPE_NEAR" value="1"/>
+      <entry name="ICAROUS_TRACK_BAND_TYPE_RECOVERY" value="2"/>
+    </enum>
+    <enum name="ICAROUS_FMS_STATE">
+      <entry name="ICAROUS_FMS_STATE_IDLE" value="0"/>
+      <entry name="ICAROUS_FMS_STATE_TAKEOFF" value="1"/>
+      <entry name="ICAROUS_FMS_STATE_CLIMB" value="2"/>
+      <entry name="ICAROUS_FMS_STATE_CRUISE" value="3"/>
+      <entry name="ICAROUS_FMS_STATE_APPROACH" value="4"/>
+      <entry name="ICAROUS_FMS_STATE_LAND" value="5"/>
+    </enum>
+  </enums>
+  <messages>
+    <message id="42000" name="ICAROUS_HEARTBEAT">
+      <description>ICAROUS heartbeat</description>
+      <field type="uint8_t" name="status" enum="ICAROUS_FMS_STATE">See the FMS_STATE enum.</field>
+    </message>
+    <message id="42001" name="ICAROUS_KINEMATIC_BANDS">
+      <description>Kinematic multi bands (track) output from Daidalus</description>
+      <field type="int8_t" name="numBands">Number of track bands</field>
+      <field type="uint8_t" name="type1" enum="ICAROUS_TRACK_BAND_TYPES">See the TRACK_BAND_TYPES enum.</field>
+      <field type="float" name="min1" units="deg">min angle (degrees)</field>
+      <field type="float" name="max1" units="deg">max angle (degrees)</field>
+      <field type="uint8_t" name="type2" enum="ICAROUS_TRACK_BAND_TYPES">See the TRACK_BAND_TYPES enum.</field>
+      <field type="float" name="min2" units="deg">min angle (degrees)</field>
+      <field type="float" name="max2" units="deg">max angle (degrees)</field>
+      <field type="uint8_t" name="type3" enum="ICAROUS_TRACK_BAND_TYPES">See the TRACK_BAND_TYPES enum.</field>
+      <field type="float" name="min3" units="deg">min angle (degrees)</field>
+      <field type="float" name="max3" units="deg">max angle (degrees)</field>
+      <field type="uint8_t" name="type4" enum="ICAROUS_TRACK_BAND_TYPES">See the TRACK_BAND_TYPES enum.</field>
+      <field type="float" name="min4" units="deg">min angle (degrees)</field>
+      <field type="float" name="max4" units="deg">max angle (degrees)</field>
+      <field type="uint8_t" name="type5" enum="ICAROUS_TRACK_BAND_TYPES">See the TRACK_BAND_TYPES enum.</field>
+      <field type="float" name="min5" units="deg">min angle (degrees)</field>
+      <field type="float" name="max5" units="deg">max angle (degrees)</field>
+    </message>
+  </messages>
+</mavlink>

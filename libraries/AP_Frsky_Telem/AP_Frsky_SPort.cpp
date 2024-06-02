@@ -92,10 +92,10 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_GPS: // Sensor ID  3
                 switch (_SPort.gps_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, _protocol->calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
                     break;
                 case 1:
-                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, _protocol->calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
                     break;
                 case 2:
                     send_sport_frame(SPORT_DATA_FRAME, GPS_SPEED_ID, _SPort_data.speed_in_meter*1000 + _SPort_data.speed_in_centimeter*10); // send gps speed in mm/sec
@@ -118,8 +118,8 @@ void AP_Frsky_SPort::send(void)
                     if (rpm == nullptr) {
                         break;
                     }
-                    int32_t value;
-                    if (calc_rpm(_SPort.rpm_call, value)) {
+                    if (_protocol->is_available_rpm(_SPort.rpm_call)) {
+                        int32_t value = _protocol->calc_sensor_rpm(_SPort.rpm_call);
                         // use high numbered frsky sensor ids to leave low numbered free for externally attached physical frsky sensors
                         uint16_t id = RPM1_ID;
                         if (_SPort.rpm_call != 0) {
@@ -158,32 +158,6 @@ void AP_Frsky_SPort::send(void)
                 break;
             }
             _SPort.sport_status = false;
-        }
-    }
-}
-
-/*
- * prepare gps latitude/longitude data
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint32_t AP_Frsky_SPort::calc_gps_latlng(bool &send_latitude)
-{
-    const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
-
-    // alternate between latitude and longitude
-    if (send_latitude == true) {
-        send_latitude = false;
-        if (loc.lat < 0) {
-            return ((labs(loc.lat)/100)*6) | 0x40000000;
-        } else {
-            return ((labs(loc.lat)/100)*6);
-        }
-    } else {
-        send_latitude = true;
-        if (loc.lng < 0) {
-            return ((labs(loc.lng)/100)*6) | 0xC0000000;
-        } else {
-            return ((labs(loc.lng)/100)*6) | 0x80000000;
         }
     }
 }
@@ -381,69 +355,7 @@ uint8_t AP_Frsky_SPort::calc_sensor_id(const uint8_t physical_id)
  */
 uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t power)
 {
-    uint16_t res = 0;
-    uint32_t abs_number = abs(number);
-
-    if ((digits == 2) && (power == 0)) { // number encoded on 7 bits, client side needs to know if expected range is 0,127 or -63,63
-        uint8_t max_value = number < 0 ? (0x1<<6)-1 : (0x1<<7)-1;
-        res = constrain_int16(abs_number,0,max_value);
-        if (number < 0) {   // if number is negative, add sign bit in front
-            res |= 1U<<6;
-        }
-    } else if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<1;
-        } else if (abs_number < 1270) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x7F x 10^1 = 1270)
-            res = 0xFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<8;
-        }
-    } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<2;
-        } else if (abs_number < 1000) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 10000) {
-            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 127000) {
-            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x7F x 10^3 = 127000)
-            res = 0x1FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<9;
-        }
-    } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<1;
-        } else if (abs_number < 10240) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10230)
-            res = 0x7FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<11;
-        }
-    } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<2;
-        } else if (abs_number < 10000) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 100000) {
-            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 1024000) {
-            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 1023000)
-            res = 0xFFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<12;
-        }
-    }
-    return res;
+    return _protocol->prep_number(number, digits, power); //OW //as much as I can see it's only used in lua scripts
 }
 
 /*

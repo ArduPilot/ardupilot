@@ -86,32 +86,9 @@ private:
 
     AP_Frsky_Parameters *&_frsky_parameters;
 
-    enum PassthroughParam : uint8_t {
-        NONE =                0,
-        FRAME_TYPE =          1,
-        BATT_FS_VOLTAGE =     2,
-        BATT_FS_CAPACITY =    3,
-        BATT_CAPACITY_1 =     4,
-        BATT_CAPACITY_2 =     5,
-        TELEMETRY_FEATURES =  6
-    };
-
-    enum PassthroughFeatures : uint8_t {
-        BIDIR =                 0,
-        SCRIPTING =             1,
-    };
-
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     uint32_t calc_param(void);
-    uint32_t calc_batt(uint8_t instance);
-    uint32_t calc_ap_status(void);
-    uint32_t calc_home(void);
     uint32_t calc_velandyaw(void);
-    uint32_t calc_attiandrng(void);
-    uint32_t calc_rpm(void);
-    uint32_t calc_terrain(void);
-    uint32_t calc_wind(void);
-    uint32_t calc_waypoint(void);
 
     // use_external_data is set when this library will
     // be providing data to another transport, such as FPort

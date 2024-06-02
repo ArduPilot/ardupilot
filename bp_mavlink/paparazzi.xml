@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<mavlink>
+  <include>common.xml</include>
+  <version>3</version>
+  <enums>
+    </enums>
+  <messages>
+    <!-- Messages specifically designated for the Paparazzi autopilot -->
+    <message id="180" name="SCRIPT_ITEM">
+      <description>Message encoding a mission script item. This message is emitted upon a request for the next script item.</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint16_t" name="seq">Sequence</field>
+      <field type="char[50]" name="name">The name of the mission script, NULL terminated.</field>
+    </message>
+    <message id="181" name="SCRIPT_REQUEST">
+      <description>Request script item with the sequence number seq. The response of the system to this message should be a SCRIPT_ITEM message.</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint16_t" name="seq">Sequence</field>
+    </message>
+    <message id="182" name="SCRIPT_REQUEST_LIST">
+      <description>Request the overall list of mission items from the system/component.</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+    </message>
+    <message id="183" name="SCRIPT_COUNT">
+      <description>This message is emitted as response to SCRIPT_REQUEST_LIST by the MAV to get the number of mission scripts.</description>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint16_t" name="count">Number of script items in the sequence</field>
+    </message>
+    <message id="184" name="SCRIPT_CURRENT">
+      <description>This message informs about the currently active SCRIPT.</description>
+      <field type="uint16_t" name="seq">Active Sequence</field>
+    </message>
+  </messages>
+</mavlink>
