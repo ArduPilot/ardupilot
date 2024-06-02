@@ -367,6 +367,14 @@ void AP_Vehicle::setup()
     networking.init();
 #endif
 
+#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    // must be done now so ports are registered and drivers get set up properly
+    // (in particular mavlink which checks during init_ardupilot())
+    scripting.init_serialdevice_ports();
+#endif
+#endif
+
 #if AP_SCHEDULER_ENABLED
     // Register scheduler_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
