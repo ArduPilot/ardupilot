@@ -118,6 +118,10 @@ public:
     // true if the mode sets the vehicle destination, which controls
     // whether control input is ignored with STICK_MIXING=0
     virtual bool does_auto_throttle() const { return false; }
+
+    // flags if the throttle can be overriden by setting new_airspeed_cm
+    // eventually it should return does_auto_throttle() but for now this is not correct
+    virtual bool can_override_throttle() const { return false; }
     
     // true if the mode supports autotuning (via switch for modes other
     // that AUTOTUNE itself
@@ -225,7 +229,9 @@ public:
     bool does_auto_navigation() const override;
 
     bool does_auto_throttle() const override;
-    
+
+    bool can_override_throttle() const override { return does_auto_throttle(); }
+
     bool mode_allows_autotuning() const override { return true; }
 
     bool is_landing() const override;
@@ -301,6 +307,8 @@ public:
 
     bool does_auto_throttle() const override { return true; }
 
+    bool can_override_throttle() const override { return does_auto_throttle(); }
+    
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
