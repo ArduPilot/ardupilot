@@ -345,6 +345,7 @@ singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
+singleton AP_Vehicle method get_landed_state uint8_t
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
