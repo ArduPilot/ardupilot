@@ -737,11 +737,51 @@ int lua_serial_find_serial(lua_State *L) {
     }
 
     new_AP_Scripting_SerialAccess(L);
-    check_AP_Scripting_SerialAccess(L, -1)->stream = driver_stream;
+    AP_Scripting_SerialAccess *port = check_AP_Scripting_SerialAccess(L, -1);
+    port->stream = driver_stream;
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    port->is_device_port = false;
+#endif
 
     return 1;
 }
 #endif // HAL_GCS_ENABLED
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+int lua_serial_find_simulated_device(lua_State *L) {
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 2 + arg_offset);
+
+    const int8_t protocol = (int8_t)get_uint32(L, 1 + arg_offset, 0, 127);
+    uint32_t instance = get_uint16_t(L, 2 + arg_offset);
+
+    auto *scripting = AP::scripting();
+    AP_Scripting_SerialDevice::Port *device_stream = nullptr;
+
+    for (auto &port : scripting->_serialdevice.ports) {
+        if (port.state.protocol == protocol) {
+            if (instance-- == 0) {
+                device_stream = &port;
+                break;
+            }
+        }
+    }
+
+    if (!scripting->_serialdevice.enable || device_stream == nullptr) {
+        // serial devices as a whole are disabled, or port not found
+        return 0;
+    }
+
+    new_AP_Scripting_SerialAccess(L);
+    AP_Scripting_SerialAccess *port = check_AP_Scripting_SerialAccess(L, -1);
+    port->stream = device_stream;
+    port->is_device_port = true;
+
+    return 1;
+}
+#endif // AP_SCRIPTING_SERIALDEVICE_ENABLED
 
 int lua_serial_writestring(lua_State *L)
 {

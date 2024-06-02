@@ -1233,7 +1233,7 @@ function AP_HAL__I2CDevice_ud:set_retries(retries) end
 ---@class (exact) AP_Scripting_SerialAccess_ud
 local AP_Scripting_SerialAccess_ud = {}
 
--- Start serial port with the given baud rate
+-- Start serial port with the given baud rate (no effect for device ports)
 ---@param baud_rate uint32_t_ud|integer|number
 function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
@@ -1263,7 +1263,7 @@ function AP_Scripting_SerialAccess_ud:readstring(count) end
 ---@return uint32_t_ud
 function AP_Scripting_SerialAccess_ud:available() end
 
--- Set flow control option for serial port
+-- Set flow control option for serial port (no effect for device ports)
 ---@param flow_control_setting integer
 ---| '0' # disabled
 ---| '1' # enabled
@@ -2118,6 +2118,16 @@ serial = {}
 ---@param instance integer -- 0-based index of the Scripting port to access
 ---@return AP_Scripting_SerialAccess_ud|nil -- access object for that instance, or nil if not found
 function serial:find_serial(instance) end
+
+-- Returns a serial access object that allows a script to simulate a device
+-- attached via a specific protocol. The device protocol is configured by
+-- SCR_SDEVx_PROTO. Instance 0 is the first such protocol, instance 1 the
+-- second, and so on. If the requested instance is not found, or SCR_SDEV_EN is
+-- disabled, returns nil.
+---@param protocol integer -- protocol to access
+---@param instance integer -- 0-based index of the protocol instance to access
+---@return AP_Scripting_SerialAccess_ud|nil -- access object for that instance, or nil if not found
+function serial:find_simulated_device(protocol, instance) end
 
 
 -- desc

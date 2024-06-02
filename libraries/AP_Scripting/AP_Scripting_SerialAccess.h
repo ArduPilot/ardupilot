@@ -1,5 +1,8 @@
 #pragma once
 
+#include "AP_Scripting_config.h"
+#include "AP_Scripting.h"
+
 #include <AP_HAL/UARTDriver.h>
 
 class AP_Scripting_SerialAccess {
@@ -22,4 +25,9 @@ public:
     void set_flow_control(enum AP_HAL::UARTDriver::flow_control fcs);
 
     AP_HAL::UARTDriver *stream;
+#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    bool is_device_port;
+#endif
+#endif
 };

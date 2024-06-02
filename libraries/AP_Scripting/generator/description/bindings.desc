@@ -406,6 +406,7 @@ userdata AP_Scripting_SerialAccess method set_flow_control void AP_HAL::UARTDriv
 -- serial is not a real C++ type here, but its name never gets used in C++ as we only have manual methods
 singleton serial depends HAL_GCS_ENABLED
 singleton serial manual find_serial lua_serial_find_serial 1 1
+singleton serial manual find_simulated_device lua_serial_find_simulated_device 2 1 depends AP_SCRIPTING_SERIALDEVICE_ENABLED
 
 include AP_Baro/AP_Baro.h
 singleton AP_Baro depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BARO))
