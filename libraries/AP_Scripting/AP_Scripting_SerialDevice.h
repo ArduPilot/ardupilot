@@ -19,12 +19,14 @@ public:
     AP_Int8 enable;
 
     void init(void);
+    void clear(void);
 
 public:
     class Port : public AP_SerialManager::RegisteredPort {
     public:
         friend class AP_Scripting_SerialDevice;
         void init(void);
+        void clear(void);
 
         size_t device_write(const uint8_t *buffer, size_t size);
         ssize_t device_read(uint8_t *buffer, uint16_t count);

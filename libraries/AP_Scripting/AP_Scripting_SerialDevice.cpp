@@ -35,12 +35,30 @@ void AP_Scripting_SerialDevice::init(void)
     }
 }
 
+void AP_Scripting_SerialDevice::clear(void)
+{
+    for (auto &p : ports) {
+        p.clear();
+    }
+}
+
 /*
   initialise port
  */
 void AP_Scripting_SerialDevice::Port::init(void)
 {
     begin(1000000, 0, 0); // assume 1MBaud rate even though it's a bit meaningless
+}
+
+void AP_Scripting_SerialDevice::Port::clear(void)
+{
+    WITH_SEMAPHORE(sem);
+    if (readbuffer) {
+        readbuffer->clear();
+    }
+    if (writebuffer) {
+        writebuffer->clear();
+    }
 }
 
 size_t AP_Scripting_SerialDevice::Port::device_write(const uint8_t *buffer, size_t size)

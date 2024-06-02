@@ -311,6 +311,11 @@ void AP_Scripting::thread(void) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "Unable to allocate memory");
             _init_failed = true;
         } else {
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+            // clear data in serial buffers that the script wasn't ready to
+            // receive
+            _serialdevice.clear();
+#endif
             // run won't return while scripting is still active
             lua->run();
 
@@ -345,6 +350,11 @@ void AP_Scripting::thread(void) {
             }
         }
 #endif // AP_NETWORKING_ENABLED
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+        // clear data in serial buffers that hasn't been transmitted
+        _serialdevice.clear();
+#endif
         
         // Clear blocked commands
         {
