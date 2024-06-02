@@ -16,11 +16,16 @@ import json
 import shutil
 import platform
 from urllib.parse import unquote
+import subprocess
+import re
 
 
-def print_failures(file_name, fails):
+def print_failures(file_name, fails, original_name):
     file_name = unquote(file_name)
     file_path = pathlib.Path(file_name[5:])
+
+    if (original_name is not None) and (original_name.name == file_path.name):
+        file_path = original_name
 
     for fail in fails:
         start = fail['range']['start']
@@ -53,6 +58,7 @@ if __name__ == '__main__':
     check_path = "./"
     if len(args) > 0:
         check_path = args[0]
+    check_path = pathlib.Path(check_path)
 
     if not os.path.exists(check_path):
         raise Exception("Path invalid: %s" % check_path)
@@ -78,7 +84,6 @@ if __name__ == '__main__':
             print("Install with: python3 -m pip install github-release-downloader")
             sys.exit(0)
 
-        import re
         asset_re = re.compile(r".*linux-x64\.tar\.gz")
         check_and_download_updates(
             GitHubRepo("LuaLS", "lua-language-server"),
@@ -96,6 +101,16 @@ if __name__ == '__main__':
         # Try and use version from path
         run_path = "lua-language-server"
 
+    # If the target is a single script copy it to a new directory
+    tmp_check_dir = None
+    original_name = None
+    if os.path.isfile(check_path):
+        tmp_check_dir = (check_path / "../tmp_llc").resolve()
+        os.mkdir(tmp_check_dir)
+        shutil.copyfile(check_path, (tmp_check_dir / check_path.name).resolve())
+        original_name = check_path
+        check_path = tmp_check_dir
+
     # Can't get the lua-language-server to find docs outside of workspace, so just copy in and then delete
     docs_check_path = (pathlib.Path(os.getcwd()) / check_path).resolve()
     if os.path.isfile(docs_check_path):
@@ -109,10 +124,32 @@ if __name__ == '__main__':
         # make copy of docs
         shutil.copyfile(docs, docs_copy)
 
-    # Run check
-    os.system("%s --configpath %s --logpath %s --check %s" % (run_path, setup, logs, check_path))
+    # Run check, print output in real time for user and capture so we can confirm it has found at least one file
+    command = "%s --configpath %s --logpath %s --check %s" % (run_path, setup, logs, check_path)
+    p = subprocess.Popen(command, shell=True, text=True, stdout=subprocess.PIPE)
+    result = []
+    while p.poll() is None:
+        l = p.stdout.readline()
+        result.append(l)
+        print(l, end="")
 
-    if docs_copy is not None:
+    # Make sure we checked at least one file
+    file_count_re = re.compile(r"^>*=* \d+/(\d+)")
+    checked_files = None
+    for line in result:
+        match = file_count_re.search(line)
+        if match is not None:
+            count = int(match.group(1))
+            if checked_files is None:
+                checked_files = count
+            elif checked_files != count:
+                raise Exception("Checked files error expected: %i got: %i" % (checked_files, count))
+
+    if tmp_check_dir is not None:
+        # Remove test directory
+        shutil.rmtree(tmp_check_dir)
+
+    elif docs_copy is not None:
         # remove copy of docs
         os.remove(docs_copy)
 
@@ -128,7 +165,7 @@ if __name__ == '__main__':
         if len(data) > 0:
             # Print output if there are any errors
             for key, value in data.items():
-                errors += print_failures(key, value)
+                errors += print_failures(key, value, original_name)
 
     # Remove output
     shutil.rmtree(logs)
@@ -136,3 +173,9 @@ if __name__ == '__main__':
     # Rase error if detected
     if errors != 0:
         raise Exception("Detected %i errors" % errors)
+
+    # Warn if no files were checked
+    if (checked_files is None) or (checked_files < 1):
+        raise Exception("No lua files found in: %s" % check_path)
+
+    print("%i Files checked" % checked_files)
