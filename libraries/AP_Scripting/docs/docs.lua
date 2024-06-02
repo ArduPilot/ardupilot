@@ -2427,6 +2427,11 @@ function vehicle:nav_scripting_enable(param1) end
 ---@return boolean
 function vehicle:set_desired_speed(param1) end
 
+-- Set autopilot desired airspeed (Plane)
+---@param airspeed_new number -- new airspeed in m/s
+---@return boolean -- true if successful
+function vehicle:set_desired_airspeed(airspeed_new) end
+
 -- desc
 ---@param param1 number
 ---@param param2 number
