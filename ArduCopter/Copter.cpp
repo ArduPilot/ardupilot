@@ -460,6 +460,28 @@ bool Copter::is_taking_off() const
     return flightmode->is_taking_off();
 }
 
+/**
+ * Get landed detector states.
+ * 
+ * @retval 1 landed (on ground) 
+ * @retval 2 in air
+ * @retval 3 currently taking off
+ * @retval 4 currently landing
+*/
+uint8_t Copter::get_landed_state() const
+{
+    if (ap.land_complete) {
+        return uint8_t(MAV_LANDED_STATE_ON_GROUND);
+    }
+    if (flightmode->is_landing()) {
+        return uint8_t(MAV_LANDED_STATE_LANDING);
+    }
+    if (flightmode->is_taking_off()) {
+        return uint8_t(MAV_LANDED_STATE_TAKEOFF);
+    }
+    return uint8_t(MAV_LANDED_STATE_IN_AIR);
+}
+
 bool Copter::current_mode_requires_mission() const
 {
 #if MODE_AUTO_ENABLED == ENABLED
