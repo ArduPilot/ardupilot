@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
 Reads two lua docs files and checks for differences
 
@@ -16,6 +18,14 @@ class method(object):
         self.full_line = full_line
         self.returns = returns
         self.params = params
+        self.manual = False
+        for i in range(len(self.returns)):
+            if self.returns[i][0] == 'UNKNOWN':
+                self.manual  = True
+
+        for i in range(len(self.params)):
+            if self.params[i][0] == 'UNKNOWN':
+                self.manual  = True
 
     def __str__(self):
         ret_str = "%s\n" % (self.full_line)
@@ -74,6 +84,11 @@ class method(object):
     def __eq__(self, other):
         return (self.global_name == other.global_name) and (self.local_name == other.local_name) and (self.num_args == other.num_args)
 
+    def is_overload(self, other):
+        # Allow manual bindings to have fewer arguments
+        # this allows multiple function definitions with different params
+        return other.manual and (self.global_name == other.global_name) and (self.local_name == other.local_name) and (self.num_args < other.num_args)
+
 def get_return_type(line):
     try:
         match = re.findall("^---@return (\w+(\|(\w+))*)", line)
@@ -85,7 +100,7 @@ def get_return_type(line):
 
 def get_param_type(line):
     try:
-        match = re.findall("^---@param \w+\?? (\w+(\|(\w+))*)", line)
+        match = re.findall("^---@param (?:\w+\??|...) (\w+(\|(\w+))*)", line)
         all_types = match[0][0]
         return all_types.split("|")
 
@@ -136,9 +151,6 @@ def parse_file(file_name):
                 num_args = 0
             else:
                 num_args = args.count(",") + 1
-                # ... shows up in arg list but not @param, add a unknown param
-                if args.endswith("..."):
-                    params.append(["UNKNOWN"])
 
             if num_args != len(params):
                 raise Exception("Missing \"---@param\" for function: %s", line)
@@ -194,7 +206,7 @@ def compare(expected_file_name, got_file_name):
     for got in got_methods:
         found = False
         for meth in expected_methods:
-            if got == meth:
+            if (got == meth) or got.is_overload(meth):
                 found = True
                 break
         if not found:

@@ -69,14 +69,21 @@ function print(text) end
 -- data flash logging to SD card
 logger = {}
 
--- write value to data flash log with given types and names, optional units and multipliers, timestamp will be automatically added
+-- write value to data flash log with given types and names with units and multipliers, timestamp will be automatically added
 ---@param name string -- up to 4 characters
 ---@param labels string -- comma separated value labels, up to 58 characters
 ---@param format string -- type format string, see https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Logger/README.md
----@param units? string -- optional units string
----@param multipliers? string -- optional multipliers string
----@param data1 integer|number|uint32_t_ud|string -- data to be logged, type to match format string
-function logger:write(name, labels, format, units, multipliers, data1, ...) end
+---@param units string -- units string
+---@param multipliers string -- multipliers string
+---@param ... integer|number|uint32_t_ud|string -- data to be logged, type to match format string
+function logger:write(name, labels, format, units, multipliers, ...) end
+
+-- write value to data flash log with given types and names, timestamp will be automatically added
+---@param name string -- up to 4 characters
+---@param labels string -- comma separated value labels, up to 58 characters
+---@param format string -- type format string, see https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_Logger/README.md
+---@param ... integer|number|uint32_t_ud|string -- data to be logged, type to match format string
+function logger:write(name, labels, format, ...) end
 
 -- log a files content to onboard log
 ---@param filename string -- file name
