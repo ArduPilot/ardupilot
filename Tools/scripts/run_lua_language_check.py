@@ -129,9 +129,9 @@ if __name__ == '__main__':
     p = subprocess.Popen(command, shell=True, text=True, stdout=subprocess.PIPE)
     result = []
     while p.poll() is None:
-        l = p.stdout.readline()
-        result.append(l)
-        print(l, end="")
+        line = p.stdout.readline()
+        result.append(line)
+        print(line, end="")
 
     # Make sure we checked at least one file
     file_count_re = re.compile(r"^>*=* \d+/(\d+)")
