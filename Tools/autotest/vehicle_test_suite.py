@@ -8456,7 +8456,7 @@ Also, ignores heartbeats not from our target system'''
             ex = e
             # reset the message hooks; we've failed-via-exception and
             # can't expect the hooks to have been cleaned up
-            for h in self.mav.message_hooks:
+            for h in copy.copy(self.mav.message_hooks):
                 if h not in start_message_hooks:
                     self.mav.message_hooks.remove(h)
             hooks_removed = True
