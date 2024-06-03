@@ -521,6 +521,8 @@ def run_step(step):
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
+    fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
+
     # handle "test.Copter" etc:
     if step in tester_class_map:
         # create an instance of the tester class:
@@ -845,6 +847,10 @@ if __name__ == "__main__":
                       action='store_true',
                       default=False,
                       help='Run in autotest-server mode; dangerous!')
+    parser.add_option("--move-logs-on-test-failure",
+                      action='store_true',
+                      default=None,
+                      help='Move logs to ../buildlogs if a test fails')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -1055,6 +1061,17 @@ if __name__ == "__main__":
             opts.timeout *= 10
         elif opts.gdb:
             opts.timeout = None
+
+    # default to moving logs when running in autotest-server mode:
+    if opts.move_logs_on_test_failure is None:
+        opts.move_logs_on_test_failure = opts.autotest_server
+
+        # temporarily default it to the old behaviour, but allow a
+        # user to test it by setting an environment variable:
+        if os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") is not None:
+            opts.move_logs_on_test_failure = os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") == "1"
+        else:
+            opts.move_logs_on_test_failure = True
 
     steps = [
         'prerequisites',

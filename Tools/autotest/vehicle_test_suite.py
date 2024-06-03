@@ -1937,8 +1937,10 @@ class TestSuite(ABC):
                  num_aux_imus=0,
                  dronecan_tests=False,
                  generate_junit=False,
+                 build_opts={},
                  enable_fgview=False,
-                 build_opts={}):
+                 move_logs_on_test_failure : bool = False,
+                 ):
 
         self.start_time = time.time()
 
@@ -1966,6 +1968,7 @@ class TestSuite(ABC):
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
+        self.move_logs_on_test_failure = move_logs_on_test_failure
         self.num_aux_imus = num_aux_imus
         self.generate_junit = generate_junit
         if generate_junit:
@@ -8976,6 +8979,8 @@ Also, ignores heartbeats not from our target system'''
     def check_logs(self, name):
         '''called to move relevant log files from our working directory to the
         buildlogs directory'''
+        if not self.move_logs_on_test_failure:
+            return
         to_dir = self.logs_dir
         # move telemetry log files
         for log in glob.glob("autotest-*.tlog"):
