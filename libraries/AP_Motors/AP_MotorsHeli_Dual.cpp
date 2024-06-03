@@ -404,7 +404,8 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
             pitch_out = _cyclic_max/4500.0f;
             limit.pitch = true;
         }
-    } else {
+    }
+    if (_dual_mode != AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
         if (roll_out < -_cyclic_max/4500.0f) {
             roll_out = -_cyclic_max/4500.0f;
             limit.roll = true;
