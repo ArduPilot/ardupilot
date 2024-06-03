@@ -34,6 +34,7 @@ import random
 import tempfile
 import threading
 import enum
+from inspect import currentframe, getframeinfo
 from pathlib import Path
 
 from MAVProxy.modules.lib import mp_util
@@ -6417,6 +6418,12 @@ class TestSuite(ABC):
     #################################################
     # UTILITIES
     #################################################
+    def lineno(self):
+        '''return line number'''
+        frameinfo = getframeinfo(currentframe().f_back)
+        # print(frameinfo.filename, frameinfo.lineno)
+        return frameinfo.lineno
+
     @staticmethod
     def longitude_scale(lat):
         ret = math.cos(lat * (math.radians(1)))
