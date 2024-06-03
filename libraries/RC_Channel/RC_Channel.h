@@ -283,6 +283,7 @@ public:
         MOUNT2_YAW =         217, // mount4 yaw input
         LOWEHEISER_THROTTLE= 218, // allows for throttle on slider
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
+        PRECLAND           = 220, // Precision Landing Active
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
