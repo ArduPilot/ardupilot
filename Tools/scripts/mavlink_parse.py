@@ -6,21 +6,30 @@ import re
 from enum import StrEnum # requires Python >= 3.11
 from pathlib import Path
 from itertools import chain
+from importlib import import_module
 from dataclasses import dataclass, astuple
 
-from pymavlink.dialects.v20 import (
-    common, icarous, cubepilot, uAvionix, ardupilotmega
-)
-
+# MAVLink message sets included in ArduPilot, determined manually via recursion
+# through https://mavlink.io/en/messages/ardupilotmega.html#mavlink-include-files
 class MAVLinkDialect(StrEnum):
     # in subset, superset, unknown order, for correct links
     # supported values must match imported dialect names
-    COMMON = 'common'
+    MINIMAL = 'minimal'
+    CSAIRLINK = 'csAirLink'
     ICAROUS = 'icarous'
+    LOWEHEISER = 'loweheiser'
+    STANDARD = 'standard'
+    COMMON = 'common'
     CUBEPILOT = 'cubepilot'
     UAVIONIX = 'uAvionix'
     ARDUPILOTMEGA = 'ardupilotmega'
+    DEVELOPMENT = 'development'
+    ALL = 'all'
     UNKNOWN = 'UNKNOWN'
+
+for dialect in MAVLinkDialect:
+    if dialect == MAVLinkDialect.UNKNOWN: continue
+    globals()[dialect] = import_module(f'pymavlink.dialects.v20.{dialect}')
 
 
 @dataclass(slots=True, order=True)
