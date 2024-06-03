@@ -646,7 +646,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->is_active_NE();
-        bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
+        bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating && copter.precland.active();
 
         if (doing_precision_landing) {
             // prec landing is active
@@ -732,7 +732,7 @@ void Mode::land_run_horizontal_control()
     // this variable will be updated if prec land target is in sight and pilot isn't trying to reposition the vehicle
     copter.ap.prec_land_active = false;
 #if AC_PRECLAND_ENABLED
-    copter.ap.prec_land_active = !copter.ap.land_repo_active && copter.precland.target_acquired();
+    copter.ap.prec_land_active = !copter.ap.land_repo_active && copter.precland.target_acquired() && copter.precland.active();
     // run precision landing
     if (copter.ap.prec_land_active) {
         Vector2f target_pos, target_vel;
@@ -855,7 +855,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
 void Mode::precland_run()
 {
     // if user is taking control, we will not run the statemachine, and simply land (may or may not be on target)
-    if (!copter.ap.land_repo_active) {
+    if (!copter.ap.land_repo_active && copter.precland.active()) {
         // This will get updated later to a retry pos if needed
         Vector3f retry_pos;
 
