@@ -377,7 +377,9 @@ bool GCS_MAVLINK::send_battery_status()
 
     for(uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
         const uint8_t battery_id = (last_battery_status_idx + 1) % AP_BATT_MONITOR_MAX_INSTANCES;
-        if (battery.get_type(battery_id) != AP_BattMonitor::Type::NONE) {
+        const auto configured_type = battery.configured_type(battery_id);
+        if (configured_type != AP_BattMonitor::Type::NONE &&
+            configured_type == battery.allocated_type(battery_id)) {
             CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
             send_battery_status(battery_id);
             last_battery_status_idx = battery_id;
