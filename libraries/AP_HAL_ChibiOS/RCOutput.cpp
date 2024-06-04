@@ -808,11 +808,9 @@ void RCOutput::push_local(void)
 #endif // HAL_DSHOT_ENABLED
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
-                    group.current_mode == MODE_NEOPIXEL ||
-                    group.current_mode == MODE_NEOPIXELRGB ||
-                    group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
                     // only control widest pulse for oneshot and dshot
+                    // do not control for neopixel since updates to these are not pushed
                     if (period_us > widest_pulse) {
                         widest_pulse = period_us;
                     }
@@ -1133,6 +1131,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         if (is_bidir_dshot_enabled(group)) {
             group.dshot_pulse_send_time_us = pulse_send_time_us;
             // to all intents and purposes the pulse time of send and receive are the same
+            // for dshot600 this is roughly 26us + 30us + 26us = 82us
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
         }
 #endif
