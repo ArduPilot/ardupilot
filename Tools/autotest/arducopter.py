@@ -11574,6 +11574,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ])
         return ret
 
+    def BattCANSplitAuxInfo(self):
+        '''test CAN battery periphs'''
+        self.start_subtest("Swap UAVCAN backend at runtime")
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+            "BATT_MONITOR": 4,  # 4 is ananlog volt+curr
+            "BATT2_MONITOR": 8,  # 8 is UAVCAN_BatteryInfo
+            "BATT_SERIAL_NUM": 0,
+            "BATT2_SERIAL_NUM": 0,
+            "BATT_OPTIONS": 128,  # allow split auxinfo
+            "BATT2_OPTIONS": 128,  # allow split auxinfo
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(2)
+        self.set_parameters({
+            "BATT_MONITOR": 8,  # 8 is UAVCAN_BatteryInfo
+            "BATT2_MONITOR": 4,  # 8 is UAVCAN_BatteryInfo
+        })
+        self.delay_sim_time(2)
+        self.set_parameters({
+            "BATT_MONITOR": 4,  # 8 is UAVCAN_BatteryInfo
+            "BATT2_MONITOR": 8,  # 8 is UAVCAN_BatteryInfo
+        })
+        self.delay_sim_time(2)
+        self.set_parameters({
+            "BATT_MONITOR": 8,  # 8 is UAVCAN_BatteryInfo
+            "BATT2_MONITOR": 4,  # 8 is UAVCAN_BatteryInfo
+        })
+        self.delay_sim_time(2)
+
+    def BattCANReplaceRuntime(self):
+        '''test CAN battery periphs'''
+        self.start_subtest("Replace UAVCAN backend at runtime")
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+            "BATT_MONITOR": 11,  # 4 is ananlog volt+curr
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(2)
+        self.set_parameters({
+            "BATT_MONITOR": 8,  # 4 is UAVCAN batterinfo
+        })
+        self.delay_sim_time(2)
+
+    def testcanbatt(self):
+        ret = ([
+            self.BattCANReplaceRuntime,
+            self.BattCANSplitAuxInfo,
+        ])
+        return ret
+
     def tests(self):
         ret = []
         ret.extend(self.tests1a())
@@ -11637,3 +11688,9 @@ class AutoTestCAN(AutoTestCopter):
 
     def tests(self):
         return self.testcan()
+
+
+class AutoTestBattCAN(AutoTestCopter):
+
+    def tests(self):
+        return self.testcanbatt()
