@@ -944,6 +944,19 @@ class sitl_periph_gps(sitl_periph):
             HAL_PERIPH_ENABLE_GPS = 1,
         )
 
+class sitl_periph_battmon(sitl_periph):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        super(sitl_periph_battmon, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_battmon"',
+            APJ_BOARD_ID = 101,
+
+            HAL_PERIPH_ENABLE_BATTERY = 1,
+        )
+
 class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
