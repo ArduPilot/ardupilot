@@ -79,7 +79,7 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
     const auto &batt = AP::battery();
     for (uint8_t i = 0; i < batt._num_instances; i++) {
         if (batt.drivers[i] == nullptr ||
-            batt.get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
+            batt.allocated_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
         AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
@@ -90,7 +90,7 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
     // find empty uavcan driver
     for (uint8_t i = 0; i < batt._num_instances; i++) {
         if (batt.drivers[i] != nullptr &&
-            batt.get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
+            batt.allocated_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
             match_battery_id(i, battery_id)) {
 
             AP_BattMonitor_DroneCAN* batmon = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
@@ -241,7 +241,7 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap
     for (uint8_t i = 0; i < batt._num_instances; i++) {
         const auto *drv = batt.drivers[i];
         if (drv != nullptr &&
-            batt.get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
+            batt.allocated_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
             drv->option_is_set(AP_BattMonitor_Params::Options::AllowSplitAuxInfo) &&
             batt.get_serial_number(i) == int32_t(msg.battery_id)) {
             driver = (AP_BattMonitor_DroneCAN *)batt.drivers[i];

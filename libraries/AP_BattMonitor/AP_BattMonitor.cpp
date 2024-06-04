@@ -480,7 +480,8 @@ AP_BattMonitor::init()
         memset(&state[instance].cell_voltages, 0xFF, sizeof(cells));
         state[instance].instance = instance;
 
-        switch (get_type(instance)) {
+        const auto allocation_type = configured_type(instance);
+        switch (allocation_type) {
 #if AP_BATTERY_ANALOG_ENABLED
             case Type::ANALOG_VOLTAGE_ONLY:
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
@@ -607,7 +608,9 @@ AP_BattMonitor::init()
             default:
                 break;
         }
-
+        if (drivers[instance] != nullptr) {
+            state[instance].type = allocation_type;
+        }
     // if the backend has some local parameters then make those available in the tree
     if (drivers[instance] && state[instance].var_info) {
         backend_var_info[instance] = state[instance].var_info;
@@ -699,7 +702,16 @@ void AP_BattMonitor::read()
 #endif
 
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (drivers[i] != nullptr && get_type(i) != Type::NONE) {
+            if (drivers[i] == nullptr) {
+                continue;
+            }
+            if (allocated_type(i) != configured_type(i)) {
+                continue;
+            }
+            // allow run-time disabling; this is technically redundant
+            if (configured_type(i) == Type::NONE) {
+                continue;
+            }
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
 
@@ -714,7 +726,6 @@ void AP_BattMonitor::read()
                 drivers[i]->Log_Write_BCL(i, time_us);
             }
 #endif
-        }
     }
 
     check_failsafes();
@@ -1126,7 +1137,14 @@ void AP_BattMonitor::MPPT_set_powered_state(const uint8_t instance, const bool p
 bool AP_BattMonitor::healthy() const
 {
     for (uint8_t i=0; i< _num_instances; i++) {
-        if (get_type(i) != Type::NONE && !healthy(i)) {
+        if (allocated_type(i) != configured_type(i)) {
+            return false;
+        }
+        // allow run-time disabling; this is technically redundant
+        if (configured_type(i) == Type::NONE) {
+            continue;
+        }
+        if (!healthy(i)) {
             return false;
         }
     }
