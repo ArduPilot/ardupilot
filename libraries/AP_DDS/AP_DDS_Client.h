@@ -213,6 +213,9 @@ public:
     //! @brief Parameter storage
     static const struct AP_Param::GroupInfo var_info[];
 
+    //! @brief ROS_DOMAIN_ID
+    AP_Int32 domain_id;
+
     //! @brief Enum used to mark a topic as a data reader or writer
     enum class Topic_rw : uint8_t {
         DataReader = 0,
