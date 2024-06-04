@@ -859,6 +859,13 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
             plane.mode_guided.set_radius_and_direction(packet.param3, requested_position.loiter_ccw);
         }
 
+        // Need to re-initialize these, otherwise DO_REPOSITION will be overruled by GUIDED_CHANGE_HEADING and GUIDED_CHANGE_ALTITUDE if previously sent
+        plane.guided_state.target_heading = -4; // radians here are in range -3.14 to 3.14, so a default value needs to be outside that range
+        plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+        plane.guided_state.target_alt = -1; // same as above, although a target alt of -1 is rare on plane.
+        plane.guided_state.target_alt_time_ms = 0;
+        plane.guided_state.last_target_alt = 0;
+
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
@@ -1101,6 +1108,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
         }
 
         if (plane.do_change_speed(packet.param1, packet.param2, packet.param3)) {
+
+            // Need to re-initialize this, otherwise DO_CHANGE_SPEED will be overrided by any prior GUIDED_CHANGE_SPEED command while in GUIDED
+            plane.guided_state.target_airspeed_cm = -1; // same as above, although an airspeed of -1 is rare on plane.
+
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
