@@ -669,38 +669,39 @@ function mavlink_mission_item_int_t_ud:param1() end
 function mavlink_mission_item_int_t_ud:param1(value) end
 
 
--- desc
+-- Parameter access helper.
 ---@class (exact) Parameter_ud
 local Parameter_ud = {}
 
+-- Create a new parameter helper, init must be called with a parameter name.
 ---@return Parameter_ud
----@param name? string
-function Parameter(name) end
+function Parameter() end
 
--- desc
+-- Set the defualt value of this parameter, if the parameter has not been configured by the user its value will be updated to the new defualt.
 ---@param value number
 ---@return boolean
 function Parameter_ud:set_default(value) end
 
--- desc
+-- Return true if the parameter has been configured by the user.
 ---@return boolean
 function Parameter_ud:configured() end
 
--- desc
+-- Set the parameter to the given value and save. The value will be persistant after a reboot.
 ---@param value number
 ---@return boolean
 function Parameter_ud:set_and_save(value) end
 
--- desc
+-- Set the parameter to the given value. The value will not persist a reboot.
 ---@param value number
 ---@return boolean
 function Parameter_ud:set(value) end
 
--- desc
+-- Get the current value of a parameter.
+-- Returns nil if the init has not been called and a valid parameter found.
 ---@return number|nil
 function Parameter_ud:get() end
 
--- desc
+-- Init the paramter from a key. This allows the script to load old parameter that have been removed from the main code.
 ---@param key integer
 ---@param group_element uint32_t_ud|integer|number
 ---@param type integer
@@ -711,11 +712,43 @@ function Parameter_ud:get() end
 ---@return boolean
 function Parameter_ud:init_by_info(key, group_element, type) end
 
--- desc
+-- Init this parameter from a name.
 ---@param name string
 ---@return boolean
 function Parameter_ud:init(name) end
 
+-- Parameter access helper
+---@class (exact) Parameter_ud_const
+local Parameter_ud_const = {}
+
+-- Create a new parameter helper with a parameter name.
+-- This will error if no parameter with the given name is found.
+---@return Parameter_ud_const
+---@param name string
+function Parameter(name) end
+
+-- Set the defualt value of this parameter, if the parameter has not been configured by the user its value will be updated to the new defualt.
+---@param value number
+---@return boolean
+function Parameter_ud_const:set_default(value) end
+
+-- Retrun true if the parameter has been configured by the user.
+---@return boolean
+function Parameter_ud_const:configured() end
+
+-- Set the parameter to the given value and save. The value will be persistant after a reboot.
+---@param value number
+---@return boolean
+function Parameter_ud_const:set_and_save(value) end
+
+-- Set the parameter to the given value. The value will not persist a reboot.
+---@param value number
+---@return boolean
+function Parameter_ud_const:set(value) end
+
+-- Get the current value of a parameter.
+---@return number
+function Parameter_ud_const:get() end
 
 -- Vector2f is a userdata object that holds a 2D vector with x and y components. The components are stored as floating point numbers.
 -- To create a new Vector2f you can call Vector2f() to allocate a new one, or call a method that returns one to you.

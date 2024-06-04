@@ -85,13 +85,16 @@ class method(object):
         return (self.global_name == other.global_name) and (self.local_name == other.local_name) and (self.num_args == other.num_args)
 
     def is_overload(self, other):
-        # Allow manual bindings to have fewer arguments
         # this allows multiple function definitions with different params
-        return other.manual and (self.global_name == other.global_name) and (self.local_name == other.local_name) and (self.num_args < other.num_args)
+        white_list = [
+            "Parameter" 
+        ]
+        allow_override = other.manual or (self.global_name in white_list)
+        return allow_override and (self.global_name == other.global_name) and (self.local_name == other.local_name) and (self.num_args != other.num_args)
 
 def get_return_type(line):
     try:
-        match = re.findall("^---@return (\w+(\|(\w+))*)", line)
+        match = re.findall(r"^---@return (\w+(\|(\w+))*)", line)
         all_types = match[0][0]
         return all_types.split("|")
 
@@ -100,7 +103,7 @@ def get_return_type(line):
 
 def get_param_type(line):
     try:
-        match = re.findall("^---@param (?:\w+\??|...) (\w+(\|(\w+))*)", line)
+        match = re.findall(r"^---@param (?:\w+\??|...) (\w+(\|(\w+))*)", line)
         all_types = match[0][0]
         return all_types.split("|")
 
@@ -202,8 +205,18 @@ def compare(expected_file_name, got_file_name):
             pass_check = False
 
 
+    # White list of classes that are allowed unexpected definitions
+    white_list = [
+        # "virtual" class to bypass need for nil check when getting a parameter value, Parameter_ud is used internally, Parameter_ud_const exists only in the docs.
+        "Parameter_ud_const"
+    ]
+
     # make sure no unexpected methods are included
     for got in got_methods:
+        if got.global_name in white_list:
+            # Dont check if in the white list
+            continue
+
         found = False
         for meth in expected_methods:
             if (got == meth) or got.is_overload(meth):
