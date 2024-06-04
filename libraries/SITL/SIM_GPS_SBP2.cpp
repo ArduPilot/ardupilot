@@ -92,8 +92,8 @@ void GPS_SBP2::publish(const GPS_Data *d)
     velned.n = 1e3 * d->speedN;
     velned.e = 1e3 * d->speedE;
     velned.d = 1e3 * d->speedD;
-    velned.h_accuracy = 5e3;
-    velned.v_accuracy = 5e3;
+    velned.h_accuracy = 1e3 * 0.5;
+    velned.v_accuracy = 1e3 * 0.5;
     velned.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
     velned.flags = 1;
     sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
