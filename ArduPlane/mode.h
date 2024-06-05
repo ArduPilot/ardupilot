@@ -141,6 +141,10 @@ public:
     // true if voltage correction should be applied to throttle
     virtual bool use_battery_compensation() const;
 
+    void reset_guided_hdg();
+    void reset_guided_alt();
+    void reset_guided_spd();
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
