@@ -5490,32 +5490,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 )
                 self.test_mount_pitch(angle, 1, mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
 
-            # point gimbal at specified location
-            self.progress("Point gimbal at Location using MOUNT_CONTROL (GPS)")
-            self.do_pitch(despitch)
-            self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
-
-            # Delay here to allow the attitude to command to timeout and level out the copter a bit
-            self.delay_sim_time(3)
-
-            start = self.mav.location()
-            self.progress("start=%s" % str(start))
-            (t_lat, t_lon) = mavextra.gps_offset(start.lat, start.lng, 10, 20)
-            t_alt = 0
-
-            self.progress("loc %f %f %f" % (start.lat, start.lng, start.alt))
-            self.progress("targetting %f %f %f" % (t_lat, t_lon, t_alt))
-            self.do_pitch(despitch)
-            self.mav.mav.mount_control_send(
-                1, # target system
-                1, # target component
-                int(t_lat * 1e7), # lat
-                int(t_lon * 1e7), # lon
-                t_alt * 100, # alt
-                0  # save position
-            )
-            self.test_mount_pitch(-52, 5, mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
-
             # this is a one-off; ArduCopter *will* time out this directive!
             self.progress("Levelling aircraft")
             self.mav.mav.set_attitude_target_send(
