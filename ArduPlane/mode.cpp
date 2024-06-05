@@ -56,9 +56,9 @@ bool Mode::enter()
 
 #if OFFBOARD_GUIDED == ENABLED
 
-    plane.reset_guided_hdg();
-    plane.reset_guided_alt();
-    plane.reset_guided_spd();
+    plane.mode_guided.reset_guided_hdg();
+    plane.mode_guided.reset_guided_alt();
+    plane.mode_guided.reset_guided_spd();
 
 #endif
 

@@ -954,11 +954,6 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
-#if OFFBOARD_GUIDED == ENABLED
-    void reset_guided_hdg();
-    void reset_guided_alt();
-    void reset_guided_spd();
-#endif
 
     bool is_land_command(uint16_t cmd) const;
 

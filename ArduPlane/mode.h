@@ -9,6 +9,7 @@
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
+#include "config.h"
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -311,6 +312,12 @@ public:
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 
     void update_target_altitude() override;
+
+#if OFFBOARD_GUIDED == ENABLED
+    void reset_guided_hdg();
+    void reset_guided_alt();
+    void reset_guided_spd();
+#endif
 
 protected:
 

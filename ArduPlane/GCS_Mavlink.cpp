@@ -860,8 +860,8 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
         }
 
         // Need to re-initialize these, otherwise DO_REPOSITION will be overruled by GUIDED_CHANGE_HEADING and GUIDED_CHANGE_ALTITUDE if previously sent
-        plane.reset_guided_hdg();
-        plane.reset_guided_alt();
+        plane.mode_guided.reset_guided_hdg();
+        plane.mode_guided.reset_guided_alt();
 
         return MAV_RESULT_ACCEPTED;
     }
@@ -1107,7 +1107,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
         if (plane.do_change_speed(packet.param1, packet.param2, packet.param3)) {
 
             // Need to re-initialize this, otherwise DO_CHANGE_SPEED will be overrided by any prior GUIDED_CHANGE_SPEED command while in GUIDED
-            plane.reset_guided_spd();
+            plane.mode_guided.reset_guided_spd();
 
             return MAV_RESULT_ACCEPTED;
         }
