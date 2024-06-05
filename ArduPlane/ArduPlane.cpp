@@ -22,6 +22,12 @@
 
 #include "Plane.h"
 
+#define FORCE_VERSION_H_INCLUDE
+#include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros, priority)
 #define FAST_TASK(func) FAST_TASK_CLASS(Plane, &plane, func)
 
@@ -1048,5 +1054,17 @@ void Plane::update_quicktune(void)
     quicktune.update(control_mode->supports_quicktune());
 }
 #endif
+
+/*
+  constructor for main Plane class
+ */
+Plane::Plane(void)
+{
+    // C++11 doesn't allow in-class initialisation of bitfields
+    auto_state.takeoff_complete = true;
+}
+
+Plane plane;
+AP_Vehicle& vehicle = plane;
 
 AP_HAL_MAIN_CALLBACKS(&plane);
