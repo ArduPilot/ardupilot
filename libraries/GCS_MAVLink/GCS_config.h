@@ -58,6 +58,10 @@
 #define AP_MAVLINK_FAILURE_CREATION_ENABLED 1
 #endif
 
+// CODE_REMOVAL
+// ArduPilot 4.6 sends deprecation warnings for RALLY_POINT/RALLY_FETCH_POINT
+// ArduPilot 4.7 stops compiling them in by default
+// ArduPilot 4.8 removes the code entirely
 #ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED HAL_GCS_ENABLED && HAL_RALLY_ENABLED
 #endif
