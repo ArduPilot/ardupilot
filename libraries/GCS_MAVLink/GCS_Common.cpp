@@ -3521,6 +3521,8 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
+    send_text(MAV_SEVERITY_INFO, "%s", text);
+
     logger->Write_Message(text);
 #endif
 }
