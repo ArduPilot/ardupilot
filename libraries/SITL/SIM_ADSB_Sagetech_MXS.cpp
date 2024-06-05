@@ -18,6 +18,13 @@ static const uint8_t FIRST_BYTE { 0xAA };
 
 using namespace SITL;
 
+ADSB_Sagetech_MXS::ADSB_Sagetech_MXS():
+    // need large TX buffer so we can send all the requested vehicles in one go
+    // Vehicle is 56 bytes (35+21). Vehicle list default is 25. So we dump 1400 bytes in one go in that case.
+    ADSB_Device(2048, 512)
+{
+}
+
 void ADSB_Sagetech_MXS::move_preamble_in_buffer(uint8_t search_start_pos)
 {
     uint8_t i;
@@ -145,8 +152,8 @@ bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::Installati
 {
     ASSERT_STORAGE_SIZE(Installation, 36);
 
-    if (operating_mode != OperatingMode::OFF &&
-        operating_mode != OperatingMode::MAINTENANCE) {
+    if ((operating_mode != OperatingMode::OFF) && !maintenance_mode) {
+        // This should probably be a OR, but our driver does not track maintenance mode.
         // see page 10 - ignored if not in one of those.  We could
         // return silently here if there are race conditions
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -194,7 +201,11 @@ bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::Operating&
 {
     ASSERT_STORAGE_SIZE(Operating, 12);
 
-    // do something!
+    // First two bits of config are operating mode
+    operating_mode = OperatingMode(_msg.config & 0b11);
+
+    // Third bit is maintenance mode
+    maintenance_mode = (_msg.config & 0b001) != 0;
 
     return true;
 }
@@ -243,7 +254,11 @@ bool ADSB_Sagetech_MXS::handle_message(const SITL::ADSB_Sagetech_MXS::TargetRequ
 {
     ASSERT_STORAGE_SIZE(TargetRequest, 7);
 
-    // handle request to send adsb data to vehicle as it is received
+    // configure adsb data reporting
+    request_type = RequestType(_msg.reqtype & 0b11);
+
+    // Need to twiddle the bits to get the correct value
+    request_count = UINT16_VALUE(LOWBYTE(_msg.number_of_participants), HIGHBYTE(_msg.number_of_participants));
 
     return true;
 }
@@ -267,7 +282,29 @@ void ADSB_Sagetech_MXS::update_serial_output(const Aircraft *sitl_model)
         ack_info.send = false;
     }
 
-    update_serial_output_vehicles(sitl_model);
+    if (operating_mode == OperatingMode::OFF) {
+        // Cannot receive if turned off
+        return;
+    }
+
+    // Send ADSB vehicles
+    switch (request_type) {
+        case RequestType::Summary:
+            // One time summary, disable output and then send
+            request_type = RequestType::Off;
+            FALLTHROUGH;
+
+        case RequestType::AutoOutput:
+            update_serial_output_vehicles(sitl_model);
+            break;
+
+        case RequestType::TargetID:
+            // TODO: search through list and report only the requested ID if found.
+            break;
+
+        case RequestType::Off:
+            break;
+    }
 }
 
 
@@ -276,12 +313,42 @@ void ADSB_Sagetech_MXS::update_serial_output_vehicles(const SITL::Aircraft *sitl
     if (sitl_model->adsb == nullptr) {
         return;
     }
-    for (uint8_t i=0; i<sitl_model->adsb->num_vehicles; i++) {
-        const ADSB_Vehicle &vehicle = sitl_model->adsb->vehicles[i];
-        if (!vehicle.initialised) {
-            continue;
+
+    // Send the number requested, sort by distance
+    const Location &aircraft_loc = sitl_model->get_location();
+    float threshold_dist = 0.0;
+    for (uint16_t i=0; i<request_count; i++) {
+
+        // Find the closest vehicle outside the threshold radius
+        bool found = false;
+        uint16_t send_inst;
+        float min_dist;
+        for (uint8_t j=0; j<sitl_model->adsb->num_vehicles; j++) {
+            const ADSB_Vehicle &vehicle = sitl_model->adsb->vehicles[j];
+            if (!vehicle.initialised) {
+                continue;
+            }
+            const float dist = aircraft_loc.get_distance(vehicle.get_location());
+            if (dist <= threshold_dist) {
+                // Inside the threshold, already sent
+                continue;
+            }
+            if (!found || (dist < min_dist)) {
+                // found new closest
+                found = true;
+                min_dist = dist;
+                send_inst = j;
+            }
         }
-        send_vehicle_message(vehicle);
+
+        if (!found) {
+            // No more vehicles to send
+            break;
+        }
+
+        // Send and update threshold
+        send_vehicle_message(sitl_model->adsb->vehicles[send_inst]);
+        threshold_dist = min_dist;
     }
 }
 

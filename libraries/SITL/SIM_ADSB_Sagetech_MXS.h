@@ -26,7 +26,7 @@ namespace SITL {
 
 class ADSB_Sagetech_MXS : public ADSB_Device {
 public:
-    using ADSB_Device::ADSB_Device;
+    ADSB_Sagetech_MXS();
 
     void update(const class Aircraft *sitl_model);
 
@@ -102,8 +102,19 @@ private:
 
     enum class OperatingMode {
         OFF,
-        MAINTENANCE,
+        ON,
+        STANDBY,
+        ALT,
     } operating_mode;
+    bool maintenance_mode;
+
+    enum class RequestType {
+        AutoOutput,
+        Summary,
+        TargetID,
+        Off,
+    } request_type;
+    uint16_t request_count;
 
     // 0x01 - Installation Message
     class PACKED Installation {

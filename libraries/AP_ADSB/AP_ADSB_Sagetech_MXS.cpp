@@ -43,13 +43,33 @@
 
 #define SAGETECH_INSTALL_MSG_RATE                   5000
 #define SAGETECH_OPERATING_MSG_RATE                 1000
-#define SAGETECH_FLIGHT_ID_MSG_RATE                 8200
+#define SAGETECH_FLIGHT_ID_MSG_RATE                 5000
 #define SAGETECH_GPS_MSG_RATE_FLYING                200
 #define SAGETECH_GPS_MSG_RATE_GROUNDED              1000
 #define SAGETECH_TARGETREQ_MSG_RATE                 1000
 #define SAGETECH_HFOM_UNKNOWN                       (19000.0f) 
 #define SAGETECH_VFOM_UNKNOWN                       (151.0f)
 #define SAGETECH_HPL_UNKNOWN                        (38000.0f)
+
+const AP_Param::GroupInfo AP_ADSB_Sagetech_MXS::var_info[] = {
+
+    // @Param: MXS_RATE
+    // @DisplayName: Sagetech MXS request rate
+    // @Description: If 0 all ADSB traffic reports are sent to the vehicle as they are received by the transponder. This can result in high data rates if there is a lot of traffic. If positive the transponder reports the closest vehicles at the given rate, the number of vehicle reported is upto the set list length. This provides a upper limit to the required serial data rate.
+    // @User: Standard
+    // @Units: Hz
+    // @Range: 0 10
+    AP_GROUPINFO("MXS_RATE", 1, AP_ADSB_Sagetech_MXS, _targetreq_rate, 0),
+
+    AP_GROUPEND
+};
+
+AP_ADSB_Sagetech_MXS::AP_ADSB_Sagetech_MXS(AP_ADSB &frontend, uint8_t instance) :
+    AP_ADSB_Backend(frontend, instance)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    _frontend._backend_var_info[instance] = var_info;
+}
 
 bool AP_ADSB_Sagetech_MXS::detect() 
 {
@@ -63,6 +83,43 @@ bool AP_ADSB_Sagetech_MXS::init()
     if (_port == nullptr) {
         return false;
     }
+
+    // Populate initial message sets
+
+    // Configure the Default Installation Message Data
+    // Fill aircraft registration with spaces
+    memset(&mxs_state.inst.reg, 0x20, sizeof(mxs_state.inst.reg));
+
+    mxs_state.inst.com0 = sg_baud_t::baud230400;
+    mxs_state.inst.com1 = sg_baud_t::baud230400;
+
+    mxs_state.inst.eth.ipAddress = 0;
+    mxs_state.inst.eth.subnetMask = 0;
+    mxs_state.inst.eth.portNumber = 0;
+
+    mxs_state.inst.sil = sg_sil_t::silUnknown;
+    mxs_state.inst.sda = sg_sda_t::sdaUnknown;
+    mxs_state.inst.altOffset = 0;         // Alt encoder offset is legacy field that should always be 0.
+    mxs_state.inst.antenna = sg_antenna_t::antBottom;
+
+    mxs_state.inst.altRes100 = true;
+    mxs_state.inst.hdgTrueNorth = false;
+    mxs_state.inst.airspeedTrue = false;
+    mxs_state.inst.heater = true;         // Heater should always be connected.
+    mxs_state.inst.wowConnected = true;
+
+
+    // Target request message
+    mxs_state.treq.transmitPort = sg_transmitport_t::transmitSource;
+    mxs_state.treq.stateVector = true;
+    mxs_state.treq.modeStatus = true;
+    mxs_state.treq.targetState = false;
+    mxs_state.treq.airRefVel = false;
+    mxs_state.treq.tisb = false;
+    mxs_state.treq.military = false;
+    mxs_state.treq.commA = false;
+    mxs_state.treq.ownship = true;
+
     return true;
 }
 
@@ -99,10 +156,11 @@ void AP_ADSB_Sagetech_MXS::update()
 
             } else {
                 // auto configure based on autopilot's saved parameters
+
+                // Send operating message to turn device off so installation message can be sent
                 auto_config_operating();
-                auto_config_installation();
-                auto_config_flightid();
-                send_targetreq_msg();
+                send_install_msg();
+
                 _frontend.out_state.cfg.rf_capable.set_and_notify(rf_capable_flags_default);      // Set the RF Capability to 1090ES TX and RX 
                 mxs_state.init = true;
             }
@@ -160,9 +218,30 @@ void AP_ADSB_Sagetech_MXS::update()
         last.packet_GPS_ms = now_ms;
         send_gps_msg();
 
-    } else if ((now_ms - last.packet_targetReq >= SAGETECH_TARGETREQ_MSG_RATE) && 
-            ((mxs_state.treq.icao != (uint32_t)_frontend._special_ICAO_target) || (mxs_state.treq.maxTargets != (uint16_t)_frontend.in_state.list_size_param))) {
-        send_targetreq_msg();
+    } else {
+        // Target request message
+        if (!is_positive(_targetreq_rate.get())) {
+            // No user rate set, set to auto
+            if ((last.packet_targetReq == 0) || (now_ms - last.packet_targetReq >= SAGETECH_TARGETREQ_MSG_RATE) ||
+                    ((mxs_state.treq.icao != (uint32_t)_frontend._special_ICAO_target) || (mxs_state.treq.maxTargets != (uint16_t)_frontend.in_state.list_size_param))) {
+                // Sends at low rate or on change of ICAO or list size
+                // Auto mode reports vehicles as they are received by the transponder
+                mxs_state.treq.reqType = sg_reporttype_t::reportAuto;
+                send_targetreq_msg();
+                last.packet_targetReq = now_ms;
+
+            }
+
+        } else {
+            // user set rate
+            const uint32_t delay_ms = 1000.0 / _targetreq_rate.get();
+            if ((last.packet_targetReq == 0) || (now_ms - last.packet_targetReq >= delay_ms)) {
+                // Summary is a one time report of the given number of vehicles
+                mxs_state.treq.reqType = sg_reporttype_t::reportSummary;
+                send_targetreq_msg();
+                last.packet_targetReq = now_ms;
+            }
+        }
     }
 }
 
@@ -341,58 +420,6 @@ void AP_ADSB_Sagetech_MXS::auto_config_operating()
 #endif
 }
 
-void AP_ADSB_Sagetech_MXS::auto_config_installation()
-{
-    // Configure the Default Installation Message Data
-    mxs_state.inst.icao = (uint32_t) _frontend.out_state.cfg.ICAO_id_param;
-    snprintf(mxs_state.inst.reg, 8, "%-7s", "TEST01Z");
-
-    mxs_state.inst.com0 = sg_baud_t::baud230400;
-    mxs_state.inst.com1 = sg_baud_t::baud57600;
-
-    mxs_state.inst.eth.ipAddress = 0;
-    mxs_state.inst.eth.subnetMask = 0;
-    mxs_state.inst.eth.portNumber = 0;
-
-    mxs_state.inst.sil = sg_sil_t::silUnknown;
-    mxs_state.inst.sda = sg_sda_t::sdaUnknown;
-    mxs_state.inst.emitter = convert_emitter_type_to_sg(_frontend.out_state.cfg.emitterType.get());
-    mxs_state.inst.size = (sg_size_t)_frontend.out_state.cfg.lengthWidth.get();
-    mxs_state.inst.maxSpeed = convert_airspeed_knots_to_sg(_frontend.out_state.cfg.maxAircraftSpeed_knots);
-    mxs_state.inst.altOffset = 0;         // Alt encoder offset is legacy field that should always be 0.
-    mxs_state.inst.antenna = sg_antenna_t::antBottom;
-
-    mxs_state.inst.altRes100 = true;
-    mxs_state.inst.hdgTrueNorth = false;
-    mxs_state.inst.airspeedTrue = false;
-    mxs_state.inst.heater = true;         // Heater should always be connected.
-    mxs_state.inst.wowConnected = true;
-
-    last.msg.type = SG_MSG_TYPE_HOST_INSTALL;
-
-#if SAGETECH_USE_MXS_SDK
-    uint8_t txComBuffer[SG_MSG_LEN_INSTALL] {};
-    sgEncodeInstall(txComBuffer, &mxs_state.inst, ++last.msg.id);
-    msg_write(txComBuffer, SG_MSG_LEN_INSTALL);
-#endif
-}
-
-void AP_ADSB_Sagetech_MXS::auto_config_flightid()
-{
-    if (!strlen(_frontend.out_state.cfg.callsign)) {
-        snprintf(mxs_state.fid.flightId, sizeof(mxs_state.fid.flightId), "%-8s", "TESTMXS0");
-    } else {
-        snprintf(mxs_state.fid.flightId, sizeof(mxs_state.fid.flightId), "%-8s", _frontend.out_state.cfg.callsign);
-    }
-    last.msg.type = SG_MSG_TYPE_HOST_FLIGHT;
-
-#if SAGETECH_USE_MXS_SDK
-    uint8_t txComBuffer[SG_MSG_LEN_FLIGHT] {};
-    sgEncodeFlightId(txComBuffer, &mxs_state.fid, ++last.msg.id);
-    msg_write(txComBuffer, SG_MSG_LEN_FLIGHT);
-#endif
-}
-
 void AP_ADSB_Sagetech_MXS::handle_ack(const sg_ack_t ack)
 {
     if ((ack.ackId != last.msg.id) || (ack.ackType != last.msg.type)) {
@@ -512,7 +539,6 @@ void AP_ADSB_Sagetech_MXS::send_install_msg()
     mxs_state.inst.emitter = convert_emitter_type_to_sg(_frontend.out_state.cfg.emitterType.get());
     mxs_state.inst.size = (sg_size_t)_frontend.out_state.cfg.lengthWidth.get();
     mxs_state.inst.maxSpeed = convert_airspeed_knots_to_sg(_frontend.out_state.cfg.maxAircraftSpeed_knots);
-    mxs_state.inst.antenna = sg_antenna_t::antBottom;
 
     last.msg.type = SG_MSG_TYPE_HOST_INSTALL;
 
@@ -661,18 +687,8 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
 
 void AP_ADSB_Sagetech_MXS::send_targetreq_msg() 
 {
-    mxs_state.treq.reqType = sg_reporttype_t::reportAuto;
-    mxs_state.treq.transmitPort = sg_transmitport_t::transmitCom1;
     mxs_state.treq.maxTargets = _frontend.in_state.list_size_param;
     mxs_state.treq.icao = _frontend._special_ICAO_target.get();
-    mxs_state.treq.stateVector = true;
-    mxs_state.treq.modeStatus = true;
-    mxs_state.treq.targetState = false;
-    mxs_state.treq.airRefVel = false;
-    mxs_state.treq.tisb = false;
-    mxs_state.treq.military = false;
-    mxs_state.treq.commA = false;
-    mxs_state.treq.ownship = true;
 
     last.msg.type = SG_MSG_TYPE_HOST_TARGETREQ;
 
