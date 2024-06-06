@@ -7386,33 +7386,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AC_Avoidance_Proximity(self):
         '''Test proximity avoidance slide behaviour'''
+
         self.context_push()
-        ex = None
-        try:
-            self.load_fence("copter-avoidance-fence.txt")
-            self.set_parameters({
-                "FENCE_ENABLE": 1,
-                "PRX1_TYPE": 10,
-                "PRX_LOG_RAW": 1,
-                "RC10_OPTION": 40, # proximity-enable
-            })
-            self.reboot_sitl()
-            self.progress("Enabling proximity")
-            self.set_rc(10, 2000)
-            self.check_avoidance_corners()
 
-            self.assert_current_onboard_log_contains_message("PRX")
-            self.assert_current_onboard_log_contains_message("PRXR")
+        self.load_fence("copter-avoidance-fence.txt")
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "PRX1_TYPE": 10,
+            "PRX_LOG_RAW": 1,
+            "RC10_OPTION": 40, # proximity-enable
+        })
+        self.reboot_sitl()
+        self.progress("Enabling proximity")
+        self.set_rc(10, 2000)
+        self.check_avoidance_corners()
 
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.assert_current_onboard_log_contains_message("PRX")
+        self.assert_current_onboard_log_contains_message("PRXR")
+
         self.context_pop()
-        self.clear_fence()
+
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
 
     def ProximitySensors(self):
         '''ensure proximity sensors return appropriate data'''
