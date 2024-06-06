@@ -136,6 +136,9 @@ private:
     // set recorded distance and bearing to target to zero
     void clear_dist_and_bearing_to_target();
 
+    // write out an onboard-log message to help diagnose follow problems:
+    void Log_Write_FOLL();
+
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
     AP_Int16    _sysid;             // target's mavlink system id (0 to use first sysid seen)
