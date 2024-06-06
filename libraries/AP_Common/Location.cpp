@@ -222,6 +222,8 @@ bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
 }
 
 #if AP_AHRS_ENABLED
+// converts location to a vector from origin; if this method returns
+// false then vec_ne is unmodified
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
 {
     Location ekf_origin;
@@ -233,18 +235,21 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
     return true;
 }
 
+// converts location to a vector from origin; if this method returns
+// false then vec_neu is unmodified
 bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 {
-    // convert lat, lon
-    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
-        return false;
-    }
-
     // convert altitude
     int32_t alt_above_origin_cm = 0;
     if (!get_alt_cm(AltFrame::ABOVE_ORIGIN, alt_above_origin_cm)) {
         return false;
     }
+
+    // convert lat, lon
+    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
+        return false;
+    }
+
     vec_neu.z = alt_above_origin_cm;
 
     return true;
