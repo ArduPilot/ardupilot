@@ -492,9 +492,10 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
 {
     // rotate roll, pitch input from north facing to vehicle's perspective
-    const float cos_yaw = cosf(radians(angle_deg));
-    const float sin_yaw = sinf(radians(angle_deg));
-    return Vector3f((vec.x * cos_yaw) - (vec.y * sin_yaw), (vec.y * cos_yaw) + (vec.x * sin_yaw), vec.z);
+    Vector3f ret = vec;
+    ret.xy().rotate(radians(angle_deg));
+
+    return ret;
 }
 
 // set recorded distance and bearing to target to zero
