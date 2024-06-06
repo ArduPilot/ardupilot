@@ -314,13 +314,31 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+        updated = handle_global_position_int_message(msg);
+        break;
+    }
+    case MAVLINK_MSG_ID_FOLLOW_TARGET: {
+        updated = handle_follow_target_message(msg);
+        break;
+    }
+    }
+
+    if (updated) {
+#if HAL_LOGGING_ENABLED
+        Log_Write_FOLL();
+#endif
+    }
+}
+
+bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
+{
         // decode message
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(&msg, &packet);
 
         // ignore message if lat and lon are (exactly) zero
         if ((packet.lat == 0 && packet.lon == 0)) {
-            return;
+            return false;
         }
 
         _target_location.lat = packet.lat;
@@ -350,21 +368,22 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _sysid.set(msg.sysid);
             _automatic_sysid = true;
         }
-        updated = true;
-        break;
-    }
-    case MAVLINK_MSG_ID_FOLLOW_TARGET: {
+        return true;
+}
+
+bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
+{
         // decode message
         mavlink_follow_target_t packet;
         mavlink_msg_follow_target_decode(&msg, &packet);
 
         // ignore message if lat and lon are (exactly) zero
         if ((packet.lat == 0 && packet.lon == 0)) {
-            return;
+            return false;
         }
         // require at least position
         if ((packet.est_capabilities & (1<<0)) == 0) {
-            return;
+            return false;
         }
 
         Location new_loc = _target_location;
@@ -376,7 +395,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         // above home if we are configured for relative alt
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE &&
             !new_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
-            return;
+            return false;
         }
         _target_location = new_loc;
 
@@ -404,16 +423,8 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _sysid.set(msg.sysid);
             _automatic_sysid = true;
         }
-        updated = true;
-        break;
-    }
-    }
 
-    if (updated) {
-#if HAL_LOGGING_ENABLED
-        Log_Write_FOLL();
-#endif
-    }
+        return true;
 }
 
 // write out an onboard-log message to help diagnose follow problems:
