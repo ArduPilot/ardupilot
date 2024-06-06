@@ -411,6 +411,15 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
     if (updated) {
 #if HAL_LOGGING_ENABLED
+        Log_Write_FOLL();
+#endif
+    }
+}
+
+// write out an onboard-log message to help diagnose follow problems:
+#if HAL_LOGGING_ENABLED
+void AP_Follow::Log_Write_FOLL()
+{
         // get estimated location and velocity
         Location loc_estimate{};
         Vector3f vel_estimate;
@@ -445,9 +454,8 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
                                                loc_estimate.lng,
                                                loc_estimate.alt
                                                );
-#endif
-    }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // get velocity estimate in m/s in NED frame using dt since last update
 bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
