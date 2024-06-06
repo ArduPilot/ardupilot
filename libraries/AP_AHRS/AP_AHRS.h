@@ -277,8 +277,8 @@ public:
 
     // return location corresponding to vector relative to the
     // vehicle's origin
-    bool get_location_from_origin_offset(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
-    bool get_location_from_home_offset(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
+    bool get_location_from_origin_offset_NED(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
+    bool get_location_from_home_offset_NED(Location &loc, const Vector3p &offset_ned) const WARN_IF_UNUSED;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
