@@ -118,6 +118,9 @@ public:
 private:
     static AP_Follow *_singleton;
 
+    // returns true if we should extract information from msg
+    bool should_handle_message(const mavlink_message_t &msg) const;
+
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
 

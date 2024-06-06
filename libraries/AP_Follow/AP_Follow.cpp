@@ -272,27 +272,40 @@ bool AP_Follow::get_target_heading_deg(float &heading) const
     return true;
 }
 
-// handle mavlink DISTANCE_SENSOR messages
-void AP_Follow::handle_msg(const mavlink_message_t &msg)
+// returns true if we should extract information from msg
+bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
-        return;
+        return false;
     }
 
     // skip our own messages
     if (msg.sysid == mavlink_system.sysid) {
-        return;
+        return false;
     }
 
     // skip message if not from our target
     if (_sysid != 0 && msg.sysid != _sysid) {
-        if (_automatic_sysid) {
-            // maybe timeout who we were following...
-            if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
-                _sysid.set(0);
-            }
+        return false;
+    }
+
+    return true;
+}
+
+// handle mavlink DISTANCE_SENSOR messages
+void AP_Follow::handle_msg(const mavlink_message_t &msg)
+{
+    // this method should be called from an "update()" method:
+    if (_automatic_sysid) {
+        // maybe timeout who we were following...
+        if ((_last_location_update_ms == 0) ||
+            (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
+            _sysid.set(0);
         }
+    }
+
+    if (!should_handle_message(msg)) {
         return;
     }
 
