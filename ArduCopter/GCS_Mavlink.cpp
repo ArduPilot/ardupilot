@@ -911,17 +911,39 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_comman
         // param2 : speed during change [deg per second]
         // param3 : direction (-1:ccw, +1:cw)
         // param4 : relative offset (1) or absolute angle (0)
-        if ((packet.param1 >= 0.0f)   &&
-            (packet.param1 <= 360.0f) &&
-            (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            copter.flightmode->auto_yaw.set_fixed_yaw(
-                packet.param1,
-                packet.param2,
-                (int8_t)packet.param3,
-                is_positive(packet.param4));
-            return MAV_RESULT_ACCEPTED;
-        }
+    const float target_angle = packet.param1;
+    if (target_angle < 0.0 || target_angle > 360.0) {
         return MAV_RESULT_FAILED;
+    }
+
+    const float rate_degs = packet.param2;
+    const int8_t direction = packet.param3;
+
+    switch ((uint8_t)packet.param4) {
+    case 0:
+        copter.flightmode->auto_yaw.set_fixed_yaw(
+            target_angle,
+            rate_degs,
+            direction,
+            false);
+        return MAV_RESULT_ACCEPTED;
+    case 1:
+        copter.flightmode->auto_yaw.set_fixed_yaw(
+            target_angle,
+            rate_degs,
+            direction,
+            true);
+        return MAV_RESULT_ACCEPTED;
+    case 2: {
+        // relative-to-vehicle-heading
+        // start by turning angle and direction into a relative yaw:
+        const float relative_angle = wrap_180(direction * target_angle);
+        copter.flightmode->auto_yaw.set_vehicle_heading_yaw(relative_angle, rate_degs);
+        return MAV_RESULT_ACCEPTED;
+    }
+    default:
+        return MAV_RESULT_FAILED;
+    }
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command_int_t &packet)
