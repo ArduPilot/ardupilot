@@ -264,6 +264,8 @@ public:
         AHRS_AUTO_TRIM =     182,  // in-flight AHRS autotrim
         AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
 
+        TIE_DOWN_RELEASE =   184, // Operate tie down release low=open, middle=auto, high=close
+
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
@@ -393,6 +395,7 @@ protected:
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
     void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance);
+    void do_aux_function_tie_down_release(const AuxSwitchPos ch_flag);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
