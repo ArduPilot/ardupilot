@@ -136,6 +136,10 @@ private:
     // set recorded distance and bearing to target to zero
     void clear_dist_and_bearing_to_target();
 
+    // handle various mavlink messages supplying position:
+    bool handle_global_position_int_message(const mavlink_message_t &msg);
+    bool handle_follow_target_message(const mavlink_message_t &msg);
+
     // write out an onboard-log message to help diagnose follow problems:
     void Log_Write_FOLL();
 
