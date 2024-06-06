@@ -68,10 +68,20 @@ public:
     // true if we have a valid target location estimate
     bool have_target() const;
 
-    // get target's estimated location and velocity (in NED)
+    // get target's estimated position (NED-from-origin) and velocity (in NED)
+    // from position-from-origin.  metres and metres/second
+    bool get_target_position_and_velocity(Vector3p &pos_ned, Vector3f &vel_ned) const;
+
+    // get target's estimated position (NED-from-origin) and velocity (in NED)
+    // from position-from-origin with offsets added.  metres and metres/second
+    bool get_target_position_and_velocity_ofs(Vector3p &pos_ned, Vector3f &vel_ned) const;
+
+    // get target's estimated location and velocity (in NED).  Derived
+    // from position-from-origin.
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
 
-    // get target's estimated location and velocity (in NED), with offsets added
+    // get target's estimated location and velocity (in NED), with
+    // offsets added.  Derived from position-from-origin.
     bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
     
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
@@ -156,7 +166,7 @@ private:
 
     // local variables
     uint32_t _last_location_update_ms;  // system time of last position update
-    Location _target_location;      // last known location of target
+    Vector3p _target_position_ned;  // last known position of target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
     Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
     uint32_t _last_heading_update_ms;   // system time of last heading update
