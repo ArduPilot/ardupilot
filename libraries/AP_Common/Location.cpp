@@ -224,7 +224,8 @@ bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
 #if AP_AHRS_ENABLED
 // converts location to a vector from origin; if this method returns
 // false then vec_ne is unmodified
-bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
+template<typename T>
+bool Location::get_vector_xy_from_origin_NE(T &vec_ne) const
 {
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
@@ -235,9 +236,16 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
     return true;
 }
 
+// define for float and position vectors
+template bool Location::get_vector_xy_from_origin_NE<Vector2f>(Vector2f &vec_ne) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_xy_from_origin_NE<Vector2p>(Vector2p &vec_ne) const;
+#endif
+
 // converts location to a vector from origin; if this method returns
 // false then vec_neu is unmodified
-bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
+template<typename T>
+bool Location::get_vector_from_origin_NEU(T &vec_neu) const
 {
     // convert altitude
     int32_t alt_above_origin_cm = 0;
@@ -254,6 +262,13 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 
     return true;
 }
+
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NEU<Vector3f>(Vector3f &vec_neu) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NEU<Vector3p>(Vector3p &vec_neu) const;
+#endif
+
 #endif  // AP_AHRS_ENABLED
 
 // return horizontal distance in meters between two locations
