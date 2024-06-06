@@ -28,7 +28,7 @@ bool ModeCircle::init(bool ignore_checks)
     if (copter.circle_nav->roi_at_center()) {
         const Vector3p &pos { copter.circle_nav->get_center() };
         Location circle_center;
-        if (!AP::ahrs().get_location_from_origin_offset(circle_center, pos * 0.01)) {
+        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos * 0.01)) {
             return false;
         }
         // point at the ground:
