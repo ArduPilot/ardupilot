@@ -55,11 +55,14 @@ public:
     // - above-origin and origin is not set
     bool change_alt_frame(AltFrame desired_frame);
 
-    // get position as a vector (in cm) from origin (x,y only or x,y,z)
-    // return false on failure to get the vector which can only
-    // happen if the EKF origin has not been set yet
-    // x, y and z are in centimetres
+    // get position as a vector (in cm) from origin (x,y only or
+    // x,y,z) return false on failure to get the vector which can only
+    // happen if the EKF origin has not been set yet x, y and z are in
+    // centimetres.  If this method returns false then vec_ne is
+    // unmodified.
     bool get_vector_xy_from_origin_NE(Vector2f &vec_ne) const WARN_IF_UNUSED;
+    // converts location to a vector from origin; if this method returns
+    // false then vec_neu is unmodified
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
 
     // return horizontal distance in meters between two locations
