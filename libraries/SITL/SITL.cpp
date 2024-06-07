@@ -1184,6 +1184,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: Allow relay output operation when running SIM-on-hardware
     AP_GROUPINFO("OH_RELAY_MSK",     48, SIM, on_hardware_relay_enable_mask, SIM_DEFAULT_ENABLED_RELAY_CHANNELS),
 
+    // @Param: CLAMP_CH
+    // @DisplayName: Simulated Clamp Channel
+    // @Description: If non-zero the vehicle will be clamped in position until the value on this servo channel passes 1800PWM
+    AP_GROUPINFO("CLAMP_CH",     49, SIM, clamp_ch, 0),
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),

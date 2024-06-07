@@ -324,6 +324,15 @@ protected:
     // update EAS speeds
     void update_eas_airspeed();
 
+    // clamp support
+    class Clamp {
+    public:
+        bool clamped(class Aircraft&, const struct sitl_input &input);  // true if the vehicle is currently clamped down
+    private:
+        bool currently_clamped;
+        bool grab_attempted;  // avoid warning multiple times about missed grab
+    } clamp;
+
 private:
     uint64_t last_time_us;
     uint32_t frame_counter;
