@@ -286,6 +286,11 @@ public:
     void rcout_thread();
 
     /*
+      Force group trigger from all callers rather than just from the main thread
+    */
+    void force_trigger_groups(bool onoff) override { force_trigger = onoff; }
+
+    /*
      timer information
      */
     void timer_info(ExpandingString &str) override;
@@ -579,6 +584,8 @@ private:
     uint8_t _dshot_cycle;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
+    // force triggering of groups
+    bool force_trigger;
 
 #if HAL_DSHOT_ENABLED
     // dshot commands
