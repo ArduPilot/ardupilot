@@ -229,6 +229,12 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             // send ESC telemetry to monitor ESC and motor temperatures
             AP::esc_telem().send_esc_telemetry_mavlink(gcs_chan.get_chan());
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // a lot of autotest timeouts are based on receiving system time
+            gcs_chan.send_system_time();
+            // autotesting of compassmot wants to see RC channels message
+            gcs_chan.send_rc_channels();
+#endif
         }
     }
 

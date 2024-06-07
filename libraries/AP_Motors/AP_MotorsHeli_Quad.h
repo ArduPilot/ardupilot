@@ -37,12 +37,6 @@ public:
     // calculate_armed_scalars - recalculates scalars that can change while armed
     void calculate_armed_scalars() override;
 
-    // has_flybar - returns true if we have a mechanical flybar
-    bool has_flybar() const  override { return AP_MOTORS_HELI_NOFLYBAR; }
-
-    // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const  override { return false; }
-
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
@@ -55,7 +49,7 @@ protected:
     void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
     void calculate_roll_pitch_collective_factors ();

@@ -25,6 +25,8 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Parachute/AP_Parachute.h>
+#include <AP_Relay/AP_Relay.h>
+#include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -163,9 +165,11 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     AP_GROUPINFO("REDLINE_RPM", 17, AP_ICEngine, redline_rpm, 0),
 #endif
 
+    // 18 was IGNITION_RLY
+
+
     AP_GROUPEND
 };
-
 
 // constructor
 AP_ICEngine::AP_ICEngine()
@@ -378,20 +382,21 @@ void AP_ICEngine::update(void)
     case ICE_DISABLED:
         return;
     case ICE_OFF:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        set_ignition(false);
+        set_starter(false);
         starter_start_time_ms = 0;
         break;
 
     case ICE_START_HEIGHT_DELAY:
     case ICE_START_DELAY:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        set_ignition(true);
+        set_starter(false);
         break;
 
     case ICE_STARTING:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);
+        set_ignition(true);
+        set_starter(true);
+
         if (starter_start_time_ms == 0) {
             starter_start_time_ms = now;
         }
@@ -399,8 +404,8 @@ void AP_ICEngine::update(void)
         break;
 
     case ICE_RUNNING:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        set_ignition(true);
+        set_starter(false);
         starter_start_time_ms = 0;
         break;
     }
@@ -590,6 +595,61 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     min_throttle = roundf(idle_governor_integrator);
 #endif // AP_RPM_ENABLED
 }
+
+/*
+  set ignition state
+ */
+void AP_ICEngine::set_ignition(bool on)
+{
+    SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, on? pwm_ignition_on : pwm_ignition_off);
+
+#if AP_RELAY_ENABLED
+    AP_Relay *relay = AP::relay();
+    if (relay != nullptr) {
+        relay->set(AP_Relay_Params::FUNCTION::IGNITION, on);
+    }
+#endif // AP_RELAY_ENABLED
+
+}
+
+/*
+  set starter state
+ */
+void AP_ICEngine::set_starter(bool on)
+{
+    SRV_Channels::set_output_pwm(SRV_Channel::k_starter, on? pwm_starter_on : pwm_starter_off);
+
+#if AP_ICENGINE_TCA9554_STARTER_ENABLED
+    tca9554_starter.set_starter(on);
+#endif
+
+#if AP_RELAY_ENABLED
+    AP_Relay *relay = AP::relay();
+    if (relay != nullptr) {
+        relay->set(AP_Relay_Params::FUNCTION::ICE_STARTER, on);
+    }
+#endif // AP_RELAY_ENABLED
+}
+
+
+bool AP_ICEngine::allow_throttle_while_disarmed() const
+{
+    return option_set(Options::THROTTLE_WHILE_DISARMED) &&
+        hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+}
+
+#if AP_RELAY_ENABLED
+bool AP_ICEngine::get_legacy_ignition_relay_index(int8_t &num) 
+{
+    // PARAMETER_CONVERSION - Added: Dec-2023
+    if (!enable || !AP_Param::get_param_by_index(this, 18, AP_PARAM_INT8, &num)) {
+        return false;
+    }
+    // convert to zero indexed
+    num -= 1;
+    return true;
+}
+#endif
 
 // singleton instance. Should only ever be set in the constructor.
 AP_ICEngine *AP_ICEngine::_singleton;

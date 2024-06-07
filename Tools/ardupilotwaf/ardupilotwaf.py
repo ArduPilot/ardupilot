@@ -1,12 +1,13 @@
 # encoding: utf-8
 
 from __future__ import print_function
-from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils
+from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
-from waflib.TaskGen import before_method, feature
+from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
 from collections import OrderedDict
+import subprocess
 
 import ap_persistent
 
@@ -91,6 +92,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_LandingGear',
     'AP_RobotisServo',
     'AP_NMEA_Output',
+    'AP_OSD',
     'AP_Filesystem',
     'AP_ADSB',
     'AP_ADSB/sagetech-sdk',
@@ -116,6 +118,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_OpenDroneID',
     'AP_CheckFirmware',
     'AP_ExternalControl',
+    'AP_JSON',
+    'AP_Beacon',
+    'AP_Arming',
+    'AP_RCMapper',
 ]
 
 def get_legacy_defines(sketch_name, bld):
@@ -124,14 +130,12 @@ def get_legacy_defines(sketch_name, bld):
     if bld.cmd == 'heli' or 'heli' in bld.targets:
         return [
         'APM_BUILD_DIRECTORY=APM_BUILD_Heli',
-        'SKETCH="' + sketch_name + '"',
-        'SKETCHNAME="' + sketch_name + '"',
+        'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
         ]
 
     return [
         'APM_BUILD_DIRECTORY=APM_BUILD_' + sketch_name,
-        'SKETCH="' + sketch_name + '"',
-        'SKETCHNAME="' + sketch_name + '"',
+        'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
 IGNORED_AP_LIBRARIES = [
@@ -238,6 +242,7 @@ def ap_get_all_libraries(bld):
             continue
         libraries.append(name)
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
+    libraries.append('AP_PiccoloCAN/piccolo_protocol')
     return libraries
 
 @conf
@@ -254,12 +259,62 @@ def ap_common_vehicle_libraries(bld):
 
 _grouped_programs = {}
 
+class check_elf_symbols(Task.Task):
+    color='CYAN'
+    always_run = True
+    def keyword(self):
+        return "checking symbols"
+
+    def run(self):
+        '''
+        check for disallowed symbols in elf file, such as C++ exceptions
+        '''
+        elfpath = self.inputs[0].abspath()
+
+        if not self.env.CHECK_SYMBOLS:
+            # checking symbols disabled on this build
+            return
+
+        if not self.env.vehicle_binary or self.env.SIM_ENABLED:
+            # we only want to check symbols for vehicle binaries, allowing examples
+            # to use C++ exceptions. We also allow them in simulator builds
+            return
+
+        # we use string find on these symbols, so this catches all types of throw
+        # calls this should catch all uses of exceptions unless the compiler
+        # manages to inline them
+        blacklist = ['std::__throw',
+                     'operator new[](unsigned int)',
+                     'operator new[](unsigned long)',
+                     'operator new(unsigned int)',
+                     'operator new(unsigned long)']
+
+        nmout = subprocess.getoutput("%s -C %s" % (self.env.get_flat('NM'), elfpath))
+        for b in blacklist:
+            if nmout.find(b) != -1:
+                raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
+
+
+@feature('post_link')
+@after_method('process_source')
+def post_link(self):
+    '''
+    setup tasks to run after link stage
+    '''
+    self.link_task.always_run = True
+
+    link_output = self.link_task.outputs[0]
+
+    check_elf_task = self.create_task('check_elf_symbols', src=link_output)
+    check_elf_task.set_run_after(self.link_task)
+    
 @conf
 def ap_program(bld,
                program_groups='bin',
                program_dir=None,
                use_legacy_defines=True,
                program_name=None,
+               vehicle_binary=True,
                **kw):
     if 'target' in kw:
         bld.fatal('Do not pass target for program')
@@ -274,7 +329,7 @@ def ap_program(bld,
     if use_legacy_defines:
         kw['defines'].extend(get_legacy_defines(bld.path.name, bld))
 
-    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES
+    kw['features'] = kw.get('features', []) + bld.env.AP_PROGRAM_FEATURES + ['post_link']
 
     program_groups = Utils.to_list(program_groups)
 
@@ -298,6 +353,9 @@ def ap_program(bld,
         program_dir=program_dir,
         **kw
     )
+
+    tg.env.vehicle_binary = vehicle_binary
+
     if 'use' in kw and bld.env.STATIC_LINKING:
         # ensure we link against vehicle library
         tg.env.STLIB += [kw['use']]
@@ -311,7 +369,7 @@ def ap_program(bld,
 @conf
 def ap_example(bld, **kw):
     kw['program_groups'] = 'examples'
-    ap_program(bld, use_legacy_defines=False, **kw)
+    ap_program(bld, use_legacy_defines=False, vehicle_binary=False, **kw)
 
 def unique_list(items):
     '''remove duplicate elements from a list while maintaining ordering'''
@@ -381,6 +439,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
             program_name=f.change_ext('').name,
             program_groups='tests',
             use_legacy_defines=False,
+            vehicle_binary=False,
             cxxflags=['-Wno-undef'],
         )
         filename = os.path.basename(f.abspath())
@@ -442,6 +501,7 @@ def ap_find_benchmarks(bld, use=[]):
             includes=includes,
             source=[f],
             use=use,
+            vehicle_binary=False,
             program_name=f.change_ext('').name,
             program_groups='benchmarks',
             use_legacy_defines=False,
@@ -584,15 +644,15 @@ arducopter and upload it to my board".
         help='''Override board type check and continue loading. Same as using uploader.py --force.
 ''')
 
+    g.add_option('--define',
+        action='append',
+        help='Add C++ define to build.')
+
     g = opt.ap_groups['check']
 
     g.add_option('--check-verbose',
         action='store_true',
         help='Output all test programs.')
-
-    g.add_option('--define',
-        action='append',
-        help='Add C++ define to build.')
 
     g = opt.ap_groups['clean']
 

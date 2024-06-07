@@ -142,7 +142,7 @@ void Tiltrotor::setup()
         }
     }
 
-    transition = new Tiltrotor_Transition(quadplane, motors, *this);
+    transition = NEW_NOTHROW Tiltrotor_Transition(quadplane, motors, *this);
     if (!transition) {
         AP_BoardConfig::allocation_error("tiltrotor transition");
     }
@@ -295,7 +295,7 @@ void Tiltrotor::continuous_update(void)
         // operate in all VTOL modes except Q_AUTOTUNE. Forward rotor tilt is used to produce
         // forward thrust equivalent to what would have been produced by a forward thrust motor
         // set to quadplane.forward_throttle_pct()
-        const float fwd_g_demand = 0.01f * quadplane.forward_throttle_pct() / plane.quadplane.q_fwd_thr_gain;
+        const float fwd_g_demand = 0.01 * quadplane.forward_throttle_pct();
         const float fwd_tilt_deg = MIN(degrees(atanf(fwd_g_demand)), (float)max_angle_deg);
         slew(MIN(fwd_tilt_deg * (1/90.0), get_forward_flight_tilt()));
         return;
@@ -393,6 +393,33 @@ void Tiltrotor::update(void)
         vectoring();
     }
 }
+
+#if HAL_LOGGING_ENABLED
+// Write tiltrotor specific log
+void Tiltrotor::write_log()
+{
+    struct log_tiltrotor pkt {
+        LOG_PACKET_HEADER_INIT(LOG_TILT_MSG),
+        time_us      : AP_HAL::micros64(),
+        current_tilt : current_tilt * 90.0,
+    };
+
+    if (type != TILT_TYPE_VECTORED_YAW) {
+        // Left and right tilt are invalid
+        pkt.front_left_tilt = plane.logger.quiet_nanf();
+        pkt.front_right_tilt = plane.logger.quiet_nanf();
+
+    } else {
+        // Calculate tilt angle from servo outputs
+        const float total_angle = 90.0 + tilt_yaw_angle + fixed_angle;
+        const float scale = total_angle * 0.001;
+        pkt.front_left_tilt = (SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * scale) - tilt_yaw_angle;
+        pkt.front_right_tilt = (SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * scale) - tilt_yaw_angle;
+    }
+
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif
 
 /*
   tilt compensation for angle of tilt. When the rotors are tilted the

@@ -42,6 +42,7 @@
 #if CH_CFG_USE_DYNAMIC == TRUE
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
@@ -59,6 +60,10 @@ extern AP_IOMCU iomcu;
 
 using namespace ChibiOS;
 
+#ifndef HAL_RCIN_THREAD_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 1
+#endif
+
 extern const AP_HAL::HAL& hal;
 #ifndef HAL_NO_TIMER_THREAD
 THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
@@ -66,7 +71,7 @@ THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
 #ifndef HAL_NO_RCOUT_THREAD
 THD_WORKING_AREA(_rcout_thread_wa, RCOUT_THD_WA_SIZE);
 #endif
-#ifndef HAL_NO_RCIN_THREAD
+#if HAL_RCIN_THREAD_ENABLED
 THD_WORKING_AREA(_rcin_thread_wa, RCIN_THD_WA_SIZE);
 #endif
 #ifndef HAL_USE_EMPTY_IO
@@ -122,7 +127,7 @@ void Scheduler::init()
                      this);                     /* Thread parameter.    */
 #endif
 
-#ifndef HAL_NO_RCIN_THREAD
+#if HAL_RCIN_THREAD_ENABLED
     // setup the RCIN thread - this will call tasks at 1kHz
     _rcin_thread_ctx = chThdCreateStatic(_rcin_thread_wa,
                      sizeof(_rcin_thread_wa),
@@ -224,7 +229,10 @@ void Scheduler::delay(uint16_t ms)
         delay_microseconds(1000);
         if (_min_delay_cb_ms <= ms) {
             if (in_main_thread()) {
+                const auto old_task = hal.util->persistent_data.scheduler_task;
+                hal.util->persistent_data.scheduler_task = -4;
                 call_delay_cb();
+                hal.util->persistent_data.scheduler_task = old_task;
             }
         }
     }
@@ -697,6 +705,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
         { PRIORITY_UART, APM_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_STORAGE_PRIORITY},
         { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY},
+        { PRIORITY_NET, APM_NET_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {

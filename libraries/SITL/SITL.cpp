@@ -37,6 +37,9 @@
   #endif
 #endif // SFML_JOYSTICK
 
+#include "SIM_StratoBlimp.h"
+#include "SIM_Glider.h"
+
 extern const AP_HAL::HAL& hal;
 
 #ifndef SIM_RATE_HZ_DEFAULT
@@ -78,13 +81,25 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: deg
     // @User: Advanced
     AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
+
     // @Param: WIND_TURB
     // @DisplayName: Simulated Wind variation
     // @Description: Allows you to emulate random wind variations in sim
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
-    AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+
+    // @Param: WIND_TC
+    // @DisplayName: Wind variation time constant
+    // @Description: this controls the time over which wind changes take effect
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("WIND_TC",       12, SIM,  wind_change_tc,  5),
+
+    // @Group: SERVO_
+    // @Path: ./ServoModel.cpp
+    AP_SUBGROUPINFO(servo, "SERVO_", 16, SIM, ServoParams),
+
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery voltage
@@ -175,9 +190,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
-#if AP_SIM_SHIP_ENABLED
-    AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
-#endif
+    AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
 #if HAL_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
@@ -195,7 +208,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
     AP_GROUPINFO("WIND_DIR_Z",  10, SIM,  wind_dir_z,     0),
-    // @Param: WIND_T_
+    // @Param: WIND_T
     // @DisplayName: Wind Profile Type
     // @Description: Selects how wind varies from surface to WIND_T_ALT
     // @Values: 0:square law,1: none, 2:linear-see WIND_T_COEF
@@ -332,28 +345,97 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
-    // vicon sensor position (position offsets in body frame)
+    // @Param: VICON_POS_X
+    // @DisplayName: SITL vicon position on vehicle in Forward direction
+    // @Description: SITL vicon position on vehicle in Forward direction
+    // @Units: m
+    // @Range: 0 10
+    // @User: Advanced
+
+    // @Param: VICON_POS_Y
+    // @DisplayName: SITL vicon position on vehicle in Right direction
+    // @Description: SITL vicon position on vehicle in Right direction
+    // @Units: m
+    // @Range: 0 10
+    // @User: Advanced
+
+    // @Param: VICON_POS_Z
+    // @DisplayName: SITL vicon position on vehicle in Down direction
+    // @Description: SITL vicon position on vehicle in Down direction
+    // @Units: m
+    // @Range: 0 10
+    // @User: Advanced    
     AP_GROUPINFO("VICON_POS",     14, SIM,  vicon_pos_offset, 0),
 
     // Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
-    // vicon glitch in NED frame
+    // @Param: VICON_GLIT_X
+    // @DisplayName: SITL vicon position glitch North
+    // @Description: SITL vicon position glitch North
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: VICON_GLIT_Y
+    // @DisplayName: SITL vicon position glitch East
+    // @Description: SITL vicon position glitch East
+    // @Units: m
+    // @User: Advanced
+
+    // @Param: VICON_GLIT_Z
+    // @DisplayName: SITL vicon position glitch Down
+    // @Description: SITL vicon position glitch Down
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("VICON_GLIT",    16, SIM,  vicon_glitch, 0),
 
-    // vicon failure
+    // @Param: VICON_FAIL
+    // @DisplayName: SITL vicon failure
+    // @Description: SITL vicon failure
+    // @Values: 0:Vicon Healthy, 1:Vicon Failed
+    // @User: Advanced
     AP_GROUPINFO("VICON_FAIL",    17, SIM,  vicon_fail, 0),
 
-    // vicon yaw (in earth frame)
+    // @Param: VICON_YAW
+    // @DisplayName: SITL vicon yaw angle in earth frame
+    // @Description: SITL vicon yaw angle in earth frame
+    // @Units: deg
+    // @Range: 0 360
+    // @User: Advanced
     AP_GROUPINFO("VICON_YAW",     18, SIM,  vicon_yaw, 0),
 
-    // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+    // @Param: VICON_YAWERR
+    // @DisplayName: SITL vicon yaw error
+    // @Description: SITL vicon yaw added to reported yaw sent to vehicle
+    // @Units: deg
+    // @Range: -180 180
+    // @User: Advanced
     AP_GROUPINFO("VICON_YAWERR",  19, SIM,  vicon_yaw_error, 0),
 
-    // vicon message type mask
+    // @Param: VICON_TMASK
+    // @DisplayName: SITL vicon type mask
+    // @Description: SITL vicon messages sent
+    // @Bitmask: 0:VISION_POSITION_ESTIMATE, 1:VISION_SPEED_ESTIMATE, 2:VICON_POSITION_ESTIMATE, 3:VISION_POSITION_DELTA, 4:ODOMETRY
+    // @User: Advanced
     AP_GROUPINFO("VICON_TMASK",   20, SIM,  vicon_type_mask, 3),
 
-    // vicon velocity glitch in NED frame
+    // @Param: VICON_VGLI_X
+    // @DisplayName: SITL vicon velocity glitch North
+    // @Description: SITL vicon velocity glitch North
+    // @Units: m/s
+    // @User: Advanced
+
+    // @Param: VICON_VGLI_Y
+    // @DisplayName: SITL vicon velocity glitch East
+    // @Description: SITL vicon velocity glitch East
+    // @Units: m/s
+    // @User: Advanced
+
+    // @Param: VICON_VGLI_Z
+    // @DisplayName: SITL vicon velocity glitch Down
+    // @Description: SITL vicon velocity glitch Down
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
     AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, SIM_RATE_HZ_DEFAULT),
@@ -455,6 +537,20 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Bitmask: 0:MAVLink,3:SageTechMXS
     AP_GROUPINFO("ADSB_TYPES",    52, SIM,  adsb_types, 1),
 
+#ifdef WITH_SITL_OSD
+    // @Param: OSD_COLUMNS
+    // @DisplayName: Simulated OSD number of text columns
+    // @Description: Simulated OSD number of text columns
+    // @Range: 10 100
+    AP_GROUPINFO("OSD_COLUMNS",   53, SIM,  osd_columns, 30),
+
+    // @Param: OSD_ROWS
+    // @DisplayName: Simulated OSD number of text rows
+    // @Description: Simulated OSD number of text rows
+    // @Range: 10 100
+    AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
+#endif
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
@@ -465,6 +561,11 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 // user settable parameters for the barometers
 const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("RND",      1, SIM::BaroParm,  noise, 0.2f),
+    // @Param: BARO_DRIFT
+    // @DisplayName: Baro altitude drift
+    // @Description: Barometer altitude drifts at this rate
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("DRIFT",    2, SIM::BaroParm,  drift, 0),
     AP_GROUPINFO("DISABLE",  3, SIM::BaroParm,  disable, 0),
     AP_GROUPINFO("GLITCH",   4, SIM::BaroParm,  glitch, 0),
@@ -499,7 +600,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Param: GPS_TYPE
     // @DisplayName: GPS 1 type
     // @Description: Sets the type of simulation used for GPS 1
-    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF, 19:MSP
+    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP2, 11:Trimble, 19:MSP
     // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     // @Param: GPS_BYTELOSS
@@ -569,6 +670,12 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @Vector3Parameter: 1
     // @User: Advanced
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
+    // @Param: GPS_JAM
+    // @DisplayName: GPS jamming enable
+    // @Description: Enable simulated GPS jamming
+    // @User: Advanced
+    // @Values: 0:Disabled, 1:Enabled
+    AP_GROUPINFO("GPS_JAM",       16, SIM,  gps_jam[0], 0),
     // @Param: GPS2_DISABLE
     // @DisplayName: GPS 2 disable
     // @Description: Disables GPS 2
@@ -671,6 +778,13 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @DisplayName: GPS Log Number
     // @Description: Log number for GPS:update_file()
     AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
+
+    // @Param: GPS2_JAM
+    // @DisplayName: GPS jamming enable
+    // @Description: Enable simulated GPS jamming
+    // @User: Advanced
+    // @Values: 0:Disabled, 1:Enabled
+    AP_GROUPINFO("GPS2_JAM",      49, SIM,  gps_jam[1], 0),
 
     AP_GROUPEND
 };
@@ -1089,6 +1203,29 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPEND
 };
 
+// user settable parameters for the physics models
+const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
+
+#if AP_SIM_SHIP_ENABLED
+    // @Group: SHIP_
+    // @Path: ./SIM_Ship.cpp
+    AP_SUBGROUPINFO(shipsim, "SHIP_", 1, SIM::ModelParm, ShipSim),
+#endif
+#if AP_SIM_STRATOBLIMP_ENABLED
+    // @Group: SB_
+    // @Path: ./SIM_StratoBlimp.cpp
+    AP_SUBGROUPPTR(stratoblimp_ptr, "SB_",  2, SIM::ModelParm, StratoBlimp),
+#endif
+
+#if AP_SIM_GLIDER_ENABLED
+    // @Group: GLD_
+    // @Path: ./SIM_Glider.cpp
+    AP_SUBGROUPPTR(glider_ptr, "GLD_",  3, SIM::ModelParm, Glider),
+#endif
+
+    AP_GROUPEND
+};
+    
 const Location post_origin {
     518752066,
     146487830,
@@ -1099,6 +1236,11 @@ const Location post_origin {
 /* report SITL state via MAVLink SIMSTATE*/
 void SIM::simstate_send(mavlink_channel_t chan) const
 {
+    if (stop_MAVLink_sim_state) {
+        // Sim only MAVLink messages disabled to give more relaistic data rates
+        return;
+    }
+
     float yaw;
 
     // convert to same conventions as DCM
@@ -1124,6 +1266,11 @@ void SIM::simstate_send(mavlink_channel_t chan) const
 /* report SITL state via MAVLink SIM_STATE */
 void SIM::sim_state_send(mavlink_channel_t chan) const
 {
+    if (stop_MAVLink_sim_state) {
+        // Sim only MAVLink messages disabled to give more relaistic data rates
+        return;
+    }
+
     // convert to same conventions as DCM
     float yaw = state.yawDeg;
     if (yaw > 180) {
@@ -1156,6 +1303,7 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
             (int32_t)(state.longitude*1.0e7));
 }
 
+#if HAL_LOGGING_ENABLED
 /* report SITL state to AP_Logger */
 void SIM::Log_Write_SIMSTATE()
 {
@@ -1183,6 +1331,7 @@ void SIM::Log_Write_SIMSTATE()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 /*
  convert a set of roll rates from earth frame to body frame

@@ -38,8 +38,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_DISABLE_LOOP_DELAY
-
 define HAL_NO_MONITOR_THREAD
 
 # we setup a small defaults.parm
@@ -102,3 +100,5 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
+
+define HAL_RCIN_THREAD_ENABLED 1

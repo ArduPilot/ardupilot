@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py for the
 # mRo Pixracer board. This is a fmuv4 board
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4
-
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
@@ -184,9 +182,6 @@ define HAL_OS_FATFS_IO 1
 
 # pixracer has 3 LEDs, Red, Green, Blue
 define HAL_HAVE_PIXRACER_LED
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
 
 # LED setup for PixracerLED driver
 PB11 LED_RED   OUTPUT GPIO(0)

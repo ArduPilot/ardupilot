@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for VRBRAINv52 hardware
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52
-
 # MCU class and specific type
 MCU STM32F4xx STM32F407xx
 
@@ -136,8 +134,8 @@ define HAL_WITH_RAMTRON 1
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_VRBOARD_LED_ENABLED 1
+define AP_NOTIFY_EXTERNALLED_ENABLED 1
 
 define HAL_GPIO_A_LED_PIN  25
 define HAL_GPIO_B_LED_PIN  26
@@ -160,8 +158,6 @@ define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
-
-define STM32_PWM_USE_ADVANCED TRUE
 
 # minimal drivers to reduce flash usage
 include ../include/minimize_features.inc

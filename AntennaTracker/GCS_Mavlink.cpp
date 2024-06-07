@@ -161,12 +161,6 @@ void GCS_MAVLINK_Tracker::send_pid_tuning()
     }
 }
 
-bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
-{
-    // do nothing
-    return false;
-}
-
 /*
   default stream rates to 1Hz
  */
@@ -274,7 +268,9 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+#if HAL_WITH_MCU_MONITORING
     MSG_MCU_STATUS,
+#endif
     MSG_MEMINFO,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_GPS_RAW,
@@ -301,7 +297,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
+#if AP_SIM_ENABLED
     MSG_SIMSTATE,
+#endif
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
 #if COMPASS_CAL_ENABLED
@@ -309,6 +307,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_PROGRESS,
 #endif
     MSG_EKF_STATUS_REPORT,
+    MSG_BATTERY_STATUS,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
@@ -452,14 +451,7 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_int_packet(const mavlink_command_
     }
 }
 
-bool GCS_MAVLINK_Tracker::set_home_to_current_location(bool _lock) {
-    return tracker.set_home(AP::gps().location());
-}
-bool GCS_MAVLINK_Tracker::set_home(const Location& loc, bool _lock) {
-    return tracker.set_home(loc);
-}
-
-void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
+void GCS_MAVLINK_Tracker::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
@@ -467,9 +459,38 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
         handle_set_attitude_target(msg);
         break;
 
+#if AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED
     // When mavproxy 'wp sethome' 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
-    {
+        handle_message_mission_write_partial_list(msg);
+        break;
+
+    // XXX receive a WP from GCS and store in EEPROM if it is HOME
+    case MAVLINK_MSG_ID_MISSION_ITEM:
+        handle_message_mission_item(msg);
+        break;
+#endif
+
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:
+        handle_message_manual_control(msg);
+        break;
+
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+        handle_message_global_position_int(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SCALED_PRESSURE:
+        handle_message_scaled_pressure(msg);
+        break;
+    }
+
+    GCS_MAVLINK::handle_message(msg);
+}
+
+
+#if AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED
+void GCS_MAVLINK_Tracker::handle_message_mission_write_partial_list(const mavlink_message_t &msg)
+{
         // decode
         mavlink_mission_write_partial_list_t packet;
         mavlink_msg_mission_write_partial_list_decode(&msg, &packet);
@@ -479,13 +500,10 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
             waypoint_receiving = true;
             send_message(MSG_NEXT_MISSION_REQUEST_WAYPOINTS);
         }
-        break;
-    }
+}
 
-    // XXX receive a WP from GCS and store in EEPROM if it is HOME
-    case MAVLINK_MSG_ID_MISSION_ITEM:
-    {
-        // decode
+void GCS_MAVLINK_Tracker::handle_message_mission_item(const mavlink_message_t &msg)
+{
         mavlink_mission_item_t packet;
         MAV_MISSION_RESULT result = MAV_MISSION_ACCEPTED;
 
@@ -559,7 +577,7 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
 
         // check if this is the HOME wp
         if (packet.seq == 0) {
-            if (!tracker.set_home(tell_command)) {
+            if (!tracker.set_home(tell_command, false)) {
                 result = MAV_MISSION_ERROR;
                 goto mission_failed;
             }
@@ -568,48 +586,37 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
         }
 
 mission_failed:
-        // we are rejecting the mission/waypoint
+        // send ACK (including in success case)
         mavlink_msg_mission_ack_send(
             chan,
             msg.sysid,
             msg.compid,
             result,
             MAV_MISSION_TYPE_MISSION);
-        break;
-    }
+}
+#endif
 
-    case MAVLINK_MSG_ID_MANUAL_CONTROL:
-    {
+void GCS_MAVLINK_Tracker::handle_message_manual_control(const mavlink_message_t &msg)
+{
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(&msg, &packet);
         tracker.tracking_manual_control(packet);
-        break;
-    }
+}
 
-    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 
-    {
+void GCS_MAVLINK_Tracker::handle_message_global_position_int(const mavlink_message_t &msg)
+{
         // decode
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(&msg, &packet);
         tracker.tracking_update_position(packet);
-        break;
-    }
+}
 
-    case MAVLINK_MSG_ID_SCALED_PRESSURE: 
-    {
-        // decode
+void GCS_MAVLINK_Tracker::handle_message_scaled_pressure(const mavlink_message_t &msg)
+{
         mavlink_scaled_pressure_t packet;
         mavlink_msg_scaled_pressure_decode(&msg, &packet);
         tracker.tracking_update_pressure(packet);
-        break;
-    }
-
-    default:
-        handle_common_message(msg);
-        break;
-    } // end switch
-} // end handle mavlink
-
+}
 
 // send position tracker is using
 void GCS_MAVLINK_Tracker::send_global_position_int()

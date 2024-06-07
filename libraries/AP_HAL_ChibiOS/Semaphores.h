@@ -37,3 +37,21 @@ protected:
     // we declare the lock as a uint32_t array, and cast inside the cpp file
     uint32_t _lock[5];
 };
+
+/*
+  BinarySemaphore implementation
+ */
+class ChibiOS::BinarySemaphore : public AP_HAL::BinarySemaphore {
+public:
+    BinarySemaphore(bool initial_state=false);
+
+    CLASS_NO_COPY(BinarySemaphore);
+
+    bool wait(uint32_t timeout_us) override;
+    bool wait_blocking(void) override;
+    void signal(void) override;
+    void signal_ISR(void) override;
+
+protected:
+    uint32_t _lock[5];
+};

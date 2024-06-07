@@ -36,12 +36,11 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Plane(frame_str);
+        return NEW_NOTHROW Plane(frame_str);
     }
 
 protected:
     const float hover_throttle = 0.7f;
-    const float air_density = 1.225; // kg/m^3 at sea level, ISA conditions
     float angle_of_attack;
     float beta;
 
@@ -102,6 +101,7 @@ protected:
     bool aerobatic;
     bool copter_tailsitter;
     bool have_launcher;
+    bool have_steering;
     float launch_accel;
     float launch_time;
     uint64_t launch_start_ms;

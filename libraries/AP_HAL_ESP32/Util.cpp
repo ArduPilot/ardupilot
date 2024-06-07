@@ -33,6 +33,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
+#include <AP_Common/ExpandingString.h>
 
 
 extern const AP_HAL::HAL& hal;
@@ -268,28 +269,17 @@ bool Util::was_watchdog_reset() const
            || reason == ESP_RST_WDT;
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
-size_t Util::thread_info(char *buf, size_t bufsize)
+void Util::thread_info(ExpandingString &str)
 {
-    thread_t *tp;
-    size_t total = 0;
-
     // a header to allow for machine parsers to determine format
-    int n = snprintf(buf, bufsize, "ThreadsV1\n");
-    if (n <= 0) {
-        return 0;
-    }
+    str.printf("ThreadsV1\n");
 
     //    char buffer[1024];
     //    vTaskGetRunTimeStats(buffer);
     //    snprintf(buf, bufsize,"\n\n%s\n", buffer);
-
-    // total = ..
-
-    return total;
 }
-#endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
 

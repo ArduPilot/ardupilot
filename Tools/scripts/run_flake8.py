@@ -25,6 +25,8 @@ class Flake8Checker(object):
         print("****** %s" % (string,))
 
     def check(self):
+        if len(self.files_to_check) == 0:
+            return
         for path in self.files_to_check:
             self.progress("Checking (%s)" % path)
         ret = subprocess.run(["flake8", "--show-source"] + self.files_to_check,

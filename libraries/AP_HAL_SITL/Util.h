@@ -5,6 +5,7 @@
 #include "AP_HAL_SITL.h"
 #include "Semaphores.h"
 #include "ToneAlarm_SF.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 #if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
 #include <sys/types.h>
@@ -106,4 +107,27 @@ private:
 
     int saved_argc;
     char *const *saved_argv;
+
+#if HAL_UART_STATS_ENABLED
+    // request information on uart I/O
+    void uart_info(ExpandingString &str) override;
+
+#if HAL_LOGGING_ENABLED
+    // Log UART message for each serial port
+    void uart_log() override;
+#endif
+#endif // HAL_UART_STATS_ENABLED
+
+private:
+#if HAL_UART_STATS_ENABLED
+    // UART stats tracking helper
+    struct uart_stats {
+        AP_HAL::UARTDriver::StatsTracker serial[AP_HAL::HAL::num_serial];
+        uint32_t last_ms;
+    };
+    uart_stats sys_uart_stats;
+#if HAL_LOGGING_ENABLED
+    uart_stats log_uart_stats;
+#endif
+#endif // HAL_UART_STATS_ENABLED
 };

@@ -69,6 +69,10 @@ extern const AP_HAL::HAL &hal;
   #define APD_ESC_SERIAL_1 -1
 #endif
 
+#ifndef AP_PERIPH_PROBE_CONTINUOUS
+#define AP_PERIPH_PROBE_CONTINUOUS 0
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -107,6 +111,16 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_slcan_cport, "CAN_SLCAN_CPORT", 1),
 #endif
 
+#ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
+    // @Param: CAN_TERMINATE
+    // @DisplayName: Enable CAN software temination in this node
+    // @Description: Enable CAN software temination in this node
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_terminate,   0, "CAN_TERMINATE", 0),
+#endif
+
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
@@ -124,6 +138,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN2_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
     GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM
+    // @Param: CAN2_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    1, "CAN2_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
@@ -135,6 +155,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN3_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
     GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM
+    // @Param: CAN3_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    2, "CAN3_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_CANFD_SUPPORTED
@@ -283,7 +309,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
-    GSCALAR(rangefinder_baud, "RNGFND_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+    GARRAY(rangefinder_baud, 0, "RNGFND_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
 
     // @Param: RNGFND_PORT
     // @DisplayName: Rangefinder Serial Port
@@ -292,7 +318,27 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    GSCALAR(rangefinder_port, "RNGFND_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+    GARRAY(rangefinder_port, 0, "RNGFND_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+
+#if RANGEFINDER_MAX_INSTANCES > 1
+    // @Param: RNGFND2_BAUDRATE
+    // @DisplayName: Rangefinder serial baudrate
+    // @Description: Rangefinder serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GARRAY(rangefinder_baud, 1, "RNGFND2_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+
+    // @Param: RNGFND2_PORT
+    // @DisplayName: Rangefinder Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Rangefinder.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(rangefinder_port, 1, "RNGFND2_PORT", -1),
+#endif
 
     // @Param: RNGFND_MAX_RATE
     // @DisplayName: Rangefinder max rate
@@ -443,7 +489,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+#endif
 
+#if HAL_GCS_ENABLED || defined(HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS)
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -564,8 +612,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_NETWORKING
     // @Group: NET_
-    // @Path: ../libraries/AP_Networking/AP_Networking.cpp
-    GOBJECT(networking, "NET_", AP_Networking),
+    // @Path: networking.cpp
+    GOBJECT(networking_periph, "NET_", Networking_Periph),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RPM
@@ -586,6 +634,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(battery_balance, "BAL",  BattBalance),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+    // @Group: UART
+    // @Path: serial_options.cpp
+    GOBJECT(serial_options, "UART",  SerialOptions),
+#endif
+    
     // NOTE: sim parameters should go last
 #if AP_SIM_ENABLED
     // @Group: SIM_
@@ -612,6 +666,41 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: RTC
     // @Path: ../libraries/AP_RTC/AP_RTC.cpp
     GOBJECT(rtc,                   "RTC",    AP_RTC),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    // @Group: RELAY
+    // @Path: ../libraries/AP_Relay/AP_Relay.cpp
+    GOBJECT(relay,                 "RELAY", AP_Relay),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    // @Param: TEMP_MSG_RATE
+    // @DisplayName: Temperature sensor message rate
+    // @Description: This is the rate Temperature sensor data is sent in Hz. Zero means no send. Each sensor with source DroneCAN is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(temperature_msg_rate, "TEMP_MSG_RATE", 0),
+#endif
+
+    // @Param: OPTIONS
+    // @DisplayName: AP Periph Options
+    // @Description: Bitmask of AP Periph Options
+    // @Bitmask: 0: Enable continuous sensor probe
+    // @User: Standard
+    GSCALAR(options, "OPTIONS", AP_PERIPH_PROBE_CONTINUOUS),
+
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    // @Param: RPM_MSG_RATE
+    // @DisplayName: RPM sensor message rate
+    // @Description: This is the rate RPM sensor data is sent in Hz. Zero means no send. Each sensor with a set ID is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rpm_msg_rate, "RPM_MSG_RATE", 0),
 #endif
 
     AP_VAREND

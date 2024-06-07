@@ -15,6 +15,7 @@ class ADCSource;
 class RCInput;
 class Util;
 class Semaphore;
+class BinarySemaphore;
 class GPIO;
 class DigitalSource;
 class DSP;

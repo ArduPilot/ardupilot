@@ -64,9 +64,9 @@ void AP_OpticalFlow_SITL::update(void)
 
     // estimate range to centre of image
     float range;
-    if (rotmat.c.z > 0.05f && _sitl->height_agl > 0) {
+    if (rotmat.c.z > 0.05f && _sitl->state.height_agl > 0) {
         Vector3f relPosSensorEF = rotmat * posRelSensorBF;
-        range = (_sitl->height_agl - relPosSensorEF.z) / rotmat.c.z;
+        range = (_sitl->state.height_agl - relPosSensorEF.z) / rotmat.c.z;
     } else {
         range = 1e38f;
     }

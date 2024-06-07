@@ -47,7 +47,6 @@
 #include <AC_AttitudeControl/AC_PosControl.h>                   // Position control library
 #include <AC_AttitudeControl/AC_CommandModel.h>                 // Command model library
 #include <AP_Motors/AP_Motors.h>            // AP Motors library
-#include <AP_Stats/AP_Stats.h>              // statistics library
 #include <Filter/Filter.h>                  // Filter library
 #include <AP_Vehicle/AP_Vehicle.h>          // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>  // inertial navigation library
@@ -72,16 +71,11 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include <AP_SurfaceDistance/AP_SurfaceDistance.h>
 
 // Configuration
 #include "defines.h"
 #include "config.h"
-
-#if FRAME_CONFIG == HELI_FRAME
-    #define AC_AttitudeControl_t AC_AttitudeControl_Heli
-#else
-    #define AC_AttitudeControl_t AC_AttitudeControl_Multi
-#endif
 
 #if FRAME_CONFIG == HELI_FRAME
  #define MOTOR_CLASS AP_MotorsHeli
@@ -110,16 +104,12 @@
  #include <AP_Beacon/AP_Beacon.h>
 #endif
 
-#if AC_AVOID_ENABLED == ENABLED
+#if AP_AVOIDANCE_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
-#if AC_OAPATHPLANNER_ENABLED == ENABLED
+#if AP_OAPATHPLANNER_ENABLED
  #include <AC_WPNav/AC_WPNav_OA.h>
  #include <AC_Avoidance/AP_OAPathPlanner.h>
-#endif
-#include <AP_Gripper/AP_Gripper_config.h>
-#if AP_GRIPPER_ENABLED
- # include <AP_Gripper/AP_Gripper.h>
 #endif
 #if AC_PRECLAND_ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
@@ -166,23 +156,22 @@
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
 #endif
 
-#if AC_AVOID_ENABLED && !AP_FENCE_ENABLED
+#if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
 
-#if AC_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
+#if AP_OAPATHPLANNER_ENABLED && !AP_FENCE_ENABLED
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
 #endif
 
-// Local modules
-#ifdef USER_PARAMS_ENABLED
-#include "UserParameters.h"
-#endif
-#include "Parameters.h"
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
-
+// Local modules
+#include "Parameters.h"
+#if USER_PARAMS_ENABLED
+#include "UserParameters.h"
+#endif
 #include "mode.h"
 
 class Copter : public AP_Vehicle {
@@ -259,26 +248,14 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
 
-    AP_Logger logger;
-
     // flight modes convenience array
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
-    struct RangeFinderState {
-        bool enabled:1;
-        bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
-        int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
-        float inertial_alt_cm; // inertial alt at time of last rangefinder sample
-        uint32_t last_healthy_ms;
-        LowPassFilterFloat alt_cm_filt; // altitude filter
-        int16_t alt_cm_glitch_protected;    // last glitch protected altitude
-        int8_t glitch_count;    // non-zero number indicates rangefinder is glitching
-        uint32_t glitch_cleared_ms; // system time glitch cleared
-        float terrain_offset_cm;    // filtered terrain offset (e.g. terrain's height above EKF origin)
-    } rangefinder_state, rangefinder_up_state;
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, inertial_nav, 0U};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, inertial_nav, 1U};
 
-    // return rangefinder height interpolated using inertial altitude
+    // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
 
     class SurfaceTracking {
@@ -348,6 +325,14 @@ private:
         uint32_t clear_ms;  // system time high vibrations stopped
     } vibration_check;
 
+    // EKF variances are unfiltered and are designed to recover very quickly when possible
+    // thus failsafes should be triggered on filtered values in order to avoid transient errors 
+    LowPassFilterFloat pos_variance_filt;
+    LowPassFilterFloat vel_variance_filt;
+    LowPassFilterFloat hgt_variance_filt;
+    bool variances_valid;
+    uint32_t last_ekf_check_us;
+
     // takeoff check
     uint32_t takeoff_check_warning_ms;  // system time user was last warned of takeoff check failure
 
@@ -372,7 +357,7 @@ private:
             uint8_t land_complete           : 1; // 7       // true if we have detected a landing
             uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
             uint8_t usb_connected_unused    : 1; // 9       // UNUSED
-            uint8_t rc_receiver_present     : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
+            uint8_t rc_receiver_present_unused : 1; // 10      // UNUSED
             uint8_t compass_mot             : 1; // 11      // true if we are currently performing compassmot calibration
             uint8_t motor_test              : 1; // 12      // true if we are currently performing the motors test
             uint8_t initialised             : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
@@ -486,7 +471,8 @@ private:
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-    AC_AttitudeControl_t *attitude_control;
+    AC_AttitudeControl *attitude_control;
+    const struct AP_Param::GroupInfo *attitude_control_var_info;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
@@ -518,7 +504,7 @@ private:
     AP_Mount camera_mount;
 #endif
 
-#if AC_AVOID_ENABLED == ENABLED
+#if AP_AVOIDANCE_ENABLED
     AC_Avoid avoid;
 #endif
 
@@ -585,9 +571,7 @@ private:
     // Tradheli flags
     typedef struct {
         uint8_t dynamic_flight          : 1;    // 0   // true if we are moving at a significant speed (used to turn on/off leaky I terms)
-        uint8_t inverted_flight         : 1;    // 1   // true for inverted flight mode
-        uint8_t in_autorotation         : 1;    // 2   // true when heli is in autorotation
-        bool coll_stk_low                  ;    // 3   // true when collective stick is on lower limit
+        bool coll_stk_low                  ;    // 1   // true when collective stick is on lower limit
     } heli_flags_t;
     heli_flags_t heli_flags;
 
@@ -673,10 +657,15 @@ private:
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+#if MODE_GUIDED_ENABLED == ENABLED
+    bool set_target_location(const Location& target_loc) override;
+#endif // MODE_GUIDED_ENABLED == ENABLED
+#endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
+
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED == ENABLED
     bool start_takeoff(float alt) override;
-    bool set_target_location(const Location& target_loc) override;
     bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) override;
     bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
     bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
@@ -746,9 +735,8 @@ private:
     // commands.cpp
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
-    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
-    bool far_from_EKF_origin(const Location& loc);
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
@@ -842,6 +830,14 @@ private:
     // standby.cpp
     void standby_update();
 
+#if HAL_LOGGING_ENABLED
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
     // Log.cpp
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
@@ -862,7 +858,7 @@ private:
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
     void Log_Write_Vehicle_Startup_Messages();
-    void log_init(void);
+#endif  // HAL_LOGGING_ENABLED
 
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);

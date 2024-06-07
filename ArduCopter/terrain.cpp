@@ -17,6 +17,7 @@ void Copter::terrain_update()
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 // log terrain data - should be called at 1hz
 void Copter::terrain_logging()
 {
@@ -26,3 +27,4 @@ void Copter::terrain_logging()
     }
 #endif
 }
+#endif

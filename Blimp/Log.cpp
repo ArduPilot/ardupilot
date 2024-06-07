@@ -1,6 +1,6 @@
 #include "Blimp.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Code to Write and Read packets from AP_Logger log memory
 // Code to interact with the user to dump or erase logs
@@ -280,6 +280,7 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Field: I: integral part of PID
     // @Field: D: derivative part of PID
     // @Field: FF: controller feed-forward portion of response
+    // @Field: DFF: controller derivative feed-forward portion of response
     // @Field: Dmod: scaler applied to D gain to reduce limit cycling
     // @Field: SRate: slew rate
     // @Field: Flags: bitmask of PID state flags
@@ -392,6 +393,12 @@ const struct LogStructure Blimp::log_structure[] = {
     },
 };
 
+uint8_t Blimp::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+
+}
+
 void Blimp::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -401,26 +408,4 @@ void Blimp::Log_Write_Vehicle_Startup_Messages()
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
-void Blimp::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
-
-#else // LOGGING_ENABLED
-
-void Blimp::Log_Write_Performance() {}
-void Blimp::Log_Write_Attitude(void) {}
-void Blimp::Log_Write_PIDs(void) {}
-void Blimp::Log_Write_EKF_POS() {}
-void Blimp::Log_Write_Data(LogDataID id, int32_t value) {}
-void Blimp::Log_Write_Data(LogDataID id, uint32_t value) {}
-void Blimp::Log_Write_Data(LogDataID id, int16_t value) {}
-void Blimp::Log_Write_Data(LogDataID id, uint16_t value) {}
-void Blimp::Log_Write_Data(LogDataID id, float value) {}
-void Blimp::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
-void Blimp::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Blimp::Log_Write_Vehicle_Startup_Messages() {}
-
-void Blimp::log_init(void) {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

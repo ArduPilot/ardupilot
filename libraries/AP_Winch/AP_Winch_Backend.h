@@ -19,6 +19,8 @@
 
 #if AP_WINCH_ENABLED
 
+#include <AP_Logger/AP_Logger_config.h>
+
 class AP_Winch_Backend {
 public:
     AP_Winch_Backend(struct AP_Winch::Backend_Config &_config) :
@@ -39,8 +41,10 @@ public:
     // send status to ground station
     virtual void send_status(const GCS_MAVLINK &channel) = 0;
 
+#if HAL_LOGGING_ENABLED
     // write log
     virtual void write_log() = 0;
+#endif
 
     // helper to check if option enabled
     bool option_enabled(AP_Winch::Options option) const {

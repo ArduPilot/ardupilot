@@ -30,7 +30,7 @@ void setup(void)
       start all UARTs at 57600 with default buffer sizes
     */
 
-    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+    hal.scheduler->delay(1000); //Ensure that hal.serial(n) can be initialized
 
     setup_uart(hal.serial(0), "SERIAL0");  // console
     setup_uart(hal.serial(1), "SERIAL1");  // telemetry 1

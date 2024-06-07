@@ -12,10 +12,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+#if HAL_LOGGING_ENABLED
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
@@ -282,7 +284,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return verify_continue_and_change_alt();
 
     case MAV_CMD_NAV_ALTITUDE_WAIT:
-        return verify_altitude_wait(cmd);
+        return mode_auto.verify_altitude_wait(cmd);
 
 #if HAL_QUADPLANE_ENABLED
     case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -357,8 +359,6 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
 
     setup_glide_slope();
     setup_turn_angle();
-
-    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
 }
 
 Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, float rtl_home_alt_amsl_cm) const
@@ -471,8 +471,9 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+    const float turns = cmd.get_loiter_turns();
 
-    loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
+    loiter.total_cd = (uint32_t)(turns * 36000UL);
     condition_value = 1; // used to signify primary turns goal not yet met
 }
 
@@ -589,22 +590,8 @@ bool Plane::verify_takeoff()
     }
 
     // check for optional takeoff timeout
-    if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
-        const float ground_speed = gps.ground_speed();
-        const float takeoff_min_ground_speed = 4;
-        if (!arming.is_armed_and_safety_off()) {
-            return false;
-        }
-        if (ground_speed >= takeoff_min_ground_speed) {
-            takeoff_state.start_time_ms = 0;
-        } else {
-            uint32_t now = AP_HAL::millis();
-            if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout at %.1f m/s", ground_speed);
-                plane.arming.disarm(AP_Arming::Method::TAKEOFFTIMEOUT);
-                mission.reset();
-            }
-        }
+    if (plane.check_takeoff_timeout()) {
+        mission.reset();
     }
 
     // see if we have reached takeoff altitude
@@ -857,26 +844,25 @@ bool Plane::verify_continue_and_change_alt()
 /*
   see if we have reached altitude or descent speed
  */
-bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
+bool ModeAuto::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 {
-    if (current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
+    if (plane.current_loc.alt > cmd.content.altitude_wait.altitude*100.0f) {
         gcs().send_text(MAV_SEVERITY_INFO,"Reached altitude");
         return true;
     }
-    if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)auto_state.sink_rate);
+    if (plane.auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)plane.auto_state.sink_rate);
         return true;        
     }
 
     // if requested, wiggle servos
     if (cmd.content.altitude_wait.wiggle_time != 0) {
-        static uint32_t last_wiggle_ms;
-        if (auto_state.idle_wiggle_stage == 0 &&
-            AP_HAL::millis() - last_wiggle_ms > cmd.content.altitude_wait.wiggle_time*1000) {
-            auto_state.idle_wiggle_stage = 1;
-            last_wiggle_ms = AP_HAL::millis();
+        if (wiggle.stage == 0 &&
+            AP_HAL::millis() - wiggle.last_ms > cmd.content.altitude_wait.wiggle_time*1000) {
+            wiggle.stage = 1;
+            wiggle.last_ms = AP_HAL::millis();
+            // idle_wiggle_stage is updated in wiggle_servos()
         }
-        // idle_wiggle_stage is updated in set_servos_idle()
     }
 
     return false;
@@ -972,7 +958,7 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
         break;
     case 1:             // Ground speed
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);
-        aparm.min_gndspeed_cm.set(speed_target_ms * 100);
+        aparm.min_groundspeed.set(speed_target_ms);
         return true;
     }
 
@@ -1089,7 +1075,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 const float breakout_direction_rad = radians(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90));
 
                 // breakout when within 5 degrees of the opposite direction
-                if (fabsF(wrap_PI(ahrs.yaw - breakout_direction_rad)) < radians(5.0f)) {
+                if (fabsF(wrap_PI(ahrs.get_yaw() - breakout_direction_rad)) < radians(5.0f)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Starting VTOL land approach path");
                     vtol_approach_s.approach_stage = APPROACH_LINE;
                     set_next_WP(cmd.content.location);

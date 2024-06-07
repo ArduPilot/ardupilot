@@ -404,15 +404,53 @@ void Display::update()
 
 void Display::update_all()
 {
-    update_text(0);
-    update_mode(1);
-    update_battery(2);
-#if AP_GPS_ENABLED
-    update_gps(3);
+    if(!BIT_IS_SET(_send_text_scr_override, 0)) {
+        update_text(0);
+    }
+
+    if(!BIT_IS_SET(_send_text_scr_override, 1)) {
+       update_mode(1);
+    }
+
+#if AP_BATTERY_ENABLED
+    if(!BIT_IS_SET(_send_text_scr_override, 2)) {
+        update_battery(2);
+    }
 #endif
-    //update_gps_sats(4);
-    update_prearm(4);
-    update_ekf(5);
+#if AP_GPS_ENABLED
+    if(!BIT_IS_SET(_send_text_scr_override, 3)) {
+        update_gps(3);
+    }
+#endif
+
+    if(!BIT_IS_SET(_send_text_scr_override, 4)) {
+        //update_gps_sats(4);
+        update_prearm(4);
+    }
+
+    if(!BIT_IS_SET(_send_text_scr_override, 5)) {
+        update_ekf(5);
+    }
+}
+
+void Display::send_text_blocking(const char *text, uint8_t r)
+{
+    if (text == nullptr) {
+        return;
+    }
+    if (r >= DISPLAY_TEXT_NUM_ROWS) {
+        return;
+    }
+    BIT_SET(_send_text_scr_override, r);
+    char txt [DISPLAY_MESSAGE_SIZE] = {};
+    memset(txt, ' ', DISPLAY_MESSAGE_SIZE);
+    memcpy(txt, text, strnlen(text, DISPLAY_MESSAGE_SIZE));
+    draw_text(COLUMN(0), ROW(r), txt);
+}
+
+void Display::release_text(uint8_t r)
+{
+    BIT_CLEAR(_send_text_scr_override, r);
 }
 
 void Display::draw_text(uint16_t x, uint16_t y, const char* c)
@@ -530,6 +568,7 @@ void Display::update_ekf(uint8_t r)
     }
 }
 
+#if AP_BATTERY_ENABLED
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
@@ -541,7 +580,8 @@ void Display::update_battery(uint8_t r)
         snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV --%% ", (double)battery.voltage()) ;
     }
     draw_text(COLUMN(0), ROW(r), msg);
- }
+}
+#endif  // AP_BATTERY_ENABLED
 
 void Display::update_mode(uint8_t r)
 {

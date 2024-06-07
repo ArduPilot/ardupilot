@@ -87,13 +87,10 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     AP_GROUPEND
 };
 
-AP_MotorsHeli_Swash::AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3)
+AP_MotorsHeli_Swash::AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t instance) :
+    _instance(instance),
+    _motor_num{mot_0, mot_1, mot_2, mot_3}
 {
-    _motor_num[0] = mot_0;
-    _motor_num[1] = mot_1;
-    _motor_num[2] = mot_2;
-    _motor_num[3] = mot_3;
-
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -219,6 +216,11 @@ void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
         collective = 1 - collective;
     }
 
+    // Store inputs for logging
+    _roll_input = roll;
+    _pitch_input = pitch;
+    _collective_input_scaled = collective;
+
     for (uint8_t i = 0; i < _max_num_servos; i++) {
         if (!_enabled[i]) {
             // This servo is not enabled
@@ -283,3 +285,37 @@ uint32_t AP_MotorsHeli_Swash::get_output_mask() const
     }
     return mask;
 }
+
+#if HAL_LOGGING_ENABLED
+// Write SWSH log for this instance of swashplate
+void AP_MotorsHeli_Swash::write_log(float cyclic_scaler, float col_ang_min, float col_ang_max, int16_t col_min, int16_t col_max) const
+{
+    // Calculate the collective contribution to blade pitch angle
+    // Swashplate receives the scaled collective value based on the col_min and col_max params. We have to reverse the scaling here to do the angle calculation.
+    float collective_scalar = ((float)(col_max-col_min))*1e-3;
+    collective_scalar = MAX(collective_scalar, 1e-3);
+    float _collective_input = (_collective_input_scaled - (float)(col_min - 1000)*1e-3) / collective_scalar;
+    float col = (col_ang_max - col_ang_min) * _collective_input + col_ang_min;
+
+    // Calculate the cyclic contribution to blade pitch angle
+    float tcyc = norm(_roll_input, _pitch_input) * cyclic_scaler;
+    float pcyc = _pitch_input * cyclic_scaler;
+    float rcyc = _roll_input * cyclic_scaler;
+
+    // @LoggerMessage: SWSH
+    // @Description: Helicopter swashplate logging
+    // @Field: TimeUS: Time since system startup
+    // @Field: I: Swashplate instance
+    // @Field: Col: Blade pitch angle contribution from collective
+    // @Field: TCyc: Total blade pitch angle contribution from cyclic
+    // @Field: PCyc: Blade pitch angle contribution from pitch cyclic
+    // @Field: RCyc: Blade pitch angle contribution from roll cyclic
+    AP::logger().WriteStreaming("SWSH", "TimeUS,I,Col,TCyc,PCyc,RCyc", "s#dddd", "F-0000", "QBffff",
+                                AP_HAL::micros64(),
+                                _instance,
+                                col,
+                                tcyc,
+                                pcyc,
+                                rcyc);
+}
+#endif

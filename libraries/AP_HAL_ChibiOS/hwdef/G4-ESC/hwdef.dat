@@ -100,8 +100,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_DISABLE_LOOP_DELAY
-
 # enable CAN support
 PB5 CAN2_RX CAN2
 PB6 CAN2_TX CAN2
@@ -151,3 +149,6 @@ env ROMFS_UNCOMPRESSED True
 
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1
+define HAL_RCIN_THREAD_ENABLED 1

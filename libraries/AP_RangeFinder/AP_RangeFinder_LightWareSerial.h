@@ -15,7 +15,7 @@ public:
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
-        return new AP_RangeFinder_LightWareSerial(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_LightWareSerial(_state, _params);
     }
 
 protected:
@@ -26,9 +26,8 @@ protected:
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
-    bool get_signal_quality_pct(int8_t &quality_pct) const override {
-        quality_pct = no_signal ? 0 : 100;
-        return true;
+    int8_t get_signal_quality_pct() const override {
+        return no_signal ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
     }
 
 private:

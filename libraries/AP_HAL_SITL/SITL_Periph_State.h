@@ -22,7 +22,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Terrain/AP_Terrain.h>
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 class SimMCast : public SITL::Aircraft {
 public:
@@ -30,9 +30,8 @@ public:
     void update(const struct sitl_input &input) override;
 
 private:
-    int mc_fd = -1;
-    int servo_fd = -1;
-    struct sockaddr_in in_addr;
+    SocketAPM_native sock{true};
+    SocketAPM_native servo_sock{true};
 
     // offset between multicast timestamp and local timestamp
     uint64_t base_time_us;
@@ -62,16 +61,16 @@ public:
     }
 
     // paths for UART devices
-    const char *_uart_path[9] {
+    const char *_serial_path[9] {
         "none:0",
-        "GPS1",
         "none:1",
         "sim:adsb",
-        "none:3",
-        "none:4",
+        "GPS1",
+        "udpclient:127.0.0.1:15550", // for CAN UART test
         "none:5",
         "none:6",
         "none:7",
+        "none:8",
     };
 
     uint8_t get_instance() const { return _instance; }

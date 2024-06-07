@@ -15,7 +15,7 @@
 /*
   Simulator for the USD1 v1 Serial RangeFinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:USD1_v1 --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:USD1_v1 --speedup=1
 
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 11

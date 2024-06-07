@@ -98,15 +98,12 @@ void Motor::calculate_forces(const struct sitl_input &input,
     }
     last_change_usec = now;
 
-    // calculate torque in newton-meters
-    torque = (position % thrust) + rotor_torque;
-
     // possibly rotate the thrust vector and the rotor torque
     if (!is_zero(roll) || !is_zero(pitch)) {
         Matrix3f rotation;
         rotation.from_euler(radians(roll), radians(pitch), 0);
         thrust = rotation * thrust;
-        torque = rotation * torque;
+        rotor_torque = rotation * rotor_torque;
     }
 
     if (use_drag) {
@@ -123,6 +120,9 @@ void Motor::calculate_forces(const struct sitl_input &input,
 
         thrust -= momentum_drag;
     }
+
+    // calculate total torque in newton-meters
+    torque = (position % thrust) + rotor_torque;
 
     // calculate current
     float power = power_factor * fabsf(motor_thrust);

@@ -1,4 +1,9 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include "AP_BattMonitor.h"
+
 #include "AP_BattMonitor_Analog.h"
 #include "AP_BattMonitor_SMBus.h"
 #include "AP_BattMonitor_SMBus_Solo.h"
@@ -20,6 +25,8 @@
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
 #include "AP_BattMonitor_Synthetic_Current.h"
+#include "AP_BattMonitor_AD7091R5.h"
+#include "AP_BattMonitor_Scripting.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -59,6 +66,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: _
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: _
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[0], "_", 41, AP_BattMonitor, backend_var_info[0]),
 
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
@@ -80,6 +89,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 2_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 2_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_", 42, AP_BattMonitor, backend_var_info[1]),
 #endif
 
@@ -102,6 +113,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 3_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 3_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_", 43, AP_BattMonitor, backend_var_info[2]),
 #endif
 
@@ -124,6 +137,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 4_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 4_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_", 44, AP_BattMonitor, backend_var_info[3]),
 #endif
 
@@ -146,6 +161,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 5_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 5_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_", 45, AP_BattMonitor, backend_var_info[4]),
 #endif
 
@@ -168,6 +185,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 6_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 6_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_", 46, AP_BattMonitor, backend_var_info[5]),
 #endif
 
@@ -190,6 +209,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 7_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 7_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_", 47, AP_BattMonitor, backend_var_info[6]),
 #endif
 
@@ -212,6 +233,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 8_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 8_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_", 48, AP_BattMonitor, backend_var_info[7]),
 #endif
 
@@ -234,6 +257,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: 9_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: 9_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[8], "9_", 49, AP_BattMonitor, backend_var_info[8]),
 #endif
 
@@ -256,6 +281,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: A_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[9], "A_", 50, AP_BattMonitor, backend_var_info[9]),
 #endif
 
@@ -278,6 +305,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: B_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[10], "B_", 51, AP_BattMonitor, backend_var_info[10]),
 #endif
 
@@ -300,6 +329,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: C_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[11], "C_", 52, AP_BattMonitor, backend_var_info[11]),
 #endif
 
@@ -322,6 +353,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: D_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[12], "D_", 53, AP_BattMonitor, backend_var_info[12]),
 #endif
 
@@ -344,6 +377,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: E_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[13], "E_", 54, AP_BattMonitor, backend_var_info[13]),
 #endif
 
@@ -366,6 +401,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: F_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[14], "F_", 55, AP_BattMonitor, backend_var_info[14]),
 #endif
 
@@ -388,6 +425,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_Synthetic_Current.cpp
     // @Group: G_
     // @Path: AP_BattMonitor_INA2xx.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_ESC.cpp
     AP_SUBGROUPVARPTR(drivers[15], "G_", 56, AP_BattMonitor, backend_var_info[15]),
 #endif
 
@@ -445,115 +484,125 @@ AP_BattMonitor::init()
 #if AP_BATTERY_ANALOG_ENABLED
             case Type::ANALOG_VOLTAGE_ONLY:
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
-                drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_SOLO_ENABLED
             case Type::SOLO:
-                drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_GENERIC_ENABLED
             case Type::SMBus_Generic:
-                drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_SUI_ENABLED
             case Type::SUI3:
-                drivers[instance] = new AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance], 3);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance], 3);
                 break;
             case Type::SUI6:
-                drivers[instance] = new AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance], 6);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_SUI(*this, state[instance], _params[instance], 6);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_MAXELL_ENABLED
             case Type::MAXELL:
-                drivers[instance] = new AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_Maxell(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_ROTOYE_ENABLED
             case Type::Rotoye:
-                drivers[instance] = new AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_NEODESIGN_ENABLED
             case Type::NeoDesign:
-                drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_BEBOP_ENABLED
             case Type::BEBOP:
-                drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
             case Type::UAVCAN_BatteryInfo:
-                drivers[instance] = new AP_BattMonitor_DroneCAN(*this, state[instance], AP_BattMonitor_DroneCAN::UAVCAN_BATTERY_INFO, _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_DroneCAN(*this, state[instance], AP_BattMonitor_DroneCAN::UAVCAN_BATTERY_INFO, _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_ESC_ENABLED
             case Type::BLHeliESC:
-                drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SUM_ENABLED
             case Type::Sum:
-                drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
 #endif
 #if AP_BATTERY_FUELFLOW_ENABLED
             case Type::FuelFlow:
-                drivers[instance] = new AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_FUELFLOW_ENABLED
 #if AP_BATTERY_FUELLEVEL_PWM_ENABLED
             case Type::FuelLevel_PWM:
-                drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_FUELLEVEL_PWM_ENABLED
 #if AP_BATTERY_FUELLEVEL_ANALOG_ENABLED
             case Type::FuelLevel_Analog:
-                drivers[instance] = new AP_BattMonitor_FuelLevel_Analog(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_FuelLevel_Analog(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_FUELLEVEL_ANALOG_ENABLED
 #if HAL_GENERATOR_ENABLED
             case Type::GENERATOR_ELEC:
-                drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
                 break;
             case Type::GENERATOR_FUEL:
-                drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_GENERATOR_ENABLED
 #if AP_BATTERY_INA2XX_ENABLED
             case Type::INA2XX:
-                drivers[instance] = new AP_BattMonitor_INA2XX(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_INA2XX(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_LTC2946_ENABLED
             case Type::LTC2946:
-                drivers[instance] = new AP_BattMonitor_LTC2946(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_LTC2946(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if HAL_TORQEEDO_ENABLED
             case Type::Torqeedo:
-                drivers[instance] = new AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
             case Type::Analog_Volt_Synthetic_Current:
-                drivers[instance] = new AP_BattMonitor_Synthetic_Current(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Synthetic_Current(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_INA239_ENABLED
             case Type::INA239_SPI:
-                drivers[instance] = new AP_BattMonitor_INA239(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_INA239(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_EFI_ENABLED
             case Type::EFI:
-                drivers[instance] = new AP_BattMonitor_EFI(*this, state[instance], _params[instance]);
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_EFI(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_EFI_ENABLED
+#if AP_BATTERY_AD7091R5_ENABLED
+            case Type::AD7091R5:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_AD7091R5(*this, state[instance], _params[instance]);
+                break;
+#endif// AP_BATTERY_AD7091R5_ENABLED
+#if AP_BATTERY_SCRIPTING_ENABLED
+            case Type::Scripting:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
+                break;
+#endif // AP_BATTERY_SCRIPTING_ENABLED
             case Type::NONE:
             default:
                 break;
@@ -639,7 +688,7 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
     }
 }
 
-// read - For all active instances read voltage & current; log BAT, BCL, POWR
+// read - For all active instances read voltage & current; log BAT, BCL, POWR, MCU
 void AP_BattMonitor::read()
 {
 #if HAL_LOGGING_ENABLED
@@ -835,24 +884,25 @@ void AP_BattMonitor::check_failsafes(void)
 // return true if any battery is pushing too much power
 bool AP_BattMonitor::overpower_detected() const
 {
-    bool result = false;
+#if AP_BATTERY_WATT_MAX_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     for (uint8_t instance = 0; instance < _num_instances; instance++) {
-        result |= overpower_detected(instance);
+        if (overpower_detected(instance)) {
+            return true;
+        }
     }
-    return result;
+#endif
+    return false;
 }
 
 bool AP_BattMonitor::overpower_detected(uint8_t instance) const
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AP_BATTERY_WATT_MAX_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (instance < _num_instances && _params[instance]._watt_max > 0) {
-        float power = state[instance].current_amps * state[instance].voltage;
+        const float power = state[instance].current_amps * state[instance].voltage;
         return state[instance].healthy && (power > _params[instance]._watt_max);
     }
-    return false;
-#else
-    return false;
 #endif
+    return false;
 }
 
 bool AP_BattMonitor::has_cell_voltages(const uint8_t instance) const
@@ -1043,6 +1093,15 @@ uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
     return drivers[instance]->get_mavlink_fault_bitmask();
 }
 
+// return true if state of health (as a percentage) can be provided and fills in soh_pct argument
+bool AP_BattMonitor::get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct) const
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->get_state_of_health_pct(soh_pct);
+}
+
 // Enable/Disable (Turn on/off) MPPT power to all backends who are MPPTs
 void AP_BattMonitor::MPPT_set_powered_state_to_all(const bool power_on)
 {
@@ -1074,6 +1133,19 @@ bool AP_BattMonitor::healthy() const
     return true;
 }
 
+#if AP_BATTERY_SCRIPTING_ENABLED
+/*
+  handle state update from a lua script
+ */
+bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State &_state)
+{
+    if (idx >= _num_instances) {
+        return false;
+    }
+    return drivers[idx]->handle_scripting(_state);
+}
+#endif
+
 namespace AP {
 
 AP_BattMonitor &battery()
@@ -1082,3 +1154,5 @@ AP_BattMonitor &battery()
 }
 
 };
+
+#endif  // AP_BATTERY_ENABLED

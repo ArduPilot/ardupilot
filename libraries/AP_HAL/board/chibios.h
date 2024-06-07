@@ -18,13 +18,6 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_20
 #endif
 
-#ifndef HAL_GPIO_LED_ON
-#define HAL_GPIO_LED_ON           0
-#endif
-#ifndef HAL_GPIO_LED_OFF
-#define HAL_GPIO_LED_OFF          1
-#endif
-
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
 #endif
@@ -63,9 +56,7 @@
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
-
-#include <AP_HAL/EventHandle.h>
-#define HAL_EventHandle AP_HAL::EventHandle
+#define HAL_BinarySemaphore ChibiOS::BinarySemaphore
 #endif
 
 /* string names for well known SPI devices */

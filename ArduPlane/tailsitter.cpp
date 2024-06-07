@@ -177,8 +177,8 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_A_RAT_YAW_FF",    0.2 },
     { "Q_A_RAT_YAW_I",     0.18 },
     { "Q_A_ANGLE_BOOST",   0 },
-    { "LIM_PITCH_MAX",    3000 },
-    { "LIM_PITCH_MIN",    -3000 },
+    { "PTCH_LIM_MAX_DEG",  30 },
+    { "PTCH_LIM_MIN_DEG", -30 },
     { "MIXING_GAIN",      1.0 },
     { "RUDD_DT_GAIN",      10 },
     { "Q_TRANSITION_MS",   2000 },
@@ -233,7 +233,7 @@ void Tailsitter::setup()
 
     // Setup for control surface less operation
     if (enable == 2) {
-        quadplane.q_assist_state = QuadPlane::Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE;
+        quadplane.assist.set_state(VTOL_Assist::STATE::FORCE_ENABLED);
         quadplane.air_mode = AirMode::ASSISTED_FLIGHT_ONLY;
 
         // Do not allow arming in forward flight modes
@@ -241,7 +241,7 @@ void Tailsitter::setup()
         quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
-    transition = new Tailsitter_Transition(quadplane, motors, *this);
+    transition = NEW_NOTHROW Tailsitter_Transition(quadplane, motors, *this);
     if (!transition) {
         AP_BoardConfig::allocation_error("tailsitter transition");
     }
@@ -707,7 +707,7 @@ void Tailsitter::speed_scaling(void)
             // (mass / A) is disk loading DL so:
             // Ue^2 = (((t / t_h) * DL * 9.81)/(0.5 * rho)) + U0^2
 
-            const float rho = SSL_AIR_DENSITY * plane.barometer.get_air_density_ratio();
+            const float rho = SSL_AIR_DENSITY * quadplane.ahrs.get_air_density_ratio();
             float hover_rho = rho;
             if ((gain_scaling_mask & TAILSITTER_GSCL_ALTITUDE) != 0) {
                 // if applying altitude correction use sea level density for hover case
@@ -752,11 +752,8 @@ void Tailsitter::speed_scaling(void)
 
     if ((gain_scaling_mask & TAILSITTER_GSCL_ALTITUDE) != 0) {
         // air density correction
-        spd_scaler /= plane.barometer.get_air_density_ratio();
+        spd_scaler /= quadplane.ahrs.get_air_density_ratio();
     }
-
-    // record for QTUN log
-    log_spd_scaler = spd_scaler;
 
     const SRV_Channel::Aux_servo_function_t functions[] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
@@ -778,7 +775,32 @@ void Tailsitter::speed_scaling(void)
     if (tailsitter_motors != nullptr) {
         tailsitter_motors->set_min_throttle(disk_loading_min_throttle);
     }
+
+    // Record for log
+    log_data.throttle_scaler = throttle_scaler;
+    log_data.speed_scaler = spd_scaler;
+    log_data.min_throttle = disk_loading_min_throttle;
+
 }
+
+#if HAL_LOGGING_ENABLED
+// Write tailsitter specific log
+void Tailsitter::write_log()
+{
+    if (!enabled()) {
+        return;
+    }
+
+    struct log_tailsitter pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_TSIT_MSG),
+        time_us             : AP_HAL::micros64(),
+        throttle_scaler     : log_data.throttle_scaler,
+        speed_scaler        : log_data.speed_scaler,
+        min_throttle        : log_data.min_throttle,
+    };
+    plane.logger.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif  // HAL_LOGGING_ENABLED
 
 // return true if pitch control should be relaxed
 // on vectored belly sitters the pitch control is not relaxed in order to keep motors pointing and avoid risk of props hitting the ground
@@ -797,7 +819,7 @@ void Tailsitter_Transition::update()
 
     float aspeed;
     bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
-    quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+    quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
 
     if (transition_state < TRANSITION_DONE) {
         // during transition we ask TECS to use a synthetic
@@ -863,7 +885,7 @@ void Tailsitter_Transition::VTOL_update()
         float aspeed;
         bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
         // provide assistance in forward flight portion of tailsitter transition
-        quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+        quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
         }
@@ -872,6 +894,9 @@ void Tailsitter_Transition::VTOL_update()
             vtol_limit_start_ms = now;
             vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
         }
+    } else {
+        // Keep assistance reset while not checking
+        quadplane.assist.reset();
     }
     restart();
 }
@@ -984,6 +1009,8 @@ void Tailsitter_Transition::force_transition_complete()
     vtol_transition_start_ms = AP_HAL::millis();
     vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
     fw_limit_start_ms = 0;
+
+    quadplane.assist.reset();
 }
 
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const

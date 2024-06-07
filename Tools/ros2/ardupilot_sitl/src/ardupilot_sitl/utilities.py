@@ -29,9 +29,7 @@ def listify(fn) -> List[LaunchDescriptionEntity]:
     """Wrap a functions's return value in a list."""
 
     @wraps(fn)
-    def listify_helper(
-        context: LaunchContext, *args, **kwargs
-    ) -> List[LaunchDescriptionEntity]:
+    def listify_helper(context: LaunchContext, *args, **kwargs) -> List[LaunchDescriptionEntity]:
         return [fn(context, args, kwargs)]
 
     return listify_helper

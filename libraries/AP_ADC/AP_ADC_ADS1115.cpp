@@ -113,7 +113,7 @@ AP_ADC_ADS1115::AP_ADC_ADS1115()
     , _gain(ADS1115_PGA_4P096)
     , _channel_to_read(0)
 {
-    _samples = new adc_report_s[_channels_number];
+    _samples = NEW_NOTHROW adc_report_s[_channels_number];
 }
 
 AP_ADC_ADS1115::~AP_ADC_ADS1115()

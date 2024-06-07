@@ -42,6 +42,11 @@ private:
     uint8_t _compass_instance;
     float _scaling;
     enum Rotation _rotation;
+
+    struct PACKED sample_regs {
+        uint8_t status;
+        int16_t val[3];
+    };
 };
 
 #endif

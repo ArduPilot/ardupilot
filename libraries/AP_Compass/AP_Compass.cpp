@@ -1,3 +1,7 @@
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
@@ -27,6 +31,7 @@
 #if AP_COMPASS_DRONECAN_ENABLED
 #include "AP_Compass_DroneCAN.h"
 #endif
+#include "AP_Compass_QMC5883P.h"
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MMC5xx3.h"
 #include "AP_Compass_MAG3110.h"
@@ -66,6 +71,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OFS_X
     // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
@@ -101,6 +107,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if COMPASS_LEARN_ENABLED
     // @Param: LEARN
@@ -111,6 +118,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: USE
     // @DisplayName: Use compass for yaw
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
@@ -124,6 +132,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
+#endif
 
 #if COMPASS_MOT_ENABLED
     // @Param: MOTCT
@@ -162,6 +171,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("MOT",    7, Compass, _state._priv_instance[0].motor_compensation, 0),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: ORIENT
     // @DisplayName: Compass orientation
     // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the COMPASS_CUS_ROLL/PIT/YAW angles for Compass orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_1_ROLL/PIT/YAW or CUST_2_ROLL/PIT/YAW angles.
@@ -175,6 +185,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state._priv_instance[0].external, 0),
+#endif
 
 #if COMPASS_MAX_INSTANCES > 1
     // @Param: OFS2_X
@@ -501,12 +512,12 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
 #endif
 
-    // @Param: TYPEMASK
+    // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
     // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS
     // @User: Advanced
-    AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
+    AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
     // @Param: FLTR_RNG
     // @DisplayName: Range in which sample is accepted
@@ -584,6 +595,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: OPTIONS
     // @DisplayName: Compass options
     // @Description: This sets options to change the behaviour of the compass
@@ -591,6 +603,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Bitmask: 1: Allow missing DroneCAN compasses to be automaticaly replaced (calibration still required)
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
+#endif
 
 #if COMPASS_MAX_UNREG_DEV > 0
     // @Param: DEV_ID4
@@ -718,7 +731,7 @@ void Compass::init()
 
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#if AP_CUSTOMROTATIONS_ENABLED
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
             continue;
@@ -738,7 +751,7 @@ void Compass::init()
         }
         break;
     }
-#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+#endif  // AP_CUSTOMROTATIONS_ENABLED
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
@@ -1124,6 +1137,26 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_QMC5883L_ENABLED
 
+#if AP_COMPASS_QMC5883P_ENABLED
+    //external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
+                    true, HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL));
+    }
+
+    // internal i2c bus
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    if (all_external) {
+        // only probe QMC5883P on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
+                        all_external,
+                        all_external?HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883P_ORIENTATION_INTERNAL));
+        }
+    }
+#endif
+#endif  // AP_COMPASS_QMC5883P_ENABLED
+
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
@@ -1290,7 +1323,7 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (serial_port >= 0) {
-        ADD_BACKEND(DRIVER_EXTERNALAHRS, new AP_Compass_ExternalAHRS(serial_port));
+        ADD_BACKEND(DRIVER_EXTERNALAHRS, NEW_NOTHROW AP_Compass_ExternalAHRS(serial_port));
     }
 #endif
     
@@ -1304,7 +1337,7 @@ void Compass::_detect_backends(void)
 #endif
 
 #if AP_COMPASS_SITL_ENABLED && !AP_TEST_DRONECAN_DRIVERS
-    ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
+    ADD_BACKEND(DRIVER_SITL, NEW_NOTHROW AP_Compass_SITL());
 #endif
 
 #if AP_COMPASS_DRONECAN_ENABLED
@@ -1323,7 +1356,7 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_MSP_ENABLED
     for (uint8_t i=0; i<8; i++) {
         if (msp_instance_mask & (1U<<i)) {
-            ADD_BACKEND(DRIVER_MSP, new AP_Compass_MSP(i));
+            ADD_BACKEND(DRIVER_MSP, NEW_NOTHROW AP_Compass_MSP(i));
         }
     }
 #endif
@@ -1710,7 +1743,7 @@ Compass::read(void)
 #if COMPASS_LEARN_ENABLED
     if (_learn == LEARN_INFLIGHT && !learn_allocated) {
         learn_allocated = true;
-        learn = new CompassLearn(*this);
+        learn = NEW_NOTHROW CompassLearn(*this);
     }
     if (_learn == LEARN_INFLIGHT && learn != nullptr) {
         learn->update();
@@ -2207,3 +2240,5 @@ Compass &compass()
 }
 
 }
+
+#endif  // AP_COMPASS_ENABLED

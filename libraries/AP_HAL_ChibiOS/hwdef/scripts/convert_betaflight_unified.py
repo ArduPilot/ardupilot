@@ -192,6 +192,9 @@ define STORAGE_FLASH_PAGE 1
         line = lines[i]
         if line.startswith('resource'):
             a = line.split()
+
+            if a[3] == 'NONE':
+                continue
             # function, number, pin
             pin = convert_pin(a[3])
             resource = [ a[2] , pin, a[1].split('_')[0], a[1] ]
@@ -367,6 +370,8 @@ define HAL_BATT_CURR_SCALE %.1f
     for led in sorted(functions["LED"].values()):
         if (led[3].endswith('_STRIP')):
             pin = led[1]
+            if not pin in timers.keys():
+                continue
             timer = timers[pin]
             nmotors = nmotors+1
             f.write("%s %s_%s %s PWM(%s) GPIO(%s) # M%s\n" % (led[1], timer[1], timer[2], timer[1], nmotors, 49+nmotors, nmotors))
@@ -376,10 +381,9 @@ define HAL_BATT_CURR_SCALE %.1f
 %s LED%u OUTPUT LOW GPIO(%u)
 define HAL_GPIO_%s_LED_PIN %u
 ''' % (led[1], ledn-1, 89+ledn, chr(ledn+64), 89+ledn))
-    f.write("define HAL_GPIO_LED_OFF 1\n")
 
     # write out devices
-    if settings['blackbox_device'] == 'SPIFLASH':
+    if 'blackbox_device' in settings and settings['blackbox_device'] == 'SPIFLASH' or 'USE_FLASH' in defines:
         write_flash_config(f, settings['flash_spi_bus'])
 
     if 'max7456_spi_bus' in settings:

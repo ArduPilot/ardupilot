@@ -44,8 +44,8 @@ public:
         k_param_format_version = 0,
         k_param_software_type,      // deprecated
 
-        k_param_gcs0 = 100,         // stream rates for uartA
-        k_param_gcs1,               // stream rates for uartC
+        k_param_gcs0 = 100,         // stream rates for SERIAL0
+        k_param_gcs1,               // stream rates for SERIAL1
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial0_baud,       // deprecated
@@ -60,7 +60,7 @@ public:
         k_param_sitl,
         k_param_pidPitch_old,   // deprecated
         k_param_pidYaw_old,     // deprecated
-        k_param_gcs2,               // stream rates for uartD
+        k_param_gcs2,               // stream rates for SERIAL2
         k_param_serial2_baud,       // deprecated
 
         k_param_yaw_slew_time,
@@ -91,10 +91,7 @@ public:
         k_param_can_mgr,
         k_param_battery,
 
-        //
-        // 150: Telemetry control
-        //
-        k_param_serial_manager,     // serial manager library
+        k_param_serial_manager_old = 144,     // serial manager library
         k_param_servo_yaw_type,
         k_param_alt_source,
         k_param_mavlink_update_rate,
@@ -114,8 +111,8 @@ public:
         k_param_rc_channels,
         k_param_servo_channels,
 
-        k_param_stats = 218,
-        k_param_scripting = 219,
+        k_param_stats_old = 218,
+        k_param_scripting_old = 219,
 
         //
         // 220: Waypoint data

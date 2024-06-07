@@ -34,7 +34,7 @@ void loop();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
@@ -73,7 +73,7 @@ private:
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
 RC_Channels_RC _rc;
-SocketAPM rc_socket{true};
+SocketAPM_native rc_socket{true};
 
 // change this to the device being tested.
 const char *devicename = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A10596TP-if00-port0";

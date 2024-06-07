@@ -30,13 +30,6 @@
 // RSC governor defaults
 #define AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT     100
 
-// rotor controller states
-enum RotorControlState {
-    ROTOR_CONTROL_STOP = 0,
-    ROTOR_CONTROL_IDLE,
-    ROTOR_CONTROL_ACTIVE
-};
-
 // rotor control modes
 enum RotorControlMode {
     ROTOR_CONTROL_MODE_DISABLED = 0,
@@ -58,6 +51,13 @@ public:
         _default_channel(default_channel)
     {
         AP_Param::setup_object_defaults(this, var_info);
+    };
+
+    // rotor controller states
+    enum class RotorControlState {
+        STOP = 0,
+        IDLE,
+        ACTIVE
     };
 
     // init_servo - servo initialization on start-up
@@ -129,7 +129,7 @@ public:
     uint32_t    get_output_mask() const;
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool        rotor_speed_above_critical(void) const { return get_rotor_speed() > get_critical_speed(); }
+    bool        rotor_speed_above_critical(void) const { return get_rotor_speed() >= get_critical_speed(); }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];

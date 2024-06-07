@@ -34,6 +34,8 @@
 #include "AP_DroneCAN_DNA_Server.h"
 #include <canard.h>
 #include <dronecan_msgs.h>
+#include <AP_SerialManager/AP_SerialManager_config.h>
+#include <AP_Relay/AP_Relay_config.h>
 
 #ifndef DRONECAN_SRV_NUMBER
 #define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
@@ -58,8 +60,17 @@
 #define AP_DRONECAN_HIMARK_SERVO_SUPPORT (BOARD_FLASH_SIZE>1024)
 #endif
 
+#ifndef AP_DRONECAN_SERIAL_ENABLED
+#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
+#endif
+
+#if AP_DRONECAN_SERIAL_ENABLED
+#include "AP_DroneCAN_serial.h"
+#endif
+
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
+class CANSensor;
 
 class AP_DroneCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
     friend class AP_DroneCAN_DNA_Server;
@@ -76,6 +87,12 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
+    // add an 11 bit auxillary driver
+    bool add_11bit_driver(CANSensor *sensor) override;
+
+    // handler for outgoing frames for auxillary drivers
+    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) override;
+    
     uint8_t get_driver_index() const { return _driver_index; }
 
     // define string with length structure
@@ -148,6 +165,12 @@ public:
     Canard::Publisher<com_xacti_CopterAttStatus> xacti_copter_att_status{canard_iface};
     Canard::Publisher<com_xacti_GimbalControlData> xacti_gimbal_control_data{canard_iface};
     Canard::Publisher<com_xacti_GnssStatus> xacti_gnss_status{canard_iface};
+
+#if AP_RELAY_DRONECAN_ENABLED
+    // Hardpoint for relay
+    // Needs to be public so relay can edge trigger as well as streaming
+    Canard::Publisher<uavcan_equipment_hardpoint_Command> relay_hardpoint{canard_iface};
+#endif
 
 private:
     void loop(void);
@@ -256,7 +279,20 @@ private:
     uint32_t _last_notify_state_ms;
     uavcan_protocol_NodeStatus node_status_msg;
 
+#if AP_RELAY_DRONECAN_ENABLED
+    void relay_hardpoint_send();
+    struct {
+        AP_Int16 rate_hz;
+        uint32_t last_send_ms;
+        uint8_t last_index;
+    } _relay;
+#endif
+
     CanardInterface canard_iface;
+
+#if AP_DRONECAN_SERIAL_ENABLED
+    AP_DroneCAN_Serial serial;
+#endif
 
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
     Canard::Publisher<dronecan_protocol_CanStats> can_stats{canard_iface};

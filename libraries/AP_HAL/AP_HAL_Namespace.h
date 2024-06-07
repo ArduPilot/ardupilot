@@ -27,9 +27,8 @@ namespace AP_HAL {
     class RCInput;
     class RCOutput;
     class Scheduler;
-    class EventHandle;
-    class EventSource;
     class Semaphore;
+    class BinarySemaphore;
     class OpticalFlow;
     class DSP;
 
@@ -67,6 +66,7 @@ namespace AP_HAL {
 
     class SIMState;
 
-    // Must be implemented by the concrete HALs.
+    // Must be implemented by the concrete HALs and return the same reference.
     const HAL& get_HAL();
+    HAL& get_HAL_mutable();
 }

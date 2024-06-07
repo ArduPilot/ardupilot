@@ -51,7 +51,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Blimp(frame_str);
+        return NEW_NOTHROW Blimp(frame_str);
     }
 
 protected:
@@ -68,7 +68,7 @@ protected:
     float drag_gyr_constant;
 
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
-    float sq(float a) {return pow(a,2);}
+    float sq(float a) {return powf(a,2);}
 };
 
 }

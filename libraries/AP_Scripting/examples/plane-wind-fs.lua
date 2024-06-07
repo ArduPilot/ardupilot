@@ -3,6 +3,9 @@
 --
 -- CAUTION: This script only works for Plane
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- store the batt info as { instance, filtered, capacity, margin_mah }
 -- instance: the battery monitor instance (zero indexed)
 -- filtered: internal variable for current draw
@@ -30,29 +33,25 @@ local SITL_wind = false
 
 
 -- Read in required params
-local value = param:get('TRIM_ARSPD_CM')
+local value = param:get('AIRSPEED_CRUISE')
 if value then
-  air_speed = value / 100
+  air_speed = value
 else
-  error('LUA: get TRIM_ARSPD_CM failed')
+  error('LUA: get AIRSPEED_CRUISE failed')
 end
-value = param:get('ARSPD_FBW_MIN')
+value = param:get('AIRSPEED_MIN')
 if value then
   min_air_speed = value
 else
-  error('LUA: get ARSPD_FBW_MIN failed')
+  error('LUA: get AIRSPEED_MIN failed')
 end
-value = param:get('MIN_GNDSPD_CM')
-if value then
-  min_ground_speed = value / 100
-else
-  error('LUA: get MIN_GNDSPD_CM failed')
+min_ground_speed = param:get('MIN_GROUNDSPEED')
+if not min_groundspeed then
+  error('LUA: get MIN_GROUNDSPEED failed')
 end
-value = param:get('LIM_ROLL_CD')
-if value then
-  max_bank_angle = value / 100
-else
-  error('LUA: get LIM_ROLL_CD failed')
+max_bank_angle = param:get('ROLL_LIMIT_DEG')
+if not max_bank_angle then
+  error('LUA: get ROLL_LIMIT_DEG failed')
 end
 
 -- https://en.wikipedia.org/wiki/Standard_rate_turn#Radius_of_turn_formula

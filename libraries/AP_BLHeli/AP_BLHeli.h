@@ -24,9 +24,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#define HAVE_AP_BLHELI_SUPPORT HAL_SUPPORT_RCOUT_SERIAL
 
-#define HAVE_AP_BLHELI_SUPPORT
+#if HAL_SUPPORT_RCOUT_SERIAL
 
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
@@ -54,6 +54,8 @@ public:
     }
 
     uint32_t get_bidir_dshot_mask() const { return channel_bidir_dshot_mask.get(); }
+    uint8_t get_motor_poles() const { return motor_poles.get(); }
+    uint16_t get_telemetry_rate() const { return telem_rate.get(); }
 
     static AP_BLHeli *get_singleton(void) {
         return _singleton;

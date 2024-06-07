@@ -4,6 +4,8 @@
 
 #include "Location.h"
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
@@ -27,6 +29,9 @@ void Location::zero(void)
 // Construct location using position (NEU) from ekf_origin for the given altitude frame
 Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame)
 {
+    // make sure we know what size the Location object is:
+    ASSERT_STORAGE_SIZE(Location, 16);
+
     zero();
     lat = latitude;
     lng = longitude;
@@ -206,6 +211,15 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     }
     return false;  // LCOV_EXCL_LINE  - not reachable
 }
+bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
+{
+    int32_t ret_alt_cm;
+    if (!get_alt_cm(desired_frame, ret_alt_cm)) {
+        return false;
+    }
+    ret_alt = ret_alt_cm * 0.01;
+    return true;
+}
 
 #if AP_AHRS_ENABLED
 bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
@@ -280,6 +294,19 @@ Vector3d Location::get_distance_NED_double(const Location &loc2) const
     return Vector3d((loc2.lat - lat) * double(LOCATION_SCALING_FACTOR),
                     diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((lat+loc2.lat)/2),
                     (alt - loc2.alt) * 0.01);
+}
+
+// return the distance in meters in North/East/Down plane as a N/E/D vector to loc2 considering alt frame, if altitude cannot be resolved down distance is 0
+Vector3f Location::get_distance_NED_alt_frame(const Location &loc2) const
+{
+    int32_t alt1, alt2 = 0;
+    if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
+        // one or both of the altitudes are invalid, don't do alt distance calc
+        alt1 = 0, alt2 = 0;
+    }
+    return Vector3f((loc2.lat - lat) * LOCATION_SCALING_FACTOR,
+                    diff_longitude(loc2.lng,lng) * LOCATION_SCALING_FACTOR * longitude_scale((loc2.lat+lat)/2),
+                    (alt1 - alt2) * 0.01);
 }
 
 Vector2d Location::get_distance_NE_double(const Location &loc2) const
@@ -380,10 +407,6 @@ bool Location::sanitize(const Location &defaultLoc)
 
     return has_changed;
 }
-
-// make sure we know what size the Location object is:
-assert_storage_size<Location, 16> _assert_storage_size_Location;
-
 
 // return bearing in radians from location to loc2, return is 0 to 2*Pi
 ftype Location::get_bearing(const Location &loc2) const
@@ -506,3 +529,5 @@ void Location::linearly_interpolate_alt(const Location &point1, const Location &
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }
+
+#endif // HAL_BOOTLOADER_BUILD

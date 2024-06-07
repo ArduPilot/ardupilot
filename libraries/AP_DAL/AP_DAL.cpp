@@ -6,6 +6,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -37,17 +38,23 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _last_imu_time_us = imu_us;
 
     // we force write all msgs when logging starts
+#if HAL_LOGGING_ENABLED
     bool logging = AP::logger().logging_started() && AP::logger().allow_start_ekf();
     if (logging && !logging_started) {
         force_write = true;
     }
     logging_started = logging;
+#endif
 
     end_frame();
 
     _RFRF.frame_types = uint8_t(frametype);
-    
+
+#if AP_VEHICLE_ENABLED
     _RFRH.time_flying_ms = AP::vehicle()->get_time_flying_ms();
+#else
+    _RFRH.time_flying_ms = 0;
+#endif
     _RFRH.time_us = AP_HAL::micros64();
     WRITE_REPLAY_BLOCK(RFRH, _RFRH);
 
@@ -58,7 +65,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
+    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
@@ -129,27 +136,27 @@ void AP_DAL::init_sensors(void)
 
     auto *rng = AP::rangefinder();
     if (rng && rng->num_sensors() > 0) {
-        alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
+        alloc_failed |= (_rangefinder = NEW_NOTHROW AP_DAL_RangeFinder) == nullptr;
     }
 
 #if AP_AIRSPEED_ENABLED
     auto *aspeed = AP::airspeed();
     if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
-        alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
+        alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
 
 #if AP_BEACON_ENABLED
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
-        alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
+        alloc_failed |= (_beacon = NEW_NOTHROW AP_DAL_Beacon) == nullptr;
     }
 #endif
 
 #if HAL_VISUALODOM_ENABLED
     auto *vodom = AP::visualodom();
     if (vodom != nullptr && vodom->enabled()) {
-        alloc_failed |= (_visualodom = new AP_DAL_VisualOdom) == nullptr;
+        alloc_failed |= (_visualodom = NEW_NOTHROW AP_DAL_VisualOdom) == nullptr;
     }
 #endif
 
@@ -275,6 +282,7 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 // write out a DAL log message. If old_msg is non-null, then
 // only write if the content has changed
 void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
@@ -296,6 +304,7 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
         _end = 0;
     }
 }
+#endif
 
 /*
   check if we are low on CPU for this core. This needs to capture the

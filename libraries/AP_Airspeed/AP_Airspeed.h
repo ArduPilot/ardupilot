@@ -10,6 +10,9 @@
 #if AP_AIRSPEED_MSP_ENABLED
 #include <AP_MSP/msp.h>
 #endif
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#endif
 
 class AP_Airspeed_Backend;
 
@@ -168,6 +171,7 @@ public:
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
         DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
         USE_EKF_CONSISTENCY                                   = (1<<3),
+        REPORT_OFFSET                                         = (1<<4),   // report offset cal to GCS
     };
 
     enum airspeed_type {
@@ -187,6 +191,7 @@ public:
         TYPE_NMEA_WATER=13,
         TYPE_MSP=14,
         TYPE_I2C_ASP5033=15,
+        TYPE_EXTERNAL=16,
         TYPE_SITL=100,
     };
 
@@ -208,6 +213,10 @@ public:
     void handle_msp(const MSP::msp_airspeed_data_message_t &pkt);
 #endif
 
+#if AP_AIRSPEED_EXTERNAL_ENABLED
+    void handle_external(const AP_ExternalAHRS::airspeed_data_message_t &pkt);
+#endif
+    
     enum class CalibrationState {
         NOT_STARTED,
         IN_PROGRESS,

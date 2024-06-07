@@ -369,6 +369,7 @@ bool AP_Frsky_SPortParser::get_packet(AP_Frsky_SPort::sport_packet_t &sport_pack
         0x1B	// Physical ID 27 - ArduPilot/Betaflight DEFAULT DOWNLINK
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
+#undef BIT
 #define BIT(x, index) (((x) >> index) & 0x01)
 uint8_t AP_Frsky_SPort::calc_sensor_id(const uint8_t physical_id)
 {

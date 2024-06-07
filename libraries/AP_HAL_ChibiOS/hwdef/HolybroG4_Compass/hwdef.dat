@@ -42,9 +42,6 @@ define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
-
 define HAL_HAVE_PIXRACER_LED
 
 # USART2, debug
@@ -75,15 +72,9 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 
-# avoid RCIN thread to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
-
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN1_RX CAN1

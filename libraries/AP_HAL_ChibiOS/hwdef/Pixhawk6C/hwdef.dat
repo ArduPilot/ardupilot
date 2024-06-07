@@ -164,11 +164,9 @@ define HAL_IMUHEAT_I_DEFAULT 0.07
 # power enable pins
 PB2 VDD_3V3_SENSORS1_EN OUTPUT HIGH
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
-PC10 nVDD_5V_HIPOWER_EN OUTPUT HIGH
-PE2  nVDD_5V_PERIPH_EN  OUTPUT HIGH
+# start peripheral power on
+PC10 nVDD_5V_HIPOWER_EN OUTPUT LOW
+PE2  nVDD_5V_PERIPH_EN  OUTPUT LOW
 
 # Control of Spektrum power pin
 PH2 SPEKTRUM_PWR OUTPUT HIGH GPIO(73)
@@ -239,6 +237,9 @@ SPIDEV ramtron  SPI2 DEVID1  FRAM_CS      MODE3  8*MHZ  8*MHZ
 # 2 IMUs
 IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180_YAW_90
 IMU BMI055 SPI:bmi055_a SPI:bmi055_g ROTATION_PITCH_180
+# BMI055 is replaced by BMI088 on the lastest hardware revision
+# They use the same CPU signal pins
+IMU BMI088 SPI:bmi055_a SPI:bmi055_g ROTATION_PITCH_180
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
@@ -257,4 +258,4 @@ define HAL_OS_FATFS_IO 1
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
-define HAL_WITH_IO_MCU_DSHOT 1
+define HAL_WITH_IO_MCU_BIDIR_DSHOT 1

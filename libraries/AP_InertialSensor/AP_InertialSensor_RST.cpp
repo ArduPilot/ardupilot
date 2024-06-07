@@ -206,7 +206,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_RST::probe(AP_InertialSensor &imu,
         return nullptr;
     }
     AP_InertialSensor_RST *sensor
-        = new AP_InertialSensor_RST(imu, std::move(dev_gyro), std::move(dev_accel), rotation_g, rotation_a);
+        = NEW_NOTHROW AP_InertialSensor_RST(imu, std::move(dev_gyro), std::move(dev_accel), rotation_g, rotation_a);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;

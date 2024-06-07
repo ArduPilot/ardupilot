@@ -25,7 +25,7 @@ public:
         k_param_airspeed,
         k_param_rangefinder,
         k_param_flash_bootloader,
-        k_param_rangefinder_baud,
+        k_param_rangefinder_baud0,
         k_param_adsb_baudrate,
         k_param_hardpoint_id,
         k_param_hardpoint_rate,
@@ -36,7 +36,7 @@ public:
         k_param_serial_number,
         k_param_adsb_port,
         k_param_servo_channels,
-        k_param_rangefinder_port,
+        k_param_rangefinder_port0,
         k_param_gps_port,
         k_param_msp_port,
         k_param_notify,
@@ -76,7 +76,7 @@ public:
         k_param_esc_number1,
         k_param_pole_count1,
         k_param_esc_serial_port1,
-        k_param_networking,
+        k_param_networking_periph,
         k_param_rpm_sensor,
         k_param_g_rcin,
         k_param_sitl,
@@ -85,6 +85,16 @@ public:
         k_param_battery_hide_mask,
         k_param_can_mirror_ports,
         k_param_rtc,
+        k_param_can_terminate0,
+        k_param_can_terminate1,
+        k_param_can_terminate2,
+        k_param_serial_options,
+        k_param_relay,
+        k_param_temperature_msg_rate,
+        k_param_rangefinder_baud1,
+        k_param_rangefinder_port1,
+        k_param_options,
+        k_param_rpm_msg_rate,
     };
 
     AP_Int16 format_version;
@@ -113,8 +123,8 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-    AP_Int32 rangefinder_baud;
-    AP_Int8 rangefinder_port;
+    AP_Int32 rangefinder_baud[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8 rangefinder_port[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 rangefinder_max_rate;
 #endif
 
@@ -198,13 +208,26 @@ public:
 #if HAL_PERIPH_CAN_MIRROR
     AP_Int8 can_mirror_ports;
 #endif // HAL_PERIPH_CAN_MIRROR
-    
+
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    AP_Int8 temperature_msg_rate;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    AP_Int16 rpm_msg_rate;
+#endif
+
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
     AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
 #else
     static constexpr uint8_t can_fdmode = 0;
 #endif
+
+    AP_Int32 options;
+
+    AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
+
     AP_Int8 node_stats;
     Parameters() {}
 };

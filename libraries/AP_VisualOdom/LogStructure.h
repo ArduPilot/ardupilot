@@ -40,13 +40,14 @@ struct PACKED log_VisualOdom {
 // @Field: PX: Position X-axis (North-South)
 // @Field: PY: Position Y-axis (East-West)
 // @Field: PZ: Position Z-axis (Down-Up)
-// @Field: Roll: Roll lean angle
-// @Field: Pitch: Pitch lean angle
-// @Field: Yaw: Yaw angle
+// @Field: R: Roll lean angle
+// @Field: P: Pitch lean angle
+// @Field: Y: Yaw angle
 // @Field: PErr: Position estimate error
 // @Field: AErr: Attitude estimate error
 // @Field: Rst: Position reset counter
 // @Field: Ign: Ignored
+// @Field: Q: Quality
 struct PACKED log_VisualPosition {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -62,6 +63,7 @@ struct PACKED log_VisualPosition {
     float ang_err;  // radians
     uint8_t reset_counter;
     uint8_t ignored;
+    int8_t quality;
 };
 
 // @LoggerMessage: VISV
@@ -75,6 +77,7 @@ struct PACKED log_VisualPosition {
 // @Field: VErr: Velocity estimate error
 // @Field: Rst: Velocity reset counter
 // @Field: Ign: Ignored
+// @Field: Q: Quality
 struct PACKED log_VisualVelocity {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -86,6 +89,7 @@ struct PACKED log_VisualVelocity {
     float vel_err;
     uint8_t reset_counter;
     uint8_t ignored;
+    int8_t quality;
 };
 
 #if HAL_VISUALODOM_ENABLED
@@ -93,9 +97,9 @@ struct PACKED log_VisualVelocity {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffBB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,Rst,Ign", "sssmmmddhmd--", "FFC00000000--" }, \
+      "VISP", "QQIffffffffBBb", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,R,P,Y,PErr,AErr,Rst,Ign,Q", "sssmmmddhmd--%", "FFC00000000--0" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffBB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign", "sssnnnn--", "FFC0000--" },
+      "VISV", "QQIffffBBb", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign,Q", "sssnnnn--%", "FFC0000--0" },
 #else
 #define LOG_STRUCTURE_FROM_VISUALODOM
 #endif

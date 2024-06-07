@@ -22,7 +22,7 @@
 
 #if AP_SIM_SHIP_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -61,6 +61,8 @@ public:
      */
     Vector2f get_ground_speed_adjustment(const Location &loc, float &yaw_rate);
 
+    bool get_location(Location &loc) const;
+
 private:
 
     AP_Int8 enable;
@@ -83,7 +85,7 @@ private:
     uint32_t last_report_ms;
     uint32_t last_heartbeat_ms;
 
-    SocketAPM mav_socket { false };
+    SocketAPM_native mav_socket { false };
     bool mavlink_connected;
     mavlink_status_t mav_status;
 

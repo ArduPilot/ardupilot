@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_MSP/AP_MSP_config.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS_config.h>
 
 #ifndef AP_AIRSPEED_ENABLED
 #define AP_AIRSPEED_ENABLED 1
@@ -65,4 +66,8 @@
 
 #ifndef AP_AIRSPEED_HYGROMETER_ENABLE
 #define AP_AIRSPEED_HYGROMETER_ENABLE (AP_AIRSPEED_ENABLED && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#ifndef AP_AIRSPEED_EXTERNAL_ENABLED
+#define AP_AIRSPEED_EXTERNAL_ENABLED AP_AIRSPEED_ENABLED && HAL_EXTERNAL_AHRS_ENABLED
 #endif

@@ -79,7 +79,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(update_altitude,       10,    100,  18),
     SCHED_TASK(three_hz_loop,          3,     75,  21),
     SCHED_TASK(update_turn_counter,   10,     50,  24),
-    SCHED_TASK_CLASS(AP_Baro,             &sub.barometer,    accumulate,          50,  90,  27),
     SCHED_TASK(one_hz_loop,            1,    100,  33),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_receive,     400, 180,  36),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&sub._gcs,   update_send,        400, 550,  39),
@@ -89,19 +88,20 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera,           &sub.camera,       update,              50,  75,  48),
 #endif
+#if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350,  51),
     SCHED_TASK(twentyfive_hz_logging, 25,    110,  54),
     SCHED_TASK_CLASS(AP_Logger,           &sub.logger,       periodic_tasks,     400, 300,  57),
+#endif
     SCHED_TASK_CLASS(AP_InertialSensor,   &sub.ins,          periodic,           400,  50,  60),
+#if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,        &sub.scheduler,    update_logging,     0.1,  75,  63),
+#endif
 #if AP_RPM_ENABLED
     SCHED_TASK_CLASS(AP_RPM,              &sub.rpm_sensor,   update,              10, 200,  66),
 #endif
     SCHED_TASK(terrain_update,        10,    100,  72),
-#if AP_GRIPPER_ENABLED
-    SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
-#endif
-#if STATS_ENABLED == ENABLED
+#if AP_STATS_ENABLED
     SCHED_TASK(stats_update,           1,    200,  76),
 #endif
 #ifdef USERHOOK_FASTLOOP
@@ -160,6 +160,7 @@ void Sub::fifty_hz_loop()
 
     // Update rc input/output
     rc().read_input();
+    SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
 }
 
@@ -177,6 +178,7 @@ void Sub::update_batt_compass()
     }
 }
 
+#if HAL_LOGGING_ENABLED
 // ten_hz_logging_loop
 // should be run at 10hz
 void Sub::ten_hz_logging_loop()
@@ -237,6 +239,7 @@ void Sub::twentyfive_hz_logging()
         AP::ins().Write_IMU();
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
@@ -274,9 +277,11 @@ void Sub::one_hz_loop()
     AP_Notify::flags.pre_arm_gps_check = position_ok();
     AP_Notify::flags.flying = motors.armed();
 
+#if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
+#endif
 
     if (!motors.armed()) {
         motors.update_throttle_range();
@@ -285,12 +290,17 @@ void Sub::one_hz_loop()
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
+#if HAL_LOGGING_ENABLED
     // log terrain data
     terrain_logging();
+#endif
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
     set_likely_flying(hal.util->get_soft_armed());
+
+    attitude_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    pos_control.get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 }
 
 void Sub::read_AHRS()
@@ -308,13 +318,17 @@ void Sub::update_altitude()
     // read in baro altitude
     read_barometer();
 
+#if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         AP::ins().write_notch_log_messages();
+#endif
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #endif
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 
 bool Sub::control_check_barometer()
@@ -355,15 +369,64 @@ bool Sub::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#if STATS_ENABLED == ENABLED
+#if AP_STATS_ENABLED
 /*
   update AP_Stats
 */
 void Sub::stats_update(void)
 {
-    g2.stats.set_flying(motors.armed());
-    g2.stats.update();
+    AP::stats()->set_flying(motors.armed());
 }
 #endif
+
+// get the altitude relative to the home position or the ekf origin
+float Sub::get_alt_rel() const
+{
+    if (!ap.depth_sensor_present) {
+        return 0;
+    }
+
+    // get relative position
+    float posD;
+    if (ahrs.get_relative_position_D_origin(posD)) {
+        if (ahrs.home_is_set()) {
+            // adjust to the home position
+            auto home = ahrs.get_home();
+            posD -= static_cast<float>(home.alt) * 0.01f;
+        }
+    } else {
+        // fall back to the barometer reading
+        posD = -AP::baro().get_altitude();
+    }
+
+    // convert down to up
+    return -posD;
+}
+
+// get the altitude above mean sea level
+float Sub::get_alt_msl() const
+{
+    if (!ap.depth_sensor_present) {
+        return 0;
+    }
+
+    Location origin;
+    if (!ahrs.get_origin(origin)) {
+        return 0;
+    }
+
+    // get relative position
+    float posD;
+    if (!ahrs.get_relative_position_D_origin(posD)) {
+        // fall back to the barometer reading
+        posD = -AP::baro().get_altitude();
+    }
+
+    // add in the ekf origin altitude
+    posD -= static_cast<float>(origin.alt) * 0.01f;
+
+    // convert down to up
+    return -posD;
+}
 
 AP_HAL_MAIN_CALLBACKS(&sub);

@@ -11,6 +11,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <Filter/Filter.h>
 #include "AP_Logger.h"
 
 #if HAL_LOGGER_FENCE_ENABLED
@@ -574,13 +575,14 @@ bool AP_Logger_Backend::Write_VER()
         patch: fwver.patch,
         fw_type: fwver.fw_type,
         git_hash: fwver.fw_hash,
-        build_type: fwver.vehicle_type,
     };
     strncpy(pkt.fw_string, fwver.fw_string, ARRAY_SIZE(pkt.fw_string)-1);
 
 #ifdef APJ_BOARD_ID
     pkt._APJ_BOARD_ID = APJ_BOARD_ID;
 #endif
+    pkt.build_type = fwver.vehicle_type;
+    pkt.filter_version = AP_FILTER_VERSION;
 
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -600,8 +602,9 @@ uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
     }
 
     uint32_t log_num = oldest_log + list_entry - 1;
-    if (log_num > MAX_LOG_FILES) {
-        log_num -= MAX_LOG_FILES;
+    const auto max_logs_num = _front.get_max_num_logs();
+    if (log_num > (uint32_t)max_logs_num) {
+        log_num -= max_logs_num;
     }
     return (uint16_t)log_num;
 }

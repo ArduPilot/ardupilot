@@ -27,7 +27,7 @@
 #if HAL_SIM_WEBOTSPYTHON_ENABLED
 
 #include "SIM_Aircraft.h"
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 namespace SITL {
 
@@ -43,7 +43,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new WebotsPython(frame_str);
+        return NEW_NOTHROW WebotsPython(frame_str);
     }
 
     /*  Create and set in/out socket for Webots simulator */
@@ -78,7 +78,7 @@ private:
 
     double last_timestamp;
 
-    SocketAPM socket_sitl;
+    SocketAPM_native socket_sitl;
     const char* _webots_address = "127.0.0.1";
     int _webots_port = 9002;
     static const uint64_t WEBOTS_TIMEOUT_US = 5000000;

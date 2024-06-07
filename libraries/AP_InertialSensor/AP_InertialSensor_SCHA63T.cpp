@@ -63,7 +63,7 @@ AP_InertialSensor_Backend* AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &i
     if (!dev_uno || !dev_due) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
 
     if (!sensor) {
         return nullptr;

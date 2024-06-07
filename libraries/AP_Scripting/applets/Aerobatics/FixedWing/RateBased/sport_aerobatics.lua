@@ -6,6 +6,10 @@ cmd = 4: knife edge at any angle, arg1 = roll angle to hold, arg2 = duration
 cmd = 5: pause, holding heading and alt to allow stabilization after a move, arg1 = duration in seconds
 ]]--
 -- luacheck: only 0
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
 
 DO_JUMP = 177
 k_throttle = 70
@@ -28,7 +32,6 @@ local THR_PIT_FF = bind_add_param("PIT_FF",4,80) -- throttle FF from pitch
 local SPD_P = bind_add_param("SPD_P",5,5) -- speed P gain
 local SPD_I = bind_add_param("SPD_I",6,25) -- speed I gain
 local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
 local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
 local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
 

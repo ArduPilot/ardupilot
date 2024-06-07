@@ -55,3 +55,28 @@ private:
 
 #define JOIN( sem, line, counter ) _DO_JOIN( sem, line, counter )
 #define _DO_JOIN( sem, line, counter ) WithSemaphore _getsem ## counter(sem, line)
+
+/*
+  a binary semaphore
+ */
+class AP_HAL::BinarySemaphore {
+public:
+    /*
+      create a binary semaphore. initial_state determines if a wait()
+      immediately after creation would block. If initial_state is true
+      then it won't block, if initial_state is false it will block
+     */
+    BinarySemaphore(bool initial_state=false) {}
+
+    // do not allow copying
+    CLASS_NO_COPY(BinarySemaphore);
+
+    virtual bool wait(uint32_t timeout_us) WARN_IF_UNUSED = 0 ;
+    virtual bool wait_blocking() = 0;
+    virtual bool wait_nonblocking() { return wait(0); }
+
+    virtual void signal() = 0;
+    virtual void signal_ISR() { signal(); }
+    
+    virtual ~BinarySemaphore(void) {}
+};

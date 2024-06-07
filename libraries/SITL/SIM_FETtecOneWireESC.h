@@ -15,7 +15,7 @@
 /*
   Simulator for the FETtecOneWire ESCs
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:fetteconewireesc --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:fetteconewireesc --speedup=1 --console
 
 param set SERIAL5_PROTOCOL 38
 param set SERIAL5_BAUD 500000

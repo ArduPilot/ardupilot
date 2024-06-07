@@ -31,6 +31,9 @@
      n+2       checksum        XOR of byte3 to n+1 (inclusive)
 --]]
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- parameters
 local PARAM_TABLE_KEY = 39
 assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 6), "could not add param table")

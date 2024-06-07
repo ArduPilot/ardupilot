@@ -112,7 +112,6 @@ PB6 I2C1_SCL I2C1
 PB7 I2C1_SDA I2C1
 
 # PWM pins S1-S6
-define STM32_PWM_USE_ADVANCED TRUE
 PC8 TIM8_CH3 TIM8 PWM(1) GPIO(50)
 PC9 TIM8_CH4 TIM8 PWM(2) GPIO(51)
 PB8 TIM4_CH3 TIM4 PWM(3) GPIO(52)
@@ -155,9 +154,6 @@ define HAL_BATT_VOLT_PIN 11
 define HAL_BATT_CURR_PIN 12
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 25
-
-# minimal drivers to reduce flash usage
-include ../include/no_bootloader_DFU.inc
 
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1

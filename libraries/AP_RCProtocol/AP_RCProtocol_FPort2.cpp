@@ -179,7 +179,7 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
         // get fresh telem_data in the next call
         telem_data.available = false;
     }
-    buf[9] = crc_sum8(&buf[1], 8);
+    buf[9] = crc_sum8_with_carry(&buf[1], 8);
     
     uart->write(buf, sizeof(buf));
 #endif
@@ -286,7 +286,7 @@ reset:
 // check checksum byte
 bool AP_RCProtocol_FPort2::check_checksum(void)
 {
-    return crc_sum8(&byte_input.buf[1], byte_input.control_len-1) == 0;
+    return crc_sum8_with_carry(&byte_input.buf[1], byte_input.control_len-1) == 0;
 }
 
 // support byte input

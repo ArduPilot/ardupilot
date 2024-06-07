@@ -54,13 +54,11 @@ bool AP_RangeFinder_TeraRanger_Serial::get_reading(float &reading_m)
     uint16_t bad_read = 0;
 
     // read any available lines from the lidar
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        int16_t r = uart->read();
-        if (r < 0) {
-            continue;
+    for (auto i=0; i<8192; i++) {
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
         }
-        uint8_t c = (uint8_t)r;
         // if buffer is empty and this byte is 0x57, add to buffer
         if (linebuf_len == 0) {
             if (c == FRAME_HEADER) {

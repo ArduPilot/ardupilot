@@ -14,7 +14,7 @@ public:
     AP_Baro_Dummy(AP_Baro &baro);
     void update(void) override;
     static AP_Baro_Backend *probe(AP_Baro &baro) {
-        return new AP_Baro_Dummy(baro);
+        return NEW_NOTHROW AP_Baro_Dummy(baro);
     }
 
 private:

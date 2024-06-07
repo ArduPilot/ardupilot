@@ -102,6 +102,11 @@ list some basic and more used commands as example.
     Cleaning the build is very often not necessary and discouraged. We do
     incremental builds reducing the build time by orders of magnitude.
 
+    If submodules are failing to be synchronized, `submodulesync` may be used
+    to resync the submodules. This is usually necessary when shifting development
+    between stable releases or a stable release and the master branch.
+
+    In some some cases `submodule_force_clean` may be necessary. This removes all submodules and then performs a `submodulesync`. (Note whitelisted modules like esp_idf is not removed.)
 
 * **Upload or install**
 
@@ -185,6 +190,27 @@ list some basic and more used commands as example.
     ```
 
     Also, take a look on the [Advanced section](#advanced-usage) below.
+
+### Using Docker ###
+
+A docker environment is provided which may be helpful for building in a clean
+environment and avoiding modification of the host environment.
+
+To build the docker image (should only need to be done once), run:
+
+```bash
+docker build --rm -t ardupilot-dev .
+```
+
+To build inside the container, prefix your `waf` commands, e.g.:
+
+```bash
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf configure --board=sitl
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf copter
+```
+
+Alternatively, simply run `docker run --rm -it -v $PWD:/ardupilot ardupilot-dev` to
+start a `bash` shell in which you can run other commands from this document.
 
 ## Advanced usage ##
 

@@ -31,6 +31,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_Param::GroupInfo AP_AIS::var_info[] = {
 
@@ -120,20 +121,26 @@ void AP_AIS::update()
 
             if (_incoming.total  > AIVDM_BUFFER_SIZE)  {
                 // no point in trying to decode it wont fit
+#if HAL_LOGGING_ENABLED
                 if (log_all || log_unsupported) {
                     log_raw(&_incoming);
                 }
+#endif
                 break;
             }
+#if HAL_LOGGING_ENABLED
             if (log_all) {
                 log_raw(&_incoming);
             }
+#endif
 
             if (_incoming.num == 1 && _incoming.total == 1) {
                 // single part message
                 if (!payload_decode(_incoming.payload) && log_unsupported) {
+#if HAL_LOGGING_ENABLED
                     // could not decode so log
                     log_raw(&_incoming);
+#endif
                 }
             } else if (_incoming.num == _incoming.total) {
                 // last part of a multi part message
@@ -154,12 +161,14 @@ void AP_AIS::update()
                 // did we find the right number?
                 if (_incoming.num != index) {
                     // could not find all of the message, save messages
+#if HAL_LOGGING_ENABLED
                     if (log_unsupported) {
                         for (uint8_t i = 0; i < index; i++) {
                             log_raw(&_AIVDM_buffer[msg_parts[i]]);
                         }
                         log_raw(&_incoming);
                     }
+#endif
                     // remove
                     for (uint8_t i = 0; i < index; i++) {
                         buffer_shift(msg_parts[i]);
@@ -174,17 +183,23 @@ void AP_AIS::update()
                     strncat(multi,_AIVDM_buffer[msg_parts[i]].payload,sizeof(multi));
                 }
                 strncat(multi,_incoming.payload,sizeof(multi));
+#if HAL_LOGGING_ENABLED
                 const bool decoded = payload_decode(multi);
+#endif
                 for (uint8_t i = 0; i < _incoming.total; i++) {
+#if HAL_LOGGING_ENABLED
                     // unsupported type, log and discard
                     if (!decoded && log_unsupported) {
                         log_raw(&_AIVDM_buffer[msg_parts[i]]);
                     }
+#endif
                     buffer_shift(msg_parts[i]);
                 }
+#if HAL_LOGGING_ENABLED
                 if (!decoded && log_unsupported) {
                     log_raw(&_incoming);
                 }
+#endif
             } else {
                 // multi part message, store in buffer
                 bool fits_in = false;
@@ -198,10 +213,12 @@ void AP_AIS::update()
                 }
                 if (!fits_in) {
                     // remove the oldest message
+#if HAL_LOGGING_ENABLED
                     if (log_unsupported) {
                         // log the unused message before removing it
                         log_raw(&_AIVDM_buffer[0]);
                     }
+#endif
                     buffer_shift(0);
                     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1] = _incoming;
                 }
@@ -268,7 +285,7 @@ void AP_AIS::buffer_shift(uint8_t i)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions related to the vessel list
 
-// find vessel index in existing list, if not then return new index if possible
+// find vessel index in existing list, if not then return NEW_NOTHROW index if possible
 bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint32_t lon)
 {
     const uint16_t list_size = _list.max_items();
@@ -393,6 +410,7 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
     bool raim = get_bits(payload, 148, 148);
     uint32_t radio = get_bits(payload, 149, 167);
 
+#if HAL_LOGGING_ENABLED
     // log the raw infomation
     if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
         const struct log_AIS_msg1 pkt{
@@ -416,6 +434,19 @@ bool AP_AIS::decode_position_report(const char *payload, uint8_t type)
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#else
+    (void)repeat;
+    (void)nav;
+    (void)rot;
+    (void)sog;
+    (void)pos_acc;
+    (void)cog;
+    (void)head;
+    (void)sec_utc;
+    (void)maneuver;
+    (void)raim;
+    (void)radio;
+#endif
 
     uint16_t index;
     if (!get_vessel_index(mmsi, index, lat, lon)) {
@@ -482,6 +513,7 @@ bool AP_AIS::decode_base_station_report(const char *payload)
     bool raim          = get_bits(payload, 148, 148);
     uint32_t radio     = get_bits(payload, 149, 167);
 
+#if HAL_LOGGING_ENABLED
     // log the raw infomation
     if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
         struct log_AIS_msg4 pkt {
@@ -504,6 +536,19 @@ bool AP_AIS::decode_base_station_report(const char *payload)
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#else
+    (void)repeat;
+    (void)year;
+    (void)month;
+    (void)day;
+    (void)hour;
+    (void)minute;
+    (void)second;
+    (void)fix;
+    (void)epfd;
+    (void)raim;
+    (void)radio;
+#endif
 
     uint16_t index;
     if (!get_vessel_index(mmsi, index)) {
@@ -548,6 +593,7 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
     bool dte            = get_bits(payload, 422, 422);
     // 423 - 426: spare
 
+#if HAL_LOGGING_ENABLED
     // log the raw infomation
     if ((_log_options & AIS_OPTIONS_LOG_DECODED) != 0) {
         struct log_AIS_msg5 pkt {
@@ -574,6 +620,14 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
         strncpy(pkt.dest, dest, sizeof(pkt.dest));
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#else
+    (void)repeat;
+    (void)ver;
+    (void)imo;
+    (void)fix;
+    (void)draught;
+    (void)dte;
+#endif
 
     uint16_t index;
     if (!get_vessel_index(mmsi, index)) {
@@ -699,6 +753,7 @@ uint8_t AP_AIS::payload_char_decode(const char c)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions for decoding and logging AIVDM NMEA sentence
 
+#if HAL_LOGGING_ENABLED
 // log a raw AIVDM a message
 void AP_AIS::log_raw(const AIVDM *msg)
 {
@@ -713,6 +768,7 @@ void AP_AIS::log_raw(const AIVDM *msg)
     memcpy(pkt.payload, msg->payload, sizeof(pkt.payload));
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 // add a single character to the buffer and attempt to decode
 // returns true if a complete sentence was successfully decoded

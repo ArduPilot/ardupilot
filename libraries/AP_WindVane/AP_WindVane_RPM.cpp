@@ -15,11 +15,14 @@
 
 #include "AP_WindVane_RPM.h"
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_RPM_ENABLED
+
 #include <AP_RPM/AP_RPM.h>
 
 void AP_WindVane_RPM::update_speed()
 {
-#if AP_RPM_ENABLED
     const AP_RPM* rpm = AP_RPM::get_singleton();
     if (rpm != nullptr) {
         float temp_speed;
@@ -28,5 +31,6 @@ void AP_WindVane_RPM::update_speed()
             _frontend._speed_apparent_raw = temp_speed;
         }
     }
-#endif  // AP_RPM_ENABLED
 }
+
+#endif  // AP_WINDVANE_RPM_ENABLED

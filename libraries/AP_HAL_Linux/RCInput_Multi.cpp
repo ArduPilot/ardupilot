@@ -31,7 +31,7 @@ RCInput_Multi::RCInput_Multi(uint8_t _num_inputs, ...) :
     num_inputs(_num_inputs)
 {
     va_list ap;
-    inputs = new RCInput*[num_inputs];
+    inputs = NEW_NOTHROW RCInput*[num_inputs];
     if (inputs == nullptr) {
         AP_HAL::panic("failed to allocated RCInput array");
     }

@@ -76,16 +76,28 @@ ShipSim::ShipSim()
 }
 
 /*
+  get the location of the ship
+ */
+bool ShipSim::get_location(Location &loc) const
+{
+    if (!enable) {
+        return false;
+    }
+    loc = home;
+    loc.offset(ship.position.x, ship.position.y);
+    return true;
+}
+
+/*
   get ground speed adjustment if we are landed on the ship
  */
 Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_rate)
 {
-    if (!enable) {
+    Location shiploc;
+    if (!get_location(shiploc)) {
         yaw_rate = 0;
         return Vector2f(0,0);
     }
-    Location shiploc = home;
-    shiploc.offset(ship.position.x, ship.position.y);
     if (loc.get_distance(shiploc) > deck_size) {
         yaw_rate = 0;
         return Vector2f(0,0);
@@ -171,12 +183,16 @@ void ShipSim::send_report(void)
 
     if (now - last_heartbeat_ms >= 1000) {
         last_heartbeat_ms = now;
+
         const mavlink_heartbeat_t heartbeat{
-            MAV_TYPE_SURFACE_BOAT,
-            MAV_AUTOPILOT_INVALID,
-            0,
-            0,
-            0};
+        custom_mode: 0,
+        type : MAV_TYPE_SURFACE_BOAT,
+        autopilot : MAV_AUTOPILOT_INVALID,
+        base_mode: 0,
+        system_status: 0,
+        mavlink_version: 0,
+        };
+
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
             sys_id.get(),
@@ -193,8 +209,10 @@ void ShipSim::send_report(void)
     /*
       send a GLOBAL_POSITION_INT messages
      */
-    Location loc = home;
-    loc.offset(ship.position.x, ship.position.y);
+    Location loc;
+    if (!get_location(loc)) {
+        return;
+    }
 
     int32_t alt_mm = home.alt * 10;  // assume home altitude
 
@@ -211,15 +229,15 @@ void ShipSim::send_report(void)
         vel.rotate(radians(ship.heading_deg));
 
         const mavlink_global_position_int_t global_position_int{
-            now,
-            loc.lat,
-            loc.lng,
-            alt_mm,
-            0,
-            int16_t(vel.x*100),
-            int16_t(vel.y*100),
-            0,
-            uint16_t(ship.heading_deg*100)
+        time_boot_ms: now,
+        lat: loc.lat,
+        lon: loc.lng,
+        alt: alt_mm,
+        relative_alt: 0,
+        vx: int16_t(vel.x*100),
+        vy: int16_t(vel.y*100),
+        vz: 0,
+        hdg: uint16_t(ship.heading_deg*100)
         };
         mavlink_message_t msg;
         mavlink_msg_global_position_int_encode_status(
@@ -237,9 +255,13 @@ void ShipSim::send_report(void)
 
     { // also set ATTITUDE so MissionPlanner can display ship orientation
         const mavlink_attitude_t attitude{
-            now,
-            0, 0, float(radians(ship.heading_deg)),
-            0, 0, ship.yaw_rate
+        time_boot_ms: now,
+        roll: 0,
+        pitch: 0,
+        yaw: float(radians(ship.heading_deg)),
+        rollspeed: 0,
+        pitchspeed: 0,
+        yawspeed: ship.yaw_rate
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(

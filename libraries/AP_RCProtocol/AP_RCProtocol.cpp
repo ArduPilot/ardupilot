@@ -33,6 +33,12 @@
 #include "AP_RCProtocol_FPort.h"
 #include "AP_RCProtocol_FPort2.h"
 #include "AP_RCProtocol_DroneCAN.h"
+#include "AP_RCProtocol_GHST.h"
+#include "AP_RCProtocol_MAVLinkRadio.h"
+#include "AP_RCProtocol_Joystick_SFML.h"
+#include "AP_RCProtocol_UDP.h"
+#include "AP_RCProtocol_FDM.h"
+#include "AP_RCProtocol_Radio.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -43,44 +49,70 @@ extern const AP_HAL::HAL& hal;
 void AP_RCProtocol::init()
 {
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
-    backend[AP_RCProtocol::PPMSUM] = new AP_RCProtocol_PPMSum(*this);
+    backend[AP_RCProtocol::PPMSUM] = NEW_NOTHROW AP_RCProtocol_PPMSum(*this);
 #endif
 #if AP_RCPROTOCOL_IBUS_ENABLED
-    backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
+    backend[AP_RCProtocol::IBUS] = NEW_NOTHROW AP_RCProtocol_IBUS(*this);
 #endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
-    backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
+    backend[AP_RCProtocol::SBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, true, 100000);
 #endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
-    backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
+    backend[AP_RCProtocol::FASTSBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
-    backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+#if AP_RCPROTOCOL_DSM_ENABLED
+    backend[AP_RCProtocol::DSM] = NEW_NOTHROW AP_RCProtocol_DSM(*this);
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
-    backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+    backend[AP_RCProtocol::SUMD] = NEW_NOTHROW AP_RCProtocol_SUMD(*this);
 #endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
-    backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+    backend[AP_RCProtocol::SRXL] = NEW_NOTHROW AP_RCProtocol_SRXL(*this);
 #endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
-    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
+    backend[AP_RCProtocol::SBUS_NI] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, false, 100000);
 #endif
 #if AP_RCPROTOCOL_SRXL2_ENABLED
-    backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
+    backend[AP_RCProtocol::SRXL2] = NEW_NOTHROW AP_RCProtocol_SRXL2(*this);
 #endif
 #if AP_RCPROTOCOL_CRSF_ENABLED
-    backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+    backend[AP_RCProtocol::CRSF] = NEW_NOTHROW AP_RCProtocol_CRSF(*this);
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
-    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
+    backend[AP_RCProtocol::FPORT2] = NEW_NOTHROW AP_RCProtocol_FPort2(*this, true);
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
-    backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+    backend[AP_RCProtocol::ST24] = NEW_NOTHROW AP_RCProtocol_ST24(*this);
 #endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
-    backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
+    backend[AP_RCProtocol::FPORT] = NEW_NOTHROW AP_RCProtocol_FPort(*this, true);
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
-    backend[AP_RCProtocol::DRONECAN] = new AP_RCProtocol_DroneCAN(*this);
+    backend[AP_RCProtocol::DRONECAN] = NEW_NOTHROW AP_RCProtocol_DroneCAN(*this);
+#endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+    backend[AP_RCProtocol::GHST] = NEW_NOTHROW AP_RCProtocol_GHST(*this);
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    backend[AP_RCProtocol::MAVLINK_RADIO] = NEW_NOTHROW AP_RCProtocol_MAVLinkRadio(*this);
+#endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+    backend[AP_RCProtocol::JOYSTICK_SFML] = NEW_NOTHROW AP_RCProtocol_Joystick_SFML(*this);
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+    const auto UDP_backend = NEW_NOTHROW AP_RCProtocol_UDP(*this);
+    backend[AP_RCProtocol::UDP] = UDP_backend;
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+    const auto FDM_backend = NEW_NOTHROW AP_RCProtocol_FDM(*this);;
+    backend[AP_RCProtocol::FDM] = FDM_backend;
+#if AP_RCPROTOCOL_UDP_ENABLED
+    // the UDP-Packed16Bit backend gives way to the FDM backend:
+    UDP_backend->set_fdm_backend(FDM_backend);
+#endif  // AP_RCPROTOCOL_UDP_ENABLED
+#endif  // AP_RCPROTOCOL_FDM_ENABLED
+#if AP_RCPROTOCOL_RADIO_ENABLED
+    backend[AP_RCProtocol::RADIO] = NEW_NOTHROW AP_RCProtocol_Radio(*this);
 #endif
 }
 
@@ -96,6 +128,13 @@ AP_RCProtocol::~AP_RCProtocol()
 
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
+#if AP_RCPROTOCOL_FDM_ENABLED && AP_RCPROTOCOL_UDP_ENABLED
+    // force re-detection when FDM is active and active backend is UDP values
+    if (_detected_protocol == AP_RCProtocol::UDP &&
+        ((AP_RCProtocol_FDM*)backend[AP_RCProtocol::FDM])->active()) {
+        return true;
+    }
+#endif  // AP_RCPROTOCOL_FDM_ENABLED && AP_RCPROTOCOL_UDP_ENABLED
 #if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_detected_protocol != AP_RCProtocol::NONE && !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
         return false;
@@ -297,7 +336,7 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
-#if AP_RCPROTOCOL_CRSF_ENABLED
+#if AP_RCPROTOCOL_CRSF_ENABLED || AP_RCPROTOCOL_GHST_ENABLED
     // CrossFire:
     { 416666,  0,   1, false },
     // CRSFv3 can negotiate higher rates which are sticky on soft reboot
@@ -361,6 +400,52 @@ void AP_RCProtocol::update()
     check_added_uart();
 }
 
+// explicitly investigate a backend for data, as opposed to feeding
+// the backend a byte (or pulse-train) at a time and having them make
+// an "add_input" callback):
+bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
+{
+    auto *p = backend[protocol];
+    if (p == nullptr) {
+        // backend is not allocated?!
+        return false;
+    }
+
+    if (_detected_protocol == protocol) {
+        // we are using this protocol already, see if there is new
+        // data.  Caller will handle the case where we stop presenting
+        // data
+        return p->new_input();
+    }
+
+    // we are not the currently in-use protocol.
+    const uint32_t now = AP_HAL::millis();
+
+    // see if another backend is providing data:
+    if (!should_search(now)) {
+        // apparently, yes
+        return false;
+    }
+
+#if AP_RC_CHANNEL_ENABLED
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (!protocol_enabled(protocol)) {
+        return false;
+    }
+
+    // nobody is providing data; can we provide data?
+    if (!p->new_input()) {
+        // we can't provide data
+        return false;
+    }
+
+    // we can provide data, change the detected protocol to be us:
+    _detected_protocol = protocol;
+    return true;
+}
+
 bool AP_RCProtocol::new_input()
 {
     // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
@@ -373,21 +458,36 @@ bool AP_RCProtocol::new_input()
         }
     }
 
+    // iterate through backends which don't do either of pulse or uart
+    // input, and thus won't update_new_input
+    const rcprotocol_t pollable[] {
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
-    uint32_t now = AP_HAL::millis();
-    if (should_search(now)) {
-        if (backend[AP_RCProtocol::DRONECAN] != nullptr &&
-            backend[AP_RCProtocol::DRONECAN]->new_input()) {
-            _detected_protocol = AP_RCProtocol::DRONECAN;
-            _last_input_ms = now;
-        }
-    } else if (_detected_protocol == AP_RCProtocol::DRONECAN) {
-        _new_input = backend[AP_RCProtocol::DRONECAN]->new_input();
-        if (_new_input) {
-            _last_input_ms = now;
-        }
-    }
+        AP_RCProtocol::DRONECAN,
 #endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+        AP_RCProtocol::MAVLINK_RADIO,
+#endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+        AP_RCProtocol::JOYSTICK_SFML,
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+        AP_RCProtocol::UDP,
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+        AP_RCProtocol::FDM,
+#endif
+#if AP_RCPROTOCOL_RADIO_ENABLED
+        AP_RCProtocol::RADIO,
+#endif
+    };
+    for (const auto protocol : pollable) {
+        if (!detect_async_protocol(protocol)) {
+            continue;
+        }
+        _new_input = true;
+        _last_input_ms = AP_HAL::millis();
+        break;
+    }
 
     bool ret = _new_input;
     _new_input = false;
@@ -471,8 +571,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case FASTSBUS:
         return "FastSBUS";
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
     case DSM:
         return "DSM";
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
     case SUMD:
         return "SUMD";
@@ -505,6 +607,30 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case DRONECAN:
         return "DroneCAN";
 #endif
+#if AP_RCPROTOCOL_GHST_ENABLED
+    case GHST:
+        return "GHST";
+#endif
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+    case MAVLINK_RADIO:
+        return "MAVRadio";
+#endif
+#if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
+    case JOYSTICK_SFML:
+        return "SFML";
+#endif
+#if AP_RCPROTOCOL_UDP_ENABLED
+    case UDP:
+        return "UDP";
+#endif
+#if AP_RCPROTOCOL_FDM_ENABLED
+    case FDM:
+        return "FDM";
+#endif
+#if AP_RCPROTOCOL_RADIO_ENABLED
+    case RADIO:
+        return "Radio";
+#endif
     case NONE:
         break;
     }
@@ -532,12 +658,23 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
 // return true if a specific protocol is enabled
 bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
 {
-    if ((rc_protocols_mask & 1) != 0) {
+    if ((rc_protocols_mask & 1U) != 0) {
         // all protocols enabled
         return true;
     }
     return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
 }
+
+#if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+void AP_RCProtocol::handle_radio_rc_channels(const mavlink_radio_rc_channels_t* packet)
+{
+    if (backend[AP_RCProtocol::MAVLINK_RADIO] == nullptr) {
+        return;
+    }
+
+    backend[AP_RCProtocol::MAVLINK_RADIO]->update_radio_rc_channels(packet);
+};
+#endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
 
 namespace AP {
     AP_RCProtocol &RC()

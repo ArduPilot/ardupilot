@@ -47,9 +47,11 @@ do {                                            \
  # define Debug(fmt, args ...)
 #endif
 
-AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state,
+AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps,
+                       AP_GPS::Params &_params,
+                       AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
+    AP_GPS_Backend(_gps, _params, _state, _port)
 {
 
     Debug("SBP Driver Initialized");

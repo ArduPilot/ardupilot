@@ -75,6 +75,14 @@ public:
 
     void read() override;
 
+    /* Must be public so the BusDriver can access its definition */
+    struct PACKED sample_regs {
+        uint8_t st1;
+        int16_t val[3];
+        uint8_t tmps;
+        uint8_t st2;
+    };
+
 private:
     AP_Compass_AK09916(AP_AK09916_BusDriver *bus, bool force_external,
                        enum Rotation rotation);

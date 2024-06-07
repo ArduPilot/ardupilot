@@ -15,7 +15,7 @@
 /*
   Simulated Frsky D device
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:frsky-d --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:frsky-d --speedup=1
 
 param set SERIAL5_PROTOCOL 3
 reboot

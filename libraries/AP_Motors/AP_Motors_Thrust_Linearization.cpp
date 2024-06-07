@@ -3,6 +3,7 @@
 #include "AP_Motors_Class.h"
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define AP_MOTORS_BATT_VOLT_FILT_HZ 0.5 // battery voltage filtered at 0.5hz
@@ -17,9 +18,10 @@
 #endif
 
 #if APM_BUILD_TYPE(APM_BUILD_Heli)
-    #define THRST_LIN_THST_EXPO_DEFAULT     0.55f   // set to 0 for linear and 1 for second order approximation
-    #define THRST_LIN_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
-    #define THRST_LIN_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    // defaults to no linearisation to not break users existing setups
+    #define THRST_LIN_THST_EXPO_DEFAULT     0.0f   // set to 0 for linear and 1 for second order approximation
+    #define THRST_LIN_SPIN_MIN_DEFAULT      0.0f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_SPIN_MAX_DEFAULT      1.0f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
     #define THRST_LIN_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
     #define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
 #else
@@ -150,6 +152,7 @@ float Thrust_Linearization::remove_thrust_curve_and_volt_scaling(float throttle)
 // update_lift_max from battery voltage - used for voltage compensation
 void Thrust_Linearization::update_lift_max_from_batt_voltage()
 {
+#if AP_BATTERY_ENABLED
     // sanity check battery_voltage_min is not too small
     // if disabled or misconfigured exit immediately
     float _batt_voltage = motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE) ? AP::battery().voltage(batt_idx) : AP::battery().voltage_resting_estimate(batt_idx);
@@ -176,6 +179,7 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
     // calculate lift max
     float thrust_curve_expo = constrain_float(curve_expo, -1.0, 1.0);
     lift_max = batt_voltage_filt.get() * (1 - thrust_curve_expo) + thrust_curve_expo * batt_voltage_filt.get() * batt_voltage_filt.get();
+#endif
 }
 
 // return gain scheduling gain based on voltage and air density
@@ -190,7 +194,7 @@ float Thrust_Linearization::get_compensation_gain() const
 
 #if AP_MOTORS_DENSITY_COMP == 1
     // air density ratio is increasing in density / decreasing in altitude
-    const float air_density_ratio = AP::baro().get_air_density_ratio();
+    const float air_density_ratio = AP::ahrs().get_air_density_ratio();
     if (air_density_ratio > 0.3 && air_density_ratio < 1.5) {
         ret *= 1.0 / constrain_float(air_density_ratio, 0.5, 1.25);
     }

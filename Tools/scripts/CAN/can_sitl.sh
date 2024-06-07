@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # this script sets up SITL to be able to attach to real CAN devices
 # once run, you can configure SITL for CAN just like a real board, with the CAN parameters
 #

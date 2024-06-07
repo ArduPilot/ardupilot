@@ -129,6 +129,9 @@ define HAL_PARACHUTE_ENABLED 0
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_fpv_osd.inc
 
+#not useable for quadplane
+define HAL_QUADPLANE_ENABLED 0
+
 # disable SMBUS monitors to save flash
 undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0

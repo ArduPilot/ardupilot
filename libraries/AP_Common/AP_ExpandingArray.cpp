@@ -16,6 +16,8 @@
 #include "AP_ExpandingArray.h"
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 extern const AP_HAL::HAL& hal;
 
 AP_ExpandingArrayGeneric::~AP_ExpandingArrayGeneric(void)
@@ -75,3 +77,5 @@ bool AP_ExpandingArrayGeneric::expand_to_hold(uint16_t num_items)
     uint16_t chunks_required = ((num_items - max_items()) / chunk_size) + 1;
     return expand(chunks_required);
 }
+
+#endif // HAL_BOOTLOADER_BUILD

@@ -7,14 +7,14 @@
 # the rear two elevons are setup for roll only (ailerons)
 
 # setup airspeed range
-ARSPD_FBW_MAX    35
-ARSPD_FBW_MIN    22
-TRIM_ARSPD_CM    2700
+AIRSPEED_MAX    35
+AIRSPEED_MIN    22
+AIRSPEED_CRUISE 27.00
 
 # fixed wing limits
-LIM_PITCH_MAX    1500
-LIM_PITCH_MIN    -1500
-LIM_ROLL_CD      2500
+PTCH_LIM_MAX_DEG 15.00
+PTCH_LIM_MIN_DEG -15.00
+ROLL_LIMIT_DEG 25.00
 
 # setup elevons as 75% elevator and 25% aileron
 MIXING_GAIN      0.25

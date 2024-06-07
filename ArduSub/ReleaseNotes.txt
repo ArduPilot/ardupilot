@@ -1,22 +1,159 @@
 APM:Sub Release Notes:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 4.0.3 5-March-2021
+Sub-4.5.0 beta1 22-February-2024
+- Branched from Copter 4.5
+- Innumerable system-level improvements; see Copter and Plane 4.2-4.5 release notes
+- Added SurfTrak mode for surface tracking (Altitude Hold with rangefinders)
 
- - No longer report battery percentage
- - Do not override RNGFND1_TYPE
- - Relax position controller when entering Depth Hold mode
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 4.0.2 21-September-2020
-
- - Fix critical error on preflight calibration
- - Fix CI build
+Sub-4.1.2 22-February-2024
+ - Add support for additional joystick axis for roll/pitch
+ - Allow using Compass Learn with no GPS
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub 4.0.1 17-March-2020
+Sub 4.1.1 2-November-2023
 
- - Do not report battery level percentage.
+Changes from 4.1.0:
+ - prevent multiple baro drivers on the same device
+ - Revert attitude control to 3.5 implementation, hopefully resolving the roll/pitch drift for good.
+ - Fix Python 3.11 compatibility
+ - drop MMC5xx3 sample rate to 100Hz
+ - Introduce CONTROL_FRAME parameter, allowing users to switch control frame for yaw
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+ - Fix Leak detection on Navigator
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+ - Fix GUIDED MODE bouncing back to origin after velocity command
+ - Add digital output (including relay) support for Navigator boards
+ - Fix Position Hold "bounce back" issue
+ - Improve low gain control in Position Hold and Depth Hold modes
+ - Add Pixhawk defaults for lights and camera mount tilt
+ - Changed flow_of_control error to a gcs warning
+ - Always calibrate barometer if negative depth is detected
+ - Improve Depth hold behavior when surface/bottom is reached
+ - Fix issue where changing modes caused the ROV to dive
+ - Change default PILOT_VELZ_MAX to 1 m/s
+ - Set default EK3_SRC1_VELZ to None instead of GPS to fix Depth oscilations
+ - Set default parameters for a smoother Position Hold and Depth Hold operation
+ - Add support for CPU affinity in Linux boards
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta8 31-Oct-2023
+
+ - Revert default Roll/Pitch P and D terms
+ - prevent multiple baro drivers on the same device
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta7 16-July-2023
+
+ - Revert attitude control to 3.5 implementation, hopefully resolving the roll/pitch drift for good.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta6 10-July-2023
+
+ - Fix roll/pitch drift in stabilized modes
+ - Fix Python 3.11 compatibility
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta5 10-April-2023
+
+ - drop MMC5xx3 sample rate to 100Hz
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta4 1-December-2022
+
+ - Introduce CONTROL_FRAME parameter, allowing users to switch control frame for yaw
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta3 1-December-2022
+
+ - Fix Leak detection on Navigator
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta2 24-October-2022
+
+ - Fix GUIDED MODE bouncing back to origin after velocity command
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta1 13-October-2022
+
+ - Add digital output (including relay) support for Navigator boards
+ - Fix Position Hold "bounce back" issue
+ - Improve low gain control in Position Hold and Depth Hold modes
+ - Add Pixhawk defaults for lights and camera mount tilt
+ - Changed flow_of_control error to a gcs warning
+ - Always calibrate barometer if negative depth is detected
+ - Improve Depth hold behavior when surface/bottom is reached
+ - Fix issue where changing modes caused the ROV to dive
+ - Change default PILOT_VELZ_MAX to 1 m/s
+ - Tighten default Pitch stabilization parameters
+ - Set default EK3_SRC1_VELZ to None instead of GPS to fix Depth oscilations
+ - Set default parameters for a smoother Position Hold and Depth Hold operation
+ - Add support for CPU affinity in Linux boards
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0 6-June-2022
+
+ - Fix agressive depth hold twitching introduced in beta7
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta8 26-May-2022
+
+ - Fix issue with poshold introduced in beta7 (no lateral control)
+ - Fix i2c buses masks for Navigator
+ - Do not use RC3_MIN/MAX instead of MOT_PWM_MIN/MAX
+ - Update submodules for easier builds
+ - Fix cygwin build
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta7 29-Apr-2022
+
+ - Tweak depth hold at arbitrary attitudes
+ - Add autotest for depth hold at arbitrary attitudes
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta6 19-Apr-2022
+
+ - Update Navigator I2C masks
+ - Fix constraining PWM with SERVON_MAX and MOT_PWM_MAX
+ - Tweak default BTN parameters
+ - Improve althold with large buoyancy/payloads
+ - Fix depth hold jumping down when enabling it
+ - Allow holding arbitrary attitudes in depth hold and stabilize modes
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta5 31-Mar-2022
+
+ - Set default BRD_RTC_TYPE to 3 (GPS and MAVLink)
+ - Set default BARO_PROBE_EXT to 768 (Keller and MS5837)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta4 25-Mar-2022
+
+ - Set default loop rate for Navigator
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta3 3-Mar-2022
+
+ - Set default parameters for Navigator for camera tilt and lights
+ - Set default streamrates
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta2 3-Mar-2022
+
+ - Set default parameters for Navigator
+ - AP_Hal_Linux: PCA9685: do not shutdown PWM chip
+ - Use AK09915 compass at 200Hz
+ - Retry reading MMC5983 Compass ID up to 10 times
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0beta 3-Jan-2022
+ - Rebased on top of Copter 4.1.3
+ - Add leak detection support for Pixhawk 4
+ - No longer report battery percentage if capacity is set to 0 mAh
+ - fix issue where it was not possible to arm after testing motors
+ - Added support for the Blue Robotics Navigator Raspberry Pi hat.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.0.0 4-March-2020

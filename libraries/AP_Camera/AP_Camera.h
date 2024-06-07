@@ -8,6 +8,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/ap_message.h>
 #include "AP_Camera_Params.h"
 #include "AP_Camera_shareddefs.h"
 
@@ -86,19 +87,9 @@ public:
     // handle MAVLink command from GCS to control the camera
     MAV_RESULT handle_command(const mavlink_command_int_t &packet);
 
-    // send camera feedback message to GCS
-    void send_feedback(mavlink_channel_t chan);
-
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan);
-
-    // send camera settings message to GCS
-    void send_camera_settings(mavlink_channel_t chan);
-
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-    // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan);
-#endif
+    // send a mavlink message; returns false if there was not space to
+    // send the message, true otherwise
+    bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time);
@@ -153,9 +144,22 @@ public:
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
     bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
 
-    // set camera lens as a value from 0 to 5
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
+    // set camera lens as a value from 0 to 5, instance starts from 0
     bool set_lens(uint8_t lens);
     bool set_lens(uint8_t instance, uint8_t lens);
+
+    // camera source handling enum.  This is a one-to-one mapping with the CAMERA_SOURCE mavlink enum
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    enum class CameraSource {
+        DEFAULT = 0,
+        RGB = 1,
+        IR = 2,
+        NDVI = 3,
+        RGB_WIDEANGLE = 4,
+    };
+    bool set_camera_source(uint8_t instance, CameraSource primary_source, CameraSource secondary_source);
+#endif
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
@@ -178,6 +182,9 @@ public:
     // returns true on success and cam_state is filled in
     bool get_state(uint8_t instance, camera_state_t& cam_state);
 #endif
+
+    // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
+    bool get_legacy_relay_index(int8_t &index) const;
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore() { return _rsem; }
@@ -212,6 +219,23 @@ private:
 
     // perform any required parameter conversion
     void convert_params();
+
+    // send camera feedback message to GCS
+    void send_feedback(mavlink_channel_t chan);
+
+    // send camera information message to GCS
+    void send_camera_information(mavlink_channel_t chan);
+
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan);
+
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    // send camera field of view status
+    void send_camera_fov_status(mavlink_channel_t chan);
+#endif
+
+    // send camera capture status message to GCS
+    void send_camera_capture_status(mavlink_channel_t chan);
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

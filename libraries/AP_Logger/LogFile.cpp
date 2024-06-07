@@ -248,6 +248,7 @@ void AP_Logger::Write_RCOUT(void)
 
 }
 
+#if AP_RSSI_ENABLED
 // Write an RSSI packet
 void AP_Logger::Write_RSSI()
 {
@@ -264,6 +265,7 @@ void AP_Logger::Write_RSSI()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
                               uint8_t source_system,
@@ -476,6 +478,8 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
     enum class log_PID_Flags : uint8_t {
         LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
         PD_SUM_LIMIT =  1U<<1, // true if the PD sum limit is active
+        RESET = 1U<<2, // true if the controller was reset
+        I_TERM_SET = 1U<<3, // true if the I term has been set externally including reseting to 0
     };
 
     uint8_t flags = 0;
@@ -484,6 +488,12 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
     }
     if (info.PD_limit) {
         flags |= (uint8_t)log_PID_Flags::PD_SUM_LIMIT;
+    }
+    if (info.reset) {
+        flags |= (uint8_t)log_PID_Flags::RESET;
+    }
+    if (info.I_term_set) {
+        flags |= (uint8_t)log_PID_Flags::I_TERM_SET;
     }
 
     const struct log_PID pkt{
@@ -496,6 +506,7 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
         I               : info.I,
         D               : info.D,
         FF              : info.FF,
+        DFF             : info.DFF,
         Dmod            : info.Dmod,
         slew_rate       : info.slew_rate,
         flags           : flags
@@ -537,39 +548,6 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
         temp            : temp
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-// a convenience function for writing out the position controller PIDs
-void AP_Logger::Write_PSCx(LogMessages id, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    const struct log_PSCx pkt{
-        LOG_PACKET_HEADER_INIT(id),
-            time_us         : AP_HAL::micros64(),
-            pos_target    : pos_target * 0.01f,
-            pos           : pos * 0.01f,
-            vel_desired   : vel_desired * 0.01f,
-            vel_target    : vel_target * 0.01f,
-            vel           : vel * 0.01f,
-            accel_desired : accel_desired * 0.01f,
-            accel_target  : accel_target * 0.01f,
-            accel         : accel * 0.01f
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCN_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
-
-void AP_Logger::Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCE_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
-
-void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCD_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
 }
 
 #endif  // HAL_LOGGING_ENABLED

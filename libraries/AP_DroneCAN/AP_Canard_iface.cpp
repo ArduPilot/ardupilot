@@ -9,6 +9,7 @@
 extern const AP_HAL::HAL& hal;
 #define LOG_TAG "DroneCANIface"
 #include <canard.h>
+#include <AP_CANManager/AP_CANSensor.h>
 
 #define DEBUG_PKTS 0
 
@@ -29,7 +30,7 @@ HAL_Semaphore test_iface_sem;
 
 void canard_allocate_sem_take(CanardPoolAllocator *allocator) {
     if (allocator->semaphore == nullptr) {
-        allocator->semaphore = new HAL_Semaphore;
+        allocator->semaphore = NEW_NOTHROW HAL_Semaphore;
         if (allocator->semaphore == nullptr) {
             // out of memory
             CANARD_ASSERT(0);
@@ -217,7 +218,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
         // volatile as the value can change at any time during can interrupt
         // we need to ensure that this is not optimized
         volatile const auto *stats = ifaces[iface]->get_statistics();
-        uint64_t last_transmit_us = stats->last_transmit_us;
+        uint64_t last_transmit_us = stats==nullptr?0:stats->last_transmit_us;
         bool iface_down = true;
         if (stats == nullptr || (AP_HAL::micros64() - last_transmit_us) < 200000UL) {
             /*
@@ -346,6 +347,15 @@ void CanardInterface::processRx() {
             if (ifaces[i]->receive(rxmsg, timestamp, flags) <= 0) {
                 break;
             }
+
+            if (!rxmsg.isExtended()) {
+                // 11 bit frame, see if we have a handler
+                if (aux_11bit_driver != nullptr) {
+                    aux_11bit_driver->handle_frame(rxmsg);
+                }
+                continue;
+            }
+
             rx_frame.data_len = AP_HAL::CANFrame::dlcToDataLength(rxmsg.dlc);
             memcpy(rx_frame.data, rxmsg.data, rx_frame.data_len);
 #if HAL_CANFD_SUPPORTED
@@ -396,10 +406,9 @@ void CanardInterface::process(uint32_t duration_ms) {
             WITH_SEMAPHORE(_sem_tx);
             canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
         }
-        uint64_t now = AP_HAL::micros64();
+        const uint64_t now = AP_HAL::micros64();
         if (now < deadline) {
-            _event_handle.wait(MIN(UINT16_MAX - 2U, deadline - now));
-            hal.scheduler->delay_microseconds(50);
+            IGNORE_RETURN(sem_handle.wait(deadline - now));
         } else {
             break;
         }
@@ -426,7 +435,7 @@ bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
         AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Can't alloc uavcan::iface\n");
         return false;
     }
-    if (!can_iface->set_event_handle(&_event_handle)) {
+    if (!can_iface->set_event_handle(&sem_handle)) {
         AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Setting event handle failed\n");
         return false;
     }
@@ -434,4 +443,29 @@ bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
     num_ifaces++;
     return true;
 }
+
+// add an 11 bit auxillary driver
+bool CanardInterface::add_11bit_driver(CANSensor *sensor)
+{
+    if (aux_11bit_driver != nullptr) {
+        // only allow one
+        return false;
+    }
+    aux_11bit_driver = sensor;
+    return true;
+}
+
+// handler for outgoing frames for auxillary drivers
+bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+{
+    bool ret = false;
+    for (uint8_t iface = 0; iface < num_ifaces; iface++) {
+        if (ifaces[iface] == NULL) {
+            continue;
+        }
+        ret |= ifaces[iface]->send(out_frame, timeout_us, 0) > 0;
+    }
+    return ret;
+}
+
 #endif // #if HAL_ENABLE_DRONECAN_DRIVERS

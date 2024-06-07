@@ -5,8 +5,8 @@
 #include "AP_Logger_Backend.h"
 
 #include "AP_Logger_File.h"
-#include "AP_Logger_DataFlash.h"
-#include "AP_Logger_W25N01GV.h"
+#include "AP_Logger_Flash_JEDEC.h"
+#include "AP_Logger_W25NXX.h"
 #include "AP_Logger_MAVLink.h"
 
 #include <AP_InternalError/AP_InternalError.h>
@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_DATAFLASH_DRIVER
-#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_DataFlash
+#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_Flash_JEDEC
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
@@ -77,6 +77,8 @@ extern const AP_HAL::HAL& hal;
 #define LOGGING_FIRST_DYNAMIC_MSGID 254
 #endif
 
+static constexpr uint16_t MAX_LOG_FILES = 500;
+static constexpr uint16_t MIN_LOG_FILES = 2;
 
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
@@ -176,14 +178,22 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("_DARM_RATEMAX",  11, AP_Logger, _params.disarm_ratemax, 0),
-    
+
+    // @Param: _MAX_FILES
+    // @DisplayName: Maximum number of log files
+    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. Limit is capped at 500 logs.
+    // @Range: 2 500
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, MAX_LOG_FILES),
+
     AP_GROUPEND
 };
 
 #define streq(x, y) (!strcmp(x, y))
 
-AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
-    : _log_bitmask(log_bitmask)
+AP_Logger::AP_Logger()
 {
     AP_Param::setup_object_defaults(this, var_info);
     if (_singleton != nullptr) {
@@ -193,8 +203,10 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
     _singleton = this;
 }
 
-void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
+void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
+    _log_bitmask = &log_bitmask;
+
     // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
@@ -235,7 +247,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
             return;
         }
         LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
+            NEW_NOTHROW LoggerMessageWriter_DFLogStart();
         if (message_writer == nullptr)  {
             AP_BoardConfig::allocation_error("message writer");
         }
@@ -278,7 +290,7 @@ static uint8_t count_commas(const char *string)
 /// return a unit name given its ID
 const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
-    for (uint8_t i=0; i<unit_id; i++) {
+    for (uint8_t i=0; i<_num_units; i++) {
         if (_units[i].ID == unit_id) {
             return _units[i].unit;
         }
@@ -289,7 +301,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 /// return a multiplier value given its ID
 double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
-    for (uint8_t i=0; i<multiplier_id; i++) {
+    for (uint8_t i=0; i<_num_multipliers; i++) {
         if (_multipliers[i].ID == multiplier_id) {
             return _multipliers[i].multiplier;
         }
@@ -618,7 +630,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
 {
     bool armed = vehicle_is_armed();
 
-    if (!(mask & _log_bitmask)) {
+    if (!(mask & *_log_bitmask)) {
         return false;
     }
     if (!armed && !log_while_disarmed()) {
@@ -702,7 +714,7 @@ void AP_Logger::save_format_Replay(const void *pBuffer)
 {
     if (((uint8_t *)pBuffer)[2] == LOG_FORMAT_MSG) {
         struct log_Format *fmt = (struct log_Format *)pBuffer;
-        struct log_write_fmt *f = new log_write_fmt;
+        struct log_write_fmt *f = NEW_NOTHROW log_write_fmt;
         f->msg_type = fmt->type;
         f->msg_len = fmt->length;
         f->name = strndup(fmt->name, sizeof(fmt->name));
@@ -820,6 +832,14 @@ uint16_t AP_Logger::get_num_logs(void) {
         return 0;
     }
     return backends[0]->get_num_logs();
+}
+
+uint16_t AP_Logger::get_max_num_logs() {
+    const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
+    if (_params.max_log_files.get() != max_logs) {
+        _params.max_log_files.set_and_save_ifchanged(static_cast<int16_t>(max_logs));
+    }
+    return static_cast<uint16_t>(_params.max_log_files.get());
 }
 
 /* we're started if any of the backends are started */
@@ -1547,13 +1567,17 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
      */
     static const char *log_content_filenames[] = {
         "@SYS/uarts.txt",
+#ifdef HAL_DEBUG_BUILD
+        // logging dma.txt has a performance impact
         "@SYS/dma.txt",
+#endif
         "@SYS/memory.txt",
         "@SYS/threads.txt",
         "@SYS/timers.txt",
         "@ROMFS/hwdef.dat",
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
+        "@ROMFS/defaults.parm",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);
@@ -1615,13 +1639,13 @@ void AP_Logger::log_file_content(const char *filename)
 void AP_Logger::log_file_content(FileContent &file_content, const char *filename)
 {
     WITH_SEMAPHORE(file_content.sem);
-    auto *file = new file_list;
+    auto *file = NEW_NOTHROW file_list;
     if (file == nullptr) {
         return;
     }
     // make copy to allow original to go out of scope
     const size_t len = strlen(filename)+1;
-    char * tmp_filename = new char[len];
+    char * tmp_filename = NEW_NOTHROW char[len];
     if (tmp_filename == nullptr) {
         delete file;
         return;

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_AVOIDANCE_ENABLED
+
 #include "AC_Avoid.h"
 #include <AP_AHRS/AP_AHRS.h>     // AHRS library
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
@@ -76,12 +80,12 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_ROVER),
 
     // @Param: BACKUP_SPD
-    // @DisplayName: Avoidance maximum backup speed
-    // @Description: Maximum speed that will be used to back away from obstacles in GPS modes (m/s). Set zero to disable
+    // @DisplayName: Avoidance maximum horizontal backup speed
+    // @Description: Maximum speed that will be used to back away from obstacles horizontally in position control modes (m/s). Set zero to disable horizontal backup.
     // @Units: m/s
     // @Range: 0 2
     // @User: Standard
-    AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_max, 0.75f),
+    AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_xy_max, 0.75f),
 
     // @Param{Copter}: ALT_MIN
     // @DisplayName: Avoidance minimum altitude
@@ -106,6 +110,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Range: 0 2
     // @User: Standard
     AP_GROUPINFO("BACKUP_DZ", 9, AC_Avoid, _backup_deadzone, 0.10f),
+
+    // @Param: BACKZ_SPD
+    // @DisplayName: Avoidance maximum vertical backup speed
+    // @Description: Maximum speed that will be used to back away from obstacles vertically in height control modes (m/s). Set zero to disable vertical backup.
+    // @Units: m/s
+    // @Range: 0 2
+    // @User: Standard
+    AP_GROUPINFO("BACKZ_SPD", 10, AC_Avoid, _backup_speed_z_max, 0.75),
 
     AP_GROUPEND
 };
@@ -220,14 +232,12 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     const float desired_backup_vel_z = back_vel_down + back_vel_up;
     Vector3f desired_backup_vel{desired_backup_vel_xy.x, desired_backup_vel_xy.y, desired_backup_vel_z};
 
-    const float max_back_spd_cms = _backup_speed_max * 100.0f;
-    if (!desired_backup_vel.is_zero() && is_positive(max_back_spd_cms)) {
+    const float max_back_spd_xy_cms = _backup_speed_xy_max * 100.0;
+    if (!desired_backup_vel.xy().is_zero() && is_positive(max_back_spd_xy_cms)) {
         backing_up = true;
-        // Constrain backing away speed
-        if (desired_backup_vel.length() > max_back_spd_cms) {
-            desired_backup_vel = desired_backup_vel.normalized() * max_back_spd_cms;
-        }
-    
+        // Constrain horizontal backing away speed
+        desired_backup_vel.xy().limit_length(max_back_spd_xy_cms);
+
         // let user take control if they are backing away at a greater speed than what we have calculated
         // this has to be done for x,y,z separately. For eg, user is doing fine in "x" direction but might need backing up in "y".
         if (!is_zero(desired_backup_vel.x)) {
@@ -244,6 +254,15 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
                 desired_vel_cms.y = MIN(desired_vel_cms.y, desired_backup_vel.y);
             }
         }
+    }
+
+    const float max_back_spd_z_cms = _backup_speed_z_max * 100.0;
+    if (!is_zero(desired_backup_vel.z) && is_positive(max_back_spd_z_cms)) {
+        backing_up = true;
+
+        // Constrain vertical backing away speed
+        desired_backup_vel.z = constrain_float(desired_backup_vel.z, -max_back_spd_z_cms, max_back_spd_z_cms);
+
         if (!is_zero(desired_backup_vel.z)) {
             if (is_positive(desired_backup_vel.z)) {
                 desired_vel_cms.z = MAX(desired_vel_cms.z, desired_backup_vel.z);
@@ -252,6 +271,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
             }
         }
     }
+
     // limit acceleration
     limit_accel(desired_vel_cms_original, desired_vel_cms, dt);
 
@@ -259,6 +279,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         _last_limit_time = AP_HAL::millis();
     }
 
+#if HAL_LOGGING_ENABLED
     if (limits_active()) {
         // log at not more than 10hz (adjust_velocity method can be potentially called at 400hz!)
         uint32_t now = AP_HAL::millis();
@@ -275,6 +296,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
             _last_log_ms = 0;
         }
     }
+#endif
 }
 
 /*
@@ -416,7 +438,13 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         if (alt_diff <= 0.0f) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             // also calculate backup speed that will get us back to safe altitude
-            backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -alt_diff*100.0f, dt));
+            const float max_back_spd_cms = _backup_speed_z_max * 100.0;
+            if (is_positive(max_back_spd_cms)) {
+                backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -alt_diff*100.0f, dt));
+
+                // Constrain to max backup speed
+                backup_speed = MAX(backup_speed, -max_back_spd_cms);
+            }
             return;
         }
 
@@ -1137,10 +1165,6 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     }
 
     AP_Proximity &_proximity = *proximity;
-    // check for status of the sensor
-    if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
-    }
     // get total number of obstacles
     const uint8_t obstacle_num = _proximity.get_obstacle_count();
     if (obstacle_num == 0) {
@@ -1432,14 +1456,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
         return;
     }
     AP_Proximity &_proximity = *proximity;
-
-    // exit immediately if proximity sensor is not present
-    if (_proximity.get_status() != AP_Proximity::Status::Good) {
-        return;
-    }
-
     const uint8_t obj_count = _proximity.get_object_count();
-
     // if no objects return
     if (obj_count == 0) {
         return;
@@ -1486,3 +1503,5 @@ AC_Avoid *ac_avoid()
 }
 
 #endif // !APM_BUILD_Arduplane
+
+#endif  // AP_AVOIDANCE_ENABLED

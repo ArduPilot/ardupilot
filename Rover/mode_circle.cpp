@@ -116,7 +116,7 @@ void ModeCircle::init_target_yaw_rad()
     // if no position estimate use vehicle yaw
     Vector2f curr_pos_NE;
     if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
-        target.yaw_rad = AP::ahrs().yaw;
+        target.yaw_rad = AP::ahrs().get_yaw();
         return;
     }
 
@@ -126,7 +126,7 @@ void ModeCircle::init_target_yaw_rad()
 
     // if current position is exactly at the center of the circle return vehicle yaw
     if (is_zero(dist_m)) {
-        target.yaw_rad = AP::ahrs().yaw;
+        target.yaw_rad = AP::ahrs().get_yaw();
     } else {
         target.yaw_rad = center_to_veh.angle();
     }

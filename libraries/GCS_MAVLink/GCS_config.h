@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Relay/AP_Relay_config.h>
+#include <AP_Mission/AP_Mission_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
@@ -13,7 +14,7 @@
 
 // BATTERY2 is slated to be removed:
 #ifndef AP_MAVLINK_BATTERY2_ENABLED
-#define AP_MAVLINK_BATTERY2_ENABLED 1
+#define AP_MAVLINK_BATTERY2_ENABLED 0
 #endif
 
 #ifndef HAL_HIGH_LATENCY2_ENABLED
@@ -25,7 +26,7 @@
 // The command was added to the spec in January 2019 and to MAVLink in
 // ArduPilot in 4.1.x
 #ifndef AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
-#define AP_MAVLINK_MISSION_SET_CURRENT_ENABLED 1
+#define AP_MAVLINK_MISSION_SET_CURRENT_ENABLED AP_MISSION_ENABLED
 #endif
 
 // AUTOPILOT_VERSION_REQUEST is slated to be removed; an instance of
@@ -58,6 +59,12 @@
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED HAL_GCS_ENABLED && HAL_RALLY_ENABLED
 #endif
 
+// handling of HIL_GPS is slated to be removed in 4.7; GPS_INPUT can be used
+// in its place
+#ifndef AP_MAVLINK_MSG_HIL_GPS_ENABLED
+#define AP_MAVLINK_MSG_HIL_GPS_ENABLED 0
+#endif
+
 #ifndef AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
 #define AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED HAL_GCS_ENABLED
 #endif
@@ -79,10 +86,25 @@
 #define AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED HAL_GCS_ENABLED
 #endif
 
+#ifndef AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
+#define AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED HAL_ADSB_ENABLED
+#endif
+
+#ifndef AP_MAVLINK_FTP_ENABLED
+#define AP_MAVLINK_FTP_ENABLED HAL_GCS_ENABLED
+#endif
+
 // GCS should be using MISSION_REQUEST_INT instead; this is a waste of
 // flash.  MISSION_REQUEST was deprecated in June 2020.  We started
 // sending warnings to the GCS in Sep 2022 if this command was used.
 // Copter 4.4.0 sends this warning.
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
-#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 1
+#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED AP_MISSION_ENABLED
+#endif
+
+// all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't
+// strictly required.  This option created for 4.5, Nov 2023, and code
+// left in place.
+#ifndef AP_MAVLINK_COMMAND_LONG_ENABLED
+#define AP_MAVLINK_COMMAND_LONG_ENABLED 1
 #endif

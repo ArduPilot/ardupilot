@@ -229,9 +229,6 @@ define HAL_OS_FATFS_IO 1
 # Control Zero has a TriColor LED, Red, Green, Blue
 define HAL_HAVE_PIXRACER_LED
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
-
 # LED setup for PixracerLED driver
 PB11 LED_R OUTPUT HIGH GPIO(0)
 PB1  LED_G OUTPUT HIGH GPIO(1)

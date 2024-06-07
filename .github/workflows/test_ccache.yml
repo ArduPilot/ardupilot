@@ -126,7 +126,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.0
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -136,13 +136,13 @@ jobs:
         gcc: [10]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - name: ccache test
         shell: bash
         run: |
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
-          Tools/scripts/build_tests/test_ccache.py --boards MatekF405,MatekF405-bdshot --min-cache-pct=75
-          Tools/scripts/build_tests/test_ccache.py --boards Durandal,Pixhawk6X --min-cache-pct=70
+          Tools/scripts/build_tests/test_ccache.py --boards MatekF405-bdshot,MatekF405-TE-bdshot --min-cache-pct=75
+          Tools/scripts/build_tests/test_ccache.py --boards Durandal-bdshot,Pixhawk6X --min-cache-pct=70
 

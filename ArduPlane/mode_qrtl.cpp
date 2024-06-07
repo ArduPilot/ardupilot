@@ -199,9 +199,9 @@ void ModeQRTL::update_target_altitude()
       giving time to lose speed before we transition
      */
     const float radius = MAX(fabsf(float(plane.aparm.loiter_radius)), fabsf(float(plane.g.rtl_radius)));
-    const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude_cm*0.01 - plane.quadplane.qrtl_alt);
+    const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt);
     const float sink_time = rtl_alt_delta / MAX(0.6*plane.TECS_controller.get_max_sinkrate(), 1);
-    const float sink_dist = plane.aparm.airspeed_cruise_cm * 0.01 * sink_time;
+    const float sink_dist = plane.aparm.airspeed_cruise * sink_time;
     const float dist = plane.auto_state.wp_distance;
     const float rad_min = 2*radius;
     const float rad_max = 20*radius;
@@ -211,7 +211,6 @@ void ModeQRTL::update_target_altitude()
     Location loc = plane.next_WP_loc;
     loc.alt += alt*100;
     plane.set_target_altitude_location(loc);
-    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
 
 // only nudge during approach

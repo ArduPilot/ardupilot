@@ -13,7 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  interfaces to ArduPilot collection of CRCs. 
+  interfaces to ArduPilot collection of CRCs.
  */
 #pragma once
 
@@ -28,6 +28,7 @@ uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length);
 uint8_t crc8_dvb_update(uint8_t crc, const uint8_t* buf, const uint16_t buf_len);
 uint8_t crc8_maxim(const uint8_t *data, uint16_t length);
 uint8_t crc8_sae(const uint8_t *data, uint16_t length);
+uint8_t crc8_rds02uf(const uint8_t *data, uint16_t length);
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
@@ -35,12 +36,15 @@ uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 
-// checksum used by SPORT/FPort
-uint8_t crc_sum8(const uint8_t *p, uint8_t len);
+// checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
+// sum, then adds those two bytes together.  Returns the complement of
+// the final sum.
+uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len);
 
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
+uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t out);
 
 // CRC16_CCITT algorithm using the GDL90 parser method which is non-standard
 // https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
@@ -60,3 +64,10 @@ uint64_t crc_crc64(const uint32_t *data, uint16_t num_words);
 // return the parity of byte - "1" if there is an odd number of bits
 // set, "0" if there is an even number of bits set
 uint8_t parity(uint8_t byte);
+
+// sums the bytes in the supplied buffer, returns that sum mod 256
+// (i.e. shoved into a uint8_t)
+uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count);
+
+// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
+uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count);

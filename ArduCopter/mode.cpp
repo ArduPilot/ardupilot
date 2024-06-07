@@ -191,7 +191,7 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 void Copter::mode_change_failed(const Mode *mode, const char *reason)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
-    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
     // make sad noise
     if (copter.ap.initialised) {
         AP_Notify::events.user_mode_change_failed = 1;
@@ -276,7 +276,8 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if MODE_AUTO_ENABLED == ENABLED
     if (mode == Mode::Number::AUTO_RTL) {
         // Special case for AUTO RTL, not a true mode, just AUTO in disguise
-        return mode_auto.jump_to_landing_sequence_auto_RTL(reason);
+        // Attempt to join return path, fallback to do-land-start
+        return mode_auto.return_path_or_jump_to_landing_sequence_auto_RTL(reason);
     }
 #endif
 
@@ -360,7 +361,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     // update flight mode
     flightmode = new_flightmode;
     control_mode_reason = reason;
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode((uint8_t)flightmode->mode_number(), reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
 #if HAL_ADSB_ENABLED
@@ -455,6 +458,11 @@ void Copter::exit_mode(Mode *&old_flightmode,
             input_manager.set_stab_col_ramp(0.0);
         }
     }
+
+    // Make sure inverted flight is disabled if not supported in the new mode
+    if (!new_flightmode->allows_inverted()) {
+        attitude_control->set_inverted_flight(false);
+    }
 #endif //HELI_FRAME
 }
 
@@ -470,7 +478,7 @@ void Copter::notify_flight_mode() {
 void Mode::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
 {
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         roll_out_cd = 0.0;
         pitch_out_cd = 0.0;
         return;
@@ -492,7 +500,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     Vector2f vel;
 
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return vel;
     }
     // fetch roll and pitch inputs
@@ -700,7 +708,7 @@ void Mode::land_run_horizontal_control()
     // process pilot inputs
     if (!copter.failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
+            LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
@@ -720,7 +728,7 @@ void Mode::land_run_horizontal_control()
             // record if pilot has overridden roll or pitch
             if (!vel_correction.is_zero()) {
                 if (!copter.ap.land_repo_active) {
-                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
+                    LOGGER_WRITE_EVENT(LogEvent::LAND_REPO_ACTIVE);
                 }
                 copter.ap.land_repo_active = true;
 #if AC_PRECLAND_ENABLED
@@ -815,7 +823,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
 {
     if (!copter.failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
+            LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
@@ -833,7 +841,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
             // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                 if (!copter.ap.land_repo_active) {
-                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
+                    LOGGER_WRITE_EVENT(LogEvent::LAND_REPO_ACTIVE);
                 }
                 // this flag will be checked by prec land state machine later and any further landing retires will be cancelled
                 copter.ap.land_repo_active = true;
@@ -940,7 +948,7 @@ float Mode::get_pilot_desired_throttle() const
 
 float Mode::get_avoidance_adjusted_climbrate(float target_rate)
 {
-#if AC_AVOID_ENABLED == ENABLED
+#if AP_AVOIDANCE_ENABLED
     AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), target_rate, G_Dt);
     return target_rate;
 #else
@@ -965,19 +973,19 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
         switch (motors->get_spool_state()) {
 
         case AP_Motors::SpoolState::SHUT_DOWN:
-            return AltHold_MotorStopped;
+            return AltHoldModeState::MotorStopped;
 
         case AP_Motors::SpoolState::GROUND_IDLE:
-            return AltHold_Landed_Ground_Idle;
+            return AltHoldModeState::Landed_Ground_Idle;
 
         default:
-            return AltHold_Landed_Pre_Takeoff;
+            return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
     } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
-        return AltHold_Takeoff;
+        return AltHoldModeState::Takeoff;
 
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         // the aircraft is armed and landed
@@ -992,17 +1000,17 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
         if (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
             // the aircraft is waiting in ground idle
-            return AltHold_Landed_Ground_Idle;
+            return AltHoldModeState::Landed_Ground_Idle;
 
         } else {
             // the aircraft can leave the ground at any time
-            return AltHold_Landed_Pre_Takeoff;
+            return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
     } else {
         // the aircraft is in a flying state
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-        return AltHold_Flying;
+        return AltHoldModeState::Flying;
     }
 }
 
@@ -1011,7 +1019,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 float Mode::get_pilot_desired_yaw_rate(float yaw_in)
 {
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return 0.0f;
     }
 
@@ -1054,4 +1062,13 @@ GCS_Copter &Mode::gcs()
 uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
+}
+
+// Return stopping point as a location with above origin alt frame
+Location Mode::get_stopping_point() const
+{
+    Vector3p stopping_point_NEU;
+    copter.pos_control->get_stopping_point_xy_cm(stopping_point_NEU.xy());
+    copter.pos_control->get_stopping_point_z_cm(stopping_point_NEU.z);
+    return Location { stopping_point_NEU.tofloat(), Location::AltFrame::ABOVE_ORIGIN };
 }

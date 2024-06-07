@@ -12,8 +12,6 @@
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
-assert_storage_size<RallyLocation, 15> _assert_storage_size_RallyLocation;
-
 #if APM_BUILD_COPTER_OR_HELI
   #define RALLY_LIMIT_KM_DEFAULT 0.3f
   #define RALLY_INCLUDE_HOME_DEFAULT 1
@@ -56,6 +54,8 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
 // constructor
 AP_Rally::AP_Rally()
 {
+    ASSERT_STORAGE_SIZE(RallyLocation, 15);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
         AP_HAL::panic("Rally must be singleton");
@@ -116,7 +116,9 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     _last_change_time_ms = AP_HAL::millis();
 
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
+#endif
 
     return true;
 }

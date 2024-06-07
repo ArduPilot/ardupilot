@@ -144,9 +144,6 @@ define HAL_OS_FATFS_IO 1
 # pixracer has 3 LEDs, Red, Green, Blue
 define HAL_HAVE_PIXRACER_LED
 
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
-
 # LED setup for PixracerLED driver
 PB11 LED_RED   OUTPUT GPIO(0)
 PB1  LED_GREEN OUTPUT GPIO(1)
@@ -187,8 +184,6 @@ BARO MS56XX SPI:ms5611_int
 
 # reserve plenty of memory for DMA for LED buffers
 define DMA_RESERVE_SIZE 32768
-
-# .env DEFAULT_PARAMETERS 'Tools/Frame_params/LuminousBee4_outdoor.param'
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0

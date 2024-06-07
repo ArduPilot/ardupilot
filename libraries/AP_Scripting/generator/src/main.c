@@ -367,6 +367,7 @@ struct method_alias {
   char *alias;
   int line;
   int num_args;
+  int num_ret;
   enum alias_type type;
   char *dependency;
 };
@@ -887,6 +888,12 @@ void handle_manual(struct userdata *node, enum alias_type type) {
       error(ERROR_SINGLETON, "Expected number of args for manual method %s %s", node->name, name);
     }
     alias->num_args = atoi(num_args);
+
+    char *num_ret = next_token();
+    if (num_ret == NULL) {
+      error(ERROR_SINGLETON, "Expected number of returns for manual method %s %s", node->name, name);
+    }
+    alias->num_ret = atoi(num_ret);
   }
 
   char *depends_keyword = next_token();
@@ -1386,41 +1393,41 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     arg_number = arg_number + NULLABLE_ARG_COUNT_BASE;
     switch (t.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "%sbool data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sbool data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "%sfloat data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sfloat data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT8_T:
-        fprintf(source, "%sint8_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint8_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT16_T:
-        fprintf(source, "%sint16_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint16_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_INT32_T:
-        fprintf(source, "%sint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%sint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT8_T:
-        fprintf(source, "%suint8_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint8_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT16_T:
-        fprintf(source, "%suint16_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint16_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_AP_OBJECT:
       case TYPE_NONE:
       case TYPE_LITERAL:
         return; // nothing to do here, this should potentially be checked outside of this, but it makes an easier implementation to accept it
       case TYPE_STRING:
-        fprintf(source, "%schar * data_%d = {};\n", indentation, arg_number);
+        fprintf(source, "%schar * data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_ENUM:
-        fprintf(source, "%suint32_t data_%d;\n", indentation, arg_number);
+        fprintf(source, "%suint32_t data_%d {};\n", indentation, arg_number);
         break;
       case TYPE_USERDATA:
-        fprintf(source, "%s%s data_%d = {};\n", indentation, t.data.ud.name, arg_number);
+        fprintf(source, "%s%s data_%d {};\n", indentation, t.data.ud.name, arg_number);
         break;
     }
   } else {
@@ -1918,7 +1925,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
     fprintf(source, "    %s%sget_semaphore()->take_blocking();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "#if AP_SCHEDULER_ENABLED\n");
     fprintf(source, "    AP::scheduler().get_semaphore().take_blocking();\n");
+    fprintf(source, "#endif\n");
   }
 
   int static_cast = TRUE;
@@ -2050,7 +2059,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
     fprintf(source, "    %s%sget_semaphore()->give();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
+    fprintf(source, "#if AP_SCHEDULER_ENABLED\n");
     fprintf(source, "    AP::scheduler().get_semaphore().give();\n");
+    fprintf(source, "#endif\n");
   }
 
   // we need to emit out refernce arguments, iterate the args again, creating and copying objects, while keeping a new count
@@ -2604,6 +2615,22 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
   }
 }
 
+void emit_docs_param_type(struct type type, const char *prefix, const char *suffix) {
+  if (type.type == TYPE_UINT32_T) {
+    // we will try and convert int and numbers to uint32
+    fprintf(docs, "%s uint32_t_ud|integer|number%s", prefix, suffix);
+    return;
+  }
+
+  emit_docs_type(type, prefix, suffix);
+}
+
+void emit_docs_return_type(struct type type, int nullable) {
+  // AP_Objects can be nil
+  nullable |= (type.type == TYPE_AP_OBJECT);
+  emit_docs_type(type, "---@return", (nullable == 0) ? "\n" : "|nil\n");
+}
+
 void emit_docs_method(const char *name, const char *method_name, struct method *method) {
 
   fprintf(docs, "-- desc\n");
@@ -2619,7 +2646,7 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
     if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0) {
       char *param_name = (char *)allocate(20);
       sprintf(param_name, "---@param param%i", count);
-      emit_docs_type(arg->type, param_name, "\n");
+      emit_docs_param_type(arg->type, param_name, "\n");
       free(param_name);
       count++;
     }
@@ -2628,18 +2655,14 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
 
   // return type
   if ((method->flags & TYPE_FLAGS_NULLABLE) == 0) {
-    emit_docs_type(method->return_type, "---@return", "\n");
+    emit_docs_return_type(method->return_type, FALSE);
   }
 
   arg = method->arguments;
   // nulable and refences returns
   while (arg != NULL) {
     if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
-      if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
-        emit_docs_type(arg->type, "---@return", "|nil\n");
-      } else {
-        emit_docs_type(arg->type, "---@return", "\n");
-      }
+      emit_docs_return_type(arg->type, arg->type.flags & TYPE_FLAGS_NULLABLE);
     }
     arg = arg->next;
   }
@@ -2666,7 +2689,9 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
 
     fprintf(docs, "-- desc\n");
-    fprintf(docs, "---@class %s\n", name);
+    if (is_userdata) {
+      fprintf(docs, "---@class %s\n", name);
+    }
 
     // enums
     if (node->enums != NULL) {
@@ -2683,6 +2708,12 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
       if (emit_creation) {
         // creation function
+        if (node->creation != NULL) {
+          for (int i = 0; i < node->creation_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+        }
+
         fprintf(docs, "---@return %s\n", name);
         fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
         if (node->creation == NULL) {
@@ -2717,7 +2748,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set field\n");
-              emit_docs_type(field->type, "---@param value", "\n");
+              emit_docs_param_type(field->type, "---@param value", "\n");
               fprintf(docs, "function %s:%s(value) end\n\n", name, field->rename ? field->rename : field->name);
             }
           } else {
@@ -2731,7 +2762,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set array field\n");
               fprintf(docs, "---@param index integer\n");
-              emit_docs_type(field->type, "---@param value", "\n");
+              emit_docs_param_type(field->type, "---@param value", "\n");
               fprintf(docs, "function %s:%s(index, value) end\n\n", name, field->rename ? field->rename : field->name);
             }
           }
@@ -2764,7 +2795,17 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
       } else if (alias->type == ALIAS_TYPE_MANUAL) {
           // Cant do a great job, don't know types or return
-          fprintf(docs, "-- desc\nfunction %s:%s(", name, alias->alias);
+          fprintf(docs, "-- desc\n");
+
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+
+          for (int i = 0; i < alias->num_ret; ++i) {
+            fprintf(docs, "---@return UNKNOWN\n");
+          }
+
+          fprintf(docs, "function %s:%s(", name, alias->alias);
           for (int i = 0; i < alias->num_args; ++i) {
             fprintf(docs, "param%i", i+1);
             if (i < alias->num_args-1) {
@@ -2923,6 +2964,11 @@ int main(int argc, char **argv) {
 
   // for set_and_print_new_error_message deprecate warning
   fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
+  fprintf(source, "\n");
+  // the generated source uses the Scehduler singleton:
+  fprintf(source, "#include <AP_Scheduler/AP_Scheduler.h>\n");
+
+  fprintf(source, "extern const AP_HAL::HAL& hal;\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 
@@ -3047,7 +3093,17 @@ int main(int argc, char **argv) {
     while(alias) {
       if (alias->type == ALIAS_TYPE_MANUAL) {
           // Cant do a great job, don't know types or return
-          fprintf(docs, "-- desc\nfunction %s(", alias->alias);
+          fprintf(docs, "-- desc\n");
+
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "---@param param%i UNKNOWN\n", i+1);
+          }
+
+          for (int i = 0; i < alias->num_ret; ++i) {
+            fprintf(docs, "---@return UNKNOWN\n");
+          }
+
+          fprintf(docs, "function %s(", alias->alias);
           for (int i = 0; i < alias->num_args; ++i) {
             fprintf(docs, "param%i", i+1);
             if (i < alias->num_args-1) {

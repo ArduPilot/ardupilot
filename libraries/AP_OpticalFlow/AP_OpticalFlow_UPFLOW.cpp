@@ -74,7 +74,7 @@ AP_OpticalFlow_UPFLOW *AP_OpticalFlow_UPFLOW::detect(AP_OpticalFlow &_frontend)
     }
 
     // we have found a serial port so use it
-    AP_OpticalFlow_UPFLOW *sensor = new AP_OpticalFlow_UPFLOW(_frontend, uart);
+    AP_OpticalFlow_UPFLOW *sensor = NEW_NOTHROW AP_OpticalFlow_UPFLOW(_frontend, uart);
     return sensor;
 }
 

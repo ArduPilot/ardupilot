@@ -15,6 +15,10 @@
 #include "esp32nick.h" //Nick K. on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
 #include "esp32s3devkit.h" //Nick K. on discord
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
+#include "esp32s3empty.h"
+#else
+#error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
 #endif
 
 #define HAL_BOARD_NAME "ESP32"
@@ -35,6 +39,7 @@
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>
 #define HAL_Semaphore ESP32::Semaphore
+#define HAL_BinarySemaphore ESP32::BinarySemaphore
 #endif
 
 #define HAL_NUM_CAN_IFACES 0
@@ -102,10 +107,10 @@
 #define AP_LANDINGGEAR_ENABLED 0
 
 // disable avoid-fence-follow in copter, these all kinda need each other, so its all or none.
-#define AC_AVOID_ENABLED 0
+#define AP_AVOIDANCE_ENABLED 0
 #define AP_FENCE_ENABLED 0
 #define MODE_FOLLOW_ENABLED 0
-#define AC_OAPATHPLANNER_ENABLED 0
+#define AP_OAPATHPLANNER_ENABLED 0
 
 
 // other big things..

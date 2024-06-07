@@ -79,10 +79,10 @@ void AP_Winch::init()
     case WinchType::NONE:
         break;
     case WinchType::PWM:
-        backend = new AP_Winch_PWM(config);
+        backend = NEW_NOTHROW AP_Winch_PWM(config);
         break;
     case WinchType::DAIWA:
-        backend = new AP_Winch_Daiwa(config);
+        backend = NEW_NOTHROW AP_Winch_Daiwa(config);
         break;
     default:
         break;
@@ -159,7 +159,9 @@ bool AP_Winch::pre_arm_check(char *failmsg, uint8_t failmsg_len) const
     }
 
 PASS_TO_BACKEND(update)
+#if HAL_LOGGING_ENABLED
 PASS_TO_BACKEND(write_log)
+#endif
 
 #undef PASS_TO_BACKEND
 

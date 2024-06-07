@@ -43,7 +43,9 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::append_item(const mavlink_mission_
 
 MAV_MISSION_RESULT MissionItemProtocol_Rally::complete(const GCS_MAVLINK &_link)
 {
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_Rally();
+#endif
     return MAV_MISSION_ACCEPTED;
 }
 

@@ -22,7 +22,7 @@
 
 #if HAL_SIM_JSON_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #include "SIM_Aircraft.h"
 
 namespace SITL {
@@ -36,7 +36,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new JSON(frame_str);
+        return NEW_NOTHROW JSON(frame_str);
     }
 
     /*  Create and set in/out socket for JSON generic simulator */
@@ -64,7 +64,7 @@ private:
     // default connection_info_.sitl_ip_port
     uint16_t control_port = 9002;
 
-    SocketAPM sock;
+    SocketAPM_native sock;
 
     uint32_t frame_counter;
     double last_timestamp_s;

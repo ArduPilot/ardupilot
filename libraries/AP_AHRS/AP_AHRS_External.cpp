@@ -1,6 +1,6 @@
 #include "AP_AHRS_External.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
 
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -23,7 +23,9 @@ bool AP_AHRS_External::healthy() const {
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
     Quaternion quat;
-    if (!AP::externalAHRS().get_quaternion(quat)) {
+    auto &extahrs = AP::externalAHRS();
+    const AP_InertialSensor &_ins = AP::ins();
+    if (!extahrs.get_quaternion(quat)) {
         return;
     }
     quat.rotation_matrix(results.dcm_matrix);
@@ -31,9 +33,15 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
     results.gyro_drift.zero();
-    results.gyro_estimate = AP::externalAHRS().get_gyro();
+    if (!extahrs.get_gyro(results.gyro_estimate)) {
+        results.gyro_estimate = _ins.get_gyro();
+    }
 
-    const Vector3f accel = AP::externalAHRS().get_accel();
+    Vector3f accel;
+    if (!extahrs.get_accel(accel)) {
+        accel = _ins.get_accel();
+    }
+
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
 

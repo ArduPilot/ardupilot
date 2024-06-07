@@ -14,6 +14,7 @@
 #include "AP_OpticalFlow_UPFLOW.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,7 +40,7 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Param: _FXSCALER
     // @DisplayName: X axis optical flow scale factor correction
     // @Description: This sets the parts per thousand scale factor correction applied to the flow sensor X axis optical rate. It can be used to correct for variations in effective focal length. Each positive increment of 1 increases the scale factor applied to the X axis optical flow reading by 0.1%. Negative values reduce the scale factor.
-    // @Range: -200 +200
+    // @Range: -800 +800
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_FXSCALER", 1,  AP_OpticalFlow,    _flowScalerX,   0),
@@ -47,7 +48,7 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Param: _FYSCALER
     // @DisplayName: Y axis optical flow scale factor correction
     // @Description: This sets the parts per thousand scale factor correction applied to the flow sensor Y axis optical rate. It can be used to correct for variations in effective focal length. Each positive increment of 1 increases the scale factor applied to the Y axis optical flow reading by 0.1%. Negative values reduce the scale factor.
-    // @Range: -200 +200
+    // @Range: -800 +800
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("_FYSCALER", 2,  AP_OpticalFlow,    _flowScalerY,   0),
@@ -140,7 +141,7 @@ void AP_OpticalFlow::init(uint32_t log_bit)
         break;
     case Type::BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-        backend = new AP_OpticalFlow_Onboard(*this);
+        backend = NEW_NOTHROW AP_OpticalFlow_Onboard(*this);
 #endif
         break;
     case Type::CXOF:
@@ -155,7 +156,7 @@ void AP_OpticalFlow::init(uint32_t log_bit)
         break;
     case Type::UAVCAN:
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
-        backend = new AP_OpticalFlow_HereFlow(*this);
+        backend = NEW_NOTHROW AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
     case Type::MSP:
@@ -170,7 +171,7 @@ void AP_OpticalFlow::init(uint32_t log_bit)
         break;
     case Type::SITL:
 #if AP_OPTICALFLOW_SITL_ENABLED
-        backend = new AP_OpticalFlow_SITL(*this);
+        backend = NEW_NOTHROW AP_OpticalFlow_SITL(*this);
 #endif
         break;
     }
@@ -242,7 +243,7 @@ void AP_OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 void AP_OpticalFlow::start_calibration()
 {
     if (_calibrator == nullptr) {
-        _calibrator = new AP_OpticalFlow_Calibrator();
+        _calibrator = NEW_NOTHROW AP_OpticalFlow_Calibrator();
         if (_calibrator == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "FlowCal: failed to start");
             return;
@@ -267,6 +268,7 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
     _state = state;
     _last_update_ms = AP_HAL::millis();
 
+#if AP_AHRS_ENABLED
     // write to log and send to EKF if new data has arrived
     AP::ahrs().writeOptFlowMeas(quality(),
                                 _state.flowRate,
@@ -274,6 +276,7 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _last_update_ms,
                                 get_pos_offset(),
                                 get_height_override());
+#endif
 #if HAL_LOGGING_ENABLED
     Log_Write_Optflow();
 #endif

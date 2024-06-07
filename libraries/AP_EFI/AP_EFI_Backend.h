@@ -49,7 +49,15 @@ protected:
     int8_t get_dronecan_node_id(void) const;
     float get_coef1(void) const;
     float get_coef2(void) const;
+
+    void set_default_coef1(float coef1);
+    
     float get_ecu_fuel_density(void) const;
+
+    /*
+      linearise throttle if enabled
+     */
+    float linearise_throttle(float throttle_percent);
 
     HAL_Semaphore &get_sem(void);
 

@@ -34,6 +34,8 @@
 
 #include "AP_CAN.h"
 
+class CANSensor;
+
 class AP_CANManager
 {
 public:
@@ -63,6 +65,9 @@ public:
     // register a new driver
     bool register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver);
 
+    // register a new auxillary sensor driver for 11 bit address frames
+    bool register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sensor, uint8_t &driver_index);
+
     // returns number of active CAN Drivers
     uint8_t get_num_drivers(void) const
     {
@@ -72,7 +77,7 @@ public:
     // return driver for index i
     AP_CANDriver* get_driver(uint8_t i) const
     {
-        if (i < HAL_NUM_CAN_IFACES) {
+        if (i < ARRAY_SIZE(_drivers)) {
             return _drivers[i];
         }
         return nullptr;
@@ -92,7 +97,7 @@ public:
     // return driver type index i
     AP_CAN::Protocol get_driver_type(uint8_t i) const
     {
-        if (i < HAL_NUM_CAN_IFACES) {
+        if (i < ARRAY_SIZE(_driver_type_cache)) {
             return _driver_type_cache[i];
         }
         return AP_CAN::Protocol::None;
@@ -141,6 +146,7 @@ private:
 
     private:
         AP_Int8 _driver_type;
+        AP_Int8 _driver_type_11bit;
         AP_CANDriver* _uavcan;
         AP_CANDriver* _piccolocan;
     };

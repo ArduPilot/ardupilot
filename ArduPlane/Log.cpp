@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
@@ -33,6 +33,9 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
         logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
+
+        // Write tailsitter specific log at same rate as PIDs
+        quadplane.tailsitter.write_log();
     }
     if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_xy()) {
         logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_x());
@@ -62,9 +65,11 @@ void Plane::Log_Write_FullRate(void)
     if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     if (should_log(MASK_LOG_NOTCH_FULLRATE)) {
         AP::ins().write_notch_log_messages();
     }
+#endif
 }
 
 
@@ -173,7 +178,7 @@ void Plane::Log_Write_Nav_Tuning()
         wp_distance         : auto_state.wp_distance,
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
-        altitude_error_cm   : (int16_t)altitude_error_cm,
+        altitude_error_cm   : (int16_t)plane.calc_altitude_error_cm(),
         xtrack_error        : nav_controller->crosstrack_error(),
         xtrack_error_i      : nav_controller->crosstrack_error_integrator(),
         airspeed_error      : airspeed_error,
@@ -383,16 +388,22 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
 // @Field: TMix: transition throttle mix value
-// @Field: Sscl: speed scalar for tailsitter control surfaces
 // @Field: Trn: Transition state: 0-AirspeedWait,1-Timer,2-Done / TailSitter: 0-FW Wait,1-VTOL Wait,2-Done
-// @Field: Ast: Q assist active
+// @Field: Ast: bitmask of assistance flags
+// @FieldBitmaskEnum: Ast: log_assistance_flags
 #if HAL_QUADPLANE_ENABLED
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "QffffffeccffBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl,Trn,Ast", "s----mmmnn----", "F----00000-0--" , true },
+      "QTUN", "QffffffeccfBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Trn,Ast", "s----mmmnn---", "F----00000---" , true },
 #endif
 
-// @LoggerMessage: PIQR,PIQP,PIQY,PIQA
-// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Z
+// @LoggerMessage: PIQR
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Roll rate
+// @LoggerMessage: PIQP
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Pitch rate
+// @LoggerMessage: PIQY
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for Yaw rate
+// @LoggerMessage: PIQA
+// @Description: QuadPlane Proportional/Integral/Derivative gain values for vertical acceleration
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
@@ -401,10 +412,12 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
+// @Field: DFF: controller derivative feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
 // @Field: SRate: slew rate
 // @Field: Flags: bitmask of PID state flags
 // @FieldBitmaskEnum: Flags: log_PID_Flags
+#if HAL_QUADPLANE_ENABLED
     { LOG_PIQR_MSG, sizeof(log_PID),
       "PIQR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true },
     { LOG_PIQP_MSG, sizeof(log_PID),
@@ -413,6 +426,29 @@ const struct LogStructure Plane::log_structure[] = {
       "PIQY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true },
     { LOG_PIQA_MSG, sizeof(log_PID),
       "PIQA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true },
+#endif
+
+// @LoggerMessage: TSIT
+// @Description: tailsitter speed scailing values
+// @Field: TimeUS: Time since system startup
+// @Field: Ts: throttle scailing used for tilt motors
+// @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
+// @Field: Tmin: minimum output throttle caculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
+#if HAL_QUADPLANE_ENABLED
+    { LOG_TSIT_MSG, sizeof(Tailsitter::log_tailsitter),
+      "TSIT", "Qfff",  "TimeUS,Ts,Ss,Tmin", "s---", "F---" , true },
+#endif
+
+// @LoggerMessage: TILT
+// @Description: Tiltrotor tilt values
+// @Field: TimeUS: Time since system startup
+// @Field: Tilt: Current tilt angle, 0 deg vertical, 90 deg horizontal
+// @Field: FL: Front left tilt angle, 0 deg vertical, 90 deg horizontal
+// @Field: FR: Front right tilt angle, 0 deg vertical, 90 deg horizontal
+#if HAL_QUADPLANE_ENABLED
+    { LOG_TILT_MSG, sizeof(Tiltrotor::log_tiltrotor),
+      "TILT", "Qfff",  "TimeUS,Tilt,FL,FR", "sddd", "F---" , true },
+#endif
 
 // @LoggerMessage: PIDG
 // @Description: Plane Proportional/Integral/Derivative gain values for Heading when using COMMAND_INT control.
@@ -424,6 +460,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: I: integral part of PID
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
+// @Field: DFF: controller derivative feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
 // @Field: SRate: slew rate
 // @Field: Flags: bitmask of PID state flags
@@ -460,6 +497,11 @@ const struct LogStructure Plane::log_structure[] = {
 #endif
 };
 
+uint8_t Plane::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -475,26 +517,4 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
-/*
-  initialise logging subsystem
- */
-void Plane::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
-
-#else // LOGGING_ENABLED
-
-void Plane::Log_Write_Attitude(void) {}
-void Plane::Log_Write_Fast(void) {}
-void Plane::Log_Write_Control_Tuning() {}
-void Plane::Log_Write_OFG_Guided() {}
-void Plane::Log_Write_Nav_Tuning() {}
-void Plane::Log_Write_Status() {}
-void Plane::Log_Write_Guided(void) {}
-void Plane::Log_Write_RC(void) {}
-void Plane::Log_Write_Vehicle_Startup_Messages() {}
-
-void Plane::log_init(void) {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

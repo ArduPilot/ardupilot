@@ -31,7 +31,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new BalanceBot(frame_str);
+        return NEW_NOTHROW BalanceBot(frame_str);
     }
 
 private:

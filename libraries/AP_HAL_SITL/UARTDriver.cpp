@@ -36,6 +36,7 @@
 #include <sys/select.h>
 #include <termios.h>
 #include <sys/time.h>
+#include <arpa/inet.h>
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
@@ -45,6 +46,7 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Common/ExpandingString.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -56,11 +58,17 @@ bool UARTDriver::_console;
 
 void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
-    if (_portNumber >= ARRAY_SIZE(_sitlState->_uart_path)) {
-        AP_HAL::panic("port number out of range; you may need to extend _sitlState->_uart_path");
+    if (baud == 0 && rxSpace == 0 && txSpace == 0) {
+        // this is a claim of the uart for the current thread, which
+        // is currently not implemented in SITL
+        return;
     }
 
-    const char *path = _sitlState->_uart_path[_portNumber];
+    if (_portNumber >= ARRAY_SIZE(_sitlState->_serial_path)) {
+        AP_HAL::panic("port number out of range; you may need to extend _sitlState->_serial_path");
+    }
+
+    const char *path = _sitlState->_serial_path[_portNumber];
 
     if (baud != 0) {
         _uart_baudrate = baud;
@@ -69,11 +77,11 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "");
+        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "", _portNumber);
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "");
+        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "", _portNumber);
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -95,13 +103,13 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        if (_portNumber == 2 && AP::sitl()->adsb_plane_count >= 0) {
+        if (_portNumber == 1 && AP::sitl()->adsb_plane_count >= 0) {
             // this is ordinarily port 5762.  The ADSB simulation assumed
             // this port, so if enabled we assume we'll be doing ADSB...
             // add sanity check here that we're doing mavlink on this port?
-            ::printf("SIM-ADSB connection on port %u\n", _portNumber);
+            ::printf("SIM-ADSB connection on SERIAL%u\n", _portNumber);
             _connected = true;
-            _sim_serial_device = _sitlState->create_serial_sim("adsb", nullptr);
+            _sim_serial_device = _sitlState->create_serial_sim("adsb", nullptr, _portNumber);
         } else
 #endif
         if (strcmp(devtype, "tcp") == 0) {
@@ -122,9 +130,9 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_start_connection();
         } else if (strcmp(devtype, "sim") == 0) {
             if (!_connected) {
-                ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
+                ::printf("SIM connection %s:%s on SERIAL%u\n", args1, args2, _portNumber);
                 _connected = true;
-                _sim_serial_device = _sitlState->create_serial_sim(args1, args2);
+                _sim_serial_device = _sitlState->create_serial_sim(args1, args2, _portNumber);
             }
         } else if (strcmp(devtype, "udpclient") == 0) {
             // udp client connection
@@ -151,6 +159,16 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             }
             ::printf("FILE connection %s\n", args1);
             _fd = AP::FS().open(args1, O_RDONLY);
+            if (_fd == -1) {
+                AP_HAL::panic("Failed to open (%s): %m", args1);
+            }
+            _connected = true;
+        } else if (strcmp(devtype, "outfile") == 0) {
+            if (_connected) {
+                AP::FS().close(_fd);
+            }
+            ::printf("FILE output connection %s\n", args1);
+            _fd = AP::FS().open(args1, O_WRONLY|O_CREAT|O_TRUNC, 0644);
             if (_fd == -1) {
                 AP_HAL::panic("Failed to open (%s): %m", args1);
             }
@@ -210,7 +228,9 @@ uint32_t UARTDriver::txspace(void)
 
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
-    return _readbuffer.read(buffer, count);
+    const ssize_t ret = _readbuffer.read(buffer, count);
+    _rx_stats_bytes += ret;
+    return ret;
 }
 
 bool UARTDriver::_discard_input(void)
@@ -267,6 +287,8 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
         }
 #endif // HAL_BUILD_AP_PERIPH
 
+    // Include lost byte in tx count, we think we sent it even though it was never added to the write buffer
+    _tx_stats_bytes += lost_byte;
 
     const size_t ret = _writebuffer.write(buffer, size - lost_byte) + lost_byte;
     if (_unbuffered_writes) {
@@ -284,6 +306,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
     int ret;
+    struct sockaddr_in _listen_sockaddr {};
 
     if (_connected) {
         return;
@@ -334,7 +357,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             exit(1);
         }
 
-        fprintf(stderr, "bind port %u for %u\n",
+        fprintf(stderr, "bind port %u for SERIAL%u\n",
                 (unsigned)ntohs(_listen_sockaddr.sin_port),
                 (unsigned)_portNumber);
 
@@ -352,7 +375,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             exit(1);
         }
 
-        fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber,
+        fprintf(stderr, "SERIAL%u on TCP port %u\n", _portNumber,
                 (unsigned)ntohs(_listen_sockaddr.sin_port));
         fflush(stdout);
     }
@@ -379,20 +402,18 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
  */
 void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
-    int one=1;
-    struct sockaddr_in sockaddr;
-    int ret;
 
     if (_connected) {
         return;
     }
 
     _use_send_recv = true;
-    
+
     if (_fd != -1) {
         close(_fd);
     }
 
+    struct sockaddr_in sockaddr;
     memset(&sockaddr,0,sizeof(sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
@@ -402,22 +423,36 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     sockaddr.sin_family = AF_INET;
     sockaddr.sin_addr.s_addr = inet_addr(address);
 
-    _fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (_fd == -1) {
-        fprintf(stderr, "socket failed - %s\n", strerror(errno));
-        exit(1);
-    }
-    ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
-    if (ret == -1) {
-        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
-        exit(1);
+    constexpr auto one=1;
+    int ret;
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        _fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (_fd == -1) {
+            fprintf(stderr, "socket failed - %s\n", strerror(errno));
+            exit(1);
+        }
+        ret = fcntl(_fd, F_SETFD, FD_CLOEXEC);
+        if (ret == -1) {
+            fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+            exit(1);
+        }
+
+        /* we want to be able to re-use ports quickly */
+        setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+
+        ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+        if (ret == 0) {
+            break;
+        }
+        fprintf(stderr, "connect failed on port %u - %s at %d retrying\n",
+                (unsigned) ntohs(sockaddr.sin_port), strerror(errno), AP_HAL::millis());
+        close(_fd);
+        // If connection failed, wait for a bit before retrying
+        sleep(1);
     }
 
-    /* we want to be able to re-use ports quickly */
-    setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-
-    ret = connect(_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
+        close(_fd);
         fprintf(stderr, "connect failed on port %u - %s\n",
                 (unsigned)ntohs(sockaddr.sin_port),
                 strerror(errno));
@@ -428,6 +463,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
     fcntl(_fd, F_SETFD, FD_CLOEXEC);
     _connected = true;
+    fprintf(stdout, "New remote connection on serial port %u, p %u at %d\n", _portNumber, (unsigned) ntohs(sockaddr.sin_port), AP_HAL::millis());
 }
 
 
@@ -630,7 +666,7 @@ void UARTDriver::_check_connection(void)
             setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
             setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
             fcntl(_fd, F_SETFD, FD_CLOEXEC);
-            fprintf(stdout, "New connection on serial port %u\n", _portNumber);
+            fprintf(stdout, "New connection on SERIAL%u\n", _portNumber);
         }
     }
 }
@@ -781,6 +817,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
 
 void UARTDriver::handle_writing_from_writebuffer_to_device()
 {
+    WITH_SEMAPHORE(write_mtx);
     if (!_connected) {
         _check_reconnect();
         return;
@@ -791,13 +828,11 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
     SITL::SIM *_sitl = AP::sitl();
     if (_sitl && _sitl->telem_baudlimit_enable) {
         // limit byte rate to configured baudrate
-        uint32_t now = AP_HAL::micros();
-        float dt = 1.0e-6 * (now - last_write_tick_us);
-        max_bytes = _uart_baudrate * dt / 10;
+        // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
+        max_bytes = baud_limits.write.max_bytes(float(_uart_baudrate) * 0.1);
         if (max_bytes == 0) {
             return;
         }
-        last_write_tick_us = now;
     }
 #endif
     if (_packetise) {
@@ -815,6 +850,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             ssize_t ret = send(_fd, tmpbuf, n, MSG_DONTWAIT);
             if (ret > 0) {
                 _writebuffer.advance(ret);
+                _tx_stats_bytes += ret;
             }
         }
     } else {
@@ -836,6 +872,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             }
             if (nwritten > 0) {
                 _writebuffer.advance(nwritten);
+                _tx_stats_bytes += nwritten;
             }
         }
     }
@@ -858,13 +895,11 @@ void UARTDriver::handle_reading_from_device_to_readbuffer()
     SITL::SIM *_sitl = AP::sitl();
     if (_sitl && _sitl->telem_baudlimit_enable) {
         // limit byte rate to configured baudrate
-        uint32_t now = AP_HAL::micros();
-        float dt = 1.0e-6 * (now - last_read_tick_us);
-        max_bytes = _uart_baudrate * dt / 10;
+        // Byte rate is bit rate divided by 10. 8 bits of data + start/stop bits
+        max_bytes = baud_limits.read.max_bytes(float(_uart_baudrate) * 0.1);
         if (max_bytes == 0) {
             return;
         }
-        last_read_tick_us = now;
     }
 #endif
 
@@ -917,7 +952,7 @@ void UARTDriver::handle_reading_from_device_to_readbuffer()
             close(_fd);
             _fd = -1;
             _connected = false;
-            fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
+            fprintf(stdout, "Closed connection on SERIAL%u\n", _portNumber);
             fflush(stdout);
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
             if (_portNumber == 0) {
@@ -989,9 +1024,32 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 
 uint32_t UARTDriver::bw_in_bytes_per_second() const
 {
-    // if connected, assume at least a 10/100Mbps connection
-    const uint32_t bitrate = (_connected && _tcp_client_addr != nullptr) ? 10E6 : _uart_baudrate;
+    // if connected, assume at least a 10/100Mbps connection if not limited
+    bool baud_limit = false;
+#if !defined(HAL_BUILD_AP_PERIPH)
+    SITL::SIM *_sitl = AP::sitl();
+    baud_limit = (_sitl != nullptr) && _sitl->telem_baudlimit_enable;
+#endif
+    const uint32_t bitrate = (_connected && !baud_limit) ? 10E6 : _uart_baudrate;
     return bitrate/10; // convert bits to bytes minus overhead
 };
+
+#if HAL_UART_STATS_ENABLED
+// request information on uart I/O for @SYS/uarts.txt for this uart
+void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms)
+{
+    const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
+    const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+
+    str.printf("TX=%8u RX=%8u TXBD=%6u RXBD=%6u %s (%s)\n",
+                unsigned(tx_bytes),
+                unsigned(rx_bytes),
+                unsigned((tx_bytes * 10000) / dt_ms),
+                unsigned((rx_bytes * 10000) / dt_ms),
+                _connected ? "connected    " : "not connected",
+                _sitlState->_serial_path[_portNumber]);
+}
+#endif
+
 #endif // CONFIG_HAL_BOARD
 

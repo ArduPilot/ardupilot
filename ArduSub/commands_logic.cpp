@@ -7,22 +7,28 @@ static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCAT
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
     // To-Do: logging when new commands start/end
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     const Location &target_loc = cmd.content.location;
+    auto alt_frame = target_loc.get_alt_frame();
 
-    // target alt must be negative (underwater)
-    if (target_loc.alt > 0.0f) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV ALT %0.2f", (double)target_loc.alt);
-        return false;
-    }
-
-    // only tested/supported alt frame so far is AltFrame::ABOVE_HOME, where Home alt is always water's surface ie zero depth
-    if (target_loc.get_alt_frame() != Location::AltFrame::ABOVE_HOME) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "BAD NAV AltFrame %d", (int8_t)target_loc.get_alt_frame());
+    if (alt_frame == Location::AltFrame::ABOVE_HOME) {
+        if (target_loc.alt > 0) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt above home must be negative");
+            return false;
+        }
+    } else if (alt_frame == Location::AltFrame::ABOVE_TERRAIN) {
+        if (target_loc.alt < 0) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Alt above terrain must be positive");
+            return false;
+        }
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Bad alt frame");
         return false;
     }
 
@@ -109,6 +115,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 
     default:
         // unable to use the command, allow the vehicle to try the next command
+        gcs().send_text(MAV_SEVERITY_WARNING, "Ignoring command %d", cmd.id);
         return false;
     }
 
@@ -347,7 +354,7 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
         } else {
             // default to current altitude above origin
             circle_center.set_alt_cm(current_loc.alt, current_loc.get_alt_frame());
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
         }
     }
 
@@ -537,9 +544,10 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
         }
         return false;
     }
+    const float turns = cmd.get_loiter_turns();
 
     // check if we have completed circling
-    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
 }
 
 #if NAV_GUIDED == ENABLED
@@ -671,10 +679,8 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
             // silently ignore this failure
         }
     } else {
-        if (!far_from_EKF_origin(cmd.content.location)) {
-            if (!set_home(cmd.content.location, false)) {
-                // silently ignore this failure
-            }
+        if (!set_home(cmd.content.location, false)) {
+            // silently ignore this failure
         }
     }
 }

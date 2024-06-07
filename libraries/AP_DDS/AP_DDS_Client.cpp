@@ -1,11 +1,13 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #if AP_DDS_ENABLED
+#include <uxr/client/util/ping.h>
 
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -30,10 +32,13 @@
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
+static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = 1000;
+static constexpr uint16_t DELAY_PING_MS = 500;
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -41,6 +46,7 @@ static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
+ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
@@ -60,12 +66,36 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @Range: 1 65535
     // @RebootRequired: True
     // @User: Standard
-    AP_GROUPINFO("_PORT", 2, AP_DDS_Client, udp.port, 2019),
+    AP_GROUPINFO("_UDP_PORT", 2, AP_DDS_Client, udp.port, 2019),
+
+    // @Group: _IP
+    // @Path: ../AP_Networking/AP_Networking_address.cpp
+    AP_SUBGROUPINFO(udp.ip, "_IP", 3,  AP_DDS_Client, AP_Networking_IPV4),
 
 #endif
 
     AP_GROUPEND
 };
+
+static void initialize(geometry_msgs_msg_Quaternion& q)
+{
+    q.x = 0.0;
+    q.y = 0.0;
+    q.z = 0.0;
+    q.w = 1.0;
+}
+
+AP_DDS_Client::~AP_DDS_Client()
+{
+    // close transport
+    if (is_using_serial) {
+        uxr_close_custom_transport(&serial.transport);
+    } else {
+#if AP_DDS_UDP_ENABLED
+        uxr_close_custom_transport(&udp.transport);
+#endif
+    }
+}
 
 void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 {
@@ -204,6 +234,9 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms[i].transform.translation.y = -1 * offset[1];
         msg.transforms[i].transform.translation.z = -1 * offset[2];
 
+        // Ensure rotation is initialized.
+        initialize(msg.transforms[i].transform.rotation);
+
         msg.transforms_size++;
     }
 
@@ -315,6 +348,8 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
+    } else {
+        initialize(msg.pose.orientation);
     }
 }
 
@@ -372,6 +407,8 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     if (ahrs.get_location(loc)) {
         msg.pose.position.latitude = loc.lat * 1E-7;
         msg.pose.position.longitude = loc.lng * 1E-7;
+        // TODO this is assumed to be absolute frame in WGS-84 as per the GeoPose message definition in ROS.
+        // Use loc.get_alt_frame() to convert if necessary.
         msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
     }
 
@@ -392,12 +429,70 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
+    } else {
+        initialize(msg.pose.orientation);
     }
+}
+
+void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_NED_FRAME_ID);
+
+    auto &imu = AP::ins();
+    auto &ahrs = AP::ahrs();
+
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    Quaternion orientation;
+    if (ahrs.get_quaternion(orientation)) {
+        msg.orientation.x = orientation[0];
+        msg.orientation.y = orientation[1];
+        msg.orientation.z = orientation[2];
+        msg.orientation.w = orientation[3];
+    } else {
+        initialize(msg.orientation);
+    }
+    msg.orientation_covariance[0] = -1;
+
+    uint8_t accel_index = ahrs.get_primary_accel_index();
+    uint8_t gyro_index = ahrs.get_primary_gyro_index();
+    const Vector3f accel_data = imu.get_accel(accel_index);
+    const Vector3f gyro_data = imu.get_gyro(gyro_index);
+
+    // Populate the message fields
+    msg.linear_acceleration.x = accel_data.x;
+    msg.linear_acceleration.y = accel_data.y;
+    msg.linear_acceleration.z = accel_data.z;
+
+    msg.angular_velocity.x = gyro_data.x;
+    msg.angular_velocity.y = gyro_data.y;
+    msg.angular_velocity.z = gyro_data.z;
+    msg.angular_velocity_covariance[0] = -1;
+    msg.linear_acceleration_covariance[0] = -1;
 }
 
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
     update_topic(msg.clock);
+}
+
+void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    Location ekf_origin;
+    // LLA is WGS-84 geodetic coordinate.
+    // Altitude converted from cm to m.
+    if (ahrs.get_origin(ekf_origin)) {
+        msg.position.latitude = ekf_origin.lat * 1E-7;
+        msg.position.longitude = ekf_origin.lng * 1E-7;
+        msg.position.altitude = ekf_origin.alt * 0.01;
+    }
 }
 
 /*
@@ -486,6 +581,19 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+    case topics[to_underlying(TopicIndex::GLOBAL_POSITION_SUB)].dr_id.id: {
+        const bool success = ardupilot_msgs_msg_GlobalPosition_deserialize_topic(ub, &rx_global_position_control_topic);
+        if (success == false) {
+            break;
+        }
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::handle_global_position_control(rx_global_position_control_topic)) {
+            // TODO #23430 handle global position control failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
+        break;
+    }
     }
 
 }
@@ -569,22 +677,83 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
  */
 void AP_DDS_Client::main_loop(void)
 {
-    if (!init() || !create()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
+    if (!init_transport()) {
         return;
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
-    populate_static_transforms(tx_static_transforms_topic);
-    write_static_transforms();
-
+    //! @todo check for request to stop task
     while (true) {
-        hal.scheduler->delay(1);
-        update();
+        if (comm == nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s transport invalid, exiting", msg_prefix);
+            return;
+        }
+
+        // check ping
+        const uint64_t ping_timeout_ms{1000};
+        const uint8_t ping_max_attempts{10};
+        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
+            return;
+        }
+
+        // create session
+        if (!init_session() || !create()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
+            return;
+        }
+        connected = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
+
+        populate_static_transforms(tx_static_transforms_topic);
+        write_static_transforms();
+
+        uint64_t last_ping_ms{0};
+        uint8_t num_pings_missed{0};
+        bool had_ping_reply{false};
+        while (connected) {
+            hal.scheduler->delay(1);
+
+            // publish topics
+            update();
+
+            // check ping response
+            if (session.on_pong_flag == PONG_IN_SESSION_STATUS) {
+                had_ping_reply = true;
+            }
+
+            const auto cur_time_ms = AP_HAL::millis64();
+            if (cur_time_ms - last_ping_ms > DELAY_PING_MS) {
+                last_ping_ms = cur_time_ms;
+
+                if (had_ping_reply) {
+                    num_pings_missed = 0;
+
+                } else {
+                    ++num_pings_missed;
+                }
+
+                const int ping_agent_timeout_ms{0};
+                const uint8_t ping_agent_attempts{1};
+                uxr_ping_agent_session(&session, ping_agent_timeout_ms, ping_agent_attempts);
+
+                had_ping_reply = false;
+            }
+
+            if (num_pings_missed > 2) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                              "%s No ping response, disconnecting", msg_prefix);
+                connected = false;
+            }
+        }
+
+        // delete session if connected
+        if (connected) {
+            uxr_delete_session(&session);
+        }
     }
 }
 
-bool AP_DDS_Client::init()
+bool AP_DDS_Client::init_transport()
 {
     // serial init will fail if the SERIALn_PROTOCOL is not setup
     bool initTransportStatus = ddsSerialInit();
@@ -602,6 +771,14 @@ bool AP_DDS_Client::init()
         return false;
     }
 
+    return true;
+}
+
+bool AP_DDS_Client::init_session()
+{
+    // init session
+    uxr_init_session(&session, comm, key);
+
     // Register topic callbacks
     uxr_set_topic_callback(&session, AP_DDS_Client::on_topic_trampoline, this);
 
@@ -614,8 +791,8 @@ bool AP_DDS_Client::init()
     }
 
     // setup reliable stream buffers
-    input_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
-    output_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
+    input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
@@ -638,14 +815,16 @@ bool AP_DDS_Client::create()
         .id = 0x01,
         .type = UXR_PARTICIPANT_ID
     };
-    const char* participant_ref = "participant_profile";
-    const auto participant_req_id = uxr_buffer_create_participant_ref(&session, reliable_out, participant_id,0,participant_ref,UXR_REPLACE);
+    const char* participant_name = "ardupilot_dds";
+    const uint16_t domain_id = 0;
+    const auto participant_req_id = uxr_buffer_create_participant_bin(&session, reliable_out, participant_id,
+                                    domain_id, participant_name, UXR_REPLACE);
 
     //Participant requests
     constexpr uint8_t nRequestsParticipant = 1;
     const uint16_t requestsParticipant[nRequestsParticipant] = {participant_req_id};
 
-    constexpr uint8_t maxTimeMsPerRequestMs = 250;
+    constexpr uint16_t maxTimeMsPerRequestMs = 500;
     constexpr uint16_t requestTimeoutParticipantMs = (uint16_t) nRequestsParticipant * maxTimeMsPerRequestMs;
     uint8_t statusParticipant[nRequestsParticipant];
     if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
@@ -660,8 +839,8 @@ bool AP_DDS_Client::create()
             .id = topics[i].topic_id,
             .type = UXR_TOPIC_ID
         };
-        const char* topic_ref = topics[i].topic_profile_label;
-        const auto topic_req_id = uxr_buffer_create_topic_ref(&session,reliable_out,topic_id,participant_id,topic_ref,UXR_REPLACE);
+        const auto topic_req_id = uxr_buffer_create_topic_bin(&session, reliable_out, topic_id,
+                                  participant_id, topics[i].topic_name, topics[i].type_name, UXR_REPLACE);
 
         // Status requests
         constexpr uint8_t nRequests = 3;
@@ -669,18 +848,18 @@ bool AP_DDS_Client::create()
         constexpr uint16_t requestTimeoutMs = nRequests * maxTimeMsPerRequestMs;
         uint8_t status[nRequests];
 
-        if (strlen(topics[i].dw_profile_label) > 0) {
+        if (topics[i].topic_rw == Topic_rw::DataWriter) {
             // Publisher
             const uxrObjectId pub_id = {
                 .id = topics[i].pub_id,
                 .type = UXR_PUBLISHER_ID
             };
-            const char* pub_xml = "";
-            const auto pub_req_id = uxr_buffer_create_publisher_xml(&session,reliable_out,pub_id,participant_id,pub_xml,UXR_REPLACE);
+            const auto pub_req_id = uxr_buffer_create_publisher_bin(&session, reliable_out, pub_id,
+                                    participant_id, UXR_REPLACE);
 
             // Data Writer
-            const char* data_writer_ref = topics[i].dw_profile_label;
-            const auto dwriter_req_id = uxr_buffer_create_datawriter_ref(&session,reliable_out,topics[i].dw_id,pub_id,data_writer_ref,UXR_REPLACE);
+            const auto dwriter_req_id = uxr_buffer_create_datawriter_bin(&session, reliable_out, topics[i].dw_id,
+                                        pub_id, topic_id, topics[i].qos, UXR_REPLACE);
 
             // save the request statuses
             requests[0] = topic_req_id;
@@ -697,18 +876,18 @@ bool AP_DDS_Client::create()
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Pub/Writer session pass for index '%u'", msg_prefix, i);
             }
-        } else if (strlen(topics[i].dr_profile_label) > 0) {
+        } else if (topics[i].topic_rw == Topic_rw::DataReader) {
             // Subscriber
             const uxrObjectId sub_id = {
                 .id = topics[i].sub_id,
                 .type = UXR_SUBSCRIBER_ID
             };
-            const char* sub_xml = "";
-            const auto sub_req_id = uxr_buffer_create_subscriber_xml(&session,reliable_out,sub_id,participant_id,sub_xml,UXR_REPLACE);
+            const auto sub_req_id = uxr_buffer_create_subscriber_bin(&session, reliable_out, sub_id,
+                                    participant_id, UXR_REPLACE);
 
             // Data Reader
-            const char* data_reader_ref = topics[i].dr_profile_label;
-            const auto dreader_req_id = uxr_buffer_create_datareader_ref(&session,reliable_out,topics[i].dr_id,sub_id,data_reader_ref,UXR_REPLACE);
+            const auto dreader_req_id = uxr_buffer_create_datareader_bin(&session, reliable_out, topics[i].dr_id,
+                                        sub_id, topic_id, topics[i].qos, UXR_REPLACE);
 
             // save the request statuses
             requests[0] = topic_req_id;
@@ -735,13 +914,14 @@ bool AP_DDS_Client::create()
 
         constexpr uint16_t requestTimeoutMs = maxTimeMsPerRequestMs;
 
-        if (strlen(services[i].rep_profile_label) > 0) {
+        if (services[i].service_rr == Service_rr::Replier) {
             const uxrObjectId rep_id = {
                 .id = services[i].rep_id,
                 .type = UXR_REPLIER_ID
             };
-            const char* replier_ref = services[i].rep_profile_label;
-            const auto  replier_req_id = uxr_buffer_create_replier_ref(&session, reliable_out, rep_id, participant_id, replier_ref, UXR_REPLACE);
+            const auto replier_req_id = uxr_buffer_create_replier_bin(&session, reliable_out, rep_id,
+                                        participant_id, services[i].service_name, services[i].request_type, services[i].reply_type,
+                                        services[i].request_topic_name, services[i].reply_topic_name, services[i].qos, UXR_REPLACE);
 
             uint16_t request = replier_req_id;
             uint8_t status;
@@ -756,7 +936,7 @@ bool AP_DDS_Client::create()
                 uxr_buffer_request_data(&session, reliable_out, rep_id, reliable_in, &delivery_control);
             }
 
-        } else if (strlen(services[i].req_profile_label) > 0) {
+        } else if (services[i].service_rr == Service_rr::Requester) {
             // TODO : Add Similar Code for Requester Profile
         }
     }
@@ -854,6 +1034,21 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 
+void AP_DDS_Client::write_imu_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = sensor_msgs_msg_Imu_size_of_topic(&imu_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::IMU_PUB)].dw_id, &ub, topic_size);
+        const bool success = sensor_msgs_msg_Imu_serialize_topic(&ub, &imu_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -879,6 +1074,20 @@ void AP_DDS_Client::write_clock_topic()
         const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_gps_global_origin_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&gps_global_origin_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB)].dw_id, &ub, topic_size);
+        const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &gps_global_origin_topic);
+        if (!success) {
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
         }
     }
@@ -919,6 +1128,12 @@ void AP_DDS_Client::update()
         write_tx_local_velocity_topic();
     }
 
+    if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
+        update_topic(imu_topic);
+        last_imu_time_ms = cur_time_ms;
+        write_imu_topic();
+    }
+
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
@@ -931,7 +1146,13 @@ void AP_DDS_Client::update()
         write_clock_topic();
     }
 
-    connected = uxr_run_session_time(&session, 1);
+    if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
+        update_topic(gps_global_origin_topic);
+        last_gps_global_origin_time_ms = cur_time_ms;
+        write_gps_global_origin_topic();
+    }
+
+    status_ok = uxr_run_session_time(&session, 1);
 }
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL

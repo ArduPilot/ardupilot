@@ -15,7 +15,7 @@
 /*
   Simulated CRSF device
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:crsf --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:crsf --speedup=1
 
 param set SERIAL5_PROTOCOL 23
 reboot

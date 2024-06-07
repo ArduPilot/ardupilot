@@ -1,0 +1,60 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/GlobalPosition.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Twist.idl"
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    module GlobalPosition_Constants {
+      const uint8 FRAME_GLOBAL_INT = 5;
+      const uint8 FRAME_GLOBAL_REL_ALT = 6;
+      const uint8 FRAME_GLOBAL_TERRAIN_ALT = 11;
+      @verbatim (language="comment", text=
+        "Position ignore flags")
+      const uint16 IGNORE_LATITUDE = 1;
+      const uint16 IGNORE_LONGITUDE = 2;
+      const uint16 IGNORE_ALTITUDE = 4;
+      @verbatim (language="comment", text=
+        "Velocity vector ignore flags")
+      const uint16 IGNORE_VX = 8;
+      const uint16 IGNORE_VY = 16;
+      const uint16 IGNORE_VZ = 32;
+      @verbatim (language="comment", text=
+        "Acceleration/Force vector ignore flags")
+      const uint16 IGNORE_AFX = 64;
+      const uint16 IGNORE_AFY = 128;
+      const uint16 IGNORE_AFZ = 256;
+      @verbatim (language="comment", text=
+        "Force in af vector flag")
+      const uint16 FORCE = 512;
+      const uint16 IGNORE_YAW = 1024;
+      const uint16 IGNORE_YAW_RATE = 2048;
+    };
+    @verbatim (language="comment", text=
+      "Experimental REP-147 Goal Interface" "\n"
+      "https://ros.org/reps/rep-0147.html#goal-interface")
+    struct GlobalPosition {
+      std_msgs::msg::Header header;
+
+      uint8 coordinate_frame;
+
+      uint16 type_mask;
+
+      double latitude;
+
+      double longitude;
+
+      @verbatim (language="comment", text=
+        "in meters, AMSL or above terrain")
+      float altitude;
+
+      geometry_msgs::msg::Twist velocity;
+
+      geometry_msgs::msg::Twist acceleration_or_force;
+
+      float yaw;
+    };
+  };
+};

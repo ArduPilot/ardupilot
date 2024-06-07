@@ -5,6 +5,7 @@
 #include <Filter/Filter.h>         // filter library
 #include <Filter/DerivativeFilter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
@@ -264,7 +265,7 @@ public:
     bool is_brushed_pwm_type() const { return _pwm_type == PWM_TYPE_BRUSHED; }
 
     // returns true is pwm type is normal
-    bool is_normal_pwm_type() const { return (_pwm_type == PWM_TYPE_NORMAL) || (_pwm_type == PWM_TYPE_PWM_RANGE); }
+    bool is_normal_pwm_type() const { return (_pwm_type == PWM_TYPE_NORMAL) || (_pwm_type == PWM_TYPE_PWM_RANGE) || (_pwm_type == PWM_TYPE_PWM_ANGLE); }
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
@@ -275,8 +276,10 @@ public:
     void set_frame_string(const char * str);
 #endif
 
+#if HAL_LOGGING_ENABLED
     // write log, to be called at 10hz
     virtual void Log_Write() {};
+#endif
 
     enum MotorOptions : uint8_t {
         BATT_RAW_VOLTAGE = (1 << 0U)
@@ -330,8 +333,15 @@ protected:
     // mask of what channels need fast output
     uint32_t            _motor_fast_mask;
 
-    // mask of what channels need to use SERVOn_MIN/MAX for output mapping
-    uint32_t            _motor_pwm_range_mask;
+    // Used with PWM_TYPE_PWM_RANGE and PWM_TYPE_PWM_ANGLE
+    struct {
+        // Mask of motors using scaled output
+        uint32_t mask;
+
+        // Offset used to convert from PWM to scaled value
+        float offset;
+    } _motor_pwm_scaled;
+
     
     // pass through variables
     float _roll_radio_passthrough;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
@@ -351,15 +361,18 @@ protected:
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
-    enum pwm_type { PWM_TYPE_NORMAL     = 0,
-                    PWM_TYPE_ONESHOT    = 1,
-                    PWM_TYPE_ONESHOT125 = 2,
-                    PWM_TYPE_BRUSHED    = 3,
-                    PWM_TYPE_DSHOT150   = 4,
-                    PWM_TYPE_DSHOT300   = 5,
-                    PWM_TYPE_DSHOT600   = 6,
-                    PWM_TYPE_DSHOT1200  = 7,
-                    PWM_TYPE_PWM_RANGE  = 8 };
+    enum pwm_type {
+        PWM_TYPE_NORMAL     = 0,
+        PWM_TYPE_ONESHOT    = 1,
+        PWM_TYPE_ONESHOT125 = 2,
+        PWM_TYPE_BRUSHED    = 3,
+        PWM_TYPE_DSHOT150   = 4,
+        PWM_TYPE_DSHOT300   = 5,
+        PWM_TYPE_DSHOT600   = 6,
+        PWM_TYPE_DSHOT1200  = 7,
+        PWM_TYPE_PWM_RANGE  = 8,
+        PWM_TYPE_PWM_ANGLE  = 9
+    };
 
     // return string corresponding to frame_class
     virtual const char* _get_frame_string() const = 0;

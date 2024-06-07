@@ -5,6 +5,13 @@
    assistance from Paul Riseborough, testing by Henry Wurzburg
 ]]--
 -- luacheck: ignore 212 (Unused argument)
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-global
+---@diagnostic disable: inject-field
 
 -- setup param block for aerobatics, reserving 35 params beginning with AERO_
 local PARAM_TABLE_KEY = 70
@@ -276,7 +283,7 @@ end
 
 ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
-ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
+AIRSPEED_MIN = Parameter("AIRSPEED_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
 SYSID_THISMAV = Parameter("SYSID_THISMAV")
 
@@ -385,7 +392,7 @@ local DO_JUMP = 177
 local k_throttle = 70
 local NAME_FLOAT_RATE = 2
 
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local AIRSPEED_CRUISE = Parameter("AIRSPEED_CRUISE")
 
 local last_id = 0
 local current_task = nil
@@ -2010,7 +2017,7 @@ end
    velocity at the start of the maneuver
 --]]
 function target_groundspeed()
-   return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
+   return math.max(ahrs:get_EAS2TAS()*AIRSPEED_CRUISE:get(), ahrs:get_velocity_NED():length())
 end
 
 --[[
@@ -2130,8 +2137,10 @@ function log_pose(logname, pos, quat)
                 math.deg(quat:get_euler_yaw()))
 end
 
-
-function log_position(logname, loc, quat)
+--[[
+   get GPS week and MS, coping with crossing a week boundary
+--]]
+function get_gps_times()
    local gps_last_fix_ms1 = gps:last_fix_time_ms(0)
    local gps_week = gps:time_week(0)
    local gps_week_ms = gps:time_week_ms(0)
@@ -2144,6 +2153,11 @@ function log_position(logname, loc, quat)
       gps_week_ms = gps:time_week_ms(0)
    end
    gps_week_ms = gps_week_ms + (now_ms - gps_last_fix_ms2)
+   return gps_week, gps_week_ms
+end
+
+function log_position(logname, loc, quat)
+   local gps_week, gps_week_ms = get_gps_times()
 
    logger.write(logname, 'I,GWk,GMS,Lat,Lon,Alt,R,P,Y',
                 'BHILLffff',
@@ -2359,8 +2373,15 @@ function handle_speed_adjustment()
          path_var.speed_adjustment = 0.0
       end
 
-      logger.write("PTHT",'SysID,RemT,LocT,TS,RemTS,PathT,RemPathT,Dt,ARPT,DE,SA','Bffffffffff',
-                   sysid, remote_t, local_t,
+      local gps_week, gps_week_ms = get_gps_times()
+      logger.write("PTHT",
+                   'SysID,GWk,GMS,RemT,LocT,TS,RTS,PT,RPT,Dt,ARPT,DE,SA',
+                   'BHIffffffffff',
+                   '#------------',
+                   '-------------',
+                   sysid,
+                   gps_week, gps_week_ms,
+                   remote_t, local_t,
                    loc_timestamp,
                    remote_timestamp,
                    path_var.path_t, rem_patht,
@@ -2465,7 +2486,7 @@ function do_path()
    end
 
    -- airspeed, assume we don't go below min
-   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs_airspeed)
+   local airspeed_constrained = math.max(AIRSPEED_MIN:get(), ahrs_airspeed)
 
    --[[
       calculate positions and angles at previous, current and next time steps
@@ -2703,8 +2724,10 @@ function do_path()
                    lookahead_bf_dps:y(),
                    path_rate_bf_dps:z(),
                    lookahead_bf_dps:z())
-      path_rate_bf_dps:y(lookahead_bf_dps:y())
-      path_rate_bf_dps:z(lookahead_bf_dps:z())
+      if not Vec3IsNaN(lookahead_bf_dps) then
+         path_rate_bf_dps:y(lookahead_bf_dps:y())
+         path_rate_bf_dps:z(lookahead_bf_dps:z())
+      end
    end
    
    --[[

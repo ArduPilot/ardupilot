@@ -3,6 +3,8 @@
 -- but also on the disarm to arm transition, it will load (if file exists) a file in the root named
 -- missionH.txt, missionM.txt, or missionH.txt corresponding to the the Mission Reset switch position of High/Mid/Low
 -- luacheck: only 0
+---@diagnostic disable: need-check-nil
+
 
 local mission_loaded = false
 local rc_switch = rc:find_channel_for_option(24)  --AUX FUNC sw for mission restart

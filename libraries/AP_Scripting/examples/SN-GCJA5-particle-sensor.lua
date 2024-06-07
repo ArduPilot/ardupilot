@@ -8,12 +8,18 @@
     https://github.com/sparkfun/SparkFun_Particle_Sensor_SN-GCJA5_Arduino_Library
 ]]--
 
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-global
+
 -- search for a index without a file, this stops us overwriting from a previous run
 local index = 0
 local file_name
 while true do
   file_name = string.format('Particle %i.csv',index)
   local file = io.open(file_name)
+  if file == nil then
+    break
+  end
   local first_line = file:read(1) -- try and read the first character
   io.close(file)
   if first_line == nil then

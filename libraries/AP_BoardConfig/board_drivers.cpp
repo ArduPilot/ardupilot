@@ -107,6 +107,7 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_MINDPXV2:
     case FMUV6_BOARD_HOLYBRO_6X:
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
+    case FMUV6_BOARD_HOLYBRO_6X_45686:
     case FMUV6_BOARD_CUAV_6X:
         break;
     default:
@@ -499,6 +500,11 @@ void AP_BoardConfig::detect_fmuv6_variant()
         state.board_type.set_and_notify(FMUV6_BOARD_CUAV_6X);
         DEV_PRINTF("Detected CUAV 6X\n");
         AP_Param::load_defaults_file("@ROMFS/param/CUAV_V6X_defaults.parm", false);
+    } else if (spi_check_register("icm45686-1", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) &&
+               spi_check_register("icm45686-2", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) &&
+               spi_check_register("icm45686-3", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
+        state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_45686);
+        DEV_PRINTF("Detected Holybro 6X_45686\n");
     } else if (spi_check_register("iim42652", INV3REG_WHOAMI, INV3_WHOAMI_IIM42652) &&
                spi_check_register("icm45686", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
         state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_REV6);

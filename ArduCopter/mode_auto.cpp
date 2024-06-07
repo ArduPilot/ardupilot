@@ -41,6 +41,9 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
+        // initialise desired speed overrides
+        desired_speed_override = {0, 0, 0};
+
         // set flag to start mission
         waiting_to_start = true;
 
@@ -161,10 +164,13 @@ void ModeAuto::run()
     }
 
     // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
-    if (auto_RTL && (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE))) {
+    const bool auto_rtl_active = mission.get_in_landing_sequence_flag() || mission.get_in_return_path_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE;
+    if (auto_RTL && !auto_rtl_active) {
         auto_RTL = false;
         // log exit from Auto RTL
+#if HAL_LOGGING_ENABLED
         copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), ModeReason::AUTO_RTL_EXIT);
+#endif
     }
 }
 
@@ -211,29 +217,76 @@ bool ModeAuto::allows_weathervaning() const
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
-    if (mission.jump_to_landing_sequence()) {
-        mission.set_force_resume(true);
-        // if not already in auto switch to auto
-        if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
-            auto_RTL = true;
-            // log entry into AUTO RTL
-            copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
-
-            // make happy noise
-            if (copter.ap.initialised) {
-                AP_Notify::events.user_mode_change = 1;
-            }
-            return true;
+    if (!mission.jump_to_landing_sequence(get_stopping_point())) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+        // make sad noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change_failed = 1;
         }
-        // mode change failed, revert force resume flag
-        mission.set_force_resume(false);
-
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed");
-    } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
+        return false;
     }
 
-    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+    return enter_auto_rtl(reason);
+}
+
+// Join mission after DO_RETURN_PATH_START waypoint, if succeeds pretend to be Auto RTL mode
+bool ModeAuto::return_path_start_auto_RTL(ModeReason reason)
+{
+    if (!mission.jump_to_closest_mission_leg(get_stopping_point())) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+        // make sad noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No return path found");
+        return false;
+    }
+
+    return enter_auto_rtl(reason);
+}
+
+// Try join return path else do land start
+bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reason)
+{
+    const Location stopping_point = get_stopping_point();
+    if (!mission.jump_to_closest_mission_leg(stopping_point) && !mission.jump_to_landing_sequence(stopping_point)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+        // make sad noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change_failed = 1;
+        }
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No return path or landing sequence found");
+        return false;
+    }
+
+    return enter_auto_rtl(reason);
+}
+
+// Enter auto rtl pseudo mode
+bool ModeAuto::enter_auto_rtl(ModeReason reason) 
+{
+    mission.set_force_resume(true);
+
+    // if not already in auto switch to auto
+    if ((copter.flightmode == this) || set_mode(Mode::Number::AUTO, reason)) {
+        auto_RTL = true;
+#if HAL_LOGGING_ENABLED
+        // log entry into AUTO RTL
+        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+#endif
+
+        // make happy noise
+        if (copter.ap.initialised) {
+            AP_Notify::events.user_mode_change = 1;
+        }
+        return true;
+    }
+
+    // mode change failed, revert force resume flag
+    mission.set_force_resume(false);
+
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
     // make sad noise
     if (copter.ap.initialised) {
         AP_Notify::events.user_mode_change_failed = 1;
@@ -335,7 +388,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         // get altitude target above EKF origin
         if (!dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
             // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             // fall back to altitude above current altitude
             alt_target_cm = current_alt_cm + dest.alt;
         }
@@ -370,7 +423,16 @@ bool ModeAuto::wp_start(const Location& dest_loc)
                 stopping_point = takeoff_complete_pos.tofloat();
             }
         }
-        wp_nav->wp_and_spline_init(0, stopping_point);
+        float des_speed_xy_cm = is_positive(desired_speed_override.xy) ? (desired_speed_override.xy * 100) : 0;
+        wp_nav->wp_and_spline_init(des_speed_xy_cm, stopping_point);
+
+        // override speeds up and down if necessary
+        if (is_positive(desired_speed_override.up)) {
+            wp_nav->set_speed_up(desired_speed_override.up * 100.0);
+        }
+        if (is_positive(desired_speed_override.down)) {
+            wp_nav->set_speed_down(desired_speed_override.down * 100.0);
+        }
     }
 
     if (!wp_nav->set_wp_destination_loc(dest_loc)) {
@@ -585,28 +647,33 @@ bool ModeAuto::use_pilot_yaw(void) const
 bool ModeAuto::set_speed_xy(float speed_xy_cms)
 {
     copter.wp_nav->set_speed_xy(speed_xy_cms);
+    desired_speed_override.xy = speed_xy_cms * 0.01;
     return true;
 }
 
 bool ModeAuto::set_speed_up(float speed_up_cms)
 {
     copter.wp_nav->set_speed_up(speed_up_cms);
+    desired_speed_override.up = speed_up_cms * 0.01;
     return true;
 }
 
 bool ModeAuto::set_speed_down(float speed_down_cms)
 {
     copter.wp_nav->set_speed_down(speed_down_cms);
+    desired_speed_override.down = speed_down_cms * 0.01;
     return true;
 }
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
     // To-Do: logging when new commands start/end
     if (copter.should_log(MASK_LOG_CMD)) {
         copter.logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     switch(cmd.id) {
 
@@ -737,6 +804,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+    case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
         break;
 
@@ -943,6 +1011,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_GUIDED_LIMITS:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_WINCH:
+    case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
         cmd_complete = true;
         break;
@@ -1214,8 +1283,7 @@ void PayloadPlace::run()
 
 #if AP_GRIPPER_ENABLED == ENABLED
     // if pilot releases load manually:
-    if (AP::gripper() != nullptr &&
-        AP::gripper()->valid() && AP::gripper()->released()) {
+    if (AP::gripper().valid() && AP::gripper().released()) {
         switch (state) {
         case State::FlyToLocation:
         case State::Descent_Start:
@@ -1281,14 +1349,14 @@ void PayloadPlace::run()
             // thrust is above minimum threshold
             place_start_time_ms = now_ms;
             break;
-        } else if (is_positive(g2.pldp_range_finder_minimum_m)) {
+        } else if (is_positive(g2.pldp_range_finder_maximum_m)) {
             if (!copter.rangefinder_state.enabled) {
                 // abort payload place because rangefinder is not enabled
                 state = State::Ascent_Start;
-                gcs().send_text(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MIN set and rangefinder not enabled", prefix_str);
+                gcs().send_text(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MAX set and rangefinder not enabled", prefix_str);
                 break;
-            } else if (copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0) && (copter.rangefinder_state.alt_cm > g2.pldp_range_finder_minimum_m * 100.0)) {
-                // range finder altitude is above minimum
+            } else if (copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0) && (copter.rangefinder_state.alt_cm > g2.pldp_range_finder_maximum_m * 100.0)) {
+                // range finder altitude is above maximum
                 place_start_time_ms = now_ms;
                 break;
             }
@@ -1313,9 +1381,9 @@ void PayloadPlace::run()
         // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
         pos_control->init_z_controller_no_descent();
 #if AP_GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid()) {
+        if (AP::gripper().valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "%s Releasing the gripper", prefix_str);
-            g2.gripper.release();
+            AP::gripper().release();
             state = State::Releasing;
         } else {
             state = State::Delay;
@@ -1326,8 +1394,8 @@ void PayloadPlace::run()
         break;
 
     case State::Releasing:
-#if AP_GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid() && !g2.gripper.released()) {
+#if AP_GRIPPER_ENABLED
+        if (AP::gripper().valid() && !AP::gripper().released()) {
             break;
         }
 #endif
@@ -1515,14 +1583,14 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     switch (next_cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
     case MAV_CMD_NAV_LOITER_UNLIM:
-    case MAV_CMD_NAV_LOITER_TIME:
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
-    case MAV_CMD_NAV_PAYLOAD_PLACE: {
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+#endif
+    case MAV_CMD_NAV_LOITER_TIME: {
         const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
         const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
         return wp_nav->set_wp_destination_next_loc(next_dest_loc);
     }
-#endif
     case MAV_CMD_NAV_SPLINE_WAYPOINT: {
         // get spline's location and next location from command and send to wp_nav
         Location next_dest_loc, next_next_dest_loc;
@@ -1562,7 +1630,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
             // this can only fail due to missing terrain database alt or rangefinder alt
             // use current alt-above-home and report error
             target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
         }
 
@@ -1850,17 +1918,18 @@ void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 // Do (Now) commands
 /********************************************************************************/
 
-
-
 void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
         if (cmd.content.speed.speed_type == 2)  {
             copter.wp_nav->set_speed_up(cmd.content.speed.target_ms * 100.0f);
+            desired_speed_override.up = cmd.content.speed.target_ms;
         } else if (cmd.content.speed.speed_type == 3)  {
             copter.wp_nav->set_speed_down(cmd.content.speed.target_ms * 100.0f);
+            desired_speed_override.down = cmd.content.speed.target_ms;
         } else {
             copter.wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+            desired_speed_override.xy = cmd.content.speed.target_ms;
         }
     }
 }
@@ -1938,7 +2007,7 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
             // this can only fail due to missing terrain database alt or rangefinder alt
             // use current alt-above-home and report error
             target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
         }
         if (!wp_start(target_loc)) {
@@ -2168,8 +2237,10 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+    const float turns = cmd.get_loiter_turns();
+
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
+    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

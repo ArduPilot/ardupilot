@@ -35,7 +35,7 @@
 template<typename T>
 static T* matrix_multiply(const T *A, const T *B, uint16_t n)
 {
-    T* ret = new T[n*n];
+    T* ret = NEW_NOTHROW T[n*n];
     memset(ret,0.0f,n*n*sizeof(T));
 
     for(uint16_t i = 0; i < n; i++) {
@@ -194,13 +194,13 @@ static bool mat_inverseN(const T* A, T* inv, uint16_t n)
 {
     T *L, *U, *P;
     bool ret = true;
-    L = new T[n*n];
-    U = new T[n*n];
-    P = new T[n*n];
+    L = NEW_NOTHROW T[n*n];
+    U = NEW_NOTHROW T[n*n];
+    P = NEW_NOTHROW T[n*n];
     mat_LU_decompose(A,L,U,P,n);
 
-    T *L_inv = new T[n*n];
-    T *U_inv = new T[n*n];
+    T *L_inv = NEW_NOTHROW T[n*n];
+    T *U_inv = NEW_NOTHROW T[n*n];
 
     memset(L_inv,0,n*n*sizeof(T));
     mat_forward_sub(L,L_inv,n);

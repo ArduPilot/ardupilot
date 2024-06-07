@@ -1,0 +1,12 @@
+# setup for ProfiLED
+SERVO9_FUNCTION 132
+SERVO10_FUNCTION 129
+NTF_LED_TYPES 512
+NTF_LED_BRIGHT 2
+NTF_LED_LEN 4
+
+# Disable Logging by default
+LOG_BACKEND_TYPE 0
+
+# make node id to not conflict with ardupilot default
+CAN_D1_UC_NODE 8

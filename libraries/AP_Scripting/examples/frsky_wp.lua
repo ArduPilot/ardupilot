@@ -18,6 +18,7 @@
   Note: 17 is the index, 0x71 is the actual ID
 --]]
 -- luacheck: only 0
+---@diagnostic disable: param-type-mismatch
 
 local loop_time = 1000 -- number of ms between runs
 

@@ -1,16 +1,14 @@
 #pragma once
 
+#include "AC_CustomControl_config.h"
+
+#if AP_CUSTOMCONTROL_EMPTY_ENABLED
+
 #include "AC_CustomControl_Backend.h"
-
-#ifndef CUSTOMCONTROL_EMPTY_ENABLED
-    #define CUSTOMCONTROL_EMPTY_ENABLED AP_CUSTOMCONTROL_ENABLED
-#endif
-
-#if CUSTOMCONTROL_EMPTY_ENABLED
 
 class AC_CustomControl_Empty : public AC_CustomControl_Backend {
 public:
-    AC_CustomControl_Empty(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt);
+    AC_CustomControl_Empty(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt);
 
 
     Vector3f update(void) override;
@@ -26,4 +24,4 @@ protected:
     AP_Float param3;
 };
 
-#endif
+#endif  // AP_CUSTOMCONTROL_EMPTY_ENABLED

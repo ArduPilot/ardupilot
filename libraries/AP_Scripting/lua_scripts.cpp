@@ -36,10 +36,13 @@ HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
 uint32_t lua_scripts::last_print_ms;
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal)
+uint32_t lua_scripts::loaded_checksum;
+uint32_t lua_scripts::running_checksum;
+HAL_Semaphore lua_scripts::crc_sem;
+
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options)
     : _vm_steps(vm_steps),
-      _debug_options(debug_options),
-     terminal(_terminal)
+      _debug_options(debug_options)
 {
     _heap.create(heap_size, 4);
 }
@@ -199,6 +202,19 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);   // cache the reference
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
 
+    // Get checksum of file
+    uint32_t crc = 0;
+    if (AP::FS().crc32(filename, crc)) {
+        // Record crc of this script
+        new_script->crc = crc;
+        {
+            // Apply crc to checksum of all scripts
+            WITH_SEMAPHORE(crc_sem);
+            loaded_checksum ^= crc;
+            running_checksum ^= crc;
+        }
+    }
+
     return new_script;
 }
 
@@ -240,7 +256,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
 
     auto *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Lua: open directory (%s) failed", dirname);
         return;
     }
 
@@ -317,7 +333,7 @@ void lua_scripts::run_next_script(lua_State *L) {
             // script has consumed an excessive amount of CPU time
             set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s exceeded time limit", script->name);
         } else {
-            set_and_print_new_error_message(MAV_SEVERITY_INFO, "%s", lua_tostring(L, -1));
+            set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s", lua_tostring(L, -1));
         }
         remove_script(L, script);
         lua_pop(L, 1);
@@ -385,6 +401,12 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
         }
     }
 
+    {
+        // Remove from running checksum
+        WITH_SEMAPHORE(crc_sem);
+        running_checksum ^= script->crc;
+    }
+    
     if (L != nullptr) {
         // state could be null if we are force killing all scripts
         luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
@@ -435,24 +457,11 @@ void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     return _heap.change_size(ptr, osize, nsize);
 }
 
-void lua_scripts::repl_cleanup (void) {
-    if (terminal.session) {
-        terminal.session = false;
-        if (terminal.output_fd != -1) {
-            AP::FS().close(terminal.output_fd);
-            terminal.output_fd = -1;
-            AP::FS().unlink(REPL_DIRECTORY "/in");
-            AP::FS().unlink(REPL_DIRECTORY "/out");
-            AP::FS().unlink(REPL_DIRECTORY);
-        }
-    }
-}
-
 void lua_scripts::run(void) {
     bool succeeded_initial_load = false;
 
     if (!_heap.available()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Unable to allocate a heap");
         return;
     }
 
@@ -470,8 +479,6 @@ void lua_scripts::run(void) {
         }
         scripts = nullptr;
         overtime = false;
-        // end any open REPL sessions
-        repl_cleanup();
     }
 
     lua_state = lua_newstate(alloc, NULL);
@@ -501,10 +508,12 @@ void lua_scripts::run(void) {
         load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
         loaded = true;
     }
+#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_LUA
     if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::ROMFS)) == 0) {
         load_all_scripts_in_dir(L, "@ROMFS/scripts");
         loaded = true;
     }
+#endif
     if (!loaded) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
     }
@@ -514,12 +523,6 @@ void lua_scripts::run(void) {
 #endif // __clang_analyzer__
 
     while (AP_Scripting::get_singleton()->should_run()) {
-        // handle terminal data if we have any
-        if (terminal.session) {
-            doREPL(L);
-            continue;
-        }
-
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {
             AP_HAL::panic("Lua: Stack should be empty before running scripts");
@@ -604,6 +607,19 @@ void lua_scripts::run(void) {
         error_msg_buf = nullptr;
     }
     error_msg_buf_sem.give();
+}
+
+// Return the file checksums of running and loaded scripts
+uint32_t lua_scripts::get_loaded_checksum()
+{
+    WITH_SEMAPHORE(crc_sem);
+    return loaded_checksum;
+}
+
+uint32_t lua_scripts::get_running_checksum()
+{
+    WITH_SEMAPHORE(crc_sem);
+    return running_checksum;
 }
 
 #endif  // AP_SCRIPTING_ENABLED

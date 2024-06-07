@@ -22,6 +22,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const uint32_t AP_OPTICALFLOW_CAL_TIMEOUT_SEC = 120;        // calibration timesout after 120 seconds
 const uint32_t AP_OPTICALFLOW_CAL_STATUSINTERVAL_SEC = 3;   // status updates printed at 3 second intervals

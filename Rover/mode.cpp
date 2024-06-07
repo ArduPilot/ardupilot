@@ -56,7 +56,7 @@ bool Mode::enter()
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
 // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
 // throttle_out is in the range -100 ~ +100
-void Mode::get_pilot_input(float &steering_out, float &throttle_out)
+void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
 {
     // no RC input means no throttle and centered steering
     if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
@@ -102,7 +102,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out)
 // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
 // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
 // throttle_out is in the range -100 ~ +100
-void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out)
+void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out) const
 {
     // do basic conversion
     get_pilot_input(steering_out, throttle_out);
@@ -111,7 +111,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     // we proportionally reduce steering and throttle
     if (g2.motors.have_skid_steering()) {
         const float steer_normalised = constrain_float(steering_out / 4500.0f, -1.0f, 1.0f);
-        const float throttle_normalised = constrain_float(throttle_out / 100.0f, -1.0f, 1.0f);
+        const float throttle_normalised = constrain_float(throttle_out * 0.01f, -1.0f, 1.0f);
         const float saturation_value = fabsf(steer_normalised) + fabsf(throttle_normalised);
         if (saturation_value > 1.0f) {
             steering_out /= saturation_value;
@@ -130,7 +130,7 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
 }
 
 // decode pilot steering and return steering_out and speed_out (in m/s)
-void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out)
+void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out) const
 {
     float desired_throttle;
     get_pilot_input(steering_out, desired_throttle);
@@ -146,7 +146,7 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
 }
 
 // decode pilot lateral movement input and return in lateral_out argument
-void Mode::get_pilot_desired_lateral(float &lateral_out)
+void Mode::get_pilot_desired_lateral(float &lateral_out) const
 {
     // no RC input means no lateral input
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (rover.channel_lateral == nullptr)) {
@@ -159,7 +159,7 @@ void Mode::get_pilot_desired_lateral(float &lateral_out)
 }
 
 // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
-void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out)
+void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const
 {
     // get steering and throttle in the -1 to +1 range
     float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
@@ -183,7 +183,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
 
 // decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
 // outputs are in the range -1 to +1
-void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
+void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out) const
 {
     if (channel_roll != nullptr) {
         roll_out = channel_roll->norm_input();
@@ -199,7 +199,7 @@ void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
 
 // decode pilot walking_height inputs and return in walking_height_out arguments
 // outputs are in the range -1 to +1
-void Mode::get_pilot_desired_walking_height(float &walking_height_out)
+void Mode::get_pilot_desired_walking_height(float &walking_height_out) const
 {
     if (channel_walking_height != nullptr) {
         walking_height_out = channel_walking_height->norm_input();
@@ -288,9 +288,10 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
     // get acceleration limited target speed
     target_speed = attitude_control.get_desired_speed_accel_limited(target_speed, rover.G_Dt);
 
+#if AP_AVOIDANCE_ENABLED
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
-        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.yaw, target_speed, rover.G_Dt);
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.get_yaw(), target_speed, rover.G_Dt);
         if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
             // we are a sailboat trying to avoid fence, try a tack
             if (rover.control_mode != &rover.mode_acro) {
@@ -298,19 +299,14 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
             }
         }
     }
+#endif  // AP_AVOIDANCE_ENABLED
 
     // call throttle controller and convert output to -100 to +100 range
     float throttle_out = 0.0f;
 
     if (rover.g2.sailboat.sail_enabled()) {
         // sailboats use special throttle and mainsail controller
-        float mainsail_out = 0.0f;
-        float wingsail_out = 0.0f;
-        float mast_rotation_out = 0.0f;
-        rover.g2.sailboat.get_throttle_and_mainsail_out(target_speed, throttle_out, mainsail_out, wingsail_out, mast_rotation_out);
-        rover.g2.motors.set_mainsail(mainsail_out);
-        rover.g2.motors.set_wingsail(wingsail_out);
-        rover.g2.motors.set_mast_rotation(mast_rotation_out);
+        rover.g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
     } else {
         // call speed or stop controller
         if (is_zero(target_speed) && !rover.is_balancebot()) {
@@ -348,8 +344,7 @@ bool Mode::stop_vehicle()
     }
 
     // relax sails if present
-    g2.motors.set_mainsail(100.0f);
-    g2.motors.set_wingsail(0.0f);
+    g2.sailboat.relax_sails();
 
     // send to motor
     g2.motors.set_throttle(throttle_out);
@@ -432,11 +427,13 @@ void Mode::navigate_to_waypoint()
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
+#if AP_AVOIDANCE_ENABLED
     // sailboats trigger tack if simple avoidance becomes active
     if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
         // we are a sailboat trying to avoid fence, try a tack
         rover.control_mode->handle_tack_request();
     }
+#endif
 
     // pass desired speed to throttle controller
     // do not do simple avoidance because this is already handled in the position controller
@@ -454,9 +451,11 @@ void Mode::navigate_to_waypoint()
         float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
 
         // if simple avoidance is active at very low speed do not attempt to turn
+#if AP_AVOIDANCE_ENABLED
         if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
             desired_turn_rate_rads = 0.0f;
         }
+#endif
 
         // call turn rate steering controller
         calc_steering_from_turn_rate(desired_turn_rate_rads);

@@ -96,9 +96,19 @@ swash_type_lookup = {0: 'H3',
                      4: 'H4_90',
                      5: 'H4_45'}
 
+dual_mode_lookup = {0: 'Longitudinal',
+                    1: 'Transverse',
+                    2: 'Intermeshing_or_Coaxial'}
+
+tail_type_lookup = {0: 'Servo_only',
+                    1: 'Servo_with_ExtGyro',
+                    2: 'DirectDrive_VarPitch',
+                    3: 'DirectDrive_FixedPitch_CW',
+                    4: 'DirectDrive_FixedPitch_CCW',
+                    5: 'DDVP_with_external_governor'}
 
 # Run sweep over range of types
-def run_sweep(frame_class, swash_type, dir_name):
+def run_sweep(frame_class, swash_type, secondary_iter, secondary_lookup, secondary_name, dir_name):
 
     # configure and build the test
     os.system('./waf configure --board linux')
@@ -107,19 +117,29 @@ def run_sweep(frame_class, swash_type, dir_name):
     # Run sweep
     for fc in frame_class:
         for swash in swash_type:
-            if swash is not None:
-                name = 'frame class = %s (%i), swash = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash)
-                filename = '%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash])
-                swash_cmd = 'swash=%d' % swash
+            for sec in secondary_iter:
+                if swash is not None:
+                    swash_cmd = 'swash=%d' % swash
 
-            else:
-                name = 'frame class = %s (%i)' % (frame_class_lookup[fc], fc)
-                filename = '%s_motor_test.csv' % (frame_class_lookup[fc])
-                swash_cmd = ''
+                    if sec is not None:
+                        name = 'frame class = %s (%i), swash = %s (%i), %s = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash, secondary_name.replace('_', ' '), secondary_lookup[sec], sec)
+                        filename = '%s_%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash], secondary_lookup[sec])
+                        sec_cmd = '%s=%d' % (secondary_name, sec)
 
-            print('Running motors test for %s' % name)
-            os.system('./build/linux/examples/AP_Motors_test s frame_class=%d %s > %s/%s' % (fc, swash_cmd, dir_name, filename))
-            print('%s complete\n' % name)
+                    else:
+                        name = 'frame class = %s (%i), swash = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash)
+                        filename = '%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash])
+                        sec_cmd = ''
+
+                else:
+                    name = 'frame class = %s (%i)' % (frame_class_lookup[fc], fc)
+                    filename = '%s_motor_test.csv' % (frame_class_lookup[fc])
+                    swash_cmd = ''
+                    sec_cmd = ''
+
+                print('Running motors test for %s' % name)
+                os.system('./build/linux/examples/AP_Motors_test s frame_class=%d %s %s > %s/%s' % (fc, swash_cmd, sec_cmd, dir_name, filename))
+                print('%s complete\n' % name)
 
 
 if __name__ == '__main__':
@@ -135,6 +155,8 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--swash-type", type=int, dest='swash_type', nargs="+", help="list of swashplate types to run comparison on. Defaults to test all types. Invalid for heli quad")
     parser.add_argument("-c", "--compare", action='store_true', help='Compare only, do not re-run tests')
     parser.add_argument("-p", "--plot", action='store_true', help='Plot comparison results')
+    parser.add_argument("-m", "--dual_mode", type=int, dest='dual_mode', help='Set DUAL_MODE, 0:Longitudinal, 1:Transverse, 2:Intermeshing/Coaxial, default:run all')
+    parser.add_argument("-t", "--tail_type", type=int, dest='tail_type', help='Set TAIL_TYPE, 0:Servo Only, 1:Servo with ExtGyro, 2:DirectDrive VarPitch, 3:DirectDrive FixedPitch CW, 4:DirectDrive FixedPitch CCW, 5:DDVP with external governor, default:run all')
     args = parser.parse_args()
 
     if 13 in args.frame_class:
@@ -146,6 +168,40 @@ if __name__ == '__main__':
     else:
         if not args.swash_type:
             args.swash_type = (0, 1, 2, 3, 4, 5)
+
+    if (args.frame_class != [11]) and (args.dual_mode is not None):
+        print('Only Frame %s (%i) supports dual_mode' % (frame_class_lookup[11], 11))
+        quit()
+
+    if args.frame_class == [11]:
+        if args.dual_mode is None:
+            args.dual_mode = (0, 1, 2)
+    else:
+        args.dual_mode = [None]
+
+    if (args.frame_class != [6]) and (args.tail_type is not None):
+        print('Only Frame %s (%i) supports tail_type' % (frame_class_lookup[6], 6))
+        quit()
+
+    if args.frame_class == [6]:
+        if args.tail_type is None:
+            args.tail_type = (0, 1, 2, 3, 4, 5)
+    else:
+        args.tail_type = [None]
+
+    # Secondary iterator, tail type for single heli and dual mode for dual heli
+    secondary_iter = [None]
+    secondary_lookup = None
+    secondary_name = None
+    if args.dual_mode != [None]:
+        secondary_iter = args.dual_mode
+        secondary_lookup = dual_mode_lookup
+        secondary_name = 'dual_mode'
+
+    elif args.tail_type != [None]:
+        secondary_iter = args.tail_type
+        secondary_lookup = tail_type_lookup
+        secondary_name = 'tail_type'
 
     dir_name = 'motors_comparison'
 
@@ -161,7 +217,7 @@ if __name__ == '__main__':
         print('\nRunning motor tests with current changes\n')
 
         # run the test
-        run_sweep(args.frame_class, args.swash_type, new_name)
+        run_sweep(args.frame_class, args.swash_type, secondary_iter, secondary_lookup, secondary_name, new_name)
 
         if args.head:
             # rewind head and repeat test
@@ -213,91 +269,98 @@ if __name__ == '__main__':
     # Print comparison
     for fc in args.frame_class:
         for sw in args.swash_type:
-            frame = frame_class_lookup[fc]
-            if sw is not None:
-                swash = swash_type_lookup[sw]
-                name = frame + ' ' + swash
-                filename = '%s_%s_motor_test.csv' % (frame, swash)
+            for sec in secondary_iter:
+                frame = frame_class_lookup[fc]
+                if sw is not None:
+                    swash = swash_type_lookup[sw]
+                    if sec is not None:
+                        sec_str = secondary_lookup[sec]
+                        name = frame + ' ' + swash + ' ' + sec_str
+                        filename = '%s_%s_%s_motor_test.csv' % (frame, swash, sec_str)
 
-            else:
-                name = frame
-                filename = '%s_motor_test.csv' % (frame)
+                    else:
+                        name = frame + ' ' + swash
+                        filename = '%s_%s_motor_test.csv' % (frame, swash)
 
-            print('%s:' % name)
+                else:
+                    name = frame
+                    filename = '%s_motor_test.csv' % (frame)
 
-            new_points = DataPoints(os.path.join(dir_name, 'new/%s' % filename))
-            old_points = DataPoints(os.path.join(dir_name, 'original/%s' % filename))
+                print('%s:' % name)
 
-            if new_points.init_failed:
-                print('\t failed!\n')
+                new_points = DataPoints(os.path.join(dir_name, 'new/%s' % filename))
+                old_points = DataPoints(os.path.join(dir_name, 'original/%s' % filename))
 
-            print('\tInputs max change:')
-            INPUTS = ['Roll', 'Pitch', 'Yaw', 'Thr']
-            input_diff = {}
-            for field in INPUTS:
-                input_diff[field] = [i-j for i, j in zip(old_points.data[field], new_points.data[field])]
-                print('\t\t%s: %f' % (field, max(map(abs, input_diff[field]))))
+                if new_points.init_failed:
+                    print('\t failed!\n')
 
-            # Find number of motors
-            num_motors = 0
-            while True:
-                num_motors += 1
-                if 'Mot%i' % (num_motors+1) not in new_points.get_fields():
-                    break
+                print('\tInputs max change:')
+                INPUTS = ['Roll', 'Pitch', 'Yaw', 'Thr']
+                input_diff = {}
+                for field in INPUTS:
+                    input_diff[field] = [i-j for i, j in zip(old_points.data[field], new_points.data[field])]
+                    print('\t\t%s: %f' % (field, max(map(abs, input_diff[field]))))
 
-            print('\tOutputs max change:')
-            output_diff = {}
-            for i in range(num_motors):
-                field = 'Mot%i' % (i+1)
-                output_diff[field] = [i-j for i, j in zip(old_points.data[field], new_points.data[field])]
-                print('\t\t%s: %f' % (field, max(map(abs, output_diff[field]))))
+                # Find number of motors
+                num_motors = 0
+                while True:
+                    num_motors += 1
+                    if 'Mot%i' % (num_motors+1) not in new_points.get_fields():
+                        break
 
-            print('\tLimits max change:')
-            LIMITS = ['LimR', 'LimP', 'LimY', 'LimThD', 'LimThU']
-            limit_diff = {}
-            for field in LIMITS:
-                limit_diff[field] = [i-j for i, j in zip(old_points.data[field], new_points.data[field])]
-                print('\t\t%s: %f' % (field, max(map(abs, limit_diff[field]))))
-            print('\n')
+                print('\tOutputs max change:')
+                output_diff = {}
+                for i in range(num_motors):
+                    field = 'Mot%i' % (i+1)
+                    output_diff[field] = [i-j for i, j in zip(old_points.data[field], new_points.data[field])]
+                    print('\t\t%s: %f' % (field, max(map(abs, output_diff[field]))))
 
-            if not args.plot:
-                continue
+                print('\tLimits max change:')
+                LIMITS = ['LimR', 'LimP', 'LimY', 'LimThD', 'LimThU']
+                limit_diff = {}
+                for field in LIMITS:
+                    limit_diff[field] = [i-j for i, j in zip(old_points.data[field], new_points.data[field])]
+                    print('\t\t%s: %f' % (field, max(map(abs, limit_diff[field]))))
+                print('\n')
 
-            # Plot comparison
-            fig_size = (16, 8)
-            fig, ax = plt.subplots(2, 2, figsize=fig_size)
-            fig.suptitle('%s Input Diff' % name, fontsize=16)
-            ax = ax.flatten()
-            for i, field in enumerate(INPUTS):
-                ax[i].plot(input_diff[field], color=RED)
-                ax[i].set_xlabel('Test Number')
-                ax[i].set_ylabel('%s Old - New' % field)
-            plt.tight_layout(rect=[0, 0.0, 1, 0.95])
+                if not args.plot:
+                    continue
 
-            fig, ax = plt.subplots(2, num_motors, figsize=fig_size)
-            fig.suptitle('%s Outputs' % name, fontsize=16)
-            for i in range(num_motors):
-                field = 'Mot%i' % (i+1)
-                ax[0, i].plot(old_points.data[field], color=RED)
-                ax[0, i].plot(new_points.data[field], color=BLUE)
-                ax[0, i].set_ylabel(field)
-                ax[0, i].set_xlabel('Test No')
-                ax[1, i].plot(output_diff[field], color=BLACK)
-                ax[1, i].set_ylabel('Change in %s' % field)
-                ax[1, i].set_xlabel('Test No')
-            plt.tight_layout(rect=[0, 0.0, 1, 0.95])
+                # Plot comparison
+                fig_size = (16, 8)
+                fig, ax = plt.subplots(2, 2, figsize=fig_size)
+                fig.suptitle('%s Input Diff' % name, fontsize=16)
+                ax = ax.flatten()
+                for i, field in enumerate(INPUTS):
+                    ax[i].plot(input_diff[field], color=RED)
+                    ax[i].set_xlabel('Test Number')
+                    ax[i].set_ylabel('%s Old - New' % field)
+                plt.tight_layout(rect=[0, 0.0, 1, 0.95])
 
-            fig, ax = plt.subplots(2, 5, figsize=fig_size)
-            fig.suptitle(name + ' Limits', fontsize=16)
-            for i, field in enumerate(LIMITS):
-                ax[0, i].plot(old_points.data[field], color=RED)
-                ax[0, i].plot(new_points.data[field], color=BLUE)
-                ax[0, i].set_ylabel(field)
-                ax[0, i].set_xlabel('Test No')
-                ax[1, i].plot(limit_diff[field], color=BLACK)
-                ax[1, i].set_ylabel('Change in %s' % field)
-                ax[1, i].set_xlabel('Test No')
-            plt.tight_layout(rect=[0, 0.0, 1, 0.95])
+                fig, ax = plt.subplots(2, num_motors, figsize=fig_size)
+                fig.suptitle('%s Outputs' % name, fontsize=16)
+                for i in range(num_motors):
+                    field = 'Mot%i' % (i+1)
+                    ax[0, i].plot(old_points.data[field], color=RED)
+                    ax[0, i].plot(new_points.data[field], color=BLUE)
+                    ax[0, i].set_ylabel(field)
+                    ax[0, i].set_xlabel('Test No')
+                    ax[1, i].plot(output_diff[field], color=BLACK)
+                    ax[1, i].set_ylabel('Change in %s' % field)
+                    ax[1, i].set_xlabel('Test No')
+                plt.tight_layout(rect=[0, 0.0, 1, 0.95])
+
+                fig, ax = plt.subplots(2, 5, figsize=fig_size)
+                fig.suptitle(name + ' Limits', fontsize=16)
+                for i, field in enumerate(LIMITS):
+                    ax[0, i].plot(old_points.data[field], color=RED)
+                    ax[0, i].plot(new_points.data[field], color=BLUE)
+                    ax[0, i].set_ylabel(field)
+                    ax[0, i].set_xlabel('Test No')
+                    ax[1, i].plot(limit_diff[field], color=BLACK)
+                    ax[1, i].set_ylabel('Change in %s' % field)
+                    ax[1, i].set_xlabel('Test No')
+                plt.tight_layout(rect=[0, 0.0, 1, 0.95])
 
 if args.plot:
     plt.show()

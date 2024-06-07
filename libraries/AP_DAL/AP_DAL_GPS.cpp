@@ -3,24 +3,12 @@
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
 
-// we use a static here as the "location" accessor wants to be const
-static Location tmp_location[GPS_MAX_INSTANCES];
-
 AP_DAL_GPS::AP_DAL_GPS()
 {
     for (uint8_t i=0; i<ARRAY_SIZE(_RGPI); i++) {
         _RGPI[i].instance = i;
         _RGPJ[i].instance = i;
     }
-}
-
-const Location &AP_DAL_GPS::location(uint8_t instance) const
-{
-    Location &loc = tmp_location[instance];
-    loc.lat = _RGPJ[instance].lat;
-    loc.lng = _RGPJ[instance].lng;
-    loc.alt = _RGPJ[instance].alt;
-    return loc;
 }
 
 void AP_DAL_GPS::start_frame()
@@ -61,5 +49,9 @@ void AP_DAL_GPS::start_frame()
 
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
+
+        tmp_location[i].lat = RGPJ.lat;
+        tmp_location[i].lng = RGPJ.lng;
+        tmp_location[i].alt = RGPJ.alt;
     }
 }

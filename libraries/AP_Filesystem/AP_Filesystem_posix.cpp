@@ -58,6 +58,12 @@ int AP_Filesystem_Posix::open(const char *fname, int flags, bool allow_absolute_
     if (! allow_absolute_paths) {
         fname = map_filename(fname);
     }
+    struct stat st;
+    if (::stat(fname, &st) == 0 &&
+        ((st.st_mode & S_IFMT) != S_IFREG && (st.st_mode & S_IFMT) != S_IFLNK)) {
+        // only allow links and files
+        return -1;
+    }
     // we automatically add O_CLOEXEC as we always want it for ArduPilot FS usage
     return ::open(fname, flags | O_CLOEXEC, 0644);
 }

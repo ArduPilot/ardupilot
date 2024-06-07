@@ -74,6 +74,9 @@ public:
     // recursively add new buffer
     void add_buffer(ScriptingCANBuffer* new_buff);
 
+    // Add a filter to this buffer
+    bool add_filter(uint32_t mask, uint32_t value);
+
 private:
 
     ObjectBuffer<AP_HAL::CANFrame> buffer;
@@ -83,6 +86,12 @@ private:
     ScriptingCANBuffer *next;
 
     HAL_Semaphore sem;
+
+    struct {
+        uint32_t mask;
+        uint32_t value;
+    } filter[8];
+    uint8_t num_filters;
 
 };
 

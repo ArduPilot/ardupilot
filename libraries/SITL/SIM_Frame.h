@@ -20,10 +20,7 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
-
-#if USE_PICOJSON
-#include "picojson.h"
-#endif
+#include <AP_JSON/AP_JSON.h>
 
 namespace SITL {
 
@@ -146,10 +143,8 @@ private:
     } default_model;
 
 protected:
-#if USE_PICOJSON
     // load frame parameters from a json model file
     void load_frame_params(const char *model_json);
-#endif
 
     // get air density in kg/m^3
     float get_air_density(float alt_amsl) const;
@@ -166,9 +161,7 @@ private:
 #endif
 
     // json parsing helpers
-#if USE_PICOJSON
-    void parse_float(picojson::value val, const char* label, float &param);
-    void parse_vector3(picojson::value val, const char* label, Vector3f &param);
-#endif
+    void parse_float(AP_JSON::value val, const char* label, float &param);
+    void parse_vector3(AP_JSON::value val, const char* label, Vector3f &param);
 };
 }

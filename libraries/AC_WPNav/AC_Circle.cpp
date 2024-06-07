@@ -43,13 +43,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _inav(inav),
     _ahrs(ahrs),
-    _pos_control(pos_control),
-    _yaw(0.0f),
-    _angle(0.0f),
-    _angle_total(0.0f),
-    _angular_vel(0.0f),
-    _angular_vel_max(0.0f),
-    _angular_accel(0.0f)
+    _pos_control(pos_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -121,7 +115,7 @@ void AC_Circle::set_center(const Location& center)
         } else {
             // failed to convert location so set to current position and log error
             set_center(_inav.get_position_neu_cm(), false);
-            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
     } else {
         // convert Location with alt-above-home, alt-above-origin or absolute alt
@@ -129,7 +123,7 @@ void AC_Circle::set_center(const Location& center)
         if (!center.get_vector_from_origin_NEU(circle_center_neu)) {
             // default to current position and log error
             circle_center_neu = _inav.get_position_neu_cm();
-            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
         }
         set_center(circle_center_neu, false);
     }

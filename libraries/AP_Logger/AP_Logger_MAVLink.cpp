@@ -545,7 +545,7 @@ void AP_Logger_MAVLink::periodic_1Hz()
          _front._params.disarm_ratemax > 0 ||
          _front._log_pause)) {
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
-        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax, _front._params.disarm_ratemax);
+        rate_limiter = NEW_NOTHROW AP_Logger_RateLimiter(_front, _front._params.mav_ratemax, _front._params.disarm_ratemax);
     }
 
     if (_sending_to_client &&
@@ -577,13 +577,6 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
         return false;
     }
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // deliberately fail 10% of the time in SITL:
-    if ((rand() % 100 + 1) < 10) {
-        return false;
-    }
-#endif
-    
 #if DF_MAVLINK_DISABLE_INTERRUPTS
     void *istate = hal.scheduler->disable_interrupts_save();
 #endif

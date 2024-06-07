@@ -9,6 +9,7 @@
 #include <AP_HAL/system.h>
 
 #include "Scheduler.h"
+#include <AP_Math/div1000.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -17,12 +18,19 @@ using HALSITL::Scheduler;
 namespace AP_HAL {
 
 static struct {
-    struct timeval start_time;
+    uint64_t start_time_ns;
 } state;
 
+static uint64_t ts_to_nsec(struct timespec &ts)
+{
+    return ts.tv_sec*1000000000ULL + ts.tv_nsec;
+}
+    
 void init()
 {
-    gettimeofday(&state.start_time, nullptr);
+    struct timespec ts {};
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    state.start_time_ns = ts_to_nsec(ts);
 }
 
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
@@ -169,28 +177,14 @@ uint64_t micros64()
         return stopped_usec;
     }
 
-    struct timeval tp;
-    gettimeofday(&tp, nullptr);
-    uint64_t ret = 1.0e6 * ((tp.tv_sec + (tp.tv_usec * 1.0e-6)) -
-                            (state.start_time.tv_sec +
-                             (state.start_time.tv_usec * 1.0e-6)));
-    return ret;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return uint64_div1000(ts_to_nsec(ts) - state.start_time_ns);
 }
 
 uint64_t millis64()
 {
-    const HALSITL::Scheduler* scheduler = HALSITL::Scheduler::from(hal.scheduler);
-    uint64_t stopped_usec = scheduler->stopped_clock_usec();
-    if (stopped_usec) {
-        return stopped_usec / 1000;
-    }
-
-    struct timeval tp;
-    gettimeofday(&tp, nullptr);
-    uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
-                          (state.start_time.tv_sec +
-                           (state.start_time.tv_usec*1.0e-6)));
-    return ret;
+    return uint64_div1000(micros64());
 }
 
 } // namespace AP_HAL

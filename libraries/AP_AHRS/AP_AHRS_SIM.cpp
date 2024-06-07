@@ -152,15 +152,15 @@ bool AP_AHRS_SIM::get_relative_position_D_origin(float &posD) const
 bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
-    status.flags.attitude = 1;
-    status.flags.horiz_vel = 1;
-    status.flags.vert_vel = 1;
-    status.flags.horiz_pos_rel = 1;
-    status.flags.horiz_pos_abs = 1;
-    status.flags.vert_pos = 1;
-    status.flags.pred_horiz_pos_rel = 1;
-    status.flags.pred_horiz_pos_abs = 1;
-    status.flags.using_gps = 1;
+    status.flags.attitude = true;
+    status.flags.horiz_vel = true;
+    status.flags.vert_vel = true;
+    status.flags.horiz_pos_rel = true;
+    status.flags.horiz_pos_abs = true;
+    status.flags.vert_pos = true;
+    status.flags.pred_horiz_pos_rel = true;
+    status.flags.pred_horiz_pos_abs = true;
+    status.flags.using_gps = true;
 
     return true;
 }

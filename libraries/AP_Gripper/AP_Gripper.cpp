@@ -113,12 +113,12 @@ void AP_Gripper::init()
         break;
 #if AP_GRIPPER_SERVO_ENABLED
     case 1:
-        backend = new AP_Gripper_Servo(config);
+        backend = NEW_NOTHROW AP_Gripper_Servo(config);
         break;
 #endif
 #if AP_GRIPPER_EPM_ENABLED
     case 2:
-        backend = new AP_Gripper_EPM(config);
+        backend = NEW_NOTHROW AP_Gripper_EPM(config);
         break;
 #endif
     default:
@@ -168,9 +168,9 @@ PASS_TO_BACKEND(grabbed)
 
 namespace AP {
 
-AP_Gripper *gripper()
+AP_Gripper &gripper()
 {
-    return AP_Gripper::get_singleton();
+    return *AP_Gripper::get_singleton();
 }
 
 };

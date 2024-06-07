@@ -17,6 +17,7 @@
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
 #include <AP_Motors/AP_MotorsTailsitter.h>
+#include <AP_Logger/LogStructure.h>
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -66,9 +67,11 @@ public:
     // return true if pitch control should be relaxed
     bool relax_pitch();
 
+    // Write tailsitter specific log
+    void write_log();
+
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
-    float log_spd_scaler; // for QTUN log
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -111,6 +114,23 @@ public:
     AP_MotorsTailsitter* tailsitter_motors;
 
 private:
+
+    // Tailsitter specific log message
+    struct PACKED log_tailsitter {
+        LOG_PACKET_HEADER;
+        uint64_t time_us;
+        float throttle_scaler;
+        float speed_scaler;
+        float min_throttle;
+    };
+
+    // Data to be logged
+    struct {
+        float throttle_scaler;
+        float speed_scaler;
+        float min_throttle;
+    } log_data;
+
 
     bool setup_complete;
 

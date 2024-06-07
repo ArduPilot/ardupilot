@@ -77,7 +77,7 @@ public:
     SPIDeviceManager() { }
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override
     {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice());
+        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice());
     }
 };
 

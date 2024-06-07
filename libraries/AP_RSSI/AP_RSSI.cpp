@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RSSI_config.h"
+
+#if AP_RSSI_ENABLED
+
 #include <AP_RSSI/AP_RSSI.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
@@ -272,3 +276,5 @@ AP_RSSI *rssi()
 }
 
 };
+
+#endif  // AP_RSSI_ENABLED

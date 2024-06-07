@@ -62,6 +62,7 @@ def pre_build(self):
     """Configure esp-idf as lib target"""
     lib_vars = OrderedDict()
     lib_vars['ARDUPILOT_CMD'] = self.cmd
+    lib_vars['WAF_BUILD_TARGET'] = self.targets
     lib_vars['ARDUPILOT_LIB'] = self.bldnode.find_or_declare('lib/').abspath()
     lib_vars['ARDUPILOT_BIN'] = self.bldnode.find_or_declare('lib/bin').abspath()
     target = self.env.ESP32_TARGET

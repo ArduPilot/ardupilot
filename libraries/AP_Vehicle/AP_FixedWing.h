@@ -13,17 +13,16 @@ struct AP_FixedWing {
     AP_Int8 takeoff_throttle_max;
     AP_Int16 airspeed_min;
     AP_Int16 airspeed_max;
-    AP_Int32 airspeed_cruise_cm;
-    AP_Int32 min_gndspeed_cm;
+    AP_Float airspeed_cruise;
+    AP_Float min_groundspeed;
     AP_Int8  crash_detection_enable;
-    AP_Int16 roll_limit_cd;
-    AP_Int16 pitch_limit_max_cd;
-    AP_Int16 pitch_limit_min_cd;
+    AP_Float roll_limit;
+    AP_Float pitch_limit_max;
+    AP_Float pitch_limit_min;
     AP_Int8  autotune_level;
     AP_Int32 autotune_options;
     AP_Int8  stall_prevention;
     AP_Int16 loiter_radius;
-    AP_Int16 pitch_trim_cd;
     AP_Float takeoff_throttle_max_t;
 
     struct Rangefinder_State {

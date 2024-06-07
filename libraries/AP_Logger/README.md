@@ -46,6 +46,7 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 | 'A' | "A" | Ampere|
 | 'd' | "deg" | of the angular variety | -180 to 180|
 | 'b' | "B" | bytes|
+| 'B' | "B/s" | bytes per second |
 | 'k' | "deg/s" | degrees per second | Not an SI unit, but in some situations more user-friendly than radians per second|
 | 'D' | "deglatitude" | degrees of latitude|
 | 'e' | "deg/s/s" | degrees per second per second | Not an SI unit, but in some situations more user-friendly than radians per second^2|

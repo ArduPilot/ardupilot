@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #A simple script to install the APM SITL environment into cygwin
 

@@ -63,6 +63,11 @@ bool Shared_DMA::is_shared(uint8_t stream_id)
     return (stream_id < SHARED_DMA_MAX_STREAM_ID) && ((1U<<stream_id) & SHARED_DMA_MASK) != 0;
 }
 
+bool Shared_DMA::is_shared()
+{
+    return is_shared(stream_id1) || is_shared(stream_id2);
+}
+
 //remove any assigned deallocator or allocator
 void Shared_DMA::unregister()
 {
@@ -244,7 +249,7 @@ void Shared_DMA::dma_info(ExpandingString &str)
 {
     // no buffer allocated, start counting
     if (_contention_stats == nullptr) {
-        _contention_stats = new dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
+        _contention_stats = NEW_NOTHROW dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
         // return zeros on first fetch
     }
 

@@ -78,7 +78,7 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
         new_flightmode->requires_GPS() &&
         !blimp.position_ok()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -89,13 +89,13 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
         flightmode->has_manual_throttle() &&
         !new_flightmode->has_manual_throttle()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -109,7 +109,9 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode((uint8_t)control_mode, reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
     // update notify object
@@ -160,7 +162,7 @@ void Mode::update_navigation()
 void Mode::get_pilot_input(Vector3f &pilot, float &yaw)
 {
     // throttle failsafe check
-    if (blimp.failsafe.radio || !blimp.ap.rc_receiver_present) {
+    if (blimp.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         pilot.y = 0;
         pilot.x = 0;
         pilot.z = 0;

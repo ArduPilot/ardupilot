@@ -10,11 +10,11 @@
 bool AP_DDS_Client::udp_transport_open(uxrCustomTransport *t)
 {
     AP_DDS_Client *dds = (AP_DDS_Client *)t->args;
-    auto *sock = new SocketAPM(true);
+    auto *sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         return false;
     }
-    if (!sock->connect(dds->udp.ip, dds->udp.port.get())) {
+    if (!sock->connect(dds->udp.ip.get_str(), dds->udp.port.get())) {
         return false;
     }
     dds->udp.socket = sock;
@@ -83,7 +83,7 @@ bool AP_DDS_Client::ddsUdpInit()
     if (!uxr_init_custom_transport(&udp.transport, (void*)this)) {
         return false;
     }
-    uxr_init_session(&session, &udp.transport.comm, uniqueClientKey);
+    comm = &udp.transport.comm;
     return true;
 }
 #endif // AP_DDS_UDP_ENABLED

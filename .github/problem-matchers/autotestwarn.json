@@ -1,0 +1,17 @@
+{
+    "__comment": "by buzz try to match common autotest warnings and errors that arent caught by gcc.json or python.json",
+    "problemMatcher": [
+        {
+            "owner": "autotest-warn-matcher",
+            "severity": "warning",
+            "pattern": [
+                {
+                    "regexp": "^(.*)(WARN|WARNING):(.*)$",
+                    "column": 1,
+                    "code": 2,
+                    "message": 3
+                }
+            ]
+        }
+    ]
+}

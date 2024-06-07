@@ -1,5 +1,7 @@
 -- Example of saving the current mission to a file on the SD card on arming
 
+---@diagnostic disable: need-check-nil
+
 local function save_to_SD()
 
   -- check if there is a mission to save
@@ -14,6 +16,9 @@ local function save_to_SD()
   while true do
     file_name = string.format('%i.waypoints',index)
     local file = io.open(file_name)
+    if file == nil then
+      break
+    end
     local first_line = file:read(1) -- try and read the first character
     io.close(file)
     if first_line == nil then

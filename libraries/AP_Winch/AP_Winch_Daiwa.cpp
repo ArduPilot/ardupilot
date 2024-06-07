@@ -86,6 +86,7 @@ void AP_Winch_Daiwa::send_status(const GCS_MAVLINK &channel)
         status_bitmask);
 }
 
+#if HAL_LOGGING_ENABLED
 // write log
 void AP_Winch_Daiwa::write_log()
 {
@@ -102,6 +103,7 @@ void AP_Winch_Daiwa::write_log()
             latest.voltage,
             constrain_int16(latest.motor_temp, INT8_MIN, INT8_MAX));
 }
+#endif
 
 // read incoming data from winch and update intermediate and latest structures
 void AP_Winch_Daiwa::read_data_from_winch()

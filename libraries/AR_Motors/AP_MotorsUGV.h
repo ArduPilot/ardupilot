@@ -114,6 +114,9 @@ public:
     // returns true if the vehicle is omni
     bool is_omni() const { return _frame_type != FRAME_TYPE_UNDEFINED && _motors_num > 0; }
 
+    // Return the relay index that would be used for param conversion to relay functions
+    bool get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const;
+
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {
         uint8_t steer_left      : 1; // we have reached the steering controller's left most limit

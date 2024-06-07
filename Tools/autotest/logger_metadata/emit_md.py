@@ -67,13 +67,23 @@ DO NOT EDIT
             if docco.url is not None:
                 desc += f' ([Read more...]({docco.url}))'
             print(desc, file=self.fh)
-            print("\n|FieldName|Description|\n|---|---|", file=self.fh)
+            print("\n|FieldName|Units/Type|Description|\n|---|---|---|", file=self.fh)
             for f in docco.fields_order:
                 if "description" in docco.fields[f]:
                     fdesc = docco.fields[f]["description"]
                 else:
                     fdesc = ""
-                print(f'|{f}|{fdesc}|', file=self.fh)
+                if "units" in docco.fields[f] and docco.fields[f]["units"]!="":
+                    ftypeunits = docco.fields[f]["units"]
+                elif "fmt" in docco.fields[f] and "char" in docco.fields[f]["fmt"]:
+                    ftypeunits = docco.fields[f]["fmt"]
+                elif "bitmaskenum" in docco.fields[f]:
+                    ftypeunits = "bitmask"
+                elif "valueenum" in docco.fields[f]:
+                    ftypeunits = "enum"
+                else:
+                    ftypeunits = ""
+                print(f'|{f}|{ftypeunits}|{fdesc}|', file=self.fh)
             print("", file=self.fh)
         self.stop()
 

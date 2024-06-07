@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -29,18 +30,18 @@ public:
     }
     
     // paths for UART devices
-    const char *_uart_path[9] {
+    const char *_serial_path[9] {
         "tcp:0:wait",
-        "GPS1",
         "tcp:2",
         "tcp:3",
+        "GPS1",
         "GPS2",
         "tcp:5",
         "tcp:6",
         "tcp:7",
         "tcp:8",
     };
-    std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
+    ObjectArray<struct AP_Param::defaults_table_struct> cmdline_param{100};
 
     /* parse a home location string */
     static bool parse_home(const char *home_str,
@@ -59,7 +60,6 @@ private:
     void _set_param_default(const char *parm);
     void _usage(void);
     void _sitl_setup();
-    void _setup_fdm(void);
     void _setup_timer(void);
     void _setup_adc(void);
 
@@ -68,8 +68,6 @@ private:
     void _set_signal_handlers(void) const;
 
     void _update_airspeed(float airspeed);
-    void _check_rc_input(void);
-    bool _read_rc_sitl_input();
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(struct sitl_input &input);
@@ -85,7 +83,6 @@ private:
 
     Scheduler *_scheduler;
 
-    SocketAPM _sitl_rc_in{true};
     uint16_t _rcin_port;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
@@ -111,6 +108,7 @@ private:
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
     uint32_t wind_start_delay_micros;
+    uint32_t last_wind_update_us;
 
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets

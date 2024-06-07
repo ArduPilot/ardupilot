@@ -8,8 +8,6 @@ MCU STM32H7xx STM32H757xx
 define CORE_CM7
 define SMPS_PWR
 
-define HAL_BUILD_AP_PERIPH
-
 # board ID for firmware load
 APJ_BOARD_ID 1079
 
@@ -72,23 +70,17 @@ define BOARD_PHY_ID  MII_LAN8720_ID
 define BOARD_PHY_RMII
 define HAL_PERIPH_ENABLE_NETWORKING
 
-# ---------------------------------------------------------------------------------------------
-# AP_Periph - boiler-plate configurations that all HW AP-Periph need
-# ---------------------------------------------------------------------------------------------
-define DISABLE_SERIAL_ESC_COMM TRUE
-define HAL_NO_RCIN_THREAD
-#define HAL_NO_GPIO_IRQ
-define HAL_DISABLE_LOOP_DELAY
-
 #################################
 # AP_Periph - configurations specific to this App
 #################################
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
-define AP_RC_CHANNEL_ENABLED 1
 define AP_INERTIALSENSOR_ENABLED 0
 
 define AP_NETWORKING_MAX_INSTANCES 4
+
+define AP_SCRIPTING_ENABLED 1
+define AP_FILESYSTEM_ROMFS_ENABLED 1
 
 # listen for reboot command from uploader.py script
 # undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0

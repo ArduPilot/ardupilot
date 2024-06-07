@@ -170,7 +170,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination)
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!sub.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -179,8 +179,11 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination)
     // no need to check return status because terrain data is not used
     sub.wp_nav.set_wp_destination(destination, false);
 
+#if HAL_LOGGING_ENABLED
     // log target
     sub.Log_Write_GuidedTarget(sub.guided_mode, destination, Vector3f());
+#endif
+
     return true;
 }
 
@@ -198,7 +201,7 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
     if (!sub.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -206,13 +209,16 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 
     if (!sub.wp_nav.set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
         return false;
     }
 
+#if HAL_LOGGING_ENABLED
     // log target
     sub.Log_Write_GuidedTarget(sub.guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+#endif
+
     return true;
 }
 
@@ -230,7 +236,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_ya
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!sub.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -244,8 +250,11 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_ya
     // no need to check return status because terrain data is not used
     sub.wp_nav.set_wp_destination(destination, false);
 
+#if HAL_LOGGING_ENABLED
     // log target
     sub.Log_Write_GuidedTarget(sub.guided_mode, destination, Vector3f());
+#endif
+
     return true;
 }
 
@@ -293,7 +302,7 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!sub.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -308,8 +317,11 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     position_control->input_pos_vel_accel_z(dz, posvel_vel_target_cms.z, 0);
     posvel_pos_target_cm.z = dz;
 
+#if HAL_LOGGING_ENABLED
     // log target
     sub.Log_Write_GuidedTarget(sub.guided_mode, destination, velocity);
+#endif
+
     return true;
 }
 
@@ -325,7 +337,7 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
     if (!sub.fence.check_destination_within_fence(dest_loc)) {
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
     }
@@ -344,8 +356,11 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     position_control->input_pos_vel_accel_z(dz, posvel_vel_target_cms.z, 0);
     posvel_pos_target_cm.z = dz;
 
+#if HAL_LOGGING_ENABLED
     // log target
     sub.Log_Write_GuidedTarget(sub.guided_mode, destination, velocity);
+#endif
+
     return true;
 }
 

@@ -12,8 +12,6 @@
     # rate: 400
     # console: true
     # home: [lat, lon, alt, yaw]
-    # uartA: /dev/tty0
-    # uartB: /dev/tty1
     # serial0: /dev/usb0
     # serial1: /dev/usb1
     # sim_port_in: 5501

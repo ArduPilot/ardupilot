@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ "`echo $1`" = "load" ]; then
     echo "Loading Test_Capes..."

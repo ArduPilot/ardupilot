@@ -26,6 +26,7 @@
 #include "tailsitter.h"
 #include "tiltrotor.h"
 #include "transition.h"
+#include "VTOL_Assist.h"
 
 /*
   QuadPlane specific functionality
@@ -45,6 +46,7 @@ public:
     friend class Tiltrotor;
     friend class SLT_Transition;
     friend class Tailsitter_Transition;
+    friend class VTOL_Assist;
 
     friend class Mode;
     friend class ModeManual;
@@ -156,19 +158,11 @@ public:
         int16_t  target_climb_rate;
         int16_t  climb_rate;
         float    throttle_mix;
-        float    speed_scaler;
         uint8_t  transition_state;
         uint8_t  assist;
     };
 
     MAV_TYPE get_mav_type(void) const;
-
-    enum Q_ASSIST_STATE_ENUM {
-        Q_ASSIST_DISABLED,
-        Q_ASSIST_ENABLED,
-        Q_ASSIST_FORCE,
-    };
-    void set_q_assist_state(Q_ASSIST_STATE_ENUM state) {q_assist_state = state;};
 
     // called when we change mode (for any mode, not just Q modes)
     void mode_enter(void);
@@ -189,6 +183,9 @@ public:
       only called when in an auto-throttle mode
      */
     bool should_disable_TECS() const;
+
+    // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
+    float get_throttle_input() const;
 
 private:
     AP_AHRS &ahrs;
@@ -211,11 +208,11 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Int16 pilot_velocity_z_max_up;
-    AP_Int16 pilot_velocity_z_max_dn;
+    AP_Float pilot_speed_z_max_up;
+    AP_Float pilot_speed_z_max_dn;
 
     // vertical acceleration the pilot may request
-    AP_Int16 pilot_accel_z;
+    AP_Float pilot_accel_z;
 
     // air mode state: OFF, ON, ASSISTED_FLIGHT_ONLY
     AirMode air_mode;
@@ -229,9 +226,6 @@ private:
 
     // return true if airmode should be active
     bool air_mode_active() const;
-
-    // check for quadplane assistance needed
-    bool should_assist(float aspeed, bool have_airspeed);
 
     // check for an EKF yaw reset
     void check_yaw_reset(void);
@@ -334,21 +328,11 @@ private:
 
     AP_Int16 rc_speed;
 
-    // speed below which quad assistance is given
-    AP_Float assist_speed;
+    // VTOL assistance in a forward flight mode
+    VTOL_Assist assist {*this};
 
-    // angular error at which quad assistance is given
-    AP_Int8 assist_angle;
-    uint32_t angle_error_start_ms;
-    AP_Float assist_delay;
-
-    // altitude to trigger assistance
-    AP_Int16 assist_alt;
-    uint32_t alt_error_start_ms;
-    bool in_alt_assist;
-
-    // landing speed in cm/s
-    AP_Int16 land_speed_cms;
+    // landing speed in m/s
+    AP_Float land_final_speed;
 
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt;
@@ -401,6 +385,9 @@ private:
     // limit applied to forward pitch to prevent wing producing negative lift
     AP_Float q_fwd_pitch_lim;
 
+    // limit applied to back pitch to prevent wing producing excessive lift
+    AP_Float q_bck_pitch_lim;
+
     // which fwd throttle handling method is active
     enum class ActiveFwdThr : uint8_t {
         NONE = 0,
@@ -439,6 +426,8 @@ private:
 
     float q_fwd_throttle; // forward throttle used in q modes
     float q_fwd_pitch_lim_cd; // forward pitch limit applied when using q_fwd_throttle
+    float q_bck_pitch_lim_cd; // backward pitch limit applied when using Q_BCK_PIT_LIM
+    uint32_t q_pitch_limit_update_ms; // last time the backward pitch limit was updated
 
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
@@ -451,9 +440,6 @@ private:
 
     // true when quad is assisting a fixed wing mode
     bool assisted_flight:1;
-
-    // true when in angle assist
-    bool in_angle_assist:1;
 
     // are we in a guided takeoff?
     bool guided_takeoff:1;
@@ -678,9 +664,6 @@ private:
     // returns true if the vehicle should currently be doing a spiral landing
     bool landing_with_fixed_wing_spiral_approach(void) const;
 
-    // Q assist state, can be enabled, disabled or force. Default to enabled
-    Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
-
     /*
       return true if we should use the fixed wing attitude control loop
      */
@@ -726,6 +709,11 @@ private:
       setup scaling of roll and pitch angle P gains to match fixed wing gains
      */
     void setup_rp_fw_angle_gains(void);
+
+    /*
+      return true if forward throttle from forward_throttle_pct() should be used
+     */
+    bool allow_forward_throttle_in_vtol_mode() const;
 
 public:
     void motor_test_output();

@@ -89,7 +89,7 @@ AP_Compass_Backend *AP_Compass_IST8308::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
         return nullptr;
     }
 
-    AP_Compass_IST8308 *sensor = new AP_Compass_IST8308(std::move(dev), force_external, rotation);
+    AP_Compass_IST8308 *sensor = NEW_NOTHROW AP_Compass_IST8308(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -198,10 +198,6 @@ void AP_Compass_IST8308::timer()
     if (!_dev->read_registers(STAT1_REG, &stat, 1) ||
         !(stat & STAT1_VAL_DRDY)) {
         return;
-    }
-
-    if (stat & STAT1_VAL_DOR) {
-        printf("IST8308: data overrun\n");
     }
 
     if (!_dev->read_registers(DATAX_L_REG, (uint8_t *) &buffer,

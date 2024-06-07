@@ -26,7 +26,7 @@
 
 #if HAL_SIM_JSBSIM_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -44,15 +44,15 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new JSBSim(frame_str);
+        return NEW_NOTHROW JSBSim(frame_str);
     }
 
 private:
     // tcp input control socket to JSBSIm
-    SocketAPM sock_control;
+    SocketAPM_native sock_control;
 
     // UDP packets from JSBSim in fgFDM format
-    SocketAPM sock_fgfdm;
+    SocketAPM_native sock_fgfdm;
 
     bool initialised;
 

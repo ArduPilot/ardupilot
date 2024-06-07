@@ -1,0 +1,17 @@
+include ../CubePilot-CANMod/hwdef.dat
+
+# we need RTS/CTS for the PPP link
+undef PD14
+undef PD13
+undef PE0
+undef PE1
+
+# need to use UART8 to get RTS/CTS
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+PD13 UART8_RTS UART8
+PD14 UART8_CTS UART8
+
+SERIAL_ORDER OTG1 UART8
+
+include ../include/network_PPPGW.inc

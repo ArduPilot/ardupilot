@@ -109,21 +109,11 @@ public:
                 uint64_t blocking_deadline) override;
     
     // setup event handle for waiting on events
-    bool set_event_handle(AP_HAL::EventHandle* handle) override;
+    bool set_event_handle(AP_HAL::BinarySemaphore *handle) override;
 
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
     void get_stats(ExpandingString &str) override;
-
-    class CANSocketEventSource : public AP_HAL::EventSource {
-        friend class CANIface;
-        CANIface *_ifaces[HAL_NUM_CAN_IFACES];
-        
-    public:
-        // we just poll fd, no signaling is done
-        void signal(uint32_t evt_mask) override { return; }
-        bool wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle) override;
-    };
 
 private:
     void _pollWrite();
@@ -164,8 +154,7 @@ private:
     const unsigned _max_frames_in_socket_tx_queue;
     unsigned _frames_in_socket_tx_queue;
     uint32_t _tx_frame_counter;
-    AP_HAL::EventHandle *_evt_handle;
-    static CANSocketEventSource evt_can_socket[HAL_NUM_CAN_IFACES];
+    AP_HAL::BinarySemaphore *sem_handle;
 
     pollfd _pollfd;
     std::map<SocketCanError, uint64_t> _errors;

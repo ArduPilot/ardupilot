@@ -144,7 +144,7 @@ void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
     if (_obstacles == nullptr) {
-        _obstacles = new AP_Avoidance::Obstacle[_obstacles_max];
+        _obstacles = NEW_NOTHROW AP_Avoidance::Obstacle[_obstacles_max];
 
         if (_obstacles == nullptr) {
             // dynamic RAM allocation of _obstacles[] failed, disable gracefully
@@ -396,6 +396,7 @@ MAV_COLLISION_THREAT_LEVEL AP_Avoidance::current_threat_level() const {
     return _obstacles[_current_most_serious_threat].threat_level;
 }
 
+#if HAL_GCS_ENABLED
 void AP_Avoidance::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour) const
 {
     const mavlink_collision_t packet{
@@ -409,6 +410,7 @@ void AP_Avoidance::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_
     };
     gcs().send_to_active_channels(MAVLINK_MSG_ID_COLLISION, (const char *)&packet);
 }
+#endif
 
 void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
 {

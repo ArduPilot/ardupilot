@@ -15,7 +15,7 @@
 /*
   Simulator for the BLping rangefinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduSub -A --uartF=sim:blping --speedup=1 -l 33.810313,-118.393867,0,185
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduSub -A --serial5=sim:blping --speedup=1 -l 33.810313,-118.393867,0,185
 
 param set SERIAL5_PROTOCOL 9
 param set RNGFND1_TYPE 23

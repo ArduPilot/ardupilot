@@ -45,13 +45,6 @@
   #define CRUISE_SPEED    2  // in m/s
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Logging control
-//
-#ifndef LOGGING_ENABLED
-  #define LOGGING_ENABLED ENABLED
-#endif
-
 #define DEFAULT_LOG_BITMASK    0xffff
 
 //////////////////////////////////////////////////////////////////////////////
@@ -82,12 +75,3 @@
 #ifndef ADVANCED_FAILSAFE
   #define ADVANCED_FAILSAFE DISABLED
 #endif
-
-#ifndef STATS_ENABLED
- # define STATS_ENABLED ENABLED
-#endif
-
-#ifndef OSD_ENABLED
- #define OSD_ENABLED DISABLED
-#endif
-

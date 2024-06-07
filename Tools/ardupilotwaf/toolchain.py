@@ -150,6 +150,11 @@ def configure(cfg):
         cfg.find_program('%s-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)
     cfg.load('compiler_cxx compiler_c')
 
+    if sys.platform.startswith("cygwin"):
+        cfg.find_program('nm', var='NM')
+    else:
+        cfg.find_program('%s-nm' % cfg.env.TOOLCHAIN, var='NM')
+
     if not cfg.options.disable_gccdeps:
         cfg.load('gccdeps')
 

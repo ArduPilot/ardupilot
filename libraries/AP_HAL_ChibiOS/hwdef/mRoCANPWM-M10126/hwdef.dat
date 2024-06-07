@@ -53,14 +53,9 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
 
-# avoid RCIN thread to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
 
 #define DMA_RESERVE_SIZE 2048
-
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN1_RX CAN1
@@ -90,6 +85,7 @@ define HAL_PERIPH_ENABLE_RC_OUT
 #define HAL_PERIPH_ENABLE_NOTIFY
 
 # enable ESC control
+define HAL_SERIAL_ESC_COMM_ENABLED 1
 define HAL_SUPPORT_RCOUT_SERIAL 1
 define HAL_WITH_ESC_TELEM 1
 

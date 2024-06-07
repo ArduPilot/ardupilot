@@ -10,13 +10,17 @@ bool ModeQLoiter::_enter()
     loiter_nav->init_target();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
+    pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
 
     quadplane.init_throttle_wait();
 
     // prevent re-init of target position
     quadplane.last_loiter_ms = AP_HAL::millis();
+
+    // clear precland timestamp
+    last_target_loc_set_ms = 0;
+
     return true;
 }
 
@@ -29,6 +33,36 @@ void ModeQLoiter::update()
 void ModeQLoiter::run()
 {
     const uint32_t now = AP_HAL::millis();
+
+#if AC_PRECLAND_ENABLED
+    const uint32_t precland_timeout_ms = 250;
+    /*
+      see if precision landing or precision loiter is active with
+      an override of the target location.
+
+    */
+    const uint32_t last_pos_set_ms = last_target_loc_set_ms;
+    const uint32_t last_vel_set_ms = quadplane.poscontrol.last_velocity_match_ms;
+
+    if (last_pos_set_ms != 0 && now - last_pos_set_ms < precland_timeout_ms) {
+        // we have an active landing target override
+        Vector2f rel_origin;
+        if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
+            quadplane.pos_control->set_pos_target_xy_cm(rel_origin.x, rel_origin.y);
+            last_target_loc_set_ms = 0;
+        }
+    }
+
+    // allow for velocity override as well
+    if (last_vel_set_ms != 0 && now - last_vel_set_ms < precland_timeout_ms) {
+        // we have an active landing velocity override
+        Vector2f target_accel;
+        Vector2f target_speed_xy_cms{quadplane.poscontrol.velocity_match.x*100, quadplane.poscontrol.velocity_match.y*100};
+        quadplane.pos_control->input_vel_accel_xy(target_speed_xy_cms, target_accel);
+        quadplane.poscontrol.last_velocity_match_ms = 0;
+    }
+#endif // AC_PRECLAND_ENABLED
+
     if (quadplane.tailsitter.in_vtol_transition(now)) {
         // Tailsitters in FW pull up phase of VTOL transition run FW controllers
         Mode::run();
@@ -66,7 +100,7 @@ void ModeQLoiter::run()
     quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
+    pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_speed_z_max_up*100, quadplane.pilot_accel_z*100);
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;

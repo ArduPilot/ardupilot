@@ -40,9 +40,7 @@ class TimeListener(Node):
     def cb(self, msg):
         """Process a Time message."""
         if msg.sec:
-            self.get_logger().info(
-                "From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec)
-            )
+            self.get_logger().info("From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec))
         else:
             self.get_logger().info("From AP : False")
 

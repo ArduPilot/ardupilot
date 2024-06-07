@@ -25,20 +25,24 @@ void loop();
 void motor_order_test();
 void stability_test();
 void update_motors();
-void print_all_motor_matrix();
+void print_all_motors();
+void print_motor_matrix(uint8_t frame_class, uint8_t frame_type);
+void print_motor_tri(uint8_t frame_class, uint8_t frame_type);
 
 // Instantiate a few classes that will be needed so that the singletons can be called from the motors lib
 #if HAL_WITH_ESC_TELEM
 AP_ESC_Telem esc_telem;
 #endif
 
-#define VERSION "AP_Motors library test ver 1.1"
+#define VERSION "AP_Motors library test ver 1.2"
 
 SRV_Channels srvs;
 AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
 AP_Motors *motors;
+AP_MotorsHeli *motors_heli;
 AP_MotorsMatrix *motors_matrix;
+AP_MotorsTri *motors_tri;
 
 bool thrust_boost = false;
 
@@ -120,6 +124,39 @@ void setup()
                     exit(1);
                 }
 
+            } else if (strcmp(cmd,"dual_mode") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI_DUAL) {
+                    ::printf("dual_mode only supported by dual heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI_DUAL, frame_class);
+                    exit(1);
+                }
+
+                // look away now, more dodgy param access.
+                AP_Int8 *dual_mode = (AP_Int8*)motors + AP_MotorsHeli_Dual::var_info[1].offset;
+                dual_mode->set(value);
+
+            } else if (strcmp(cmd,"tail_type") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI) {
+                    ::printf("tail_type only supported by single heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI, frame_class);
+                    exit(1);
+                }
+
+                // Union allows pointers to be aligned despite different sizes
+                // avoids "increases required alignment of target type" error when casting from char* to AP_Int16*
+                union {
+                    char *char_ptr;
+                    AP_Int16 *int16;
+                } tail_type;
+
+                // look away now, more dodgy param access.
+                tail_type.char_ptr = (char*)motors + AP_MotorsHeli_Single::var_info[1].offset;
+                tail_type.int16->set(value);
+
+                // Re-init motors to switch to the new tail type
+                // Have to do this twice to make sure the tail type sticks
+                motors->set_initialised_ok(false);
+                motors->init(frame_class, AP_Motors::MOTOR_FRAME_TYPE_X);
+                motors->set_initialised_ok(false);
+                motors->init(frame_class, AP_Motors::MOTOR_FRAME_TYPE_X);
 
             } else if (strcmp(cmd,"frame_class") == 0) {
                 // We must have the frame_class argument 2nd as resulting class is used to determine if
@@ -142,19 +179,27 @@ void setup()
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI:
-                        motors = new AP_MotorsHeli_Single(400);
-                        // Mot 1-3 swashplate, mot 4 tail rotor pitch, mot 5 for 4th servo in H4-90 swash
-                        num_outputs = 5;
+                        motors_heli = new AP_MotorsHeli_Single(400);
+                        motors = motors_heli;
+                        // Mot 1-3: Swash plate 1 to 3
+                        // Mot 4: Tail rotor
+                        // Mot 5: 4th servo in H4-90 swash
+                        // Mot 6: Unused
+                        // Mot 7: Tail rotor RSC / external governor output
+                        // Mot 8: Main rotor RSC
+                        num_outputs = 8;
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI_DUAL:
-                        motors = new AP_MotorsHeli_Dual(400);
+                        motors_heli = new AP_MotorsHeli_Dual(400);
+                        motors = motors_heli;
                         // Mot 1-3 swashplate 1, mot 4-6 swashplate 2, mot 7 and 8 for 4th servos on H4-90 swash plates front and back, respectively
                         num_outputs = 8;
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI_QUAD:
-                        motors = new AP_MotorsHeli_Quad(400);
+                        motors_heli = new AP_MotorsHeli_Quad(400);
+                        motors = motors_heli;
                         num_outputs = 4; // Only 4 collective servos
                         break;
 
@@ -176,6 +221,29 @@ void setup()
                     ::printf("ERROR: frame_class=%d initialisation failed\n", frame_class);
                     exit(1);
                 }
+
+            } else if (strcmp(cmd,"COL2YAW") == 0) {
+                if (frame_class != AP_Motors::MOTOR_FRAME_HELI) {
+                    ::printf("COL2YAW only supported by single heli frame type (%i), got %i\n", AP_Motors::MOTOR_FRAME_HELI, frame_class);
+                    exit(1);
+                }
+
+                // Union allows pointers to be aligned despite different sizes
+                // avoids "increases required alignment of target type" error when casting from char* to AP_Int16*
+                union {
+                    char *char_ptr;
+                    AP_Float *ap_float;
+                } collective_yaw_scale;
+
+                collective_yaw_scale.char_ptr = (char*)motors + AP_MotorsHeli_Single::var_info[7].offset;
+                collective_yaw_scale.ap_float->set(value);
+
+            } else if (strcmp(cmd,"autorotation") == 0) {
+                if (motors_heli == nullptr) {
+                    ::printf("autorotation only supported by heli frame types, got %i\n", frame_class);
+                    exit(1);
+                }
+                motors_heli->set_in_autorotation(!is_zero(value));
 
             } else {
                 ::printf("Expected \"frame_class\", \"yaw_headroom\" or \"throttle_avg_max\"\n");
@@ -206,9 +274,12 @@ void setup()
 
         } else if (strcmp(argv[1],"p") == 0) {
             if (motors_matrix == nullptr) {
-                ::printf("Print only supports motors matrix\n");
+                motors_matrix = new AP_MotorsMatrix(400);
             }
-            print_all_motor_matrix();
+            if (motors_tri == nullptr) {
+                motors_tri = new AP_MotorsTri(400);
+            }
+            print_all_motors();
 
         } else {
             ::printf("Expected first argument: 't', 's' or 'p'\n");
@@ -271,74 +342,23 @@ void loop()
     }
 }
 
+bool first_layout = true;
+
 // print motor layout for all frame types in json format
-void print_all_motor_matrix()
+void print_all_motors()
 {
     hal.console->printf("{\n");
     hal.console->printf("\t\"Version\": \"%s\",\n", VERSION);
     hal.console->printf("\t\"layouts\": [\n");
 
-    bool first_layout = true;
-    char frame_and_type_string[30];
+    first_layout = true;
 
     for (uint8_t frame_class=0; frame_class <= AP_Motors::MOTOR_FRAME_DECA; frame_class++) {
         for (uint8_t frame_type=0; frame_type < AP_Motors::MOTOR_FRAME_TYPE_Y4; frame_type++) {
-            if (frame_type == AP_Motors::MOTOR_FRAME_TYPE_VTAIL ||
-                frame_type == AP_Motors::MOTOR_FRAME_TYPE_ATAIL) {
-                // Skip the none planar motors types
-                continue;
-            }
-            motors_matrix->init((AP_Motors::motor_frame_class)frame_class, (AP_Motors::motor_frame_type)frame_type);
-            if (motors_matrix->initialised_ok()) {
-                if (!first_layout) {
-                    hal.console->printf(",\n");
-                }
-                first_layout = false;
-
-                // Grab full frame string and strip "Frame: " and split
-                // This is the long way round, motors does have direct getters, but there protected
-                motors_matrix->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
-                char *frame_string = strchr(frame_and_type_string, ':');
-                char *type_string = strchr(frame_and_type_string, '/');
-                if (type_string != nullptr) {
-                    *type_string = 0;
-                }
-
-                hal.console->printf("\t\t{\n");
-                hal.console->printf("\t\t\t\"Class\": %i,\n", frame_class);
-                hal.console->printf("\t\t\t\"ClassName\": \"%s\",\n", frame_string+2);
-                hal.console->printf("\t\t\t\"Type\": %i,\n", frame_type);
-                hal.console->printf("\t\t\t\"TypeName\": \"%s\",\n", (type_string != nullptr) ? type_string + 1 : "?");
-                hal.console->printf("\t\t\t\"motors\": [\n");
-                bool first_motor = true;
-                for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-                    float roll, pitch, yaw, throttle;
-                    uint8_t testing_order;
-                    if (motors_matrix->get_factors(i, roll, pitch, yaw, throttle, testing_order)) {
-                        if (!first_motor) {
-                            hal.console->printf(",\n");
-                        }
-                        first_motor = false;
-                        hal.console->printf("\t\t\t\t{\n");
-                        hal.console->printf("\t\t\t\t\t\"Number\": %i,\n", i+1);
-                        hal.console->printf("\t\t\t\t\t\"TestOrder\": %i,\n", testing_order);
-                        hal.console->printf("\t\t\t\t\t\"Rotation\": ");
-                        if (is_positive(yaw)) {
-                            hal.console->printf("\"CCW\",\n");
-                        } else if (is_negative(yaw)) {
-                            hal.console->printf("\"CW\",\n");
-                        } else {
-                            hal.console->printf("\"?\",\n");
-                        }
-                        hal.console->printf("\t\t\t\t\t\"Roll\": %0.4f,\n", roll);
-                        hal.console->printf("\t\t\t\t\t\"Pitch\": %0.4f\n", pitch);
-                        hal.console->printf("\t\t\t\t}");
-                    }
-                }
-                hal.console->printf("\n");
-                hal.console->printf("\t\t\t]\n");
-                hal.console->printf("\t\t}");
-
+            if (frame_class == AP_Motors::MOTOR_FRAME_TRI) {
+                print_motor_tri(frame_class, frame_type);
+            } else {
+                print_motor_matrix(frame_class, frame_type);
             }
         }
     }
@@ -346,6 +366,118 @@ void print_all_motor_matrix()
     hal.console->printf("\n");
     hal.console->printf("\t]\n");
     hal.console->printf("}\n");
+}
+
+void print_motor_tri(uint8_t frame_class, uint8_t frame_type)
+{
+    char frame_and_type_string[30];
+    motors_tri->init((AP_Motors::motor_frame_class)frame_class, (AP_Motors::motor_frame_type)frame_type);
+    if (motors_tri->initialised_ok()) {
+        if (!first_layout) {
+            hal.console->printf(",\n");
+        }
+        first_layout = false;
+
+        // Grab full frame string and strip "Frame: " and split
+        // This is the long way round, motors does have direct getters, but there protected
+        motors_tri->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
+        char *frame_string = strchr(frame_and_type_string, ':');
+        char *type_string = strchr(frame_and_type_string, '/');
+        if (type_string != nullptr) {
+            *type_string = 0;
+        }
+
+        hal.console->printf("\t\t{\n");
+        hal.console->printf("\t\t\t\"Class\": %i,\n", frame_class);
+        hal.console->printf("\t\t\t\"ClassName\": \"%s\",\n", frame_string+2);
+        hal.console->printf("\t\t\t\"Type\": %i,\n", frame_type);
+        hal.console->printf("\t\t\t\"TypeName\": \"%s\",\n", (type_string != nullptr) ? type_string + 1 : "default");
+        hal.console->printf("\t\t\t\"motors\": [\n");
+        bool first_motor = true;
+        for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            float roll, pitch;
+            uint8_t testing_order;
+            roll = motors_tri->get_roll_factor(i);
+            pitch = motors_tri->get_pitch_factor_json(i);
+            testing_order = motors_tri->get_motor_test_order(i);
+            if (testing_order) {
+                if (!first_motor) {
+                    hal.console->printf(",\n");
+                }
+                first_motor = false;
+                hal.console->printf("\t\t\t\t{\n");
+                hal.console->printf("\t\t\t\t\t\"Number\": %i,\n", i+1);
+                hal.console->printf("\t\t\t\t\t\"TestOrder\": %i,\n", testing_order);
+                hal.console->printf("\t\t\t\t\t\"Rotation\": \"?\",\n");
+                hal.console->printf("\t\t\t\t\t\"Roll\": %0.4f,\n", roll);
+                hal.console->printf("\t\t\t\t\t\"Pitch\": %0.4f\n", pitch);
+                hal.console->printf("\t\t\t\t}");
+                while (hal.console->tx_pending()) { ; }
+            }
+        }
+        hal.console->printf("\n");
+        hal.console->printf("\t\t\t]\n");
+        hal.console->printf("\t\t}");
+
+    }
+}
+
+void print_motor_matrix(uint8_t frame_class, uint8_t frame_type)
+{
+    char frame_and_type_string[30];
+    motors_matrix->init((AP_Motors::motor_frame_class)frame_class, (AP_Motors::motor_frame_type)frame_type);
+    if (motors_matrix->initialised_ok()) {
+        if (!first_layout) {
+            hal.console->printf(",\n");
+        }
+        first_layout = false;
+
+        // Grab full frame string and strip "Frame: " and split
+        // This is the long way round, motors does have direct getters, but there protected
+        motors_matrix->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
+        char *frame_string = strchr(frame_and_type_string, ':');
+        char *type_string = strchr(frame_and_type_string, '/');
+        if (type_string != nullptr) {
+            *type_string = 0;
+        }
+
+        hal.console->printf("\t\t{\n");
+        hal.console->printf("\t\t\t\"Class\": %i,\n", frame_class);
+        hal.console->printf("\t\t\t\"ClassName\": \"%s\",\n", frame_string+2);
+        hal.console->printf("\t\t\t\"Type\": %i,\n", frame_type);
+        hal.console->printf("\t\t\t\"TypeName\": \"%s\",\n", (type_string != nullptr) ? type_string + 1 : "?");
+        hal.console->printf("\t\t\t\"motors\": [\n");
+        bool first_motor = true;
+        for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+            float roll, pitch, yaw, throttle;
+            uint8_t testing_order;
+            if (motors_matrix->get_factors(i, roll, pitch, yaw, throttle, testing_order)) {
+                if (!first_motor) {
+                    hal.console->printf(",\n");
+                }
+                first_motor = false;
+                hal.console->printf("\t\t\t\t{\n");
+                hal.console->printf("\t\t\t\t\t\"Number\": %i,\n", i+1);
+                hal.console->printf("\t\t\t\t\t\"TestOrder\": %i,\n", testing_order);
+                hal.console->printf("\t\t\t\t\t\"Rotation\": ");
+                if (is_positive(yaw)) {
+                    hal.console->printf("\"CCW\",\n");
+                } else if (is_negative(yaw)) {
+                    hal.console->printf("\"CW\",\n");
+                } else {
+                    hal.console->printf("\"?\",\n");
+                }
+                hal.console->printf("\t\t\t\t\t\"Roll\": %0.4f,\n", roll);
+                hal.console->printf("\t\t\t\t\t\"Pitch\": %0.4f\n", pitch);
+                hal.console->printf("\t\t\t\t}");
+                while (hal.console->tx_pending()) { ; }
+            }
+        }
+        hal.console->printf("\n");
+        hal.console->printf("\t\t\t]\n");
+        hal.console->printf("\t\t}");
+
+    }
 }
 
 // stability_test

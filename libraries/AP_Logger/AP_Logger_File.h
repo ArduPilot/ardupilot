@@ -26,7 +26,7 @@ public:
 
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_File(front, ls);
+        return NEW_NOTHROW AP_Logger_File(front, ls);
     }
 
     // initialisation
@@ -72,7 +72,7 @@ private:
     char *_write_filename;
     bool last_log_is_marked_discard;
     uint32_t _last_write_ms;
-#if AP_RTC_ENABLED
+#if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     bool _need_rtc_update;
 #endif
     

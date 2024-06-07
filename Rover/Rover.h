@@ -136,8 +136,6 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
 
-    AP_Logger logger;
-
     // flight modes convenience array
     AP_Int8 *modes;
     const uint8_t num_modes = 6;
@@ -226,7 +224,9 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
 
     static const AP_Param::Info var_info[];
+#if HAL_LOGGING_ENABLED
     static const LogStructure log_structure[];
+#endif
 
     // time that rudder/steering arming has been running
     uint32_t rudder_arm_timer;
@@ -268,11 +268,12 @@ private:
     } cruise_learn_t;
     cruise_learn_t cruise_learn;
 
-private:
-
     // Rover.cpp
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     bool set_target_location(const Location& target_loc) override;
+#endif
+
+#if AP_SCRIPTING_ENABLED
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
     bool get_steering_and_throttle(float& steering, float& throttle) override;
@@ -297,8 +298,8 @@ private:
     bool is_balancebot() const;
 
     // commands.cpp
-    bool set_home_to_current_location(bool lock) WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
+    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
+    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     void update_home();
 
     // crash_check.cpp
@@ -330,6 +331,14 @@ private:
     // GCS_Mavlink.cpp
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
+#if HAL_LOGGING_ENABLED
+    // methods for AP_Vehicle:
+    const AP_Int32 &get_log_bitmask() override { return g.log_bitmask; }
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
+
     // Log.cpp
     void Log_Write_Attitude();
     void Log_Write_Depth();
@@ -341,7 +350,7 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Read(uint16_t log_num, uint16_t start_page, uint16_t end_page);
-    void log_init(void);
+#endif
 
     // mode.cpp
     Mode *mode_from_mode_num(enum Mode::Number num);
@@ -387,7 +396,7 @@ private:
         return control_mode == &mode_auto;
     }
 
-    void startup_INS_ground(void);
+    void startup_INS(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);

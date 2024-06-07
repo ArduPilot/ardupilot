@@ -11,6 +11,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
@@ -22,6 +23,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
@@ -45,7 +47,9 @@ struct float_array {
     uint16_t length;
     float *data;
 };
-    
+
+class StratoBlimp;
+class Glider;
 
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
@@ -59,8 +63,8 @@ struct sitl_fdm {
     double rollRate, pitchRate, yawRate; // degrees/s in body frame
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
-    double airspeed; // m/s
-    Vector3f velocity_air_bf; // velocity relative to airmass, body frame
+    double airspeed; // m/s, EAS
+    Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity
@@ -92,6 +96,10 @@ struct sitl_fdm {
 
     // earthframe wind, from backends that know it
     Vector3f wind_ef;
+
+    // AGL altitude, usually derived from the terrain database in simulation:
+    float height_agl;
+
 };
 
 // number of rc output channels
@@ -152,9 +160,6 @@ public:
     // throttle when motors are active
     float throttle;
 
-    // height above ground
-    float height_agl;
-    
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
@@ -179,7 +184,6 @@ public:
     AP_Int8 mag_orient[HAL_COMPASS_MAX_SENSORS];   // external compass orientation
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Int8 mag_save_ids;
-    AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
@@ -206,6 +210,7 @@ public:
     AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Float gps_accuracy[2];
     AP_Vector3f gps_vel_err[2]; // Velocity error offsets in NED (x = N, y = E, z = D)
+    AP_Int8 gps_jam[2]; // jamming simulation enable
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
@@ -291,11 +296,41 @@ public:
         AP_Int8  signflip;
     };
     AirspeedParm airspeed[AIRSPEED_MAX_SENSORS];
+
+    class ServoParams {
+    public:
+        ServoParams(void) {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+        static const struct AP_Param::GroupInfo var_info[];
+        AP_Float servo_speed; // servo speed in seconds per 60 degrees
+        AP_Float servo_delay; // servo delay in seconds
+        AP_Float servo_filter; // servo 2p filter in Hz
+    };
+    ServoParams servo;
+    
+    // physics model parameters
+    class ModelParm {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+#if AP_SIM_STRATOBLIMP_ENABLED
+        StratoBlimp *stratoblimp_ptr;
+#endif
+#if AP_SIM_SHIP_ENABLED
+        ShipSim shipsim;
+#endif
+#if AP_SIM_GLIDER_ENABLED
+        Glider *glider_ptr;
+#endif
+    };
+    ModelParm models;
     
     // EFI type
     enum EFIType {
         EFI_TYPE_NONE = 0,
         EFI_TYPE_MS = 1,
+        EFI_TYPE_LOWEHEISER = 2,
+        EFI_TYPE_HIRTH = 8,
     };
     
     AP_Int8  efi_type;
@@ -314,6 +349,7 @@ public:
     AP_Float wind_direction;
     AP_Float wind_turbulance;
     AP_Float wind_dir_z;
+    AP_Float wind_change_tc;
     AP_Int8  wind_type; // enum WindLimitType
     AP_Float wind_type_alt;
     AP_Float wind_type_coef;
@@ -411,6 +447,7 @@ public:
     } opos;
 
     uint16_t irlock_port;
+    uint16_t rcin_port;
 
     time_t start_time_UTC;
 
@@ -437,11 +474,6 @@ public:
 
     Sprayer sprayer_sim;
 
-    // simulated ship takeoffs
-#if AP_SIM_SHIP_ENABLED
-    ShipSim shipsim;
-#endif
-
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
 
@@ -452,6 +484,9 @@ public:
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
+#if AP_SIM_LOWEHEISER_ENABLED
+    Loweheiser loweheiser_sim;
+#endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
 #if AP_TEST_DRONECAN_DRIVERS
@@ -529,6 +564,16 @@ public:
     AP_Int8 gyro_file_rw;
     AP_Int8 accel_file_rw;
 #endif
+
+#ifdef WITH_SITL_OSD
+    AP_Int16 osd_rows;
+    AP_Int16 osd_columns;
+#endif
+
+    // Allow inhibiting of SITL only sim state messages over MAVLink
+    // This gives more realistic data rates for testing links
+    void set_stop_MAVLink_sim_state() { stop_MAVLink_sim_state = true; }
+    bool stop_MAVLink_sim_state;
 };
 
 } // namespace SITL

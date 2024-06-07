@@ -153,12 +153,14 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(uint8_t source_set_idx)
     // sanity check source idx
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
         active_source_set = source_set_idx;
+#if HAL_LOGGING_ENABLED
         static const LogEvent evt[AP_NAKEKF_SOURCE_SET_MAX] {
             LogEvent::EK3_SOURCES_SET_TO_PRIMARY,
             LogEvent::EK3_SOURCES_SET_TO_SECONDARY,
             LogEvent::EK3_SOURCES_SET_TO_TERTIARY,
         };
         AP::logger().Write_Event(evt[active_source_set]);
+#endif
     }
 }
 

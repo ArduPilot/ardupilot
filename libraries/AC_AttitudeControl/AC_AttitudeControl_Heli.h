@@ -28,24 +28,13 @@
 #define AC_ATTITUDE_HELI_RATE_Y_FF_FILTER          20.0f
 #define AC_ATTITUDE_HELI_HOVER_ROLL_TRIM_DEFAULT    300
 #define AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD   ToRad(30.0f)
+#define AC_ATTITUDE_HELI_INVERTED_TRANSITION_TIME    3.0f
 
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS_View &ahrs,
                         const AP_MultiCopter &aparm,
-                        AP_MotorsHeli& motors) :
-        AC_AttitudeControl(ahrs, aparm, motors),
-        _pid_rate_roll(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_FF, AC_ATC_HELI_RATE_RP_IMAX, AC_ATTITUDE_HELI_RATE_RP_FF_FILTER, AC_ATC_HELI_RATE_RP_FILT_HZ, 0.0f),
-        _pid_rate_pitch(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_FF, AC_ATC_HELI_RATE_RP_IMAX, AC_ATTITUDE_HELI_RATE_RP_FF_FILTER, AC_ATC_HELI_RATE_RP_FILT_HZ, 0.0f),
-        _pid_rate_yaw(AC_ATC_HELI_RATE_YAW_P, AC_ATC_HELI_RATE_YAW_I, AC_ATC_HELI_RATE_YAW_D, AC_ATC_HELI_RATE_YAW_FF, AC_ATC_HELI_RATE_YAW_IMAX, AC_ATTITUDE_HELI_RATE_Y_FF_FILTER, AC_ATC_HELI_RATE_YAW_FILT_HZ, 0.0f)
-        {
-            AP_Param::setup_object_defaults(this, var_info);
-
-            // initialise flags
-            _flags_heli.leaky_i = true;
-            _flags_heli.flybar_passthrough = false;
-            _flags_heli.tail_passthrough = false;
-        }
+                        AP_MotorsHeli& motors);
 
     // pid accessors
     AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
@@ -94,10 +83,11 @@ public:
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
     
     // enable/disable inverted flight
-    void set_inverted_flight(bool inverted) override {
-        _inverted_flight = inverted;
-    }
-    
+    void set_inverted_flight(bool inverted) override;
+
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) override;
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -109,6 +99,10 @@ private:
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
         uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
     } _flags_heli;
+
+    // true in inverted flight mode
+    bool _inverted_flight;
+    uint16_t _transition_count;
 
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();

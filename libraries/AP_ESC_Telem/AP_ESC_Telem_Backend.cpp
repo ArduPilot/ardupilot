@@ -20,14 +20,19 @@
 #if HAL_WITH_ESC_TELEM
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
 AP_ESC_Telem_Backend::AP_ESC_Telem_Backend() {
     _frontend = AP_ESC_Telem::_singleton;
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // we allow for no frontend in example fw and tools to make it
+    // possible to run them on hardware with IOMCU
     if (_frontend == nullptr) {
         AP_HAL::panic("No ESC frontend");
     }
+#endif
 }
 
 // callback to update the rpm in the frontend, should be called by the driver when new data is available

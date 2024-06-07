@@ -148,6 +148,22 @@ float AnalogSource::_pin_scaler(void)
             break;
         }
     }
+#ifdef HAL_ANALOG2_PINS
+    for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
+        if (AnalogIn::pin_config_2[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
+            scaling = AnalogIn::pin_config_2[i].scaling;
+            break;
+        }
+    }
+#endif
+#ifdef HAL_ANALOG3_PINS
+    for (uint8_t i=0; i<ADC3_GRP1_NUM_CHANNELS; i++) {
+        if (AnalogIn::pin_config_3[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
+            scaling = AnalogIn::pin_config_3[i].scaling;
+            break;
+        }
+    }
+#endif
     return scaling;
 }
 
@@ -195,6 +211,22 @@ bool AnalogSource::set_pin(uint8_t pin)
                 break;
             }
         }
+#ifdef HAL_ANALOG2_PINS
+        for (uint8_t i=0; i<ADC2_GRP1_NUM_CHANNELS; i++) {
+            if (AnalogIn::pin_config_2[i].analog_pin == pin) {
+                found_pin = true;
+                break;
+            }
+        }
+#endif
+#ifdef HAL_ANALOG3_PINS
+        for (uint8_t i=0; i<ADC3_GRP1_NUM_CHANNELS; i++) {
+            if (AnalogIn::pin_config_3[i].analog_pin == pin) {
+                found_pin = true;
+                break;
+            }
+        }
+#endif
     }
     if (!found_pin) {
         return false;
@@ -738,7 +770,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
     WITH_SEMAPHORE(_semaphore);
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(pin);
+            _channels[j] = NEW_NOTHROW AnalogSource(pin);
             return _channels[j];
         }
     }

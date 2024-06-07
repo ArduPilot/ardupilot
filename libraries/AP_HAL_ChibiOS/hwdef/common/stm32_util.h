@@ -43,6 +43,7 @@ void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
 void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
 struct memory_region {
     void *address;
@@ -185,10 +186,10 @@ void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
 
 // allow stack view code to show free ISR stack
-extern uint32_t __main_stack_base__;
-extern uint32_t __main_stack_end__;
-extern uint32_t __main_thread_stack_base__;
-extern uint32_t __main_thread_stack_end__;
+extern stkalign_t __main_stack_base__;
+extern stkalign_t __main_stack_end__;
+extern stkalign_t __main_thread_stack_base__;
+extern stkalign_t __main_thread_stack_end__;
 
 #ifdef __cplusplus
 }

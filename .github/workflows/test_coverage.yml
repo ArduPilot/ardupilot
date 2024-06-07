@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.1.0
+      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.1.3
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -38,7 +38,7 @@ jobs:
             type: coverage
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -72,7 +72,7 @@ jobs:
             Tools/scripts/run_coverage.py -f
           else
             Tools/scripts/run_coverage.py -i
-            ./waf configure --board sitl_periph_gps --debug --coverage
+            ./waf configure --board sitl_periph_universal --debug --coverage
             ./waf build --target bin/AP_Periph
             Tools/scripts/run_coverage.py -i
             Tools/autotest/autotest.py test.CAN --debug --coverage

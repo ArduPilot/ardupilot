@@ -46,7 +46,28 @@ bool AP_Mount_Backend::has_pitch_control() const
     return (_params.pitch_angle_min < _params.pitch_angle_max);
 }
 
+bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
+{
+    switch (mode) {
+    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_HOME_LOCATION:
+        return true;
+    case MAV_MOUNT_MODE_ENUM_END:
+        return false;
+    }
+    return false;
+}
+
+bool AP_Mount_Backend::set_mode(MAV_MOUNT_MODE mode)
+{
+    if (!valid_mode(mode)) {
+        return false;
+    }
+    _mode = mode;
+    return true;
+}
+
 // set angle target in degrees
+// roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
@@ -71,6 +92,11 @@ void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float y
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(yaw_is_earth_frame);
+    }
 }
 
 // sets rate target in deg/s
@@ -86,6 +112,11 @@ void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float 
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(yaw_is_earth_frame);
+    }
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
@@ -97,6 +128,11 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(true);
+    }
 }
 
 // clear_roi_target - clears target location that mount should attempt to point towards
@@ -119,6 +155,11 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 
     // set the mode to sysid tracking mode
     set_mode(MAV_MOUNT_MODE_SYSID_TARGET);
+
+    // optionally set RC_TARGETING yaw lock state
+    if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
+        set_yaw_lock(true);
+    }
 }
 
 #if AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
@@ -142,6 +183,8 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
     if (!get_attitude_quaternion(att_quat)) {
         return;
     }
+    Vector3f ang_velocity { nanf(""), nanf(""), nanf("") };
+    IGNORE_RETURN(get_angular_velocity(ang_velocity));
 
     // construct quaternion array
     const float quat_array[4] = {att_quat.q1, att_quat.q2, att_quat.q3, att_quat.q4};
@@ -152,9 +195,9 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
                                                    AP_HAL::millis(),    // autopilot system time
                                                    get_gimbal_device_flags(),
                                                    quat_array,    // attitude expressed as quaternion
-                                                   std::numeric_limits<double>::quiet_NaN(),    // roll axis angular velocity (NaN for unknown)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // pitch axis angular velocity (NaN for unknown)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // yaw axis angular velocity (NaN for unknown)
+                                                   ang_velocity.x,    // roll axis angular velocity (NaN for unknown)
+                                                   ang_velocity.y,    // pitch axis angular velocity (NaN for unknown)
+                                                   ang_velocity.z,    // yaw axis angular velocity (NaN for unknown)
                                                    0,                                           // failure flags (not supported)
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw (NaN for unknonw)
                                                    std::numeric_limits<double>::quiet_NaN(),    // delta_yaw_velocity (NaN for unknonw)
@@ -235,8 +278,8 @@ void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packe
 {
     switch (get_mode()) {
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-        // input_a : Pitch in centi-degrees
-        // input_b : Roll in centi-degrees
+        // input_a : Pitch in centi-degrees (earth-frame)
+        // input_b : Roll in centi-degrees (earth-frame)
         // input_c : Yaw in centi-degrees (interpreted as body-frame)
         set_angle_target(packet.input_b * 0.01, packet.input_a * 0.01, packet.input_c * 0.01, false);
         break;
@@ -283,10 +326,10 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
         return MAV_RESULT_ACCEPTED;
 
     case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
-        // set body-frame target angles (in degrees) from mavlink message
-        const float pitch_deg = packet.param1;  // param1: pitch (in degrees)
-        const float roll_deg = packet.param2;   // param2: roll in degrees
-        const float yaw_deg = packet.param3;    // param3: yaw in degrees
+        // set target angles (in degrees) from mavlink message
+        const float pitch_deg = packet.param1;  // param1: pitch (earth-frame, degrees)
+        const float roll_deg = packet.param2;   // param2: roll (earth-frame, degrees)
+        const float yaw_deg = packet.param3;    // param3: yaw (body-frame, degrees)
 
         // warn if angles are invalid to catch angles sent in centi-degrees
         if ((fabsf(pitch_deg) > 90) || (fabsf(roll_deg) > 180) || (fabsf(yaw_deg) > 360)) {
@@ -336,6 +379,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
         return MAV_RESULT_FAILED;
     }
 
+    // backup the current values so we can detect a change
+    mavlink_control_id_t prev_control_id = mavlink_control_id;
+
     // convert negative packet1 and packet2 values
     int16_t new_sysid = packet.param1;
     switch (new_sysid) {
@@ -360,6 +406,11 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
             break;
     }
 
+    // send gimbal_manager_status if control has changed
+    if (prev_control_id != mavlink_control_id) {
+        GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
+    }
+
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -379,11 +430,12 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 // write mount log packet
 void AP_Mount_Backend::write_log(uint64_t timestamp_us)
 {
     // return immediately if no yaw estimate
-    float ahrs_yaw = AP::ahrs().yaw;
+    float ahrs_yaw = AP::ahrs().get_yaw();
     if (isnan(ahrs_yaw)) {
         return;
     }
@@ -426,6 +478,7 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
 // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
@@ -548,6 +601,54 @@ void AP_Mount_Backend::calculate_poi()
 }
 #endif
 
+// change to RC_TARGETING mode if rc inputs have changed by more than the dead zone
+// should be called on every update
+void AP_Mount_Backend::set_rctargeting_on_rcinput_change()
+{
+    // exit immediately if no RC input
+    if (!rc().has_valid_input()) {
+        return;
+    }
+
+    const RC_Channel *roll_ch = rc().find_channel_for_option(_instance == 0 ? RC_Channel::AUX_FUNC::MOUNT1_ROLL : RC_Channel::AUX_FUNC::MOUNT2_ROLL);
+    const RC_Channel *pitch_ch = rc().find_channel_for_option(_instance == 0 ? RC_Channel::AUX_FUNC::MOUNT1_PITCH : RC_Channel::AUX_FUNC::MOUNT2_PITCH);
+    const RC_Channel *yaw_ch = rc().find_channel_for_option(_instance == 0 ? RC_Channel::AUX_FUNC::MOUNT1_YAW : RC_Channel::AUX_FUNC::MOUNT2_YAW);
+
+    // get rc input
+    const int16_t roll_in = (roll_ch == nullptr) ? 0 : roll_ch->get_radio_in();
+    const int16_t pitch_in = (pitch_ch == nullptr) ? 0 : pitch_ch->get_radio_in();
+    const int16_t yaw_in = (yaw_ch == nullptr) ? 0 : yaw_ch->get_radio_in();
+
+    if (!last_rc_input.initialised) {
+            // The first time through, initial RC inputs should be set, but not used
+            last_rc_input.initialised = true;
+            last_rc_input.roll_in = roll_in;
+            last_rc_input.pitch_in = pitch_in;
+            last_rc_input.yaw_in = yaw_in;
+    }
+    // if not in RC_TARGETING or RETRACT modes then check for RC change
+    if (get_mode() != MAV_MOUNT_MODE_RC_TARGETING && get_mode() != MAV_MOUNT_MODE_RETRACT) {
+        // get dead zones
+        const int16_t roll_dz = (roll_ch == nullptr) ? 10 : MAX(roll_ch->get_dead_zone(), 10);
+        const int16_t pitch_dz = (pitch_ch == nullptr) ? 10 : MAX(pitch_ch->get_dead_zone(), 10);
+        const int16_t yaw_dz = (yaw_ch == nullptr) ? 10 : MAX(yaw_ch->get_dead_zone(), 10);
+
+        // check if RC input has changed by more than the dead zone
+        if ((abs(last_rc_input.roll_in - roll_in) > roll_dz) ||
+            (abs(last_rc_input.pitch_in - pitch_in) > pitch_dz) ||
+            (abs(last_rc_input.yaw_in - yaw_in) > yaw_dz)) {
+                set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+        }
+    }
+
+    // if NOW in RC_TARGETING or RETRACT mode then store last RC input (mode might have changed)
+    if (get_mode() == MAV_MOUNT_MODE_RC_TARGETING || get_mode() == MAV_MOUNT_MODE_RETRACT) {
+        last_rc_input.roll_in = roll_in;
+        last_rc_input.pitch_in = pitch_in;
+        last_rc_input.yaw_in = yaw_in;
+    }
+}
+
 // get pilot input (in the range -1 to +1) received through RC
 void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const
 {
@@ -663,7 +764,7 @@ float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
     if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(yaw - AP::ahrs().yaw);
+        return wrap_PI(yaw - AP::ahrs().get_yaw());
     }
 
     // target is already body-frame
@@ -679,7 +780,7 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
     }
 
     // convert to earth-frame
-    return wrap_PI(yaw + AP::ahrs().yaw);
+    return wrap_PI(yaw + AP::ahrs().get_yaw());
 }
 
 // sets roll, pitch, yaw and yaw_is_ef
@@ -724,10 +825,45 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
 // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
 uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 {
+    // get yaw lock state by mode
+    bool yaw_lock_state = false;
+    switch (_mode) {
+    case MAV_MOUNT_MODE_RETRACT:
+    case MAV_MOUNT_MODE_NEUTRAL:
+        // these modes always use body-frame yaw (aka follow)
+        yaw_lock_state = false;
+        break;
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        switch (mnt_target.target_type) {
+        case MountTargetType::RATE:
+            yaw_lock_state = mnt_target.rate_rads.yaw_is_ef;
+            break;
+        case MountTargetType::ANGLE:
+            yaw_lock_state = mnt_target.angle_rad.yaw_is_ef;
+            break;
+        }
+        break;
+    case MAV_MOUNT_MODE_RC_TARGETING:
+        yaw_lock_state = _yaw_lock;
+        break;
+    case MAV_MOUNT_MODE_GPS_POINT:
+    case MAV_MOUNT_MODE_SYSID_TARGET:
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+        // these modes always use earth-frame yaw (aka lock)
+        yaw_lock_state = true;
+        break;
+    case MAV_MOUNT_MODE_ENUM_END:
+        // unsupported
+        yaw_lock_state = false;
+        break;
+    }
+
     const uint16_t flags = (get_mode() == MAV_MOUNT_MODE_RETRACT ? GIMBAL_DEVICE_FLAGS_RETRACT : 0) |
                            (get_mode() == MAV_MOUNT_MODE_NEUTRAL ? GIMBAL_DEVICE_FLAGS_NEUTRAL : 0) |
                            GIMBAL_DEVICE_FLAGS_ROLL_LOCK | // roll angle is always earth-frame
-                           GIMBAL_DEVICE_FLAGS_PITCH_LOCK; // pitch angle is always earth-frame, yaw_angle is always body-frame
+                           GIMBAL_DEVICE_FLAGS_PITCH_LOCK| // pitch angle is always earth-frame, yaw_angle is always body-frame
+                           GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME | // yaw angle is always in vehicle-frame
+                           (yaw_lock_state ? GIMBAL_DEVICE_FLAGS_YAW_LOCK : 0);
     return flags;
 }
 

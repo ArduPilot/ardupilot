@@ -28,16 +28,20 @@ void AP_InertialNav::update(bool high_vibes)
 
     // get the velocity relative to the local earth frame
     Vector3f velNED;
-    if (_ahrs_ekf.get_velocity_NED(velNED)) {
-        // during high vibration events use vertical position change
-        if (high_vibes) {
-            float rate_z;
-            if (_ahrs_ekf.get_vert_pos_rate_D(rate_z)) {
-                velNED.z = rate_z;
-            }
-        }
+    
+    const bool velned_ok = _ahrs_ekf.get_velocity_NED(velNED);
+    if (velned_ok) {
         _velocity_cm = velNED * 100; // convert to cm/s
         _velocity_cm.z = -_velocity_cm.z; // convert from NED to NEU
+    }
+    //  During high vibration events, or failure of get_velocity_NED, use the
+    //  fallback vertical velocity estimate. For get_velocity_NED failure, freeze
+    //  the horizontal velocity at the last good value.
+    if (!velned_ok || high_vibes) {
+        float rate_z;
+        if (_ahrs_ekf.get_vert_pos_rate_D(rate_z)) {
+            _velocity_cm.z = -rate_z * 100; // convert from m/s in NED to cm/s in NEU
+        }
     }
 }
 

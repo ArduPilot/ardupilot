@@ -123,7 +123,7 @@ float Plane::mode_auto_target_airspeed_cm()
             return land_airspeed * 100;
         }
         // fallover to normal airspeed
-        return aparm.airspeed_cruise_cm;
+        return aparm.airspeed_cruise*100;
     }
     if (quadplane.in_vtol_land_approach()) {
         return quadplane.get_land_airspeed() * 100;
@@ -137,7 +137,7 @@ float Plane::mode_auto_target_airspeed_cm()
     }
 
     // fallover to normal airspeed
-    return aparm.airspeed_cruise_cm;
+    return aparm.airspeed_cruise*100;
 }
 
 void Plane::calc_airspeed_errors()
@@ -160,7 +160,7 @@ void Plane::calc_airspeed_errors()
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == &mode_fbwb || control_mode == &mode_cruise)) {
         if (flight_option_enabled(FlightOptions::CRUISE_TRIM_AIRSPEED)) {
-            target_airspeed_cm = aparm.airspeed_cruise_cm;
+            target_airspeed_cm = aparm.airspeed_cruise*100;
         } else if (flight_option_enabled(FlightOptions::CRUISE_TRIM_THROTTLE)) {
             float control_min = 0.0f;
             float control_mid = 0.0f;
@@ -175,11 +175,11 @@ void Plane::calc_airspeed_errors()
                     break;
             }
             if (control_in <= control_mid) {
-                target_airspeed_cm = linear_interpolate(aparm.airspeed_min * 100, aparm.airspeed_cruise_cm,
+                target_airspeed_cm = linear_interpolate(aparm.airspeed_min * 100, aparm.airspeed_cruise*100,
                                                         control_in,
                                                         control_min, control_mid);
             } else {
-                target_airspeed_cm = linear_interpolate(aparm.airspeed_cruise_cm, aparm.airspeed_max * 100,
+                target_airspeed_cm = linear_interpolate(aparm.airspeed_cruise*100, aparm.airspeed_max * 100,
                                                         control_in,
                                                         control_mid, control_max);
             }
@@ -213,7 +213,7 @@ void Plane::calc_airspeed_errors()
             if (arspd > 0) {
                 target_airspeed_cm = arspd * 100;
             } else {
-                target_airspeed_cm = aparm.airspeed_cruise_cm;
+                target_airspeed_cm = aparm.airspeed_cruise*100;
             }
         } else if (control_mode == &mode_auto) {
             float arspd = g2.soaring_controller.get_cruising_target_airspeed();
@@ -221,7 +221,7 @@ void Plane::calc_airspeed_errors()
             if (arspd > 0) {
                 target_airspeed_cm = arspd * 100;
             } else {
-                target_airspeed_cm = aparm.airspeed_cruise_cm;
+                target_airspeed_cm = aparm.airspeed_cruise*100;
             }
         }
 #endif
@@ -239,7 +239,7 @@ void Plane::calc_airspeed_errors()
 #endif
     } else {
         // Normal airspeed target for all other cases
-        target_airspeed_cm = aparm.airspeed_cruise_cm;
+        target_airspeed_cm = aparm.airspeed_cruise*100;
     }
 
     // Set target to current airspeed + ground speed undershoot,
@@ -286,8 +286,8 @@ void Plane::calc_gndspeed_undershoot()
         if (!yawVect.is_zero()) {
             yawVect.normalize();
             float gndSpdFwd = yawVect * velNED.xy();
-            groundspeed_undershoot_is_valid = aparm.min_gndspeed_cm > 0;
-            groundspeed_undershoot = groundspeed_undershoot_is_valid ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+            groundspeed_undershoot_is_valid = aparm.min_groundspeed > 0;
+            groundspeed_undershoot = groundspeed_undershoot_is_valid ? (aparm.min_groundspeed*100 - gndSpdFwd*100) : 0;
         }
     } else {
         groundspeed_undershoot_is_valid = false;
@@ -394,14 +394,18 @@ void Plane::update_fbwb_speed_height(void)
             elevator_input = -elevator_input;
         }
 
-        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
-        change_target_altitude(alt_change_cm);
-
-        if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
-            // the user has just released the elevator, lock in
-            // the current altitude
+        bool input_stop_climb = !is_positive(elevator_input) && is_positive(target_altitude.last_elevator_input);
+        bool input_stop_descent = !is_negative(elevator_input) && is_negative(target_altitude.last_elevator_input);
+        if (input_stop_climb || input_stop_descent) {
+            // user elevator input reached or passed zero, lock in the current altitude
             set_target_altitude_current();
         }
+
+        float climb_rate = g.flybywire_climb_rate * elevator_input;
+        climb_rate = constrain_float(climb_rate, -TECS_controller.get_max_sinkrate(), TECS_controller.get_max_climbrate());
+
+        int32_t alt_change_cm = climb_rate * dt * 100;
+        change_target_altitude(alt_change_cm);
 
 #if HAL_SOARING_ENABLED
         if (g2.soaring_controller.is_active()) {
@@ -420,8 +424,6 @@ void Plane::update_fbwb_speed_height(void)
     }
 
     check_fbwb_altitude();
-
-    altitude_error_cm = calc_altitude_error_cm();
 
     calc_throttle();
     calc_nav_pitch();

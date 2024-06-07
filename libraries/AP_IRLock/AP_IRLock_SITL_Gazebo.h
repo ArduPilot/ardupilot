@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "IRLock.h"
 
@@ -24,6 +24,6 @@ public:
 private:
 
     uint32_t _last_timestamp;
-    SocketAPM sock;
+    SocketAPM_native sock;
 };
 #endif // CONFIG_HAL_BOARD

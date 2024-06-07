@@ -138,24 +138,24 @@ protected:
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
     // throttle_out is in the range -100 ~ +100
-    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out);
+    void get_pilot_desired_steering_and_throttle(float &steering_out, float &throttle_out) const;
 
     // decode pilot input steering and return steering_out and speed_out (in m/s)
-    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out);
+    void get_pilot_desired_steering_and_speed(float &steering_out, float &speed_out) const;
 
     // decode pilot lateral movement input and return in lateral_out argument
-    void get_pilot_desired_lateral(float &lateral_out);
+    void get_pilot_desired_lateral(float &lateral_out) const;
 
     // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
-    void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out);
+    void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out) const;
 
     // decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
     // outputs are in the range -1 to +1
-    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out);
+    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out) const;
 
     // decode pilot height inputs and return in height_out arguments
     // outputs are in the range -1 to +1
-    void get_pilot_desired_walking_height(float &walking_height_out);
+    void get_pilot_desired_walking_height(float &walking_height_out) const;
 
     // high level call to navigate to waypoint
     void navigate_to_waypoint();
@@ -192,7 +192,7 @@ protected:
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
     // steering_out is in the range -4500 ~ +4500 with positive numbers meaning rotate clockwise
     // throttle_out is in the range -100 ~ +100
-    void get_pilot_input(float &steering_out, float &throttle_out);
+    void get_pilot_input(float &steering_out, float &throttle_out) const;
     void set_steering(float steering_value);
 
     // references to avoid code churn:
@@ -745,7 +745,7 @@ protected:
     bool _loitering;        // true if loitering at end of SRTL
 };
 
-   
+
 
 class ModeSteering : public Mode
 {

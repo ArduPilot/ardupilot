@@ -6,6 +6,13 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
+// minimum GPS horizontal speed required to use GPS ground course for yaw alignment (m/s)
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+  #define GPS_VEL_YAW_ALIGN_MIN_SPD 5.0F
+#else
+  #define GPS_VEL_YAW_ALIGN_MIN_SPD 1.0F
+#endif
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/
@@ -151,7 +158,7 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
         if (badMagYaw) {
             // attempt to use EKF-GSF estimate if available as it is more robust to GPS glitches
             // by default fly forward vehicles use ground course for initial yaw unless the GSF is explicitly selected as the yaw source
-            const bool useGSF = !assume_zero_sideslip() || (frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::GSF);
+            const bool useGSF = !assume_zero_sideslip() || (yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF);
             if (useGSF && EKFGSF_resetMainFilterYaw(emergency_reset)) {
                 return;
             }
@@ -214,13 +221,6 @@ void NavEKF3_core::SelectMagFusion()
     // used for load levelling
     magFusePerformed = false;
 
-    // get default yaw source
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if (yaw_source != yaw_source_last) {
-        yaw_source_last = yaw_source;
-        yaw_source_reset = true;
-    }
-
     // Store yaw angle when moving for use as a static reference when not moving
     if (!onGroundNotMoving) {
         if (fabsF(prevTnb[0][2]) < fabsF(prevTnb[1][2])) {
@@ -238,13 +238,13 @@ void NavEKF3_core::SelectMagFusion()
 
     // Handle case where we are not using a yaw sensor of any type and attempt to reset the yaw in
     // flight using the output from the GSF yaw estimator or GPS ground course.
-    if ((yaw_source == AP_NavEKF_Source::SourceYaw::GSF) ||
+    if ((yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF) ||
         (!use_compass() &&
-         yaw_source != AP_NavEKF_Source::SourceYaw::GPS &&
-         yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK &&
-         yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
+         yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS &&
+         yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK &&
+         yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
 
-        if ((!yawAlignComplete || yaw_source_reset) && ((yaw_source != AP_NavEKF_Source::SourceYaw::GSF) || (EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD))) {
+        if ((!yawAlignComplete || yaw_source_reset) && ((yaw_source_last != AP_NavEKF_Source::SourceYaw::GSF) || (EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD))) {
             realignYawGPS(false);
             yaw_source_reset = false;
         } else {
@@ -255,7 +255,7 @@ void NavEKF3_core::SelectMagFusion()
             // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
             // for non fixed wing platform types
             ftype gsfYaw, gsfYawVariance;
-            const bool didUseEKFGSF = yawAlignComplete && (yaw_source == AP_NavEKF_Source::SourceYaw::GSF) && EKFGSF_getYaw(gsfYaw, gsfYawVariance) && !assume_zero_sideslip() && fuseEulerYaw(yawFusionMethod::GSF);
+            const bool didUseEKFGSF = yawAlignComplete && (yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF) && EKFGSF_getYaw(gsfYaw, gsfYawVariance) && !assume_zero_sideslip() && fuseEulerYaw(yawFusionMethod::GSF);
 
             // fallback methods
             if (!didUseEKFGSF) {
@@ -276,7 +276,7 @@ void NavEKF3_core::SelectMagFusion()
     }
 
     // Handle case where we are using GPS yaw sensor instead of a magnetomer
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
         bool have_fused_gps_yaw = false;
         if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
@@ -312,7 +312,7 @@ void NavEKF3_core::SelectMagFusion()
             yaw_source_reset = true;
         }
 
-        if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS) {
+        if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS) {
             // no fallback
             return;
         }
@@ -355,7 +355,7 @@ void NavEKF3_core::SelectMagFusion()
 #if EK3_FEATURE_EXTERNAL_NAV
     // Handle case where we are using an external nav for yaw
     const bool extNavYawDataToFuse = storedExtNavYawAng.recall(extNavYawAngDataDelayed, imuDataDelayed.time_ms);
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         if (extNavYawDataToFuse) {
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
                 alignYawAngle(extNavYawAngDataDelayed);
@@ -390,7 +390,7 @@ void NavEKF3_core::SelectMagFusion()
         magTimeout = true;
     }
 
-    if (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
+    if (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
         // check for and read new magnetometer measurements. We don't
         // read for GPS_COMPASS_FALLBACK as it has already been read
         // above
@@ -402,8 +402,8 @@ void NavEKF3_core::SelectMagFusion()
 
     // Control reset of yaw and magnetic field states if we are using compass data
     if (magDataToFuse) {
-        if (yaw_source_reset && (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS ||
-                                 yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
+        if (yaw_source_reset && (yaw_source_last == AP_NavEKF_Source::SourceYaw::COMPASS ||
+                                 yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
             magYawResetRequest = true;
             yaw_source_reset = false;
         }
@@ -1566,7 +1566,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw(bool emergency_reset)
         EKFGSF_yaw_reset_ms = imuSampleTime_ms;
         EKFGSF_yaw_reset_count++;
 
-        if ((frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::GSF) ||
+        if ((yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF) ||
             !use_compass() || (dal.compass().get_num_enabled() == 0)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned using GPS",(unsigned)imu_index);
         } else {

@@ -14,8 +14,11 @@ struct AP_PIDInfo {
     float I;
     float D;
     float FF;
+    float DFF;
     float Dmod;
     float slew_rate;
     bool limit;
     bool PD_limit;
+    bool reset;
+    bool I_term_set;
 };

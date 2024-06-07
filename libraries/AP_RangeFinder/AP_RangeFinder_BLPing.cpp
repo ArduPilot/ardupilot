@@ -61,10 +61,9 @@ bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
     } averageStruct;
 
     // read any available lines from the lidar
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        const int16_t b = uart->read();
-        if (b < 0) {
+    for (auto i=0; i<8192; i++) {
+        uint8_t b;
+        if (!uart->read(b)) {
             break;
         }
         if (protocol.parse_byte(b) == PingProtocol::MessageId::DISTANCE_SIMPLE) {
@@ -83,13 +82,12 @@ bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
     return false;
 }
 
-bool AP_RangeFinder_BLPing::get_signal_quality_pct(int8_t &quality_pct) const
+int8_t AP_RangeFinder_BLPing::get_signal_quality_pct() const
 {
     if (status() != RangeFinder::Status::Good) {
-        return false;
+        return RangeFinder::SIGNAL_QUALITY_UNKNOWN;
     }
-    quality_pct = protocol.get_confidence();
-    return true;
+    return protocol.get_confidence();
 }
 
 uint8_t PingProtocol::get_confidence() const

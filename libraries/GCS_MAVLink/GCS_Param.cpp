@@ -75,7 +75,7 @@ GCS_MAVLINK::queued_param_send()
     }
     count -= async_replies_sent_count;
 
-    while (count && _queued_parameter != nullptr && get_last_txbuf() > 50) {
+    while (count && _queued_parameter != nullptr && last_txbuf_is_greater(33)) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
@@ -108,7 +108,7 @@ bool GCS_MAVLINK::have_flow_control(void)
         return false;
     }
 
-    if (_port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
+    if (_port->flow_control_enabled()) {
         return true;
     }
 
@@ -314,11 +314,13 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
         AP_Param::invalidate_count();
     }
-    
+
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(key, vp->cast_to_float(var_type));
     }
+#endif
 }
 
 void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value)
@@ -351,11 +353,13 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     gcs().send_to_active_channels(MAVLINK_MSG_ID_PARAM_VALUE,
                                   (const char *)&packet);
 
+#if HAL_LOGGING_ENABLED
     // also log to AP_Logger
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(param_name, param_value);
     }
+#endif
 }
 
 

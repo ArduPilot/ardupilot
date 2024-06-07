@@ -14,11 +14,16 @@ import re
 import pickle
 import struct
 import base64
+import subprocess
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
-    tmp_str = bldnode.find_node('include_dirs').read()
+    include_dirs_node = bldnode.find_node('include_dirs')
+    if include_dirs_node is None:
+        _dynamic_env_data['include_dirs'] = []
+        return
+    tmp_str = include_dirs_node.read()
     tmp_str = tmp_str.replace(';\n','')
     tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
     # split, coping with separator
@@ -114,7 +119,7 @@ class upload_fw(Task.Task):
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
         
-        pip.exe install empy pyserial
+        pip.exe install empy==3.3.4 pyserial
         ****************************************
         ****************************************
         """ % error_msg)
@@ -233,8 +238,13 @@ def sign_firmware(image, private_keyfile):
     try:
         import monocypher
     except ImportError:
-        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
         return None
+
+    if monocypher.__version__ != "3.1.3.2":
+        Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+        return None
+
     try:
         key = open(private_keyfile, 'r').read()
     except Exception as ex:
@@ -411,7 +421,10 @@ def chibios_firmware(self):
     bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
-            hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+            if int(self.bld.env.FLASH_RESERVE_START_KB) > 0:
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_with_bl.hex').name)
+            else:
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
             hex_task.set_run_after(cleanup_task)
         else:
@@ -461,13 +474,17 @@ def setup_canmgr_build(cfg):
             'CANARD_ALLOCATE_SEM=1'
             ]
 
-    if cfg.env.HAL_CANFD_SUPPORTED:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
-    else:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
-
     cfg.get_board().with_can = True
 
+def setup_canperiph_build(cfg):
+    '''enable CAN build for peripherals'''
+    env = cfg.env
+    env.DEFINES += [
+        'CANARD_ENABLE_DEADLINE=1',
+        ]
+
+    cfg.get_board().with_can = True
+    
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
     print("Checking for env.py")
@@ -578,6 +595,8 @@ def configure(cfg):
     load_env_vars(cfg.env)
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
+    if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and not env.BOOTLOADER:
+        setup_canperiph_build(cfg)
     if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and int(env.HAL_NUM_CAN_IFACES)>1 and not env.BOOTLOADER:
         env.DEFINES += [ 'CANARD_MULTI_IFACE=1' ]
     setup_optimization(cfg.env)
@@ -710,16 +729,19 @@ def build(bld):
     if bld.env.ENABLE_CRASHDUMP:
         bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
     # list of functions that will be wrapped to move them out of libc into our
-    # own code note that we also include functions that we deliberately don't
-    # implement anywhere (the FILE* functions). This allows us to get link
-    # errors if we accidentially try to use one of those functions either
-    # directly or via another libc call
-    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf','vasprintf','asprintf','vprintf','scanf',
-                'fiprintf','printf',
-                'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
-                'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
-                'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock',
-                '_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r']
-    for w in wraplist:
+    # own code
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
+
+    # list of functions that we will give a link error for if they are
+    # used. This is to prevent accidential use of these functions
+    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell',
+                 'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
+                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
+                'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock']
+
+    # these functions use global state that is not thread safe
+    blacklist += ['gmtime']
+
+    for w in wraplist + blacklist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]

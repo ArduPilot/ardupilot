@@ -883,6 +883,7 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
         // @Field: t4_out: segment duration
         // @Field: t6_out: segment duration
 
+#if HAL_LOGGING_ENABLED
         static bool logged_scve;  // only log once
         if (!logged_scve) {
             logged_scve = true;
@@ -906,6 +907,8 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
                 (double)t6_out
                 );
         }
+#endif  // HAL_LOGGING_ENABLED
+
 #endif  // APM_BUILD_COPTER_OR_HELI
 
         Jm_out = 0.0f;

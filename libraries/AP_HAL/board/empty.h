@@ -16,3 +16,4 @@
 #define HAL_HAVE_SAFETY_SWITCH 1
 
 #define HAL_Semaphore Empty::Semaphore
+#define HAL_BinarySemaphore Empty::BinarySemaphore

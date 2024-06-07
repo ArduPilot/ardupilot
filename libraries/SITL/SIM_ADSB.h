@@ -22,7 +22,7 @@
 
 #if HAL_SIM_ADSB_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 

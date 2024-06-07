@@ -525,6 +525,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.disarm_vehicle()
         self.progress("RTL Mission OK (%fm)" % home_distance)
 
+    def RTL_SPEED(self, timeout=120):
+        '''Test RTL_SPEED is honoured'''
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 0),
+        ])
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(2, timeout=120)
+        for speed in 1, 5.5, 1.5, 7.5:
+            self.set_parameter("RTL_SPEED", speed)
+            self.change_mode('RTL')
+            self.wait_groundspeed(speed-0.1, speed+0.1, minimum_duration=10)
+            self.change_mode('HOLD')
+        self.do_RTL()
+        self.disarm_vehicle()
+
     def AC_Avoidance(self):
         '''Test AC Avoidance switch'''
         self.context_push()
@@ -568,6 +589,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test ServoRelayEvents'''
         for method in self.run_cmd, self.run_cmd_int:
             self.context_push()
+
+            self.set_parameters({
+                "RELAY1_FUNCTION": 1, # Enable relay 1 as a standard relay pin
+                "RELAY2_FUNCTION": 1, # Enable relay 2 as a standard relay pin
+            })
+            self.reboot_sitl() # Needed for relay functions to take effect
+
             method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=0)
             off = self.get_parameter("SIM_PIN_MASK")
             method(mavutil.mavlink.MAV_CMD_DO_SET_RELAY, p1=0, p2=1)
@@ -602,8 +630,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "on": 0,
             })
 
-            # add another servo:
-            self.set_parameter("RELAY_PIN6", 14)
+            # add another relay and ensure that it changes the "present field"
+            self.set_parameters({
+                "RELAY6_FUNCTION": 1, # Enable relay 6 as a standard relay pin
+                "RELAY6_PIN": 14, # Set pin number
+            })
+            self.reboot_sitl() # Needed for relay function to take effect
+            self.set_message_rate_hz("RELAY_STATUS", 10) # Need to re-request the message since reboot
+
             self.assert_received_message_field_values('RELAY_STATUS', {
                 "present": 35,
                 "on": 0,
@@ -1356,7 +1390,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # location copied in from rover-test-rally.txt:
         loc = mavutil.location(40.071553,
                                -105.229401,
-                               0,
+                               1583,
                                0)
 
         self.wait_location(loc, accuracy=accuracy, minimum_duration=10, timeout=45)
@@ -2574,7 +2608,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Unexpected mission type %u want=%u" %
                                        (m.mission_type, mission_type))
         if m.type != want_type:
-            raise NotAchievedException("Expected ack type got %u got %u" %
+            raise NotAchievedException("Expected ack type %u got %u" %
                                        (want_type, m.type))
 
     def assert_filepath_content(self, filepath, want):
@@ -2585,7 +2619,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def mavproxy_can_do_mision_item_protocols(self):
         return False
-        if not self.mavproxy_version_gt(1, 8, 12):
+        if not self.mavproxy_version_gt(1, 8, 69):
             self.progress("MAVProxy is too old; skipping tests")
             return False
         return True
@@ -4849,7 +4883,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         #     target_component=target_component)
 
     def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence.txt")
+        mavproxy = self.start_mavproxy()
+        self.load_fence_using_mavproxy(mavproxy, "rover-path-planning-fence.txt")
+        self.stop_mavproxy(mavproxy)
+        # self.load_fence("rover-path-planning-fence.txt")
         self.load_mission("rover-path-planning-mission.txt")
         self.context_push()
         ex = None
@@ -4868,11 +4905,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.mavproxy.send("fence list\n")
             # target_loc is copied from the mission file
             target_loc = mavutil.location(40.073799, -105.229156)
-            self.wait_location(target_loc, timeout=300)
+            self.wait_location(target_loc, height_accuracy=None, timeout=300)
             # mission has RTL as last item
             self.wait_distance_to_home(3, 7, timeout=300)
             self.disarm_vehicle()
         except Exception as e:
+            self.disarm_vehicle(force=True)
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
@@ -5212,9 +5250,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def PolyFenceObjectAvoidance(self, target_system=1, target_component=1):
         '''PolyFence object avoidance tests'''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
         self.test_poly_fence_object_avoidance_auto(
             target_system=target_system,
             target_component=target_component)
@@ -5269,21 +5304,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.context_push()
 
-        test_scripts = ["scripting_test.lua", "math.lua", "strings.lua", "mavlink_test.lua"]
-        success_text = ["Internal tests passed", "Math tests passed", "String tests passed", "Received heartbeat from"]
-        named_value_float_types = ["test"]
-
-        messages = []
-        named_value_float = []
-
-        def my_message_hook(mav, message):
-            if message.get_type() == 'STATUSTEXT':
-                messages.append(message)
-            # also sniff for named value float messages
-            if message.get_type() == 'NAMED_VALUE_FLOAT':
-                named_value_float.append(message)
-
-        self.install_message_hook_context(my_message_hook)
         self.set_parameters({
             "SCR_ENABLE": 1,
             "SCR_HEAP_SIZE": 1024000,
@@ -5291,38 +5311,36 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.install_test_modules_context()
         self.install_mavlink_module_context()
-        for script in test_scripts:
+        for script in [
+                "scripting_test.lua",
+                "math.lua",
+                "strings.lua",
+                "mavlink_test.lua",
+        ]:
             self.install_test_script_context(script)
+
+        self.context_collect('STATUSTEXT')
+        self.context_collect('NAMED_VALUE_FLOAT')
+
         self.reboot_sitl()
 
-        self.delay_sim_time(10)
+        for success_text in [
+                "Internal tests passed",
+                "Math tests passed",
+                "String tests passed",
+                "Received heartbeat from"
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+
+        for success_nvf in [
+                "test",
+        ]:
+            self.assert_received_message_field_values("NAMED_VALUE_FLOAT", {
+                "name": success_nvf,
+            }, check_context=True)
 
         self.context_pop()
         self.reboot_sitl()
-
-        # check all messages to see if we got our message
-        success = True
-        for text in success_text:
-            script_success = False
-            for m in messages:
-                if text in m.text:
-                    script_success = True
-            success = script_success and success
-        if not success:
-            raise NotAchievedException("Failed to receive STATUS_TEXT")
-        else:
-            self.progress("Success STATUS_TEXT")
-
-        for type in named_value_float_types:
-            script_success = False
-            for m in named_value_float:
-                if type == m.name:
-                    script_success = True
-            success = script_success and success
-        if not success:
-            raise NotAchievedException("Failed to receive NAMED_VALUE_FLOAT")
-        else:
-            self.progress("Success NAMED_VALUE_FLOAT")
 
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
@@ -5369,7 +5387,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_collect("STATUSTEXT")
         self.set_parameters({
             "SCR_ENABLE": 1,
-            "RELAY_PIN": 1,
+            "RELAY1_FUNCTION": 1,
+            "RELAY1_PIN": 1
         })
         self.install_example_script_context("RCIN_test.lua")
         self.reboot_sitl()
@@ -6055,7 +6074,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             timeout=1,
             target_sysid=target_sysid,
             target_compid=target_compid,
-            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
     def FlashStorage(self):
@@ -6131,14 +6150,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test mulitple depthfinders for boats'''
         # Setup rangefinders
         self.customise_SITL_commandline([
-            "--uartH=sim:nmea", # NMEA Rangefinder
+            "--serial7=sim:nmea", # NMEA Rangefinder
         ])
 
         # RANGEFINDER_INSTANCES = [0, 2, 5]
         self.set_parameters({
             "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
             "RNGFND1_ORIENT" : 25,   # Set to downward facing
-            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on uartH
+            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on serial7
             "SERIAL7_BAUD" : 9600,   # Rangefinder specific baudrate
 
             "RNGFND3_TYPE" : 2,      # MaxbotixI2C
@@ -6614,6 +6633,274 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0)
         self.assert_fence_disabled()
 
+    def MAV_CMD_BATTERY_RESET(self):
+        '''manipulate battery levels with MAV_CMD_BATTERY_RESET'''
+        for (run_cmd, value) in (self.run_cmd, 56), (self.run_cmd_int, 97):
+            run_cmd(
+                mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+                p1=65535,  # battery mask
+                p2=value,
+            )
+            self.assert_received_message_field_values('BATTERY_STATUS', {
+                "battery_remaining": value,
+            }, {
+                "poll": True,
+            })
+
+    def TestWebServer(self, url):
+        '''test active web server'''
+        self.progress("Accessing webserver main page")
+        import urllib.request
+
+        main_page = urllib.request.urlopen(url).read().decode('utf-8')
+        if main_page.find('ArduPilot Web Server') == -1:
+            raise NotAchievedException("Expected banner on main page")
+
+        board_status = urllib.request.urlopen(url + '/@DYNAMIC/board_status.shtml').read().decode('utf-8')
+        if board_status.find('0 hours') == -1:
+            raise NotAchievedException("Expected uptime in board status")
+        if board_status.find('40.713') == -1:
+            raise NotAchievedException("Expected lattitude in board status")
+
+        self.progress("WebServer tests OK")
+
+    def NetworkingWebServer(self):
+        '''web server'''
+        applet_script = "net_webserver.lua"
+
+        self.context_push()
+        self.install_applet_script_context(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "SIM_SPEEDUP": 20,
+            "NET_ENABLE": 1,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "WEB_BIND_PORT": 8081,
+        })
+
+        self.scripting_restart()
+        self.wait_text("WebServer: starting on port 8081", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        self.TestWebServer("http://127.0.0.1:8081")
+
+        self.context_pop()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def NetworkingWebServerPPP(self):
+        '''web server over PPP'''
+        applet_script = "net_webserver.lua"
+
+        self.context_push()
+        self.install_applet_script_context(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "SIM_SPEEDUP": 20,
+            "NET_ENABLE": 1,
+            "SERIAL5_PROTOCOL": 48,
+        })
+
+        self.progress('rebuilding rover with ppp enabled')
+        import shutil
+        shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
+        util.build_SITL('bin/ardurover', clean=False, configure=True, extra_configure_args=['--enable-ppp', '--debug'])
+
+        self.reboot_sitl()
+
+        self.progress("Starting PPP daemon")
+        pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        pppd.expect("remote IP address 192.168.14.13")
+
+        self.progress("PPP daemon started")
+
+        self.set_parameters({
+            "WEB_BIND_PORT": 8081,
+        })
+
+        self.scripting_restart()
+        self.wait_text("WebServer: starting on port 8081", check_context=True)
+
+        self.wait_ready_to_arm()
+
+        self.TestWebServer("http://192.168.14.13:8081")
+
+        self.context_pop()
+        self.context_pop()
+
+        # restore rover without ppp enabled for next test
+        os.unlink('build/sitl/bin/ardurover')
+        shutil.copy('build/sitl/bin/ardurover.noppp', 'build/sitl/bin/ardurover')
+        self.reboot_sitl()
+
+    def FenceFullAndPartialTransfer(self, target_system=1, target_component=1):
+        '''ensure starting a fence transfer then a partial transfer behaves
+        appropriately'''
+        # start uploading a 10 item list:
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_FENCE, 0)
+        # change our mind and try a partial mission upload:
+        self.mav.mav.mission_write_partial_list_send(
+            target_system,
+            target_component,
+            3,
+            3,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        # should get denied for that one:
+        self.assert_receive_mission_ack(
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            want_type=mavutil.mavlink.MAV_MISSION_DENIED,
+        )
+        # now wait for the original upload to be "cancelled"
+        self.assert_receive_mission_ack(
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
+        )
+
+    def MissionRetransfer(self, target_system=1, target_component=1):
+        '''torture-test with MISSION_COUNT'''
+#        self.send_debug_trap()
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_FENCE, 0)
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10000,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.wait_statustext('Only [0-9]+ items are supported', regex=True, check_context=True)
+        self.context_pop()
+        self.assert_not_receive_message('MISSION_REQUEST')
+        self.mav.mav.mission_count_send(
+            target_system,
+            target_component,
+            10,
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+        )
+        self.assert_receive_mission_item_request(mavutil.mavlink.MAV_MISSION_TYPE_FENCE, 0)
+        self.assert_receive_mission_ack(
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            want_type=mavutil.mavlink.MAV_MISSION_OPERATION_CANCELLED,
+        )
+
+    def MissionPolyEnabledPreArm(self):
+        '''check Polygon porearm checks'''
+        self.set_parameters({
+            'FENCE_ENABLE': 1,
+        })
+        self.progress("Ensure that we can arm if polyfence is enabled but we have no polyfence")
+        self.assert_parameter_value('FENCE_TYPE', 6)
+        self.wait_ready_to_arm()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.progress("Ensure we can arm when we have an inclusion fence we are inside of")
+        here = self.mav.location()
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                [ # over the top of the vehicle
+                    self.offset_location_ne(here, -50, -50), # bl
+                    self.offset_location_ne(here, -50, 50), # br
+                    self.offset_location_ne(here, 50, 50), # tr
+                    self.offset_location_ne(here, 50, -50), # tl,
+                ]
+            ]
+        )
+        self.delay_sim_time(5)
+        self.wait_ready_to_arm()
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.progress("Ensure we can't arm when we are in breacnh of a polyfence")
+        self.clear_fence()
+
+        self.progress("Now create a fence we are in breach of")
+        here = self.mav.location()
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                [ # over the top of the vehicle
+                    self.offset_location_ne(here, 20, 20), # bl
+                    self.offset_location_ne(here, 20, 50), # br
+                    self.offset_location_ne(here, 50, 50), # tr
+                    self.offset_location_ne(here, 50, 20), # tl,
+                ]
+            ]
+        )
+
+        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False)
+        self.reboot_sitl()
+
+        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+
+        self.progress("Ensure we can arm when a polyfence fence is cleared when we've previously been in breach")
+        self.clear_fence()
+        self.wait_ready_to_arm()
+
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                [ # over the top of the vehicle
+                    self.offset_location_ne(here, 20, 20), # bl
+                    self.offset_location_ne(here, 20, 50), # br
+                    self.offset_location_ne(here, 50, 50), # tr
+                    self.offset_location_ne(here, 50, 20), # tl,
+                ]
+            ]
+        )
+        self.reboot_sitl()
+        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+        self.clear_fence()
+        self.wait_ready_to_arm()
+
+        self.progress("Ensure we can arm after clearing polygon fence type enabled")
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                [ # over the top of the vehicle
+                    self.offset_location_ne(here, 20, 20), # bl
+                    self.offset_location_ne(here, 20, 50), # br
+                    self.offset_location_ne(here, 50, 50), # tr
+                    self.offset_location_ne(here, 50, 20), # tl,
+                ]
+            ]
+        )
+        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+        self.set_parameter('FENCE_TYPE', 2)
+        self.wait_ready_to_arm()
+        self.set_parameter('FENCE_TYPE', 6)
+        self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6697,12 +6984,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MAV_CMD_DO_SET_REVERSE,
             self.MAV_CMD_GET_HOME_POSITION,
             self.MAV_CMD_DO_FENCE_ENABLE,
+            self.MAV_CMD_BATTERY_RESET,
+            self.NetworkingWebServer,
+            self.NetworkingWebServerPPP,
+            self.RTL_SPEED,
+            self.MissionRetransfer,
+            self.FenceFullAndPartialTransfer,
+            self.MissionPolyEnabledPreArm,
         ])
         return ret
 
     def disabled_tests(self):
         return {
             "SlewRate": "got timing report failure on CI",
+            "MAV_CMD_NAV_SET_YAW_SPEED": "compiled out of code by default",
         }
 
     def rc_defaults(self):

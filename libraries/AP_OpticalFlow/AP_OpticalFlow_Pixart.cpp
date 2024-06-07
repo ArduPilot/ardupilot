@@ -94,7 +94,7 @@ AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, AP_OpticalFlow
 // detect the device
 AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(const char *devname, AP_OpticalFlow &_frontend)
 {
-    AP_OpticalFlow_Pixart *sensor = new AP_OpticalFlow_Pixart(devname, _frontend);
+    AP_OpticalFlow_Pixart *sensor = NEW_NOTHROW AP_OpticalFlow_Pixart(devname, _frontend);
     if (!sensor) {
         return nullptr;
     }
@@ -287,7 +287,11 @@ void AP_OpticalFlow_Pixart::timer(void)
 
     uint32_t dt_us = last_burst_us - integral.last_frame_us;
     float dt = dt_us * 1.0e-6;
+#if AP_AHRS_ENABLED
     const Vector3f &gyro = AP::ahrs().get_gyro();
+#else
+    const Vector3f &gyro = AP::ins().get_gyro();
+#endif
 
     {
         WITH_SEMAPHORE(_sem);

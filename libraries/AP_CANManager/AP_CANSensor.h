@@ -36,6 +36,9 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
+    // Return true if this sensor has been successfully registered to a driver and initialized.
+    bool initialized() const { return _initialized; }
+
     // handler for incoming frames
     virtual void handle_frame(AP_HAL::CANFrame &frame) = 0;
 
@@ -72,8 +75,12 @@ private:
     const uint16_t _stack_size;
     bool _initialized;
     uint8_t _driver_index;
+
+    // this is true when we are setup as an auxillary driver using CAN_Dn_PROTOCOL2
+    bool is_aux_11bit_driver;
+
     AP_CANDriver *_can_driver;
-    HAL_EventHandle _event_handle;
+    HAL_BinarySemaphore sem_handle;
     AP_HAL::CANIface* _can_iface;
 
 #ifdef HAL_BUILD_AP_PERIPH
@@ -84,6 +91,42 @@ private:
         AP_CAN::Protocol protocol;
     } static _periph[HAL_NUM_CAN_IFACES];
 #endif
+};
+
+// a class to allow for multiple CAN backends with one
+// CANSensor driver. This can be shared among different libraries like rangefinder and proximity
+class MultiCAN : public CANSensor {
+public:
+    // callback functor def for forwarding frames
+    FUNCTOR_TYPEDEF(ForwardCanFrame, bool, AP_HAL::CANFrame &);
+
+    MultiCAN(ForwardCanFrame cf, AP_CAN::Protocol can_type, const char *driver_name);
+
+    // handle a received frame from the CAN bus
+    void handle_frame(AP_HAL::CANFrame &frame) override;
+
+private:
+    // class to allow for multiple callbacks implemented as a linked list
+    class MultiCANLinkedList {
+    public:
+        struct CANSensor_Multi {
+            ForwardCanFrame _callback;
+            CANSensor_Multi* next = nullptr;
+        };
+
+        // register a callback for a CAN frame by adding it to the linked list
+        void register_callback(ForwardCanFrame callback);
+
+        // distribute the CAN frame to the registered callbacks
+        void handle_frame(AP_HAL::CANFrame &frame);
+        HAL_Semaphore sem;
+
+    private:
+        CANSensor_Multi* head = nullptr;
+    };
+
+    // Pointer to static instance of the linked list for persistence across instances
+    static MultiCANLinkedList* callbacks;
 };
 
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS

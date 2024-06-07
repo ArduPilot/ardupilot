@@ -1,6 +1,8 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Radio_config.h"
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#if AP_RADIO_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include "AP_Radio.h"
 #include "AP_Radio_backend.h"
@@ -151,40 +153,36 @@ AP_Radio::AP_Radio(void)
 bool AP_Radio::init(void)
 {
     switch (radio_type) {
-#if (not defined AP_RADIO_CYRF6936 || AP_RADIO_CYRF6936)
+#if AP_RADIO_CYRF6936_ENABLED
     case RADIO_TYPE_CYRF6936:
-        driver = new AP_Radio_cypress(*this);
+        driver = NEW_NOTHROW AP_Radio_cypress(*this);
         break;
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#if (not defined AP_RADIO_CC2500 || AP_RADIO_CC2500)
+#if AP_RADIO_CC2500_ENABLED
     case RADIO_TYPE_CC2500:
-        driver = new AP_Radio_cc2500(*this);
+        driver = NEW_NOTHROW AP_Radio_cc2500(*this);
         break;
 #endif
-#endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
-#if (not defined AP_RADIO_BK2425 || AP_RADIO_BK2425)
+#if AP_RADIO_BK2425_ENABLED
     case RADIO_TYPE_BK2425:
-        driver = new AP_Radio_beken(*this);
+        driver = NEW_NOTHROW AP_Radio_beken(*this);
         break;
-#endif
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
     case RADIO_TYPE_AUTO:
         // auto-detect between cc2500 and beken radios
-#if (not defined AP_RADIO_CC2500 || AP_RADIO_CC2500)
+#if AP_RADIO_CC2500_ENABLED
         if (AP_Radio_cc2500::probe()) {
-            driver = new AP_Radio_cc2500(*this);
+            driver = NEW_NOTHROW AP_Radio_cc2500(*this);
         }
 #endif
-#if (not defined AP_RADIO_BK2425 || AP_RADIO_BK2425)
+#if AP_RADIO_BK2425_ENABLED
         if (driver == nullptr) {
-            driver = new AP_Radio_beken(*this);
+            driver = NEW_NOTHROW AP_Radio_beken(*this);
         }
 #endif
         break;
-#endif
+#endif  // CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
     default:
         break;
     }
@@ -301,5 +299,4 @@ void AP_Radio::change_txmode(void)
     }
 }
 
-#endif // HAL_RCINPUT_WITH_AP_RADIO
-
+#endif  // AP_RADIO_ENABLED

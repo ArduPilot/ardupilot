@@ -15,7 +15,7 @@
 /*
   Simulator for the NMEA serial rangefinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rf_mavlink --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:rf_mavlink --speedup=1
 
 param set SERIAL5_PROTOCOL 1
 param set RNGFND1_TYPE 10

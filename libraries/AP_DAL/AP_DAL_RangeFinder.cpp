@@ -12,8 +12,8 @@ AP_DAL_RangeFinder::AP_DAL_RangeFinder()
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     _RRNH.num_sensors = AP::rangefinder()->num_sensors();
-    _RRNI = new log_RRNI[_RRNH.num_sensors];
-    _backend = new AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
+    _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
+    _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
     if (!_RRNI || !_backend) {
         goto failed;
     }
@@ -22,7 +22,7 @@ AP_DAL_RangeFinder::AP_DAL_RangeFinder()
     }
     for (uint8_t i=0; i<_RRNH.num_sensors; i++) {
         // this avoids having to discard a const....
-        _backend[i] = new AP_DAL_RangeFinder_Backend(_RRNI[i]);
+        _backend[i] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[i]);
         if (!_backend[i]) {
             goto failed;
         }
@@ -132,8 +132,8 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNH &msg)
 {
     _RRNH = msg;
     if (_RRNH.num_sensors > 0 && _RRNI == nullptr) {
-        _RRNI = new log_RRNI[_RRNH.num_sensors];
-        _backend = new AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
+        _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
+        _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
     }
 }
 
@@ -142,7 +142,7 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNI &msg)
     if (_RRNI != nullptr && msg.instance < _RRNH.num_sensors) {
         _RRNI[msg.instance] = msg;
         if (_backend != nullptr && _backend[msg.instance] == nullptr) {
-            _backend[msg.instance] = new AP_DAL_RangeFinder_Backend(_RRNI[msg.instance]);
+            _backend[msg.instance] = NEW_NOTHROW AP_DAL_RangeFinder_Backend(_RRNI[msg.instance]);
         }
     }
 }

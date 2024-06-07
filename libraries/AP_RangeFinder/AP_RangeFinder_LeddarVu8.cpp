@@ -51,13 +51,12 @@ bool AP_RangeFinder_LeddarVu8::get_reading(float &reading_m)
     bool latest_dist_valid = false;
 
     // read any available characters from the lidar
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        int16_t r = uart->read();
-        if (r < 0) {
-            continue;
+    for (auto i=0; i<8192; i++) {
+        uint8_t b;
+        if (!uart->read(b)) {
+            break;
         }
-        if (parse_byte((uint8_t)r, latest_dist_valid, latest_dist_cm)) {
+        if (parse_byte(b, latest_dist_valid, latest_dist_cm)) {
             if (latest_dist_valid) {
                 sum_cm += latest_dist_cm;
                 count++;

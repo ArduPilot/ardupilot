@@ -10,6 +10,8 @@
 
 #include "MultiHeap.h"
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 /*
   on ChibiOS allow up to 4 heaps. On other HALs only allow a single
   heap. This is needed as hal.util->heap_realloc() needs to have the
@@ -38,7 +40,7 @@ bool MultiHeap::create(uint32_t total_size, uint8_t max_heaps)
         // don't allow double allocation
         return false;
     }
-    heaps = new void*[max_heaps];
+    heaps = NEW_NOTHROW void*[max_heaps];
     if (heaps == nullptr) {
         return false;
     }
@@ -141,3 +143,6 @@ void *MultiHeap::change_size(void *ptr, uint32_t old_size, uint32_t new_size)
     */
     return hal.util->heap_realloc(heaps[0], ptr, old_size, new_size);
 }
+
+#endif // HAL_BOOTLOADER_BUILD
+

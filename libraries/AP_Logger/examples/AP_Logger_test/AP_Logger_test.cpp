@@ -41,7 +41,7 @@ public:
 private:
 
     AP_Int32 log_bitmask;
-    AP_Logger logger{log_bitmask};
+    AP_Logger logger;
     AP_Scheduler scheduler;
 
 };
@@ -53,7 +53,7 @@ void AP_LoggerTest::setup(void)
     hal.console->printf("Logger Log Test 1.0\n");
 
     log_bitmask.set((uint32_t)-1);
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
+    logger.init(log_bitmask, log_structure, ARRAY_SIZE(log_structure));
     logger.set_vehicle_armed(true);
     logger.Write_Message("AP_Logger Test");
 #ifdef DEBUG_RATES

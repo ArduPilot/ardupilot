@@ -29,7 +29,6 @@ public:
 private:
 
     uint32_t telem_delay() const override { return 0; }
-    void handleMessage(const mavlink_message_t &msg) override { handle_common_message(msg); }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     uint8_t sysid_my_gcs() const override;
@@ -39,9 +38,6 @@ protected:
     // Periph information:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
     MAV_STATE vehicle_system_status() const override { return MAV_STATE_CALIBRATING; }
-
-    bool set_home_to_current_location(bool _lock) override { return false; }
-    bool set_home(const Location& loc, bool _lock) override { return false; }
 
     void send_nav_controller_output() const override {};
     void send_pid_tuning() override {};
@@ -65,7 +61,7 @@ protected:
 
     GCS_MAVLINK_Periph *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
-        return new GCS_MAVLINK_Periph(params, uart);
+        return NEW_NOTHROW GCS_MAVLINK_Periph(params, uart);
     }
 
 private:

@@ -2,13 +2,14 @@
 
 #include "AP_Networking_Config.h"
 
-#if AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include "AP_Networking_backend.h"
+#if AP_NETWORKING_BACKEND_CHIBIOS
+#include "AP_Networking_Backend.h"
 
-class AP_Networking_ChibiOS : public AP_Networking_backend
+class AP_Networking_ChibiOS : public AP_Networking_Backend
 {
 public:
-    using AP_Networking_backend::AP_Networking_backend;
+    friend class BL_Network;
+    using AP_Networking_Backend::AP_Networking_Backend;
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Networking_ChibiOS);
@@ -17,13 +18,19 @@ public:
     void update() override;
 
 private:
-    bool allocate_buffers(void);
-    int32_t send_udp(struct udp_pcb *pcb, const struct ip4_addr &ip4_addr, const uint16_t port, const uint8_t* data, uint16_t data_len);
+    static bool allocate_buffers(void);
+    void thread(void);
+    static void link_up_cb(void*);
+    static void link_down_cb(void*);
+    static int8_t ethernetif_init(struct netif *netif);
+    static int8_t low_level_output(struct netif *netif, struct pbuf *p);
+    static bool low_level_input(struct netif *netif, struct pbuf **pbuf);
 
-private:
     struct lwipthread_opts *lwip_options;
     uint8_t macaddr[6];
+
+    struct netif *thisif;
 };
 
-#endif // AP_NETWORKING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#endif // AP_NETWORKING_BACKEND_CHIBIOS
 
