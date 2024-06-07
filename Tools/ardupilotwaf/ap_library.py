@@ -29,7 +29,7 @@ vehicle-related headers and fails the build if they do.
 import os
 import re
 
-from waflib import Errors, Task, Utils
+from waflib import Errors, Task, Utils, Logs
 from waflib.Configure import conf
 from waflib.TaskGen import after_method, before_method, feature
 from waflib.Tools import c_preproc
@@ -320,6 +320,125 @@ def ap_library_register_for_check(self):
     for t in self.compiled_tasks:
         tsk = self.create_task('ap_library_check_headers')
         tsk.compiled_task = t
+
+def write_compilation_database(bld):
+    """
+    Write the compilation database as JSON
+    """
+    database_file = bld.bldnode.find_or_declare('compile_commands.json')
+    # don't remove the file at clean
+
+    Logs.info('Build commands will be stored in %s', database_file.path_from(bld.path))
+    try:
+        root = database_file.read_json()
+    except IOError:
+        root = []
+    compile_cmd_db = dict((x['file'], x) for x in root)
+    for task in bld.compilation_database_tasks:
+        try:
+            cmd = task.last_cmd
+        except AttributeError:
+            continue
+        f_node = task.inputs[0]
+        filename = f_node.path_from(task.get_cwd())
+        entry = {
+            "directory": task.get_cwd().abspath(),
+            "arguments": cmd,
+            "file": filename,
+        }
+        compile_cmd_db[filename] = entry
+    root = list(compile_cmd_db.values())
+    database_file.write_json(root)
+
+def target_list_changed(bld, targets):
+    """
+    Check if the list of targets has changed recorded in target_list file
+    """
+    # target_list file is in the root build directory
+    target_list_file = bld.bldnode.find_or_declare('target_list')
+    try:
+        with open(target_list_file.abspath(), 'r') as f:
+            old_targets = f.read().strip().split(',')
+    except IOError:
+        Logs.info('No target_list file found, creating')
+        old_targets = []
+    if old_targets != targets:
+        with open(target_list_file.abspath(), 'w') as f:
+            f.write(','.join(targets))
+        return True
+    return False
+
+@conf
+def remove_target_list(cfg):
+    target_list_file = cfg.bldnode.make_node(cfg.options.board + '/target_list')
+    try:
+        Logs.info('Removing target_list file %s', target_list_file.abspath())
+        os.remove(target_list_file.abspath())
+    except OSError:
+        pass
+
+@feature('cxxprogram', 'cxxstlib')
+@after_method('propagate_uselib_vars')
+def dry_run_compilation_database(self):
+    if not hasattr(self, 'bld'):
+        return
+    bld = self.bld
+    bld.compilation_database_tasks = []
+    targets = bld.targets.split(',')
+    use = self.use
+    if isinstance(use, str):
+        use = [use]
+    # if targets have not changed and neither has configuration, 
+    # we can skip compilation database generation
+    if not target_list_changed(bld, targets + use):
+        Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')
+        return
+    Logs.info('Generating compile_commands.json')
+    # we need only to generate last_cmd, so override
+    # exec_command temporarily
+    def exec_command(bld, *k, **kw):
+        return 0
+
+    for g in bld.groups:
+        for tg in g:
+            # we only care to list targets and library objects
+            if not hasattr(tg, 'name'):
+                continue
+            if (tg.name not in targets) and (tg.name not in self.use):
+                continue
+            try:
+                f = tg.post
+            except AttributeError:
+                pass
+            else:
+                f()
+
+            if isinstance(tg, Task.Task):
+                lst = [tg]
+            else:
+                lst = tg.tasks
+            for tsk in lst:
+                if tsk.__class__.__name__ == "swig":
+                    tsk.runnable_status()
+                    if hasattr(tsk, 'more_tasks'):
+                        lst.extend(tsk.more_tasks)
+                # Not all dynamic tasks can be processed, in some cases
+                # one may have to call the method "run()" like this:
+                # elif tsk.__class__.__name__ == 'src2c':
+                #    tsk.run()
+                #    if hasattr(tsk, 'more_tasks'):
+                #        lst.extend(tsk.more_tasks)
+
+                tup = tuple(y for y in [Task.classes.get(x) for x in ('c', 'cxx')] if y)
+                if isinstance(tsk, tup):
+                    bld.compilation_database_tasks.append(tsk)
+                    tsk.nocache = True
+                    old_exec = tsk.exec_command
+                    tsk.exec_command = exec_command
+                    tsk.run()
+                    tsk.exec_command = old_exec
+
+    write_compilation_database(bld)
 
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
