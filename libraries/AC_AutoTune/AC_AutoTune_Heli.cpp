@@ -117,14 +117,14 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @Description: maximum angular acceleration in deg/s/s allowed during autotune maneuvers
     // @Range: 1 4000
     // @User: Standard
-    AP_GROUPINFO("ACC_MAX", 7, AC_AutoTune_Heli, accel_max,  5000.0f),
+    AP_GROUPINFO("ACC_MAX", 7, AC_AutoTune_Heli, accel_max, 0.0f),
 
     // @Param: RAT_MAX
     // @DisplayName: Autotune maximum allowable angular rate
     // @Description: maximum angular rate in deg/s allowed during autotune maneuvers
     // @Range: 0 500
     // @User: Standard
-    AP_GROUPINFO("RAT_MAX", 8, AC_AutoTune_Heli, rate_max,  50.0f),
+    AP_GROUPINFO("RAT_MAX", 8, AC_AutoTune_Heli, rate_max, 0.0f),
 
     AP_GROUPEND
 };
@@ -155,9 +155,7 @@ void AC_AutoTune_Heli::test_init()
         filter_freq = start_freq;
         
         attitude_control->bf_feedforward(false);
-        attitude_control->use_sqrt_controller(false);
-//        attitude_control->use_sqrt_controller(true); // invoke rate and acceleration limits to provide square wave rate response.
-//        freq_resp_amplitude = 10.0f;  // increase amplitude with limited rate to get desired square wave rate response
+
         // variables needed to initialize frequency response object and test method
         resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
         calc_type = RATE;
@@ -179,7 +177,6 @@ void AC_AutoTune_Heli::test_init()
         filter_freq = start_freq;
 
         attitude_control->bf_feedforward(false);
-        attitude_control->use_sqrt_controller(false);
 
         // variables needed to initialize frequency response object and test method
         resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
@@ -209,7 +206,6 @@ void AC_AutoTune_Heli::test_init()
         filter_freq = start_freq;
 
         attitude_control->bf_feedforward(false);
-        attitude_control->use_sqrt_controller(false);
 
         // variables needed to initialize frequency response object and test method
         resp_type = AC_AutoTune_FreqResp::ResponseType::RATE;
@@ -231,7 +227,6 @@ void AC_AutoTune_Heli::test_init()
         }
         filter_freq = start_freq;
         attitude_control->bf_feedforward(false);
-        attitude_control->use_sqrt_controller(false);
 
         // variables needed to initialize frequency response object and test method
         resp_type = AC_AutoTune_FreqResp::ResponseType::ANGLE;
@@ -527,9 +522,18 @@ void AC_AutoTune_Heli::load_intra_test_gains()
 // called by control_attitude() just before it beings testing a gain (i.e. just before it twitches)
 void AC_AutoTune_Heli::load_test_gains()
 {
-    float rate_p, rate_i, rate_d, rate_test_max;
+    float rate_p, rate_i, rate_d, rate_test_max, accel_test_max;
     switch (axis) {
     case ROLL:
+
+        if (tune_type == TUNE_CHECK) {
+            rate_test_max = orig_roll_rate;
+            accel_test_max = tune_roll_accel;
+        } else {
+            // have attitude controller use accel and rate limit parameter
+            rate_test_max = rate_max;
+            accel_test_max = accel_max;
+        }
         if (tune_type == SP_UP || tune_type == TUNE_CHECK) {
             rate_i = tune_roll_rff*AUTOTUNE_FFI_RATIO_FINAL;
         } else {
@@ -543,16 +547,17 @@ void AC_AutoTune_Heli::load_test_gains()
             rate_p = tune_roll_rp;
             rate_d = tune_roll_rd;
         }
-/*        if (tune_type == RFF_UP) {
-            rate_test_max = 5.0f;
-        } else {
-            rate_test_max = orig_roll_rate;
-        }
-*/
-        rate_test_max = orig_roll_rate;
-        load_gain_set(ROLL, rate_p, rate_i, rate_d, tune_roll_rff, tune_roll_sp, tune_roll_accel, orig_roll_fltt, 0.0f, 0.0f, rate_test_max);
+        load_gain_set(ROLL, rate_p, rate_i, rate_d, tune_roll_rff, tune_roll_sp, accel_test_max, orig_roll_fltt, 0.0f, 0.0f, rate_test_max);
         break;
     case PITCH:
+        if (tune_type == TUNE_CHECK) {
+            rate_test_max = orig_pitch_rate;
+            accel_test_max = tune_pitch_accel;
+        } else {
+            // have attitude controller use accel and rate limit parameter
+            rate_test_max = rate_max;
+            accel_test_max = accel_max;
+        }
         if (tune_type == SP_UP || tune_type == TUNE_CHECK) {
             rate_i = tune_pitch_rff*AUTOTUNE_FFI_RATIO_FINAL;
         } else {
@@ -566,31 +571,25 @@ void AC_AutoTune_Heli::load_test_gains()
             rate_p = tune_pitch_rp;
             rate_d = tune_pitch_rd;
         }
-/*        if (tune_type == RFF_UP) {
-            rate_test_max = 5.0f;
-        } else {
-            rate_test_max = orig_pitch_rate;
-        }
-*/
-        rate_test_max = orig_pitch_rate;
-        load_gain_set(PITCH, rate_p, rate_i, rate_d, tune_pitch_rff, tune_pitch_sp, tune_pitch_accel, orig_pitch_fltt, 0.0f, 0.0f, rate_test_max);
+        load_gain_set(PITCH, rate_p, rate_i, rate_d, tune_pitch_rff, tune_pitch_sp, accel_test_max, orig_pitch_fltt, 0.0f, 0.0f, rate_test_max);
         break;
     case YAW:
     case YAW_D:
+        if (tune_type == TUNE_CHECK) {
+            rate_test_max = orig_yaw_rate;
+            accel_test_max = tune_yaw_accel;
+        } else {
+            // have attitude controller use accel and rate limit parameter
+            rate_test_max = rate_max;
+            accel_test_max = accel_max;
+        }
         if (tune_type == SP_UP || tune_type == TUNE_CHECK) {
             rate_i = tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL;
         } else {
             // freeze integrator to hold trim by making i term small during rate controller tuning
             rate_i = 0.01f * orig_yaw_ri;
         }
-/*        if (tune_type == RFF_UP) {
-            rate_test_max = 5.0f;
-        } else {
-            rate_test_max = orig_yaw_rate;
-        }
-*/
-        rate_test_max = orig_yaw_rate;
-        load_gain_set(YAW, tune_yaw_rp, rate_i, tune_yaw_rd, tune_yaw_rff, tune_yaw_sp, tune_yaw_accel, orig_yaw_fltt, tune_yaw_rLPF, 0.0f, rate_test_max);
+        load_gain_set(YAW, tune_yaw_rp, rate_i, tune_yaw_rd, tune_yaw_rff, tune_yaw_sp, accel_test_max, orig_yaw_fltt, tune_yaw_rLPF, 0.0f, rate_test_max);
         break;
     }
 }
