@@ -144,7 +144,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        copter.set_mode(mode, ModeReason::RC_COMMAND);
+        copter.set_mode(mode, ModeReason::AUX_FUNCTION);
         break;
     }
     default:
@@ -163,7 +163,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
         case AUX_FUNC::FLIP:
             // flip if switch is on, positive throttle and we're actually flying
             if (ch_flag == AuxSwitchPos::HIGH) {
-                copter.set_mode(Mode::Number::FLIP, ModeReason::RC_COMMAND);
+                copter.set_mode(Mode::Number::FLIP, ModeReason::AUX_FUNCTION);
             }
             break;
 
