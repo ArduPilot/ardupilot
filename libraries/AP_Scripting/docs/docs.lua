@@ -2064,7 +2064,7 @@ function baro:healthy(instance) end
 -- Serial ports
 serial = {}
 
--- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28`).
+-- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28).
 -- For instance = 0, returns first such UART, second for instance = 1, and so on.
 -- If such an instance is not found, returns nil.
 ---@param instance integer -- the 0-based index of the UART instance to return.
