@@ -212,12 +212,12 @@ to the cube. The TX pin is closest to the servo rail.
    </tr>
    <tr>
    <td>2</td>
-   <td>RX (IN)</td>
+   <td>RX (IN) / NC (ADSB CB) </td>
    <td>+3.3V</td>
    </tr>
    <tr>
    <td>3</td>
-   <td>TX (OUT)</td>
+   <td>TX (OUT) / NC (ADSB CB) </td>
    <td>+3.3V</td>
    </tr>
    </tbody>
