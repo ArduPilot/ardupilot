@@ -11449,6 +11449,78 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_heading(90, timeout=60, minimum_duration=10)
         self.do_RTL()
 
+    def Clamp(self):
+        '''test Copter docking clamp'''
+        clamp_ch = 11
+        self.set_parameters({
+            "SIM_CLAMP_CH": clamp_ch,
+        })
+
+        self.takeoff(1, mode='LOITER')
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.progress("Ensure can't take off with clamp in place")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(0, 5, minimum_duration=5, relative=True)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
+        self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
+        self.wait_altitude(5, 5000, minimum_duration=1, relative=True)
+        self.do_RTL()
+        self.set_rc(3, 1000)
+        self.change_mode('LOITER')
+        self.context_pop()
+
+        self.progress("Same again for repeatability")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(0, 1, minimum_duration=5, relative=True)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
+        self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
+        self.wait_altitude(5, 5000, minimum_duration=1, relative=True)
+        self.do_RTL()
+        self.set_rc(3, 1000)
+        self.change_mode('LOITER')
+        self.context_pop()
+
+        here = self.mav.location()
+        loc = self.offset_location_ne(here, 10, 0)
+        self.takeoff(5, mode='GUIDED')
+        self.do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.wait_location(loc, timeout=120)
+        self.land_and_disarm()
+
+        # explicitly set home so we RTL to the right spot
+        self.set_home(here)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
+        self.wait_statustext("SITL: Clamp: missed vehicle", check_context=True)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
+        self.context_pop()
+
+        self.takeoff(5, mode='GUIDED')
+        self.do_RTL()
+
+        self.takeoff(5, mode='GUIDED')
+        self.land_and_disarm()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.context_pop()
+
+        self.reboot_sitl()  # because we set home
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11537,7 +11609,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_OGN_HGT_MASK,
             self.FarOrigin,
             self.GuidedForceArm,
-            self.GuidedWeatherVane
+            self.GuidedWeatherVane,
+            self.Clamp,
         ])
         return ret
 

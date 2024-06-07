@@ -6226,19 +6226,20 @@ class TestSuite(ABC):
                 command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
             except KeyError:
                 command_name = "UNKNOWNu"
-            self.progress("Sending COMMAND_INT to (%u,%u) (%s=%u) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f)" %
-                          (
-                              target_sysid,
-                              target_compid,
-                              command_name,
-                              command,
-                              p1,
-                              p2,
-                              p3,
-                              p4,
-                              x,
-                              y,
-                              z))
+            self.progress("Sending COMMAND_INT to (%u,%u) (%s=%u) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f f=%u)" % (
+                target_sysid,
+                target_compid,
+                command_name,
+                command,
+                p1,
+                p2,
+                p3,
+                p4,
+                x,
+                y,
+                z,
+                frame
+            ))
         mav.mav.command_int_send(target_sysid,
                                  target_compid,
                                  frame,
@@ -8515,6 +8516,7 @@ Also, ignores heartbeats not from our target system'''
                 self.reset_SITL_commandline()
             else:
                 self.progress("Force-rebooting SITL")
+                self.zero_throttle()
                 self.reboot_sitl() # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
