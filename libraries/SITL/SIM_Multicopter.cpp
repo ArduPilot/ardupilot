@@ -61,6 +61,11 @@ void MultiCopter::update(const struct sitl_input &input)
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
+    // simulated clamp holding vehicle down
+    if (clamp.clamped(*this, input)) {
+        rot_accel.zero();
+        accel_body.zero();
+    }
 
     // estimate voltage and current
     frame->current_and_voltage(battery_voltage, battery_current);

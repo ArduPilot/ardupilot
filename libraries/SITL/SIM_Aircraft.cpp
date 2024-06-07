@@ -973,6 +973,45 @@ void Aircraft::extrapolate_sensors(float delta_time)
     velocity_air_bf = dcm.transposed() * velocity_air_ef;
 }
 
+bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input)
+{
+    const auto clamp_ch = AP::sitl()->clamp_ch;
+    if (clamp_ch < 1) {
+        return false;
+    }
+    const uint32_t clamp_idx = clamp_ch - 1;
+    if (clamp_idx > ARRAY_SIZE(input.servos)) {
+        return false;
+    }
+    const uint16_t servo_pos = input.servos[clamp_idx];
+    bool new_clamped = currently_clamped;
+    if (servo_pos < 1200) {
+        if (currently_clamped) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SITL: Clamp: released vehicle");
+            new_clamped = false;
+        }
+        grab_attempted = false;
+    } else {
+        // re-clamp if < 10cm from home
+        if (servo_pos > 1800 && !grab_attempted) {
+            const Vector3d pos = aircraft.get_position_relhome();
+            const float distance_from_home = pos.length();
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SITL: Clamp: dist=%f", distance_from_home);
+            if (distance_from_home < 0.5) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SITL: Clamp: grabbed vehicle");
+                new_clamped = true;
+            } else if (!grab_attempted) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SITL: Clamp: missed vehicle");
+            }
+            grab_attempted = true;
+        }
+    }
+
+    currently_clamped = new_clamped;
+
+    return currently_clamped;
+}
+
 void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
