@@ -2585,15 +2585,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "RC8_OPTION": 17,
             "ATC_RAT_RLL_FLTT": 20,
         })
-        rlld = self.get_parameter("ATC_RAT_RLL_D")
-        rlli = self.get_parameter("ATC_RAT_RLL_I")
-        rllp = self.get_parameter("ATC_RAT_RLL_P")
-        rllt = self.get_parameter("ATC_RAT_RLL_FLTT")
-        self.progress("AUTOTUNE pre-gains are P:%f I:%f D:%f" %
-                      (self.get_parameter("ATC_RAT_RLL_P"),
-                       self.get_parameter("ATC_RAT_RLL_I"),
-                       self.get_parameter("ATC_RAT_RLL_D")))
+
         self.takeoff(10, mode='LOITER')
+
+        def print_gains(name, gains):
+            self.progress(f"AUTOTUNE {name} gains are P:%f I:%f D:%f" % (
+                gains["ATC_RAT_RLL_P"],
+                gains["ATC_RAT_RLL_I"],
+                gains["ATC_RAT_RLL_D"]
+            ))
+
+        def get_roll_gains(name):
+            ret = self.get_parameters([
+                "ATC_RAT_RLL_D",
+                "ATC_RAT_RLL_I",
+                "ATC_RAT_RLL_P",
+            ], verbose=False)
+            print_gains(name, ret)
+            return ret
+
+        def gains_same(gains1, gains2):
+            for c in 'P', 'I', 'D':
+                p_name = f"ATC_RAT_RLL_{c}"
+                if abs(gains1[p_name] - gains2[p_name]) > 0.00001:
+                    return False
+            return True
+
+        self.progress("Take a copy of original gains")
+        original_gains = get_roll_gains("pre-tuning")
+        scaled_original_gains = copy.copy(original_gains)
+        scaled_original_gains["ATC_RAT_RLL_I"] *= 0.1
+
+        pre_rllt = self.get_parameter("ATC_RAT_RLL_FLTT")
 
         # hold position in loiter and run autotune
         self.set_rc(8, 1850)
@@ -2610,46 +2633,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m is None:
                 continue
             self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
+            if "Determination Failed" in m.text:
+                break
             if "AutoTune: Success" in m.text:
                 self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-                # Check original gains are re-instated
+                post_gains = get_roll_gains("post")
+                if gains_same(original_gains, post_gains):
+                    raise NotAchievedException("AUTOTUNE gains not changed")
+
+                # because of the way AutoTune works, once autotune is
+                # complete we return the original parameters via
+                # parameter-fetching, but fly on the tuned parameters
+                # (both sets with the I term scaled down).  This test
+                # makes sure that's still the case.  It would be nice
+                # if the PIDs parameters were `set` on success, but
+                # they aren't...  Note that if we use the switch to
+                # restore the original gains and then start testing
+                # again (with the switch) then we see the new gains!
+
+                # gains are scaled during the testing phase:
+                if not gains_same(scaled_original_gains, post_gains):
+                    raise NotAchievedException("AUTOTUNE gains were reported as just original gains in test-mode.  If you're fixing this, good!")  # noqa
+
+                self.progress("Check original gains are re-instated by switch")
                 self.set_rc(8, 1100)
                 self.delay_sim_time(1)
-                self.progress("AUTOTUNE original gains are P:%f I:%f D:%f" %
-                              (self.get_parameter("ATC_RAT_RLL_P"), self.get_parameter("ATC_RAT_RLL_I"),
-                               self.get_parameter("ATC_RAT_RLL_D")))
-                if (rlld != self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli != self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp != self.get_parameter("ATC_RAT_RLL_P")):
-                    raise NotAchievedException("AUTOTUNE gains still present")
-                # Use autotuned gains
+                current_gains = get_roll_gains("set-original")
+                if not gains_same(original_gains, current_gains):
+                    raise NotAchievedException("AUTOTUNE original gains not restored")
+
+                self.progress("Use autotuned gains")
                 self.set_rc(8, 1850)
                 self.delay_sim_time(1)
-                self.progress("AUTOTUNE testing gains are P:%f I:%f D:%f" %
-                              (self.get_parameter("ATC_RAT_RLL_P"), self.get_parameter("ATC_RAT_RLL_I"),
-                               self.get_parameter("ATC_RAT_RLL_D")))
-                if (rlld == self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli == self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp == self.get_parameter("ATC_RAT_RLL_P")):
-                    raise NotAchievedException("AUTOTUNE gains not present in pilot testing")
-                # land without changing mode
+                tuned_gains = get_roll_gains("tuned")
+                if gains_same(tuned_gains, original_gains):
+                    raise NotAchievedException("AUTOTUNE tuned gains same as pre gains")
+                if gains_same(tuned_gains, scaled_original_gains):
+                    raise NotAchievedException("AUTOTUNE tuned gains same as scaled pre gains")
+
+                self.progress("land without changing mode")
                 self.set_rc(3, 1000)
                 self.wait_altitude(-1, 5, relative=True)
                 self.wait_disarmed()
-                # Check gains are still there after disarm
-                if (rlld == self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli == self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp == self.get_parameter("ATC_RAT_RLL_P")):
+                self.progress("Check gains are still there after disarm")
+                disarmed_gains = get_roll_gains("post-disarm")
+                if not gains_same(tuned_gains, disarmed_gains):
                     raise NotAchievedException("AUTOTUNE gains not present on disarm")
 
                 self.reboot_sitl()
-                # Check gains are still there after reboot
-                if (rlld == self.get_parameter("ATC_RAT_RLL_D") or
-                        rlli == self.get_parameter("ATC_RAT_RLL_I") or
-                        rllp == self.get_parameter("ATC_RAT_RLL_P")):
+                self.progress("Check gains are still there after reboot")
+                reboot_gains = get_roll_gains("post-reboot")
+                if not gains_same(tuned_gains, reboot_gains):
                     raise NotAchievedException("AUTOTUNE gains not present on reboot")
-                # Check FLTT is unchanged
-                if rllt != self.get_parameter("ATC_RAT_RLL_FLTT"):
+                self.progress("Check FLTT is unchanged")
+                if pre_rllt != self.get_parameter("ATC_RAT_RLL_FLTT"):
                     raise NotAchievedException("AUTOTUNE FLTT was modified")
                 return
 

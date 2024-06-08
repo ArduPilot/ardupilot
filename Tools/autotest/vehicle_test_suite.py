@@ -6026,11 +6026,11 @@ class TestSuite(ABC):
                 pass
         raise NotAchievedException("Failed to retrieve parameter (%s)" % name)
 
-    def get_parameters(self, some_list):
+    def get_parameters(self, some_list, **kwargs):
         ret = {}
 
         for n in some_list:
-            ret[n] = self.get_parameter(n)
+            ret[n] = self.get_parameter(n, **kwargs)
 
         return ret
 
