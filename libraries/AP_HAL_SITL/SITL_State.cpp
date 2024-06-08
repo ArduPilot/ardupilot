@@ -188,6 +188,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             if (queue_length < 1024) {
                 break;
             }
+            _serial_0_outqueue_full_count++;
             usleep(1000);
         }
     }
