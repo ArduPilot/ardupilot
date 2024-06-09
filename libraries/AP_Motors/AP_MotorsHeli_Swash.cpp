@@ -218,7 +218,7 @@ void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
     _collective_input_scaled = collective;
 
     // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
-    if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED){
+    if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED) {
         collective = 1 - collective;
     }
 
