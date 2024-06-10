@@ -6,6 +6,27 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  generate:
+    runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Generate mavlink bindings
+        run: ./dv/scripts/generate_mavlink_bindings.sh
+  
+      - name: Archive mavlink bindings
+        uses: actions/upload-artifact@v4
+        with:
+          name: Archive mavlink
+          path: |
+            build/mavlink_generated
+          retention-days: 7
+          compression-level: 0
+
   build:
     runs-on: ubuntu-latest
     container: ardupilot/ardupilot-dev-chibios
@@ -64,18 +85,5 @@ jobs:
           path: |
             build/${{ matrix.board }}/bin/arducopter
             build/${{ matrix.board }}/bin/arducopter.apj
-          retention-days: 7
-          compression-level: 0
-
-
-      - name: Generate mavlink bindings
-        run: ./dv/scripts/generate_mavlink_bindings.sh
-
-      - name: Archive mavlink bindings
-        uses: actions/upload-artifact@v4
-        with:
-          name: Archive mavlink
-          path: |
-            build/mavlink_generated
           retention-days: 7
           compression-level: 0
