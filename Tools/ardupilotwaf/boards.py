@@ -187,7 +187,7 @@ class Board:
         cfg.env.prepend_value('INCLUDES', [
             cfg.srcnode.find_dir('libraries/AP_Common/missing').abspath()
         ])
-        if os.path.exists(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')):
+        if os.path.exists(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')) and 'AP_NO_COMPILE_COMMANDS' not in os.environ:
             # change c_cpp_properties.json configure the VSCode Intellisense env
             c_cpp_properties = json.load(open(os.path.join(env.SRCROOT, '.vscode/c_cpp_properties.json')))
             for config in c_cpp_properties['configurations']:
