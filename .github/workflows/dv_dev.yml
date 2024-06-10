@@ -76,8 +76,6 @@ jobs:
         with:
           name: Archive mavlink
           path: |
-            build/mavlink_generated/c
-            build/mavlink_generated/cpp
-            build/mavlink_generated/wlua
+            build/mavlink_generated
           retention-days: 7
           compression-level: 0
