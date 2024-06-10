@@ -28,7 +28,7 @@ jobs:
       - name: Archive mavlink bindings
         uses: actions/upload-artifact@v4
         with:
-          name: Archive mavlink
+          name: ${{ matrix.dialect }}
           path: |
             build/mavlink_generated/${{ matrix.dialect }}
           retention-days: 7
