@@ -3,6 +3,8 @@
 if [ -z "$1" ]
 then
     DIALECT=ardupilotmega
+else
+    DIALECT="$1"
 fi
 
 OUTPUT=./build/mavlink_generated
