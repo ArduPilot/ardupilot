@@ -66,3 +66,18 @@ jobs:
             build/${{ matrix.board }}/bin/arducopter.apj
           retention-days: 7
           compression-level: 0
+
+
+      - name: Generate mavlink bindings
+        run: ./dv/scripts/generate_mavlink_bindings.sh
+
+      - name: Archive mavlink bindings
+        uses: actions/upload-artifact@v4
+        with:
+          name: Archive mavlink
+          path: |
+            build/mavlink_generated/c
+            build/mavlink_generated/cpp
+            build/mavlink_generated/wlua
+          retention-days: 7
+          compression-level: 0
