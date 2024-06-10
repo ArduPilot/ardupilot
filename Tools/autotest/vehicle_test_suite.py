@@ -370,6 +370,7 @@ class WaitAndMaintain(object):
 
             # check for timeout
             if now - tstart > self.timeout:
+                self.print_failure_text(now, current_value)
                 raise self.timeoutexception()
 
             # handle the case where we are are achieving our value:
@@ -400,6 +401,10 @@ class WaitAndMaintain(object):
             delta = now - self.achieving_duration_start
             text += f" (maintain={delta:.1f}/{self.minimum_duration})"
         self.progress(text)
+
+    def print_failure_text(self, now, value):
+        '''optionally print a more detailed error string'''
+        pass
 
     def progress_text(self, value):
         return f"want={self.get_target_value()} got={value}"
@@ -501,10 +506,39 @@ class WaitAndMaintainEKFFlags(WaitAndMaintain):
         return AutoTestTimeoutException(f"Failed to get EKF.flags={self.required_flags}")
 
     def progress_text(self, current_value):
-        error_bits_str = ""
-        if current_value & self.error_bits:
-            error_bits_str = " (error bits present)"
-        return (f"Want=({self.required_flags}) got={current_value}{error_bits_str}")
+        error_bits = current_value & self.error_bits
+        return (f"Want={self.required_flags} got={current_value} errors={error_bits}")
+
+    def ekf_flags_string(self, bits):
+        ret = []
+        for i in range(0, 16):
+            bit = 1 << i
+            try:
+                if not bits & bit:
+                    continue
+                name = mavutil.mavlink.enums["ESTIMATOR_STATUS_FLAGS"][bit].name
+                trimmed_name = name.removeprefix("ESTIMATOR_")
+                ret.append(trimmed_name)
+            except KeyError:
+                ret.append(str(bit))
+        return "|".join(ret)
+
+    def failure_text(self, now, current_value):
+        components = []
+        components.append(("want", self.ekf_flags_string(self.required_flags)))
+
+        missing_bits = self.required_flags & ~current_value
+        if missing_bits:
+            components.append(("missing", self.ekf_flags_string(missing_bits)))
+
+        error_bits = current_value & self.error_bits
+        if error_bits:
+            components.append(("errors", self.ekf_flags_string(error_bits)))
+
+        return " ".join([f"{n}={v}" for (n, v) in components])
+
+    def print_failure_text(self, now, current_value):
+        self.progress(self.failure_text(now, current_value))
 
 
 class WaitAndMaintainArmed(WaitAndMaintain):
