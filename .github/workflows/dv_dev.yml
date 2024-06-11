@@ -9,13 +9,6 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     container: ardupilot/ardupilot-dev-chibios
-    strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
-      matrix:
-        dialect: [
-            ardupilotmega,
-            rid,
-        ]
 
     steps:
       - uses: actions/checkout@v4
@@ -23,14 +16,14 @@ jobs:
           submodules: 'recursive'
 
       - name: Generate mavlink bindings
-        run: ./dv/scripts/generate_mavlink_bindings.sh ${{ matrix.dialect }}
+        run: ./dv/scripts/generate_mavlink_bindings.sh
   
       - name: Archive mavlink bindings
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.dialect }}
+          name: ardupilotmega
           path: |
-            build/mavlink_generated/${{ matrix.dialect }}
+            build/mavlink_generated
           retention-days: 7
           compression-level: 0
 
