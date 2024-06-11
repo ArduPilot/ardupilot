@@ -21,7 +21,7 @@ jobs:
       - name: Archive mavlink bindings
         uses: actions/upload-artifact@v4
         with:
-          name: mavlink_generated_bindings
+          name: mavlink_generated
           path: |
             build/mavlink_generated
           retention-days: 7
