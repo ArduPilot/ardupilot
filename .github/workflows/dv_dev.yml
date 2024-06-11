@@ -52,7 +52,7 @@ jobs:
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       
       - name: ccache cache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
