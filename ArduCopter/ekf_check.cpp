@@ -20,6 +20,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 static struct {
     uint8_t fail_count;         // number of iterations ekf or dcm have been out of tolerances
+    uint8_t bad_variance_count; // number of iterations ekf has been continuously in bad variance
     bool bad_variance;          // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
     bool has_ever_passed;       // true if the ekf checks have ever passed
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
@@ -41,6 +42,7 @@ void Copter::ekf_check()
     // return immediately if ekf check is disabled
     if (g.fs_ekf_thresh <= 0.0f) {
         ekf_check_state.fail_count = 0;
+        ekf_check_state.bad_variance_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
         failsafe_ekf_off_event();   // clear failsafe
@@ -88,11 +90,20 @@ void Copter::ekf_check()
                 }
                 failsafe_ekf_event();
             }
+        // variances are already bad, check that we can't lane switch to get on a more stable core
+        } else {
+            ekf_check_state.bad_variance_count++;
+            // this re-checks every 1s
+            if (ekf_check_state.bad_variance_count == EKF_CHECK_ITERATIONS_MAX) {
+                ekf_check_state.bad_variance_count = 0;
+                ahrs.check_lane_switch();
+            }
         }
     } else {
         // reduce counter
         if (ekf_check_state.fail_count > 0) {
             ekf_check_state.fail_count--;
+            ekf_check_state.bad_variance_count = 0;
 
             // if variances are flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
