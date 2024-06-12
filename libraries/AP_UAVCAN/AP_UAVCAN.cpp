@@ -264,6 +264,8 @@ AP_UAVCAN::AP_UAVCAN()
         _SRV_conf[i].servo_pending = false;
     }
 
+    AP_Param::load_object_from_eeprom(this, var_info);
+
     debug_uavcan(AP_CANManager::LOG_INFO, "AP_UAVCAN constructed\n\r");
 }
 

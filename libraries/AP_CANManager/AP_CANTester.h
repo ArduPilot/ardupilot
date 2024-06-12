@@ -31,6 +31,7 @@ public:
     {
         // update protected var for parameter interface
         AP_Param::setup_object_defaults(this, var_info);
+        AP_Param::load_object_from_eeprom(this, var_info);
     }
 
     static const struct AP_Param::GroupInfo var_info[];
