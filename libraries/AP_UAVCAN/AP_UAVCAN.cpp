@@ -81,6 +81,7 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include "AP_UAVCAN_pool.h"
 #include <AP_Proximity/AP_Proximity_DroneCAN.h>
+#include "AP_DroneCAN_serial.h"
 
 #define LED_DELAY_US 50000
 
@@ -176,6 +177,105 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Range: 1024 16384
     // @User: Advanced
     AP_GROUPINFO("POOL", 8, AP_UAVCAN, _pool_size, UAVCAN_NODE_POOL_SIZE),
+
+#if AP_DRONECAN_SERIAL_ENABLED
+    /*
+      due to the parameter tree depth limitation we can't use a sub-table for the serial parameters
+     */
+
+    // @Param: SER_EN
+    // @DisplayName: DroneCAN Serial enable
+    // @Description: Enable DroneCAN virtual serial ports
+    // @Values: 0:Disabled, 1:Enabled
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("SER_EN", 10,  AP_UAVCAN, serial.enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: S1_NOD
+    // @DisplayName: Serial CAN remote node number
+    // @Description: CAN remote node number for serial port
+    // @Range: 0 127
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_NOD", 11,  AP_UAVCAN, serial.ports[0].node, 0),
+
+    // @Param: S1_IDX
+    // @DisplayName: DroneCAN Serial1 index
+    // @Description: Serial port number on remote CAN node
+    // @Range: 0 100
+    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_IDX", 12,  AP_UAVCAN, serial.ports[0].idx, -1),
+
+    // @Param: S1_BD
+    // @DisplayName: DroneCAN Serial default baud rate
+    // @Description: Serial baud rate on remote CAN node
+    // @CopyFieldsFrom: SERIAL1_BAUD
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_BD", 13,  AP_UAVCAN, serial.ports[0].state.baud, 57600),
+
+    // @Param: S1_PRO
+    // @DisplayName: Serial protocol of DroneCAN serial port
+    // @Description: Serial protocol of DroneCAN serial port
+    // @CopyFieldsFrom: SERIAL1_PROTOCOL
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("S1_PRO", 14,  AP_UAVCAN, serial.ports[0].state.protocol, -1),
+
+#if AP_DRONECAN_SERIAL_NUM_PORTS > 1
+    // @Param: S2_NOD
+    // @DisplayName: Serial CAN remote node number
+    // @Description: CAN remote node number for serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_NOD
+    AP_GROUPINFO("S2_NOD", 15,  AP_UAVCAN, serial.ports[1].node, 0),
+
+    // @Param: S2_IDX
+    // @DisplayName: Serial port number on remote CAN node
+    // @Description: Serial port number on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_IDX
+    AP_GROUPINFO("S2_IDX", 16,  AP_UAVCAN, serial.ports[1].idx, -1),
+
+    // @Param: S2_BD
+    // @DisplayName: DroneCAN Serial default baud rate
+    // @Description: Serial baud rate on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_BD
+    AP_GROUPINFO("S2_BD", 17,  AP_UAVCAN, serial.ports[1].state.baud, 57600),
+
+    // @Param: S2_PRO
+    // @DisplayName: Serial protocol of DroneCAN serial port
+    // @Description: Serial protocol of DroneCAN serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_PRO
+    AP_GROUPINFO("S2_PRO", 18,  AP_UAVCAN, serial.ports[1].state.protocol, -1),
+#endif
+
+#if AP_DRONECAN_SERIAL_NUM_PORTS > 2
+    // @Param: S3_NOD
+    // @DisplayName: Serial CAN remote node number
+    // @Description: CAN node number for serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_NOD
+    AP_GROUPINFO("S3_NOD", 19,  AP_UAVCAN, serial.ports[2].node, 0),
+
+    // @Param: S3_IDX
+    // @DisplayName: Serial port number on remote CAN node
+    // @Description: Serial port number on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_IDX
+    AP_GROUPINFO("S3_IDX", 20,  AP_UAVCAN, serial.ports[2].idx, 0),
+
+    // @Param: S3_BD
+    // @DisplayName: Serial baud rate on remote CAN node
+    // @Description: Serial baud rate on remote CAN node
+    // @CopyFieldsFrom: CAN_D1_UC_S1_BD
+    AP_GROUPINFO("S3_BD", 21,  AP_UAVCAN, serial.ports[2].state.baud, 57600),
+
+    // @Param: S3_PRO
+    // @DisplayName: Serial protocol of DroneCAN serial port
+    // @Description: Serial protocol of DroneCAN serial port
+    // @CopyFieldsFrom: CAN_D1_UC_S1_PRO
+    AP_GROUPINFO("S3_PRO", 22,  AP_UAVCAN, serial.ports[2].state.protocol, -1),
+#endif
+#endif // AP_DRONECAN_SERIAL_ENABLED
     
     AP_GROUPEND
 };
@@ -566,6 +666,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
+#if AP_DRONECAN_SERIAL_ENABLED
+    serial.init(this);
+#endif
+    
     _initialized = true;
     debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
 }
@@ -650,6 +754,9 @@ void AP_UAVCAN::loop(void)
         logging();
 #if AP_DRONECAN_HOBBYWING_ESC_ENABLED
         hobbywing_ESC_update();
+#endif
+#if AP_DRONECAN_SERIAL_ENABLED
+        serial.update();
 #endif
     }
 }
