@@ -220,6 +220,10 @@ public:
     /// return the crosstrack_error - horizontal error of the actual position vs the desired position
     float crosstrack_error() const { return _pos_control.crosstrack_error();}
 
+    // return true if the rangefinder is enabled for position control
+    bool get_rangefinder_position_control_enabled() const { return _rangefinder_position_control_enabled; }
+    void disable_logging_if_no_rangefinder_control() { _rangefinder_position_control_enabled = false; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -290,4 +294,5 @@ protected:
     AP_Int8     _rangefinder_use;       // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;   // true if rangefinder distance is healthy (i.e. between min and maximum)
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
+    bool        _rangefinder_position_control_enabled; // true if rangefinder is being used for position control
 };

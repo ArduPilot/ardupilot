@@ -659,6 +659,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
         return false;
     case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
+            _rangefinder_position_control_enabled = true;
             offset_cm = _rangefinder_terrain_offset_cm;
             return true;
         }
