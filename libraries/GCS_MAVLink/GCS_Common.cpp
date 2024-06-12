@@ -3981,6 +3981,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_HEARTBEAT: {
         handle_heartbeat(msg);
+#if HAL_MOUNT_ENABLED
+        handle_mount_message(msg);
+#endif
         break;
     }
 
@@ -4099,6 +4102,7 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_mount_message(msg);
         break;
 #endif
+    case MAVLINK_MSG_ID_MOUNT_STATUS:
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
@@ -4433,6 +4437,11 @@ void GCS_MAVLINK::send_banner()
             send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
         }
     }
+#endif
+
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount != nullptr) mount->send_banner();
 #endif
 }
 

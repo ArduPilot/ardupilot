@@ -15,6 +15,7 @@
 #include "AP_Mount_Scripting.h"
 #include "AP_Mount_Xacti.h"
 #include "AP_Mount_Viewpro.h"
+#include "AP_Mount_STorM32_MAVLink.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -156,6 +157,14 @@ void AP_Mount::init()
             serial_instance++;
             break;
 #endif // HAL_MOUNT_VIEWPRO_ENABLED
+
+#if HAL_MOUNT_STORM32_MAVLINK_V2_ENABLED
+        // check for STorM32_MAVLink mounts using MAVLink protocol
+        case Type::STorM32_MAVLink:
+            _backends[instance] = new AP_Mount_STorM32_MAVLink(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_STORM32_MAVLINK_V2_ENABLED
         }
 
         // init new instance
@@ -337,13 +346,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
 
     // check flags for change to RETRACT
     const uint32_t flags = packet.x;
-    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
-        return MAV_RESULT_ACCEPTED;
-    }
-    // check flags for change to NEUTRAL
-    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+    if (!backend->handle_gimbal_manager_flags(flags)) {
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -415,14 +418,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg) 
 
     // check flags for change to RETRACT
     const uint32_t flags = packet.flags;
-    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
-        return;
-    }
-
-    // check flags for change to NEUTRAL
-    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+    if (!backend->handle_gimbal_manager_flags(flags)) {
         return;
     }
 
@@ -481,13 +477,7 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
 
     // check flags for change to RETRACT
     uint32_t flags = (uint32_t)packet.flags;
-    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
-        return;
-    }
-    // check flags for change to NEUTRAL
-    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+    if (!backend->handle_gimbal_manager_flags(flags)) {
         return;
     }
 
@@ -541,6 +531,15 @@ MAV_RESULT AP_Mount::handle_command(const mavlink_command_int_t &packet, const m
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
+}
+
+uint8_t AP_Mount::get_gimbal_device_id(uint8_t instance) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->get_gimbal_device_id();
 }
 
 /// Change the configuration of the mount
@@ -940,6 +939,8 @@ void AP_Mount::handle_gimbal_report(mavlink_channel_t chan, const mavlink_messag
 
 void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
+    handle_message_extra(chan, msg);
+
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GIMBAL_REPORT:
         handle_gimbal_report(chan, msg);
@@ -1113,5 +1114,23 @@ AP_Mount *mount()
 }
 
 };
+
+void AP_Mount::handle_message_extra(mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->handle_message_extra(msg);
+        }
+    }
+}
+
+void AP_Mount::send_banner()
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_banner();
+        }
+    }
+}
 
 #endif /* HAL_MOUNT_ENABLED */

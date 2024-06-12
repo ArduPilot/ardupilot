@@ -81,7 +81,7 @@ public:
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
-    void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
+    virtual void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
 
     // set angle target in degrees
     // roll and pitch are in earth-frame
@@ -118,13 +118,13 @@ public:
 #endif
 
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+    virtual void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
     // return gimbal capabilities sent to GCS in the GIMBAL_MANAGER_INFORMATION
     virtual uint32_t get_gimbal_manager_capability_flags() const;
 
     // send a GIMBAL_MANAGER_INFORMATION message to GCS
-    void send_gimbal_manager_information(mavlink_channel_t chan);
+    virtual void send_gimbal_manager_information(mavlink_channel_t chan);
 
     // send a GIMBAL_MANAGER_STATUS message to GCS
     void send_gimbal_manager_status(mavlink_channel_t chan);
@@ -202,6 +202,22 @@ public:
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
     bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc);
 #endif
+
+    // handle msg - allows to process a msg from a gimbal
+    virtual void handle_message_extra(const mavlink_message_t &msg) {}
+
+    // send banner
+    virtual void send_banner() {}
+
+    // return gimbal device id used by GIMBAL_MANAGER_STATUS message, and other places
+    virtual uint8_t get_gimbal_device_id() const;
+
+    // return gimbal manager flags used by GIMBAL_MANAGER_STATUS message
+    virtual uint32_t get_gimbal_manager_flags() const;
+
+    // handle gimbal manager flags received from gimbal manager messages
+    // Return false to abort angle/rate processing.
+    virtual bool handle_gimbal_manager_flags(uint32_t flags);
 
     //
     // rangefinder

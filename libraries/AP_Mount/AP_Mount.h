@@ -47,6 +47,7 @@ class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
 class AP_Mount_Viewpro;
+class AP_Mount_STorM32_MAVLink;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -67,6 +68,7 @@ class AP_Mount
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
     friend class AP_Mount_Viewpro;
+    friend class AP_Mount_STorM32_MAVLink;
 
 public:
     AP_Mount();
@@ -114,6 +116,9 @@ public:
 #endif
 #if HAL_MOUNT_VIEWPRO_ENABLED
         Viewpro = 11,        /// Viewpro gimbal using a custom serial protocol
+#endif
+#if HAL_MOUNT_STORM32_MAVLINK_V2_ENABLED
+        STorM32_MAVLink = 12  /// STorM32 mount using MAVLink protocol v1 & v2
 #endif
     };
 
@@ -278,6 +283,15 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
+
+    // this links into handle_message() to catch all messages
+    void handle_message_extra(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+    // returns the gimbal device id for this instance, or 0 if the instance is not available
+    uint8_t get_gimbal_device_id(uint8_t instance) const;
+
+    // send banner
+    void send_banner();
 
 protected:
 
