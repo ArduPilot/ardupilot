@@ -13,6 +13,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
+#include <AP_Common/AP_BackendIterator.h>
 
 #include <stdint.h>
 
@@ -404,6 +405,8 @@ public:
     // add a filename to list of files to log. The name must be a constant string, not allocated
     void log_file_content(const char *name);
 
+    AP_BackendIterator<AP_Logger_Backend> backends{backends_array, _next_backend};
+
 protected:
 
     const struct LogStructure *_structures;
@@ -422,7 +425,7 @@ protected:
 private:
     #define LOGGER_MAX_BACKENDS 2
     uint8_t _next_backend;
-    AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
+    AP_Logger_Backend *backends_array[LOGGER_MAX_BACKENDS];
     const AP_Int32 *_log_bitmask;
 
     enum class Backend_Type : uint8_t {

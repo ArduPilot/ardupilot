@@ -251,15 +251,15 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
         if (message_writer == nullptr)  {
             AP_BoardConfig::allocation_error("message writer");
         }
-        backends[_next_backend] = backend_config.probe_fn(*this, message_writer);
-        if (backends[_next_backend] == nullptr) {
+        backends_array[_next_backend] = backend_config.probe_fn(*this, message_writer);
+        if (backends_array[_next_backend] == nullptr) {
             AP_BoardConfig::allocation_error("logger backend");
         }
         _next_backend++;
     }
 
-    for (uint8_t i=0; i<_next_backend; i++) {
-        backends[i]->Init();
+    for (auto &b : backends) {
+        b.Init();
     }
 
     start_io_thread();
@@ -578,8 +578,8 @@ bool AP_Logger::logging_enabled() const
     if (_next_backend == 0) {
         return false;
     }
-    for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i]->logging_enabled()) {
+    for (const auto &b : backends) {
+        if (b.logging_enabled()) {
             return true;
         }
     }
@@ -591,8 +591,8 @@ bool AP_Logger::logging_failed() const
         // we should not have been called!
         return true;
     }
-    for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i]->logging_failed()) {
+    for (const auto &b : backends) {
+        if (b.logging_failed()) {
             return true;
         }
     }
@@ -616,7 +616,7 @@ void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
     _log_start_count++;
 
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i] == backend) { // pointer comparison!
+        if (backends_array[i] == backend) { // pointer comparison!
             // reset sent masks
             for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
                 f->sent_mask &= ~(1<<i);
@@ -670,8 +670,8 @@ const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
 
 #define FOR_EACH_BACKEND(methodcall)              \
     do {                                          \
-        for (uint8_t i=0; i<_next_backend; i++) { \
-            backends[i]->methodcall;              \
+        for (auto &b : backends) {                         \
+            b.methodcall;              \
         }                                         \
     } while (0)
 
@@ -741,12 +741,12 @@ bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size)
     if (_next_backend == 0) {
         return false;
     }
-    
+
     for (uint8_t i=1; i<_next_backend; i++) {
-        backends[i]->WriteBlock(pBuffer, size);
+        backends_array[i]->WriteBlock(pBuffer, size);
     }
 
-    return backends[0]->WriteBlock(pBuffer, size);
+    return backends_array[0]->WriteBlock(pBuffer, size);
 }
 
 // write a replay block. This differs from other as it returns false if a backend doesn't
@@ -759,8 +759,8 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
         buf[1] = HEAD_BYTE2;
         buf[2] = msg_id;
         memcpy(&buf[3], pBuffer, size);
-        for (uint8_t i=0; i<_next_backend; i++) {
-            if (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {
+        for (auto &b : backends) {
+            if (!b.WritePrioritisedBlock(buf, sizeof(buf), true)) {
                 ret = false;
             }
         }
@@ -790,8 +790,8 @@ void AP_Logger::EraseAll() {
 }
 // change me to "LoggingAvailable"?
 bool AP_Logger::CardInserted(void) {
-    for (uint8_t i=0; i< _next_backend; i++) {
-        if (backends[i]->CardInserted()) {
+    for (auto &b : backends) {
+        if (b.CardInserted()) {
             return true;
         }
     }
@@ -807,31 +807,31 @@ uint16_t AP_Logger::find_last_log() const {
     if (_next_backend == 0) {
         return 0;
     }
-    return backends[0]->find_last_log();
+    return backends_array[0]->find_last_log();
 }
 void AP_Logger::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
     if (_next_backend == 0) {
         return;
     }
-    backends[0]->get_log_boundaries(log_num, start_page, end_page);
+    backends_array[0]->get_log_boundaries(log_num, start_page, end_page);
 }
 void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
     if (_next_backend == 0) {
         return;
     }
-    backends[0]->get_log_info(log_num, size, time_utc);
+    backends_array[0]->get_log_info(log_num, size, time_utc);
 }
 int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
     if (_next_backend == 0) {
         return 0;
     }
-    return backends[0]->get_log_data(log_num, page, offset, len, data);
+    return backends_array[0]->get_log_data(log_num, page, offset, len, data);
 }
 uint16_t AP_Logger::get_num_logs(void) {
     if (_next_backend == 0) {
         return 0;
     }
-    return backends[0]->get_num_logs();
+    return backends_array[0]->get_num_logs();
 }
 
 uint16_t AP_Logger::get_max_num_logs() {
@@ -844,8 +844,8 @@ uint16_t AP_Logger::get_max_num_logs() {
 
 /* we're started if any of the backends are started */
 bool AP_Logger::logging_started(void) {
-    for (uint8_t i=0; i< _next_backend; i++) {
-        if (backends[i]->logging_started()) {
+    for (auto &b : backends) {
+        if (b.logging_started()) {
             return true;
         }
     }
@@ -951,7 +951,7 @@ void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
     for (uint8_t i=0; i<_next_backend; i++) {
         if (!(f->sent_mask & (1U<<i))) {
-            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
+            if (!backends_array[i]->Write_Emit_FMT(f->msg_type)) {
                 continue;
             }
             f->sent_mask |= (1U<<i);
@@ -964,7 +964,7 @@ uint32_t AP_Logger::num_dropped() const
     if (_next_backend == 0) {
         return 0;
     }
-    return backends[0]->num_dropped();
+    return backends_array[0]->num_dropped();
 }
 
 
@@ -1042,14 +1042,14 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
 
     for (uint8_t i=0; i<_next_backend; i++) {
         if (!(f->sent_mask & (1U<<i))) {
-            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
+            if (!backends_array[i]->Write_Emit_FMT(f->msg_type)) {
                 continue;
             }
             f->sent_mask |= (1U<<i);
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
+        backends_array[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
         va_end(arg_copy);
     }
 }
@@ -1065,8 +1065,8 @@ bool AP_Logger::allow_start_ekf() const
         return true;
     }
 
-    for (uint8_t i=0; i<_next_backend; i++) {
-        if (!backends[i]->allow_start_ekf()) {
+    for (auto &b : backends) {
+        if (!b.allow_start_ekf()) {
             return false;
         }
     }
