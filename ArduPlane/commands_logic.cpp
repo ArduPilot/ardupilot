@@ -254,12 +254,22 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
             return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
 
         } else {
+            float height = height_above_target();
+
             // use rangefinder to correct if possible
-            float height = height_above_target() - rangefinder_correction();
+            if (landing.get_rangefinder_holdoff_distance() <= 0 ||  // rangefinder holdoff is disabled (never hold off, always use rtanegfinder)
+                auto_state.wp_proportion >= 1 ||                    // or we have reached the land waypoint
+                landing.is_flaring() ||                             // or we are flaring
+                current_loc.get_distance(next_WP_loc) <= landing.get_rangefinder_holdoff_distance()) // or we've reached the holdoff distance
+            {
+                height -= rangefinder_correction();
+            }
+
             // for flare calculations we don't want to use the terrain
             // correction as otherwise we will flare early on rising
             // ground
             height -= auto_state.terrain_correction;
+
             return landing.verify_land(prev_WP_loc, next_WP_loc, current_loc,
                                        height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(),
                                        g.rangefinder_landing && rangefinder_state.in_range);
