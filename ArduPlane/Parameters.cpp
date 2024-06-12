@@ -1090,6 +1090,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL
     // @Bitmask: 11: Disable suppression of fixed wing rate gains in ground mode
     // @Bitmask: 12: Enable FBWB style loiter altitude control
+    // @Bitmask: 14: Enable ground mode PID suppression when armed and not flying
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 

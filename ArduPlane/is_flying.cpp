@@ -175,8 +175,13 @@ void Plane::update_is_flying_5Hz(void)
     // tell AHRS flying state
     set_likely_flying(new_is_flying);
 
-    // conservative ground mode value for rate D suppression
-    ground_mode = !is_flying() && !arming.is_armed_and_safety_off();
+    // conservative ground mode value for rate D suppression. By
+    // default don't do ground mode when armed. User can set
+    // FLIGHT_OPTIONS bit to enable when armed and not flying
+    ground_mode = !is_flying();
+    if (!(plane.g2.flight_options & FlightOptions::ENABLE_GROUND_PID_SUPPRESSION_ARMED)) {
+        ground_mode &= !arming.is_armed_and_safety_off();
+    }
 }
 
 /*

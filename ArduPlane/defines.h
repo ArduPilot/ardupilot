@@ -161,7 +161,7 @@ enum FlightOptions {
     CENTER_THROTTLE_TRIM = (1<<10),
     DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
-
+    ENABLE_GROUND_PID_SUPPRESSION_ARMED = (1<<14),
 };
 
 enum CrowFlapOptions {
