@@ -340,7 +340,8 @@ void AP_OpenDroneID::send_location_message()
 
     Location current_location;
     if (!ahrs.get_location(current_location)) {
-        return;
+      // TODO, OLSLO, check if this is fine. We send location even if it is not OK as this is expected and understood by the opendroneid spec.
+      //        return;
     }
     uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
 #if HAL_PARACHUTE_ENABLED
