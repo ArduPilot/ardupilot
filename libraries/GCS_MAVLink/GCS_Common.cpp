@@ -961,7 +961,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
         } else if (current == 3) {
             //current = 3 is a flag to tell us this is a alt change only
             // add home alt if needed
-            handle_change_alt_request(cmd);
+            handle_change_alt_request(cmd.content.location);
 
             // verify we received the command
             result = MAV_MISSION_ACCEPTED;
