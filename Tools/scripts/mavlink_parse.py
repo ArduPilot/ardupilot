@@ -2,7 +2,7 @@
 
 # flake8: noqa
 
-import re
+import re, sys
 from enum import StrEnum # requires Python >= 3.11
 from pathlib import Path
 from itertools import chain
@@ -109,8 +109,9 @@ class MAVLinkCommand(MAVLinkMessage):
 
 class MAVLinkDetector:
     # file paths
-    BASE_DIR = Path(__file__).parent / '../..'
+    BASE_DIR = Path(__file__).parent.parent.parent
     COMMON_FILE = BASE_DIR / 'libraries/GCS_MAVLink/GCS_Common.cpp'
+    # file no longer in new firmware releases, but neither are stream groups
     STREAM_GROUP_FILE = 'GCS_MAVLink.cpp'
 
     # regex for messages handled by the autopilot
@@ -118,7 +119,7 @@ class MAVLinkDetector:
     # regex for commands handled by the autopilot
     INCOMING_COMMANDS = re.compile(r'case (MAV_CMD_[A-Z0-9_]*)')
     # regex for messages that can be requested from the autopilot
-    REQUESTABLE_REGION = re.compile(' map\[\]([^;]*);')
+    REQUESTABLE_REGION = re.compile(r' map\[\]([^;]*);')
     REQUESTABLE_MAP = re.compile(r'MAVLINK_MSG_ID_([A-Z0-9_]*),\s*MSG_([A-Z0-9_]*)')
     # regex for messages the autopilot might send, but cannot be requested
     OUTGOING_MESSAGES = re.compile(r'mavlink_msg_([a-z0-9_]*)_send\(')
@@ -208,7 +209,13 @@ class MAVLinkDetector:
             folder = file.parent.stem
             if folder in exclude_libraries:
                 continue
-            text = file.read_text()
+
+            try:
+                text = file.read_text()
+            except FileNotFoundError as e:  # Broken symlink
+                print(e, file=sys.stderr)
+                continue
+
             source = f'{folder}/{file.name}'
             if file == self.COMMON_FILE:
                 for mavlink, ap_message in self.find_requestable_messages(text):
@@ -277,7 +284,12 @@ class MAVLinkDetector:
     def get_stream_groups(self, vehicle):
         stream_groups = ['stream_groups']
 
-        text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+        try:
+            text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+        except FileNotFoundError:  # No stream groups
+            print('Could not find stream groups for', vehicle, file=sys.stderr)
+            return []
+
         for group_name, message_data in self.STREAM_GROUPS.findall(text):
             stream_groups.extend(sorted(
                 MAVLinkMessage(self._ap_to_mavlink.get(ap_message, ap_message),
