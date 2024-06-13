@@ -255,14 +255,20 @@ define STORAGE_FLASH_PAGE 1
         if (spin != int(spi[0])):
             spin = int(spi[0])
             f.write("\n# SPI%s\n" % spin)
-        f.write("%s SPI%s_%s SPI%s\n" % (spi[1], spin, spi[3].split('_')[1], spin))
+        fn = spi[3].split('_')[1]
+        if fn == "SDI":
+            fn = "MISO"
+        elif fn == "SDO":
+            fn = "MOSI"
+        f.write("%s SPI%s_%s SPI%s\n" % (spi[1], spin, fn, spin))
 
     f.write("\n# Chip select pins\n")
     for cs in chip_select.values():
         f.write("%s %s%s_CS CS\n" % (cs[1], cs[2], int(cs[0])))
 
-    beeper = list(functions["BEEPER"].values())[0]
-    f.write('''\n# Beeper
+    if len(functions["BEEPER"].values()) > 0:
+        beeper = list(functions["BEEPER"].values())[0]
+        f.write('''\n# Beeper
 %s BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
 ''' % beeper[1])
