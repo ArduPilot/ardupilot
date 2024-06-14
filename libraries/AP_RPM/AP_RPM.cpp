@@ -214,9 +214,7 @@ void AP_RPM::update(void)
     }
 
 #if HAL_LOGGING_ENABLED
-    if (enabled(0) || enabled(1)) {
-        Log_RPM();
-    }
+    Log_RPM();
 #endif
 }
 
@@ -295,18 +293,23 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 #if HAL_LOGGING_ENABLED
 void AP_RPM::Log_RPM() const
 {
-    float rpm1 = -1, rpm2 = -1;
+    // update logging for each instance
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] == nullptr || !enabled(i)) {
+            // don't log unused instances
+            continue;
+        }
 
-    get_rpm(0, rpm1);
-    get_rpm(1, rpm2);
-
-    const struct log_RPM pkt{
-        LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
-        time_us     : AP_HAL::micros64(),
-        rpm1        : rpm1,
-        rpm2        : rpm2
-    };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+        const struct log_RPM pkt{
+            LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
+            time_us     : AP_HAL::micros64(),
+            inst        : i,
+            rpm         : state[i].rate_rpm,
+            quality     : get_signal_quality(i),
+            health      : uint8_t(healthy(i))
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 #endif
 
