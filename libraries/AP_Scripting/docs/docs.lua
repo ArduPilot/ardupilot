@@ -2897,6 +2897,11 @@ gps.GPS_OK_FIX_2D = enum_integer
 gps.NO_FIX = enum_integer
 gps.NO_GPS = enum_integer
 
+-- get unix time
+---@param instance integer -- instance number
+---@return uint64_t_ud -- unix time microseconds
+function gps:time_epoch_usec(instance) end
+
 -- get yaw from GPS in degrees
 ---@param instance integer -- instance number
 ---@return number|nil -- yaw in degrees
