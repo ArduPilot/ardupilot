@@ -46,68 +46,16 @@ int lua_new_uint32_t(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    *static_cast<uint32_t *>(lua_newuserdata(L, sizeof(uint32_t))) = (args == 1) ? coerce_to_uint32_t(L, 1) : 0;
-    luaL_getmetatable(L, "uint32_t");
-    lua_setmetatable(L, -2);
+    new_uint32_t(L);
+    *check_uint32_t(L, -1) = (args == 1) ? coerce_to_uint32_t(L, 1) : 0;
     return 1;
 }
-
-#define UINT32_T_BOX_OP(name, sym) \
-    int uint32_t___##name(lua_State *L) { \
-        binding_argcheck(L, 2); \
-          \
-        uint32_t v1 = coerce_to_uint32_t(L, 1); \
-        uint32_t v2 = coerce_to_uint32_t(L, 2); \
-          \
-        new_uint32_t(L); \
-        *static_cast<uint32_t *>(luaL_checkudata(L, -1, "uint32_t")) = v1 sym v2; \
-        return 1; \
-    }
-
-UINT32_T_BOX_OP(add, +)
-UINT32_T_BOX_OP(sub, -)
-UINT32_T_BOX_OP(mul, *)
-UINT32_T_BOX_OP(div, /)
-UINT32_T_BOX_OP(mod, %)
-UINT32_T_BOX_OP(band, &)
-UINT32_T_BOX_OP(bor, |)
-UINT32_T_BOX_OP(bxor, ^)
-UINT32_T_BOX_OP(shl, <<)
-UINT32_T_BOX_OP(shr, >>)
-
-#define UINT32_T_BOX_OP_BOOL(name, sym) \
-    int uint32_t___##name(lua_State *L) { \
-        binding_argcheck(L, 2); \
-          \
-        uint32_t v1 = coerce_to_uint32_t(L, 1); \
-        uint32_t v2 = coerce_to_uint32_t(L, 2); \
-          \
-        lua_pushboolean(L, v1 sym v2); \
-        return 1; \
-    }
-
-UINT32_T_BOX_OP_BOOL(eq, ==)
-UINT32_T_BOX_OP_BOOL(lt, <)
-UINT32_T_BOX_OP_BOOL(le, <=)
-
-#define UINT32_T_BOX_OP_UNARY(name, sym) \
-    int uint32_t___##name(lua_State *L) { \
-        binding_argcheck(L, 2); \
-          \
-        uint32_t v1 = coerce_to_uint32_t(L, 1); \
-          \
-        new_uint32_t(L); \
-        *static_cast<uint32_t *>(luaL_checkudata(L, -1, "uint32_t")) = sym v1; \
-        return 1; \
-    }
-
-// DO NOT SUPPORT UNARY NEGATION
-UINT32_T_BOX_OP_UNARY(bnot, ~)
 
 int uint32_t_toint(lua_State *L) {
     binding_argcheck(L, 1);
 
-    uint32_t v = *static_cast<uint32_t *>(luaL_checkudata(L, 1, "uint32_t"));
+    const uint32_t v = *check_uint32_t(L, 1);
+
 
     lua_pushinteger(L, static_cast<lua_Integer>(v));
 
@@ -117,7 +65,8 @@ int uint32_t_toint(lua_State *L) {
 int uint32_t_tofloat(lua_State *L) {
     binding_argcheck(L, 1);
 
-    uint32_t v = *static_cast<uint32_t *>(luaL_checkudata(L, 1, "uint32_t"));
+    const uint32_t v = *check_uint32_t(L, 1);
+
 
     lua_pushnumber(L, static_cast<lua_Number>(v));
 
@@ -127,7 +76,7 @@ int uint32_t_tofloat(lua_State *L) {
 int uint32_t___tostring(lua_State *L) {
     binding_argcheck(L, 1);
 
-    uint32_t v = *static_cast<uint32_t *>(luaL_checkudata(L, 1, "uint32_t"));
+    const uint32_t v = *check_uint32_t(L, 1);
 
     char buf[32];
     hal.util->snprintf(buf, ARRAY_SIZE(buf), "%u", (unsigned)v);
