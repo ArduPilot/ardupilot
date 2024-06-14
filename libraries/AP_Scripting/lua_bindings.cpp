@@ -381,9 +381,8 @@ int AP_Logger_Write(lua_State *L) {
         switch(fmt_cat[index]) {
             // logger variable types not available to scripting
             // 'd': double
-            // 'Q': uint64_t
             // 'q': int64_t
-            // 'a': arrays
+            // 'a': int16_t[32]
             case 'b': { // int8_t
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
@@ -494,6 +493,18 @@ int AP_Logger_Write(lua_State *L) {
                 }
                 memcpy(&buffer[offset], &tmp, sizeof(uint32_t));
                 offset += sizeof(uint32_t);
+                break;
+            }
+            case 'Q': { // uint64_t
+                void * ud = luaL_testudata(L, arg_index, "uint64_t");
+                if (ud == nullptr) {
+                    luaM_free(L, buffer);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                uint64_t tmp = *static_cast<uint64_t *>(ud);
+                memcpy(&buffer[offset], &tmp, sizeof(uint64_t));
+                offset += sizeof(uint64_t);
                 break;
             }
             case 'N': { // char[16]

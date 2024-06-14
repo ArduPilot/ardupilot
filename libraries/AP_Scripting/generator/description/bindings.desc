@@ -875,6 +875,27 @@ userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint 0 1
 userdata uint32_t manual tofloat uint32_t_tofloat 0 1
 
+userdata uint64_t creation lua_new_uint64_t 2
+userdata uint64_t operator_getter coerce_to_uint64_t
+userdata uint64_t operator +
+userdata uint64_t operator -
+userdata uint64_t operator *
+userdata uint64_t operator /
+userdata uint64_t operator %
+userdata uint64_t operator &
+userdata uint64_t operator |
+userdata uint64_t operator ^
+userdata uint64_t operator <<
+userdata uint64_t operator >>
+userdata uint64_t operator ==
+userdata uint64_t operator <
+userdata uint64_t operator <=
+userdata uint64_t operator ~
+userdata uint64_t manual_operator __tostring uint64_t___tostring
+userdata uint64_t manual toint uint64_t_toint 0 1
+userdata uint64_t manual tofloat uint64_t_tofloat 0 1
+userdata uint64_t manual split uint64_t_split 0 2
+
 global manual dirlist lua_dirlist 1 2
 global manual remove lua_removefile 1 3
 global manual print lua_print 1 0
