@@ -136,11 +136,6 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
         return false;
     }
 
-    if (! WriteBlockCheckStartupMessages()) {
-        semaphore.give();
-        return false;
-    }
-
     if (bufferspace_available() < size) {
         if (_startup_messagewriter->finished()) {
             // do not count the startup packets as being dropped...

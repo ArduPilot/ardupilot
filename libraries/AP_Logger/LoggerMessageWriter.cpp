@@ -109,7 +109,12 @@ void LoggerMessageWriter_DFLogStart::process()
     case Stage::FORMATS:
         // write log formats so the log is self-describing
         while (next_format_to_send < _logger_backend->num_types()) {
-            if (!_logger_backend->Write_Format(_logger_backend->structure(next_format_to_send))) {
+            const auto &s { _logger_backend->structure(next_format_to_send) };
+            if (_logger_backend->have_emitted_format_for_type((LogMessages)s->msg_type)) {
+                next_format_to_send++;
+                continue;
+            }
+            if (!_logger_backend->Write_Format(s)) {
                 return; // call me again!
             }
             next_format_to_send++;
