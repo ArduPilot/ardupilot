@@ -2535,12 +2535,19 @@ void emit_loaders(void) {
   fprintf(source, "        lua_setmetatable(L, -2);\n");
   fprintf(source, "        lua_setglobal(L, singleton_fun[i].name);\n");
   fprintf(source, "    }\n");
-
   fprintf(source, "\n");
+
+  fprintf(source, "    // userdata creation funcs\n");
+  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
+  fprintf(source, "        lua_pushcfunction(L, new_userdata[i].fun);\n");
+  fprintf(source, "        lua_setglobal(L, new_userdata[i].name);\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "\n");
+
   fprintf(source, "}\n\n");
 }
 
-void emit_sandbox(void) {
+void emit_userdata_new_funcs(void) {
   struct userdata *data = parsed_userdata;
   fprintf(source, "const struct userdata {\n");
   fprintf(source, "    const char *name;\n");
@@ -2589,23 +2596,14 @@ void emit_sandbox(void) {
     }
   }
   fprintf(source, "};\n\n");
+}
 
+void emit_sandbox(void) {
   fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
-  // load the singletons
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
-  fprintf(source, "        lua_pushstring(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_getglobal(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
-  fprintf(source, "    }\n");
-
-  // load the userdata allactors and globals
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
-  fprintf(source, "        lua_pushstring(L, new_userdata[i].name);\n");
-  fprintf(source, "        lua_pushcfunction(L, new_userdata[i].fun);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
-  fprintf(source, "    }\n");
-
-  fprintf(source, "\n");
+  fprintf(source, "    lua_createtable(L, 0, 1);\n");
+  fprintf(source, "    lua_pushglobaltable(L);\n");
+  fprintf(source, "    lua_setfield(L, -2, \"__index\");\n");
+  fprintf(source, "    lua_setmetatable(L, -2);\n");
   fprintf(source, "}\n");
 }
 
@@ -3149,7 +3147,7 @@ int main(int argc, char **argv) {
   emit_methods(parsed_ap_objects);
   emit_index(parsed_ap_objects);
 
-
+  emit_userdata_new_funcs();
   emit_loaders();
 
   emit_sandbox();
