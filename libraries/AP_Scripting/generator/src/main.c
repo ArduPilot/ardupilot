@@ -2504,46 +2504,31 @@ void emit_loaders(void) {
   fprintf(source, "    // userdata metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {\n");
   fprintf(source, "        luaL_newmetatable(L, userdata_fun[i].name);\n");
-  fprintf(source, "        lua_pushcclosure(L, userdata_fun[i].func, 0);\n");
+  fprintf(source, "        lua_pushcfunction(L, userdata_fun[i].func);\n");
   fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
 
   fprintf(source, "        if (userdata_fun[i].operators != nullptr) {\n");
   fprintf(source, "            luaL_setfuncs(L, userdata_fun[i].operators, 0);\n");
   fprintf(source, "        }\n");
 
-  fprintf(source, "        lua_pushstring(L, \"__call\");\n");
-  fprintf(source, "        lua_pushvalue(L, -2);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
-
   fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_getmetatable(L, userdata_fun[i].name);\n");
-  fprintf(source, "        lua_setmetatable(L, -2);\n");
-  fprintf(source, "        lua_setglobal(L, userdata_fun[i].name);\n");
   fprintf(source, "    }\n");
   fprintf(source, "\n");
 
   fprintf(source, "    // ap object metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(ap_object_fun); i++) {\n");
   fprintf(source, "        luaL_newmetatable(L, ap_object_fun[i].name);\n");
-  fprintf(source, "        lua_pushcclosure(L, ap_object_fun[i].func, 0);\n");
+  fprintf(source, "        lua_pushcfunction(L, ap_object_fun[i].func);\n");
   fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-  fprintf(source, "        lua_pushstring(L, \"__call\");\n");
-  fprintf(source, "        lua_pushvalue(L, -2);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
 
   fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_getmetatable(L, ap_object_fun[i].name);\n");
-  fprintf(source, "        lua_setmetatable(L, -2);\n");
-  fprintf(source, "        lua_setglobal(L, ap_object_fun[i].name);\n");
   fprintf(source, "    }\n");
   fprintf(source, "\n");
 
   fprintf(source, "    // singleton metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
   fprintf(source, "        luaL_newmetatable(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_pushcclosure(L, singleton_fun[i].func, 0);\n");
+  fprintf(source, "        lua_pushcfunction(L, singleton_fun[i].func);\n");
   fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
   fprintf(source, "        lua_pushstring(L, \"__call\");\n");
   fprintf(source, "        lua_pushvalue(L, -2);\n");
