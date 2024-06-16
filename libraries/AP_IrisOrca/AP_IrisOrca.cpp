@@ -243,24 +243,33 @@ void AP_IrisOrca::thread_main()
             switch (_control_state)
             {
                 case orca::MotorControlState::AUTO_ZERO:
-                    if (waiting_for_auto_zero) {
+                    // Auto-zero mode is initiated by sending a write register command to the actuator with the 
+                    // mode set to AUTO_ZERO. The actuator will then transition to AUTO_ZERO mode and will exit this mode
+                    // to another mode (either SLEEP or POSITION) when the zero position is found.
+                    if (!waiting_for_auto_zero) {
+                        if (_actuator_state.mode == orca::OperatingMode::AUTO_ZERO) {
+                            // Capture the entry into auto-zero mode
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero started");
+                            waiting_for_auto_zero = true;
+                        }
+                        else if (safe_to_send()) {
+                            // Initiate auto-zero mode
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero commanded");
+                            send_auto_zero_mode_cmd();
+                        }
+                    }
+                    else {
                         // waiting for auto-zero to complete
                         if (_actuator_state.mode != orca::OperatingMode::AUTO_ZERO) {
-                            // zeroing complete
+                            // was auto-zeroing and has exited to another mode, therefore auto-zeroing is complete
                             waiting_for_auto_zero = false;
                             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero complete");
                             _control_state = orca::MotorControlState::POSITION_CONTROL;
                         }
                         else if (safe_to_send()) {
-                        // zeroing is in progress - read the mode of operation to check if it has completed
+                            // read the mode of operation to check if auto-zero is complete
                             send_actuator_status_request();
                         }
-                    }
-                    else if (safe_to_send()) {
-                        // start by sending an auto-zero command
-                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IrisOrca: Auto-zero");
-                        send_auto_zero_mode_cmd();
-                        waiting_for_auto_zero = true;
                     }
                     break;
                     
