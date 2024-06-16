@@ -306,8 +306,8 @@ void AC_AutoTune_FreqResp::set_dwell_cycles(uint8_t cycles)
 {
     dwell_cycles = cycles;
     if (meas_peak_info_buffer != nullptr) { delete meas_peak_info_buffer;}
-    meas_peak_info_buffer = new ObjectBuffer<peak_info>(cycles);
+    meas_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(cycles);
     if (tgt_peak_info_buffer != nullptr) { delete tgt_peak_info_buffer;}
-    tgt_peak_info_buffer = new ObjectBuffer<peak_info>(cycles);
+    tgt_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(cycles);
 
 }
