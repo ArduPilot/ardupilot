@@ -655,10 +655,10 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
-int AP_HAL__UARTDriver_readstring(lua_State *L) {
+int AP_Scripting_SerialAccess_readstring(lua_State *L) {
     binding_argcheck(L, 2);
 
-    AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
+    AP_Scripting_SerialAccess * p = check_AP_Scripting_SerialAccess(L, 1);
 
     const uint16_t count = get_uint16_t(L, 2);
     uint8_t *data = (uint8_t*)malloc(count);
@@ -666,7 +666,7 @@ int AP_HAL__UARTDriver_readstring(lua_State *L) {
         return 0;
     }
 
-    const auto ret = ud->read(data, count);
+    const auto ret = p->read(data, count);
     if (ret < 0) {
         free(data);
         return 0;
@@ -742,6 +742,30 @@ int lua_get_CAN_device2(lua_State *L) {
     return 1;
 }
 #endif // AP_SCRIPTING_CAN_SENSOR_ENABLED
+
+#if HAL_GCS_ENABLED
+int lua_serial_find_serial(lua_State *L) {
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1 + arg_offset);
+
+    uint8_t instance = get_uint8_t(L, 1 + arg_offset);
+
+    AP_SerialManager *mgr = &AP::serialmanager();
+    AP_HAL::UARTDriver *driver_stream = mgr->find_serial(
+        AP_SerialManager::SerialProtocol_Scripting, instance);
+
+    if (driver_stream == nullptr) { // not found
+        return 0;
+    }
+
+    new_AP_Scripting_SerialAccess(L);
+    check_AP_Scripting_SerialAccess(L, -1)->stream = driver_stream;
+
+    return 1;
+}
+#endif // HAL_GCS_ENABLED
 
 /*
   directory listing, return table of files in a directory
