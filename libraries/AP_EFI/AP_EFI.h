@@ -101,6 +101,10 @@ public:
         Hirth      = 8, 
 #endif
 		MAV = 9,
+#if AP_EFI_SERIAL_FH_ENABLED
+        FlyHenry = 10, 
+#endif
+
     };
 
     static AP_EFI *get_singleton(void) {
