@@ -1242,6 +1242,13 @@ function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 ---@return uint32_t_ud -- 1 if success else 0
 function AP_Scripting_SerialAccess_ud:write(value) end
 
+-- Writes a string. The number of bytes actually written, i.e. the length of the
+-- written prefix of the string, is returned. It may be 0 up to the length of
+-- the string.
+---@param data string -- string of bytes to write
+---@return integer -- number of bytes actually written, which may be 0
+function AP_Scripting_SerialAccess_ud:writestring(data) end
+
 -- Reads a single byte from the serial port
 ---@return integer -- byte, -1 if error or none available
 function AP_Scripting_SerialAccess_ud:read() end

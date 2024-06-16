@@ -397,6 +397,7 @@ include AP_Scripting/AP_Scripting_SerialAccess.h
 userdata AP_Scripting_SerialAccess creation null -1
 userdata AP_Scripting_SerialAccess method begin void uint32_t 1U UINT32_MAX
 userdata AP_Scripting_SerialAccess method write uint32_t uint8_t'skip_check
+userdata AP_Scripting_SerialAccess manual writestring lua_serial_writestring 1 1
 userdata AP_Scripting_SerialAccess method read int16_t
 userdata AP_Scripting_SerialAccess manual readstring lua_serial_readstring 1 1
 userdata AP_Scripting_SerialAccess method available uint32_t
