@@ -743,6 +743,25 @@ int lua_serial_find_serial(lua_State *L) {
 }
 #endif // HAL_GCS_ENABLED
 
+int lua_serial_writestring(lua_State *L)
+{
+    binding_argcheck(L, 2);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    // get the bytes the user wants to write, along with their length
+    size_t req_bytes;
+    const char *data = lua_tolstring(L, 2, &req_bytes);
+
+    // write up to that number of bytes
+    const uint32_t written_bytes = port->write((const uint8_t*)data, req_bytes);
+
+    // return the number of bytes that were actually written
+    lua_pushinteger(L, written_bytes);
+
+    return 1;
+}
+
 int lua_serial_readstring(lua_State *L) {
     binding_argcheck(L, 2);
 
