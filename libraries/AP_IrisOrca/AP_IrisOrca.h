@@ -367,7 +367,7 @@ private:
     uint32_t _last_send_actuator_ms;    // system time (in millis) last actuator position command was sent (used for health reporting)
     uint32_t _send_start_us;            // system time (in micros) when last message started being sent (used for timing to unset DE pin)
     uint32_t _send_delay_us;            // delay (in micros) to allow bytes to be sent after which pin can be unset.  0 if not delaying
-
+    uint32_t _last_error_report_ms;     // system time (in millis) that last error was reported (used to avoid spamming errors)
 
     // health reporting
     HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_actuator_ms and _last_received_ms

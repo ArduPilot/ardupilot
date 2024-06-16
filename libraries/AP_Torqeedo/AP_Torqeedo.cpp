@@ -327,6 +327,8 @@ const char * AP_Torqeedo::map_master_error_code_to_string(uint8_t code) const
         return "tiller comm error";
     case 33:
         return "general comm error";
+    case 34:
+        return "kill switch activated";
     case 41:
     case 42:
         return "charge voltage bad";
@@ -338,6 +340,38 @@ const char * AP_Torqeedo::map_master_error_code_to_string(uint8_t code) const
         return "battery temp error";
     case 48:
         return "charging temp error";
+    case 70:
+        return "battery over/under temp during charge";
+    case 71:
+        return "battery over/under temp during discharge";
+    case 72:
+        return "battery FET overtemp";
+    case 73:
+        return "battery overcurrent during discharge";
+    case 74:
+        return "battery overcurrent during charge";
+    case 75:
+        return "battery activating pyro switch";
+    case 76:
+        return "battery undervoltage";
+    case 77:
+        return "battery overvoltage during charging";
+    case 78:
+        return "battery overcharge";
+    case 79:
+        return "battery electronic fault";
+    case 80:
+        return "battery deep discharging";
+    case 81:
+        return "battery water sensor triggered";
+    case 82:
+        return "charge imbalance between batteries";
+    case 83:
+        return "battery software version error";
+    case 84:
+        return "battery count does not match enumeration";
+    case 85:
+        return "battery cell imbalance";
     }
 
     return nullptr;
@@ -370,7 +404,7 @@ void AP_Torqeedo::report_error_codes()
     if (_display_system_state.flags.batt_nearly_empty) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s batt nearly empty", msg_prefix);
     }
-    if (_display_system_state.master_error_code > 0) {
+    if (_display_system_state.master_error_code > 0 && _display_system_state.master_error_code != 132) {
         const char *error_string = map_master_error_code_to_string(_display_system_state.master_error_code);
         if (error_string != nullptr) {
             GCS_SEND_TEXT(
