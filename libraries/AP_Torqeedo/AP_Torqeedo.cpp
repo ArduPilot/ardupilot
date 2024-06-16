@@ -36,7 +36,7 @@
 #define TORQEEDO_BATT_TIMEOUT_MS    5000    // battery info timeouts after 5 seconds
 #define TORQEEDO_REPLY_TIMEOUT_MS   25      // stop waiting for replies after 25ms
 #define TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS   10000   // errors reported to user at no less than once every 10 seconds
-#define TORQEEDO_MIN_RESET_INTERVAL_MS 10000    // minimum time between hard resets/wake
+#define TORQEEDO_MIN_RESET_INTERVAL_MS 5000    // minimum time between hard resets/wake
 
 extern const AP_HAL::HAL& hal;
 
@@ -168,6 +168,12 @@ bool AP_Torqeedo::init_internals()
     } else {
         _uart->set_CTS_pin(false);
     }
+
+    // Press on/off button. This seems to be required in the case that 
+    // motor power cutoff switch is already on to prevent numerous crc errors...
+    // or to ensure that the motor is in a known state.
+    press_on_off_button();
+    _last_reset_ms = AP_HAL::millis();
 
     return true;
 }
