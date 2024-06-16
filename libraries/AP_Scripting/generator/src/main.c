@@ -2568,8 +2568,8 @@ void emit_sandbox(void) {
     // Dont expose creation function for all read only items
     int expose_creation = FALSE;
     if (data->creation || data->methods) {
-      // Custom creation or methods
-      expose_creation = TRUE;
+      // Custom creation or methods, if not specifically disabled
+      expose_creation = !(data->creation && data->creation_args == -1);
     } else {
       // Feilds only
       struct userdata_field * field = data->fields;
@@ -2866,7 +2866,8 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
       // local userdata
       fprintf(docs, "local %s = {}\n\n", name);
 
-      if (emit_creation) {
+      int creation_disabled = (node->creation && node->creation_args == -1);
+      if (emit_creation && (!node->creation || !creation_disabled)) {
         // creation function
         if (node->creation != NULL) {
           for (int i = 0; i < node->creation_args; ++i) {
