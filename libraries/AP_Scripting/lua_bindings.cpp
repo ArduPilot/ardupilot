@@ -655,30 +655,6 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
-int AP_Scripting_SerialAccess_readstring(lua_State *L) {
-    binding_argcheck(L, 2);
-
-    AP_Scripting_SerialAccess * p = check_AP_Scripting_SerialAccess(L, 1);
-
-    const uint16_t count = get_uint16_t(L, 2);
-    uint8_t *data = (uint8_t*)malloc(count);
-    if (data == nullptr) {
-        return 0;
-    }
-
-    const auto ret = p->read(data, count);
-    if (ret < 0) {
-        free(data);
-        return 0;
-    }
-
-    // push to lua string
-    lua_pushlstring(L, (const char *)data, ret);
-    free(data);
-
-    return 1;
-}
-
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 
@@ -766,6 +742,28 @@ int lua_serial_find_serial(lua_State *L) {
     return 1;
 }
 #endif // HAL_GCS_ENABLED
+
+int lua_serial_readstring(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    // create a buffer sized to hold the number of bytes the user wants to read
+    luaL_Buffer b;
+    const uint16_t req_bytes = get_uint16_t(L, 2);
+    uint8_t *data = (uint8_t *)luaL_buffinitsize(L, &b, req_bytes);
+
+    // read up to that number of bytes
+    const ssize_t read_bytes = port->read(data, req_bytes);
+    if (read_bytes < 0) {
+        return 0; // error, return nil
+    }
+
+    // push the buffer as a string, truncated to the number of bytes actually read
+    luaL_pushresultsize(&b, read_bytes);
+
+    return 1;
+}
 
 /*
   directory listing, return table of files in a directory
