@@ -10,7 +10,7 @@ Mode::Mode() :
     channel_roll(rover.channel_roll),
     channel_pitch(rover.channel_pitch),
     channel_walking_height(rover.channel_walking_height),
-    attitude_control(rover.g2.attitude_control)
+    attitude_control(g2.attitude_control)
 { }
 
 void Mode::exit()
@@ -47,7 +47,7 @@ bool Mode::enter()
         set_reversed(false);
 
         // clear sailboat tacking flags
-        rover.g2.sailboat.clear_tack();
+        g2.sailboat.clear_tack();
     }
 
     return ret;
@@ -66,7 +66,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
     }
 
     // apply RC skid steer mixing
-    switch ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get())
+    switch ((enum pilot_steer_type_t)g.pilot_steer_type.get())
     {
         case PILOT_STEER_TYPE_DEFAULT:
         case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
@@ -166,7 +166,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
 
     // handle two paddle input
-    if ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get() == PILOT_STEER_TYPE_TWO_PADDLES) {
+    if ((enum pilot_steer_type_t)g.pilot_steer_type.get() == PILOT_STEER_TYPE_TWO_PADDLES) {
         const float left_paddle = desired_steering;
         const float right_paddle = desired_throttle;
         desired_steering = (left_paddle - right_paddle) * 0.5f;
@@ -279,7 +279,7 @@ void Mode::handle_tack_request()
 {
     // autopilot modes handle tacking
     if (is_autopilot_mode()) {
-        rover.g2.sailboat.handle_tack_request_auto();
+        g2.sailboat.handle_tack_request_auto();
     }
 }
 
@@ -304,9 +304,9 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
     // call throttle controller and convert output to -100 to +100 range
     float throttle_out = 0.0f;
 
-    if (rover.g2.sailboat.sail_enabled()) {
+    if (g2.sailboat.sail_enabled()) {
         // sailboats use special throttle and mainsail controller
-        rover.g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
+        g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
     } else {
         // call speed or stop controller
         if (is_zero(target_speed) && !rover.is_balancebot()) {

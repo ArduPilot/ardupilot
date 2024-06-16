@@ -34,6 +34,7 @@ import random
 import tempfile
 import threading
 import enum
+from inspect import currentframe, getframeinfo
 from pathlib import Path
 
 from MAVProxy.modules.lib import mp_util
@@ -6225,19 +6226,20 @@ class TestSuite(ABC):
                 command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
             except KeyError:
                 command_name = "UNKNOWNu"
-            self.progress("Sending COMMAND_INT to (%u,%u) (%s=%u) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f)" %
-                          (
-                              target_sysid,
-                              target_compid,
-                              command_name,
-                              command,
-                              p1,
-                              p2,
-                              p3,
-                              p4,
-                              x,
-                              y,
-                              z))
+            self.progress("Sending COMMAND_INT to (%u,%u) (%s=%u) (p1=%f p2=%f p3=%f p4=%f p5=%u p6=%u  p7=%f f=%u)" % (
+                target_sysid,
+                target_compid,
+                command_name,
+                command,
+                p1,
+                p2,
+                p3,
+                p4,
+                x,
+                y,
+                z,
+                frame
+            ))
         mav.mav.command_int_send(target_sysid,
                                  target_compid,
                                  frame,
@@ -6417,6 +6419,12 @@ class TestSuite(ABC):
     #################################################
     # UTILITIES
     #################################################
+    def lineno(self):
+        '''return line number'''
+        frameinfo = getframeinfo(currentframe().f_back)
+        # print(frameinfo.filename, frameinfo.lineno)
+        return frameinfo.lineno
+
     @staticmethod
     def longitude_scale(lat):
         ret = math.cos(lat * (math.radians(1)))
@@ -8456,7 +8464,7 @@ Also, ignores heartbeats not from our target system'''
             ex = e
             # reset the message hooks; we've failed-via-exception and
             # can't expect the hooks to have been cleaned up
-            for h in self.mav.message_hooks:
+            for h in copy.copy(self.mav.message_hooks):
                 if h not in start_message_hooks:
                     self.mav.message_hooks.remove(h)
             hooks_removed = True
@@ -8508,6 +8516,7 @@ Also, ignores heartbeats not from our target system'''
                 self.reset_SITL_commandline()
             else:
                 self.progress("Force-rebooting SITL")
+                self.zero_throttle()
                 self.reboot_sitl() # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
@@ -13695,8 +13704,8 @@ switch value'''
             (1, "UBLOX", None, "u-blox", 5, 'probing'),
             (5, "NMEA", 5, "NMEA", 5, 'probing'),
             (6, "SBP", None, "SBP", 5, 'probing'),
-            # (7, "SBP2", 9, "SBP2", 5),  # broken, "waiting for config data"
             (8, "NOVA", 15, "NOVA", 5, 'probing'),  # no attempt to auto-detect this in AP_GPS
+            (9, "SBP2", None, "SBP2", 5, 'probing'),
             (11, "GSOF", 11, "GSOF", 5, 'specified'), # no attempt to auto-detect this in AP_GPS
             (19, "MSP", 19, "MSP", 32, 'specified'),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),

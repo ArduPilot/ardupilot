@@ -103,6 +103,8 @@ AP_HW_JDMINIF405                      144
 AP_HW_KAKUTEF7_MINI                   145
 AP_HW_H757I_EVAL                      146
 AP_HW_F4BY                             20 # value due to previous release by vendor
+AP_HW_MAZZYSTARDRONE                  188
+
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152
 AP_HW_VRBRAIN_V54                    1154
@@ -111,7 +113,7 @@ AP_HW_VRUBRAIN_V51                   1351
 AP_HW_F103_PERIPH                    1000
 AP_HW_CUAV_GPS                       1001
 AP_HW_OMNIBUSF4                      1002
-AP_HW_CUBEBLACK+                     1003
+AP_HW_CUBEBLACKPLUS                  1003
 AP_HW_F303_PERIPH                    1004
 AP_HW_ZUBAXGNSS                      1005
 AP_HW_NIGHTCRAWLER                   1006
@@ -200,7 +202,7 @@ AP_HW_HolybroCompass                 1088
 AP_HW_FOXEERH743_V1                  1089
 AP_HW_PixFlamingoL4R5_V1             1090
 
-AP_HW_Sierra-TrueNav Pro             1091
+AP_HW_Sierra-TrueNavPro              1091
 AP_HW_Sierra-TrueNav                 1092
 AP_HW_Sierra-TrueNorth               1093
 AP_HW_Sierra-TrueSpeed               1094
@@ -286,6 +288,8 @@ AP_HW_FlywooF405HD_AIOv2             1180
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
+
+AP_HW_KHA_ETH                        1315
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401

@@ -141,7 +141,7 @@ void ModeAuto::update()
             break;
 
         case SubMode::Circle:
-            rover.g2.mode_circle.update();
+            g2.mode_circle.update();
             break;
     }
 }
@@ -173,7 +173,7 @@ float ModeAuto::wp_bearing() const
     case SubMode::NavScriptTime:
         return rover.mode_guided.wp_bearing();
     case SubMode::Circle:
-        return rover.g2.mode_circle.wp_bearing();
+        return g2.mode_circle.wp_bearing();
     }
 
     // this line should never be reached
@@ -197,7 +197,7 @@ float ModeAuto::nav_bearing() const
     case SubMode::NavScriptTime:
         return rover.mode_guided.nav_bearing();
     case SubMode::Circle:
-        return rover.g2.mode_circle.nav_bearing();
+        return g2.mode_circle.nav_bearing();
     }
 
     // this line should never be reached
@@ -221,7 +221,7 @@ float ModeAuto::crosstrack_error() const
     case SubMode::NavScriptTime:
         return rover.mode_guided.crosstrack_error();
     case SubMode::Circle:
-        return rover.g2.mode_circle.crosstrack_error();
+        return g2.mode_circle.crosstrack_error();
     }
 
     // this line should never be reached
@@ -245,7 +245,7 @@ float ModeAuto::get_desired_lat_accel() const
     case SubMode::NavScriptTime:
         return rover.mode_guided.get_desired_lat_accel();
     case SubMode::Circle:
-        return rover.g2.mode_circle.get_desired_lat_accel();
+        return g2.mode_circle.get_desired_lat_accel();
     }
 
     // this line should never be reached
@@ -270,7 +270,7 @@ float ModeAuto::get_distance_to_destination() const
     case SubMode::NavScriptTime:
         return rover.mode_guided.get_distance_to_destination();
     case SubMode::Circle:
-        return rover.g2.mode_circle.get_distance_to_destination();
+        return g2.mode_circle.get_distance_to_destination();
     }
 
     // this line should never be reached
@@ -299,7 +299,7 @@ bool ModeAuto::get_desired_location(Location& destination) const
     case SubMode::NavScriptTime:
         return rover.mode_guided.get_desired_location(destination);
     case SubMode::Circle:
-        return rover.g2.mode_circle.get_desired_location(destination);
+        return g2.mode_circle.get_desired_location(destination);
     }
 
     // we should never reach here but just in case
@@ -341,7 +341,7 @@ bool ModeAuto::reached_destination() const
     case SubMode::NavScriptTime:
         return rover.mode_guided.reached_destination();
     case SubMode::Circle:
-        return rover.g2.mode_circle.reached_destination();
+        return g2.mode_circle.reached_destination();
     }
 
     // we should never reach here but just in case, return true to allow missions to continue
@@ -366,7 +366,7 @@ bool ModeAuto::set_desired_speed(float speed)
     case SubMode::NavScriptTime:
         return rover.mode_guided.set_desired_speed(speed);
     case SubMode::Circle:
-        return rover.g2.mode_circle.set_desired_speed(speed);
+        return g2.mode_circle.set_desired_speed(speed);
     }
     return false;
 }
@@ -902,7 +902,7 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 
     // if a location target was set, return true once vehicle is close
     if (guided_target.valid) {
-        if (rover.current_loc.get_distance(guided_target.loc) <= rover.g2.wp_nav.get_radius()) {
+        if (rover.current_loc.get_distance(guided_target.loc) <= g2.wp_nav.get_radius()) {
             return true;
         }
     }

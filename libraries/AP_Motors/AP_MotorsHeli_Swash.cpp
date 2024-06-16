@@ -211,15 +211,16 @@ void AP_MotorsHeli_Swash::add_servo_raw(uint8_t num, float roll, float pitch, fl
 // calculates servo output
 void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
 {
-    // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
-    if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED){
-        collective = 1 - collective;
-    }
 
-    // Store inputs for logging
+    // Store inputs for logging, store col before col reversal to ensure logging comes out with the correct sign (+/-)
     _roll_input = roll;
     _pitch_input = pitch;
     _collective_input_scaled = collective;
+
+    // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
+    if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED) {
+        collective = 1 - collective;
+    }
 
     for (uint8_t i = 0; i < _max_num_servos; i++) {
         if (!_enabled[i]) {

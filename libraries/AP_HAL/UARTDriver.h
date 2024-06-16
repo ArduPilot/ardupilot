@@ -78,6 +78,9 @@ public:
 
     // read buffer from a locked port. If port is locked and key is not correct then -1 is returned
     ssize_t read_locked(uint8_t *buf, size_t count, uint32_t key) WARN_IF_UNUSED;
+
+    // get current parity for passthrough use
+    uint8_t get_parity(void);
     
     // control optional features
     virtual bool set_options(uint16_t options) { _last_options = options; return options==0; }
@@ -189,6 +192,9 @@ public:
     // return true requested baud on USB port
     virtual uint32_t get_usb_baud(void) const { return 0; }
 
+    // return requested parity on USB port
+    virtual uint8_t get_usb_parity(void) const { return parity; }
+
     // disable TX/RX pins for unusued uart
     virtual void disable_rxtx(void) const {}
 
@@ -212,6 +218,8 @@ protected:
     // key for a locked port
     uint32_t lock_write_key;
     uint32_t lock_read_key;
+
+    uint8_t parity;
 
     /*
       backend begin method

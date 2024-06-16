@@ -247,6 +247,10 @@ public:
     void multicast_state_open(void);
     void multicast_state_send(void);
 
+    // number of times we have paused the simulation for 1ms because
+    // the TCP queue is full:
+    uint32_t _serial_0_outqueue_full_count;
+
 protected:
     enum vehicle_type _vehicle;
 

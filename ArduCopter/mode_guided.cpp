@@ -243,10 +243,10 @@ void ModeGuided::pos_control_start()
     pva_control_start();
 }
 
-// initialise guided mode's velocity controller
+// initialise guided mode's acceleration controller
 void ModeGuided::accel_control_start()
 {
-    // set guided_mode to velocity controller
+    // set guided_mode to acceleration controller
     guided_mode = SubMode::Accel;
 
     // initialise position controller
@@ -256,7 +256,7 @@ void ModeGuided::accel_control_start()
 // initialise guided mode's velocity and acceleration controller
 void ModeGuided::velaccel_control_start()
 {
-    // set guided_mode to velocity controller
+    // set guided_mode to velocity and acceleration controller
     guided_mode = SubMode::VelAccel;
 
     // initialise position controller
@@ -266,7 +266,7 @@ void ModeGuided::velaccel_control_start()
 // initialise guided mode's position, velocity and acceleration controller
 void ModeGuided::posvelaccel_control_start()
 {
-    // set guided_mode to velocity controller
+    // set guided_mode to position, velocity and acceleration controller
     guided_mode = SubMode::PosVelAccel;
 
     // initialise position controller
@@ -414,11 +414,14 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::Pos:
         destination = Location(guided_pos_target_cm.tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         return true;
-    default:
-        return false;
+    case SubMode::Angle:
+    case SubMode::TakeOff:
+    case SubMode::Accel:
+    case SubMode::VelAccel:
+    case SubMode::PosVelAccel:
+        break;
     }
 
-    // should never get here but just in case
     return false;
 }
 
@@ -515,7 +518,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 // set_velaccel - sets guided mode's target velocity and acceleration
 void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
-    // check we are in velocity control mode
+    // check we are in acceleration control mode
     if (guided_mode != SubMode::Accel) {
         accel_control_start();
     }
@@ -547,7 +550,7 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 // set_velaccel - sets guided mode's target velocity and acceleration
 void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
-    // check we are in velocity control mode
+    // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
         velaccel_control_start();
     }
@@ -589,7 +592,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     }
 #endif
 
-    // check we are in velocity control mode
+    // check we are in position, velocity and acceleration control mode
     if (guided_mode != SubMode::PosVelAccel) {
         posvelaccel_control_start();
     }

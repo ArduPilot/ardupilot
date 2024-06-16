@@ -272,27 +272,40 @@ bool AP_Follow::get_target_heading_deg(float &heading) const
     return true;
 }
 
-// handle mavlink DISTANCE_SENSOR messages
-void AP_Follow::handle_msg(const mavlink_message_t &msg)
+// returns true if we should extract information from msg
+bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
-        return;
+        return false;
     }
 
     // skip our own messages
     if (msg.sysid == mavlink_system.sysid) {
-        return;
+        return false;
     }
 
     // skip message if not from our target
     if (_sysid != 0 && msg.sysid != _sysid) {
-        if (_automatic_sysid) {
-            // maybe timeout who we were following...
-            if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
-                _sysid.set(0);
-            }
+        return false;
+    }
+
+    return true;
+}
+
+// handle mavlink DISTANCE_SENSOR messages
+void AP_Follow::handle_msg(const mavlink_message_t &msg)
+{
+    // this method should be called from an "update()" method:
+    if (_automatic_sysid) {
+        // maybe timeout who we were following...
+        if ((_last_location_update_ms == 0) ||
+            (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
+            _sysid.set(0);
         }
+    }
+
+    if (!should_handle_message(msg)) {
         return;
     }
 
@@ -301,13 +314,31 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+        updated = handle_global_position_int_message(msg);
+        break;
+    }
+    case MAVLINK_MSG_ID_FOLLOW_TARGET: {
+        updated = handle_follow_target_message(msg);
+        break;
+    }
+    }
+
+    if (updated) {
+#if HAL_LOGGING_ENABLED
+        Log_Write_FOLL();
+#endif
+    }
+}
+
+bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
+{
         // decode message
         mavlink_global_position_int_t packet;
         mavlink_msg_global_position_int_decode(&msg, &packet);
 
         // ignore message if lat and lon are (exactly) zero
         if ((packet.lat == 0 && packet.lon == 0)) {
-            return;
+            return false;
         }
 
         _target_location.lat = packet.lat;
@@ -337,21 +368,22 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _sysid.set(msg.sysid);
             _automatic_sysid = true;
         }
-        updated = true;
-        break;
-    }
-    case MAVLINK_MSG_ID_FOLLOW_TARGET: {
+        return true;
+}
+
+bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
+{
         // decode message
         mavlink_follow_target_t packet;
         mavlink_msg_follow_target_decode(&msg, &packet);
 
         // ignore message if lat and lon are (exactly) zero
         if ((packet.lat == 0 && packet.lon == 0)) {
-            return;
+            return false;
         }
         // require at least position
         if ((packet.est_capabilities & (1<<0)) == 0) {
-            return;
+            return false;
         }
 
         Location new_loc = _target_location;
@@ -363,7 +395,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         // above home if we are configured for relative alt
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE &&
             !new_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
-            return;
+            return false;
         }
         _target_location = new_loc;
 
@@ -391,13 +423,14 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _sysid.set(msg.sysid);
             _automatic_sysid = true;
         }
-        updated = true;
-        break;
-    }
-    }
 
-    if (updated) {
+        return true;
+}
+
+// write out an onboard-log message to help diagnose follow problems:
 #if HAL_LOGGING_ENABLED
+void AP_Follow::Log_Write_FOLL()
+{
         // get estimated location and velocity
         Location loc_estimate{};
         Vector3f vel_estimate;
@@ -432,9 +465,8 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
                                                loc_estimate.lng,
                                                loc_estimate.alt
                                                );
-#endif
-    }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // get velocity estimate in m/s in NED frame using dt since last update
 bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
@@ -492,9 +524,10 @@ bool AP_Follow::get_offsets_ned(Vector3f &offset) const
 Vector3f AP_Follow::rotate_vector(const Vector3f &vec, float angle_deg) const
 {
     // rotate roll, pitch input from north facing to vehicle's perspective
-    const float cos_yaw = cosf(radians(angle_deg));
-    const float sin_yaw = sinf(radians(angle_deg));
-    return Vector3f((vec.x * cos_yaw) - (vec.y * sin_yaw), (vec.y * cos_yaw) + (vec.x * sin_yaw), vec.z);
+    Vector3f ret = vec;
+    ret.xy().rotate(radians(angle_deg));
+
+    return ret;
 }
 
 // set recorded distance and bearing to target to zero
