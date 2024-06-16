@@ -12,8 +12,8 @@ public:
     AC_AutoTune_FreqResp()
 {
     dwell_cycles = 6;
-    meas_peak_info_buffer = new ObjectBuffer<peak_info>(dwell_cycles);
-    tgt_peak_info_buffer = new ObjectBuffer<peak_info>(dwell_cycles);
+    meas_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(dwell_cycles);
+    tgt_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(dwell_cycles);
 }
 
     // Enumeration of input type
