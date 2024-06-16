@@ -74,7 +74,7 @@ void AP_EFI_Serial_FH::update()
             internal_state.coolant_temperature = degF_to_Kelvin(111) * 0.1;
             // CHT is in coolant field
             internal_state.cylinder_status.cylinder_head_temperature = data.temp[1];
-            internal_state.throttle_position_percent = data.tpp * 0.1;
+            internal_state.throttle_position_percent = data.tps * 0.1;
             // integrate fuel consumption
             if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
                 const float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm) / 600.0f;
