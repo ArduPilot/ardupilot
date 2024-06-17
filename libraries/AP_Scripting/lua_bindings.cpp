@@ -656,6 +656,33 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
+int AP_HAL__I2CDevice_transfer(lua_State *L) {
+    binding_argcheck(L, 3);
+
+    AP_HAL::I2CDevice * ud = *check_AP_HAL__I2CDevice(L, 1);
+
+    // Parse string of bytes to send
+    size_t send_len;
+    const uint8_t* send_data = (const uint8_t*)(lua_tolstring(L, 2, &send_len));
+
+    // Parse and setup rx buffer
+    uint32_t rx_len = get_uint8_t(L, 3);
+    uint8_t rx_data[rx_len];
+
+    // Transfer
+    ud->get_semaphore()->take_blocking();
+    const bool success = ud->transfer(send_data, send_len, rx_data, rx_len);
+    ud->get_semaphore()->give();
+
+    if (!success) {
+        return 0;
+    }
+
+    // Return a string
+    lua_pushlstring(L, (const char *)rx_data, rx_len);
+    return 1;
+}
+
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 
