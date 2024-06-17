@@ -40,6 +40,7 @@ class AP_BattMonitor_SMBus_Solo;
 class AP_BattMonitor_SMBus_Generic;
 class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
+class AP_BattMonitor_SMBus_TIBQ;
 class AP_BattMonitor_DroneCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
@@ -60,6 +61,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Generic;
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_SMBus_Rotoye;
+    friend class AP_BattMonitor_SMBus_TIBQ;
     friend class AP_BattMonitor_DroneCAN;
     friend class AP_BattMonitor_Sum;
     friend class AP_BattMonitor_FuelFlow;
@@ -116,6 +118,7 @@ public:
         EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
+        TIBQ                           = 30,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);

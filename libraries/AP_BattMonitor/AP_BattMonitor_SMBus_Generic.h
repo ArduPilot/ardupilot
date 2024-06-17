@@ -19,9 +19,13 @@ public:
                              AP_BattMonitor::BattMonitor_State &mon_state,
                              AP_BattMonitor_Params &params);
 
+protected:
+
+    // timer is protected to allow calling from a child class
+    virtual void timer(void) override;
+
 private:
 
-    void timer(void) override;
 
     // check if PEC supported with the version value in SpecificationInfo() function
     // returns true once PEC is confirmed as working or not working

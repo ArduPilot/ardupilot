@@ -10,6 +10,7 @@
 #include "AP_BattMonitor_SMBus_Generic.h"
 #include "AP_BattMonitor_SMBus_Maxell.h"
 #include "AP_BattMonitor_SMBus_Rotoye.h"
+#include "AP_BattMonitor_SMBus_TIBQ.h"
 #include "AP_BattMonitor_Bebop.h"
 #include "AP_BattMonitor_ESC.h"
 #include "AP_BattMonitor_SMBus_SUI.h"
@@ -514,6 +515,11 @@ AP_BattMonitor::init()
 #if AP_BATTERY_SMBUS_ROTOYE_ENABLED
             case Type::Rotoye:
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_Rotoye(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if AP_BATTERY_SMBUS_TIBQ_ENABLED
+            case Type::TIBQ:
+                drivers[instance] = NEW_NOTHROW AP_BattMonitor_SMBus_TIBQ(*this, state[instance], _params[instance]);
                 break;
 #endif
 #if AP_BATTERY_SMBUS_NEODESIGN_ENABLED
