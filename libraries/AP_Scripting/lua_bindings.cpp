@@ -459,11 +459,17 @@ int AP_Logger_Write(lua_State *L) {
             case 'M': // uint8_t (flight mode)
             case 'B': { // uint8_t
                 int isnum;
-                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT8_MAX)) {
-                    luaM_free(L, buffer);
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    // Also allow boolean
+                    if (!isnum && lua_isboolean(L, arg_index)) {
+                        tmp1 = lua_toboolean(L, arg_index);
+
+                    } else {
+                        luaM_free(L, buffer);
+                        luaL_argerror(L, arg_index, "argument out of range");
+                        // no return
+                    }
                 }
                 uint8_t tmp = static_cast<uint8_t>(tmp1);
                 memcpy(&buffer[offset], &tmp, sizeof(uint8_t));
