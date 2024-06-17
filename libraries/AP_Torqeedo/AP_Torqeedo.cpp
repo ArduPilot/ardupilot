@@ -772,11 +772,6 @@ void AP_Torqeedo::parse_message()
     if ((_type == ConnectionType::TYPE_TILLER) && (msg_addr == MsgAddress::BUS_MASTER)) {
         // replies strangely do not return the msgid so we must have stored it
         BatteryMsgId msg_id = (BatteryMsgId)_reply_msgid;
-
-        // Print the first 2 bytes of the message in hex
-        // to help with debugging
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TRBS -- first two: %02X %02X", _received_buff[0], _received_buff[1]);
-
         switch (msg_id) {
         case BatteryMsgId::STATUS:
             if (_received_buff_len == 29) {
