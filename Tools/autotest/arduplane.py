@@ -16207,6 +16207,20 @@ return update, 200
                 self.wait_message_field_values('VFR_HUD', {'airspeed': airspeed}, epsilon=0.5)
                 self.wait_message_field_values('WIND', {'direction': direction, 'speed': speed}, epsilon=0.1)
 
+    def ArmInRCFailsafe(self):
+        '''test we can arm in the face of an RC failsafe'''
+        self.set_parameter("THR_FAILSAFE", 0)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(2, reason="RC failsafe to take effect")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.set_parameter("THR_FAILSAFE", 2)
+        self.delay_sim_time(2, reason="RC failsafe to take effect")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -16308,6 +16322,7 @@ return update, 200
             self.FenceMinAltAutoEnable,
             self.FenceMinAltAutoEnableAbort,
             self.GuidedRejectOutsideFence,
+            self.ArmInRCFailsafe,
             self.FenceBreachedChangeMode,
             self.FenceNoFenceReturnPoint,
             self.FenceDisableUnderAction,
