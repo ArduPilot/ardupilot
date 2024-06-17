@@ -1241,7 +1241,9 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, sweep_info &test_data
     }
 }
 
-// updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
+// updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not
+// exceed max response gain.  A phase of 161 deg is used to conduct the tuning as this phase is where analytically
+// max gain to 6db gain margin is determined for a unity feedback controller.
 void AC_AutoTune_Heli::updating_rate_p_up(float &tune_p, sweep_info &test_data, float &next_freq, max_gain_data &max_gain_p)
 {
     float test_freq_incr = 0.25f * M_2PI;
@@ -1265,7 +1267,9 @@ void AC_AutoTune_Heli::updating_rate_p_up(float &tune_p, sweep_info &test_data, 
     }
 }
 
-// updating_rate_d_up - uses maximum allowable gain determined from max_gain test to determine rate d gain where the response gain is at a minimum
+// updating_rate_d_up - uses maximum allowable gain determined from max_gain test to determine rate d gain where the response
+// gain is at a minimum.  A phase of 161 deg is used to conduct the tuning as this phase is where analytically
+// max gain to 6db gain margin is determined for a unity feedback controller.
 void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, sweep_info &test_data, float &next_freq, max_gain_data &max_gain_d)
 {
     float test_freq_incr = 0.25f * M_2PI;  // set for 1/4 hz increments
@@ -1291,7 +1295,8 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, sweep_info &test_data, 
     }
 }
 
-// updating_angle_p_up - determines maximum angle p gain for pitch and roll
+// updating_angle_p_up - determines maximum angle p gain for pitch and roll.  This is accomplished by determining the frequency
+// for the maximum response gain that is the disturbance rejection peak.
 void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, sweep_info &test_data, float &next_freq)
 {
     float test_freq_incr = 0.5f * M_2PI;
@@ -1382,7 +1387,11 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, sweep_info &test_data,
     }
 }
 
-// updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
+// updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur.  This uses the frequency
+// response of motor class input to rate response to determine the max allowable gain for rate P gain.  A phase of 161 deg is used to
+// determine analytically the max gain to 6db gain margin for a unity feedback controller. Since acceleration can be more noisy, the
+// response of the motor class input to rate response to determine the max allowable gain for rate D gain.  A phase of 251 deg is used
+// to determine analytically the max gain to 6db gain margin for a unity feedback controller.
 void AC_AutoTune_Heli::updating_max_gains(sweep_info &test_data, float &next_freq, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d)
 {
     float test_freq_incr = 0.5f * M_2PI;
