@@ -121,6 +121,12 @@ private:
         DRIVE = 0x82
     };
 
+    // Battery specific message ids
+    enum class BatteryMsgId : uint8_t {
+        INFO = 0x01,
+        STATUS = 0x04
+    };
+
     enum class ParseState {
         WAITING_FOR_HEADER = 0,
         WAITING_FOR_FOOTER,
@@ -192,6 +198,10 @@ private:
     // msg_id can be INFO, STATUS or PARAM
     void send_motor_msg_request(MotorMsgId msg_id);
 
+    // send request to battery to reply with a particular message
+    // msg_id can be STATUS
+    void send_battery_msg_request(BatteryMsgId msg_id);
+
     // calculate the limited motor speed that is sent to the motors
     // desired_motor_speed argument and returned value are in the range -1000 to 1000
     int16_t calc_motor_speed_limited(int16_t desired_motor_speed);
@@ -216,7 +226,8 @@ private:
     AP_Float _slew_time;    // slew rate specified as the minimum number of seconds required to increase the throttle from 0 to 100%.  A value of zero disables the limit
     AP_Float _dir_delay;    // direction change delay.  output will remain at zero for this many seconds when transitioning between forward and backwards rotation
     AP_Int8 _auto_reset;    // whether to auto reset the motor if it goes into an error state (0:disabled, 1:enabled)
-    
+    AP_Int8 _ext_batt;      // whether to use external battery (0:disabled, 1:enabled)
+
     // members
     AP_HAL::UARTDriver *_uart;      // serial port to communicate with motor
     bool _initialised;              // true once driver has been initialised
@@ -355,6 +366,77 @@ private:
         uint32_t last_update_ms;// system time that above values were updated
     } _motor_param;
     uint32_t _last_send_motor_param_request_ms;     // system time (in milliseconds) that last motor param request was sent
+
+    // Battery Status Flags
+    typedef union PACKED {
+        struct {
+            uint8_t discharge_channel    : 1;    // 0, discharge channel active
+            uint8_t charge_channel       : 1;    // 1, charge channel active
+            uint8_t ddch                 : 1;    // 2, deep discharge
+            uint8_t eod                  : 1;    // 3, end of discharge
+            uint8_t hi_stack             : 1;    // 4, battery on high side of serial connection
+        };
+        uint16_t value;
+    } BatteryStatusFlags;
+
+    // Battery Warning Flags
+    typedef union PACKED {
+        struct {
+            uint8_t warn_batt_overcurrent     : 1;    // 0, discharge current too high
+            uint8_t warn_batt_overcomplicate  : 1;    // 1, cell temp too high
+            uint8_t warn_overtemp_fet         : 1;    // 2, pcb/fet temp too high
+            uint8_t warn_undertemp_cell       : 1;    // 3, cell temp too low
+            uint8_t warn_eod                  : 1;    // 4, end of discharge
+            uint8_t warn_batt_off             : 1;    // 5, battery nearly empty
+            uint8_t warn_overcurrent_charge   : 1;    // 6, charge current too high
+            uint8_t warn_batt_overtemp_cell   : 1;    // 7, cell temp too high
+            uint8_t warn_batt_undertemp_cell  : 1;    // 8, cell temp too low
+            uint8_t warn_cells_unbalanced     : 1;    // 9, single voltage diff too big
+        };
+        uint16_t value;
+    } BatteryWarningFlags;
+
+    // Battery Error Flags
+    typedef union PACKED {
+        struct {
+            uint8_t err_batt_discharge_curr  : 1;    // 0, discharge current too high
+            uint8_t err_overtemp_cell        : 1;    // 1, cell temp too high
+            uint8_t err_overtemp_fet         : 1;    // 2, pcb/fet temp too high
+            uint8_t err_undertemp_cell       : 1;    // 3, cell temp too low
+            uint8_t err_eod                  : 1;    // 4, end of discharge
+            uint8_t err_batt_off             : 1;    // 5, battery nearly empty
+            uint8_t err_overcurrent          : 1;    // 6, charge current too high
+            uint8_t err_overtemp_batt_cell   : 1;    // 7, cell temp too high
+            uint8_t err_undertemp_batt_cel   : 1;    // 8, cell temp too low
+            uint8_t err_overvoltage          : 1;    // 9, charge voltage too high
+            uint8_t err_overcharge           : 1;    // 10, overcharge
+            uint8_t err_second_protection    : 1;    // 11, second level protection was activated
+            uint8_t err_electronic_err       : 1;    // 12, general electronic error
+            uint8_t err_no_pyro_fuse         : 1;    // 13, pyrofuse connection lost
+            uint8_t err_leak_current         : 1;    // 14, water sensor
+            uint8_t err_ddch                 : 1;    // 15, deep discharge - no charge
+        };
+        uint16_t value;
+    } BatteryErrorFlags;
+
+    // Battery status
+    struct BatteryStatus {
+        BatteryStatusFlags status_flags;      // battery status flags
+        BatteryWarningFlags warning_flags;    // battery warning flags
+        BatteryErrorFlags error_flags;        // battery error flags
+        float temp_cell_pack;                 // max temp within cellpack (C)
+        float temp_pcb;                       // max temp on pcb/mosfet (C)
+        float voltage;                        // voltage cellpack (V)
+        float current;                        // battery current (A)
+        uint16_t power;                       // actual power (W)
+        float capacity;                       // learned max capacity (Ah)
+        float capacity_remaining;             // remaining capacity (Ah)
+        uint16_t capacity_pct;                // remaining capacity in percent (%)
+        uint16_t running_time;                // remaining capacity in minutes (min)
+        uint16_t water_detect;                // water detection (ADC value, 0=wet)
+        uint32_t last_update_ms;              // system time that above values were updated
+    } _battery_status;
+    uint32_t _last_send_battery_status_request_ms;  // system time (in milliseconds) that last battery status request was sent
 
     // error reporting
     DisplaySystemStateFlags _display_system_state_flags_prev;   // backup of display system state flags

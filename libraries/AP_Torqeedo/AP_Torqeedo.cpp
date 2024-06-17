@@ -33,6 +33,7 @@
 #define TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_MS           100 // motor speed sent at 10hz if connected to motor
 #define TORQEEDO_SEND_MOTOR_STATUS_REQUEST_INTERVAL_MS  400 // motor status requested every 0.4sec if connected to motor
 #define TORQEEDO_SEND_MOTOR_PARAM_REQUEST_INTERVAL_MS   400 // motor param requested every 0.4sec if connected to motor
+#define TORQEEDO_SEND_BATTERY_STATUS_REQUEST_INTERVAL_MS 400 // battery status requested every 0.4sec
 #define TORQEEDO_BATT_TIMEOUT_MS    5000    // battery info timeouts after 5 seconds
 #define TORQEEDO_REPLY_TIMEOUT_MS   25      // stop waiting for replies after 25ms
 #define TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS   10000   // errors reported to user at no less than once every 10 seconds
@@ -107,6 +108,13 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("AUTO_RST", 8, AP_Torqeedo, _auto_reset, 1),
+
+    // @Param: EXT_BATT
+    // @DisplayName: Torqeedo External Battery
+    // @Description: Torqeedo external battery.  If enabled, battery status will be requested from the battery
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("EXT_BATT", 9, AP_Torqeedo, _ext_batt, 1),
 
     AP_GROUPEND
 };
@@ -252,6 +260,13 @@ void AP_Torqeedo::thread_main()
                 send_motor_speed_cmd();
                 _send_motor_speed = false;
                 log_update = true;
+            }
+            else if (_type == ConnectionType::TYPE_TILLER && _ext_batt) {
+                // send request for battery status
+                if (now_ms - _last_send_battery_status_request_ms > TORQEEDO_SEND_BATTERY_STATUS_REQUEST_INTERVAL_MS) {
+                    send_battery_msg_request(BatteryMsgId::STATUS);
+                    _last_send_battery_status_request_ms = now_ms;
+                }
             }
         }
 
@@ -476,22 +491,34 @@ void AP_Torqeedo::report_error_codes()
 bool AP_Torqeedo::get_batt_info(float &voltage, float &current_amps, float &temp_C, uint8_t &pct_remaining) const
 {
 
-    // use battery info from display_system_state if available (tiller connection)
-    if ((AP_HAL::millis() - _display_system_state.last_update_ms) <= TORQEEDO_BATT_TIMEOUT_MS) {
-        voltage = _display_system_state.batt_voltage;
-        current_amps = _display_system_state.batt_current;
-        temp_C = MAX(_display_system_state.temp_sw, _display_system_state.temp_rp);
-        pct_remaining = _display_system_state.batt_charge_pct;
-        return true;
+    if (_ext_batt) {
+        // always use external battery info if selected
+        if ((AP_HAL::millis() - _battery_status.last_update_ms) <= TORQEEDO_BATT_TIMEOUT_MS) {
+            voltage = _battery_status.voltage;
+            current_amps = _battery_status.current;
+            temp_C = _battery_status.temp_cell_pack;
+            pct_remaining = static_cast<uint8_t>(_battery_status.capacity_pct);
+            return true;
+        }
     }
+    else {
+        // use battery info from display_system_state if available (tiller connection)
+        if ((AP_HAL::millis() - _display_system_state.last_update_ms) <= TORQEEDO_BATT_TIMEOUT_MS) {
+            voltage = _display_system_state.batt_voltage;
+            current_amps = _display_system_state.batt_current;
+            temp_C = MAX(_display_system_state.temp_sw, _display_system_state.temp_rp);
+            pct_remaining = _display_system_state.batt_charge_pct;
+            return true;
+        }
 
-    // use battery info from motor_param if available (motor connection)
-    if ((AP_HAL::millis() - _motor_param.last_update_ms) <= TORQEEDO_BATT_TIMEOUT_MS) {
-        voltage = _motor_param.voltage;
-        current_amps = _motor_param.current;
-        temp_C = MAX(_motor_param.pcb_temp, _motor_param.stator_temp);
-        pct_remaining = 0; // motor does not know percent remaining
-        return true;
+        // use battery info from motor_param if available (motor connection)
+        if ((AP_HAL::millis() - _motor_param.last_update_ms) <= TORQEEDO_BATT_TIMEOUT_MS) {
+            voltage = _motor_param.voltage;
+            current_amps = _motor_param.current;
+            temp_C = MAX(_motor_param.pcb_temp, _motor_param.stator_temp);
+            pct_remaining = 0; // motor does not know percent remaining
+            return true;
+        }
     }
 
     return false;
@@ -500,6 +527,14 @@ bool AP_Torqeedo::get_batt_info(float &voltage, float &current_amps, float &temp
 // get battery capacity.  returns true on success and populates argument
 bool AP_Torqeedo::get_batt_capacity_Ah(uint16_t &amp_hours) const
 {
+    if (_ext_batt) {
+        if (_battery_status.capacity <= 0.0) {
+            return false;
+        }
+        amp_hours = static_cast<uint16_t>(_battery_status.capacity);
+        return true;
+    }
+
     if (_display_system_setup.batt_capacity == 0) {
         return false;
     }
@@ -729,6 +764,102 @@ void AP_Torqeedo::parse_message()
             break;
         }
         return;
+    }
+
+    // handle reply from battery
+    // For now, only process battery messages if in tiller type mode to avoid changing
+    // code for motor type mode. This is because both reply to the bus master.
+    if ((_type == ConnectionType::TYPE_TILLER) && (msg_addr == MsgAddress::BUS_MASTER)) {
+        // replies strangely do not return the msgid so we must have stored it
+        BatteryMsgId msg_id = (BatteryMsgId)_reply_msgid;
+
+        // Print the first 2 bytes of the message in hex
+        // to help with debugging
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TRBS -- first two: %02X %02X", _received_buff[0], _received_buff[1]);
+
+        switch (msg_id) {
+        case BatteryMsgId::STATUS:
+            if (_received_buff_len == 29) {
+                _battery_status.status_flags.value = UINT16_VALUE(_received_buff[2], _received_buff[3]);
+                _battery_status.warning_flags.value = UINT16_VALUE(_received_buff[4], _received_buff[5]);
+                _battery_status.error_flags.value = UINT16_VALUE(_received_buff[6], _received_buff[7]);
+                _battery_status.temp_cell_pack = (float)((int16_t)UINT16_VALUE(_received_buff[8], _received_buff[9])) * 0.1;
+                _battery_status.temp_pcb = (float)((int16_t)UINT16_VALUE(_received_buff[10], _received_buff[11])) * 0.1;
+                _battery_status.voltage = (float)(UINT16_VALUE(_received_buff[12], _received_buff[13])) * 0.1;
+                _battery_status.current = -1.0 * (float)((int16_t)UINT16_VALUE(_received_buff[14], _received_buff[15])) * 0.1;
+                _battery_status.power = UINT16_VALUE(_received_buff[16], _received_buff[17]);
+                _battery_status.capacity = (float)(UINT16_VALUE(_received_buff[18], _received_buff[19])) * 0.1;
+                _battery_status.capacity_remaining = (float)(UINT16_VALUE(_received_buff[20], _received_buff[21])) * 0.1;
+                _battery_status.capacity_pct = UINT16_VALUE(_received_buff[22], _received_buff[23]);
+                _battery_status.running_time = UINT16_VALUE(_received_buff[24], _received_buff[25]);
+                _battery_status.water_detect = UINT16_VALUE(_received_buff[26], _received_buff[27]);
+                _battery_status.last_update_ms = AP_HAL::millis();
+
+#if HAL_LOGGING_ENABLED
+
+                // log data
+                if ((_options & options::LOG) != 0) {
+                    // @LoggerMessage: TRBS
+                    // @Description: Torqeedo Battery Status
+                    // @Field: TimeUS: Time since system startup
+                    // @Field: State: Battery status flags
+                    // @Field: Warn: Battery warning flags
+                    // @Field: Err: Battery error flags
+                    // @Field: CTemp: Cell pack temp
+                    // @Field: PTemp: PCB temp
+                    // @Field: Volt: Battery voltage
+                    // @Field: Cur: Battery current
+                    // @Field: Pow: Battery power
+                    // @Field: Cap: Battery capacity
+                    // @Field: CapPct: Battery capacity percentage
+                    // @Field: CapRem: Battery capacity remaining
+                    // @Field: Water: Water detect
+                    AP::logger().Write("TRBS", "TimeUS,State,Warn,Err,CTemp,PTemp,Volt,Cur,Pow,Cap,CapPct,CapRem,Water", "QHHHffffHfHfH",
+                                       AP_HAL::micros64(),
+                                       _battery_status.status_flags.value,
+                                       _battery_status.warning_flags.value,
+                                       _battery_status.error_flags.value,
+                                       _battery_status.temp_cell_pack,
+                                       _battery_status.temp_pcb,
+                                       _battery_status.voltage,
+                                       _battery_status.current,
+                                       _battery_status.power,
+                                       _battery_status.capacity,
+                                       _battery_status.capacity_pct,
+                                       _battery_status.capacity_remaining,
+                                       _battery_status.water_detect);
+                }
+
+#endif
+                    
+                // send to GCS
+                if ((_options & options::DEBUG_TO_GCS) != 0) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TRBS S:%d W:%d E:%d V:%4.1f C:%4.1f P:%u Cap:%4.0f Rem:%u",
+                                _battery_status.status_flags.value,
+                                _battery_status.warning_flags.value,
+                                _battery_status.error_flags.value,
+                                (double)_battery_status.voltage,
+                                (double)_battery_status.current,
+                                (unsigned)_battery_status.power,
+                                (double)_battery_status.capacity,
+                                (unsigned)_battery_status.capacity_pct);
+                }
+            }
+            else {
+                // unexpected length
+                // _parse_error_count++;
+                // Lots of messages come addressed to the bus master, so we don't want to count these as errors
+            }
+            break;
+
+        case BatteryMsgId::INFO:
+            // we do not process these replies
+            break;
+
+        default:
+            // ignore unknown messages
+            break;
+        }
     }
 
     // handle reply from motor
@@ -1053,6 +1184,20 @@ void AP_Torqeedo::send_motor_msg_request(MotorMsgId msg_id)
 
     // send a message
     if (send_message(mot_status_request_buff, ARRAY_SIZE(mot_status_request_buff))) {
+        // record waiting for reply
+        set_expected_reply_msgid((uint8_t)msg_id);
+    }
+}
+
+// send request to battery to reply with a particular message
+// msg_id can be STATUS
+void AP_Torqeedo::send_battery_msg_request(BatteryMsgId msg_id)
+{
+    // prepare message
+    uint8_t batt_status_request_buff[] = {(uint8_t)MsgAddress::BATTERY, (uint8_t)msg_id};
+
+    // send a message
+    if (send_message(batt_status_request_buff, ARRAY_SIZE(batt_status_request_buff))) {
         // record waiting for reply
         set_expected_reply_msgid((uint8_t)msg_id);
     }
