@@ -262,14 +262,16 @@ void AC_AutoTune_FreqResp::push_to_meas_buffer(uint16_t count, float amplitude, 
     sample.curr_count = count;
     sample.amplitude = amplitude;
     sample.time_ms = time_ms;
-    meas_peak_info_buffer->push(sample);
+    if (meas_peak_info_buffer != nullptr) {
+        meas_peak_info_buffer->push(sample);
+    }
 }
 
 // pull measured peak info from buffer
 void AC_AutoTune_FreqResp::pull_from_meas_buffer(uint16_t &count, float &amplitude, uint32_t &time_ms)
 {
     peak_info sample;
-    if (!meas_peak_info_buffer->pop(sample)) {
+    if ((meas_peak_info_buffer == nullptr) || !meas_peak_info_buffer->pop(sample)) {
         // no sample
         return;
     }
@@ -285,15 +287,16 @@ void AC_AutoTune_FreqResp::push_to_tgt_buffer(uint16_t count, float amplitude, u
     sample.curr_count = count;
     sample.amplitude = amplitude;
     sample.time_ms = time_ms;
-    tgt_peak_info_buffer->push(sample);
-
+    if (tgt_peak_info_buffer != nullptr) {
+        tgt_peak_info_buffer->push(sample);
+    }
 }
 
 // pull target peak info from buffer
 void AC_AutoTune_FreqResp::pull_from_tgt_buffer(uint16_t &count, float &amplitude, uint32_t &time_ms)
 {
     peak_info sample;
-    if (!tgt_peak_info_buffer->pop(sample)) {
+    if ((tgt_peak_info_buffer == nullptr) || !tgt_peak_info_buffer->pop(sample)) {
         // no sample
         return;
     }
