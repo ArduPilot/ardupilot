@@ -1,5 +1,5 @@
 # MCU class and specific type
-MCU STM32L431 STM32L431xx
+MCU STM32F412 STM32F412Rxx
 
 # bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
 FLASH_RESERVE_START_KB 40
