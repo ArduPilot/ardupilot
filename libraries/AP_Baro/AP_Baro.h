@@ -266,6 +266,7 @@ private:
         PROBE_BMP388=(1<<10),
         PROBE_SPL06 =(1<<11),
         PROBE_MSP   =(1<<12),
+        PROBE_BMP581=(1<<13),
     };
     
 #if HAL_BARO_WIND_COMP_ENABLED
