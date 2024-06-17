@@ -1,64 +1,126 @@
 # MCU class and specific type
-MCU STM32F412 STM32F412Rxx
+MCU STM32F4xx STM32F412Rx
 
-# bootloader starts firmware at 36k + 4k (STORAGE_FLASH)
-FLASH_RESERVE_START_KB 40
-FLASH_SIZE_KB 256
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
 
-# store parameters in pages 18 and 19
-STORAGE_FLASH_PAGE 18
-define HAL_STORAGE_SIZE 800
+# store parameters in pages 2 and 3
+define STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
 
 # ChibiOS system timer
-STM32_ST_USE_TIMER 15
-define CH_CFG_ST_RESOLUTION 16
+STM32_ST_USE_TIMER 5
 
 # board ID for firmware load
-APJ_BOARD_ID 1080
+#APJ_BOARD_ID 1080
 
 # crystal frequency
-OSCILLATOR_HZ 8000000
+OSCILLATOR_HZ 16000000
 
-env AP_PERIPH 1
+define CH_CFG_ST_FREQUENCY 1000000
+
+# Flash available
+FLASH_SIZE_KB 1024
 
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-define HAL_NO_GPIO_IRQ
-define SERIAL_BUFFERS_SIZE 512
-define PORT_INT_REQUIRED_STACK 64
+# order of UARTs
+SERIAL_ORDER USART1 EMPTY EMPTY USART2
 
-define DMA_RESERVE_SIZE 0
+# USART1 for debug
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+define DEFAULT_SERIAL0_BAUD 57600
 
-# MAIN_STACK is stack for ISR handlers
-MAIN_STACK 0x300
+# Enable the sensor voltage pin
+PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-# PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0xA00
+# USART2 for GPS
+PA2 USART2_TX USART2 SPEED_HIGH
+PA3 USART2_RX USART2 SPEED_HIGH
 
-define HAL_NO_MONITOR_THREAD
-
-# setup a small defaults.parm
-define AP_PARAM_MAX_EMBEDDED_PARAM 512
-
-#ACT LED
-PB3 LED OUTPUT HIGH
-define HAL_LED_ON 1
-
-# debugger support
+# SWD debugging
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-#CAN bus
-CAN_ORDER 1
-PB8 CAN1_RX CAN1
-PB9 CAN1_TX CAN1
+# SPI sensors
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
 
-define HAL_CAN_POOL_SIZE 6000
+# SPI CS
+PB12 MAG_CS CS
+PA8 BARO_CS CS
+
+# Baro probe
+SPIDEV dps310 SPI1 DEVID3 BARO_CS MODE3 5*MHZ 5*MHZ
+BARO DPS310 SPI:dps310
+
+# Mag probe
+SPIDEV  rm3100 SPI1 DEVID1   MAG_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_PITCH_180
+define AP_RM3100_REVERSAL_MASK 7
+
+# PWM, WS2812 LED
+PB8 TIM4_CH3 TIM4 PWM(1) GPIO(50)
+PB9 TIM4_CH4 TIM4 PWM(2) GPIO(51)
+PA15 TIM2_CH1 TIM2 PWM(3) GPIO(52)
+PB4 TIM3_CH1 TIM3 PWM(4) GPIO(53)
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+#define HAL_DISABLE_ADC_DRIVER TRUE
+PA0 VSENSE ADC1 SCALE(2)
+
+define HAL_NO_GPIO_IRQ
+
+# avoid RCIN thread to save memory
+define HAL_USE_RTC FALSE
+define DMA_RESERVE_SIZE 0
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+define HAL_NO_MONITOR_THREAD
+define HAL_DEVICE_THREAD_STACK 768
+
+# disable dual GPS and GPS blending to save flash space
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+# GPS+MAG+BARO+Buzzer+NeoPixels
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_GPS_PORT_DEFAULT 3
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
 
 # allow for reboot command for faster development
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 
-# keep ROMFS uncompressed as we don't have enough RAM
-# to uncompress the bootloader at runtime
-env ROMFS_UNCOMPRESSED True
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+#GPS M9N
+PC11 M9EXTINT INPUT
+PC10 M9RST INPUT
+PC8 GPS_PPS_IN INPUT
+PC7 M9SB INPUT
+
+define DEFAULT_NTF_LED_TYPES 455
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
