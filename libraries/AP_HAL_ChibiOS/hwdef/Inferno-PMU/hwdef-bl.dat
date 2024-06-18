@@ -1,21 +1,19 @@
+# hw definition file for processing by chibios_pins.py
+
+# Inferno-PMU Bootloader
+
 # MCU class and specific type
 MCU STM32F4xx STM32F412Rx
 
-# bootloader starts firmware at 64k
-FLASH_RESERVE_START_KB 64
+FLASH_RESERVE_START_KB 0
+# two sectors for bootloader, two for storage
+FLASH_BOOTLOADER_LOAD_KB 64
 
-# store parameters in pages 2 and 3
-define STORAGE_FLASH_PAGE 2
-define HAL_STORAGE_SIZE 8192
+# board ID for firmware load
+APJ_BOARD_ID 1055
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
-
-# ChibiOS system timer
-STM32_ST_USE_TIMER 5
-
-# board ID for firmware load
-APJ_BOARD_ID 1080
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -25,107 +23,53 @@ define CH_CFG_ST_FREQUENCY 1000000
 # Flash available
 FLASH_SIZE_KB 1024
 
-STDOUT_SERIAL SD1
-STDOUT_BAUDRATE 57600
+define HAL_STORAGE_SIZE 16384
 
-define HAL_NO_GPIO_IRQ
-define SERIAL_BUFFERS_SIZE 512
-define PORT_INT_REQUIRED_STACK 64
+# Enable the sensor voltage pin
+PC13 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-define DMA_RESERVE_SIZE 0
+# order of UARTs
+SERIAL_ORDER
 
-# MAIN_STACK is stack for ISR handlers
-MAIN_STACK 0x300
+# USART1
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
 
-# PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0xA00
+# USART2
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
 
-define HAL_NO_MONITOR_THREAD
-
-# setup a small defaults.parm
-define AP_PARAM_MAX_EMBEDDED_PARAM 512
-
-#ACT LED
-PB3 LED OUTPUT HIGH
-define HAL_LED_ON 1
-
-# debugger support
+# SWD debugging
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-#CAN bus
-CAN_ORDER 1
-PB8 CAN1_RX CAN1
-PB9 CAN1_TX CAN1
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
 
-define HAL_CAN_POOL_SIZE 6000
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
 
-# allow for reboot command for faster development
-define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+# reserve 256 bytes for comms between app and bootloader
+RAM_RESERVE_START 256
 
-# keep ROMFS uncompressed as we don't have enough RAM
-# to uncompress the bootloader at runtime
-env ROMFS_UNCOMPRESSED True
+# Add CS pins to ensure they are high in bootloader
+PB12 MAG_CS CS
+PA8 BARO_CS CS
 
-# SERIAL
-SERIAL_ORDER USART1 EMPTY USART3
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
 
-# ESC 
-PB10  USART3_TX USART3 SPEED_HIGH
-PB11  USART3_RX USART3 SPEED_HIGH
+define HAL_USE_SERIAL TRUE
+define STM32_SERIAL_USE_USART1 TRUE
+define STM32_SERIAL_USE_USART2 TRUE
+define STM32_SERIAL_USE_USART3 FALSE
 
-# USART2
-#PA2 USART2_TX USART2 SPEED_HIGH
-#PA3 USART2_RX USART2 SPEED_HIGH
+define HAL_NO_GPIO_IRQ
+define HAL_USE_EMPTY_IO TRUE
 
-# DEBUG 
-PB6  USART1_TX USART1 SPEED_HIGH
-PB7  USART1_RX USART1 SPEED_HIGH
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
 
-# BATTERY
-define HAL_PERIPH_ENABLE_BATTERY
-
-define HAL_USE_ADC TRUE
-define STM32_ADC_USE_ADC1 TRUE
-
-PB0 BATT_VOLTAGE_SENS  ADC1 SCALE(1)
-PB1 BATT_CURRENT_SENS  ADC1 SCALE(1)
-
-define HAL_BATT_MONITOR_DEFAULT  0
-define HAL_BATT_VOLT_PIN 5
-define HAL_BATT_VOLT_SCALE 21.0
-define HAL_BATT_CURR_PIN 6
-define HAL_BATT_CURR_SCALE 40.0
-
-#PWM
-PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50)
-PA9   TIM1_CH2  TIM1 PWM(2) GPIO(51)
-PA10  TIM1_CH3  TIM1 PWM(3) GPIO(52)
-PA11  TIM1_CH4  TIM1 PWM(4) GPIO(53)
-PA15  TIM2_CH1  TIM2 PWM(5) GPIO(54)
-PA2   TIM2_CH3  TIM2 PWM(6) GPIO(55)
-PA3   TIM2_CH4  TIM2 PWM(7) GPIO(56)
-PA1   TIM2_CH2  TIM2 PWM(8) GPIO(57)
-#PA6   TIM16_CH1 TIM16  PWM(9)  GPIO(58) NODMA
-
-define HAL_PERIPH_ENABLE_RC_OUT
-define HAL_PERIPH_ENABLE_NOTIFY
-
-# enable ESC control
-define HAL_SUPPORT_RCOUT_SERIAL 1
-define HAL_WITH_ESC_TELEM 1
-
-#GPIO LED
-define HAL_HAVE_PIXRACER_LED 
-PB2 LED_RED OUTPUT OPENDRAIN HIGH GPIO(0) 
-PB4 LED_GREEN OUTPUT OPENDRAIN LOW GPIO(1) 
-PB5 LED_BLUE OUTPUT OPENDRAIN LOW GPIO(2) 
-define HAL_GPIO_A_LED_PIN 0 
-define HAL_GPIO_B_LED_PIN 1 
-define HAL_GPIO_C_LED_PIN 2 
-
-define HAL_SERIAL_ESC_COMM_ENABLED 1
-define HAL_RCIN_THREAD_ENABLED 1
-
-# bootloader embedding / bootloader flashing not available
-define AP_BOOTLOADER_FLASHING_ENABLED 0
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
