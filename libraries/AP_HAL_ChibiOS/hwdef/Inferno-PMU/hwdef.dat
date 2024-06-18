@@ -71,10 +71,6 @@ define HAL_BATT_VOLT_SCALE 21.0
 define HAL_BATT_CURR_PIN 6
 define HAL_BATT_CURR_SCALE 40.0
 
-# safety LED, active low
-PB1 SAFE_LED OUTPUT HIGH
-define SAFE_LED_ON 0
-
 define HAL_NO_GPIO_IRQ
 
 define HAL_USE_RTC FALSE
