@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Relay/AP_Relay_config.h>
 #include <AP_Mission/AP_Mission_config.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
@@ -121,4 +122,8 @@
 // left in place.
 #ifndef AP_MAVLINK_COMMAND_LONG_ENABLED
 #define AP_MAVLINK_COMMAND_LONG_ENABLED 1
+#endif
+
+#ifndef AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
+#define AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED (BOARD_FLASH_SIZE > 1024) && AP_INERTIALSENSOR_ENABLED
 #endif

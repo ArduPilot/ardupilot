@@ -44,6 +44,44 @@ function uint32_t_ud:tofloat() end
 ---@return integer
 function uint32_t_ud:toint() end
 
+---@class (exact) uint64_t_ud
+---@operator add(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator sub(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator mul(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator div(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator mod(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator band(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator bor(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator shl(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator shr(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+local uint64_t_ud = {}
+
+-- create uint64_t_ud with optional value
+-- Note that lua ints are 32 bits and lua floats will loose resolution at large values
+---@param value? uint64_t_ud|uint32_t_ud|integer|number
+---@return uint64_t_ud
+function uint64_t(value) end
+
+-- create uint64_t_ud from a low and high half
+-- value = (high << 32) | low
+---@param high uint32_t_ud|integer|number
+---@param low uint32_t_ud|integer|number
+---@return uint64_t_ud
+function uint64_t(high, low) end
+
+-- Convert to number, will loose resolution at large values
+---@return number
+function uint64_t_ud:tofloat() end
+
+-- Convert to integer, nil if too large to be represented by native int32
+---@return integer|nil
+function uint64_t_ud:toint() end
+
+-- Split into high and low half's, returning each as a uint32_t_ud
+---@return uint32_t_ud -- high (value >> 32)
+---@return uint32_t_ud -- low (value & 0xFFFFFFFF)
+function uint64_t_ud:split() end
+
 -- system time in milliseconds
 ---@return uint32_t_ud -- milliseconds
 function millis() end
@@ -2858,6 +2896,11 @@ gps.GPS_OK_FIX_3D = enum_integer
 gps.GPS_OK_FIX_2D = enum_integer
 gps.NO_FIX = enum_integer
 gps.NO_GPS = enum_integer
+
+-- get unix time
+---@param instance integer -- instance number
+---@return uint64_t_ud -- unix time microseconds
+function gps:time_epoch_usec(instance) end
 
 -- get yaw from GPS in degrees
 ---@param instance integer -- instance number

@@ -381,4 +381,8 @@
 #error "HAL_GPIO_LED_OFF must not be defined, it is implicitly !HAL_GPIO_LED_ON"
 #endif
 
+#ifndef HAL_WITH_POSTYPE_DOUBLE
+#define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
+#endif
+
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)

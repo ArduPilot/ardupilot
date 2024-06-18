@@ -22,17 +22,16 @@ bool ModeCircle::init(bool ignore_checks)
     copter.circle_nav->init();
 
 #if HAL_MOUNT_ENABLED
-    AP_Mount *s = AP_Mount::get_singleton();
-
     // Check if the CIRCLE_OPTIONS parameter have roi_at_center
     if (copter.circle_nav->roi_at_center()) {
         const Vector3p &pos { copter.circle_nav->get_center() };
         Location circle_center;
-        if (!AP::ahrs().get_location_from_origin_offset(circle_center, pos * 0.01)) {
+        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos * 0.01)) {
             return false;
         }
         // point at the ground:
         circle_center.set_alt_cm(0, Location::AltFrame::ABOVE_TERRAIN);
+        AP_Mount *s = AP_Mount::get_singleton();
         s->set_roi_target(circle_center);
     }
 #endif

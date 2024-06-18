@@ -135,6 +135,7 @@ singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 ud->num_sensors
 singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 singleton AP_GPS method gps_yaw_deg boolean uint8_t 0 ud->num_sensors() float'Null float'Null uint32_t'Null
+singleton AP_GPS method time_epoch_usec uint64_t uint8_t 0 ud->num_sensors()
 
 include AP_Math/AP_Math.h
 
@@ -854,24 +855,47 @@ global manual micros lua_micros 0 1
 global manual mission_receive lua_mission_receive 0 5 depends AP_MISSION_ENABLED
 
 userdata uint32_t creation lua_new_uint32_t 1
-userdata uint32_t manual_operator __add uint32_t___add
-userdata uint32_t manual_operator __sub uint32_t___sub
-userdata uint32_t manual_operator __mul uint32_t___mul
-userdata uint32_t manual_operator __div uint32_t___div
-userdata uint32_t manual_operator __mod uint32_t___mod
+userdata uint32_t operator_getter coerce_to_uint32_t
+userdata uint32_t operator +
+userdata uint32_t operator -
+userdata uint32_t operator *
+userdata uint32_t operator /
+-- We know name of the generated function so we can point at it again with a manual operator so idiv is the same as div
 userdata uint32_t manual_operator __idiv uint32_t___div
-userdata uint32_t manual_operator __band uint32_t___band
-userdata uint32_t manual_operator __bor uint32_t___bor
-userdata uint32_t manual_operator __bxor uint32_t___bxor
-userdata uint32_t manual_operator __shl uint32_t___shl
-userdata uint32_t manual_operator __shr uint32_t___shr
-userdata uint32_t manual_operator __eq uint32_t___eq
-userdata uint32_t manual_operator __lt uint32_t___lt
-userdata uint32_t manual_operator __le uint32_t___le
-userdata uint32_t manual_operator __bnot uint32_t___bnot
+userdata uint32_t operator %
+userdata uint32_t operator &
+userdata uint32_t operator |
+userdata uint32_t operator ^
+userdata uint32_t operator <<
+userdata uint32_t operator >>
+userdata uint32_t operator ==
+userdata uint32_t operator <
+userdata uint32_t operator <=
+userdata uint32_t operator ~
 userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint 0 1
 userdata uint32_t manual tofloat uint32_t_tofloat 0 1
+
+userdata uint64_t creation lua_new_uint64_t 2
+userdata uint64_t operator_getter coerce_to_uint64_t
+userdata uint64_t operator +
+userdata uint64_t operator -
+userdata uint64_t operator *
+userdata uint64_t operator /
+userdata uint64_t operator %
+userdata uint64_t operator &
+userdata uint64_t operator |
+userdata uint64_t operator ^
+userdata uint64_t operator <<
+userdata uint64_t operator >>
+userdata uint64_t operator ==
+userdata uint64_t operator <
+userdata uint64_t operator <=
+userdata uint64_t operator ~
+userdata uint64_t manual_operator __tostring uint64_t___tostring
+userdata uint64_t manual toint uint64_t_toint 0 1
+userdata uint64_t manual tofloat uint64_t_tofloat 0 1
+userdata uint64_t manual split uint64_t_split 0 2
 
 global manual dirlist lua_dirlist 1 2
 global manual remove lua_removefile 1 3
