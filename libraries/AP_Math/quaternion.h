@@ -81,11 +81,11 @@ public:
     // convert a vector from earth to body frame
     void        earth_to_body(Vector3<T> &v) const;
 
-    // create a quaternion from Euler angles
+    // create a quaternion from Euler angles using 321 euler ordering
     void        from_euler(T roll, T pitch, T yaw);
     void        from_euler(const Vector3<T> &v);
 
-    // create a quaternion from Euler angles applied in yaw, roll, pitch order
+    // create a quaternion from Euler angles applied in yaw, roll, pitch order (312)
     // instead of the normal yaw, pitch, roll order
     void        from_vector312(T roll, T pitch, T yaw);
 
@@ -129,7 +129,7 @@ public:
     // get euler yaw angle in radians
     T       get_euler_yaw() const;
 
-    // create eulers (in radians) from a quaternion
+    // create eulers (in radians) from a quaternion, using 321 ordering
     void        to_euler(float &roll, float &pitch, float &yaw) const;
     void        to_euler(Vector3f &rpy) const {
         to_euler(rpy.x, rpy.y, rpy.z);
@@ -139,7 +139,7 @@ public:
         to_euler(rpy.x, rpy.y, rpy.z);
     }
 
-    // create eulers from a quaternion
+    // create eulers from a quaternion with 312 ordering
     Vector3<T>    to_vector312(void) const;
 
     T length_squared(void) const;
