@@ -58,7 +58,7 @@ AP_EFI_Serial_FH::AP_EFI_Serial_FH(AP_EFI &_frontend):
   }
 
 static unsigned char boza = 0;
-
+#include "../AP_ICEngine/AP_ICEngine.h"
 void AP_EFI_Serial_FH::update()
 {
     const uint32_t now = AP_HAL::millis();
@@ -95,8 +95,22 @@ void AP_EFI_Serial_FH::update()
 
 void AP_EFI_Serial_FH::send_request(void)
 {
-    static uint8_t d[] = { 0, 'A', 'L', 'F', '!' };
-    d[0]=boza;
+    static uint8_t d[] = { 0, 0, 'A', 'L', 'F' };
+
+    uint8_t kur=0;
+    switch (AP::ice()->state) {
+
+      case AP_ICEngine::ICE_DISABLED: kur = 0xFF; break;
+      case AP_ICEngine::ICE_OFF: kur = 0; break;
+      case AP_ICEngine::ICE_START_HEIGHT_DELAY:
+      case AP_ICEngine::ICE_START_DELAY: kur = 1; break;
+      case AP_ICEngine::ICE_STARTING: kur = 2; break;    
+      case AP_ICEngine::ICE_RUNNING: kur = 3; break;
+      default:break;
+    }
+
+    d[0] = boza;
+    d[1] = kur;
  //   const uint32_t crc = ~crc_crc32(~0U, &d[2], sizeof(d)-2);
 //    const uint32_t crc2 = htobe32(crc);
     port->write(d, sizeof(d));

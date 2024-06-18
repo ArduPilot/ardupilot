@@ -24,8 +24,11 @@
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
 
+#include "../AP_ICEngine/AP_ICEngine.h"
+
 class AP_EFI_Serial_FH: public AP_EFI_Backend {
     
+    friend AP_ICEngine;
 public:
     // Constructor with initialization
     AP_EFI_Serial_FH(AP_EFI &_frontend);
