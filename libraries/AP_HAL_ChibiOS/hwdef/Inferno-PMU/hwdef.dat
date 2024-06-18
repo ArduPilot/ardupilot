@@ -2,7 +2,7 @@
 MCU STM32F4xx STM32F412Rx
 
 # bootloader starts firmware at 64k
-FLASH_RESERVE_START_KB 64
+FLASH_RESERVE_START_KB 0
 
 # store parameters in pages 2 and 3
 define STORAGE_FLASH_PAGE 2
