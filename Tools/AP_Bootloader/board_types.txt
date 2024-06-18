@@ -313,6 +313,10 @@ AP_HW_MountainEagleH743              1444
 
 AP_HW_SakuraRC-H743                  2714
 
+# IDs 4200-4220 reserved for HAKRC
+AP_HW_HAKRC_F405                     4200
+AP_HW_HAKRC_F405Wing                 4201
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 5200-5209 reserved for Airvolute
