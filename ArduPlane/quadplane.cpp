@@ -2218,6 +2218,16 @@ void QuadPlane::poscontrol_init_approach(void)
  */
 void QuadPlane::log_QPOS(void)
 {
+// @LoggerMessage: QPOS
+// @Description: Quadplane position data
+// @Field: TimeUS: Time since system startup
+// @Field: State: Position control state
+// @FieldValueEnum: State: QuadPlane::position_control_state
+// @Field: Dist: Distance to next waypoint
+// @Field: TSpd: Target speed
+// @Field: TAcc: Target acceleration
+// @Field: OShoot: True if landing point is overshot or heading off by more than 60 degrees
+
     AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist,TSpd,TAcc,OShoot", "QBfffB",
                                 AP_HAL::micros64(),
                                 poscontrol.get_state(),
