@@ -44,11 +44,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_NO_MONITOR_THREAD
-
-# setup a small defaults.parm
-define AP_PARAM_MAX_EMBEDDED_PARAM 512
-
 # order of UARTs
 SERIAL_ORDER USART1 EMPTY EMPTY USART2
 
@@ -86,8 +81,6 @@ define HAL_BATT_VOLT_PIN 5
 define HAL_BATT_VOLT_SCALE 21.0
 define HAL_BATT_CURR_PIN 6
 define HAL_BATT_CURR_SCALE 40.0
-
-define AP_TEMPERATURE_SENSOR_ENABLED 1
 
 # disable unnecessary threads
 define HAL_NO_MONITOR_THREAD
