@@ -80,7 +80,6 @@ define HAL_BATT_VOLT_SCALE 21.0
 define HAL_BATT_CURR_PIN 6
 define HAL_BATT_CURR_SCALE 40.0
 
-define AP_BATTERY_ANALOG_ENABLED 1
 define AP_PERIPH_BATTERY_MODEL_NAME "MatekL431-BattMon"
 
 # disable unnecessary threads
