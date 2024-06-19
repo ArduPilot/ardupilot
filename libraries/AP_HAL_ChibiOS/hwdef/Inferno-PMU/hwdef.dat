@@ -83,7 +83,6 @@ define HAL_BATT_CURR_SCALE 40.0
 define AP_PERIPH_BATTERY_MODEL_NAME "MatekL431-BattMon"
 
 # disable unnecessary threads
-define HAL_NO_MONITOR_THREAD
 define HAL_NO_RCOUT_THREAD
 define HAL_NO_TIMER_THREAD
 
