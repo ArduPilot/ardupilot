@@ -91,6 +91,11 @@ define AP_TEMPERATURE_SENSOR_ENABLED 1
 
 # disable unnecessary threads
 define HAL_NO_MONITOR_THREAD
+define HAL_NO_RCOUT_THREAD
+define HAL_NO_TIMER_THREAD
+
+undef HAL_RCIN_THREAD_ENABLED
+define HAL_RCIN_THREAD_ENABLED 0
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
