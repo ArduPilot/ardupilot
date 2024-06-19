@@ -59,6 +59,7 @@ AP_EFI_Serial_FH::AP_EFI_Serial_FH(AP_EFI &_frontend):
 
 static unsigned char boza = 0;
 #include "../AP_ICEngine/AP_ICEngine.h"
+#define degC_to_Kelvin(degC) 273.15+(float)(degC)
 void AP_EFI_Serial_FH::update()
 {
     const uint32_t now = AP_HAL::millis();
@@ -66,15 +67,28 @@ void AP_EFI_Serial_FH::update()
     if (process(now)) {
         boza=0x66;
             internal_state.spark_dwell_time_ms = 1234 * 0.1;
-            internal_state.cylinder_status.injection_time_ms = data.ilus;
             internal_state.engine_speed_rpm = data.rpm;
-            internal_state.atmospheric_pressure_kpa = 2345 * 0.1;
-            internal_state.intake_manifold_pressure_kpa = 3456 * 0.1;
-            internal_state.intake_manifold_temperature = degF_to_Kelvin(data.tempOut) * 0.1;
-            internal_state.coolant_temperature = degF_to_Kelvin(111) * 0.1;
-            // CHT is in coolant field
-            internal_state.cylinder_status.cylinder_head_temperature = data.temp[1];
-            internal_state.throttle_position_percent = data.tps * 0.1;
+            internal_state.atmospheric_pressure_kpa = (float)data.ivolt/10;
+
+            //0=-273.15 273.15=0
+            internal_state.intake_manifold_temperature = degC_to_Kelvin(data.tempOut);
+            internal_state.intake_manifold_pressure_kpa = 1.23+(float)data.FP/10;
+
+            internal_state.coolant_temperature = degC_to_Kelvin(123);
+
+            // CHT and EGT
+            internal_state.cylinder_status.cylinder_head_temperature = degC_to_Kelvin(MAX(data.temp[0], data.temp[1]));
+            internal_state.cylinder_status.exhaust_gas_temperature = degC_to_Kelvin(data.temp[2]);
+            internal_state.cylinder_status.exhaust_gas_temperature2 = degC_to_Kelvin(data.temp[3]);
+            // Injection timing
+            internal_state.cylinder_status.injection_time_ms = data.ilus;
+            // Lambda
+            internal_state.cylinder_status.lambda_coefficient = (float)data.LV/10;
+
+            internal_state.throttle_position_percent = data.tps;
+
+            float fp = (float)data.FP / 10;
+            internal_state.fuel_pressure = fp; // Fuel_Pressure_Status::OK;
             // integrate fuel consumption
             if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
                 const float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm) / 600.0f;
