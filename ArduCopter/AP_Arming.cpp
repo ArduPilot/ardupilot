@@ -601,11 +601,11 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // check throttle
     if (check_enabled(ARMING_CHECK_RC)) {
-         #if FRAME_CONFIG == HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
         const char *rc_item = "Collective";
-        #else
+#else
         const char *rc_item = "Throttle";
-        #endif
+#endif
         // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
         if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS || copter.flightmode->mode_number() == Mode::Number::AUTO))) {
             // above top of deadband is too always high
@@ -614,12 +614,12 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
                 return false;
             }
             // in manual modes throttle must be at zero
-            #if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG != HELI_FRAME
             if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
                 check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
                 return false;
             }
-            #endif
+#endif
         }
     }
 
