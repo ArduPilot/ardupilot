@@ -80,11 +80,11 @@ enum fs_ekf_action {
 
 #define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location
 
-enum pilot_steer_type_t {
-    PILOT_STEER_TYPE_DEFAULT = 0,
-    PILOT_STEER_TYPE_TWO_PADDLES = 1,
-    PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING = 2,
-    PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING = 3,
+enum class PilotSteerType : uint8_t {
+    DEFAULT = 0,
+    TWO_PADDLES = 1,
+    DIR_REVERSED_WHEN_REVERSING = 2,
+    DIR_UNCHANGED_WHEN_REVERSING = 3,
 };
 
 // frame class enum used for FRAME_CLASS parameter
