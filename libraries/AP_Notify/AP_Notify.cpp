@@ -132,9 +132,9 @@ AP_Notify *AP_Notify::_singleton;
 #ifndef BUZZER_ENABLE_DEFAULT
 #if HAL_CANMANAGER_ENABLED
 // Enable Buzzer messages over UAVCAN
-#define BUZZER_ENABLE_DEFAULT (Notify_Buzz_Builtin | Notify_Buzz_UAVCAN)
+#define BUZZER_ENABLE_DEFAULT (uint8_t(BuzzerType::BUILTIN) | uint8_t(BuzzerType::UAVCAN))
 #else
-#define BUZZER_ENABLE_DEFAULT Notify_Buzz_Builtin
+#define BUZZER_ENABLE_DEFAULT uint8_t(BuzzerType::BUILTIN)
 #endif
 #endif
 

@@ -103,11 +103,11 @@ public:
         Notify_LED_MAX
     };
 
-    enum Notify_Buzz_Type {
-        Notify_Buzz_None                    = 0,
-        Notify_Buzz_Builtin                 = (1 << 0), // Built in default Alarm Out
-        Notify_Buzz_DShot                   = (1 << 1), // DShot Alarm
-        Notify_Buzz_UAVCAN                  = (1 << 2), // UAVCAN Alarm
+    enum class BuzzerType : uint8_t {
+        NONE                    = 0,
+        BUILTIN                 = (1 << 0), // Built in default Alarm Out
+        DSHOT                   = (1 << 1), // DShot Alarm
+        UAVCAN                  = (1 << 2), // UAVCAN Alarm
     };
 
     /// notify_flags_type - bitmask of notification flags
