@@ -58,7 +58,7 @@ These are set by default in the firmware and shouldn't need to be adjusted.
 The X6 flight controller built-in industrial-grade electronic compass chip RM3100.
 
 ## Analog inputs
-The X6 flight controller  has 2 analog inputs
-ADC Pin12 -> ADC 6.6V Sense
-ADC Pin13 -> ADC 3.3V Sense
-RSSI input pin = 103
+The X6 flight controller has 2 analog inputs.
+- ADC Pin12 -> ADC 6.6V Sense
+- ADC Pin13 -> ADC 3.3V Sense
+- RSSI input pin = 103
