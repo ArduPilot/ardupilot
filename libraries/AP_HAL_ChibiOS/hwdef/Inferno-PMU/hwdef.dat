@@ -97,3 +97,6 @@ define HAL_NO_TIMER_THREAD
 
 undef HAL_RCIN_THREAD_ENABLED
 define HAL_RCIN_THREAD_ENABLED 0
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
