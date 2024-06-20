@@ -2,7 +2,7 @@
 # MCU class and specific type
 
 # MCU class and specific type
-MCU STM32F412Rx
+MCU STM32F4xx STM32F412Rx
 
 # bootloader starts firmware at 64k
 FLASH_RESERVE_START_KB 64
@@ -69,7 +69,7 @@ define STM32_ADC_USE_ADC1 TRUE
 PA2 BATT_CURRENT_SENS  ADC1 SCALE(1)
 define HAL_BATT_MONITOR_DEFAULT  8
 define HAL_BATT_CURR_PIN 2
-
+define HAL_BATT_CURR_SCALE 40.0
 
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
