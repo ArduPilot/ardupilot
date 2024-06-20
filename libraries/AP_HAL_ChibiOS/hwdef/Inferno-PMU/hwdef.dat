@@ -38,12 +38,6 @@ define PORT_INT_REQUIRED_STACK 64
 
 define DMA_RESERVE_SIZE 0
 
-# MAIN_STACK is stack for ISR handlers
-MAIN_STACK 0x300
-
-# PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0xA00
-
 define HAL_NO_MONITOR_THREAD
 
 # we setup a small defaults.parm
