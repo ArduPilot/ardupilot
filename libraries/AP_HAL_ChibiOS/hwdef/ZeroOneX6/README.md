@@ -20,7 +20,7 @@ The ZeroOne X6 is a flight controller manufactured by ZeroOne, which is based on
   Magnetometer:   Builtin RM3100 magnetometer
 
 ## Pinout
-![ZeroOneX6 Pinout]( /ZeroOneX6Pinout.jpg "ZeroOneX6")
+![ZeroOneX6 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/zeroOneBootLoader/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/ZeroOneX6Pinout.jpg "ZeroOneX6")
 
 
 ## UART Mapping
