@@ -26,6 +26,12 @@
 
 #include "../AP_ICEngine/AP_ICEngine.h"
 
+#define degC_to_Kelvin(degC) 273.15+(float)(degC)
+#define fdiv(x,y) ((float)x/(float)y)
+#define tenth(x) fdiv(x,10)
+#define hundth(x) fdiv(x,100)
+#define thousnd(x) fdiv(x,1000)
+
 class AP_EFI_Serial_FH: public AP_EFI_Backend {
     
     friend AP_ICEngine;
@@ -49,6 +55,17 @@ private:
         return sum;
     }
 
+    float convertFuelConsumption(float fuelConsumption_lph) {
+      const int // Conversion factors
+        litersToCubicCentimeters = 1000,// 1 liter = 1000 cm³
+        hoursToMinutes = 60;            // 1 hour = 60 minutes
+      
+      float // Convert l/h to cm³/m
+        fuelConsumption_cmh = fuelConsumption_lph * litersToCubicCentimeters,// l/h to cm³/h
+        fuelConsumption_cmm = fuelConsumption_cmh / hoursToMinutes;           // cm³/h to cm³/m
+      
+      return fuelConsumption_cmm;
+    }
 
   union {
     struct PACKED {

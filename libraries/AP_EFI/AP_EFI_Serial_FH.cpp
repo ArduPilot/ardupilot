@@ -36,6 +36,15 @@ AP_EFI_Serial_FH::AP_EFI_Serial_FH(AP_EFI &_frontend):
     AP_EFI_Backend(_frontend)
 {
     port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_EFI, 0);
+
+    // Indicate that temperature and fuel pressure are supported
+    internal_state.fuel_pressure_status = Fuel_Pressure_Status::OK;
+    internal_state.temperature_status = Temperature_Status::OK;
+
+    // FlyHenry ECU reports EGT 
+    internal_state.cylinder_status.exhaust_gas_temperature = 0;
+    internal_state.cylinder_status.exhaust_gas_temperature2 = 0;
+
 }
 
 
@@ -59,44 +68,56 @@ AP_EFI_Serial_FH::AP_EFI_Serial_FH(AP_EFI &_frontend):
 
 static unsigned char boza = 0;
 #include "../AP_ICEngine/AP_ICEngine.h"
-#define degC_to_Kelvin(degC) 273.15+(float)(degC)
+
 void AP_EFI_Serial_FH::update()
 {
     const uint32_t now = AP_HAL::millis();
     boza++;
     if (process(now)) {
         boza=0x66;
-            internal_state.spark_dwell_time_ms = 1234 * 0.1;
-            internal_state.engine_speed_rpm = data.rpm;
-            internal_state.atmospheric_pressure_kpa = (float)data.ivolt/10;
+        internal_state.spark_dwell_time_ms = 123.45f;        
+        // RPM and Engine State
+        internal_state.engine_speed_rpm = data.rpm;
+        if (internal_state.engine_speed_rpm > 0) {
+          internal_state.engine_state = Engine_State::RUNNING;
+        } else {
+          internal_state.engine_state = Engine_State::STOPPED;
+        }
+        // EFI ECU power [volts]
+        internal_state.ignition_voltage = tenth(data.ivolt);
+        internal_state.atmospheric_pressure_kpa = tenth(data.ivolt);
+        //0=-273.15 273.15=0
+        internal_state.intake_manifold_temperature = degC_to_Kelvin(data.tempOut);
+        internal_state.intake_manifold_pressure_kpa = tenth(data.FP);
+        
+        auto &c = internal_state.cylinder_status;
+        // CHT temp 1/2
+        c.cylinder_head_temperature  = degC_to_Kelvin(MAX(data.temp[0], data.temp[1]));
+        c.cylinder_head_temperature2 = degC_to_Kelvin(MIN(data.temp[0], data.temp[1]));
+        // EGT temp 3/4
+        c.exhaust_gas_temperature = degC_to_Kelvin(MAX(data.temp[2], data.temp[3]));
+        c.exhaust_gas_temperature2 = degC_to_Kelvin(MIN(data.temp[2], data.temp[3]));
+        // PMU/GEN temp
+        internal_state.coolant_temperature = degC_to_Kelvin(data.temp[4]);
+        internal_state.oil_temperature = degC_to_Kelvin(data.temp[5]);
+        // Injection timing
+        c.injection_time_ms = thousnd(data.ilus);            
+        // Lambda
+        c.lambda_coefficient = tenth(data.LV);
+        // Throttle Position [%]
+        internal_state.throttle_position_percent = data.tps;
 
-            //0=-273.15 273.15=0
-            internal_state.intake_manifold_temperature = degC_to_Kelvin(data.tempOut);
-            internal_state.intake_manifold_pressure_kpa = 1.23+(float)data.FP/10;
-
-            internal_state.coolant_temperature = degC_to_Kelvin(123);
-
-            // CHT and EGT
-            internal_state.cylinder_status.cylinder_head_temperature = degC_to_Kelvin(MAX(data.temp[0], data.temp[1]));
-            internal_state.cylinder_status.exhaust_gas_temperature = degC_to_Kelvin(data.temp[2]);
-            internal_state.cylinder_status.exhaust_gas_temperature2 = degC_to_Kelvin(data.temp[3]);
-            // Injection timing
-            internal_state.cylinder_status.injection_time_ms = data.ilus;
-            // Lambda
-            internal_state.cylinder_status.lambda_coefficient = (float)data.LV/10;
-
-            internal_state.throttle_position_percent = data.tps;
-
-            float fp = (float)data.FP / 10;
-            internal_state.fuel_pressure = fp; // Fuel_Pressure_Status::OK;
-            // integrate fuel consumption
-            if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
-                const float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm) / 600.0f;
-                internal_state.fuel_consumption_rate_cm3pm = duty_cycle * get_coef1() - get_coef2();
-                internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (now - internal_state.last_updated_ms) / 60000.0f;
-            } else {
-                internal_state.fuel_consumption_rate_cm3pm = 0;
-            }
+        internal_state.fuel_pressure = tenth(data.FP); // Fuel_Pressure_Status::OK;
+        // Fuel consumption
+        internal_state.fuel_consumption_rate_cm3pm = convertFuelConsumption((float)data.CFCHPL/1000.f);
+        // Integrate fuel consumption
+        if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
+            //const float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm) / 600.0f;
+            //internal_state.fuel_consumption_rate_cm3pm = duty_cycle * get_coef1() - get_coef2();
+            internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (now - internal_state.last_updated_ms) / 60000.0f;
+        } else {
+            //internal_state.fuel_consumption_rate_cm3pm = 0;
+        }
         internal_state.last_updated_ms = now;
         copy_to_frontend();
     }
