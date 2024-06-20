@@ -285,6 +285,7 @@ class ExtractFeatures(object):
             ('AP_QUICKTUNE_ENABLED', r'AP_Quicktune::update'),
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
+            ('AP_TIE_DOWN_CLAMPS_ENABLED', 'AP_LandingGear::tie_down_release'),
         ]
 
     def progress(self, msg):
