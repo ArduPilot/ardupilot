@@ -12265,13 +12265,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_CLAMP_CH": clamp_ch,
         })
 
-        self.takeoff(1, mode='LOITER')
-
         self.context_push()
         self.context_collect('STATUSTEXT')
         self.progress("Ensure can't take off with clamp in place")
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(3, 2000)
         self.wait_altitude(0, 5, minimum_duration=5, relative=True)
