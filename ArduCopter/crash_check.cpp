@@ -169,12 +169,6 @@ void Copter::thrust_loss_check()
         // enable thrust loss handling
         motors->set_thrust_boost(true);
         // the motors library disables this when it is no longer needed to achieve the commanded output
-
-#if AP_GRIPPER_ENABLED
-        if (copter.option_is_enabled(FlightOption::RELEASE_GRIPPER_ON_THRUST_LOSS)) {
-            gripper.release();
-        }
-#endif
     }
 }
 
