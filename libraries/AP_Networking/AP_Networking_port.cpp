@@ -350,13 +350,21 @@ bool AP_Networking::Port::send_receive(void)
         uint32_t last_addr = 0;
         uint16_t last_port = 0;
         if (sock->last_recv_address(last_addr, last_port)) {
-            if (!connected || (last_addr != last_udp_connect_address) || (last_port != last_udp_connect_port)) {
+            // we might be disconnected and want to reconnect to a different address/port
+            // if we haven't received anything for a while
+            bool maybe_disconnected = (AP_HAL::millis() - last_udp_srv_recv_time_ms) > 3000 &&
+                                      ((last_addr != last_udp_connect_address) || (last_port != last_udp_connect_port));
+            if (maybe_disconnected || !connected) {
                 char last_addr_str[IP4_STR_LEN];
                 sock->inet_addr_to_str(last_addr, last_addr_str, sizeof(last_addr_str));
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", unsigned(state.idx), last_addr_str, unsigned(last_port));
                 connected = true;
                 last_udp_connect_address = last_addr;
                 last_udp_connect_port = last_port;
+            }
+            // if we received something from the same address, reset the timer
+            if (((last_addr == last_udp_connect_address) && (last_port == last_udp_connect_port))) {
+                last_udp_srv_recv_time_ms = AP_HAL::millis();
             }
         }
     }
