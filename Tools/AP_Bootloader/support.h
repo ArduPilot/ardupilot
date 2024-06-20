@@ -18,7 +18,9 @@ int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
 void cout(uint8_t *data, uint32_t len);
 void port_setbaud(uint32_t baudrate);
-
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+bool update_otg2_serial_forward(void);
+#endif
 void flash_init();
 
 uint32_t flash_func_read_word(uint32_t offset);

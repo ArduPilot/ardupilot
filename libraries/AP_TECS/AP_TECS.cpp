@@ -738,8 +738,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _throttle_dem = 0.0f;
     } else {
         // Calculate gain scaler from specific energy error to throttle
-        // (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf) is the derivative of STEdot wrt throttle measured across the max allowed throttle range.
-        const float K_STE2Thr = 1 / (timeConstant() * (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf));
+        const float K_thr2STE = (_STEdot_max - _STEdot_min) / (_THRmaxf - _THRminf); // This is the derivative of STEdot wrt throttle measured across the max allowed throttle range.
+        const float K_STE2Thr = 1 / (timeConstant() * K_thr2STE);
 
         // Calculate feed-forward throttle
         const float nomThr = aparm.throttle_cruise * 0.01f;
@@ -749,7 +749,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         // drag increase during turns.
         const float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
         STEdot_dem = STEdot_dem + _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
-        const float ff_throttle = nomThr + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
+        const float ff_throttle = nomThr + STEdot_dem / K_thr2STE;
 
         // Calculate PD + FF throttle
         float throttle_damp = _thrDamp;
@@ -1160,7 +1160,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        _PITCHminf            = 0.000174533f * ptchMinCO_cd;
+        _PITCHminf            = CentiDegreesToRadians(ptchMinCO_cd);
         _hgt_afe              = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
@@ -1287,7 +1287,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _land_pitch_min = _PITCHminf;
     }
 
-    // calculate the expected pitch angle from the demanded climb rate and airspeed fo ruse during approach and flare
+    // calculate the expected pitch angle from the demanded climb rate and airspeed for use during approach and flare
     if (_landing.is_flaring()) {
         // smoothly move the min pitch to the required minimum at touchdown
         float p; // 0 at start of flare, 1 at finish
