@@ -6697,6 +6697,18 @@ class TestSuite(ABC):
         self.progress("No mode (%s); available modes '%s'" % (mode, mode_map))
         raise ErrorException("Unknown mode '%s'" % mode)
 
+    def get_mode_string_for_mode(self, mode):
+        if isinstance(mode, str):
+            return mode
+        mode_map = self.mav.mode_mapping()
+        if mode_map is None:
+            return f"mode={mode}"
+        for (n, v) in mode_map.items():
+            if v == mode:
+                return n
+        self.progress(f"No mode ({mode} {type(mode)}); available modes '{mode_map}'")
+        raise ErrorException("Unknown mode '%s'" % mode)
+
     def run_cmd_do_set_mode(self,
                             mode,
                             timeout=30,
