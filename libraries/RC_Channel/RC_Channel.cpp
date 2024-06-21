@@ -209,6 +209,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 109:use Custom Controller
     // @Values{Copter, Rover, Plane, Blimp}:  110:KillIMU3
     // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
+    // @Values{Copter, Rover, Plane}: 113:Retract Mount2
     // @Values{Plane}: 150:CRUISE Mode
     // @Values{Copter}: 151:TURTLE Mode
     // @Values{Copter}: 152:SIMPLE heading reset
@@ -731,6 +732,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT1:
+    case AUX_FUNC::RETRACT_MOUNT2:
     case AUX_FUNC::MOUNT_LOCK:
 #endif
 #if HAL_LOGGING_ENABLED
@@ -770,7 +772,10 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::PARACHUTE_RELEASE,"ParachuteRelease"},
     { AUX_FUNC::PARACHUTE_3POS,"Parachute3Position"},
     { AUX_FUNC::MISSION_RESET,"MissionReset"},
+#if HAL_MOUNT_ENABLED
     { AUX_FUNC::RETRACT_MOUNT1,"RetractMount1"},
+    { AUX_FUNC::RETRACT_MOUNT2,"RetractMount2"},
+#endif
     { AUX_FUNC::RELAY,"Relay1"},
     { AUX_FUNC::MOTOR_ESTOP,"MotorEStop"},
     { AUX_FUNC::MOTOR_INTERLOCK,"MotorInterlock"},
@@ -1282,6 +1287,34 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
 #endif
 }
 
+/**
+ * Perform the RETRACT_MOUNT 1/2 process.
+ * 
+ * @param [in] ch_flag  Position of the switch. HIGH, MIDDLE and LOW.
+ * @param [in] instance 0: RETRACT MOUNT 1 <br>
+ *                      1: RETRACT MOUNT 2
+*/
+#if HAL_MOUNT_ENABLED
+void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance)
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    switch (ch_flag) {
+    case AuxSwitchPos::HIGH:
+        mount->set_mode(instance,MAV_MOUNT_MODE_RETRACT);
+        break;
+    case AuxSwitchPos::MIDDLE:
+        // nothing
+        break;
+    case AuxSwitchPos::LOW:
+        mount->set_mode_to_default(instance);
+        break;
+    }
+}
+#endif  // HAL_MOUNT_ENABLED
+
 bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
 {
 #if AP_SCRIPTING_ENABLED
@@ -1608,24 +1641,13 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
 #endif // AP_CAMERA_ENABLED
 
 #if HAL_MOUNT_ENABLED
-    case AUX_FUNC::RETRACT_MOUNT1: {
-        AP_Mount *mount = AP::mount();
-        if (mount == nullptr) {
-            break;
-        }
-        switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            mount->set_mode(0,MAV_MOUNT_MODE_RETRACT);
-            break;
-        case AuxSwitchPos::MIDDLE:
-            // nothing
-            break;
-        case AuxSwitchPos::LOW:
-            mount->set_mode_to_default(0);
-            break;
-        }
+    case AUX_FUNC::RETRACT_MOUNT1:
+        do_aux_function_retract_mount(ch_flag, 0);
         break;
-    }
+
+    case AUX_FUNC::RETRACT_MOUNT2:
+        do_aux_function_retract_mount(ch_flag, 1);
+        break;
 
     case AUX_FUNC::MOUNT_LOCK: {
         AP_Mount *mount = AP::mount();
