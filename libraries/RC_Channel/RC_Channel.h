@@ -217,6 +217,7 @@ public:
         KILL_IMU3 =          110, // disable third IMU (for IMU failure testing)
         LOWEHEISER_STARTER = 111,  // allows for manually running starter
         AHRS_TYPE =          112, // change AHRS_EKF_TYPE
+        RETRACT_MOUNT2 =     113, // Retract Mount2
 
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
@@ -362,6 +363,7 @@ protected:
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
+    void do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const uint8_t instance);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
