@@ -538,11 +538,19 @@ void port_setbaud(uint32_t baudrate)
   check if flash has any ECC errors and if it does then erase all of
   flash
  */
+#define ECC_CHECK_CHUNK_SIZE (32*sizeof(uint32_t))
 void check_ecc_errors(void)
 {
     __disable_fault_irq();
+    // stm32_flash_corrupt(0x8043200);
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
-    uint32_t buf[32];
+
+    uint32_t *buf = (uint32_t*)malloc_dma(ECC_CHECK_CHUNK_SIZE);
+
+    if (buf == nullptr) {
+        // DMA'ble memory not available
+        return;
+    }
     uint32_t ofs = 0;
     while (ofs < BOARD_FLASH_SIZE*1024) {
         if (FLASH->SR1 != 0) {
@@ -556,9 +564,9 @@ void check_ecc_errors(void)
         dmaStartMemCopy(dma,
                         STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_BYTE |
                         STM32_DMA_CR_MSIZE_BYTE,
-                        ofs+(uint8_t*)FLASH_BASE, buf, sizeof(buf));
+                        ofs+(uint8_t*)FLASH_BASE, buf, ECC_CHECK_CHUNK_SIZE);
         dmaWaitCompletion(dma);
-        ofs += sizeof(buf);
+        ofs += ECC_CHECK_CHUNK_SIZE;
     }
     dmaStreamFree(dma);
     
