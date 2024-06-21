@@ -1832,6 +1832,7 @@ class TestSuite(ABC):
         self.terrain_data_messages_sent = 0  # count of messages back
         self.dronecan_tests = dronecan_tests
         self.statustext_id = 1
+        self.message_hooks = []  # functions or MessageHook instances
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -3325,6 +3326,71 @@ class TestSuite(ABC):
             return
         self.drain_all_pexpects()
 
+    class MessageHook():
+        '''base class for objects that watch the message stream and check for
+        validity of fields'''
+        def __init__(self, suite):
+            self.suite = suite
+
+        def process(self):
+            pass
+
+        def progress_prefix(self):
+            return ""
+
+        def progress(self, string):
+            string = self.progress_prefix() + string
+            self.suite.progress(string)
+
+    class ValidateIntPositionAgainstSimState(MessageHook):
+        '''monitors a message containing a position containing lat/lng in 1e7,
+        makes sure it stays close to SIMSTATE'''
+        def __init__(self, suite, other_int_message_name, max_allowed_divergence=150):
+            super(TestSuite.ValidateIntPositionAgainstSimState, self).__init__(suite)
+            self.other_int_message_name = other_int_message_name
+            self.max_allowed_divergence = max_allowed_divergence
+            self.max_divergence = 0
+            self.gpi = None
+            self.simstate = None
+            self.last_print = 0
+            self.min_print_interval = 1  # seconds
+
+        def progress_prefix(self):
+            return "VIPASS: "
+
+        def process(self, mav, m):
+            if m.get_type() == self.other_int_message_name:
+                self.gpi = m
+            elif m.get_type() == 'SIMSTATE':
+                self.simstate = m
+            if self.gpi is None:
+                return
+            if self.simstate is None:
+                return
+
+            divergence = self.suite.get_distance_int(self.gpi, self.simstate)
+            if (time.time() - self.last_print > self.min_print_interval or
+                    divergence > self.max_divergence):
+                self.progress(f"distance(SIMSTATE,{self.other_int_message_name})={divergence:.5f}m")
+                self.last_print = time.time()
+            if divergence > self.max_divergence:
+                self.max_divergence = divergence
+            if divergence > self.max_allowed_divergence:
+                raise NotAchievedException(
+                    "%s diverged from simstate by %fm (max=%fm" %
+                    (self.other_int_message_name, divergence, self.max_allowed_divergence,))
+
+        def hook_removed(self):
+            self.progress(f"Maximum divergence was {self.max_divergence}m (max={self.max_allowed_divergence}m)")
+
+    class ValidateGlobalPositionIntAgainstSimState(ValidateIntPositionAgainstSimState):
+        def __init__(self, suite, **kwargs):
+            super(TestSuite.ValidateGlobalPositionIntAgainstSimState, self).__init__(suite, 'GLOBAL_POSITION_INT', **kwargs)
+
+    class ValidateAHRS3AgainstSimState(ValidateIntPositionAgainstSimState):
+        def __init__(self, suite, **kwargs):
+            super(TestSuite.ValidateAHRS3AgainstSimState, self).__init__(suite, 'AHRS3', **kwargs)
+
     def message_hook(self, mav, msg):
         """Called as each mavlink msg is received."""
 #        print("msg: %s" % str(msg))
@@ -3335,6 +3401,13 @@ class TestSuite(ABC):
 
         self.idle_hook(mav)
         self.do_heartbeats()
+
+        for h in self.message_hooks:
+            if isinstance(h, TestSuite.MessageHook):
+                h.process(mav, msg)
+                continue
+            # assume it's a function
+            h(mav, msg)
 
     def send_message_hook(self, msg, x):
         self.write_msg_to_tlog(msg)
@@ -4643,14 +4716,14 @@ class TestSuite(ABC):
         return wploader.count()
 
     def install_message_hook(self, hook):
-        self.mav.message_hooks.append(hook)
+        self.message_hooks.append(hook)
 
     def install_message_hook_context(self, hook):
         '''installs a message hook which will be removed when the context goes
         away'''
         if self.mav is None:
             return
-        self.mav.message_hooks.append(hook)
+        self.message_hooks.append(hook)
         self.context_get().message_hooks.append(hook)
 
     def remove_message_hook(self, hook):
@@ -4658,7 +4731,9 @@ class TestSuite(ABC):
         once'''
         if self.mav is None:
             return
-        self.mav.message_hooks.remove(hook)
+        self.message_hooks.remove(hook)
+        if isinstance(hook, TestSuite.MessageHook):
+            hook.hook_removed()
 
     def install_example_script_context(self, scriptname):
         '''installs an example script which will be removed when the context goes
@@ -7480,6 +7555,23 @@ class TestSuite(ABC):
             **kwargs
         )
 
+    def wait_distance_between(self, series1, series2, min_distance, max_distance, timeout=30, **kwargs):
+        """Wait for distance between two position series to be between two thresholds."""
+        def get_distance():
+            self.drain_mav()
+            m1 = self.mav.messages[series1]
+            m2 = self.mav.messages[series2]
+            return self.get_distance_int(m1, m2)
+
+        self.wait_and_maintain_range(
+            value_name=f"Distance({series1}, {series2})",
+            minimum=min_distance,
+            maximum=max_distance,
+            current_value_getter=lambda: get_distance(),
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_distance(self, distance, accuracy=2, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
         start = self.mav.location()
@@ -8517,7 +8609,7 @@ Also, ignores heartbeats not from our target system'''
 
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile, suppress_stdout=suppress_stdout)
 
-        start_message_hooks = copy.copy(self.mav.message_hooks)
+        start_message_hooks = copy.copy(self.message_hooks)
 
         prettyname = "%s (%s)" % (name, desc)
         self.start_test(prettyname)
@@ -8551,9 +8643,9 @@ Also, ignores heartbeats not from our target system'''
             ex = e
             # reset the message hooks; we've failed-via-exception and
             # can't expect the hooks to have been cleaned up
-            for h in copy.copy(self.mav.message_hooks):
+            for h in copy.copy(self.message_hooks):
                 if h not in start_message_hooks:
-                    self.mav.message_hooks.remove(h)
+                    self.message_hooks.remove(h)
             hooks_removed = True
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
@@ -8640,9 +8732,9 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Done popping extra contexts")
 
         # make sure we don't leave around stray listeners:
-        if len(self.mav.message_hooks) != len(start_message_hooks):
+        if len(self.message_hooks) != len(start_message_hooks):
             self.progress("Stray message listeners: %s vs start %s" %
-                          (str(self.mav.message_hooks), str(start_message_hooks)))
+                          (str(self.message_hooks), str(start_message_hooks)))
             passed = False
 
         if passed:
