@@ -38,7 +38,7 @@ The packages depend on:
 #### 1. Create a workspace folder
 
 ```bash
-mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
 The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/humble/Tutorials/Workspace/Creating-A-Workspace.html).
