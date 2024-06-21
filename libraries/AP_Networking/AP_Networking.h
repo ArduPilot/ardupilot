@@ -266,9 +266,11 @@ private:
         uint32_t last_size_rx;
         bool packetise;
         bool connected;
+        uint32_t last_udp_connect_address;
+        uint16_t last_udp_connect_port;
         bool have_received;
         bool close_on_recv_error;
-
+        uint32_t last_udp_srv_recv_time_ms;
         HAL_Semaphore sem;
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED

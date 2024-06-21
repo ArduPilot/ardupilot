@@ -137,10 +137,7 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         return false;
     }
 
-    if (!write_sem.take(1)) {
-         _dropped++;
-        return false;
-    }
+    WITH_SEMAPHORE(write_sem);
 
     const uint32_t space = writebuf.space();
 
@@ -155,7 +152,6 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
-            write_sem.give();
             return false;
         }
         last_messagewrite_message_sent = now;
@@ -163,7 +159,6 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space(writebuf.get_size())) {
             _dropped++;
-            write_sem.give();
             return false;
         }
     }
@@ -171,13 +166,11 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
     // if no room for entire message - drop it:
     if (space < size) {
         _dropped++;
-        write_sem.give();
         return false;
     }
 
     writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, writebuf.space());
-    write_sem.give();
 
     return true;
 }

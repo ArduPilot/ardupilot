@@ -450,17 +450,15 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
             check_failed(display_failure, "Need Position Estimate");
             return false;
         }
-    } else {
-        if (fence_requires_gps) {
-            if (!copter.position_ok()) {
-                // clarify to user why they need GPS in non-GPS flight mode
-                check_failed(display_failure, "Fence enabled, need position estimate");
-                return false;
-            }
-        } else {
-            // return true if GPS is not required
-            return true;
+    } else if (fence_requires_gps) {
+        if (!copter.position_ok()) {
+            // clarify to user why they need GPS in non-GPS flight mode
+            check_failed(display_failure, "Fence enabled, need position estimate");
+            return false;
         }
+    } else {
+        // return true if GPS is not required
+        return true;
     }
 
     // check for GPS glitch (as reported by EKF)

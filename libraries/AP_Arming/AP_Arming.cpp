@@ -1046,6 +1046,11 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 
+        if (AP_Param::get_eeprom_full()) {
+            check_failed(ARMING_CHECK_PARAMETERS, report, "parameter storage full");
+            return false;
+        }
+        
         // check main loop rate is at least 90% of expected value
         const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
         const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
