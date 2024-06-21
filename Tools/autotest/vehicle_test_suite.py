@@ -7783,7 +7783,8 @@ class TestSuite(ABC):
                       wpnum_end,
                       allow_skip=True,
                       max_dist=2,
-                      timeout=400):
+                      timeout=400,
+                      ignore_RTL_mode_change=False):
         """Wait for waypoint ranges."""
         tstart = self.get_sim_time()
         # this message arrives after we set the current WP
@@ -7806,8 +7807,11 @@ class TestSuite(ABC):
             m = self.assert_receive_message('VFR_HUD')
 
             # if we changed mode, fail
-            if self.mav.flightmode != mode:
-                raise WaitWaypointTimeout('Exited %s mode' % mode)
+            if not self.mode_is('AUTO'):
+                self.progress(f"{self.mav.flightmode} vs {self.get_mode_from_mode_mapping(mode)}")
+                if not ignore_RTL_mode_change or not self.mode_is('RTL', cached=True):
+                    new_mode_str = self.get_mode_string_for_mode(self.get_mode())
+                    raise WaitWaypointTimeout(f'Exited {mode} mode to {new_mode_str} ignore={ignore_RTL_mode_change}')
 
             if self.get_sim_time_cached() - last_wp_msg > 1:
                 self.progress("WP %u (wp_dist=%u Alt=%.02f), current_wp: %u,"
@@ -7838,9 +7842,9 @@ class TestSuite(ABC):
         '''returns the most-recently received instance of message_type'''
         return self.mav.messages[message_type]
 
-    def mode_is(self, mode, cached=False, drain_mav=True):
+    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
         if not cached:
-            self.wait_heartbeat(drain_mav=drain_mav)
+            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
         try:
             return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
         except Exception:
@@ -7864,6 +7868,12 @@ class TestSuite(ABC):
     def assert_mode_is(self, mode):
         if not self.mode_is(mode):
             raise NotAchievedException("Expected mode %s" % str(mode))
+
+    def get_mode(self, cached=False, drain_mav=True):
+        '''return numeric custom mode'''
+        if not cached:
+            self.wait_heartbeat(drain_mav=drain_mav)
+        return self.mav.messages['HEARTBEAT'].custom_mode
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
