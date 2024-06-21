@@ -5,7 +5,7 @@
  */
 #include "esc_apd_telem.h"
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_Math/crc.h>
+#include <AP_Math/checksum.h>
 #include <AP_Math/definitions.h>
 #include <string.h>
 

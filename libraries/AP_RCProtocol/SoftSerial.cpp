@@ -17,7 +17,7 @@
  */
 
 #include "SoftSerial.h"
-#include <AP_Math/crc.h>
+#include <AP_Math/checksum.h>
 #include <stdio.h>
 
 SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :

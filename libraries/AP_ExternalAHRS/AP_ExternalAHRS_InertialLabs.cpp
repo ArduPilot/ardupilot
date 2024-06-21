@@ -22,7 +22,7 @@
 
 #include "AP_ExternalAHRS_InertialLabs.h"
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
+#include <AP_Math/checksum.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
