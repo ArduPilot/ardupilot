@@ -5450,6 +5450,12 @@ class TestSuite(ABC):
         self.location_offset_ne(ret, n, e)
         return ret
 
+    def home_relative_loc_neu(self, n, e, u):
+        ret = self.home_position_as_mav_location()
+        self.location_offset_ne(ret, n, e)
+        ret.alt += u
+        return ret
+
     def zero_throttle(self):
         """Set throttle to zero."""
         if self.is_rover():
