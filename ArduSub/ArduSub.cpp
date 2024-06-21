@@ -162,9 +162,7 @@ void Sub::fifty_hz_loop()
 
     failsafe_sensors_check();
 
-    // Update rc input/output
     rc().read_input();
-    SRV_Channels::output_ch_all();
 }
 
 // update_batt_compass - read battery and compass
