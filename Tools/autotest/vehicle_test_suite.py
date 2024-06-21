@@ -8271,6 +8271,20 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copy(source, dest)
 
+    def installed_script_module_path(self, modulename):
+        return os.path.join("scripts", "modules", os.path.basename(modulename))
+
+    def install_script_module(self, source, modulename, install_name=None):
+        if install_name is not None:
+            dest = self.installed_script_module_path(install_name)
+        else:
+            dest = self.installed_script_module_path(modulename)
+
+        destdir = os.path.dirname(dest)
+        os.makedirs(destdir, exist_ok=True)
+        self.progress("Copying (%s) to (%s)" % (source, dest))
+        shutil.copy(source, dest)
+
     def install_test_modules(self):
         source = os.path.join(self.rootdir(), "libraries", "AP_Scripting", "tests", "modules", "test")
         dest = os.path.join("scripts", "modules", "test")
@@ -8304,6 +8318,10 @@ Also, ignores heartbeats not from our target system'''
             pass
         except OSError:
             pass
+
+    def remove_installed_script_module(self, modulename):
+        path = self.installed_script_module_path(modulename)
+        os.unlink(path)
 
     def remove_installed_modules(self, modulename):
         dest = os.path.join("scripts", "modules", modulename)
