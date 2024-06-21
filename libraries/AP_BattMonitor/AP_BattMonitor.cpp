@@ -27,6 +27,7 @@
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include "AP_BattMonitor_AD7091R5.h"
 #include "AP_BattMonitor_Scripting.h"
+#include "AP_BattMonitor_MAVLink.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -604,6 +605,11 @@ AP_BattMonitor::init()
                 drivers[instance] = NEW_NOTHROW AP_BattMonitor_Scripting(*this, state[instance], _params[instance]);
                 break;
 #endif // AP_BATTERY_SCRIPTING_ENABLED
+#if AP_BATTERY_MAVLINK_ENABLED
+            case Type::MAVLink:
+                drivers[instance] = new AP_BattMonitor_MAVLink(*this, state[instance], _params[instance]);
+                break;
+#endif // AP_BATTERY_MAVLINK_ENABLED
             case Type::NONE:
             default:
                 break;
@@ -1163,6 +1169,20 @@ bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State
     return drivers[idx]->handle_scripting(_state);
 }
 #endif
+
+/*
+  pass along a mavlink message (for MAV type)
+ */
+void AP_BattMonitor::handle_msg(const mavlink_message_t &msg)
+{
+
+    uint8_t i;
+    for (i=0; i<_num_instances; i++) {
+        if ((drivers[i] != nullptr) && ((Type)_params[i]._type.get() != Type::NONE)) {
+          drivers[i]->handle_msg(msg);
+        }
+    }
+}
 
 namespace AP {
 

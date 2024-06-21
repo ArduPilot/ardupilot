@@ -115,6 +115,7 @@ public:
         EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
+        MAVLink                        = 30,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -174,6 +175,9 @@ public:
 
     /// Read the battery voltage and current for all batteries.  Should be called at 10hz
     void read();
+
+    // Pass mavlink data to message handler
+    void handle_msg(const mavlink_message_t &msg);
 
     // healthy - returns true if monitor is functioning
     bool healthy(uint8_t instance) const;
