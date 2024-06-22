@@ -96,3 +96,7 @@
 #endif
 
 #define HAL_SOLO_GIMBAL_ENABLED 1
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
