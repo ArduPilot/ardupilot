@@ -1280,16 +1280,12 @@ bool AP_Arming::fence_checks(bool display_failure)
     }
 
     // check fence is ready
-    const char *fail_msg = nullptr;
-    if (fence->pre_arm_check(fail_msg)) {
+    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (fence->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
         return true;
     }
 
-    if (fail_msg == nullptr) {
-        check_failed(display_failure, "Check fence");
-    } else {
-        check_failed(display_failure, "%s", fail_msg);
-    }
+    check_failed(display_failure, "%s", fail_msg);
 
 #if AP_SDCARD_STORAGE_ENABLED
     if (fence->failed_sdcard_storage() || StorageManager::storage_failed()) {
