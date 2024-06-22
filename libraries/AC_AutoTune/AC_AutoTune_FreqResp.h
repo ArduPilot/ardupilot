@@ -11,9 +11,9 @@ public:
     // Constructor
     AC_AutoTune_FreqResp()
 {
-    dwell_cycles = 6;
-    meas_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(dwell_cycles);
-    tgt_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(dwell_cycles);
+    // ring buffers sized to for more cycles than are needed.  Most cycles needed are 6.
+    meas_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(12);
+    tgt_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(12);
 }
 
     // Enumeration of input type
@@ -30,7 +30,7 @@ public:
 
     // Initialize the Frequency Response Object. 
     // Must be called before running dwell or frequency sweep tests
-    void init(InputType input_type, ResponseType response_type);
+    void init(InputType input_type, ResponseType response_type, uint8_t cycles);
 
     // Determines the gain and phase based on angle response for a dwell or sweep
     void update(float command, float tgt_resp, float meas_resp, float tgt_freq);
@@ -40,10 +40,6 @@ public:
 
     // Reset cycle_complete flag
     void reset_cycle_complete() { cycle_complete = false; }
-
-    void set_dwell_cycles(uint8_t cycles);
-
-    uint8_t get_dwell_cycles() { return dwell_cycles;}
 
     // Frequency response data accessors
     float get_freq() { return curr_test_freq; }
