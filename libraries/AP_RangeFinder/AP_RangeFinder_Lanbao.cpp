@@ -68,7 +68,7 @@ bool AP_RangeFinder_Lanbao::get_reading(float &reading_m)
         if (buf_len == sizeof(buf)) {
             buf_len = 0;
             uint16_t crc = (buf[5]<<8) | buf[4];
-            if (crc != calc_crc_modbus(buf, 4)) {
+            if (crc != crc_modbus(buf, 4)) {
                 // bad CRC, discard
                 continue;
             }
