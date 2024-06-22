@@ -62,7 +62,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
         available -= uart->read(buffer, ARRAY_SIZE(buffer));
 
         const uint8_t checksum = buffer[ARRAY_SIZE(buffer)-1]; // last byte is a checksum
-        if (crc_sum_of_bytes(buffer, ARRAY_SIZE(buffer)-1) != checksum) {
+        if (cksum_sum8(buffer, ARRAY_SIZE(buffer)-1) != checksum) {
             // bad Checksum
             continue;
         }
