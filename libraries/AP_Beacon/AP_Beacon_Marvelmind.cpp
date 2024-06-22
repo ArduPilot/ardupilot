@@ -266,7 +266,7 @@ void AP_Beacon_Marvelmind::update(void)
             num_bytes_in_block_received++;
             if (num_bytes_in_block_received >= 7 + input_buffer[4]) {
                 // parse dgram
-                uint16_t block_crc = calc_crc_modbus(input_buffer, num_bytes_in_block_received);
+                uint16_t block_crc = crc_modbus(input_buffer, num_bytes_in_block_received);
                 if (block_crc == 0) {
                     switch (data_id) {
                         case AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID:
