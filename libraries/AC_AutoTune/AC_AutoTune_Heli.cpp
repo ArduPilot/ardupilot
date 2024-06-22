@@ -753,17 +753,15 @@ void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float am
         curr_test.phase = 0.0f;
         chirp_input.init(0.001f * sweep_time_ms, start_frq / M_2PI, stop_frq / M_2PI, 0.0f, 0.0001f * sweep_time_ms, 0.0f);
     } else {
-        freqresp_tgt.set_dwell_cycles(num_dwell_cycles);
-        freqresp_mtr.set_dwell_cycles(num_dwell_cycles);
         if (!is_zero(start_frq)) {
             // time limit set by adding the pre calc cycles with the dwell cycles.  500 ms added to account for settling with buffer.
-            step_time_limit_ms = (uint32_t) (2000 + ((float) freqresp_tgt.get_dwell_cycles() + pre_calc_cycles + 2.0f) * 1000.0f * M_2PI / start_frq);
+            step_time_limit_ms = (uint32_t) (2000 + ((float)num_dwell_cycles + pre_calc_cycles + 2.0f) * 1000.0f * M_2PI / start_frq);
         }
         chirp_input.init(0.001f * step_time_limit_ms, start_frq / M_2PI, stop_frq / M_2PI, 0.0f, 0.0001f * step_time_limit_ms, 0.0f);
     }
 
-    freqresp_tgt.init(test_input_type, resp_type);
-    freqresp_mtr.init(test_input_type, resp_type);
+    freqresp_tgt.init(test_input_type, resp_type, num_dwell_cycles);
+    freqresp_mtr.init(test_input_type, resp_type, num_dwell_cycles);
     
     dwell_start_time_ms = 0.0f;
     settle_time = 200;

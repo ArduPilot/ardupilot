@@ -6,7 +6,7 @@ This library receives time history data (angular rate or angle) during a dwell t
 #include "AC_AutoTune_FreqResp.h"
 
 // Initialize the Frequency Response Object. Must be called before running dwell or frequency sweep tests
-void AC_AutoTune_FreqResp::init(InputType input_type, ResponseType response_type)
+void AC_AutoTune_FreqResp::init(InputType input_type, ResponseType response_type, uint8_t cycles)
 {
     excitation = input_type;
     response = response_type;
@@ -25,6 +25,7 @@ void AC_AutoTune_FreqResp::init(InputType input_type, ResponseType response_type
     max_accel = 0.0f;
     max_meas_rate = 0.0f;
     max_command = 0.0f;
+    dwell_cycles = cycles;
     if (meas_peak_info_buffer != nullptr) {
         meas_peak_info_buffer->clear();
     }
@@ -305,12 +306,3 @@ void AC_AutoTune_FreqResp::pull_from_tgt_buffer(uint16_t &count, float &amplitud
     time_ms = sample.time_ms;
 }
 
-void AC_AutoTune_FreqResp::set_dwell_cycles(uint8_t cycles)
-{
-    dwell_cycles = cycles;
-    delete meas_peak_info_buffer;
-    meas_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(cycles);
-    delete tgt_peak_info_buffer;
-    tgt_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(cycles);
-
-}
