@@ -60,7 +60,7 @@ uint32_t RF_LeddarOne::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t 
     buffer[21] = third_amplitude >> 8;
     buffer[22] = third_amplitude & 0xff;
 
-    const uint16_t crc = calc_crc_modbus(buffer, 23);
+    const uint16_t crc = crc_modbus(buffer, 23);
     buffer[23] = crc & 0xff;
     buffer[24] = crc >> 8;
 
