@@ -464,7 +464,7 @@ uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc)
  * @param [in] len size of buffer
  * @return CRC value
  */
-uint16_t calc_crc_modbus(const uint8_t *buf, uint16_t len)
+uint16_t crc_modbus(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;
     for (uint16_t pos = 0; pos < len; pos++) {

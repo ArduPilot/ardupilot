@@ -45,7 +45,7 @@ uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t 
 // https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
 uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc);
 
-uint16_t calc_crc_modbus(const uint8_t *buf, uint16_t len);
+uint16_t crc_modbus(const uint8_t *buf, uint16_t len);
 
 // CRC-64-WE using the polynomial of 0x42F0E1EBA9EA3693
 uint64_t crc_crc64(const uint32_t *data, uint16_t num_words);
