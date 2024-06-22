@@ -43,8 +43,8 @@ bool ESC_APD_Telem::update() {
         if ((size_t)len >= sizeof(received.packet)) {
             // we have a full packet, check the stop byte
             if (received.packet.stop == 65535) {
-                // valid stop byte, check the CRC
-                if (crc_fletcher16(received.bytes, 18) == received.packet.checksum) {
+                // valid stop byte, check the checksum
+                if (cksum_fletcher16(received.bytes, 18) == received.packet.checksum) {
                     // valid packet, copy the data we need and reset length
                     decoded.voltage = le16toh(received.packet.voltage) * 1e-2f;
                     decoded.temperature = convert_temperature(le16toh(received.packet.temperature));
