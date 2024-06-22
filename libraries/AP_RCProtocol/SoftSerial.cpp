@@ -86,7 +86,7 @@ bool SoftSerial::process_pulse(uint32_t width_high, uint32_t width_low, uint8_t 
         }
         if (config == SERIAL_CONFIG_8E2I) {
             // check parity
-            if (parity((state.byte>>1)&0xFF) != (state.byte&0x200)>>9) {
+            if (cksum_byte_parity((state.byte>>1)&0xFF) != (state.byte&0x200)>>9) {
                 goto reset;
             }
         }
