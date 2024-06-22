@@ -341,9 +341,8 @@ uint8_t AC_Fence::get_auto_disable_fences(void) const
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
         case AC_Fence::AutoEnable::ONLY_WHEN_ARMED:
+        default: // when auto disable is not set we still need to disable the altmin fence on landing
             auto_disable = _auto_enable_mask & AC_FENCE_TYPE_ALT_MIN;
-            break;
-        default:
             break;
     }
     return auto_disable;
@@ -366,7 +365,7 @@ uint8_t AC_Fence::get_enabled_fences() const
 }
 
 // additional checks for the polygon fence:
-bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const
 {
     if (!(_configured_fences & AC_FENCE_TYPE_POLYGON)) {
         // not enabled; all good
@@ -374,12 +373,12 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
     }
 
     if (! _poly_loader.loaded()) {
-        fail_msg = "Fences invalid";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence(s) invalid");
         return false;
     }
 
     if (!_poly_loader.check_inclusion_circle_margin(_margin)) {
-        fail_msg = "Margin is less than inclusion circle radius";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence margin is less than inclusion circle radius");
         return false;
     }
 
@@ -387,14 +386,14 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
 }
 
 // additional checks for the circle fence:
-bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const
 {
     if (_circle_radius < 0) {
-        fail_msg = "Invalid FENCE_RADIUS value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid Circle FENCE_RADIUS value");
         return false;
     }
     if (_circle_radius < _margin) {
-        fail_msg = "FENCE_MARGIN is less than FENCE_RADIUS";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Circle FENCE_MARGIN is less than FENCE_RADIUS");
         return false;
     }
 
@@ -402,15 +401,15 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
 }
 
 // additional checks for the alt fence:
-bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_len) const
 {
     if (_alt_max < 0.0f) {
-        fail_msg = "Invalid FENCE_ALT_MAX value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MAX value");
         return false;
     }
 
     if (_alt_min < -100.0f) {
-        fail_msg = "Invalid FENCE_ALT_MIN value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MIN value");
         return false;
     }
     return true;
@@ -418,13 +417,11 @@ bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
 
 
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-bool AC_Fence::pre_arm_check(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
 {
-    fail_msg = nullptr;
-
     // if fences are enabled but none selected fail pre-arm check
     if (_enabled && !present()) {
-        fail_msg = "Fences enabled, but none selected";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Fences enabled, but none selected");
         return false;
     }
 
@@ -439,42 +436,45 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
         (_configured_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
         if (!AP::ahrs().get_relative_position_NE_home(position)) {
-            fail_msg = "Fence requires position";
+            hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
             return false;
         }
     }
 
-    if (!pre_arm_check_polygon(fail_msg)) {
+    if (!pre_arm_check_polygon(failure_msg, failure_msg_len)) {
         return false;
     }
 
-    if (!pre_arm_check_circle(fail_msg)) {
+    if (!pre_arm_check_circle(failure_msg, failure_msg_len)) {
         return false;
     }
 
-    if (!pre_arm_check_alt(fail_msg)) {
+    if (!pre_arm_check_alt(failure_msg, failure_msg_len)) {
         return false;
     }
 
     // check no limits are currently breached
     if (_breached_fences) {
-        fail_msg =  "vehicle outside fence";
+        char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+        AC_Fence::get_fence_names(_breached_fences, e);
+        hal.util->snprintf(failure_msg, failure_msg_len, "vehicle outside %s", e.get_writeable_string());
         return false;
     }
 
     // validate FENCE_MARGIN parameter range
     if (_margin < 0.0f) {
-        fail_msg = "Invalid FENCE_MARGIN value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_MARGIN value");
         return false;
     }
 
     if (_alt_max < _alt_min) {
-        fail_msg =  "FENCE_ALT_MAX < FENCE_ALT_MIN";
+        hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_ALT_MAX < FENCE_ALT_MIN");
         return false;
     }
 
     if (_alt_max - _alt_min <= 2.0f * _margin) {
-        fail_msg =  "FENCE_MARGIN too big";
+        hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_MARGIN too big");
         return false;
     }
 
@@ -910,7 +910,7 @@ uint8_t AC_Fence::present() const { return 0; }
 
 uint8_t AC_Fence::get_enabled_fences() const { return 0; }
 
-bool AC_Fence::pre_arm_check(const char* &fail_msg) const  { return true; }
+bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const  { return true; }
 
 uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
 bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
