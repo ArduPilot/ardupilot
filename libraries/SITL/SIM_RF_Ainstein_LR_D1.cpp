@@ -44,7 +44,7 @@ uint32_t RF_Ainstein_LR_D1::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uin
     buffer[9] = 0;  // speed high
     buffer[10] = 0;  // speed low
     memset(&buffer[11], 0xff, 20); // unused
-    buffer[31] = crc_sum_of_bytes(&buffer[3], PACKET_LEN-4); // minus headerMSB, headerLSB, device_id and checksum
+    buffer[31] = cksum_sum8(&buffer[3], PACKET_LEN-4); // minus headerMSB, headerLSB, device_id and checksum
 
     return PACKET_LEN;
 }

@@ -99,7 +99,7 @@ void InertialLabs::send_packet(void)
     pkt.temperature = 23.4*10;
 
     const uint8_t *buffer = (const uint8_t *)&pkt;
-    pkt.crc = crc_sum_of_bytes_16(&buffer[2], sizeof(pkt)-4);
+    pkt.crc = cksum_sum16(&buffer[2], sizeof(pkt)-4);
 
     write_to_autopilot((char *)&pkt, sizeof(pkt));
 
