@@ -22,7 +22,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 // fletcher 16 implementation
-uint16_t crc_fletcher16(const uint8_t *buffer, uint32_t len) {
+uint16_t cksum_fletcher16(const uint8_t *buffer, uint32_t len) {
     uint16_t c0 = 0;
     uint16_t c1 = 0;
     for (uint32_t i = 0; i < len; i++) {
@@ -35,7 +35,7 @@ uint16_t crc_fletcher16(const uint8_t *buffer, uint32_t len) {
 
 // FNV-1a implementation
 #define FNV_1_PRIME_64 1099511628211UL
-void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
+void cksum_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
 {
     uint32_t i;
     for (i=0; i<len; i++) {
@@ -45,7 +45,7 @@ void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
 }
 
 // simple 8 bit checksum used by FPort
-uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len)
+uint8_t cksum_fport(const uint8_t *p, uint8_t len)
 {
     uint16_t sum = 0;
     for (uint8_t i=0; i<len; i++) {
@@ -61,7 +61,7 @@ uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len)
 // set, "0" if there is an even number of bits set note that
 // __builtin_parity causes hardfaults on Pixracer-periph - and is
 // slower on 1 byte than this:
-uint8_t parity(uint8_t byte)
+uint8_t cksum_byte_parity(uint8_t byte)
 {
     uint8_t p = 0;
 
@@ -85,7 +85,7 @@ uint8_t parity(uint8_t byte)
 }
 
 // sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
-uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
+uint16_t cksum_sum16(const uint8_t *data, uint16_t count)
 {
     uint16_t ret = 0;
     for (uint32_t i=0; i<count; i++) {
@@ -96,7 +96,7 @@ uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
 
 // sums the bytes in the supplied buffer, returns that sum mod 256
 // (i.e. shoved into a uint8_t)
-uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count)
+uint8_t cksum_sum8(const uint8_t *data, uint16_t count)
 {
-    return crc_sum_of_bytes_16(data, count) & 0xFF;
+    return cksum_sum16(data, count) & 0xFF;
 }

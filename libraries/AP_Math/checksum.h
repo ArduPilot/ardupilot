@@ -19,24 +19,24 @@
 
 #include <stdint.h>
 
-// checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
-// sum, then adds those two bytes together.  Returns the complement of
-// the final sum.
-uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len);
-
-uint16_t crc_fletcher16(const uint8_t * buffer, uint32_t len);
+uint16_t cksum_fletcher16(const uint8_t * buffer, uint32_t len);
 
 // generate 64bit FNV1a hash from buffer
 #define FNV_1_OFFSET_BASIS_64 14695981039346656037UL
-void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
+void cksum_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
+
+// checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
+// sum, then adds those two bytes together.  Returns the complement of
+// the final sum.
+uint8_t cksum_fport(const uint8_t *p, uint8_t len);
 
 // return the parity of byte - "1" if there is an odd number of bits
 // set, "0" if there is an even number of bits set
-uint8_t parity(uint8_t byte);
+uint8_t cksum_byte_parity(uint8_t byte);
+
+// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
+uint16_t cksum_sum16(const uint8_t *data, uint16_t count);
 
 // sums the bytes in the supplied buffer, returns that sum mod 256
 // (i.e. shoved into a uint8_t)
-uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count);
-
-// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
-uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count);
+uint8_t cksum_sum8(const uint8_t *data, uint16_t count);
