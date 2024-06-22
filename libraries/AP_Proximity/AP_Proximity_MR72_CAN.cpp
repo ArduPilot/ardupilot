@@ -117,6 +117,7 @@ bool AP_Proximity_MR72_CAN::parse_distance_message(AP_HAL::CANFrame &frame)
 
     const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw);
     _temp_boundary.add_distance(face, yaw, objects_dist);
+    database_push(yaw, objects_dist);
     return true;
 }
 
