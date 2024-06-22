@@ -108,7 +108,7 @@ public:
     void update();
 
     /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-    bool pre_arm_check(const char* &fail_msg) const;
+    bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const;
 
     ///
     /// methods to check we are within the boundaries and recover
@@ -215,9 +215,9 @@ private:
     void clear_breach(uint8_t fence_type);
 
     // additional checks for the different fence types:
-    bool pre_arm_check_polygon(const char* &fail_msg) const;
-    bool pre_arm_check_circle(const char* &fail_msg) const;
-    bool pre_arm_check_alt(const char* &fail_msg) const;
+    bool pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const;
+    bool pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const;
+    bool pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_len) const;
     // fence floor is enabled
     bool floor_enabled() const { return _enabled_fences & AC_FENCE_TYPE_ALT_MIN; }
 
