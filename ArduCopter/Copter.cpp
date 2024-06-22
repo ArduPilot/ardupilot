@@ -457,9 +457,15 @@ bool Copter::get_target_location(Location& target_loc)
  */
 bool Copter::update_target_location(const Location &old_loc, const Location &new_loc)
 {
+    /*
+      by checking the caller has provided the correct old target
+      location we prevent a race condition where the user changes mode
+      or commands a different target in the controlling lua script
+    */
     Location next_WP_loc;
     flightmode->get_wp(next_WP_loc);
-    if (!old_loc.same_loc_as(next_WP_loc)) {
+    if (!old_loc.same_loc_as(next_WP_loc) ||
+         old_loc.get_alt_frame() != new_loc.get_alt_frame()) {
         return false;
     }
 
