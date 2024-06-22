@@ -236,7 +236,7 @@ public:
     }
 
     /*
-      create a rotation matrix from Euler angles in 321 euler orderin
+      create a rotation matrix from Euler angles in 321 euler ordering
     */
     void        from_euler(T roll, T pitch, T yaw);
 
