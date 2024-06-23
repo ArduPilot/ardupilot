@@ -35,8 +35,7 @@ PC13 BUZZER OUTPUT LOW PULLDOWN
 PC2 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 1
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # Add CS pins to ensure they are high in bootloader
 PE4 IMU_CS CS
