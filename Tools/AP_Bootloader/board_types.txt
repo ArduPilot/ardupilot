@@ -283,7 +283,13 @@ AP_HW_JHEMCUF405WING                 1169
 AP_HW_MatekG474                      1170
 AP_HW_PhenixH7_lite                  1171
 AP_HW_PhenixH7_Pro                   1172
-
+AP_HW_ArduPX4_F4                     1173
+AP_HW_ArduPX4_F7                     1174
+AP_HW_ArduPX4_H7                     1175
+AP_HW_ArduPX4_H7_Nano                1176
+AP_HW_ArduPX4_H7_Mini                1177
+AP_HW_AdvanPX4_H7                    1178
+AP_HW_AdvanPX4_H7_SUPER              1179
 AP_HW_FlywooF405HD_AIOv2             1180
 
 AP_HW_ESP32_PERIPH                   1205
