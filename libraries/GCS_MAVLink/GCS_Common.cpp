@@ -2434,10 +2434,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
 {
     char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
 
+    // ensure send_text from multiple threads is safe
+    WITH_SEMAPHORE(_sem);
+
     do {
         // send_text can be called from multiple threads; we must
         // protect the "text" member with _statustext_sem
-        WITH_SEMAPHORE(_statustext_queue.semaphore());
         hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
         memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text)-1);
 
@@ -2540,7 +2542,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
 
 void GCS::service_statustext(void)
 {
-    WITH_SEMAPHORE(_statustext_queue.semaphore());
+    WITH_SEMAPHORE(_sem);
 
     if (_statustext_queue.is_empty()) {
         // nothing to do
@@ -2697,6 +2699,7 @@ void GCS::update_send()
 
 void GCS::update_receive(void)
 {
+    WITH_SEMAPHORE(_sem);
     for (uint8_t i=0; i<num_gcs(); i++) {
         chan(i)->update_receive();
     }
