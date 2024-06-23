@@ -4632,11 +4632,18 @@ class TestSuite(ABC):
         self.install_example_script(scriptname)
         self.context_get().installed_scripts.append(scriptname)
 
-    def install_test_script_context(self, scriptname):
+    def install_test_script_context(self, scriptnames):
         '''installs an test script which will be removed when the context goes
         away'''
-        self.install_test_script(scriptname)
-        self.context_get().installed_scripts.append(scriptname)
+        if isinstance(scriptnames, str):
+            scriptnames = [scriptnames]
+        for scriptname in scriptnames:
+            self.install_test_script(scriptname)
+        self.context_get().installed_scripts.extend(scriptnames)
+
+    def install_test_scripts_context(self, *args, **kwargs):
+        '''same as install_test_scripts_context - just pluralised name'''
+        return self.install_test_script_context(*args, **kwargs)
 
     def install_test_modules_context(self):
         '''installs test modules which will be removed when the context goes
