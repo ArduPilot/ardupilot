@@ -1112,4 +1112,78 @@ void lua_abort()
 #endif
 }
 
+#if HAL_GCS_ENABLED
+/*
+  implement gcs:command_int() access to MAV_CMD_xxx commands
+ */
+int lua_GCS_command_int(lua_State *L)
+{
+    GCS *_gcs = check_GCS(L);
+    binding_argcheck(L, 3);
+
+    const uint16_t command = get_uint16_t(L, 2);
+    if (!lua_istable(L, 3)) {
+        // must have parameter table
+        return 0;
+    }
+
+    mavlink_command_int_t pkt {};
+
+    pkt.command = command;
+
+    float *params = &pkt.param1;
+    int32_t *xy = &pkt.x;
+
+    // extract the first 4 parameters as floats
+    for (uint8_t i=0; i<4; i++) {
+        char pname[3] { 'p' , char('1' + i), 0 };
+        lua_pushstring(L, pname);
+        lua_gettable(L, 3);
+        if (lua_isnumber(L, -1)) {
+            params[i] = lua_tonumber(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+
+    // extract the xy values
+    for (uint8_t i=0; i<2; i++) {
+        const char *names[] = { "x", "y" };
+        lua_pushstring(L, names[i]);
+        lua_gettable(L, 3);
+        if (lua_isinteger(L, -1)) {
+            xy[i] = lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+    }
+
+    // and z
+    lua_pushstring(L, "z");
+    lua_gettable(L, 3);
+    if (lua_isnumber(L, -1)) {
+        pkt.z = lua_tonumber(L, -1);
+    }
+    lua_pop(L, 1);
+
+    // optional frame
+    lua_pushstring(L, "frame");
+    lua_gettable(L, 3);
+    if (lua_isinteger(L, -1)) {
+        pkt.frame = lua_tointeger(L, -1);
+    }
+    lua_pop(L, 1);
+    
+    // call the interface with scheduler lock
+    WITH_SEMAPHORE(AP::scheduler().get_semaphore());
+
+    auto result = _gcs->lua_command_int_packet(pkt);
+
+    // map MAV_RESULT to a boolean
+    bool ok = result == MAV_RESULT_ACCEPTED;
+
+    lua_pushboolean(L, ok);
+
+    return 1;
+}
+#endif
+
 #endif  // AP_SCRIPTING_ENABLED

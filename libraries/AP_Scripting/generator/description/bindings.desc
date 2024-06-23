@@ -296,6 +296,7 @@ singleton GCS method get_high_latency_status depends HAL_HIGH_LATENCY2_ENABLED =
 
 singleton GCS method enable_high_latency_connections void boolean
 singleton GCS method enable_high_latency_connections depends HAL_HIGH_LATENCY2_ENABLED == 1
+singleton GCS manual run_command_int lua_GCS_command_int 2 1
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
