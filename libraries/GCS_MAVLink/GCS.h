@@ -1271,6 +1271,11 @@ public:
 
     virtual uint8_t sysid_this_mav() const = 0;
 
+#if AP_SCRIPTING_ENABLED
+    // lua access to command_int
+    MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
+#endif
+
 protected:
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
