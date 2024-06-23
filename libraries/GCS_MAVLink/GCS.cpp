@@ -409,9 +409,6 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
 #if AP_SCRIPTING_ENABLED
 /*
   lua access to command_int
-
-  Note that this is called with the AP_Scheduler lock, ensuring the
-  main thread does not race with a lua command_int
 */
 MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 {
@@ -422,6 +419,8 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
     }
     // we need a dummy message for some calls
     mavlink_message_t msg {};
+
+    WITH_SEMAPHORE(_sem);
 
     return ch->handle_command_int_packet(packet, msg);
 }
