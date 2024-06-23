@@ -1151,6 +1151,11 @@ public:
         return _singleton;
     }
 
+    // allow threads to lock against GCS operations
+    HAL_Semaphore &get_semaphore(void) {
+        return _sem;
+    }
+
     virtual uint32_t custom_mode() const = 0;
     virtual MAV_TYPE frame_type() const = 0;
     virtual const char* frame_string() const { return nullptr; }
@@ -1163,13 +1168,8 @@ public:
     class StatusTextQueue : public ObjectArray<statustext_t> {
     public:
         using ObjectArray::ObjectArray;
-        HAL_Semaphore &semaphore() { return _sem; }
         void prune();
     private:
-        // a lock for the statustext queue, to make it safe to use send_text()
-        // from multiple threads
-        HAL_Semaphore _sem;
-
         uint32_t last_prune_ms;
     };
 
@@ -1304,6 +1304,7 @@ protected:
 private:
 
     static GCS *_singleton;
+    HAL_Semaphore _sem;
 
     void create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                     AP_HAL::UARTDriver &uart);
