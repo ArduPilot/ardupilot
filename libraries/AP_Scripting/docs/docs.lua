@@ -3571,3 +3571,11 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+--Gnerator object
+--@class generator
+generator = {}
+
+-- returns the generator error code
+--- @return integer
+function generator:get_errorcode() end
