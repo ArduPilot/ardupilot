@@ -4,7 +4,7 @@
 -- configure a forward or downward facing lidar with a range of at least 5m
 -- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=GPS, middle=opticalflow, high=Not Used)
 -- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
--- SRC_ENABLE = 1 (enable scripting)
+-- SCR_ENABLE = 1 (enable scripting)
 -- setup EK3_SRCn_ parameters so that GPS is the primary source, opticalflow is secondary.
 --     EK3_SRC1_POSXY = 3 (GPS)
 --     EK3_SRC1_VELXY = 3 (GPS)
