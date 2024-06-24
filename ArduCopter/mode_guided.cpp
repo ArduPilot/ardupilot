@@ -15,7 +15,7 @@ static uint32_t update_time_ms;             // system time of last target update
 struct {
     uint32_t update_time_ms;
     Quaternion attitude_quat;
-    Vector3f ang_vel;
+    Vector3f ang_vel_body;
     float yaw_rate_cds;
     float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
@@ -320,7 +320,7 @@ void ModeGuided::angle_control_start()
     // initialise targets
     guided_angle_state.update_time_ms = millis();
     guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
-    guided_angle_state.ang_vel.zero();
+    guided_angle_state.ang_vel_body.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
     guided_angle_state.yaw_rate_cds = 0.0f;
     guided_angle_state.use_yaw_rate = false;
@@ -638,13 +638,13 @@ bool ModeGuided::use_wpnav_for_position_control() const
 }
 
 // Sets guided's angular target submode: Using a rotation quaternion, angular velocity, and climbrate or thrust (depends on user option)
-// attitude_quat: IF zero: ang_vel (angular velocity) must be provided even if all zeroes
-//                IF non-zero: attitude_control is performed using both the attitude quaternion and angular velocity
-// ang_vel: angular velocity (rad/s)
+// attitude_quat: IF zero: ang_vel_body (body frame angular velocity) must be provided even if all zeroes
+//                IF non-zero: attitude_control is performed using both the attitude quaternion and body frame angular velocity
+// ang_vel_body: body frame angular velocity (rad/s)
 // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
 // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
 //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust)
+void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel_body, float climb_rate_cms_or_thrust, bool use_thrust)
 {
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
@@ -652,7 +652,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
     }
 
     guided_angle_state.attitude_quat = attitude_quat;
-    guided_angle_state.ang_vel = ang_vel;
+    guided_angle_state.ang_vel_body = ang_vel_body;
 
     guided_angle_state.use_thrust = use_thrust;
     if (use_thrust) {
@@ -671,7 +671,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel, guided_angle_state.thrust, guided_angle_state.climb_rate_cms * 0.01);
+    copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel_body, guided_angle_state.thrust, guided_angle_state.climb_rate_cms * 0.01);
 #endif
 }
 
@@ -946,7 +946,7 @@ void ModeGuided::angle_control_run()
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
         guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
-        guided_angle_state.ang_vel.zero();
+        guided_angle_state.ang_vel_body.zero();
         climb_rate_cms = 0.0f;
         if (guided_angle_state.use_thrust) {
             // initialise vertical velocity controller
@@ -985,9 +985,9 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel.x) * 100.0f, ToDeg(guided_angle_state.ang_vel.y) * 100.0f, ToDeg(guided_angle_state.ang_vel.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
     } else {
-        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel);
+        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
 
     // call position controller
