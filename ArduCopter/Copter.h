@@ -205,6 +205,7 @@ public:
     friend class ModeAvoidADSB;
     friend class ModeBrake;
     friend class ModeCircle;
+    friend class ModeHeart;
     friend class ModeDrift;
     friend class ModeFlip;
     friend class ModeFlowHold;
@@ -678,6 +679,9 @@ private:
     bool get_circle_radius(float &radius_m) override;
     bool set_circle_rate(float rate_dps) override;
 #endif
+#if MODE_HEART_ENABLED == ENABLED
+    // TODO: for heart code?
+#endif
     bool set_desired_speed(float speed) override;
 #if MODE_AUTO_ENABLED == ENABLED
     bool nav_scripting_enable(uint8_t mode) override;
@@ -986,6 +990,9 @@ private:
 #endif
 #if MODE_CIRCLE_ENABLED == ENABLED
     ModeCircle mode_circle;
+#endif
+#if MODE_HEART_ENABLED == ENABLED
+    ModeHeart mode_heart;
 #endif
 #if MODE_DRIFT_ENABLED == ENABLED
     ModeDrift mode_drift;

@@ -65,6 +65,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_HEART_ENABLED == ENABLED
+        case Mode::Number::HEART:
+            ret = &mode_heart;
+            break;
+#endif
+
 #if MODE_LOITER_ENABLED == ENABLED
         case Mode::Number::LOITER:
             ret = &mode_loiter;
@@ -207,6 +213,7 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
 {
     // List of modes that can be blocked, index is bit number in parameter bitmask
     static const uint8_t mode_list [] {
+        (uint8_t)Mode::Number::HEART,
         (uint8_t)Mode::Number::MYFIRST,
         (uint8_t)Mode::Number::STABILIZE,
         (uint8_t)Mode::Number::ACRO,

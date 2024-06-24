@@ -161,6 +161,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Heart - fly vehicle around a central point
+#ifndef MODE_HEART_ENABLED
+# define MODE_HEART_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
 # define MODE_DRIFT_ENABLED ENABLED
