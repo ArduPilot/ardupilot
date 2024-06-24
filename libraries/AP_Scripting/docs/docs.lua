@@ -3572,8 +3572,7 @@ function visual_odom:healthy() end
 ---@return integer
 function visual_odom:quality() end
 
---Gnerator object
---@class generator
+--Generator object
 generator = {}
 
 -- returns the generator error code
