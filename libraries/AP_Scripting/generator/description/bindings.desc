@@ -959,4 +959,4 @@ singleton AP_VisualOdom method quality int8_t
 include AP_Generator/AP_Generator.h  
 singleton AP_Generator depends HAL_GENERATOR_ENABLED
 singleton AP_Generator rename generator
-singleton AP_Generator method get_errorcode int8_t
+singleton AP_Generator method get_errorcode uint32_t

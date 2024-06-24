@@ -173,7 +173,7 @@ bool AP_Generator::run()
     return _driver_ptr->run();
 }
 
-int AP_Generator::get_errorcode()
+uint32_t AP_Generator::get_errorcode()
 {
     // Return 0 if no driver
     if (_driver_ptr == nullptr) {

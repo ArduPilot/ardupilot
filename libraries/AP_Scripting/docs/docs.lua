@@ -3577,5 +3577,5 @@ function visual_odom:quality() end
 generator = {}
 
 -- returns the generator error code
---- @return integer
+--- @return uint32_t_ud
 function generator:get_errorcode() end

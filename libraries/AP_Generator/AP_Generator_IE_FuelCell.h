@@ -27,7 +27,7 @@ public:
     void update(void) override;
 
     // Allow generator error code to pass up to frontend and export to LUA
-    int get_errorcode(void) override {return _err_code;}
+    uint32_t get_errorcode(void) override {return _err_code;}
 
 protected:
 

@@ -54,7 +54,7 @@ public:
     bool healthy() const override;
     
     // Allow generator error code to pass up to fronten and export to LUA
-    int get_errorcode(void) override {return last_reading.errors;}
+    uint32_t get_errorcode(void) override {return last_reading.errors;}
 
 private:
 
