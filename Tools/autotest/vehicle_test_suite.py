@@ -13852,6 +13852,17 @@ switch value'''
         # heading seemingly indefinitely.
         self.reboot_sitl()
 
+    def run_replay(self, filepath):
+        '''runs replay in filepath, returns filepath to Replay logfile'''
+        util.run_cmd(
+            ['build/sitl/tool/Replay', filepath],
+            directory=util.topdir(),
+            checkfail=True,
+            show=True,
+            output=True,
+        )
+        return self.current_onboard_log_filepath()
+
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
         self.context_push()
