@@ -9225,13 +9225,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
 
-        util.run_cmd(
-            ['build/sitl/tool/Replay', current_log_filepath],
-            directory=util.topdir(),
-            checkfail=True,
-            show=True,
-            output=True,
-        )
+        self.run_replay(current_log_filepath)
 
         self.context_pop()
 
