@@ -10,10 +10,7 @@ void Copter::fence_check()
 {
     const uint8_t orig_breaches = fence.get_breaches();
 
-    bool is_in_landing = flightmode->mode_number() == Mode::Number::LAND
-                         || flightmode->mode_number() == Mode::Number::RTL
-                         || flightmode->mode_number() == Mode::Number::SMART_RTL
-                         || ap.land_complete  || !motors->armed();
+    bool is_in_landing = flightmode->is_landing() || ap.land_complete  || !motors->armed();
 
     // check for new breaches; new_breaches is bitmask of fence types breached
     const uint8_t new_breaches = fence.check(is_in_landing);
