@@ -775,6 +775,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--sysid", str(opts.sysid)])
     if opts.slave is not None:
         cmd.extend(["--slave", str(opts.slave)])
+    if opts.enable_fgview:
+        cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
         # this could be a lot better:
         cmd.extend(opts.sitl_instance_args.split(" "))
@@ -1340,6 +1342,8 @@ group_sim.add_option("--enable-ppp", action='store_true',
                      help="Enable PPP networking")
 group_sim.add_option("--enable-networking-tests", action='store_true',
                      help="Enable networking tests")
+group_sim.add_option("--enable-fgview", action='store_true',
+                     help="Enable FlightGear output")
 
 parser.add_option_group(group_sim)
 
