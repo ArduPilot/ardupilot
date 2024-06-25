@@ -76,8 +76,8 @@ struct log_RFRN {
 // Replay Data Structure - Inertial Sensor header
 struct log_RISH {
     uint16_t loop_rate_hz;
-    uint8_t primary_gyro;
-    uint8_t primary_accel;
+    uint8_t default_gyro;
+    uint8_t default_accel;
     float loop_delta_t;
     uint8_t accel_count;
     uint8_t gyro_count;
