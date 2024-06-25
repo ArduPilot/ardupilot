@@ -11,6 +11,8 @@ import sys
 import os
 import subprocess
 
+import pathlib
+
 board_name = sys.argv[1]
 oem_board_name = sys.argv[2]
 
@@ -26,8 +28,5 @@ if not os.path.exists("libraries/AP_HAL_ChibiOS/hwdef/%s" % oem_board_name):
     f.write("include ../%s/hwdef-bl.dat" % board_name)
     f.close()
     if os.path.exists("libraries/AP_HAL_ChibiOS/hwdef/%s/defaults.parm" % board_name):
-        subprocess.run([
-            "cp",
-            "libraries/AP_HAL_ChibiOS/hwdef/%s/defaults.parm" % board_name,
-            "libraries/AP_HAL_ChibiOS/hwdef/%s/defaults.parm" % oem_board_name,
-        ])
+        path = pathlib.Path(f"libraries/AP_HAL_ChibiOS/hwdef/{oem_board_name}/defaults.parm")
+        path.write_text(f"@include ../{board_name}/defaults.parm\n")  # noqa
