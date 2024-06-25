@@ -197,7 +197,7 @@ protected:
     enum StepType {
         WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
         TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
-        UPDATE_GAINS      = 2     // autotune has completed a test and is updating the gains based on the results
+        UPDATE_GAINS      = 2,    // autotune has completed a test and is updating the gains based on the results
     };
 
     // mini steps performed while in Tuning mode, Testing step
@@ -272,13 +272,13 @@ protected:
     int8_t   counter;                               // counter for tuning gains
     float    target_rate;                           // target rate-multi only
     float    target_angle;                          // target angle-multi only
-    float    start_rate;                            // start rate - parent and multi
     float    start_angle;                           // start angle
+    float    start_rate;                            // start rate - parent and multi
     float    rate_max;                              // maximum rate variable - parent and multi
     float    test_accel_max;                        // maximum acceleration variable
-    float    step_scaler;                           // scaler to reduce maximum target step - parent and multi
     float    angle_finish;                           // Angle that test is aborted- parent and multi
     float    desired_yaw_cd;                        // yaw heading during tune - parent and Tradheli
+    float    step_scaler;                           // scaler to reduce maximum target step - parent and multi
 
     LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
 

@@ -1189,17 +1189,17 @@ void AC_AutoTune_Multi::twitch_test_init()
     float target_max_rate;
     switch (axis) {
     case ROLL: {
-        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, target_angle_min_rp_cd(), target_angle_max_rp_cd());
-        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz()*2.0f);
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler * AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll()) * 100.0, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll()) * 100.0, target_angle_min_rp_cd(), target_angle_max_rp_cd());
+        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz() * 2.0);
         break;
     }
     case PITCH: {
-        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, target_angle_min_rp_cd(), target_angle_max_rp_cd());
-        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz()*2.0f);
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler * AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch()) * 100.0, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch()) * 100.0, target_angle_min_rp_cd(), target_angle_max_rp_cd());
+        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz() * 2.0);
         break;
     }
     case YAW:
