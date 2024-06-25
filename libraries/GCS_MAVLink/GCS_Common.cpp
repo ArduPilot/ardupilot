@@ -2172,7 +2172,7 @@ void GCS_MAVLINK::send_highres_imu()
         .temperature = 0.0,  
         .fields_updated = (HIGHRES_IMU_UPDATED_XACC | HIGHRES_IMU_UPDATED_YACC | HIGHRES_IMU_UPDATED_ZACC |
             HIGHRES_IMU_UPDATED_XGYRO | HIGHRES_IMU_UPDATED_YGYRO | HIGHRES_IMU_UPDATED_ZGYRO), 
-        .id = ins.get_primary_accel(),
+        .id = ins.get_first_usable_accel(),
     };
     
     
