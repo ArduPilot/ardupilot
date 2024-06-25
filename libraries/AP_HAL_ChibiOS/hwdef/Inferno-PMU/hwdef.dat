@@ -79,7 +79,5 @@ define HAL_BATT_VOLT_SCALE 21.0
 define HAL_BATT_CURR_PIN 2
 define HAL_BATT_CURR_SCALE 40.0
 
-define AP_SCRIPTING_ENABLED 1
-
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
