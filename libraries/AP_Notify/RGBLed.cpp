@@ -20,6 +20,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include "RGBLed.h"
 #include "AP_Notify.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -136,33 +137,48 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_failsafe_radio_or_battery;
     }
 
+#if AP_GPS_ENABLED
+    Location loc;
+#if AP_AHRS_ENABLED
+    // the AHRS can return "true" for get_location and still not be
+    // happy enough with the location to set its origin from that
+    // location:
+    const bool good_ahrs_location = AP::ahrs().get_location(loc) && AP::ahrs().get_origin(loc);
+#else
+    const bool good_ahrs_location = true;
+#endif
+
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
 #if AP_GPS_ENABLED
-        // solid green if armed with GPS 3d lock
-        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
+        // solid green if armed with GPS 3d lock and good location
+        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D &&
+            good_ahrs_location) {
             return sequence_armed;
         }
 #endif
         // solid blue if armed with no GPS lock
-        return sequence_armed_nogps;
+        return sequence_armed_no_gps_or_no_location;
     }
 
     // double flash yellow if failing pre-arm checks
     if (!AP_Notify::flags.pre_arm_check) {
         return sequence_prearm_failing;
     }
-#if AP_GPS_ENABLED
-    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS && AP_Notify::flags.pre_arm_gps_check) {
-        return sequence_disarmed_good_dgps;
+    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS &&
+        AP_Notify::flags.pre_arm_gps_check &&
+        good_ahrs_location) {
+        return sequence_disarmed_good_dgps_and_location;
     }
 
-    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D && AP_Notify::flags.pre_arm_gps_check) {
-        return sequence_disarmed_good_gps;
+    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D &&
+        AP_Notify::flags.pre_arm_gps_check &&
+        good_ahrs_location) {
+        return sequence_disarmed_good_gps_and_location;
     }
 #endif
 
-    return sequence_disarmed_bad_gps;
+    return sequence_disarmed_bad_gps_or_no_location;
 }
 
 uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
