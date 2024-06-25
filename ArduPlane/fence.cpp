@@ -13,7 +13,7 @@ void Plane::fence_check()
     bool is_in_landing = plane.flight_stage == AP_FixedWing::FlightStage::LAND
 #if HAL_QUADPLANE_ENABLED
                          || control_mode->mode_number() == Mode::Number::QLAND
-                         || control_mode->mode_number() == Mode::Number::QRTL
+                         || quadplane.in_vtol_land_descent()
 #endif
                          || (plane.is_land_command(mission_id) && plane.mission.state() == AP_Mission::MISSION_RUNNING);
 
