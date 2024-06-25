@@ -169,6 +169,8 @@ public:
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
 
+    float get_soft_landing_adjusted_climbrate(float target_rate);
+
     const Vector3f& get_vel_desired_cms() {
         // note that position control isn't used in every mode, so
         // this may return bogus data:

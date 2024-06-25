@@ -956,6 +956,28 @@ float Mode::get_avoidance_adjusted_climbrate(float target_rate)
 #endif
 }
 
+float Mode::get_soft_landing_adjusted_climbrate(float target_rate)
+{
+    // return immediately if:
+    // we are climbing,
+    // soft landing is disabled,
+    // or we do not have a healthy downward facing rangefinder
+    if (is_positive(target_rate) || !(copter.g2.flight_options & uint32_t(Copter::FlightOptions::ENABLE_SOFT_LANDING)) || !copter.rangefinder_alt_ok()) {
+        return target_rate;
+    }
+    
+    const float curr_alt = copter.rangefinder_state.alt_cm_filt.get() * 0.01; // in meters
+    const float final_speed = 0.3; // in m/s
+    const float margin = 1; // in meters
+    float allowed_descent_rate = final_speed;
+    if (is_positive(curr_alt - margin)) {
+        allowed_descent_rate = 0.5 * safe_sqrt((final_speed * final_speed) +  2 * (curr_alt - margin) * g.pilot_accel_z * 0.01);
+    }
+    allowed_descent_rate = MAX(allowed_descent_rate, final_speed); // make sure the descent rate doesn't go below final_speed
+    
+    return -MIN(-target_rate, allowed_descent_rate * 100); // in cm/s    
+}
+
 // send output to the motors, can be overridden by subclasses
 void Mode::output_to_motors()
 {
