@@ -165,16 +165,13 @@ uint32_t RGBLed::get_colour_sequence(void) const
     if (!AP_Notify::flags.pre_arm_check) {
         return sequence_prearm_failing;
     }
-    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS &&
-        AP_Notify::flags.pre_arm_gps_check &&
-        good_ahrs_location) {
-        return sequence_disarmed_good_dgps_and_location;
-    }
-
-    if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D &&
-        AP_Notify::flags.pre_arm_gps_check &&
-        good_ahrs_location) {
-        return sequence_disarmed_good_gps_and_location;
+    if (AP_Notify::flags.pre_arm_gps_check && good_ahrs_location) {
+        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+            return sequence_disarmed_good_dgps_and_location;
+        }
+        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
+            return sequence_disarmed_good_gps_and_location;
+        }
     }
 #endif
 
