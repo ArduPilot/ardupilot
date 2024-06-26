@@ -4951,48 +4951,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Test payload placing in auto."""
         self.context_push()
 
-        ex = None
-        try:
-            self.set_analog_rangefinder_parameters()
-            self.set_servo_gripper_parameters()
-            self.reboot_sitl()
+        self.set_analog_rangefinder_parameters()
+        self.set_servo_gripper_parameters()
+        self.reboot_sitl()
 
-            self.load_mission("copter_payload_place.txt")
-            if self.mavproxy is not None:
-                self.mavproxy.send('wp list\n')
+        self.load_mission("copter_payload_place.txt")
+        if self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
 
-            self.set_parameter("AUTO_OPTIONS", 3)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
 
-            self.arm_vehicle()
+        self.arm_vehicle()
 
-            self.wait_text("Gripper load releas", timeout=90)
-            dist_limit = 1
-            # this is a copy of the point in the mission file:
-            target_loc = mavutil.location(-35.363106,
-                                          149.165436,
-                                          0,
-                                          0)
-            dist = self.get_distance(target_loc, self.mav.location())
-            self.progress("dist=%f" % (dist,))
-            if dist > dist_limit:
-                raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
-                                           (dist, dist_limit))
+        self.wait_text("Gripper load releas", timeout=90)
+        dist_limit = 1
+        # this is a copy of the point in the mission file:
+        target_loc = mavutil.location(-35.363106,
+                                      149.165436,
+                                      0,
+                                      0)
+        dist = self.get_distance(target_loc, self.mav.location())
+        self.progress("dist=%f" % (dist,))
+        if dist > dist_limit:
+            raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
+                                       (dist, dist_limit))
 
-            self.wait_disarmed()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle(force=True)
-            ex = e
+        self.wait_disarmed()
 
         self.context_pop()
         self.reboot_sitl()
         self.progress("All done")
-
-        if ex is not None:
-            raise ex
 
     def Weathervane(self):
         '''Test copter weathervaning'''
