@@ -1,12 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the ZeroOneX6 hardware
 
-# order of UARTs (and USB)
-SERIAL_ORDER OTG1 UART7 UART5 USART3
-
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
-
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -26,6 +20,12 @@ FLASH_BOOTLOADER_LOAD_KB 128
 FLASH_SIZE_KB 2048
 
 env OPTIMIZE -Os
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART3
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
 
 # Pin for PWM Voltage Selection
 PG6 PWM_VOLT_SEL OUTPUT HIGH
