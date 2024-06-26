@@ -269,6 +269,9 @@ void __early_init(void) {
                      STM32_NOCACHE_MPU_REGION_2_SIZE |
                      MPU_RASR_ENABLE);
 #endif
+#if defined(DUAL_CORE)
+  stm32_disable_cm4_core(); // disable second core
+#endif
 #endif
 }
 
