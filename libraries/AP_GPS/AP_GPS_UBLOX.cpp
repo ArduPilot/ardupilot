@@ -1835,7 +1835,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 void
 AP_GPS_UBLOX::pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us)
 {
-    _last_pps_time_us = timestamp_us;
+    _last_pps_time_us = AP_HAL::micros64();
 }
 
 void
