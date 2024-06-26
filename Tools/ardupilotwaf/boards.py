@@ -286,7 +286,7 @@ class Board:
 
         if cfg.env.DEBUG:
             env.CFLAGS += [
-                '-g',
+                '-g3',
                 '-O0',
             ]
             env.DEFINES.update(
@@ -294,7 +294,7 @@ class Board:
             )
         elif cfg.options.debug_symbols:
             env.CFLAGS += [
-                '-g',
+                '-g3',
             ]
         if cfg.env.COVERAGE:
             env.CFLAGS += [
