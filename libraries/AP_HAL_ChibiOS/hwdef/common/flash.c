@@ -452,6 +452,65 @@ bool stm32_flash_ispageerased(uint32_t page)
 static uint32_t last_erase_ms;
 #endif
 
+#if defined(STM32H7)
+
+/*
+    corrupt a flash to trigger ECC fault
+*/
+void stm32_flash_corrupt(uint32_t addr)
+{
+    stm32_flash_unlock();
+
+    volatile uint32_t *CR = &FLASH->CR1;
+    volatile uint32_t *CCR = &FLASH->CCR1;
+    volatile uint32_t *SR = &FLASH->SR1;
+#if STM32_FLASH_NBANKS > 1
+    if (addr - STM32_FLASH_BASE >= STM32_FLASH_FIXED_PAGE_PER_BANK * STM32_FLASH_FIXED_PAGE_SIZE * 1024) {
+        CR = &FLASH->CR2;
+        CCR = &FLASH->CCR2;
+        SR = &FLASH->SR2;
+    }
+#endif
+    stm32_flash_wait_idle();
+
+    *CCR = ~0;
+    *CR |= FLASH_CR_PG;
+
+    for (uint32_t i=0; i<2; i++) {
+        while (*SR & (FLASH_SR_BSY|FLASH_SR_QW)) ;
+        putreg32(0xAAAA5555, addr);
+        if (*SR & FLASH_SR_INCERR) {
+            // clear the error
+            *SR &= ~FLASH_SR_INCERR;
+        }
+        addr += 4;
+    }
+
+    *CR |= FLASH_CR_FW;  // force write
+    stm32_flash_wait_idle();
+
+    for (uint32_t i=0; i<2; i++) {
+        while (*SR & (FLASH_SR_BSY|FLASH_SR_QW)) ;
+        putreg32(0x5555AAAA, addr);
+        if (*SR & FLASH_SR_INCERR) {
+            // clear the error
+            *SR &= ~FLASH_SR_INCERR;
+        }
+        addr += 4;
+    }
+
+    *CR |= FLASH_CR_FW;  // force write
+    stm32_flash_wait_idle();
+    __DSB();
+
+    stm32_flash_wait_idle();
+    *CCR = ~0;
+    *CR &= ~FLASH_CR_PG;
+
+    stm32_flash_lock();
+}
+#endif
+
 /*
   erase a page
  */
