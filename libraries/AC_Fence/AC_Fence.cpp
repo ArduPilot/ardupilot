@@ -36,8 +36,10 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
+#define AC_FENCE_OPTIONS_DEFAULT                   OPTIONS::DISABLE_MODE_CHANGE
 #else
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0   // after fence is broken we recreate the fence 20m further out
+#define AC_FENCE_OPTIONS_DEFAULT                   0
 #endif
 
 //#define AC_FENCE_DEBUG
@@ -137,12 +139,12 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
-    // @Param{Plane}: OPTIONS
+    // @Param{Plane, Copter}: OPTIONS
     // @DisplayName: Fence options
     // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
     // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(OPTIONS::DISABLE_MODE_CHANGE), AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER),
 
     AP_GROUPEND
 };
