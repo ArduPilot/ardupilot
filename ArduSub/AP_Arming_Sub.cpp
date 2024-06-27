@@ -149,6 +149,11 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // flag exiting this function
     in_arm_motors = false;
 
+    // if we do not have an ekf origin then we can't use the WMM tables
+    if (!sub.ensure_ekf_origin()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Compass performance degraded");
+    }
+
     // return success
     return true;
 }
