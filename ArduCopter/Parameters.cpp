@@ -1236,6 +1236,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @RebootRequired: True
     // @Values: 0:Disabled,1:Enabled-Dynamic,2:Enabled-Fixed
     AP_GROUPINFO("FSTRATE_ENABLE", 9, ParametersG2, att_enable, 0),
+
+    // @Param: FSTRATE_DIV
+    // @DisplayName: Fast rate thread divisor
+    // @Description: Fast rate thread divisor used to control the maximum fast rate update rate. The actual rate is the gyro rate divided by this value.
+    // @User: Advanced
+    // @Range: 1 10
+    AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
 #endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION

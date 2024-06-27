@@ -13,7 +13,9 @@
 */
 void Copter::rate_controller_thread()
 {
-    uint8_t rate_decimation = 1;
+    uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                     uint8_t((ins.get_raw_gyro_rate_hz() + 400 - 1) / 400));
+    uint8_t rate_decimation = target_rate_decimation;
     uint32_t rate_loop_count = 0;
     uint32_t prev_loop_count = 0;
 
@@ -31,6 +33,7 @@ void Copter::rate_controller_thread()
 #endif
     uint32_t last_notch_sample_ms = now_ms;
     bool was_using_rate_thread = false;
+    bool was_armed = false;
     uint32_t running_slow = 0;
 #ifdef RATE_LOOP_TIMING_DEBUG
     uint32_t gyro_sample_time_us = 0;
@@ -170,6 +173,9 @@ void Copter::rate_controller_thread()
 
         now_ms = AP_HAL::millis();
 
+        // make sure we have the latest target rate
+        target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                 uint8_t((ins.get_raw_gyro_rate_hz() + 400 - 1) / 400));
         if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
             // update the PID notch sample rate at 1Hz if we are
             // enabled at runtime
@@ -178,25 +184,29 @@ void Copter::rate_controller_thread()
         }
 
         // Once armed, switch to the fast rate if configured to do so
-        if (rate_decimation > 1 && motors->armed() && get_fast_rate_type() != FastRateType::FAST_RATE_FIXED) {
-            rate_decimation = 1;
-            attitude_control->set_notch_sample_rate(ins.get_raw_gyro_rate_hz());
-            gcs().send_text(MAV_SEVERITY_INFO, "Attitude rate active at %uHz", (unsigned)ins.get_raw_gyro_rate_hz());
+        if ((rate_decimation != target_rate_decimation || !was_armed) && motors->armed() && get_fast_rate_type() == FastRateType::FAST_RATE_FIXED) {
+            rate_decimation = target_rate_decimation;
+            attitude_control->set_notch_sample_rate(ins.get_raw_gyro_rate_hz() / rate_decimation);
+            gcs().send_text(MAV_SEVERITY_INFO, "Attitude rate active at %uHz", (unsigned)ins.get_raw_gyro_rate_hz() / rate_decimation);
+            was_armed = motors->armed();
+        } else if (!motors->armed()) {
+            was_armed = false;
         }
         
         // check that the CPU is not pegged, if it is drop the attitude rate
-        if (now_ms - last_rate_check_ms >= 200
-            && (get_fast_rate_type() != FastRateType::FAST_RATE_FIXED || !motors->armed())) {
+        if (now_ms - last_rate_check_ms >= 100
+            && (get_fast_rate_type() != FastRateType::FAST_RATE_FIXED || !motors->armed() || target_rate_decimation > rate_decimation)) {
             last_rate_check_ms = now_ms;
             const uint32_t att_rate = ins.get_raw_gyro_rate_hz()/rate_decimation;
             if (running_slow > 5 || AP::scheduler().get_extra_loop_us() > 0
 #if HAL_LOGGING_ENABLED
                 || AP::logger().in_log_download()
 #endif
-                ) {
-                const uint32_t new_attitude_rate = ins.get_raw_gyro_rate_hz()/(rate_decimation+1);
-                if (new_attitude_rate > AP::scheduler().get_filtered_loop_rate_hz() * 2) {
-                    rate_decimation = rate_decimation + 1;
+                || target_rate_decimation > rate_decimation) {
+                const uint8_t new_rate_decimation = MAX(rate_decimation + 1, target_rate_decimation);
+                const uint32_t new_attitude_rate = ins.get_raw_gyro_rate_hz() / new_rate_decimation;
+                if (new_attitude_rate > AP::scheduler().get_filtered_loop_rate_hz()) {
+                    rate_decimation = new_rate_decimation;
                     attitude_control->set_notch_sample_rate(new_attitude_rate);
                     gcs().send_text(MAV_SEVERITY_WARNING, "Attitude CPU high, dropping rate to %uHz",
                                     (unsigned)new_attitude_rate);
@@ -212,7 +222,7 @@ void Copter::rate_controller_thread()
                     }
 #endif
                 }
-            } else if (rate_decimation > 1 && rate_loop_count > att_rate // ensure a second's worth of good readings
+            } else if (rate_decimation > target_rate_decimation && rate_loop_count > att_rate/10 // ensure 100ms worth of good readings
                 && (prev_loop_count > att_rate/10   // ensure there was 100ms worth of good readings at the higher rate
                     || prev_loop_count == 0         // last rate was actually a lower rate so keep going quickly
                     || now_ms - last_rate_increase_ms >= 10000)) { // every 10s retry

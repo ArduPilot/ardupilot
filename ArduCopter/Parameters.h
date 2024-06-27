@@ -688,6 +688,7 @@ public:
 
 #if AP_INERTIALSENSOR_RATE_LOOP_WINDOW_ENABLED
     AP_Int8 att_enable;
+    AP_Int8 att_decimation;
 #endif
 };
 
