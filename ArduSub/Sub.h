@@ -232,7 +232,18 @@ private:
     } failsafe;
 
     bool any_failsafe_triggered() const {
-        return (failsafe.pilot_input || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain);
+        return (
+            failsafe.pilot_input
+            || battery.has_failsafed()
+            || failsafe.gcs
+            || failsafe.ekf
+            || failsafe.terrain
+            || failsafe.leak
+            || failsafe.internal_pressure
+            || failsafe.internal_temperature
+            || failsafe.crash
+            || failsafe.sensor_health
+        );
     }
 
     // sensor health for logging
