@@ -31,7 +31,7 @@
 
   All entries in this table must be ordered by priority.
 
-  This table is interleaved with the table presnet in each of the
+  This table is interleaved with the table present in each of the
   vehicles to determine the order in which tasks are run.  Convenience
   methods SCHED_TASK and SCHED_TASK_CLASS are provided to build
   entries in this structure:
