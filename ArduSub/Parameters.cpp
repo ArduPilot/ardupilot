@@ -709,14 +709,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: ORIGIN_LAT
     // @DisplayName: Backup latitude for EKF origin
     // @Description:  Backup EKF origin latitude used when not using a positioning system.
-    // @Units: degrees
+    // @Units: deg
     // @User: Standard
     AP_GROUPINFO("ORIGIN_LAT", 19, ParametersG2, backup_origin_lat, 0),
 
     // @Param: ORIGIN_LON
     // @DisplayName: Backup longitude for EKF origin
     // @Description:  Backup EKF origin longitude used when not using a positioning system.
-    // @Units: degrees
+    // @Units: deg
     // @User: Standard
     AP_GROUPINFO("ORIGIN_LON", 20, ParametersG2, backup_origin_lon, 0),
 
