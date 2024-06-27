@@ -433,7 +433,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @LoggerMessage: TSIT
 // @Description: tailsitter speed scailing values
 // @Field: TimeUS: Time since system startup
-// @Field: Ts: throttle scailing used for tilt motors
+// @Field: Ts: throttle scaling used for tilt motors
 // @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
 // @Field: Tmin: minimum output throttle caculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
