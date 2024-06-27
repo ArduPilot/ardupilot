@@ -152,8 +152,11 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // if we do not have an ekf origin then we can't use the WMM tables
     if (!sub.ensure_ekf_origin()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Compass performance degraded");
+        if (check_enabled(ARMING_CHECK_PARAMETERS)) {
+            check_failed(ARMING_CHECK_PARAMETERS, true, "No world position, check ORIGIN_* parameters");
+            return false;
+        }
     }
-
     // return success
     return true;
 }
