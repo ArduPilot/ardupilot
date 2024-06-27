@@ -9,7 +9,7 @@
 
 #if AP_SCRIPTING_ENABLED
     #include <AP_Filesystem/AP_Filesystem_config.h>
-    #if !AP_FILESYSTEM_FILE_READING_ENABLED
+    #if !AP_FILESYSTEM_FILE_READING_ENABLED && !defined(HAL_HAVE_AP_ROMFS_EMBEDDED_LUA)
         #error "Scripting requires a filesystem"
     #endif
 #endif
