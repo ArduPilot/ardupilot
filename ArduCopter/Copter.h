@@ -627,7 +627,7 @@ private:
     enum class FlightOption : uint32_t {
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
-        RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
+        RELEASE_GRIPPER_ON_THRUST_LOSS_DEPRECATED = (1<<2), // 4 (deprecated)
         REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
     };
     // returns true if option is enabled for this vehicle
