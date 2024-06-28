@@ -176,6 +176,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
@@ -223,6 +224,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+
+      - name: Register gcc problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/gcc.json"
+
+      - name: Register python problem matcher
+        run: echo "::add-matcher::.github/problem-matchers/python.json"
+
+      - name: Register autotest warn matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+
+      - name: Register autotest fail matcher
+        run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
