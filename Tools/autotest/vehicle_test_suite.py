@@ -5016,7 +5016,7 @@ class TestSuite(ABC):
 
     def mission_from_filepath(self, filepath, target_system=1, target_component=1):
         '''returns a list of mission-item-ints from filepath'''
-        print("filepath: %s" % filepath)
+        self.progress("filepath: %s" % filepath)
         self.progress("Loading mission (%s)" % os.path.basename(filepath))
         wploader = mavwp.MAVWPLoader(
             target_system=target_system,
@@ -5809,7 +5809,7 @@ class TestSuite(ABC):
                 self.set_output_to_trim(self.get_stick_arming_channel())
                 self.progress("Arm in %ss" % tdelta)  # TODO check arming time
                 return
-            print("Not armed after %f seconds" % (tdelta))
+            self.progress("Not armed after %f seconds" % (tdelta))
             if tdelta > timeout:
                 break
         self.set_output_to_trim(self.get_stick_arming_channel())

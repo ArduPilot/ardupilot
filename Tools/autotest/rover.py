@@ -3952,11 +3952,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 continue
             t = m.get_type()
             if t == "POSITION_TARGET_GLOBAL_INT":
-                print("Target: (%s)" % str(m))
+                self.progress("Target: (%s)" % str(m))
             elif t == "GLOBAL_POSITION_INT":
-                print("Position: (%s)" % str(m))
+                self.progress("Position: (%s)" % str(m))
             elif t == "FENCE_STATUS":
-                print("Fence: %s" % str(m))
+                self.progress("Fence: %s" % str(m))
                 if m.breach_status != 0:
                     seen_fence_breach = True
                     self.progress("Fence breach detected!")
