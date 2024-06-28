@@ -1,0 +1,6 @@
+include ../CubeOrangePlus-bdshot/hwdef.dat
+
+# enable and enforce OpenDroneID
+define AP_OPENDRONEID_ENABLED 1
+
+SERIAL1_BAUD 921

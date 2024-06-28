@@ -1,0 +1,4 @@
+include ../CubeOrangePlus/hwdef-bl.dat
+
+# enable OpenDroneID
+define AP_OPENDRONEID_ENABLED 1

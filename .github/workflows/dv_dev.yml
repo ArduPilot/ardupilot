@@ -1,0 +1,89 @@
+name: DV dev
+
+on: [push]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Generate mavlink bindings
+        run: ./dv/scripts/generate_mavlink_bindings.sh
+  
+      - name: Archive mavlink bindings
+        uses: actions/upload-artifact@v4
+        with:
+          name: mavlink_generated
+          path: |
+            build/mavlink_generated
+          retention-days: 7
+          compression-level: 0
+
+  build:
+    runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        board: [
+            sitl, # For simulation
+            CubeOrangePlus-bdshot, # Legacy support
+            CubeOrangePlus-dv, # CubeOrangePlus with bdshot and ODID enabled
+            CubeOrange-dv, # For my obsolete devkit
+        ]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+      
+      - name: ccache cache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          . .github/workflows/ccache.env
+          ccache -s
+          ccache -z
+
+      - name: build copter ${{ matrix.board }}
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          ./Tools/scripts/build_bootloaders.py ${{ matrix.board }}
+          ./waf configure --board ${{ matrix.board }}
+          ./waf build --target bin/arducopter
+
+      - name: ccache stats ${{ matrix.board }}
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          ccache -s
+          ccache -z
+
+      - name: Archive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.board }}
+          path: |
+            build/${{ matrix.board }}/bin/arducopter
+            build/${{ matrix.board }}/bin/arducopter.apj
+          retention-days: 7
+          compression-level: 0
