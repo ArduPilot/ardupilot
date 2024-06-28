@@ -28,6 +28,10 @@ enum class TopicIndex: uint8_t {
     DYNAMIC_TRANSFORMS_SUB,
     VELOCITY_CONTROL_SUB,
     GLOBAL_POSITION_SUB,
+
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    SENSOR_NAV_SAT_0_SUB,
+#endif
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -264,4 +268,23 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 5,
         },
     },
+
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB),
+        .pub_id = to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB),
+        .sub_id = to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/in/navsat/navsat0",
+        .type_name = "sensor_msgs::msg::dds_::NavSatFix_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif
 };

@@ -49,7 +49,9 @@ sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
-
+#if AP_DDS_SENSOR_SUBS_ENABLED
+sensor_msgs_msg_NavSatFix AP_DDS_Client::rx_nav_sat_fix_0_topic {};
+#endif
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -598,6 +600,17 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    case topics[to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_NavSatFix_deserialize_topic(ub, &rx_nav_sat_fix_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+        break;
+    }
+#endif
     }
 
 }

@@ -76,6 +76,10 @@ private:
     static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    // incoming nav sat sensor
+    static sensor_msgs_msg_NavSatFix rx_nav_sat_fix_0_topic;
+#endif
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
     // incoming transforms
