@@ -28,6 +28,7 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'7','3'}, "A8"},
         {{'6','B'}, "ZR10"},
         {{'7','8'}, "ZR30"},
+        {{'8','2'}, "ZT6"},
         {{'7','A'}, "ZT30"},
 };
 
@@ -812,7 +813,8 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
         return 0;
     case HardwareModel::A2:
     case HardwareModel::A8:
-        // a8 has 6x digital zoom
+    case HardwareModel::ZT6:
+        // a8, zt6 have 6x digital zoom
         return 6;
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
@@ -1030,6 +1032,7 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
     case HardwareModel::UNKNOWN:
     case HardwareModel::A2:
     case HardwareModel::A8:
+    case HardwareModel::ZT6:
         focal_length_mm = 21;
         break;
     case HardwareModel::ZR10:
@@ -1137,6 +1140,7 @@ void AP_Mount_Siyi::check_firmware_version() const
         case HardwareModel::A2:
         case HardwareModel::ZR10:
         case HardwareModel::ZR30:
+        case HardwareModel::ZT6:
         case HardwareModel::ZT30:
             // TBD
             break;

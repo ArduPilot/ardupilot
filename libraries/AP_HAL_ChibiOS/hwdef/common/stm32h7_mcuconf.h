@@ -202,6 +202,9 @@
 #if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
 #define STM32_PLL1_DIVN_VALUE               120
 #define STM32_PLL1_DIVQ_VALUE               12
+#elif HAL_CUSTOM_MCU_CLOCKRATE == 200000000
+#define STM32_PLL1_DIVN_VALUE               50
+#define STM32_PLL1_DIVQ_VALUE               5
 #else
 #error "Unable to configure custom clockrate"
 #endif

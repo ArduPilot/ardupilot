@@ -1229,41 +1229,46 @@ function AP_HAL__I2CDevice_ud:write_register(register_num, value) end
 function AP_HAL__I2CDevice_ud:set_retries(retries) end
 
 
--- Serial driver object
----@class (exact) AP_HAL__UARTDriver_ud
-local AP_HAL__UARTDriver_ud = {}
+-- Serial port access object
+---@class (exact) AP_Scripting_SerialAccess_ud
+local AP_Scripting_SerialAccess_ud = {}
 
--- Set flow control option for serial port
----@param flow_control_setting integer
----| '0' # disabled
----| '1' # enabled
----| '2' # auto
-function AP_HAL__UARTDriver_ud:set_flow_control(flow_control_setting) end
-
--- Returns number of available bytes to read.
----@return uint32_t_ud
-function AP_HAL__UARTDriver_ud:available() end
+-- Start serial port with the given baud rate (no effect for device ports)
+---@param baud_rate uint32_t_ud|integer|number
+function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
 -- Writes a single byte
 ---@param value integer -- byte to write
 ---@return uint32_t_ud -- 1 if success else 0
-function AP_HAL__UARTDriver_ud:write(value) end
+function AP_Scripting_SerialAccess_ud:write(value) end
 
--- Read a single byte from the serial port
----@return integer -- byte, -1 if not available
-function AP_HAL__UARTDriver_ud:read() end
+-- Writes a string. The number of bytes actually written, i.e. the length of the
+-- written prefix of the string, is returned. It may be 0 up to the length of
+-- the string.
+---@param data string -- string of bytes to write
+---@return integer -- number of bytes actually written, which may be 0
+function AP_Scripting_SerialAccess_ud:writestring(data) end
 
--- Start serial port with given baud rate
----@param baud_rate uint32_t_ud|integer|number
-function AP_HAL__UARTDriver_ud:begin(baud_rate) end
+-- Reads a single byte from the serial port
+---@return integer -- byte, -1 if error or none available
+function AP_Scripting_SerialAccess_ud:read() end
 
---[[
-  read count bytes from a uart and return as a lua string. Note
-  that the returned string can be shorter than the requested length
---]]
----@param count integer
----@return string|nil
-function AP_HAL__UARTDriver_ud:readstring(count) end
+-- Reads up to `count` bytes and returns the bytes read as a string. No bytes
+-- may be read, in which case a 0-length string is returned.
+---@param count integer -- maximum number of bytes to read
+---@return string|nil -- bytes actually read, which may be 0-length, or nil on error
+function AP_Scripting_SerialAccess_ud:readstring(count) end
+
+-- Returns number of available bytes to read.
+---@return uint32_t_ud
+function AP_Scripting_SerialAccess_ud:available() end
+
+-- Set flow control option for serial port (no effect for device ports)
+---@param flow_control_setting integer
+---| '0' # disabled
+---| '1' # enabled
+---| '2' # auto
+function AP_Scripting_SerialAccess_ud:set_flow_control(flow_control_setting) end
 
 
 -- desc
@@ -1649,6 +1654,10 @@ function Motors_dynamic:init(expected_num_motors) end
 
 -- desc
 analog = {}
+
+-- return MCU temperature in degrees C
+---@return number -- MCU temperature
+function analog:mcu_temperature() end
 
 -- desc
 ---@return AP_HAL__AnalogSource_ud|nil
@@ -2102,12 +2111,23 @@ function baro:healthy(instance) end
 -- Serial ports
 serial = {}
 
--- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28).
--- For instance = 0, returns first such UART, second for instance = 1, and so on.
--- If such an instance is not found, returns nil.
----@param instance integer -- the 0-based index of the UART instance to return.
----@return AP_HAL__UARTDriver_ud|nil -- the requested UART instance available for scripting, or nil if none.
+-- Returns a serial access object that allows a script to interface with a
+-- device over a port set to protocol 28 (Scripting) (e.g. SERIALx_PROTOCOL).
+-- Instance 0 is the first such port, instance 1 the second, and so on. If the
+-- requested instance is not found, returns nil.
+---@param instance integer -- 0-based index of the Scripting port to access
+---@return AP_Scripting_SerialAccess_ud|nil -- access object for that instance, or nil if not found
 function serial:find_serial(instance) end
+
+-- Returns a serial access object that allows a script to simulate a device
+-- attached via a specific protocol. The device protocol is configured by
+-- SCR_SDEVx_PROTO. Instance 0 is the first such protocol, instance 1 the
+-- second, and so on. If the requested instance is not found, or SCR_SDEV_EN is
+-- disabled, returns nil.
+---@param protocol integer -- protocol to access
+---@param instance integer -- 0-based index of the protocol instance to access
+---@return AP_Scripting_SerialAccess_ud|nil -- access object for that instance, or nil if not found
+function serial:find_simulated_device(protocol, instance) end
 
 
 -- desc

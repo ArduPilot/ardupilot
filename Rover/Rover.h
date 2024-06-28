@@ -285,7 +285,6 @@ private:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
 #endif // AP_SCRIPTING_ENABLED
-    void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
     void update_logging1(void);

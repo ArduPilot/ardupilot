@@ -1,8 +1,7 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the BotBloxSwitch hardware
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # MCU class and specific type
 MCU STM32H7xx STM32H723xx

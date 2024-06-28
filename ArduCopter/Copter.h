@@ -626,6 +626,7 @@ private:
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
+        REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
     };
     // returns true if option is enabled for this vehicle
     bool option_is_enabled(FlightOption option) const {
@@ -670,6 +671,8 @@ private:
 #if AP_SCRIPTING_ENABLED
 #if MODE_GUIDED_ENABLED == ENABLED
     bool start_takeoff(float alt) override;
+    bool get_target_location(Location& target_loc) override;
+    bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) override;
     bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
     bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;

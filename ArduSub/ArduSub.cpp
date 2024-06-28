@@ -158,10 +158,7 @@ void Sub::fifty_hz_loop()
 
     failsafe_sensors_check();
 
-    // Update rc input/output
     rc().read_input();
-    SRV_Channels::calc_pwm();
-    SRV_Channels::output_ch_all();
 }
 
 // update_batt_compass - read battery and compass
@@ -271,6 +268,9 @@ void Sub::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
+    // sync MAVLink system ID
+    mavlink_system.sysid = g.sysid_this_mav;
+
     bool arm_check = arming.pre_arm_checks(false);
     ap.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_check = arm_check;

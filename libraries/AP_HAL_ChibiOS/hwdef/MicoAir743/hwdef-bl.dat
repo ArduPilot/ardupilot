@@ -19,8 +19,7 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 128
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART1

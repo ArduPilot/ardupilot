@@ -459,11 +459,17 @@ int AP_Logger_Write(lua_State *L) {
             case 'M': // uint8_t (flight mode)
             case 'B': { // uint8_t
                 int isnum;
-                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT8_MAX)) {
-                    luaM_free(L, buffer);
-                    luaL_argerror(L, arg_index, "argument out of range");
-                    // no return
+                    // Also allow boolean
+                    if (!isnum && lua_isboolean(L, arg_index)) {
+                        tmp1 = lua_toboolean(L, arg_index);
+
+                    } else {
+                        luaM_free(L, buffer);
+                        luaL_argerror(L, arg_index, "argument out of range");
+                        // no return
+                    }
                 }
                 uint8_t tmp = static_cast<uint8_t>(tmp1);
                 memcpy(&buffer[offset], &tmp, sizeof(uint8_t));
@@ -649,30 +655,6 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     return success;
 }
 
-int AP_HAL__UARTDriver_readstring(lua_State *L) {
-    binding_argcheck(L, 2);
-
-    AP_HAL::UARTDriver * ud = *check_AP_HAL__UARTDriver(L, 1);
-
-    const uint16_t count = get_uint16_t(L, 2);
-    uint8_t *data = (uint8_t*)malloc(count);
-    if (data == nullptr) {
-        return 0;
-    }
-
-    const auto ret = ud->read(data, count);
-    if (ret < 0) {
-        free(data);
-        return 0;
-    }
-
-    // push to lua string
-    lua_pushlstring(L, (const char *)data, ret);
-    free(data);
-
-    return 1;
-}
-
 #if AP_SCRIPTING_CAN_SENSOR_ENABLED
 int lua_get_CAN_device(lua_State *L) {
 
@@ -736,6 +718,111 @@ int lua_get_CAN_device2(lua_State *L) {
     return 1;
 }
 #endif // AP_SCRIPTING_CAN_SENSOR_ENABLED
+
+#if HAL_GCS_ENABLED
+int lua_serial_find_serial(lua_State *L) {
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1 + arg_offset);
+
+    uint8_t instance = get_uint8_t(L, 1 + arg_offset);
+
+    AP_SerialManager *mgr = &AP::serialmanager();
+    AP_HAL::UARTDriver *driver_stream = mgr->find_serial(
+        AP_SerialManager::SerialProtocol_Scripting, instance);
+
+    if (driver_stream == nullptr) { // not found
+        return 0;
+    }
+
+    new_AP_Scripting_SerialAccess(L);
+    AP_Scripting_SerialAccess *port = check_AP_Scripting_SerialAccess(L, -1);
+    port->stream = driver_stream;
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    port->is_device_port = false;
+#endif
+
+    return 1;
+}
+#endif // HAL_GCS_ENABLED
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+int lua_serial_find_simulated_device(lua_State *L) {
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 2 + arg_offset);
+
+    const int8_t protocol = (int8_t)get_uint32(L, 1 + arg_offset, 0, 127);
+    uint32_t instance = get_uint16_t(L, 2 + arg_offset);
+
+    auto *scripting = AP::scripting();
+    AP_Scripting_SerialDevice::Port *device_stream = nullptr;
+
+    for (auto &port : scripting->_serialdevice.ports) {
+        if (port.state.protocol == protocol) {
+            if (instance-- == 0) {
+                device_stream = &port;
+                break;
+            }
+        }
+    }
+
+    if (!scripting->_serialdevice.enable || device_stream == nullptr) {
+        // serial devices as a whole are disabled, or port not found
+        return 0;
+    }
+
+    new_AP_Scripting_SerialAccess(L);
+    AP_Scripting_SerialAccess *port = check_AP_Scripting_SerialAccess(L, -1);
+    port->stream = device_stream;
+    port->is_device_port = true;
+
+    return 1;
+}
+#endif // AP_SCRIPTING_SERIALDEVICE_ENABLED
+
+int lua_serial_writestring(lua_State *L)
+{
+    binding_argcheck(L, 2);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    // get the bytes the user wants to write, along with their length
+    size_t req_bytes;
+    const char *data = lua_tolstring(L, 2, &req_bytes);
+
+    // write up to that number of bytes
+    const uint32_t written_bytes = port->write((const uint8_t*)data, req_bytes);
+
+    // return the number of bytes that were actually written
+    lua_pushinteger(L, written_bytes);
+
+    return 1;
+}
+
+int lua_serial_readstring(lua_State *L) {
+    binding_argcheck(L, 2);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    // create a buffer sized to hold the number of bytes the user wants to read
+    luaL_Buffer b;
+    const uint16_t req_bytes = get_uint16_t(L, 2);
+    uint8_t *data = (uint8_t *)luaL_buffinitsize(L, &b, req_bytes);
+
+    // read up to that number of bytes
+    const ssize_t read_bytes = port->read(data, req_bytes);
+    if (read_bytes < 0) {
+        return 0; // error, return nil
+    }
+
+    // push the buffer as a string, truncated to the number of bytes actually read
+    luaL_pushresultsize(&b, read_bytes);
+
+    return 1;
+}
 
 /*
   directory listing, return table of files in a directory

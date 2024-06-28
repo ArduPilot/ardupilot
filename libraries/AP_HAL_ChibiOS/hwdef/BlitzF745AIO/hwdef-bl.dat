@@ -3,8 +3,7 @@
 # for IFLIGHT_BLITZ_F7_AIO hardware.
 # thanks to betaflight for pin information
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
