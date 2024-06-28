@@ -151,6 +151,9 @@ void AP_EFI_DroneCAN::handle_status(const uavcan_equipment_ice_reciprocating_Sta
         c.lambda_coefficient = cs.lambda_coefficient;
     }
 
+    // Required for healthy message
+    istate.last_updated_ms = AP_HAL::millis();
+
     copy_to_frontend();
 }
 
