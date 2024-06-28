@@ -465,21 +465,23 @@ void AP_RangeFinder_LightWareI2C::update(void)
 
 void AP_RangeFinder_LightWareI2C::legacy_timer(void)
 {
-    if (legacy_get_reading(state.distance_m)) {
+    float distance_m = 0;
+    if (legacy_get_reading(distance_m)) {
         // update range_valid state based on distance measured
+        WITH_SEMAPHORE(_sem);
+        state.distance_m = distance_m;
         update_status();
-    } else {
-        set_status(RangeFinder::Status::NoData);
     }
 }
 
 void AP_RangeFinder_LightWareI2C::sf20_timer(void)
 {
-    if (sf20_get_reading(state.distance_m)) {
+    float distance_m = 0;
+    if (sf20_get_reading(distance_m)) {
         // update range_valid state based on distance measured
+        WITH_SEMAPHORE(_sem);
+        state.distance_m = distance_m;
         update_status();
-    } else {
-        set_status(RangeFinder::Status::NoData);
     }
 }
 

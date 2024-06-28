@@ -49,6 +49,7 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
     : AP_RangeFinder_Backend(_state, _params)
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
     , rftype(_rftype)
+    , filter(1)
 {
 }
 
@@ -91,15 +92,10 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
         // read the high and low byte distance registers
         if (_dev->read_registers(LL40LS_DISTHIGH_REG | LL40LS_AUTO_INCREMENT, (uint8_t*)&val, sizeof(val))) {
             uint16_t _distance_cm = be16toh(val);
-            // remove momentary spikes
-            if (abs(_distance_cm - last_distance_cm) < 100) {
-                state.distance_m = _distance_cm * 0.01f;
-                state.last_reading_ms = AP_HAL::millis();
-                update_status();                
-            }
-            last_distance_cm = _distance_cm;
-        } else {
-            set_status(RangeFinder::Status::NoData);
+            // apply mode filter
+            state.distance_m = filter.apply(_distance_cm*0.01);
+            state.last_reading_ms = AP_HAL::millis();
+            update_status();
         }
         if (!v2_hardware) {
             // for v2 hw we use continuous mode

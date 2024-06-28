@@ -22,14 +22,16 @@ public:
     // there is an attached MAVLink rangefinder
     static bool detect() { return true; }
 
-    // update state
-    void update(void) override;
+    // empty update
+    void update(void) override {}
 
     // Get update from mavlink
     void handle_msg(const mavlink_message_t &msg) override;
 
     int16_t max_distance_cm() const override;
     int16_t min_distance_cm() const override;
+
+    uint32_t read_timeout_ms() const override { return AP_RANGEFINDER_MAVLINK_TIMEOUT_MS; }
 
 protected:
 

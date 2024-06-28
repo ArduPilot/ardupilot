@@ -42,6 +42,10 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
             // Map 1 to 0 as that is what ardupilot uses as the worst signal quality
             signal_quality = RangeFinder::SIGNAL_QUALITY_MIN;
         }
+        WITH_SEMAPHORE(_sem);
+        state.distance_m = distance_cm * 0.01f;
+        state.signal_quality_pct = signal_quality;
+        update_status();
     }
 }
 
@@ -67,24 +71,6 @@ int16_t AP_RangeFinder_MAVLink::min_distance_cm() const
         return params.min_distance_cm;
     }
     return _min_distance_cm;
-}
-
-/*
-   update the state of the sensor
-*/
-void AP_RangeFinder_MAVLink::update(void)
-{
-    //Time out on incoming data; if we don't get new
-    //data in 500ms, dump it
-    if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
-        set_status(RangeFinder::Status::NoData);
-        state.distance_m = 0.0f;
-        state.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
-    } else {
-        state.distance_m = distance_cm * 0.01f;
-        state.signal_quality_pct = signal_quality;
-        update_status();
-    }
 }
 
 #endif

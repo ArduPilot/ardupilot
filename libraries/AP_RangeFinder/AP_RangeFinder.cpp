@@ -242,6 +242,19 @@ void RangeFinder::update(void)
                 continue;
             }
             drivers[i]->update();
+
+            WITH_SEMAPHORE(drivers[i]->get_semaphore());
+            /*
+              ensure that all drivers timeout to NoData. If they are
+              currently in NotConnected state then leave it in that
+              state as they have never had any data
+             */
+            const uint32_t last_update_ms = drivers[i]->last_reading_ms();
+            const uint32_t now_ms = AP_HAL::millis();
+            if (state[i].status != Status::NotConnected &&
+                now_ms - last_update_ms > drivers[i]->read_timeout_ms()) {
+                state[i].status = Status::NoData;
+            }
         }
     }
 #if HAL_LOGGING_ENABLED

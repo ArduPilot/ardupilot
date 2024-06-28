@@ -84,10 +84,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
 void AP_RangeFinder_DroneCAN::update()
 {
     WITH_SEMAPHORE(_sem);
-    if ((AP_HAL::millis() - _last_reading_ms) > 500) {
-        //if data is older than 500ms, report NoData
-        set_status(RangeFinder::Status::NoData);
-    } else if (_status == RangeFinder::Status::Good && new_data) {
+    if (_status == RangeFinder::Status::Good && new_data) {
         //copy over states
         state.distance_m = _distance_cm * 0.01f;
         state.last_reading_ms = _last_reading_ms;
