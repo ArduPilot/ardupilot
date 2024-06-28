@@ -2499,6 +2499,43 @@ void emit_loaders(void) {
   emit_type_index(parsed_singletons, "singleton");
   emit_type_index(parsed_ap_objects, "ap_object");
 
+  fprintf(source, "static int binding_index(lua_State *L) {\n");
+  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
+  fprintf(source, "\n");
+  fprintf(source, "    bool found = false;\n");
+  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
+  fprintf(source, "        if (strcmp(name, singleton_fun[i].name) == 0) {\n");
+  fprintf(source, "            lua_newuserdata(L, 0);\n");
+  fprintf(source, "            if (luaL_newmetatable(L, name)) { // need to create metatable\n");
+  fprintf(source, "                lua_pushcfunction(L, singleton_fun[i].func);\n");
+  fprintf(source, "                lua_setfield(L, -2, \"__index\");\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "            lua_setmetatable(L, -2);\n");
+  fprintf(source, "            found = true;\n");
+  fprintf(source, "            break;\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    if (!found) {\n");
+  fprintf(source, "        for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
+  fprintf(source, "            if (strcmp(name, new_userdata[i].name) == 0) {\n");
+  fprintf(source, "                lua_pushcfunction(L, new_userdata[i].fun);\n");
+  fprintf(source, "                found = true;\n");
+  fprintf(source, "                break;\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    if (!found) {\n");
+  fprintf(source, "        return 0;\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "\n");
+  fprintf(source, "    // store found value to avoid a re-index\n");
+  fprintf(source, "    lua_pushvalue(L, -2);\n");
+  fprintf(source, "    lua_pushvalue(L, -2);\n");
+  fprintf(source, "    lua_settable(L, -5);\n");
+  fprintf(source, "\n");
+  fprintf(source, "    return 1;\n");
+  fprintf(source, "}\n\n");
+
   fprintf(source, "void load_generated_bindings(lua_State *L) {\n");
   fprintf(source, "    luaL_checkstack(L, 5, \"Out of stack\");\n"); // this is more stack space then we need, but should never fail
   fprintf(source, "    // userdata metatables\n");
@@ -2525,24 +2562,7 @@ void emit_loaders(void) {
   fprintf(source, "    }\n");
   fprintf(source, "\n");
 
-  fprintf(source, "    // singleton metatables\n");
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_newmetatable(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_pushcfunction(L, singleton_fun[i].func);\n");
-  fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-
-  fprintf(source, "        lua_setmetatable(L, -2);\n");
-  fprintf(source, "        lua_setglobal(L, singleton_fun[i].name);\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "\n");
-
-  fprintf(source, "    // userdata creation funcs\n");
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
-  fprintf(source, "        lua_pushcfunction(L, new_userdata[i].fun);\n");
-  fprintf(source, "        lua_setglobal(L, new_userdata[i].name);\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "\n");
+  fprintf(source, "    // singletons and userdata creation funcs are loaded dynamically\n");
 
   fprintf(source, "}\n\n");
 }
@@ -2601,7 +2621,7 @@ void emit_userdata_new_funcs(void) {
 void emit_sandbox(void) {
   fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
   fprintf(source, "    lua_createtable(L, 0, 1);\n");
-  fprintf(source, "    lua_pushglobaltable(L);\n");
+  fprintf(source, "    lua_pushcfunction(L, binding_index);\n");
   fprintf(source, "    lua_setfield(L, -2, \"__index\");\n");
   fprintf(source, "    lua_setmetatable(L, -2);\n");
   fprintf(source, "}\n");
