@@ -481,6 +481,17 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     analogin->init();
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
+#if HAL_HAVE_SAFETY_SWITCH
+    #ifndef HAL_SAFETY_SWITCH_PIN
+        #error HAL_HAVE_SAFETY_SWITCH set but no HAL_SAFETY_SWITCH_PIN defined
+    #endif // HAL_SAFETY_SWITCH_PIN
+
+    auto safety_switch = gpio->channel(HAL_SAFETY_SWITCH_PIN);
+    safety_switch->mode(HAL_GPIO_INPUT);
+    utilInstance.set_safety_switch(safety_switch);
+#endif // HAL_HAVE_SAFETY_SWITCH
+
+
     // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct
     // deadlock, and infinite loop in setup()") for details about the
     // order of scheduler initialize and setup on Linux.
