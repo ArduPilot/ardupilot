@@ -1,5 +1,51 @@
 ArduPilot Plane Release Notes:
 ------------------------------
+Release 4.5.5-beta1 1st July 2024
+
+Changes from 4.5.4
+
+1) Board specific enhancements and bug fixes
+
+- fixed IOMCU transmission errors when using bdshot
+- update relay parameter names on various boards
+- add ASP5033 airspeed in minimal builds
+- added RadiolinkPIX6
+- fix Aocoda-RC H743Dual motor issue
+- use ICM45686 as an ICM20649 alternative in CubeRedPrimary
+
+2) System level minor enhancements and bug fixes
+
+- correct use-after-free in script statistics
+- added arming check for eeprom full
+- fixed a block logging issue which caused log messages to be dropped
+- enable Socket SO_REUSEADDR on LwIP
+- removed IST8310 overrun message
+- added Siyi ZT6 support
+- added BTFL sidebar symbols to the OSD
+- added CRSF extended link stats to the OSD
+- use the ESC with the highest RPM in the OSD when only one can be displayed
+- support all Tramp power levels on high power VTXs
+- emit jump count in missions even if no limit
+- improve the bitmask indicating persistent parameters on bootloader flash	
+- fix duplicate error condition in the MicroStrain7
+
+3) AHRS / EKF fixes
+
+- fix infinite climb bug when using EK3_OGN_HGT_MASK
+
+4) Plane specific changes
+
+- fix rangefinder correction when terrain following is off
+- correct description of MIN_GROUNDSPEED parameter
+- correct Q_TRIM_PITCH description
+- ensure the dshot type gets set at startup
+
+5) Other minor enhancements and bug fixes
+
+- specify pymonocypher version in more places
+- added DroneCAN dependencies to custom builds
+
+------------------------------------------------------------------
 Release 4.5.4 12th June 2024
 
 Changes from 4.5.3
