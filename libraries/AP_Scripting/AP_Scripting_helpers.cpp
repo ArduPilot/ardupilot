@@ -21,7 +21,6 @@ int lua_new_Parameter(lua_State *L) {
 
     // This chunk is the same as the auto generated constructor
     void *ud = lua_newuserdata(L, sizeof(Parameter));
-    memset(ud, 0, sizeof(Parameter));
     new (ud) Parameter();
     luaL_getmetatable(L, "Parameter");
     lua_setmetatable(L, -2);
