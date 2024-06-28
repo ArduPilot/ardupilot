@@ -16,7 +16,9 @@ enum class TopicIndex: uint8_t {
     NAV_SAT_FIX_PUB,
     STATIC_TRANSFORMS_PUB,
     BATTERY_STATE_PUB,
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     IMU_PUB,
+#endif
     LOCAL_POSE_PUB,
     LOCAL_VELOCITY_PUB,
     GEOPOSE_PUB,
@@ -100,6 +102,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 5,
         },
     },
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::IMU_PUB),
         .pub_id = to_underlying(TopicIndex::IMU_PUB),
@@ -116,6 +119,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 5,
         },
     },
+#endif
     {
         .topic_id = to_underlying(TopicIndex::LOCAL_POSE_PUB),
         .pub_id = to_underlying(TopicIndex::LOCAL_POSE_PUB),

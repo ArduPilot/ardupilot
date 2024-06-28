@@ -32,7 +32,9 @@
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
+#endif
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
@@ -434,6 +436,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     }
 }
 
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 {
     update_topic(msg.header.stamp);
@@ -471,6 +474,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity_covariance[0] = -1;
     msg.linear_acceleration_covariance[0] = -1;
 }
+#endif
 
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
@@ -1034,6 +1038,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1048,6 +1053,7 @@ void AP_DDS_Client::write_imu_topic()
         }
     }
 }
+#endif
 
 void AP_DDS_Client::write_geo_pose_topic()
 {
@@ -1128,11 +1134,13 @@ void AP_DDS_Client::update()
         write_tx_local_velocity_topic();
     }
 
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
+#endif
 
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);
