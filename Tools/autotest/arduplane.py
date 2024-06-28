@@ -3261,6 +3261,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test InertialLabs EAHRS support'''
         self.fly_external_AHRS("ILabs", 5, "ap1.txt")
 
+    def AdvancedNavigationEAHRS(self):
+        '''Test AdvancedNavigation EAHRS series 5 support'''
+        self.fly_external_AHRS("AdNav", 3, "ap1.txt")
+
     def GpsSensorPreArmEAHRS(self):
         '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
         self.customise_SITL_commandline(["--serial4=sim:MicroStrain7"])
@@ -5498,6 +5502,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.AdvancedNavigationEAHRS,
             self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
             self.DeadreckoningNoAirSpeed,
