@@ -264,6 +264,11 @@ bool AP_RPM::get_rpm(uint8_t instance, float &rpm_value) const
     return true;
 }
 
+float AP_RPM::get_rpm_no_check(uint8_t instance) const
+{
+    return state[instance].rate_rpm;
+}
+
 // check settings are valid
 bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 {
@@ -295,18 +300,26 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 #if HAL_LOGGING_ENABLED
 void AP_RPM::Log_RPM() const
 {
-    float rpm1 = -1, rpm2 = -1;
+    // update logging for each instance
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] == nullptr) {
+            // don't log unused instances
+            continue;
+        }
+        float rpm = get_rpm_no_check(i);
+        float qual = get_signal_quality(i);
+        bool h = healthy(i);
 
-    get_rpm(0, rpm1);
-    get_rpm(1, rpm2);
-
-    const struct log_RPM pkt{
-        LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
-        time_us     : AP_HAL::micros64(),
-        rpm1        : rpm1,
-        rpm2        : rpm2
-    };
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+        const struct log_RPM pkt{
+            LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
+            time_us     : AP_HAL::micros64(),
+            inst        : i,
+            rpm         : rpm,
+            quality     : qual,
+            health      : uint8_t(h)
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 #endif
 

@@ -90,6 +90,7 @@ public:
       return RPM for a sensor. Return -1 if not healthy
      */
     bool get_rpm(uint8_t instance, float &rpm_value) const;
+    float get_rpm_no_check(uint8_t instance) const;
 
     /*
       return signal quality for a sensor.
