@@ -93,7 +93,6 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             pull_from_tgt_buffer(tgt_cnt, tgt_ampl, tgt_time);
             push_to_meas_buffer(0, 0.0f, 0);
             push_to_tgt_buffer(0, 0.0f, 0);
-            // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tgt_cnt=%f meas_cnt=%f", (double)(tgt_cnt), (double)(meas_cnt));
 
             if (meas_cnt == tgt_cnt && meas_cnt != 0) {
                 if (tgt_ampl > 0.0f) {
@@ -111,8 +110,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             } else if (meas_cnt < tgt_cnt) {
                 pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
                 push_to_meas_buffer(0, 0.0f, 0);
-            }                
-
+            }        
         }
         if (gcnt > 0) {
             curr_test_gain = sum_gain / gcnt;
@@ -140,7 +138,6 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
 
         curr_test_freq = tgt_freq;
         cycle_complete = true;
-        // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: cycles completed");
         return;
     }
 
@@ -160,7 +157,9 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             sweep_tgt.count_m1 = min_target_cnt - 1;
             sweep_tgt.amplitude_m1 = temp_tgt_ampl;
             temp_tgt_ampl = temp_max_target - temp_min_target;
-            push_to_tgt_buffer(min_target_cnt,temp_tgt_ampl,temp_max_tgt_time);
+            if (excitation == DWELL) {
+                push_to_tgt_buffer(min_target_cnt,temp_tgt_ampl,temp_max_tgt_time);
+            }
         }
 
     } else if (((response == ANGLE && !is_positive(prev_target) && is_positive(target_rate))
@@ -189,8 +188,9 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             sweep_meas.count_m1 = min_meas_cnt - 1;
             sweep_meas.amplitude_m1 = temp_meas_ampl;
             temp_meas_ampl = temp_max_meas - temp_min_meas;
-            push_to_meas_buffer(min_meas_cnt,temp_meas_ampl,temp_max_meas_time);
-
+            if (excitation == DWELL) {
+                push_to_meas_buffer(min_meas_cnt,temp_meas_ampl,temp_max_meas_time);
+            }
             if (excitation == SWEEP) {
                 float tgt_period = 0.001f * (temp_max_tgt_time - sweep_tgt.max_time_m1);
                 if (!is_zero(tgt_period)) {
