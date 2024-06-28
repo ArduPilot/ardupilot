@@ -2527,16 +2527,11 @@ void emit_loaders(void) {
 
   fprintf(source, "    // singleton metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
+  fprintf(source, "        lua_newuserdata(L, 0);\n");
   fprintf(source, "        luaL_newmetatable(L, singleton_fun[i].name);\n");
   fprintf(source, "        lua_pushcfunction(L, singleton_fun[i].func);\n");
   fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-  fprintf(source, "        lua_pushstring(L, \"__call\");\n");
-  fprintf(source, "        lua_pushvalue(L, -2);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
 
-  fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_getmetatable(L, singleton_fun[i].name);\n");
   fprintf(source, "        lua_setmetatable(L, -2);\n");
   fprintf(source, "        lua_setglobal(L, singleton_fun[i].name);\n");
   fprintf(source, "    }\n");
