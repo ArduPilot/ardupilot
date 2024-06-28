@@ -149,6 +149,15 @@ private:
         uint32_t last_send_ms;
         ByteBuffer *buf;
     } _rtcm_stream;
+
+    // returns true if the supplied GPS_Type is a DroneCAN GPS type
+    static bool is_dronecan_gps_type(AP_GPS::GPS_Type type) {
+        return (
+            type == AP_GPS::GPS_TYPE_UAVCAN ||
+            type == AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE ||
+            type == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER
+       );
+    }
 };
 
 #endif  // AP_GPS_DRONECAN_ENABLED

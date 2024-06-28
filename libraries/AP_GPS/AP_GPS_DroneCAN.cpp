@@ -227,24 +227,13 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 
 bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
 {
-    // only do these checks if there is at least one DroneCAN GPS:
-    bool found_uavan_type = false;
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-        const auto type = AP::gps().params[i].type;
-        if (type != AP_GPS::GPS_TYPE_UAVCAN &&
-            type != AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE &&
-            type != AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER) {
-            continue;
-        }
-        found_uavan_type = true;
-   }
-    if (!found_uavan_type) {
-        return true;
-    }
-
     // lint parameters and detected node IDs:
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         const auto &params_i = AP::gps().params[i];
+        // we are only interested in parameters for DroneCAN GPSs:
+        if (!is_dronecan_gps_type(params_i.type)) {
+            continue;
+        }
         bool overriden_node_found = false;
         bool bad_override_config = false;
         if (params_i.override_node_id == 0) {
@@ -253,6 +242,10 @@ bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t
         }
         for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
             const auto &params_j = AP::gps().params[j];
+            // we are only interested in parameters for DroneCAN GPSs:
+            if (!is_dronecan_gps_type(params_j.type)) {
+                continue;
+            }
             if (params_i.override_node_id == params_j.override_node_id && (i != j)) {
                 bad_override_config = true;
                 break;
