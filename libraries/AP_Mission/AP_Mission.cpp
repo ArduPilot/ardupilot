@@ -976,6 +976,22 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     case MAV_CMD_NAV_VTOL_LAND:
         nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
         break;
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+        nan_mask = ~((1 << 1) | (1 << 2) | (1 << 3)); // param 2, 3 and 4 can be nan
+        break;
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
+        break;
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        nan_mask = ~((1 << 1) | (1 << 2) | (1 << 3)); // param 2, 3 and 4 can be nan
+        break;
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:    // Special case for MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW: replicates sanity check in AP_MOUNT library
+        if ((isnan(packet.param1) != isnan(packet.param2)) ||             // Reject if only one angle is NaN
+            (isnan(packet.param3) != isnan(packet.param4)) ||             // Reject if only one turn rate is NaN
+            (isnan(packet.param1) && isnan(packet.param2) && isnan(packet.param3) && isnan(packet.param4)))       // Reject if all are NaN
+            return MAV_MISSION_INVALID;
+        else
+            return MAV_MISSION_ACCEPTED;
     default:
         nan_mask = 0xff;
         break;
@@ -1350,10 +1366,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = packet.param1;
-        cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg = packet.param2;
-        cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs = packet.param3;
-        cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs = packet.param4;
+        cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = isnan(packet.param1) ? INT8_MAX : packet.param1;
+        cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg = isnan(packet.param2) ? INT16_MAX : packet.param2;
+        cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs = isnan(packet.param3) ? INT8_MAX : packet.param3;
+        cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs = isnan(packet.param4) ? INT8_MAX : packet.param4;
         cmd.content.gimbal_manager_pitchyaw.flags = packet.x;
         cmd.content.gimbal_manager_pitchyaw.gimbal_id = packet.z;
         break;
@@ -1864,11 +1880,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;
         break;
 
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
-        packet.param1 = cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg;
-        packet.param2 = cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg;
-        packet.param3 = cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs;
-        packet.param4 = cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs;
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW: 
+        packet.param1 = (cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg == INT8_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg;
+        packet.param2 = (cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg == INT16_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg;
+        packet.param3 = (cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs == INT8_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs;
+        packet.param4 = (cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs == INT8_MAX) ? NAN : cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs;
         packet.x = cmd.content.gimbal_manager_pitchyaw.flags;
         packet.z = cmd.content.gimbal_manager_pitchyaw.gimbal_id;
         break;
