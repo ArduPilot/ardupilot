@@ -88,7 +88,7 @@ state.total_fuel_cm3 = 0.0
    check for input and parse data
 --]]
 local function check_input()
-   local n_bytes = uart:available():toint()
+   local n_bytes = uart:available()
    --gcs:send_text(MAV_SEVERITY.INFO, string.format("n_bytes=%u %.2f", n_bytes, millis():tofloat()*0.001))
    if n_bytes < 82 then
       return
@@ -108,7 +108,7 @@ local function check_input()
    state.last_read_us = micros()
 
    -- discard the rest
-   discard_bytes(uart:available():toint())
+   discard_bytes(uart:available())
 end
 
 --[[

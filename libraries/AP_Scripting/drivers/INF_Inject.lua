@@ -168,7 +168,7 @@ end
 --]]
 local function check_input()
    local packet_size = 83
-   local n_bytes = uart:available():toint()
+   local n_bytes = uart:available()
    if n_bytes < packet_size then
       return false
    end

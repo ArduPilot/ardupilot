@@ -14,13 +14,13 @@ public:
 
     void begin(uint32_t baud);
 
-    size_t write(uint8_t c);
+    int32_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
     int16_t read(void);
     ssize_t read(uint8_t *buffer, uint16_t count);
 
-    uint32_t available(void);
+    int32_t available(void);
 
     void set_flow_control(enum AP_HAL::UARTDriver::flow_control fcs);
 

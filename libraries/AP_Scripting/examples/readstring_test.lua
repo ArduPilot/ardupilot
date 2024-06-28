@@ -32,14 +32,14 @@ end
 
 function update()
    -- test using 4.5 method
-   local n = port:available():toint()
+   local n = port:available()
    if n > 0 then
       local str = get_string_45(n)
       gcs:send_text(0, string.format("Received: '%s'", str))
    end
 
    -- test using 4.4 method (just so we don't have an unused function in lua check)
-   n = port:available():toint()
+   n = port:available()
    if n > 0 then
       local str = get_string_44(n)
       gcs:send_text(0, string.format("Received: '%s'", str))

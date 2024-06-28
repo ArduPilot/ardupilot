@@ -149,7 +149,7 @@ state.last_status = -1
    check for input and parse data
 --]]
 local function check_input()
-   local n_bytes = uart:available():toint()
+   local n_bytes = uart:available()
    --gcs:send_text(MAV_SEVERITY.INFO, string.format("n_bytes=%u %.2f", n_bytes, millis():tofloat()*0.001))
    if n_bytes < 31 then
       return
