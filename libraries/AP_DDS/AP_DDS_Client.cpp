@@ -50,6 +50,8 @@ tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 #if AP_DDS_SENSOR_SUBS_ENABLED
+sensor_msgs_msg_FluidPressure AP_DDS_Client::rx_air_pressure_0_topic {};
+sensor_msgs_msg_MagneticField AP_DDS_Client::rx_magnetometer_0_topic {};
 sensor_msgs_msg_NavSatFix AP_DDS_Client::rx_nav_sat_fix_0_topic {};
 #endif
 
@@ -601,12 +603,39 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #if AP_DDS_SENSOR_SUBS_ENABLED
+    case topics[to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_FluidPressure_deserialize_topic(ub, &rx_air_pressure_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/FluidPressure (pressure: %f) Pa.",
+        //     msg_prefix, rx_air_pressure_0_topic.fluid_pressure);
+
+        break;
+    }
+    case topics[to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_MagneticField_deserialize_topic(ub, &rx_magnetometer_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/MagneticField (%f, %f, %f) T.",
+        //     msg_prefix, rx_magnetometer_0_topic.magnetic_field.x, rx_magnetometer_0_topic.magnetic_field.y, rx_magnetometer_0_topic.magnetic_field.z);
+
+        break;
+    }
     case topics[to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB)].dr_id.id: {
         const bool success = sensor_msgs_msg_NavSatFix_deserialize_topic(ub, &rx_nav_sat_fix_0_topic);
 
         if (success == false) {
             break;
         }
+
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/NavSatFix (lat: %f, lon: %f, alt: %f).",
+        //     msg_prefix, rx_nav_sat_fix_0_topic.latitude, rx_nav_sat_fix_0_topic.longitude, rx_nav_sat_fix_0_topic.altitude);
 
         break;
     }

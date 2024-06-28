@@ -13,8 +13,10 @@
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
+#include "sensor_msgs/msg/FluidPressure.h"
 #include "sensor_msgs/msg/Imu.h"
 #include "sensor_msgs/msg/Joy.h"
+#include "sensor_msgs/msg/MagneticField.h"
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
 #include "geographic_msgs/msg/GeoPointStamped.h"
@@ -77,7 +79,11 @@ private:
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
 #if AP_DDS_SENSOR_SUBS_ENABLED
-    // incoming nav sat sensor
+    // incoming air pressure data
+    static sensor_msgs_msg_FluidPressure rx_air_pressure_0_topic;
+    // incoming magnetometer data
+    static sensor_msgs_msg_MagneticField rx_magnetometer_0_topic;
+    // incoming nav sat data
     static sensor_msgs_msg_NavSatFix rx_nav_sat_fix_0_topic;
 #endif
     // outgoing transforms
