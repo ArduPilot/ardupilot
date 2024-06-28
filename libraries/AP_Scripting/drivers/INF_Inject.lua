@@ -140,6 +140,7 @@ local function read_bytes(n)
    local ret = ""
    for _ = 1, n do
       local b = uart:read()
+      assert(b)
       state.chk0 = state.chk0 ~ b
       state.chk1 = state.chk1 ~ state.chk0
       ret = ret .. string.char(b)

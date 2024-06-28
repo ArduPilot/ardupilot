@@ -803,6 +803,21 @@ int lua_serial_writestring(lua_State *L)
     return 1;
 }
 
+int lua_serial_read(lua_State *L) {
+    binding_argcheck(L, 1);
+
+    AP_Scripting_SerialAccess * port = check_AP_Scripting_SerialAccess(L, 1);
+
+    uint8_t c;
+    if (port->read(c)) {
+        lua_pushinteger(L, c);
+    } else {
+        lua_pushnil(L); // error, return nil
+    }
+
+    return 1;
+}
+
 int lua_serial_readstring(lua_State *L) {
     binding_argcheck(L, 2);
 
@@ -815,12 +830,12 @@ int lua_serial_readstring(lua_State *L) {
 
     // read up to that number of bytes
     const ssize_t read_bytes = port->read(data, req_bytes);
-    if (read_bytes < 0) {
-        return 0; // error, return nil
+    if (read_bytes >= 0) {
+        // push the buffer as a string, truncated to the number of bytes actually read
+        luaL_pushresultsize(&b, read_bytes);
+    } else {
+        lua_pushnil(L); // error, return nil
     }
-
-    // push the buffer as a string, truncated to the number of bytes actually read
-    luaL_pushresultsize(&b, read_bytes);
 
     return 1;
 }

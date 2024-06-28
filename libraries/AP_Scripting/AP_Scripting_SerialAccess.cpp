@@ -37,13 +37,9 @@ size_t AP_Scripting_SerialAccess::write(const uint8_t *buffer, size_t size)
     return ON_DEVICE_PORT(write, buffer, size);
 }
 
-int16_t AP_Scripting_SerialAccess::read(void)
+bool AP_Scripting_SerialAccess::read(uint8_t &c)
 {
-    uint8_t c;
-    if (read(&c, 1) != 1) {
-        return -1;
-    }
-    return c;
+    return read(&c, 1) > 0;
 }
 
 ssize_t AP_Scripting_SerialAccess::read(uint8_t* buffer, uint16_t count)

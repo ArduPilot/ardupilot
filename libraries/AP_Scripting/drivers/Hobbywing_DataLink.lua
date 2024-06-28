@@ -67,7 +67,9 @@ uart:begin(115200)
 local function read_bytes(n)
    local ret = ""
    for _ = 1, n do
-      ret = ret .. string.char(uart:read())
+      local b = uart:read()
+      assert(b)
+      ret = ret .. string.char(b)
    end
    return ret
 end

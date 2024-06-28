@@ -1250,7 +1250,7 @@ function AP_Scripting_SerialAccess_ud:write(value) end
 function AP_Scripting_SerialAccess_ud:writestring(data) end
 
 -- Reads a single byte from the serial port
----@return integer -- byte, -1 if error or none available
+---@return integer|nil -- byte, or nil on error/none available
 function AP_Scripting_SerialAccess_ud:read() end
 
 -- Reads up to `count` bytes and returns the bytes read as a string. No bytes

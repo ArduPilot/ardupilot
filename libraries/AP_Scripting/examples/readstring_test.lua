@@ -17,6 +17,7 @@ local function get_string_44(n)
    local ret = ""
    for _ = 1, n do
       local b = port:read()
+      assert(b)
       ret = ret .. string.char(b)
    end
    return ret

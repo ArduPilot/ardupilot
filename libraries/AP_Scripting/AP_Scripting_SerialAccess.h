@@ -17,7 +17,7 @@ public:
     int32_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
-    int16_t read(void);
+    bool read(uint8_t &c);
     ssize_t read(uint8_t *buffer, uint16_t count);
 
     int32_t available(void);
