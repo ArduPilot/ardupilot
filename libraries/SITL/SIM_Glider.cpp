@@ -14,6 +14,26 @@
  */
 /*
   glider model for high altitude balloon drop
+
+  controls:
+    - servo6: balloon lift, 1000 for no lift, 2000 for maximum lift
+    - servo10: balloon cut, this cuts away the balloon when high
+
+  Note that the glider starts off in a lifted by tail pose, with pitch
+  -80 degrees. The balloon then lifts the glider above the ground. The
+  balloon automatically bursts at a height of SIM_GLD_BLN_BRST meters,
+  or can be cut away early with servo10.
+
+  The maximum rate of the balloon lift is in SIM_GLD_BLN_RATE, in m/s
+
+  To perform a takeoff first arm on the ground then use
+    servo set 6 2000
+  to release the ground hold. Use this to cut away the balloon:
+    servo set 10 2000
+
+  For an automatic mission, NAV_ALTITUDE_WAIT should be used to wait
+  for a desired altitude under balloon lift. Then a DO_SET_SERVO with
+  servo 10 and a value of 2000 to cut away the balloon.
  */
 
 #include "SIM_Glider.h"
