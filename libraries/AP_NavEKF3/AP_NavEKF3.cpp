@@ -1338,7 +1338,7 @@ uint8_t NavEKF3::getActiveAirspeed() const
     if (core) {
         return core[primary].getActiveAirspeed();
     } else {
-        return 255;
+        return UINT8_MAX;
     }
 }
 
