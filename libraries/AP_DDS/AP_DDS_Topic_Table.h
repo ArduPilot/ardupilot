@@ -30,7 +30,7 @@ enum class TopicIndex: uint8_t {
     GLOBAL_POSITION_SUB,
 
 #if AP_DDS_SENSOR_SUBS_ENABLED
-    SENSOR_AIR_PRESSURE_0_SUB,
+    SENSOR_FLUID_PRESSURE_0_SUB,
     SENSOR_MAGNETOMETER_0_SUB,
     SENSOR_NAV_SAT_0_SUB,
 #endif
@@ -273,11 +273,11 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
 
 #if AP_DDS_SENSOR_SUBS_ENABLED
     {
-        .topic_id = to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB),
-        .pub_id = to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB),
-        .sub_id = to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB),
-        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB), .type=UXR_DATAWRITER_ID},
-        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB), .type=UXR_DATAREADER_ID},
+        .topic_id = to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB),
+        .pub_id = to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB),
+        .sub_id = to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataReader,
         .topic_name = "rt/ap/in/sensors/air_pressure0",
         .type_name = "sensor_msgs::msg::dds_::FluidPressure_",

@@ -603,13 +603,25 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #if AP_DDS_SENSOR_SUBS_ENABLED
-    case topics[to_underlying(TopicIndex::SENSOR_AIR_PRESSURE_0_SUB)].dr_id.id: {
+    case topics[to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB)].dr_id.id: {
         const bool success = sensor_msgs_msg_FluidPressure_deserialize_topic(ub, &rx_air_pressure_0_topic);
 
         if (success == false) {
             break;
         }
 
+#if AP_BARO_DDS_ENABLED
+    {
+        AP_ExternalAHRS::baro_data_message_t baro;
+        baro.instance = 0;
+        baro.pressure_pa = rx_air_pressure_0_topic.fluid_pressure;
+
+        //! @todo(srmainwaring) sensor_msgs/FluidPressure does not provide temp.
+        baro.temperature = 30.17;
+
+        AP::baro().handle_external(baro);
+    }
+#endif
         // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/FluidPressure (pressure: %f) Pa.",
         //     msg_prefix, rx_air_pressure_0_topic.fluid_pressure);
 
