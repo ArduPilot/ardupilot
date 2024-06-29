@@ -42,6 +42,7 @@
 #include "AP_Baro_ICM20789.h"
 #include "AP_Baro_LPS2XH.h"
 #include "AP_Baro_FBM320.h"
+#include "AP_Baro_DDS.h"
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_Dummy.h"
 #include "AP_Baro_DroneCAN.h"
@@ -560,6 +561,10 @@ void AP_Baro::init(void)
     }
 #endif
 
+#if AP_BARO_DDS_ENABLED
+    ADD_BACKEND(NEW_NOTHROW AP_Baro_DDS(*this));
+#endif
+
 #if AP_BARO_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
     if (serial_port >= 0) {
@@ -1046,7 +1051,7 @@ void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
 }
 #endif
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
+#if (AP_BARO_EXTERNALAHRS_ENABLED || AP_BARO_DDS_ENABLED)
 /*
   handle ExternalAHRS barometer data
  */
@@ -1056,7 +1061,7 @@ void AP_Baro::handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt)
         drivers[i]->handle_external(pkt);
     }
 }
-#endif  // AP_BARO_EXTERNALAHRS_ENABLED
+#endif  // (AP_BARO_EXTERNALAHRS_ENABLED || AP_BARO_DDS_ENABLED)
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_Baro::arming_checks(size_t buflen, char *buffer) const

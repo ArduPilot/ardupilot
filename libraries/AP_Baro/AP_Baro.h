@@ -29,6 +29,7 @@ class AP_Baro
     friend class AP_Baro_Backend;
     friend class AP_Baro_SITL; // for access to sensors[]
     friend class AP_Baro_DroneCAN; // for access to sensors[]
+    friend class AP_Baro_DDS; // for access to sensors[]
 
 public:
     AP_Baro();
@@ -217,7 +218,7 @@ public:
 #if AP_BARO_MSP_ENABLED
     void handle_msp(const MSP::msp_baro_data_message_t &pkt);
 #endif
-#if AP_BARO_EXTERNALAHRS_ENABLED
+#if (AP_BARO_EXTERNALAHRS_ENABLED || AP_BARO_DDS_ENABLED)
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
 
