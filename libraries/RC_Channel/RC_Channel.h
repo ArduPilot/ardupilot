@@ -11,7 +11,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
 
+#ifndef NUM_RC_CHANNELS
 #define NUM_RC_CHANNELS 16
+#endif
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
