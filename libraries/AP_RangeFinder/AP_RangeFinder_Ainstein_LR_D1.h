@@ -46,7 +46,7 @@ private:
     // quality is not available
     int8_t get_signal_quality_pct() const override { return signal_quality_pct; };
 
-    static void report_malfunction(const uint8_t _malfunction_alert_);
+    static void report_malfunction(const uint8_t _malfunction_alert_, const uint8_t _malfunction_alert_prev_);
 
     enum class MalfunctionAlert : uint8_t {
         Temperature       = (1U << 0),  // 0x01
