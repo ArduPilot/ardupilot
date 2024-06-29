@@ -2209,23 +2209,33 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
     float rounding_addition = 0.01f;
         
     // handle variables with standard type IDs
-    if (var_type == AP_PARAM_FLOAT) {
+    switch (var_type) {
+    case AP_PARAM_FLOAT:
         ((AP_Float *)this)->set(value);
-    } else if (var_type == AP_PARAM_INT32) {
+        break;
+    case AP_PARAM_INT32: {
         if (value < 0) rounding_addition = -rounding_addition;
         float v = value+rounding_addition;
         v = constrain_float(v, INT32_MIN, INT32_MAX);
         ((AP_Int32 *)this)->set(v);
-    } else if (var_type == AP_PARAM_INT16) {
+        break;
+    }
+    case AP_PARAM_INT16: {
         if (value < 0) rounding_addition = -rounding_addition;
         float v = value+rounding_addition;
         v = constrain_float(v, INT16_MIN, INT16_MAX);
         ((AP_Int16 *)this)->set(v);
-    } else if (var_type == AP_PARAM_INT8) {
+        break;
+    }
+    case AP_PARAM_INT8: {
         if (value < 0) rounding_addition = -rounding_addition;
         float v = value+rounding_addition;
         v = constrain_float(v, INT8_MIN, INT8_MAX);
         ((AP_Int8 *)this)->set(v);
+        break;
+    }
+    default:
+        break;
     }
 }
 

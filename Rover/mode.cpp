@@ -122,11 +122,17 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
 
     // check for special case of input and output throttle being in opposite directions
     float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
-    if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
-        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
-         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
-        steering_out *= -1;
+    if (is_negative(throttle_out) != is_negative(throttle_out_limited)) {
+        switch (g.pilot_steer_type) {
+        case PILOT_STEER_TYPE_DEFAULT:
+        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
+            steering_out *= -1;
+            break;
+        default:
+            break;
+        }
     }
+
     throttle_out = throttle_out_limited;
 }
 
@@ -138,11 +144,17 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
     speed_out = desired_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
     // check for special case of input and output throttle being in opposite directions
     float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
-    if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
-        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
-         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
-        steering_out *= -1;
+    if (is_negative(speed_out) != is_negative(speed_out_limited)) {
+        switch (g.pilot_steer_type) {
+        case PILOT_STEER_TYPE_DEFAULT:
+        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
+            steering_out *= -1;
+            break;
+        default:
+            break;
+        }
     }
+
     speed_out = speed_out_limited;
 }
 
