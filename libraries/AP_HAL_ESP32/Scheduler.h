@@ -50,6 +50,8 @@ public:
 
     void     print_stats(void) ;
     void     print_main_loop_rate(void);
+    void     print_real_time_stats(TickType_t xTicksToWait);
+
 
     uint16_t get_loop_rate_hz(void);
     AP_Int16 _active_loop_rate_hz;
