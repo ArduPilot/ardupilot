@@ -184,6 +184,7 @@ public:
     // pause and resume a mode
     virtual bool pause() { return false; };
     virtual bool resume() { return false; };
+    void make_safe_ground_handling(bool force_throttle_unlimited = false);
 
     // true if weathervaning is allowed in the current mode
 #if WEATHERVANE_ENABLED == ENABLED
@@ -196,7 +197,6 @@ protected:
     bool is_disarmed_or_landed() const;
     void zero_throttle_and_relax_ac(bool spool_up = false);
     void zero_throttle_and_hold_attitude();
-    void make_safe_ground_handling(bool force_throttle_unlimited = false);
 
     // Return stopping point as a location with above origin alt frame
     Location get_stopping_point() const;
