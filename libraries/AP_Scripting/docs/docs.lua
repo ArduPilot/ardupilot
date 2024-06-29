@@ -2486,6 +2486,15 @@ function vehicle:is_taking_off() end
 function vehicle:is_landing() end
 
 -- desc
+---@return integer
+---| '0' # unknown
+---| '1' # landed (on ground) 
+---| '2' # in air
+---| '3' # currently taking off
+---| '4' # currently landing 
+function vehicle:get_landed_state() end
+
+-- desc
 onvif = {}
 
 -- desc
