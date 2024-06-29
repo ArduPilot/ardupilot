@@ -28,6 +28,15 @@
 #define SBF_DISK_FULL     (1 << 8)
 #define SBF_DISK_MOUNTED  (1 << 9)
 
+#define SBF_0_1_HZ  "sec10";
+#define SBF_0_2_HZ  "sec5";
+#define SBF_0_5_HZ  "sec2";
+#define SBF_1_0_HZ  "sec1";
+#define SBF_2_0_HZ  "msec500";
+#define SBF_5_0_HZ  "msec200";
+#define SBF_10_0_HZ "msec100";
+#define SBF_20_0_HZ "msec50";
+
 class AP_GPS_SBF : public AP_GPS_Backend
 {
 public:
@@ -73,6 +82,7 @@ private:
     enum class Config_State {
         Baud_Rate,
         SSO,
+        Log,
         Blob,
         SBAS,
         SGA,
@@ -84,7 +94,6 @@ private:
     "srd,Moderate,UAV",
     "sem,PVT,5",
     "spm,Rover,all",
-    "sso,Stream2,Dsk1,postprocess+event+comment+ReceiverStatus,msec100",
 #if defined (GPS_SBF_EXTRA_CONFIG)
     GPS_SBF_EXTRA_CONFIG
 #endif
