@@ -805,6 +805,17 @@ bool AP_Arming::rc_calibration_checks(bool report)
             check_failed(ARMING_CHECK_RC, report, "RC%d_MAX is less than RC%d_TRIM", i + 1, i + 1);
             check_passed = false;
         }
+
+        // Expect the width of the channel to be above and below the center plus and minus 200 PMM
+        uint16_t center =  c->get_radio_max() - c->get_radio_min() / 2;
+        if (c->get_radio_min() > center) {
+            check_failed(ARMING_CHECK_RC, report, "RC%d_MIN is greater than %d %d", i + 1, center);
+            check_passed = false;
+        }
+        if (c->get_radio_max() < center) {
+            check_failed(ARMING_CHECK_RC, report, "RC%d_MAX is less than %d %d", i + 1, center);
+            check_passed = false;
+        }
     }
 
     return check_passed;
