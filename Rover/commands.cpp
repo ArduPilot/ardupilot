@@ -33,7 +33,7 @@ bool Rover::set_home(const Location& loc, bool lock)
     mode_auto.mission.write_home_to_storage();
 
     // send text of home position to ground stations
-    gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
+    gcs().send_text(MAV_SEVERITY_INFO, "Set HOME to %.7f %.7f at %.2fm",
             static_cast<double>(loc.lat * 1.0e-7f),
             static_cast<double>(loc.lng * 1.0e-7f),
             static_cast<double>(loc.alt * 0.01f));
