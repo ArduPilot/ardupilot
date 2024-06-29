@@ -454,43 +454,70 @@ float ParametersG2::FWD_BATT_CMP::apply_throttle(float throttle) const
 #if AP_BATTERY_WATT_MAX_ENABLED
 void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
 {
-    uint32_t now = millis();
+    const uint32_t now_ms = millis();
+    const float throttle_demand = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (battery.overpower_detected()) {
         // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
-        // throttle limit will attack by 10% per second
-        
-        if (is_positive(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) && // demanding too much positive thrust
-            throttle_watt_limit_max < max_throttle - 25 &&
-            now - throttle_watt_limit_timer_ms >= 1) {
-            // always allow for 25% throttle available regardless of battery status
-            throttle_watt_limit_timer_ms = now;
-            throttle_watt_limit_max++;
-            
-        } else if (is_negative(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) &&
-                   min_throttle < 0 && // reverse thrust is available
-                   throttle_watt_limit_min < -(min_throttle) - 25 &&
-                   now - throttle_watt_limit_timer_ms >= 1) {
-            // always allow for 25% throttle available regardless of battery status
-            throttle_watt_limit_timer_ms = now;
-            throttle_watt_limit_min++;
+        // throttle limit will attack by 50% per second
+        if (now_ms - throttle_watt_limit_timer_ms >= 20) {
+            if (is_positive(throttle_demand) && throttle_watt_limit_max < max_throttle) {
+                // demanding too much positive thrust
+                throttle_watt_limit_timer_ms = now_ms;
+                throttle_watt_limit_max++;
+                
+            } else if (is_negative(throttle_demand) && min_throttle < 0 && throttle_watt_limit_min < -(min_throttle)) {
+                // demanding too much negative thrust
+                throttle_watt_limit_timer_ms = now_ms;
+                throttle_watt_limit_min++;
+            }
         }
         
-    } else if (now - throttle_watt_limit_timer_ms >= 1000) {
-        // it has been 1 second since last over-current, check if we can resume higher throttle.
+    } else if (throttle_watt_limit_min == 0 && throttle_watt_limit_max == 0) {
+        // no limiting happening, nothing to do
+        if (throttle_watt_limit_last_gcs_ms > 0) {
+            throttle_watt_limit_last_gcs_ms = 0;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Throttle no longer limited");
+        }
+        return;
+    }
+    
+    // check to recover the throttle limit since we're not overloading
+    int8_t most_limited_of_min_and_max = MAX(throttle_watt_limit_min, throttle_watt_limit_max);
+    int8_t most_throttle_of_min_and_max = (most_limited_of_min_and_max == throttle_watt_limit_min) ? -min_throttle : max_throttle;
+    const int16_t most_throttle_minus_limit = most_throttle_of_min_and_max - most_limited_of_min_and_max;
+
+    // if we're limiting all the way (demand - min/max == 0) then the delay is larger
+    const uint32_t recovery_delay_ms = (most_throttle_minus_limit == 0) ? 5000 : 1000;
+
+    if (now_ms - throttle_watt_limit_timer_ms >= recovery_delay_ms) {
+        // it has been 1 second since last over-current, or 5s if throttle is pushed all the way down to 0%, check if we can resume higher throttle.
         // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
         // throttle limit will release by 1% per second
-        if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) > throttle_watt_limit_max && // demanding max forward thrust
-            throttle_watt_limit_max > 0) { // and we're currently limiting it
-            throttle_watt_limit_timer_ms = now;
+
+        if (throttle_demand >= throttle_watt_limit_max && throttle_watt_limit_max > 0) {
+            // we're not overloaded and demanding forward thrust beyond our currently limited max
+            throttle_watt_limit_timer_ms = now_ms;
             throttle_watt_limit_max--;
             
-        } else if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < throttle_watt_limit_min && // demanding max negative thrust
-                   throttle_watt_limit_min > 0) { // and we're limiting it
-            throttle_watt_limit_timer_ms = now;
+        } else if (throttle_demand <= -throttle_watt_limit_min && throttle_watt_limit_min > 0) {
+            // we're not overloaded and demanding reverse thrust beyond our currently limited min
+            throttle_watt_limit_timer_ms = now_ms;
             throttle_watt_limit_min--;
         }
     }
     
+    // announce to user so they are aware of this event happening every 5 seconds
+    if (now_ms - throttle_watt_limit_last_gcs_ms >= 5000) {
+        if (throttle_watt_limit_last_gcs_ms == 0) {
+            // initial message is handled differently because it will always show max-1 which isn't very useful.
+            // Need to give it a few seconds to see how much we're actually limiting the throttle
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Throttle limited by battery Watt limit!");
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Throttle limited by %d%% to Max:%d%%", most_limited_of_min_and_max, most_throttle_minus_limit);
+        }
+        throttle_watt_limit_last_gcs_ms = now_ms;
+    }
+
     max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
     if (min_throttle < 0) {
         min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
