@@ -474,13 +474,13 @@ bool Copter::update_target_location(const Location &old_loc, const Location &new
 
 #endif // AP_SCRIPTING_ENABLED
 
-// returns true if vehicle is landing. Only used by Lua scripts
+// returns true if vehicle is landing.
 bool Copter::is_landing() const
 {
     return flightmode->is_landing();
 }
 
-// returns true if vehicle is taking off. Only used by Lua scripts
+// returns true if vehicle is taking off.
 bool Copter::is_taking_off() const
 {
     return flightmode->is_taking_off();
