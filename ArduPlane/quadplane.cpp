@@ -2248,30 +2248,47 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         auto &qp = plane.quadplane;
         pilot_correction_done = false;
         // handle resets needed for when the state changes
-        if (s == QPOS_POSITION1) {
+        switch (s) {
+        case QPOS_POSITION1:
             reached_wp_speed = false;
             // never do a rate reset, if attitude control is not active it will be automaticaly reset before running, see: last_att_control_ms
             // if it is active then the rate control should not be reset at all
             qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_speed_limit = plane.ahrs.groundspeed_vector().length();
             done_accel_init = false;
-        } else if (s == QPOS_AIRBRAKE) {
+            break;
+
+        case QPOS_AIRBRAKE:
             // start with zero integrator on vertical throttle
             qp.pos_control->get_accel_z_pid().set_integrator(0);
-        } else if (s == QPOS_LAND_DESCEND) {
+            break;
+
+        case QPOS_LAND_DESCEND:
             // reset throttle descent control
             qp.thr_ctrl_land = false;
             qp.land_descend_start_alt = plane.current_loc.alt*0.01;
             last_override_descent_ms = 0;
-        } else if (s == QPOS_LAND_ABORT) {
+            break;
+
+        case QPOS_LAND_ABORT:
             // reset throttle descent control
             qp.thr_ctrl_land = false;
-        } else if (s == QPOS_LAND_FINAL) {
+            break;
+
+        case QPOS_LAND_FINAL: {
             // remember last pos reset to handle GPS glitch in LAND_FINAL
             Vector2f rpos;
             last_pos_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
             qp.landing_detect.land_start_ms = 0;
             qp.landing_detect.lower_limit_start_ms = 0;
+            break;
+        }
+
+        case QPOS_NONE:
+        case QPOS_APPROACH:
+        case QPOS_POSITION2:
+        case QPOS_LAND_COMPLETE:
+            break;
         }
         // double log to capture the state change
 #if HAL_LOGGING_ENABLED
