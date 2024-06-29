@@ -6953,6 +6953,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
     if (msg.sysid != sysid_my_gcs()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Ignore sysid %u", msg.sysid);
         return; // only accept control from our gcs
     }
 
