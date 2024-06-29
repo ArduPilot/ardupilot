@@ -40,6 +40,15 @@ void AP_Mount_Servo::update()
             break;
         }
 
+        case MAV_MOUNT_MODE_TOGGLE_RC: {
+            if (_mode == MAV_MOUNT_MODE_RC_TARGETING) {
+                set_mode(MAV_MOUNT_MODE_NEUTRAL);
+            } else {
+                set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+            }
+            break;
+        }
+
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             _angle_bf_output_rad = _params.neutral_angles.get() * DEG_TO_RAD;
@@ -102,8 +111,7 @@ void AP_Mount_Servo::update()
             update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
             FALLTHROUGH;
         case MountTargetType::ANGLE:
-            // update _angle_bf_output_rad based on angle target
-            if ((mount_mode != MAV_MOUNT_MODE_RETRACT) & (mount_mode != MAV_MOUNT_MODE_NEUTRAL)) {
+            if ((mount_mode != MAV_MOUNT_MODE_RETRACT) && (mount_mode != MAV_MOUNT_MODE_NEUTRAL)) {
                 update_angle_outputs(mnt_target.angle_rad);
             }
             break;

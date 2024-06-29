@@ -59,10 +59,22 @@ bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
 
 bool AP_Mount_Backend::set_mode(MAV_MOUNT_MODE mode)
 {
-    if (!valid_mode(mode)) {
+    // Add a check for the new mode
+    if (!valid_mode(mode) && mode != MAV_MOUNT_MODE_TOGGLE_RC) {
         return false;
     }
+
     _mode = mode;
+
+    // handle the toggle mode
+    if (_mode == MAV_MOUNT_MODE_TOGGLE_RC) {
+        if (_mode == MAV_MOUNT_MODE_RC_TARGETING) {
+            _mode = MAV_MOUNT_MODE_NEUTRAL;
+        } else {
+            _mode = MAV_MOUNT_MODE_RC_TARGETING;
+        }
+    }
+
     return true;
 }
 
