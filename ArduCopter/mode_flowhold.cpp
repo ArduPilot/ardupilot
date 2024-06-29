@@ -320,7 +320,7 @@ void ModeFlowHold::run()
     get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y, angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
     if (quality_filtered >= flow_min_quality &&
-        AP_HAL::millis() - copter.arm_time_ms > 3000) {
+        AP_HAL::millis() - copter.arm_time_ms > 3_s) {
         // don't use for first 3s when we are just taking off
         Vector2f flow_angles;
 
@@ -355,7 +355,7 @@ void ModeFlowHold::update_height_estimate(void)
     // assume on ground when disarmed, or if we have only just started spooling the motors up
     if (!hal.util->get_soft_armed() ||
         copter.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED ||
-        AP_HAL::millis() - copter.arm_time_ms < 1500) {
+        AP_HAL::millis() - copter.arm_time_ms < 1500_ms) {
         height_offset = -ins_height;
         last_ins_height = ins_height;
         return;

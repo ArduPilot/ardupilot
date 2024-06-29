@@ -389,3 +389,18 @@ float int32_to_float_le(const uint32_t& value) WARN_IF_UNUSED;
   Convert from uint64_t to double without breaking Wstrict-aliasing due to type punning
 */
 double uint64_to_double_le(const uint64_t& value) WARN_IF_UNUSED;
+
+// Adds units to time values
+constexpr uint32_t operator ""_s(unsigned long long seconds)
+{
+    return static_cast<uint32_t>(seconds) * 1000u;
+}
+
+constexpr uint32_t operator ""_ms(unsigned long long milliseconds)
+{
+    return static_cast<uint32_t>(milliseconds);
+}
+
+constexpr uint64_t operator ""_us(unsigned long long microseconds) {
+    return static_cast<uint64_t>(microseconds);
+}
