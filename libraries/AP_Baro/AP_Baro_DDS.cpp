@@ -23,6 +23,16 @@ AP_Baro_DDS::AP_Baro_DDS(AP_Baro &baro) :
 
 AP_Baro_DDS::~AP_Baro_DDS() = default;
 
+void AP_Baro_DDS::update_healthy_flag(uint8_t instance)
+{
+    _frontend.sensors[instance].healthy = healthy(instance);
+
+    //! @todo(srmainwaring) - find alternative
+    // Force calibration true. Baro calibration fails for DDS because the
+    // DDS client is not created until after the baro calibration has run. 
+    _frontend.sensors[instance].calibrated = true;
+};
+
 bool AP_Baro_DDS::healthy(uint8_t instance) 
 {
     return _last_sample_time != 0;

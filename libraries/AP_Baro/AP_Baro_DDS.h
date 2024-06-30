@@ -12,7 +12,7 @@ public:
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt) override;
 
 protected:
-    void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = healthy(instance); };
+    void update_healthy_flag(uint8_t instance) override;
 
 private:
     bool healthy(uint8_t instance);
