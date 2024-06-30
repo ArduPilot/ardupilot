@@ -3776,19 +3776,38 @@ function precland:healthy() end
 -- desc
 follow = {}
 
+-- true if we have a valid target location estimate
+---@return boolean
+function follow:have_target() end
+
+-- get the SYSID_THISMAV of the target
+---@return uint8_t_ud
+function follow:get_target_sysid() end
+singleton AP_Follow method get_target_sysid uint8_t
+
+-- get horizontal distance to target (including offset) in meters (for reporting purposes)
+---@return float
+function follow:get_distance_to_target() end
+
 -- desc
 ---@return number|nil
 function follow:get_target_heading_deg() end
 
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
+-- get target's estimated location and velocity (in NED)
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
+function follow:get_target_location_and_velocity() end
+
+-- get target's estimated location and velocity (in NED), with offsets added
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
 function follow:get_target_location_and_velocity_ofs() end
 
--- desc
----@return Location_ud|nil
+-- desc get distance vector to target (in meters) and target's velocity all in NED frame
 ---@return Vector3f_ud|nil
-function follow:get_target_location_and_velocity() end
+---@return Vector3f_ud|nil
+---@return Vector3f_ud|nil
+function follow:get_target_dist_and_vel_ned() end
 
 -- desc
 ---@return uint32_t_ud
