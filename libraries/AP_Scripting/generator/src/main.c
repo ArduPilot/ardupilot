@@ -1902,11 +1902,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
 
-  if ((data->ud_type == UD_SINGLETON) && !(data->flags & UD_FLAG_LITERAL)) {
-      // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = check_%s(L);\n", data->name, data->sanatized_name);
-  }
-
   // emit warning if configured
   if (method->deprecate != NULL) {
     fprintf(source, "    static bool warned = false;\n");
@@ -1915,7 +1910,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     fprintf(source, "        warned = true;\n");
     fprintf(source, "    }\n\n");
   }
-
 
   // sanity check number of args called with
   arg_count = 1;
@@ -1933,8 +1927,12 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    %s * ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
       break;
     case UD_SINGLETON:
+      if (!(data->flags & UD_FLAG_LITERAL)) {
+        // fetch and check the singleton pointer
+        fprintf(source, "    %s * ud = check_%s(L);\n", data->name, data->sanatized_name);
+      }
+      break;
     case UD_GLOBAL:
-      // this was bound early
       break;
     case UD_AP_OBJECT:
       // extract the userdata, it was a pointer, so we need to grab it
