@@ -2381,7 +2381,7 @@ void emit_methods(struct userdata *node) {
 }
 
 void emit_enum(struct userdata * data) {
-    fprintf(source, "struct userdata_enum %s_enums[] = {\n", data->sanatized_name);
+    fprintf(source, "const struct userdata_enum %s_enums[] = {\n", data->sanatized_name);
     struct userdata_enum *ud_enum = data->enums;
     while (ud_enum != NULL) {
       fprintf(source, "    {\"%s\", %s::%s},\n", ud_enum->name, data->name, ud_enum->name);
