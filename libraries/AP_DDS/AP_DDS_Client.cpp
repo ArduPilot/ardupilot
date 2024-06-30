@@ -622,7 +622,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         AP::baro().handle_external(baro);
     }
 #endif
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/FluidPressure (pressure: %f) Pa.",
+        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/FluidPressure (pressure: %f) Pa.",
         //     msg_prefix, rx_air_pressure_0_topic.fluid_pressure);
 
         break;
@@ -634,7 +634,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             break;
         }
 
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/MagneticField (%f, %f, %f) T.",
+        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/MagneticField (%f, %f, %f) T.",
         //     msg_prefix, rx_magnetometer_0_topic.magnetic_field.x, rx_magnetometer_0_topic.magnetic_field.y, rx_magnetometer_0_topic.magnetic_field.z);
 
         break;
@@ -646,7 +646,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             break;
         }
 
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/NavSatFix (lat: %f, lon: %f, alt: %f).",
+        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/NavSatFix (lat: %f, lon: %f, alt: %f).",
         //     msg_prefix, rx_nav_sat_fix_0_topic.latitude, rx_nav_sat_fix_0_topic.longitude, rx_nav_sat_fix_0_topic.altitude);
 
         break;
