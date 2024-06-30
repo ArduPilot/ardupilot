@@ -14,7 +14,7 @@ public:
 
     void begin(uint32_t baud);
 
-    int32_t write(uint8_t c);
+    bool write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
     bool read(uint8_t &c);

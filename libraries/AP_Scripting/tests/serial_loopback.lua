@@ -11,7 +11,7 @@ function test_driver_to_device()
   local msg_send = "hello device"
   local num_sent = 0
   for ci = 1,#msg_send do
-    num_sent = num_sent + ser_driver:write(msg_send:byte(ci, ci))
+    num_sent = num_sent + (ser_driver:write(msg_send:byte(ci, ci)) and 1 or 0)
   end
   local msg_recv = ser_device:readstring(#msg_send)
   if msg_send == msg_recv and num_sent == #msg_send then

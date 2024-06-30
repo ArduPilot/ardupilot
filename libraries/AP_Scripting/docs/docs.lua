@@ -1239,7 +1239,7 @@ function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
 -- Writes a single byte
 ---@param value integer -- byte to write
----@return integer -- 1 if success else 0
+---@return boolean -- true if successfully written
 function AP_Scripting_SerialAccess_ud:write(value) end
 
 -- Writes a string. The number of bytes actually written, i.e. the length of the

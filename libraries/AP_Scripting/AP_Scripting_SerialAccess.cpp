@@ -24,9 +24,9 @@ void AP_Scripting_SerialAccess::begin(uint32_t baud)
     }
 }
 
-int32_t AP_Scripting_SerialAccess::write(uint8_t c)
+bool AP_Scripting_SerialAccess::write(uint8_t c)
 {
-    return (int32_t)write(&c, 1); // return value will be 0 or 1
+    return write(&c, 1) > 0;
 }
 
 size_t AP_Scripting_SerialAccess::write(const uint8_t *buffer, size_t size)
