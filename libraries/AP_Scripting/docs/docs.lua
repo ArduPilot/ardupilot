@@ -958,6 +958,10 @@ function Vector3f_ud:rotate_xy(param1) end
 ---@return Vector2f_ud
 function Vector3f_ud:xy() end
 
+-- Project a vector onto this vector
+---@param vector Vector3f_ud
+function Vector3f_ud:project(vector) end
+
 -- desc
 ---@class (exact) Quaternion_ud
 ---@operator mul(Quaternion_ud): Quaternion_ud
@@ -1172,6 +1176,12 @@ function Location_ud:offset(ofs_north, ofs_east) end
 ---@param loc Location_ud -- location to compare with
 ---@return number -- horizontal distance in meters
 function Location_ud:get_distance(loc) end
+
+-- Given a Location this calculates the north and east distance between the two locations in meters.
+---@param loc1 Location_ud -- 1st location 
+---@param loc2 Location_ud -- 1st location 
+---@return number -- proportion the current location is between loc1 and loc2
+function Location_ud:line_path_proportion(loc1, loc2) end
 
 -- desc
 ---@class (exact) AP_EFI_Backend_ud
@@ -3776,19 +3786,27 @@ function precland:healthy() end
 -- desc
 follow = {}
 
--- desc
+-- true if we have a valid target location estimate
+---@return boolean
+function follow:have_target() end
+
+-- get the SYSID_THISMAV of the target
+---@return uint32_t_ud
+function follow:get_target_sysid() end
+
+-- get target's heading in degrees (0 = north, 90 = east)
 ---@return number|nil
 function follow:get_target_heading_deg() end
 
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
-function follow:get_target_location_and_velocity_ofs() end
-
--- desc
----@return Location_ud|nil
----@return Vector3f_ud|nil
+-- get target's estimated location and velocity (in NED)
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
 function follow:get_target_location_and_velocity() end
+
+-- get target's estimated location and velocity (in NED), with offsets added
+---@return Location_ud|nil -- location
+---@return Vector3f_ud|nil -- velocity
+function follow:get_target_location_and_velocity_ofs() end
 
 -- desc
 ---@return uint32_t_ud
@@ -3797,6 +3815,16 @@ function follow:get_last_update_ms() end
 -- desc
 ---@return boolean
 function follow:have_target() end
+
+-- combo function returning all follow values calcuted in a cycle
+---@return Vector3f_ud|nil -- dist_ned - distance to the target
+---@return Vector3f_ud|nil -- dist_with_offs - distance to the target with offsets
+---@return Vector3f_ud|nil -- target_vel_ned - proposed velocity of the target
+---@return Vector3f_ud|nil -- target_vel_ned_ofs - proposed velocity of the target with offsets
+---@return Location_ud|nil -- target_loc - location of the target
+---@return Location_ud|nil -- target_loc_ofs - location of the target with offsets
+---@return number|nil -- target_dist_ofs - distance to the target in meters
+function follow:get_target_info() end
 
 -- desc
 scripting = {}
