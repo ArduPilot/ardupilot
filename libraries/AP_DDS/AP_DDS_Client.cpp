@@ -611,7 +611,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
 #if AP_BARO_DDS_ENABLED
-    {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
         baro.pressure_pa = rx_air_pressure_0_topic.fluid_pressure;
@@ -620,7 +619,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         baro.temperature = 30.17;
 
         AP::baro().handle_external(baro);
-    }
 #endif
         // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/FluidPressure (pressure: %f) Pa.",
         //     msg_prefix, rx_air_pressure_0_topic.fluid_pressure);
