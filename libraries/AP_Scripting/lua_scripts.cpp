@@ -268,8 +268,8 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
             continue;
         }
 
-        if (strncmp(&de->d_name[length-4], ".lua", 4)) {
-            // doesn't end in .lua
+        if ((de->d_name[0] == '.') || strncmp(&de->d_name[length-4], ".lua", 4)) {
+            // starts with . (hidden file) or doesn't end in .lua
             continue;
         }
 
