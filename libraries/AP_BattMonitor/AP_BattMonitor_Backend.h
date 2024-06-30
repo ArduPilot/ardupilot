@@ -35,6 +35,9 @@ public:
     // initialise
     virtual void init() {};
 
+    //read the latest battery informations from MAVLink messages
+    virtual void handle_msg(const mavlink_message_t &msg){}    
+
     // read the latest battery voltage
     virtual void read() = 0;
 

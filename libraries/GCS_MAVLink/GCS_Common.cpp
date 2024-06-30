@@ -4203,6 +4203,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         break;
 #endif
 
+#if AP_BATTERY_MAVLINK_ENABLED
+    case MAVLINK_MSG_ID_BATTERY_STATUS:
+        AP::battery().handle_msg(msg);
+        break;
+#endif
+
 #if AP_GPS_ENABLED
 #if AP_MAVLINK_MSG_HIL_GPS_ENABLED
     case MAVLINK_MSG_ID_HIL_GPS:
