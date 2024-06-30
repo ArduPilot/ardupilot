@@ -1037,7 +1037,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
     case Invensensev3_Type::ICM42605:
     case Invensensev3_Type::ICM40605:
     case Invensensev3_Type::ICM42670:
-        _clip_limit = 15.5f * GRAVITY_MSS;
+        _clip_limit = (16.0f - 0.5f) * GRAVITY_MSS;
         break;
     }
 
