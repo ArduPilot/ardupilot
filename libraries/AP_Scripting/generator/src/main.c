@@ -1302,12 +1302,12 @@ void emit_userdata_allocators(void) {
   while (node) {
     start_dependency(source, node->dependency);
     // New method used internally
-    fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
+    fprintf(source, "%s * new_%s(lua_State *L) {\n", node->name, node->sanatized_name);
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
     fprintf(source, "    new (ud) %s();\n", node->name);
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->rename ? node->rename :  node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
-    fprintf(source, "    return 1;\n");
+    fprintf(source, "    return (%s *)ud;\n", node->name);
     fprintf(source, "}\n");
 
     // New method used externally, includes argcheck, overridden by custom creation function if provided
@@ -1321,7 +1321,8 @@ void emit_userdata_allocators(void) {
       fprintf(source, "        warned = true;\n");
       fprintf(source, "    }\n");
 
-      fprintf(source, "    return new_%s(L);\n", node->sanatized_name);
+      fprintf(source, "    new_%s(L);\n", node->sanatized_name);
+      fprintf(source, "    return 1;\n");
       fprintf(source, "}\n");
     }
 
@@ -1335,8 +1336,8 @@ void emit_ap_object_allocators(void) {
   struct userdata * node = parsed_ap_objects;
   while (node) {
     start_dependency(source, node->dependency);
-    fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
-    fprintf(source, "    return new_ap_object(L, sizeof(%s *), \"%s\");\n", node->name, node->name);
+    fprintf(source, "%s ** new_%s(lua_State *L) {\n", node->name, node->sanatized_name);
+    fprintf(source, "    return (%s **)new_ap_object(L, sizeof(%s *), \"%s\");\n", node->name, node->name, node->name);
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -1349,8 +1350,7 @@ void emit_userdata_checkers(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "%s * check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
-    fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n",  node->rename ? node->rename :  node->name);
-    fprintf(source, "    return (%s *)data;\n", node->name);
+    fprintf(source, "    return (%s *)luaL_checkudata(L, arg, \"%s\");\n", node->name, node->rename ? node->rename :  node->name);
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -1401,7 +1401,7 @@ void emit_userdata_declarations(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
     start_dependency(header, node->dependency);
-    fprintf(header, "int new_%s(lua_State *L);\n", node->sanatized_name);
+    fprintf(header, "%s * new_%s(lua_State *L);\n", node->name, node->sanatized_name);
     if (node->creation == NULL) {
       fprintf(header, "int lua_new_%s(lua_State *L);\n", node->sanatized_name);
     }
@@ -1415,7 +1415,7 @@ void emit_ap_object_declarations(void) {
   struct userdata * node = parsed_ap_objects;
   while (node) {
     start_dependency(header, node->dependency);
-    fprintf(header, "int new_%s(lua_State *L);\n", node->sanatized_name);
+    fprintf(header, "%s ** new_%s(lua_State *L);\n", node->name, node->sanatized_name);
     fprintf(header, "%s ** check_%s(lua_State *L, int arg);\n", node->name, node->sanatized_name);
     end_dependency(header, node->dependency);
     node = node->next;
@@ -1741,8 +1741,7 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
         fprintf(source, "%slua_pushinteger(L, static_cast<int32_t>(%s%s%s%s));\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%snew_uint32_t(L);\n", indent);
-        fprintf(source, "%s*check_uint32_t(L, -1) = %s%s%s%s;\n", indent, object_name, object_access, field->name, index_string);
+        fprintf(source, "%s*new_uint32_t(L) = %s%s%s%s;\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't access a NONE field");
@@ -1754,9 +1753,7 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
         fprintf(source, "%slua_pushstring(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_USERDATA:
-          // userdatas must allocate a new container to return
-          fprintf(source, "%snew_%s(L);\n", indent, field->type.data.ud.sanatized_name);
-          fprintf(source, "%s*check_%s(L, -1) = %s%s%s%s;\n", indent, field->type.data.ud.sanatized_name, object_name, object_access, field->name, index_string);
+          fprintf(source, "%s*new_%s(L) = %s%s%s%s;\n", indent, field->type.data.ud.sanatized_name, object_name, object_access, field->name, index_string);
         break;
       case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
         error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
@@ -1873,16 +1870,13 @@ int emit_references(const struct argument *arg, const char * tab) {
           fprintf(source, "%slua_pushinteger(L, data_%d);\n", tab, arg_index);
           break;
         case TYPE_UINT32_T:
-          fprintf(source, "%snew_uint32_t(L);\n", tab);
-          fprintf(source, "%s*check_uint32_t(L, -1) = data_%d;\n", tab, arg_index);
+          fprintf(source, "%s*new_uint32_t(L) = data_%d;\n", tab, arg_index);
           break;
         case TYPE_STRING:
           fprintf(source, "%slua_pushstring(L, data_%d);\n", tab, arg_index);
           break;
         case TYPE_USERDATA:
-          // userdatas must allocate a new container to return
-          fprintf(source, "%snew_%s(L);\n", tab, arg->type.data.ud.sanatized_name);
-          fprintf(source, "%s*check_%s(L, -1) = data_%d;\n", tab, arg->type.data.ud.sanatized_name, arg_index);
+          fprintf(source, "%s*new_%s(L) = data_%d;\n", tab, arg->type.data.ud.sanatized_name, arg_index);
           break;
         case TYPE_NONE:
           error(ERROR_INTERNAL, "Attempted to emit a nullable or reference  argument of type none");
@@ -2148,23 +2142,19 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    lua_pushinteger(L, data);\n");
       break;
     case TYPE_UINT32_T:
-      fprintf(source, "        new_uint32_t(L);\n");
-      fprintf(source, "        *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = data;\n");
+      fprintf(source, "        *new_uint32_t(L) = data;\n");
       break;
     case TYPE_STRING:
       fprintf(source, "    lua_pushstring(L, data);\n");
       break;
     case TYPE_USERDATA:
-      // userdatas must allocate a new container to return
-      fprintf(source, "    new_%s(L);\n", method->return_type.data.ud.sanatized_name);
-      fprintf(source, "    *check_%s(L, -1) = data;\n", method->return_type.data.ud.sanatized_name);
+      fprintf(source, "    *new_%s(L) = data;\n", method->return_type.data.ud.sanatized_name);
       break;
     case TYPE_AP_OBJECT:
       fprintf(source, "    if (data == NULL) {\n");
       fprintf(source, "        return 0;\n");
       fprintf(source, "    }\n");
-      fprintf(source, "    new_%s(L);\n", method->return_type.data.ud.sanatized_name);
-      fprintf(source, "    *(%s**)luaL_checkudata(L, -1, \"%s\") = data;\n", method->return_type.data.ud.name, method->return_type.data.ud.name);
+      fprintf(source, "    *new_%s(L) = data;\n", method->return_type.data.ud.sanatized_name);
       break;
     case TYPE_NONE:
     case TYPE_LITERAL:
@@ -2351,14 +2341,12 @@ void emit_operators(struct userdata *data) {
       } else {
         // Return same type
         // create a container for the result
-        fprintf(source, "    new_%s(L);\n", data->sanatized_name);
-        fprintf(source, "    *check_%s(L, -1) = (%sud) %s (%sud2);\n", data->sanatized_name, access, op_sym, access);
+        fprintf(source, "    *new_%s(L) = (%sud) %s (%sud2);\n", data->sanatized_name, access, op_sym, access);
       }
 
     } else {
       // Only a single value, lua pushes the same value onto the stack twice, so we still check for 2 arguments
-      fprintf(source, "    new_%s(L);\n", data->sanatized_name);
-      fprintf(source, "    *check_%s(L, -1) = %s (%sud);\n", data->sanatized_name, op_sym, access);
+      fprintf(source, "    *new_%s(L) = %s (%sud);\n", data->sanatized_name, op_sym, access);
 
     }
 
@@ -2717,11 +2705,11 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    return lua_unint32;\n");
   fprintf(source, "}\n\n");
 
-  fprintf(source, "int new_ap_object(lua_State *L, size_t size, const char * name) {\n");
-  fprintf(source, "    lua_newuserdata(L, size);\n");
+  fprintf(source, "void * new_ap_object(lua_State *L, size_t size, const char * name) {\n");
+  fprintf(source, "    void * ud = lua_newuserdata(L, size);\n");
   fprintf(source, "    luaL_getmetatable(L, name);\n");
   fprintf(source, "    lua_setmetatable(L, -2);\n");
-  fprintf(source, "    return 1;\n");
+  fprintf(source, "    return ud;\n");
   fprintf(source, "}\n\n");
 
 }
@@ -3216,7 +3204,7 @@ int main(int argc, char **argv) {
   fprintf(header, "uint16_t get_uint16_t(lua_State *L, int arg_num);\n");
   fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
   fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
-  fprintf(header, "int new_ap_object(lua_State *L, size_t size, const char * name);\n");
+  fprintf(header, "void * new_ap_object(lua_State *L, size_t size, const char * name);\n");
 
   struct userdata * node = parsed_singletons;
   while (node) {
