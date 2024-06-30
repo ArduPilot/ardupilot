@@ -652,6 +652,32 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             break;
         }
 
+// #if AP_GPS_DDS_ENABLED
+        //! @todo(srmainwaring) sensor_msgs/NavSatFix is missing fields
+        // required by FC.
+
+        AP_ExternalAHRS::gps_data_message_t gps;
+        gps.gps_week = 0xFFFF;
+        // gps.ms_tow;
+        // gps.fix_type;
+        // gps.satellites_in_view;
+        // gps.horizontal_pos_accuracy;
+        // gps.vertical_pos_accuracy;
+        // gps.horizontal_vel_accuracy;
+        // gps.hdop;
+        // gps.vdop;
+        gps.longitude = static_cast<int32_t>(rx_nav_sat_fix_0_topic.longitude * 1E7);
+        gps.latitude = static_cast<int32_t>(rx_nav_sat_fix_0_topic.latitude * 1E7);
+        gps.msl_altitude = static_cast<int32_t>(rx_nav_sat_fix_0_topic.altitude * 1E2);
+        // gps.ned_vel_north;
+        // gps.ned_vel_east;
+        // gps.ned_vel_down;
+ 
+        uint8_t instance;
+        if (AP::gps().get_first_external_instance(instance)) {
+            AP::gps().handle_external(gps, instance);
+        }
+// #endif
         // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/NavSatFix (lat: %f, lon: %f, alt: %f).",
         //     msg_prefix, rx_nav_sat_fix_0_topic.latitude, rx_nav_sat_fix_0_topic.longitude, rx_nav_sat_fix_0_topic.altitude);
 
