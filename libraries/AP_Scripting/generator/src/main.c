@@ -2459,15 +2459,11 @@ void emit_index(struct userdata *head) {
     }
 
     fprintf(source, "static int %s_index(lua_State *L) {\n", node->sanatized_name);
-    fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
-    fprintf(source, "    if (load_function(L,%s_meta,ARRAY_SIZE(%s_meta),name)",node->sanatized_name,node->sanatized_name);
+    fprintf(source, "    return load_function(L,%s_meta,ARRAY_SIZE(%s_meta))",node->sanatized_name,node->sanatized_name);
     if (node->enums != NULL) {
-      fprintf(source, " || load_enum(L,%s_enums,ARRAY_SIZE(%s_enums),name)",node->sanatized_name,node->sanatized_name);
+      fprintf(source, " || load_enum(L,%s_enums,ARRAY_SIZE(%s_enums))",node->sanatized_name,node->sanatized_name);
     }
-    fprintf(source, ") {\n");
-    fprintf(source, "        return 1;\n");
-    fprintf(source, "    }\n");
-    fprintf(source, "    return 0;\n");
+    fprintf(source, ";\n");
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -2992,14 +2988,15 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
 
 
 void emit_index_helpers(void) {
-  fprintf(source, "static bool load_function(lua_State *L, const luaL_Reg *list, const uint8_t length, const char* name) {\n");
+  fprintf(source, "static int load_function(lua_State *L, const luaL_Reg *list, const uint8_t length) {\n");
+  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
   fprintf(source, "    for (uint8_t i = 0; i < length; i++) {\n");
   fprintf(source, "        if (strcmp(name,list[i].name) == 0) {\n");
   fprintf(source, "            lua_pushcfunction(L, list[i].func);\n");
-  fprintf(source, "            return true;\n");
+  fprintf(source, "            return 1;\n");
   fprintf(source, "        }\n");
   fprintf(source, "    }\n");
-  fprintf(source, "    return false;\n");
+  fprintf(source, "    return 0;\n");
   fprintf(source, "}\n\n");
 
   // If enough stuff is defined out we can end up with no enums.
@@ -3007,14 +3004,15 @@ void emit_index_helpers(void) {
   fprintf(source, "#pragma GCC diagnostic push\n");
   fprintf(source, "#pragma GCC diagnostic ignored \"-Wunused-function\"\n");
 
-  fprintf(source, "static bool load_enum(lua_State *L, const userdata_enum *list, const uint8_t length, const char* name) {\n");
+  fprintf(source, "static int load_enum(lua_State *L, const userdata_enum *list, const uint8_t length) {\n");
+  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
   fprintf(source, "    for (uint8_t i = 0; i < length; i++) {\n");
   fprintf(source, "        if (strcmp(name,list[i].name) == 0) {\n");
   fprintf(source, "            lua_pushinteger(L, list[i].value);\n");
-  fprintf(source, "            return true;\n");
+  fprintf(source, "            return 1;\n");
   fprintf(source, "        }\n");
   fprintf(source, "    }\n");
-  fprintf(source, "    return false;\n");
+  fprintf(source, "    return 0;\n");
   fprintf(source, "}\n");
 
   fprintf(source, "#pragma GCC diagnostic pop\n\n");
