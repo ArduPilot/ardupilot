@@ -33,7 +33,6 @@
 #include "AP_Proximity_RPLidarA2.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity_RPLidarA2.h"
 #include <AP_InternalError/AP_InternalError.h>
 
 #include <ctype.h>
@@ -75,15 +74,6 @@ void AP_Proximity_RPLidarA2::update(void)
         return;
     }
 
-    // request device info 3sec after reset
-    // required for S1 support that sends only 9 bytes after a reset (A1,A2 send 63)
-    uint32_t now_ms = AP_HAL::millis();
-    if ((_state == State::RESET) && (now_ms - _last_reset_ms > 3000)) {
-        send_request_for_device_info();
-        _state = State::AWAITING_RESPONSE;
-        _byte_count = 0;
-    }
-
     get_readings();
 
     // check for timeout and set health status
@@ -112,6 +102,8 @@ float AP_Proximity_RPLidarA2::distance_max() const
         return 12.0f;
     case Model::S1:
         return 40.0f;
+    case Model::S2:
+        return 50.0f;
     }
     return 0.0f;
 }
@@ -127,18 +119,20 @@ float AP_Proximity_RPLidarA2::distance_min() const
     case Model::C1:
     case Model::S1:
         return 0.2f;
+    case Model::S2:
+        return 0.05f;
     }
     return 0.0f;
 }
 
+// reset lidar
 void AP_Proximity_RPLidarA2::reset_rplidar()
 {
     static const uint8_t tx_buffer[2] {RPLIDAR_PREAMBLE, RPLIDAR_CMD_RESET};
     _uart->write(tx_buffer, 2);
     Debug(1, "LIDAR reset");
-    // To-Do: ensure delay of 8m after sending reset request
     _last_reset_ms =  AP_HAL::millis();
-    reset();
+    _state = State::RESET;
 }
 
 // set Lidar into SCAN mode
@@ -165,114 +159,36 @@ void AP_Proximity_RPLidarA2::send_request_for_device_info()
     Debug(1, "Sent device information request");
 }
 
-void AP_Proximity_RPLidarA2::consume_bytes(uint16_t count)
-{
-    if (count > _byte_count) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        _byte_count = 0;
-        return;
-    }
-    _byte_count -= count;
-    if (_byte_count) {
-        memmove((void*)&_payload[0], (void*)&_payload[count], _byte_count);
-    }
-}
-
-void AP_Proximity_RPLidarA2::reset()
-{
-    _state = State::RESET;
-    _byte_count = 0;
-}
-
-bool AP_Proximity_RPLidarA2::make_first_byte_in_payload(uint8_t desired_byte)
-{
-    if (_byte_count == 0) {
-        return false;
-    }
-    if (_payload[0] == desired_byte) {
-        return true;
-    }
-    for (auto i=1; i<_byte_count; i++) {
-        if (_payload[i] == desired_byte) {
-            consume_bytes(i);
-            return true;
-        }
-    }
-    // just not in our buffer.  Throw everything away:
-    _byte_count = 0;
-    return false;
-}
-
 void AP_Proximity_RPLidarA2::get_readings()
 {
-    Debug(2, "             CURRENT STATE: %u ", (unsigned)_state);
-    const uint32_t nbytes = _uart->available();
-    if (nbytes == 0) {
-        return;
-    }
-    const uint32_t bytes_to_read = MIN(nbytes, sizeof(_payload)-_byte_count);
-    if (bytes_to_read == 0) {
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        reset();
-        return;
-    }
-    const uint32_t bytes_read = _uart->read(&_payload[_byte_count], bytes_to_read);
-    if (bytes_read == 0) {
-        // this is bad; we were told there were bytes available
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        reset();
-        return;
-    }
-    _byte_count += bytes_read;
-
-    uint32_t previous_loop_byte_count = UINT32_MAX;
-    while (_byte_count) {
-        if (_byte_count >= previous_loop_byte_count) {
-            // this is a serious error, we should always consume some
-            // bytes.  Avoid looping forever.
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            _uart = nullptr;
-            return;
-        }
-        previous_loop_byte_count = _byte_count;
-
+    uint16_t _bytes_read = 0;
+    Debug(2, "CURRENT STATE: %u ", (unsigned)_state);
+    while (_uart->available() && _bytes_read < MAX_BYTES_CONSUME) {
         switch(_state){
         case State::RESET: {
-            // looking for 0x52 at start of buffer; the 62 following
-            // bytes are "information"
-            if (!make_first_byte_in_payload('R')) { // that's 'R' as in RPiLidar
+            if (AP_HAL::millis() - _last_reset_ms < 1000) {
                 return;
             }
-            if (_byte_count < 63) {
-                return;
-            }
-#if RP_DEBUG_LEVEL
-            // optionally spit out via mavlink the 63-bytes of cruft
-            // that is spat out on device reset
-            Debug(1, "Got RPLidar Information");
-            char xbuffer[64]{};
-            memcpy((void*)xbuffer, (void*)&_payload.information, 63);
-            gcs().send_text(MAV_SEVERITY_INFO, "RPLidar: (%s)", xbuffer);
-#endif
-            // 63 is the magic number of bytes in the spewed-out
-            // reset data ... so now we'll just drop that stuff on
-            // the floor.
-            consume_bytes(63);
+            _uart->discard_input();
             send_request_for_device_info();
             _state = State::AWAITING_RESPONSE;
             continue;
         }
         case State::AWAITING_RESPONSE:
+            // descriptor packet has 7 byte in total
+            if (_uart->available() < sizeof(_descriptor)) {
+                return;
+            }
+            _uart->read(&_payload[0], sizeof(_descriptor));
+            _bytes_read += sizeof(_descriptor);
+
             if (_payload[0] != RPLIDAR_PREAMBLE) {
-                // this is a protocol error.  Reset.
-                reset();
+                Debug(1, "protocol error");
+                // this is a protocol error do a reset.
+                reset_rplidar();
                 return;
             }
 
-            // descriptor packet has 7 byte in total
-            if (_byte_count < sizeof(_descriptor)) {
-                return;
-            }
             // identify the payload data after the descriptor
             static const _descriptor SCAN_DATA_DESCRIPTOR[] {
                 { RPLIDAR_PREAMBLE, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81 }
@@ -293,31 +209,33 @@ void AP_Proximity_RPLidarA2::get_readings()
             } else {
                 // unknown descriptor.  Ignore it.
             }
-            consume_bytes(sizeof(_descriptor));
             break;
 
         case State::AWAITING_DEVICE_INFO:
-            if (_byte_count < sizeof(_payload.device_info)) {
+            if (_uart->available() < sizeof(_payload.device_info)) {
                 return;
             }
+            _uart->read(&_payload[0], sizeof(_payload.device_info));
+            _bytes_read += sizeof(_payload.device_info);
             parse_response_device_info();
-            consume_bytes(sizeof(_payload.device_info));
             break;
 
         case State::AWAITING_SCAN_DATA:
-            if (_byte_count < sizeof(_payload.sensor_scan)) {
+            if (_uart->available() < sizeof(_payload.sensor_scan)) {
                 return;
             }
+            _uart->read(&_payload[0], sizeof(_payload.sensor_scan));
+            _bytes_read += sizeof(_payload.sensor_scan);
             parse_response_data();
-            consume_bytes(sizeof(_payload.sensor_scan));
             break;
 
         case State::AWAITING_HEALTH:
-            if (_byte_count < sizeof(_payload.sensor_health)) {
+            if (_uart->available() < sizeof(_payload.sensor_health)) {
                 return;
             }
+            _uart->read(&_payload[0], sizeof(_payload.sensor_health));
+            _bytes_read += sizeof(_payload.sensor_health);
             parse_response_health();
-            consume_bytes(sizeof(_payload.sensor_health));
             break;
         }
     }
@@ -344,6 +262,10 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
         model = Model::S1;
         device_type = "S1";
         break;
+    case 0x71:
+        model = Model::S2;
+        device_type = "S2";
+        break;
     default:
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
     }
@@ -356,12 +278,13 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 {
     if (_sync_error) {
         // out of 5-byte sync mask -> catch new revolution
-        Debug(1, "       OUT OF SYNC");
+        Debug(1, "OUT OF SYNC");
         // on first revolution bit 1 = 1, bit 2 = 0 of the first byte
         if ((_payload[0] & 0x03) == 0x01) {
             _sync_error = 0;
-            Debug(1, "                  RESYNC");
+            Debug(1, "RESYNC");
         } else {
+            Debug(1, "NO RESYNC");
             return;
         }
     }
@@ -412,7 +335,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 
 void AP_Proximity_RPLidarA2::parse_response_health()
 {
-    // health issue if status is "3" ->HW error
+    // health issue if status is "3" -> HW error
     if (_payload.sensor_health.status == 3) {
         Debug(1, "LIDAR Error");
     }
