@@ -144,23 +144,24 @@ void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
 }
 
 // Write a rate packet
-void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
+void AP_AHRS_View::Write_Rate(const AP_Motors &motors, AC_AttitudeControl &attitude_control,
                                 const AC_PosControl &pos_control) const
 {
-    const Vector3f &rate_targets = attitude_control.rate_bf_targets();
+    Vector3f rate_targets = attitude_control.rate_bf_targets();
     const Vector3f &accel_target = pos_control.get_accel_target_cmss();
+    const Vector3f gyro_rate = get_gyro_latest();
     const auto timeus = AP_HAL::micros64();
     const struct log_Rate pkt_rate{
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
         time_us         : timeus,
         control_roll    : degrees(rate_targets.x),
-        roll            : degrees(get_gyro().x),
+        roll            : degrees(gyro_rate.x),
         roll_out        : motors.get_roll()+motors.get_roll_ff(),
         control_pitch   : degrees(rate_targets.y),
-        pitch           : degrees(get_gyro().y),
+        pitch           : degrees(gyro_rate.y),
         pitch_out       : motors.get_pitch()+motors.get_pitch_ff(),
         control_yaw     : degrees(rate_targets.z),
-        yaw             : degrees(get_gyro().z),
+        yaw             : degrees(gyro_rate.z),
         yaw_out         : motors.get_yaw()+motors.get_yaw_ff(),
         control_accel   : (float)accel_target.z,
         accel           : (float)(-(get_accel_ef().z + GRAVITY_MSS) * 100.0f),
