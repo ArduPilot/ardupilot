@@ -11,9 +11,6 @@ public:
     // Constructor
     AC_AutoTune_FreqResp()
 {
-    // ring buffers sized to for more cycles than are needed.  Most cycles needed are 6.
-    meas_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(12);
-    tgt_peak_info_buffer = NEW_NOTHROW ObjectBuffer<peak_info>(12);
 }
 
     // Enumeration of input type
@@ -183,10 +180,10 @@ private:
     };
 
     // Buffer object for measured peak data
-    ObjectBuffer<peak_info> *meas_peak_info_buffer;
+    ObjectBuffer<peak_info> meas_peak_info_buffer{12};
 
     // Buffer object for target peak data
-    ObjectBuffer<peak_info> *tgt_peak_info_buffer;
+    ObjectBuffer<peak_info> tgt_peak_info_buffer{12};
 
     // Push data into measured peak data buffer object
     void push_to_meas_buffer(uint16_t count, float amplitude, uint32_t time_ms);
