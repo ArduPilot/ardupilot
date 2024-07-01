@@ -6,6 +6,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
@@ -235,6 +236,7 @@ public:
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
+    // these are currently only used by TradHeli, they can be removed when the rate step update is done in TradHeli
     // Set x-axis angular velocity in centidegrees/s
     void rate_bf_roll_target(float rate_cds) { _ang_vel_body.x = radians(rate_cds * 0.01f); }
 
@@ -281,7 +283,7 @@ public:
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw() / _p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
-    Vector3f rate_bf_targets() const { return _ang_vel_body + _sysid_ang_vel_body; }
+    Vector3f rate_bf_targets();
 
     // return the angular velocity of the target (setpoint) attitude rad/s
     const Vector3f& get_rate_ef_targets() const { return _euler_rate_target; }
@@ -559,6 +561,9 @@ protected:
     const AP_AHRS_View&  _ahrs;
     const AP_MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+    // control access to _ang_vel_body updates
+    HAL_Semaphore _ang_vel_sem;
 
     static AC_AttitudeControl *_singleton;
 

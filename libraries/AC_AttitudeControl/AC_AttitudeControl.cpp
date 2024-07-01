@@ -155,6 +155,14 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
 constexpr Vector3f AC_AttitudeControl::VECTORF_111;
 
+    // Return angular velocity in radians used in the angular velocity controller
+Vector3f AC_AttitudeControl::rate_bf_targets()
+{
+    WITH_SEMAPHORE(_ang_vel_sem);
+
+    return _ang_vel_body + _sysid_ang_vel_body;
+}
+
 // get the slew yaw rate limit in deg/s
 float AC_AttitudeControl::get_slew_yaw_max_degs() const
 {
@@ -167,6 +175,8 @@ float AC_AttitudeControl::get_slew_yaw_max_degs() const
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     // take a copy of the last gyro used by the rate controller before using it
     Vector3f gyro = _rate_gyro;
     // Initialize the attitude variables to the current attitude
@@ -461,6 +471,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
 // Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     _ang_vel_body = input_rate_bf_roll_pitch_yaw_4(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
 }
 
@@ -491,6 +503,8 @@ Vector3f AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_4(float roll_rate_bf_c
 // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     // Convert from centidegrees on public interface to radians
     float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
     float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
@@ -575,6 +589,8 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
 // Done as a single thread-safe function to avoid intermediate zero values being seen by the attitude controller
 void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd)
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     Vector3f ang_vel_body = input_rate_bf_roll_pitch_yaw_4(0.0f, 0.0f, 0.0f);
     // Set x-axis angular velocity in centidegrees/s
     ang_vel_body.x = radians(roll_rate_step_bf_cd * 0.01f);
@@ -735,6 +751,8 @@ Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vecto
 // Calculates the body frame angular velocities to follow the target attitude
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     // This represents a quaternion rotation in NED frame to the body
     Quaternion attitude_body;
     _ahrs.get_quat_body_to_ned(attitude_body);
