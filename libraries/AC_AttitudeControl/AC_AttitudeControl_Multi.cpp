@@ -317,6 +317,27 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
 
+    // @Param: PD_RLL_SCALE
+    // @DisplayName: PD scale factor for Roll
+    // @Description: Scale factor that is to be applied to Roll PDs
+    // @Range: 0.1 1.0
+    // @User: Advanced
+    AP_GROUPINFO("PD_RLL_SCALE", 8, AC_AttitudeControl_Multi, _pd_scale_roll, 1.0f),
+
+    // @Param: PD_PIT_SCALE
+    // @DisplayName: PD scale factor for Pitch
+    // @Description: Scale factor that is to be applied to Pitch PDs
+    // @Range: 0.1 1.0
+    // @User: Advanced
+    AP_GROUPINFO("PD_PIT_SCALE", 9, AC_AttitudeControl_Multi, _pd_scale_pitch, 1.0f),
+
+    // @Param: PD_YAW_SCALE
+    // @DisplayName: PD scale factor for Yaw
+    // @Description: Scale factor that is to be applied to Yaw PDs
+    // @Range: 0.1 1.0
+    // @User: Advanced
+    AP_GROUPINFO("PD_YAW_SCALE", 10, AC_AttitudeControl_Multi, _pd_scale_yaw, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -464,7 +485,10 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     _actuator_sysid.zero();
 
     _pd_scale_used = _pd_scale;
-    _pd_scale = VECTORF_111;
+    // reset the scale back to the default
+    _pd_scale.x = _pd_scale_roll;
+    _pd_scale.y = _pd_scale_pitch;
+    _pd_scale.z = _pd_scale_yaw;
 
     control_monitor_update();
 }
