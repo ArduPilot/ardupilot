@@ -667,6 +667,14 @@ void Plane::rangefinder_height_update(void)
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
         rangefinder_state.height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
+        if (flight_option_enabled(FlightOptions::INVERTED_LANDING) && fly_inverted()) {
+            /*
+              allow for rangefinders which point upwards for an
+              inverted landing. Some aircraft are setup for inverted
+              landing to protect camera payloads
+             */
+            rangefinder_state.height_estimate *= -1;
+        }
 
         rangefinder_terrain_correction(rangefinder_state.height_estimate);
 
