@@ -54,6 +54,11 @@ void Mode::_TakeOff::start(float alt_cm)
     _running = true;
     take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
     take_off_complete_alt  = take_off_start_alt + alt_cm;
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    if (copter.option_is_enabled(Copter::FlightOption::TAKEOFF_TIEDOWN_RELEASE)) {
+        copter.landinggear.tie_down_release();
+    }
+#endif
 }
 
 // stop takeoff
@@ -218,6 +223,12 @@ void _AutoTakeoff::run()
     if (complete) {
         const Vector3p& _complete_pos = copter.pos_control->get_pos_target_cm();
         complete_pos = Vector3p{_complete_pos.x, _complete_pos.y, pos_z};
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+        // make clamp is ready for reattachment when the aircraft lands again
+        if (copter.option_is_enabled(Copter::FlightOption::TAKEOFF_TIEDOWN_RELEASE)) {
+            copter.landinggear.tie_down_secure();
+        }
+#endif
     }
 }
 
@@ -237,6 +248,11 @@ void _AutoTakeoff::start(float _complete_alt_cm, bool _terrain_alt)
     } else {
         no_nav_active = false;
     }
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    if (copter.option_is_enabled(Copter::FlightOption::TAKEOFF_TIEDOWN_RELEASE)) {
+        copter.landinggear.tie_down_release();
+    }
+#endif
 }
 
 // return takeoff final position if takeoff has completed successfully

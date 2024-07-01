@@ -252,6 +252,7 @@ public:
         MOUNT_LRF_ENABLE =   177,  // mount LRF enable/disable
         FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
 
+        TIE_DOWN_RELEASE =   179, // Operate tie down release low=open, middle=auto, high=close
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -362,6 +363,7 @@ protected:
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
     void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
+    void do_aux_function_TIE_DOWN_RELEASE(const AuxSwitchPos ch_flag);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {

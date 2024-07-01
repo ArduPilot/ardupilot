@@ -671,6 +671,9 @@ class sitl(Board):
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
         cfg.define('AP_SIGNED_FIRMWARE', 0)
 
+        cfg.define('AP_LANDINGGEAR_ENABLED', 1)
+        cfg.define('AP_TIE_DOWN_CLAMPS_ENABLED', 1)
+
         cfg.define('AP_NOTIFY_LP5562_BUS', 2)
         cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
 

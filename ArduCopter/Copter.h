@@ -627,6 +627,9 @@ private:
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
         REQUIRE_POSITION_FOR_ARMING =   (1<<3),   // 8
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+        TAKEOFF_TIEDOWN_RELEASE       = (1<<4),   // 16
+#endif
     };
     // returns true if option is enabled for this vehicle
     bool option_is_enabled(FlightOption option) const {
