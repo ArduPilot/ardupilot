@@ -7,6 +7,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_Logger.h"
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -331,7 +332,11 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
 
     case Stage::RC_PROTOCOL: {
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_RCPROTOCOL_ENABLED
+        const char *prot = AP::RC().detected_protocol_name();
+#else
         const char *prot = hal.rcin->protocol();
+#endif
         if (prot == nullptr) {
             prot = "None";
         }

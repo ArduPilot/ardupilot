@@ -24,6 +24,7 @@
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
 #include "AP_RCProtocol_IBUS.h"
+#include "AP_RCProtocol_IOMCU.h"
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
@@ -43,6 +44,8 @@
 #include <RC_Channel/RC_Channel.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -113,6 +116,9 @@ void AP_RCProtocol::init()
 #endif  // AP_RCPROTOCOL_FDM_ENABLED
 #if AP_RCPROTOCOL_RADIO_ENABLED
     backend[AP_RCProtocol::RADIO] = NEW_NOTHROW AP_RCProtocol_Radio(*this);
+#endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    backend[AP_RCProtocol::IOMCU] = new AP_RCProtocol_IOMCU(*this);
 #endif
 }
 
@@ -446,6 +452,39 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
     return true;
 }
 
+const char *AP_RCProtocol::detected_protocol_name() const
+{
+    switch (_detected_protocol) {
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    case AP_RCProtocol::IOMCU:
+        return ((AP_RCProtocol_IOMCU*)(backend[AP_RCProtocol::IOMCU]))->get_rc_protocol();
+#endif
+    default:
+        return protocol_name();
+    }
+}
+
+void AP_RCProtocol::announce_detected()
+{
+    const char *src;
+    const char *name = detected_protocol_name();
+    if (name == nullptr) {
+        return;
+    }
+    switch (_detected_protocol) {
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    case AP_RCProtocol::IOMCU:
+        src = "IOMCU";
+        break;
+#endif
+    default:
+        src = using_uart() ? "Bytes" : "Pulses";
+    }
+    (void)src;  // iofirmware doesn't use this
+    (void)name;  // iofirmware doesn't use this
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s (%s)", name, src);
+}
+
 bool AP_RCProtocol::new_input()
 {
     // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
@@ -479,6 +518,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_RADIO_ENABLED
         AP_RCProtocol::RADIO,
 #endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+        AP_RCProtocol::IOMCU,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -487,6 +529,21 @@ bool AP_RCProtocol::new_input()
         _new_input = true;
         _last_input_ms = AP_HAL::millis();
         break;
+    }
+
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    // IOMCU takes precedence over serial-port-type-23 input etc:
+    if (((AP_RCProtocol_IOMCU*)(backend[AP_RCProtocol::IOMCU]))->active()) {
+        _detected_protocol = AP_RCProtocol::IOMCU;
+    }
+#endif
+
+    // announce protocol changes:
+    if (_detected_protocol != _last_detected_protocol ||
+        using_uart() != _last_detected_using_uart) {
+        _last_detected_protocol = _detected_protocol;
+        _last_detected_using_uart = using_uart();
+        announce_detected();
     }
 
     bool ret = _new_input;
@@ -534,11 +591,11 @@ int16_t AP_RCProtocol::get_rx_link_quality(void) const
 /*
   ask for bind start on supported receivers (eg spektrum satellite)
  */
-void AP_RCProtocol::start_bind(void)
+void AP_RCProtocol::start_bind(int dsmMode)
 {
     for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
-            backend[i]->start_bind();
+            backend[i]->start_bind(dsmMode);
         }
     }
 }
@@ -630,6 +687,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_RADIO_ENABLED
     case RADIO:
         return "Radio";
+#endif
+#if AP_RCPROTOCOL_IOMCU_ENABLED
+    case IOMCU:
+        return "IOMCU";
 #endif
     case NONE:
         break;
