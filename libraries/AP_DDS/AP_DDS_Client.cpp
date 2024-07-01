@@ -632,14 +632,17 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             break;
         }
 
-// #if AP_COMPASS_DDS_ENABLED
+#if AP_COMPASS_DDS_ENABLED
         AP_ExternalAHRS::mag_data_message_t mag;
 
-        //! @todo(srmainwaring) check whether a frame transform is required
-        mag.field = Vector3f(rx_magnetometer_0_topic.magnetic_field.x, rx_magnetometer_0_topic.magnetic_field.y, rx_magnetometer_0_topic.magnetic_field.z);
+        // convert mag field from FLU in telsa to FRD in milli gauss.
+        mag.field = Vector3f(
+            rx_magnetometer_0_topic.magnetic_field.x * 1.0E7,
+            rx_magnetometer_0_topic.magnetic_field.y * -1.0E7,
+            rx_magnetometer_0_topic.magnetic_field.z * -1.0E7);
 
         AP::compass().handle_external(mag);
-// #endif
+#endif
         // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/MagneticField (%f, %f, %f) T.",
         //     msg_prefix, rx_magnetometer_0_topic.magnetic_field.x, rx_magnetometer_0_topic.magnetic_field.y, rx_magnetometer_0_topic.magnetic_field.z);
 
