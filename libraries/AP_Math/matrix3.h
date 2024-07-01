@@ -235,13 +235,17 @@ public:
         return a.is_nan() || b.is_nan() || c.is_nan();
     }
 
-    // create a rotation matrix from Euler angles
+    /*
+      create a rotation matrix from Euler angles in 321 euler ordering
+    */
     void        from_euler(T roll, T pitch, T yaw);
 
-    // create eulers from a rotation matrix.
-    // roll is from -Pi to Pi
-    // pitch is from -Pi/2 to Pi/2
-    // yaw is from -Pi to Pi
+    /* create eulers from a rotation matrix.
+       roll is from -Pi to Pi
+       pitch is from -Pi/2 to Pi/2
+       yaw is from -Pi to Pi
+       euler order is 321
+    */
     void        to_euler(T *roll, T *pitch, T *yaw) const;
 
     // create matrix from rotation enum
