@@ -504,10 +504,12 @@ void lua_scripts::run(void) {
     // Skip those directores disabled with SCR_DIR_DISABLE param
     uint16_t dir_disable = AP_Scripting::get_singleton()->get_disabled_dir();
     bool loaded = false;
+#if AP_FILESYSTEM_FILE_WRITING_ENABLED
     if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
         load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
         loaded = true;
     }
+#endif
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_LUA
     if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::ROMFS)) == 0) {
         load_all_scripts_in_dir(L, "@ROMFS/scripts");
