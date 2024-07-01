@@ -444,7 +444,11 @@ void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
     if (set_mode(Mode::Number::BRAKE, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
         return;
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to change to Brake Mode");
     }
+#else
+    gcs().send_text(MAV_SEVERITY_WARNING, "Brake Mode not enabled");
 #endif
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Trying Land Mode");
