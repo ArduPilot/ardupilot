@@ -89,6 +89,9 @@ public:
     // convert values to PWM min and max if not configured
     void                convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max);
 
+    // return thrust for motor motor_num, returns true if value is valid false otherwise
+    bool                get_thrust(uint8_t motor_num, float& thr_out) const override;
+
 #if HAL_LOGGING_ENABLED
     // 10hz logging of voltage scaling and max trust
     void                Log_Write() override;
