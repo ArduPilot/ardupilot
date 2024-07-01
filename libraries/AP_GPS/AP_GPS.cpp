@@ -29,6 +29,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "AP_GPS_NOVA.h"
+#include "AP_GPS_Blended.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
 #include "AP_GPS_NMEA.h"
@@ -65,8 +66,6 @@
 #endif
 #define GPS_BAUD_TIME_MS 1200
 #define GPS_TIMEOUT_MS 4000u
-
-#define BLEND_COUNTER_FAILURE_INCREMENT 10
 
 extern const AP_HAL::HAL &hal;
 
@@ -347,6 +346,11 @@ void AP_GPS::init()
             rate_ms.set(GPS_MAX_RATE_MS);
         }
     }
+
+    // create the blended instance if appropriate:
+#if AP_GPS_BLENDED_ENABLED
+    drivers[GPS_BLENDED_INSTANCE] = new AP_GPS_Blended(*this, params[GPS_BLENDED_INSTANCE], state[GPS_BLENDED_INSTANCE], timing[GPS_BLENDED_INSTANCE]);
+#endif
 }
 
 void AP_GPS::convert_parameters()
@@ -1084,25 +1088,15 @@ void AP_GPS::update_primary(void)
     */
     const bool using_moving_base = is_rtk_base(0) || is_rtk_base(1);
     if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
-        _output_is_blended = calc_blend_weights();
-        // adjust blend health counter
-        if (!_output_is_blended) {
-            _blend_health_counter = MIN(_blend_health_counter+BLEND_COUNTER_FAILURE_INCREMENT, 100);
-        } else if (_blend_health_counter > 0) {
-            _blend_health_counter--;
-        }
-        // stop blending if unhealthy
-        if (_blend_health_counter >= 50) {
-            _output_is_blended = false;
-        }
+        _output_is_blended = ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_weights();
     } else {
         _output_is_blended = false;
-        _blend_health_counter = 0;
+        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->zero_health_counter();
     }
 
     if (_output_is_blended) {
         // Use the weighting to calculate blended GPS states
-        calc_blended_state();
+        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_state();
         // set primary to the virtual instance
         primary_instance = GPS_BLENDED_INSTANCE;
         return;
@@ -1695,10 +1689,7 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 #if AP_GPS_BLENDED_ENABLED
     // return lag of blended GPS
     if (instance == GPS_BLENDED_INSTANCE) {
-        lag_sec = _blended_lag_sec;
-        // auto switching uses all GPS receivers, so all must be configured
-        uint8_t inst; // we don't actually care what the number is, but must pass it
-        return first_unconfigured_gps(inst);
+        return drivers[instance]->get_lag(lag_sec);
     }
 #endif
 
@@ -1732,7 +1723,7 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
 #if AP_GPS_BLENDED_ENABLED
     if (instance == GPS_BLENDED_INSTANCE) {
         // return an offset for the blended GPS solution
-        return _blended_antenna_offset;
+        return ((AP_GPS_Blended*)drivers[instance])->get_antenna_offset();
     }
 #endif
 
@@ -1788,12 +1779,6 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     }
 #endif // HAL_BUILD_AP_PERIPH
 
-#if AP_GPS_BLENDED_ENABLED
-    if (instance == GPS_BLENDED_INSTANCE) {
-        return blend_health_check();
-    }
-#endif
-
     return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 }
@@ -1827,6 +1812,14 @@ bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
             }
         }
     }
+
+#if defined(GPS_BLENDED_INSTANCE)
+    if (!drivers[GPS_BLENDED_INSTANCE]->is_healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "GPS blending unhealthy");
+        return false;
+    }
+#endif
+
     return true;
 }
 
