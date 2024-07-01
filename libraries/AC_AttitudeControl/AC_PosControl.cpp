@@ -508,10 +508,10 @@ void AC_PosControl::soften_for_landing_xy()
 void AC_PosControl::init_xy_controller()
 {
     // set roll, pitch lean angle targets to current attitude
-    const Vector3f &att_target_euler_cd = _attitude_control.get_att_target_euler_cd();
-    _roll_target = att_target_euler_cd.x;
-    _pitch_target = att_target_euler_cd.y;
-    _yaw_target = att_target_euler_cd.z; // todo: this should be thrust vector heading, not yaw.
+    const auto &ahrs = AP::ahrs();
+    _roll_target = ahrs.roll_sensor;
+    _pitch_target = ahrs.pitch_sensor;
+    _yaw_target = ahrs.yaw_sensor; // todo: this should be thrust vector heading, not yaw.
     _yaw_rate_target = 0.0f;
     _angle_max_override_cd = 0.0;
 
