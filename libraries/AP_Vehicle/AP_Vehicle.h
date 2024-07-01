@@ -293,7 +293,8 @@ public:
     virtual bool set_home_to_current_location(bool lock) WARN_IF_UNUSED { return false; }
     virtual bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED { return false; }
 #endif
-
+    // notch pre-arm check
+    bool pre_arm_check_notches() const;
 protected:
 
     virtual void init_ardupilot() = 0;

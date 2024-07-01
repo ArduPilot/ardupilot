@@ -43,6 +43,7 @@ public:
         ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
         ARMING_CHECK_OSD         = (1U << 20),
+        ARMING_CHECK_NOTCHES     = (1U << 21),
     };
 
     enum class Method {
@@ -235,6 +236,7 @@ protected:
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
     bool crashdump_checks(bool report);
 #endif
+    bool notch_checks(bool report);
 
     virtual bool system_checks(bool report);
 
