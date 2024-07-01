@@ -251,7 +251,10 @@ void Copter::update_throttle_mix()
         // check if landing
         const bool landing = flightmode->is_landing();
 
-        if (((large_angle_request || force_flying) && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
+        // check for failed motor
+        const bool motor_failed = motors->get_thrust_boost();
+
+        if (((large_angle_request || motor_failed || force_flying) && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
             attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();
