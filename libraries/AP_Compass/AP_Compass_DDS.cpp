@@ -23,18 +23,18 @@
 
 AP_Compass_DDS::AP_Compass_DDS()
 {
-    //! @todo(srmainwaring) ordering awkward here, baro registers first,
-    // then uses the instance to generate the devid.
-    auto devid = AP_HAL::Device::make_bus_id(
+    //! @todo(srmainwaring) ordering awkward here. For comparison AP_Baro_DDS
+    // registers first, then uses the provided instance to generate the dev_id.
+    auto dev_id = AP_HAL::Device::make_bus_id(
         AP_HAL::Device::BUS_TYPE_DDS, 0, 0/*_instance*/, DEVTYPE_DDS);
 
-    register_compass(devid, _instance);
-    set_dev_id(_instance, devid);
+    register_compass(dev_id, _instance);
+    set_dev_id(_instance, dev_id);
     set_external(_instance, true);
 
     //! @todo(srmainwaring) remove debug info
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Compass_DDS: instance: %d, devid: %d",
-        _instance, devid);
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Compass_DDS: instance: %d, dev_id: %d",
+        _instance, dev_id);
 }
 
 void AP_Compass_DDS::handle_external(
