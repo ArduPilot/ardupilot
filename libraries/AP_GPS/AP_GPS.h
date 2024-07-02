@@ -437,6 +437,14 @@ public:
         return get_vdop(primary_instance);
     }
 
+    // horizontal accuracy
+    uint16_t get_hacc_cm(uint8_t instance) const {
+        return uint16_t(state[instance].horizontal_accuracy * 100);
+    }
+    uint16_t get_hacc_cm() const {
+        return get_hacc_cm(primary_instance);
+    }
+
     // the time we got our last fix in system milliseconds. This is
     // used when calculating how far we might have moved since that fix
     uint32_t last_fix_time_ms(uint8_t instance) const {

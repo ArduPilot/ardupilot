@@ -110,6 +110,7 @@ public:
         k_param_sprayer,
         k_param_angle_max,
         k_param_gps_hdop_good,
+        k_param_gps_hacc_good,
         k_param_battery,
         k_param_fs_batt_mah,            // unused - moved to AP_BattMonitor
         k_param_angle_rate_max,         // remove
@@ -410,6 +411,7 @@ public:
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
+    AP_Int16        gps_hacc_good;              // GPS Hacc value at or below this value represent a good position
 
     AP_Int8         super_simple;
 
