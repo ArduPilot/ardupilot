@@ -46,6 +46,11 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+protected:
+
+    // Return true if the monitor is missing an ESC
+    bool missing() const override;
+
 private:
 
     AP_Int32  _mask;
@@ -53,6 +58,9 @@ private:
     bool have_current;
     bool have_temperature;
     float delta_mah;
+
+    uint8_t esc_count;
+    bool missing_esc;
 };
 
 #endif  // AP_BATTERY_ESC_ENABLED

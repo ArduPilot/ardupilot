@@ -26,11 +26,17 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+protected:
+
+    // Return true if the monitor is missing a instance
+    bool missing() const override;
+
 private:
 
     AP_Int16  _sum_mask;
     uint8_t _instance;
     bool _has_current;
+    uint32_t _last_all_healthy_ms;
 };
 
 #endif  // AP_BATTERY_SUM_ENABLED
