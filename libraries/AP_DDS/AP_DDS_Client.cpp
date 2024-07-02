@@ -3,6 +3,9 @@
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
