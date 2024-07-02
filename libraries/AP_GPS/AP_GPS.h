@@ -201,8 +201,8 @@ public:
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
         uint32_t gps_yaw_time_ms;           ///< timestamp of last GPS yaw reading
         bool  gps_yaw_configured;           ///< GPS is configured to provide yaw
-        uint16_t hdop;                      ///< horizontal dilution of precision in cm
-        uint16_t vdop;                      ///< vertical dilution of precision in cm
+        uint16_t hdop;                      ///< horizontal dilution of precision, scaled by a factor of 100 (155 means the HDOP value is 1.55)
+        uint16_t vdop;                      ///< vertical dilution of precision, scaled by a factor of 100 (155 means the VDOP value is 1.55)
         uint8_t num_sats;                   ///< Number of visible satellites
         Vector3f velocity;                  ///< 3D velocity in m/s, in NED format
         float speed_accuracy;               ///< 3D velocity RMS accuracy estimate in m/s
