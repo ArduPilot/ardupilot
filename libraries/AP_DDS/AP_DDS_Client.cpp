@@ -56,6 +56,7 @@ ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topi
 sensor_msgs_msg_FluidPressure AP_DDS_Client::rx_air_pressure_0_topic {};
 sensor_msgs_msg_MagneticField AP_DDS_Client::rx_magnetometer_0_topic {};
 sensor_msgs_msg_NavSatFix AP_DDS_Client::rx_nav_sat_fix_0_topic {};
+mavros_msgs_msg_ESCTelemetry AP_DDS_Client::rx_esc_telem_0_topic {};
 #endif  // AP_COMPASS_DDS_ENABLED
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
@@ -676,6 +677,19 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             AP::gps().handle_external(gps, instance);
         }
 // #endif  // AP_GPS_DDS_ENABLED
+        break;
+    }
+    case topics[to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB)].dr_id.id: {
+        const bool success = mavros_msgs_msg_ESCTelemetry_deserialize_topic(ub, &rx_esc_telem_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+#if AP_ESC_TELEM_DDS_ENABLED
+        //! @todo(srmainwaring) populate message for handle_external();
+        AP::esc_telem().handle_external();
+#endif // AP_ESC_TELEM_DDS_ENABLED
         break;
     }
 #endif  // AP_DDS_SENSOR_SUBS_ENABLED

@@ -10,6 +10,8 @@
 #include "ardupilot_msgs/msg/GlobalPosition.h"
 #include "builtin_interfaces/msg/Time.h"
 
+#include "mavros_msgs/msg/ESCTelemetry.h"
+
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
@@ -85,6 +87,8 @@ private:
     static sensor_msgs_msg_MagneticField rx_magnetometer_0_topic;
     // incoming nav sat data
     static sensor_msgs_msg_NavSatFix rx_nav_sat_fix_0_topic;
+    // incoming esc telem data
+    static mavros_msgs_msg_ESCTelemetry rx_esc_telem_0_topic;
 #endif  // AP_COMPASS_DDS_ENABLED
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
