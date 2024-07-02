@@ -37,7 +37,7 @@ static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 #if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
@@ -56,7 +56,7 @@ ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topi
 sensor_msgs_msg_FluidPressure AP_DDS_Client::rx_air_pressure_0_topic {};
 sensor_msgs_msg_MagneticField AP_DDS_Client::rx_magnetometer_0_topic {};
 sensor_msgs_msg_NavSatFix AP_DDS_Client::rx_nav_sat_fix_0_topic {};
-#endif
+#endif  // AP_COMPASS_DDS_ENABLED
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -481,7 +481,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity_covariance[0] = -1;
     msg.linear_acceleration_covariance[0] = -1;
 }
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
@@ -622,7 +622,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         baro.temperature = 30.17;
 
         AP::baro().handle_external(baro);
-#endif
+#endif  // AP_BARO_DDS_ENABLED
         break;
     }
     case topics[to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB)].dr_id.id: {
@@ -642,7 +642,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             rx_magnetometer_0_topic.magnetic_field.z * -1.0E7);
 
         AP::compass().handle_external(mag);
-#endif
+#endif  // AP_COMPASS_DDS_ENABLED
         break;
     }
     case topics[to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB)].dr_id.id: {
@@ -675,10 +675,10 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         if (AP::gps().get_first_external_instance(instance)) {
             AP::gps().handle_external(gps, instance);
         }
-// #endif
+// #endif  // AP_GPS_DDS_ENABLED
         break;
     }
-#endif
+#endif  // AP_DDS_SENSOR_SUBS_ENABLED
     }
 
 }
@@ -1134,7 +1134,7 @@ void AP_DDS_Client::write_imu_topic()
         }
     }
 }
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 
 void AP_DDS_Client::write_geo_pose_topic()
 {
@@ -1221,7 +1221,7 @@ void AP_DDS_Client::update()
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);

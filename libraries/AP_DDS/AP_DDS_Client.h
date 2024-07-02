@@ -70,7 +70,7 @@ private:
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
 #if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     sensor_msgs_msg_Imu imu_topic;
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     rosgraph_msgs_msg_Clock clock_topic;
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
@@ -85,7 +85,7 @@ private:
     static sensor_msgs_msg_MagneticField rx_magnetometer_0_topic;
     // incoming nav sat data
     static sensor_msgs_msg_NavSatFix rx_nav_sat_fix_0_topic;
-#endif
+#endif  // AP_COMPASS_DDS_ENABLED
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
     // incoming transforms
@@ -106,7 +106,7 @@ private:
     static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
 #if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     static void update_topic(sensor_msgs_msg_Imu& msg);
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
     static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
 
@@ -135,7 +135,7 @@ private:
 #if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     // The last ms timestamp AP_DDS wrote an IMU message
     uint64_t last_imu_time_ms;
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     // The last ms timestamp AP_DDS wrote a Local Pose message
     uint64_t last_local_pose_time_ms;
     // The last ms timestamp AP_DDS wrote a Local Velocity message
@@ -217,7 +217,7 @@ public:
 #if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     //! @brief Serialize the current IMU data and publish to the IO stream(s)
     void write_imu_topic();
-#endif
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     //! @brief Serialize the current clock and publish to the IO stream(s)
     void write_clock_topic();
     //! @brief Serialize the current gps global origin and publish to the IO stream(s)
