@@ -10,11 +10,15 @@
 #include "ardupilot_msgs/msg/GlobalPosition.h"
 #include "builtin_interfaces/msg/Time.h"
 
+#include "mavros_msgs/msg/ESCTelemetry.h"
+
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
+#include "sensor_msgs/msg/FluidPressure.h"
 #include "sensor_msgs/msg/Imu.h"
 #include "sensor_msgs/msg/Joy.h"
+#include "sensor_msgs/msg/MagneticField.h"
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
 #include "geographic_msgs/msg/GeoPointStamped.h"
@@ -66,7 +70,9 @@ private:
     geometry_msgs_msg_TwistStamped tx_local_velocity_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     sensor_msgs_msg_Imu imu_topic;
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     rosgraph_msgs_msg_Clock clock_topic;
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
@@ -74,6 +80,16 @@ private:
     static geometry_msgs_msg_TwistStamped rx_velocity_control_topic;
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    // incoming air pressure data
+    static sensor_msgs_msg_FluidPressure rx_air_pressure_0_topic;
+    // incoming magnetometer data
+    static sensor_msgs_msg_MagneticField rx_magnetometer_0_topic;
+    // incoming nav sat data
+    static sensor_msgs_msg_NavSatFix rx_nav_sat_fix_0_topic;
+    // incoming esc telem data
+    static mavros_msgs_msg_ESCTelemetry rx_esc_telem_0_topic;
+#endif  // AP_COMPASS_DDS_ENABLED
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
     // incoming transforms
@@ -92,7 +108,9 @@ private:
     static void update_topic(geometry_msgs_msg_PoseStamped& msg);
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
     static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     static void update_topic(sensor_msgs_msg_Imu& msg);
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
     static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
 
@@ -118,8 +136,10 @@ private:
     uint64_t last_nav_sat_fix_time_ms;
     // The last ms timestamp AP_DDS wrote a BatteryState message
     uint64_t last_battery_state_time_ms;
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     // The last ms timestamp AP_DDS wrote an IMU message
     uint64_t last_imu_time_ms;
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     // The last ms timestamp AP_DDS wrote a Local Pose message
     uint64_t last_local_pose_time_ms;
     // The last ms timestamp AP_DDS wrote a Local Velocity message
@@ -198,8 +218,10 @@ public:
     void write_tx_local_velocity_topic();
     //! @brief Serialize the current geo_pose and publish to the IO stream(s)
     void write_geo_pose_topic();
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     //! @brief Serialize the current IMU data and publish to the IO stream(s)
     void write_imu_topic();
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     //! @brief Serialize the current clock and publish to the IO stream(s)
     void write_clock_topic();
     //! @brief Serialize the current gps global origin and publish to the IO stream(s)

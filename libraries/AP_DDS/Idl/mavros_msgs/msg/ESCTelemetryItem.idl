@@ -1,0 +1,44 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from mavros_msgs/msg/ESCTelemetryItem.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module mavros_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "APM ESC Telemetry as returned by BLHeli" "\n"
+      "" "\n"
+      "See:" "\n"
+      "https://mavlink.io/en/messages/ardupilotmega.html#ESC_TELEMETRY_1_TO_4" "\n"
+      "https://mavlink.io/en/messages/ardupilotmega.html#ESC_TELEMETRY_5_TO_8" "\n"
+      "https://mavlink.io/en/messages/ardupilotmega.html#ESC_TELEMETRY_9_TO_12")
+    struct ESCTelemetryItem {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "deg C")
+      float temperature;
+
+      @verbatim (language="comment", text=
+        "V")
+      float voltage;
+
+      @verbatim (language="comment", text=
+        "A")
+      float current;
+
+      @verbatim (language="comment", text=
+        "Ah")
+      float totalcurrent;
+
+      @verbatim (language="comment", text=
+        "1/min")
+      int32 rpm;
+
+      @verbatim (language="comment", text=
+        "count of telemetry packets")
+      uint16 count;
+    };
+  };
+};
