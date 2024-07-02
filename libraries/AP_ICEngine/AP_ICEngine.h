@@ -73,7 +73,7 @@ public:
 
     static AP_ICEngine *get_singleton() { return _singleton; }
 
-private:
+//!!private:
     static AP_ICEngine *_singleton;
 
     void set_ignition(bool on);
