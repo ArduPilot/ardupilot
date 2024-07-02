@@ -24,8 +24,7 @@ env OPTIMIZE -Os
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART3
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # USB
 PA11 OTG_FS_DM OTG1

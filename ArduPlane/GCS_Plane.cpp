@@ -114,6 +114,7 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     }
 #endif
 
+#if AP_RANGEFINDER_ENABLED
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder && rangefinder->has_orientation(ROTATION_PITCH_270)) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;
@@ -124,4 +125,5 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;            
         }
     }
+#endif
 }

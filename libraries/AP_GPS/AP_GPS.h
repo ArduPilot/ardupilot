@@ -551,9 +551,10 @@ public:
     // returns true if all GPS instances have passed all final arming checks/state changes
     bool prepare_for_arming(void);
 
-    // returns true if all GPS backend drivers haven't seen any failure
-    // this is for backends to be able to spout pre arm error messages
-    bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
+    // returns true if all GPS backend drivers are OK with the concept
+    // of the vehicle arming.  this is for backends to be able to
+    // spout pre arm error messages
+    bool pre_arm_checks(char failure_msg[], uint16_t failure_msg_len);
 
     // returns false if any GPS drivers are not performing their logging appropriately
     bool logging_failed(void) const;

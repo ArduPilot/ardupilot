@@ -61,13 +61,17 @@ void EFI_Hirth::update_receive()
         if (received_packet_code == PacketCode::SetValues) {
             // do this synchronously for now
             handle_set_values();
-        } else {
+        } else if (uint8_t(received_packet_code) == 0x04 ||
+                   uint8_t(received_packet_code) == 0x0B ||
+                   uint8_t(received_packet_code) == 0x0D) {
             assert_receive_size(3);
             if (requested_data_record.time_ms != 0) {
                 AP_HAL::panic("Requesting too fast?");
             }
             requested_data_record.code = received_packet_code;
             requested_data_record.time_ms = AP_HAL::millis();
+        } else {
+            AP_HAL::panic("Invalid packet code");
         }
     } else {
         AP_HAL::panic("checksum failed");
@@ -90,6 +94,14 @@ void EFI_Hirth::handle_set_values()
     assert_receive_size(23);
     static_assert(sizeof(settings) == 20, "correct number of bytes in settings");
     memcpy((void*)&settings, &receive_buf[2], sizeof(settings));
+
+    // send ACK for set-values
+    constexpr uint8_t set_values_ack[] {
+        3,  // length
+        uint8_t(PacketCode::SetValues),  // code
+        3 + uint8_t(PacketCode::SetValues)
+    };
+    write_to_autopilot((const char*)set_values_ack, sizeof(set_values_ack));
 }
 
 void EFI_Hirth::update_send()

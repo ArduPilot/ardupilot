@@ -52,9 +52,5 @@ private:
     LowPassFilter2pVector3f _gyro_filter;
 
     enum Rotation _rotation; 
-
-    // gyro and accel instances
-    uint8_t _gyro_instance;
-    uint8_t _accel_instance;
 };
 #endif // __AP_INERTIAL_SENSOR_L3G4200D2_H__

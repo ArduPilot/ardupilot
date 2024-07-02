@@ -243,9 +243,11 @@ void NavEKF2_core::InitialiseVariables()
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
     activeHgtSource = 0;
+#if AP_RANGEFINDER_ENABLED
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
     memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
+#endif
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
     ekfGpsRefHgt = 0.0;

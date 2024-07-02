@@ -709,6 +709,9 @@ public:
         _force_resume = force_resume;
     }
 
+    // returns true if configured to resume
+    bool is_resume() const { return _restart == 0 || _force_resume; }
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore &get_semaphore(void)

@@ -212,14 +212,14 @@ void AP_InertialSensor_BMI270::start()
 
     _dev->get_semaphore()->give();
 
-    if (!_imu.register_accel(_accel_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270)) ||
-        !_imu.register_gyro(_gyro_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270))) {
+    if (!_imu.register_accel(accel_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270)) ||
+        !_imu.register_gyro(gyro_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270))) {
         return;
     }
 
     // setup sensor rotations from probe()
-    set_gyro_orientation(_gyro_instance, _rotation);
-    set_accel_orientation(_accel_instance, _rotation);
+    set_gyro_orientation(gyro_instance, _rotation);
+    set_accel_orientation(accel_instance, _rotation);
 
     /* Call read_fifo() at 1600Hz */
     periodic_handle = _dev->register_periodic_callback(BACKEND_PERIOD_US, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI270::read_fifo, void));
@@ -227,8 +227,8 @@ void AP_InertialSensor_BMI270::start()
 
 bool AP_InertialSensor_BMI270::update()
 {
-    update_accel(_accel_instance);
-    update_gyro(_gyro_instance);
+    update_accel(accel_instance);
+    update_gyro(gyro_instance);
     return true;
 }
 
@@ -364,8 +364,8 @@ void AP_InertialSensor_BMI270::fifo_reset()
     // flush and reset FIFO
     write_register(BMI270_REG_CMD, BMI270_CMD_FIFOFLUSH);
 
-    notify_accel_fifo_reset(_accel_instance);
-    notify_gyro_fifo_reset(_gyro_instance);
+    notify_accel_fifo_reset(accel_instance);
+    notify_gyro_fifo_reset(gyro_instance);
 }
 
 /*
@@ -383,8 +383,8 @@ void AP_InertialSensor_BMI270::read_fifo(void)
 
     uint8_t len[2];
     if (!read_registers(BMI270_REG_FIFO_LENGTH_LSB, len, 2)) {
-        _inc_accel_error_count(_accel_instance);
-        _inc_gyro_error_count(_gyro_instance);
+        _inc_accel_error_count(accel_instance);
+        _inc_gyro_error_count(gyro_instance);
         return;
     }
     uint16_t fifo_length = len[0] + (len[1]<<8);
@@ -403,8 +403,8 @@ void AP_InertialSensor_BMI270::read_fifo(void)
 
     uint8_t data[fifo_length];
     if (!read_registers(BMI270_REG_FIFO_DATA, data, fifo_length)) {
-        _inc_accel_error_count(_accel_instance);
-        _inc_gyro_error_count(_gyro_instance);
+        _inc_accel_error_count(accel_instance);
+        _inc_gyro_error_count(gyro_instance);
         return;
     }
 
@@ -462,14 +462,14 @@ void AP_InertialSensor_BMI270::read_fifo(void)
         temperature_counter = 0;
         uint8_t tbuf[2];
         if (!read_registers(BMI270_REG_TEMPERATURE_LSB, tbuf, 2)) {
-            _inc_accel_error_count(_accel_instance);
-            _inc_gyro_error_count(_gyro_instance);
+            _inc_accel_error_count(accel_instance);
+            _inc_gyro_error_count(gyro_instance);
         } else {
             uint16_t tval = tbuf[0] | (tbuf[1] << 8);
             if (tval != 0x8000) {   // 0x8000 is invalid
                 int16_t klsb = static_cast<int16_t>(tval);
                 float temp_degc = klsb * 0.002f + 23.0f;
-                _publish_temperature(_accel_instance, temp_degc);
+                _publish_temperature(accel_instance, temp_degc);
             }
         }
     }
@@ -487,8 +487,8 @@ void AP_InertialSensor_BMI270::parse_accel_frame(const uint8_t* d)
 
     accel *= scale;
 
-    _rotate_and_correct_accel(_accel_instance, accel);
-    _notify_new_accel_raw_sample(_accel_instance, accel);
+    _rotate_and_correct_accel(accel_instance, accel);
+    _notify_new_accel_raw_sample(accel_instance, accel);
 }
 
 void AP_InertialSensor_BMI270::parse_gyro_frame(const uint8_t* d)
@@ -502,8 +502,8 @@ void AP_InertialSensor_BMI270::parse_gyro_frame(const uint8_t* d)
     Vector3f gyro(xyz[0], xyz[1], xyz[2]);
     gyro *= scale;
 
-    _rotate_and_correct_gyro(_gyro_instance, gyro);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+    _rotate_and_correct_gyro(gyro_instance, gyro);
+    _notify_new_gyro_raw_sample(gyro_instance, gyro);
 }
 
 bool AP_InertialSensor_BMI270::hardware_init()

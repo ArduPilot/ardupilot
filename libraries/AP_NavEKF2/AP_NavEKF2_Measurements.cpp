@@ -5,6 +5,8 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
+#if AP_RANGEFINDER_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 
@@ -110,6 +112,7 @@ void NavEKF2_core::readRangeFinder(void)
         }
     }
 }
+#endif
 
 // write the raw optical flow measurements
 // this needs to be called externally.
@@ -335,13 +338,13 @@ void NavEKF2_core::readIMUData()
     if (ins.use_accel(imu_index)) {
         accel_active = imu_index;
     } else {
-        accel_active = ins.get_primary_accel();
+        accel_active = ins.get_first_usable_accel();
     }
 
     if (ins.use_gyro(imu_index)) {
         gyro_active = imu_index;
     } else {
-        gyro_active = ins.get_primary_gyro();
+        gyro_active = ins.get_first_usable_gyro();
     }
 
     if (gyro_active != gyro_index_active) {

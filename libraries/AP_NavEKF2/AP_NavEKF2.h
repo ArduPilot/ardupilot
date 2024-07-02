@@ -443,15 +443,6 @@ private:
         NO_SETUP,
         NUM_INIT_FAILURES
     };
-    // initialization failure reasons
-    const char* initFailureReason[int(InitFailures::NUM_INIT_FAILURES)] {
-        "EKF2: unknown initialization failure",
-        "EKF2: EK2_enable is false",
-        "EKF2: no IMUs available",
-        "EKF2: EK2_IMU_MASK is zero",
-        "EKF2: insufficient memory available",
-        "EKF2: core setup failed"
-    };
     InitFailures initFailure;
 
     // update the yaw reset data to capture changes due to a lane switch

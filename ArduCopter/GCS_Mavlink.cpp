@@ -89,6 +89,10 @@ MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
         return MAV_STATE_STANDBY;
     }
 
+    if (!copter.ap.initialised) {
+    	return MAV_STATE_BOOT;
+    }
+
     return MAV_STATE_ACTIVE;
 }
 
@@ -1213,6 +1217,7 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
 
         // ensure thrust field is not ignored
         if (throttle_ignore) {
+            // The throttle input is not defined
             return;
         }
 
@@ -1229,6 +1234,18 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
                 // The attitude quaternion is ill-defined
                 return;
             }
+        }
+
+        Vector3f ang_vel_body;
+        if (!roll_rate_ignore && !pitch_rate_ignore && !yaw_rate_ignore) {
+            ang_vel_body.x = packet.body_roll_rate;
+            ang_vel_body.y = packet.body_pitch_rate;
+            ang_vel_body.z = packet.body_yaw_rate;
+        } else if (!(roll_rate_ignore && pitch_rate_ignore && yaw_rate_ignore)) {
+            // The body rates are ill-defined
+            // input is not valid so stop
+            copter.mode_guided.init(true);
+            return;
         }
 
         // check if the message's thrust field should be interpreted as a climb rate or as thrust
@@ -1252,18 +1269,7 @@ void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_messag
             }
         }
 
-        Vector3f ang_vel;
-        if (!roll_rate_ignore) {
-            ang_vel.x = packet.body_roll_rate;
-        }
-        if (!pitch_rate_ignore) {
-            ang_vel.y = packet.body_pitch_rate;
-        }
-        if (!yaw_rate_ignore) {
-            ang_vel.z = packet.body_yaw_rate;
-        }
-
-        copter.mode_guided.set_angle(attitude_quat, ang_vel,
+        copter.mode_guided.set_angle(attitude_quat, ang_vel_body,
                 climb_rate_or_thrust, use_thrust);
 }
 

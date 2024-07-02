@@ -56,7 +56,6 @@ OSPIDEV  w25q         OCTOSPI1 MODE3      130*MHZ   21           1
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
-DEFAULTGPIO OUTPUT LOW PULLDOWN
 
 # Add CS pins to ensure they are high in bootloader
 PA15 ICM42688_CS CS

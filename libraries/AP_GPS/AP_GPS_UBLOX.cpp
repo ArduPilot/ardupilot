@@ -1719,8 +1719,10 @@ AP_GPS_UBLOX::_parse_gps(void)
             state.hdop        = _buffer.pvt.p_dop;
             state.vdop        = _buffer.pvt.p_dop;
         }
-                    
-        state.last_gps_time_ms = AP_HAL::millis();
+
+        if (_buffer.pvt.fix_type >= 2) {
+            state.last_gps_time_ms = AP_HAL::millis();
+        }
         
         // time
         state.time_week_ms    = _buffer.pvt.itow;
@@ -1835,7 +1837,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 void
 AP_GPS_UBLOX::pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us)
 {
-    _last_pps_time_us = timestamp_us;
+    _last_pps_time_us = AP_HAL::micros64();
 }
 
 void

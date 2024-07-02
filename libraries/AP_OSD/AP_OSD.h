@@ -33,6 +33,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
 #include <AC_Fence/AC_Fence_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 class AP_OSD_Backend;
 class AP_MSP;
@@ -259,6 +260,9 @@ private:
     AP_Int8 txt_resolution;
     AP_Int8 font_index;
 #endif
+#if HAL_WITH_ESC_TELEM
+    AP_Int8 esc_index;
+#endif
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t instance,VoltageType  type,uint8_t x, uint8_t y);
@@ -331,7 +335,9 @@ private:
 #if AP_FENCE_ENABLED
     void draw_fence(uint8_t x, uint8_t y);
 #endif
+#if AP_RANGEFINDER_ENABLED
     void draw_rngf(uint8_t x, uint8_t y);
+#endif
 
 #if AP_OSD_EXTENDED_LNK_STATS
     // Extended link stats data panels

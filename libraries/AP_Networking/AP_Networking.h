@@ -266,9 +266,11 @@ private:
         uint32_t last_size_rx;
         bool packetise;
         bool connected;
+        uint32_t last_udp_connect_address;
+        uint16_t last_udp_connect_port;
         bool have_received;
         bool close_on_recv_error;
-
+        uint32_t last_udp_srv_recv_time_ms;
         HAL_Semaphore sem;
     };
 #endif // AP_NETWORKING_REGISTER_PORT_ENABLED
@@ -281,11 +283,13 @@ private:
         TEST_UDP_CLIENT = (1U<<0),
         TEST_TCP_CLIENT = (1U<<1),
         TEST_TCP_DISCARD = (1U<<2),
+        TEST_TCP_REFLECT = (1U<<3),
     };
     void start_tests(void);
     void test_UDP_client(void);
     void test_TCP_client(void);
     void test_TCP_discard(void);
+    void test_TCP_reflect(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
 
 #if AP_NETWORKING_REGISTER_PORT_ENABLED

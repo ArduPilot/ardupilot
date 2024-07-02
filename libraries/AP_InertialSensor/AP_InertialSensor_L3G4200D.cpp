@@ -250,8 +250,8 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
  */
 void AP_InertialSensor_L3G4200D::start(void)
 {
-    if (!_imu.register_gyro(_gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_L3G4200D)) ||
-        !_imu.register_accel(_accel_instance, 800, _dev_accel->get_bus_id_devtype(DEVTYPE_L3G4200D))) {
+    if (!_imu.register_gyro(gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_L3G4200D)) ||
+        !_imu.register_accel(accel_instance, 800, _dev_accel->get_bus_id_devtype(DEVTYPE_L3G4200D))) {
         return;
     }
 
@@ -276,8 +276,8 @@ void AP_InertialSensor_L3G4200D::_set_filter_frequency(uint8_t filter_hz)
  */
 bool AP_InertialSensor_L3G4200D::update(void)
 {
-    update_gyro(_gyro_instance);
-    update_accel(_accel_instance);
+    update_gyro(gyro_instance);
+    update_accel(accel_instance);
 
     return true;
 }
@@ -313,8 +313,8 @@ void AP_InertialSensor_L3G4200D::_accumulate_gyro (void)
                 // Adjust for chip scaling to get radians/sec
                 //hal.console->printf("gyro %f \r\n",gyro.x); 
                 gyro *= L3G4200D_GYRO_SCALE_R_S;
-                _rotate_and_correct_gyro(_gyro_instance, gyro);
-                _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+                _rotate_and_correct_gyro(gyro_instance, gyro);
+                _notify_new_gyro_raw_sample(gyro_instance, gyro);
             }
         }
     }
@@ -341,8 +341,8 @@ void AP_InertialSensor_L3G4200D::_accumulate_accel (void)
                 Vector3f accel = Vector3f(buffer[i][0], -buffer[i][1], -buffer[i][2]);
                 // Adjust for chip scaling to get m/s/s
                 accel *= ADXL345_ACCELEROMETER_SCALE_M_S;
-                _rotate_and_correct_accel(_accel_instance, accel);
-                _notify_new_accel_raw_sample(_accel_instance, accel);
+                _rotate_and_correct_accel(accel_instance, accel);
+                _notify_new_accel_raw_sample(accel_instance, accel);
             }
         }
     } 

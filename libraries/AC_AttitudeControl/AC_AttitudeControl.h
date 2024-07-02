@@ -120,12 +120,27 @@ public:
 
     // get the roll angular velocity limit in radians/s
     float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max); }
+    // get the roll angular velocity limit in degrees/s
+    float get_ang_vel_roll_max_degs() const { return _ang_vel_roll_max; }
+
+    // set the roll angular velocity limit in degrees/s
+    void set_ang_vel_roll_max_degs(float vel_roll_max) { _ang_vel_roll_max.set(vel_roll_max); }
 
     // get the pitch angular velocity limit in radians/s
     float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max); }
+    // get the pitch angular velocity limit in degrees/s
+    float get_ang_vel_pitch_max_degs() const { return _ang_vel_pitch_max; }
+
+    // set the pitch angular velocity limit in degrees/s
+    void set_ang_vel_pitch_max_degs(float vel_pitch_max) { _ang_vel_pitch_max.set(vel_pitch_max); }
 
     // get the yaw angular velocity limit in radians/s
     float get_ang_vel_yaw_max_rads() const { return radians(_ang_vel_yaw_max); }
+    // get the yaw angular velocity limit in degrees/s
+    float get_ang_vel_yaw_max_degs() const { return _ang_vel_yaw_max; }
+
+    // set the yaw angular velocity limit in degrees/s
+    void set_ang_vel_yaw_max_degs(float vel_yaw_max) { _ang_vel_yaw_max.set(vel_yaw_max); }
 
     // get the slew yaw rate limit in deg/s
     float get_slew_yaw_max_degs() const;
@@ -160,8 +175,8 @@ public:
     void inertial_frame_reset();
 
     // Command a Quaternion attitude with feedforward and smoothing
-    // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
-    virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target);
+    // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the body frame angular velocity
+    virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
@@ -378,6 +393,9 @@ public:
 
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
+
+    // enable accessor for inverted flight flag on backends that support it
+    virtual bool get_inverted_flight() { return false;}
 
     // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
     void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);

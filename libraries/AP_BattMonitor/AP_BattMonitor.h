@@ -81,6 +81,7 @@ public:
     // battery failsafes must be defined in levels of severity so that vehicles wont fall backwards
     enum class Failsafe : uint8_t {
         None = 0,
+        Unhealthy,
         Low,
         Critical
     };
@@ -153,6 +154,7 @@ public:
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
         Failsafe failsafe;                     // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
+        uint32_t    last_healthy_ms;           // Time when monitor was last healthy
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time

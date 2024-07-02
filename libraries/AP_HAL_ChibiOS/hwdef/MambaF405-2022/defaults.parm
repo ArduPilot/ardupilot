@@ -1,7 +1,7 @@
 # setup for LEDs on chan9
 SERVO7_FUNCTION 120
 # Default VTX power to on
-RELAY_DEFAULT 1
+RELAY2_DEFAULT 1
 # UART1 is RX input
 SERIAL1_PROTOCOL 23
 #  UART2 is GPS

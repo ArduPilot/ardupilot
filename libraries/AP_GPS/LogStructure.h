@@ -23,7 +23,7 @@
 // @Field: GMS: milliseconds since start of GPS Week
 // @Field: GWk: weeks since 5 Jan 1980
 // @Field: NSats: number of satellites visible
-// @Field: HDop: horizontal precision
+// @Field: HDop: horizontal dilution of precision
 // @Field: Lat: latitude
 // @Field: Lng: longitude
 // @Field: Alt: altitude
@@ -55,7 +55,7 @@ struct PACKED log_GPS {
 // @Description: GPS accuracy information
 // @Field: I: GPS instance number
 // @Field: TimeUS: Time since system startup
-// @Field: VDop: vertical degree of procession
+// @Field: VDop: vertical dilution of precision
 // @Field: HAcc: horizontal position accuracy
 // @Field: VAcc: vertical position accuracy
 // @Field: SAcc: speed accuracy

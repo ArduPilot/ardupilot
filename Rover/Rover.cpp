@@ -70,7 +70,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     //         Function name,          Hz,     us,
     SCHED_TASK(read_radio,             50,    200,   3),
     SCHED_TASK(ahrs_update,           400,    400,   6),
+#if AP_RANGEFINDER_ENABLED
     SCHED_TASK(read_rangefinders,      50,    200,   9),
+#endif
 #if AP_OPTICALFLOW_ENABLED
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
@@ -293,17 +295,6 @@ void Rover::nav_script_time_done(uint16_t id)
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if AP_STATS_ENABLED
-/*
-  update AP_Stats
-*/
-void Rover::stats_update(void)
-{
-    AP::stats()->set_flying(g2.motors.active());
-}
-#endif
-
-
 // update AHRS system
 void Rover::ahrs_update()
 {
@@ -468,6 +459,11 @@ void Rover::one_second_loop(void)
     g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
     g2.pos_control.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
     g2.wheel_rate_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+
+#if AP_STATS_ENABLED
+    // Update stats "flying" time
+    AP::stats()->set_flying(g2.motors.active());
+#endif
 }
 
 void Rover::update_current_mode(void)

@@ -384,8 +384,10 @@ public:
     // windvane
     AP_WindVane windvane;
 
+#if AP_MISSION_ENABLED
     // mission behave
-    AP_Int8 mis_done_behave;
+    AP_Enum<ModeAuto::DoneBehaviour> mis_done_behave;
+#endif
 
     // balance both pitch trim
     AP_Float bal_pitch_trim;

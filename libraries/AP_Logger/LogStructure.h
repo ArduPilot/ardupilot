@@ -1082,7 +1082,7 @@ struct PACKED log_VER {
 // @Field: NumPts: number of points currently in use
 // @Field: MaxPts: maximum number of points that could be used
 // @Field: Action: most recent internal action taken by SRTL library
-// @FieldValueEnum: Action: AP_SmartRTL::SRTL_Actions
+// @FieldValueEnum: Action: AP_SmartRTL::Action
 // @Field: N: point associated with most recent action (North component)
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
@@ -1309,7 +1309,7 @@ LOG_STRUCTURE_FROM_AIS \
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
       "MOTB", "QfffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,ThrOut,FailFlags", "s------", "F------" , true }
 
-// message types 0 to 63 reserved for vehicle specific use
+// message types 0 to 31 reserved for vehicle-specific use
 
 // message types for common messages
 enum LogMessages : uint8_t {

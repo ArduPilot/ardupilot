@@ -63,6 +63,9 @@ MAV_STATE GCS_MAVLINK_Sub::vehicle_system_status() const
     if (sub.motors.armed()) {
         return MAV_STATE_ACTIVE;
     }
+    if (!sub.ap.initialised) {
+    	return MAV_STATE_BOOT;
+    }
 
     return MAV_STATE_STANDBY;
 }

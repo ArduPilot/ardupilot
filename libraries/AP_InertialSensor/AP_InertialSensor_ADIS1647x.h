@@ -66,8 +66,6 @@ private:
         Delta32    =3
     } opmode;
 
-    uint8_t accel_instance;
-    uint8_t gyro_instance;
     enum Rotation rotation;
     uint8_t drdy_pin;
 

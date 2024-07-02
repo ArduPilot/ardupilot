@@ -38,8 +38,7 @@ PE4 LED_ACTIVITY OUTPUT HIGH
 define HAL_LED_ON 0
 define HAL_LED_OFF 1
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 # Add CS pins to ensure they are high in bootloader
 PC15 BMI270_CS1 CS

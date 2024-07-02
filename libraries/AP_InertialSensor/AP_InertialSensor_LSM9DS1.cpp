@@ -321,8 +321,8 @@ void AP_InertialSensor_LSM9DS1::_fifo_reset()
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
-    notify_accel_fifo_reset(_accel_instance);
-    notify_gyro_fifo_reset(_gyro_instance);
+    notify_accel_fifo_reset(accel_instance);
+    notify_gyro_fifo_reset(gyro_instance);
 }
 
 /*
@@ -330,15 +330,15 @@ void AP_InertialSensor_LSM9DS1::_fifo_reset()
  */
 void AP_InertialSensor_LSM9DS1::start(void)
 {
-    if (!_imu.register_gyro(_gyro_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_GYR_LSM9DS1)) ||
-        !_imu.register_accel(_accel_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1))) {
+    if (!_imu.register_gyro(gyro_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_GYR_LSM9DS1)) ||
+        !_imu.register_accel(accel_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1))) {
         return;
     }
 
-    set_accel_orientation(_accel_instance, _rotation);
-    set_gyro_orientation(_gyro_instance, _rotation);
+    set_accel_orientation(accel_instance, _rotation);
+    set_gyro_orientation(gyro_instance, _rotation);
 
-    _set_accel_max_abs_offset(_accel_instance, 5.0f);
+    _set_accel_max_abs_offset(accel_instance, 5.0f);
 
     /* start the timer process to read samples */
     _dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_LSM9DS1::_poll_data, void));
@@ -431,7 +431,7 @@ void AP_InertialSensor_LSM9DS1::_poll_data()
     AP_HAL::Device::checkreg reg;
     if (!_dev->check_next_register(reg)) {
         log_register_change(_dev->get_bus_id(), reg);
-        _inc_accel_error_count(_accel_instance);
+        _inc_accel_error_count(accel_instance);
     }
 }
 
@@ -465,8 +465,8 @@ void AP_InertialSensor_LSM9DS1::_read_data_transaction_x(uint16_t samples)
     Vector3f accel_data(raw_data.x, raw_data.y, -raw_data.z);
     accel_data *= _accel_scale;
 
-    _rotate_and_correct_accel(_accel_instance, accel_data);
-    _notify_new_accel_raw_sample(_accel_instance, accel_data);
+    _rotate_and_correct_accel(accel_instance, accel_data);
+    _notify_new_accel_raw_sample(accel_instance, accel_data);
 }
 
 /*
@@ -501,14 +501,14 @@ void AP_InertialSensor_LSM9DS1::_read_data_transaction_g(uint16_t samples)
     Vector3f gyro_data(raw_data.x, raw_data.y, -raw_data.z);
     gyro_data *= _gyro_scale;
 
-    _rotate_and_correct_gyro(_gyro_instance, gyro_data);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro_data);
+    _rotate_and_correct_gyro(gyro_instance, gyro_data);
+    _notify_new_gyro_raw_sample(gyro_instance, gyro_data);
 }
 
 bool AP_InertialSensor_LSM9DS1::update()
 {
-    update_gyro(_gyro_instance);
-    update_accel(_accel_instance);
+    update_gyro(gyro_instance);
+    update_accel(accel_instance);
 
     return true;
 }

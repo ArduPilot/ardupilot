@@ -578,11 +578,17 @@ void AP_Spektrum_Telem::calc_gps_status()
 void AP_Spektrum_Telem::calc_esc()
 {
 #if HAL_WITH_ESC_TELEM
-    const volatile AP_ESC_Telem_Backend::TelemetryData& td = AP::esc_telem().get_telem_data(0); // ideally should rotate between ESCs
+    uint8_t esc = AP::esc_telem().get_max_rpm_esc();
+    const volatile AP_ESC_Telem_Backend::TelemetryData& td = AP::esc_telem().get_telem_data(esc); // ideally should rotate between ESCs
+    float rpm = 0.0f;
+    uint16_t rpmdata = 0xFFFFU;
+    if (AP::esc_telem().get_rpm(esc, rpm)) {
+        rpmdata = uint16_t(roundf(rpm));
+    }
 
 	_telem.esc.identifier = TELE_DEVICE_ESC;	    // Source device = 0x20
 	_telem.esc.sID = 0;									// Secondary ID
-	_telem.esc.RPM = htobe16(uint16_t(roundf(AP::esc_telem().get_average_motor_frequency_hz() * 60)));	// Electrical RPM, 10RPM (0-655340 RPM)  0xFFFF --> "No data"
+	_telem.esc.RPM = htobe16(rpmdata);	// Electrical RPM, 10RPM (0-655340 RPM)  0xFFFF --> "No data"
 	_telem.esc.voltsInput = htobe16(td.voltage * 100);	    // Volts, 0.01v (0-655.34V)       0xFFFF --> "No data"
 	_telem.esc.tempFET = htobe16(td.temperature_cdeg * 10);	// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
 	_telem.esc.currentMotor = htobe16(td.current * 100);		// Current, 10mA (0-655.34A)      0xFFFF --> "No data"

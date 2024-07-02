@@ -83,6 +83,9 @@ public:
     // ESC_TELEM_DATA_TIMEOUT_MS
     uint32_t get_active_esc_mask() const;
 
+    // return an active ESC with the highest RPM for the purposes of reporting (e.g. in the OSD)
+    uint8_t get_max_rpm_esc() const;
+
     // return the last time telemetry data was received in ms for the given ESC or 0 if never
     uint32_t get_last_telem_data_ms(uint8_t esc_index) const {
         if (esc_index >= ESC_TELEM_MAX_ESCS) {return 0;}

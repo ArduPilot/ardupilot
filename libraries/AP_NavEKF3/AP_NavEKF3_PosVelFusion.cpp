@@ -1128,6 +1128,7 @@ void NavEKF3_core::FuseVelPosNED()
 // select the height measurement to be fused from the available baro, range finder and GPS sources
 void NavEKF3_core::selectHeightForFusion()
 {
+#if AP_RANGEFINDER_ENABLED
     // Read range finder data and check for new data in the buffer
     // This data is used by both height and optical flow fusion processing
     readRangeFinder();
@@ -1147,6 +1148,7 @@ void NavEKF3_core::selectHeightForFusion()
             }
         }
     }
+#endif  // AP_RANGEFINDER_ENABLED
 
     // read baro height data from the sensor and check for new data in the buffer
     readBaroData();
@@ -1160,6 +1162,7 @@ void NavEKF3_core::selectHeightForFusion()
     if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::NONE)) {
         // user has specified no height sensor
         activeHgtSource = AP_NavEKF_Source::SourceZ::NONE;
+#if AP_RANGEFINDER_ENABLED
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
@@ -1201,6 +1204,7 @@ void NavEKF3_core::selectHeightForFusion()
             // reliable terrain and range finder so start using range finder height
             activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
         }
+#endif
     } else if (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) {
         activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {

@@ -88,19 +88,19 @@ public:
 private:
 
     // enums for logging latest actions
-    enum SRTL_Actions {
-        SRTL_POINT_ADD,
-        SRTL_POINT_PRUNE,
-        SRTL_POINT_SIMPLIFY,
-        SRTL_ADD_FAILED_NO_SEMAPHORE,
-        SRTL_ADD_FAILED_PATH_FULL,
-        SRTL_POP_FAILED_NO_SEMAPHORE,
-        SRTL_PEEK_FAILED_NO_SEMAPHORE,
-        SRTL_DEACTIVATED_INIT_FAILED,
-        SRTL_DEACTIVATED_BAD_POSITION,
-        SRTL_DEACTIVATED_BAD_POSITION_TIMEOUT,
-        SRTL_DEACTIVATED_PATH_FULL_TIMEOUT,
-        SRTL_DEACTIVATED_PROGRAM_ERROR,
+    enum Action : uint8_t {
+        POINT_ADD = 0,
+        POINT_PRUNE = 1,
+        POINT_SIMPLIFY = 2,
+        ADD_FAILED_NO_SEMAPHORE = 3,
+        ADD_FAILED_PATH_FULL = 4,
+        POP_FAILED_NO_SEMAPHORE = 5,
+        PEEK_FAILED_NO_SEMAPHORE = 6,
+        DEACTIVATED_INIT_FAILED = 7,
+        // DEACTIVATED_BAD_POSITION = 8,  unused, but historical
+        DEACTIVATED_BAD_POSITION_TIMEOUT = 9,
+        DEACTIVATED_PATH_FULL_TIMEOUT = 10,
+        DEACTIVATED_PROGRAM_ERROR = 11,
     };
 
     // enum for SRTL_OPTIONS parameter
@@ -171,13 +171,13 @@ private:
     static dist_point segment_segment_dist(const Vector3f& p1, const Vector3f& p2, const Vector3f& p3, const Vector3f& p4);
 
     // de-activate SmartRTL, send warning to GCS and logger
-    void deactivate(SRTL_Actions action, const char *reason);
+    void deactivate(Action action, const char *reason);
 
 #if HAL_LOGGING_ENABLED
     // logging
-    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f()) const;
+    void log_action(Action action, const Vector3f &point = Vector3f()) const;
 #else
-    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f()) const {}
+    void log_action(Action action, const Vector3f &point = Vector3f()) const {}
 #endif
 
     // parameters

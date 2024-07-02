@@ -126,6 +126,7 @@ baro_types = {
     0x12 : "DEVTYPE_BARO_MS5837",
     0x13 : "DEVTYPE_BARO_MS5637",
     0x14 : "DEVTYPE_BARO_BMP390",
+    0x15 : "DEVTYPE_BARO_BMP581",
 }
 
 airspeed_types = {

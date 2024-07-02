@@ -1,5 +1,12 @@
 ArduPilot Plane Release Notes:
 ------------------------------
+Release 4.5.4 12th June 2024
+
+Changes from 4.5.3
+
+Disable highres IMU sampling on ICM42670 fixing an issue on some versions of Pixhawk6X
+
+------------------------------------------------------------------
 Release 4.5.3 28th May 2024
 
 No changes from 4.5.3-beta1

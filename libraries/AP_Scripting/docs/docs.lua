@@ -44,6 +44,44 @@ function uint32_t_ud:tofloat() end
 ---@return integer
 function uint32_t_ud:toint() end
 
+---@class (exact) uint64_t_ud
+---@operator add(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator sub(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator mul(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator div(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator mod(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator band(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator bor(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator shl(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+---@operator shr(uint64_t_ud|uint32_t_ud|integer|number): uint64_t_ud
+local uint64_t_ud = {}
+
+-- create uint64_t_ud with optional value
+-- Note that lua ints are 32 bits and lua floats will loose resolution at large values
+---@param value? uint64_t_ud|uint32_t_ud|integer|number
+---@return uint64_t_ud
+function uint64_t(value) end
+
+-- create uint64_t_ud from a low and high half
+-- value = (high << 32) | low
+---@param high uint32_t_ud|integer|number
+---@param low uint32_t_ud|integer|number
+---@return uint64_t_ud
+function uint64_t(high, low) end
+
+-- Convert to number, will loose resolution at large values
+---@return number
+function uint64_t_ud:tofloat() end
+
+-- Convert to integer, nil if too large to be represented by native int32
+---@return integer|nil
+function uint64_t_ud:toint() end
+
+-- Split into high and low half's, returning each as a uint32_t_ud
+---@return uint32_t_ud -- high (value >> 32)
+---@return uint32_t_ud -- low (value & 0xFFFFFFFF)
+function uint64_t_ud:split() end
+
 -- system time in milliseconds
 ---@return uint32_t_ud -- milliseconds
 function millis() end
@@ -1191,41 +1229,46 @@ function AP_HAL__I2CDevice_ud:write_register(register_num, value) end
 function AP_HAL__I2CDevice_ud:set_retries(retries) end
 
 
--- Serial driver object
----@class (exact) AP_HAL__UARTDriver_ud
-local AP_HAL__UARTDriver_ud = {}
+-- Serial port access object
+---@class (exact) AP_Scripting_SerialAccess_ud
+local AP_Scripting_SerialAccess_ud = {}
 
--- Set flow control option for serial port
----@param flow_control_setting integer
----| '0' # disabled
----| '1' # enabled
----| '2' # auto
-function AP_HAL__UARTDriver_ud:set_flow_control(flow_control_setting) end
-
--- Returns number of available bytes to read.
----@return uint32_t_ud
-function AP_HAL__UARTDriver_ud:available() end
+-- Start serial port with the given baud rate (no effect for device ports)
+---@param baud_rate uint32_t_ud|integer|number
+function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
 -- Writes a single byte
 ---@param value integer -- byte to write
 ---@return uint32_t_ud -- 1 if success else 0
-function AP_HAL__UARTDriver_ud:write(value) end
+function AP_Scripting_SerialAccess_ud:write(value) end
 
--- Read a single byte from the serial port
----@return integer -- byte, -1 if not available
-function AP_HAL__UARTDriver_ud:read() end
+-- Writes a string. The number of bytes actually written, i.e. the length of the
+-- written prefix of the string, is returned. It may be 0 up to the length of
+-- the string.
+---@param data string -- string of bytes to write
+---@return integer -- number of bytes actually written, which may be 0
+function AP_Scripting_SerialAccess_ud:writestring(data) end
 
--- Start serial port with given baud rate
----@param baud_rate uint32_t_ud|integer|number
-function AP_HAL__UARTDriver_ud:begin(baud_rate) end
+-- Reads a single byte from the serial port
+---@return integer -- byte, -1 if error or none available
+function AP_Scripting_SerialAccess_ud:read() end
 
---[[
-  read count bytes from a uart and return as a lua string. Note
-  that the returned string can be shorter than the requested length
---]]
----@param count integer
----@return string|nil
-function AP_HAL__UARTDriver_ud:readstring(count) end
+-- Reads up to `count` bytes and returns the bytes read as a string. No bytes
+-- may be read, in which case a 0-length string is returned.
+---@param count integer -- maximum number of bytes to read
+---@return string|nil -- bytes actually read, which may be 0-length, or nil on error
+function AP_Scripting_SerialAccess_ud:readstring(count) end
+
+-- Returns number of available bytes to read.
+---@return uint32_t_ud
+function AP_Scripting_SerialAccess_ud:available() end
+
+-- Set flow control option for serial port (no effect for device ports)
+---@param flow_control_setting integer
+---| '0' # disabled
+---| '1' # enabled
+---| '2' # auto
+function AP_Scripting_SerialAccess_ud:set_flow_control(flow_control_setting) end
 
 
 -- desc
@@ -1611,6 +1654,10 @@ function Motors_dynamic:init(expected_num_motors) end
 
 -- desc
 analog = {}
+
+-- return MCU temperature in degrees C
+---@return number -- MCU temperature
+function analog:mcu_temperature() end
 
 -- desc
 ---@return AP_HAL__AnalogSource_ud|nil
@@ -2064,12 +2111,23 @@ function baro:healthy(instance) end
 -- Serial ports
 serial = {}
 
--- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28).
--- For instance = 0, returns first such UART, second for instance = 1, and so on.
--- If such an instance is not found, returns nil.
----@param instance integer -- the 0-based index of the UART instance to return.
----@return AP_HAL__UARTDriver_ud|nil -- the requested UART instance available for scripting, or nil if none.
+-- Returns a serial access object that allows a script to interface with a
+-- device over a port set to protocol 28 (Scripting) (e.g. SERIALx_PROTOCOL).
+-- Instance 0 is the first such port, instance 1 the second, and so on. If the
+-- requested instance is not found, returns nil.
+---@param instance integer -- 0-based index of the Scripting port to access
+---@return AP_Scripting_SerialAccess_ud|nil -- access object for that instance, or nil if not found
 function serial:find_serial(instance) end
+
+-- Returns a serial access object that allows a script to simulate a device
+-- attached via a specific protocol. The device protocol is configured by
+-- SCR_SDEVx_PROTO. Instance 0 is the first such protocol, instance 1 the
+-- second, and so on. If the requested instance is not found, or SCR_SDEV_EN is
+-- disabled, returns nil.
+---@param protocol integer -- protocol to access
+---@param instance integer -- 0-based index of the protocol instance to access
+---@return AP_Scripting_SerialAccess_ud|nil -- access object for that instance, or nil if not found
+function serial:find_simulated_device(protocol, instance) end
 
 
 -- desc
@@ -2547,6 +2605,12 @@ function gcs:send_text(severity, text) end
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
 
+-- call a MAVLink MAV_CMD_xxx command via command_int interface
+---@param command integer -- MAV_CMD_xxx
+---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
+---@return boolean
+function gcs:run_command_int(command, params) end
+
 -- The relay library provides access to controlling relay outputs.
 relay = {}
 
@@ -2858,6 +2922,11 @@ gps.GPS_OK_FIX_3D = enum_integer
 gps.GPS_OK_FIX_2D = enum_integer
 gps.NO_FIX = enum_integer
 gps.NO_GPS = enum_integer
+
+-- get unix time
+---@param instance integer -- instance number
+---@return uint64_t_ud -- unix time microseconds
+function gps:time_epoch_usec(instance) end
 
 -- get yaw from GPS in degrees
 ---@param instance integer -- instance number

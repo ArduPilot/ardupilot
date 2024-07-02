@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder.h"
@@ -89,3 +93,4 @@ void AP_RangeFinder_Backend::get_state(RangeFinder::RangeFinder_State &state_arg
 }
 #endif
 
+#endif  // AP_RANGEFINDER_ENABLED

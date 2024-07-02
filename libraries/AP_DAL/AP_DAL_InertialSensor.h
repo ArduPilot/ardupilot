@@ -18,7 +18,7 @@ public:
 
     // accel stuff
     uint8_t get_accel_count(void) const { return _RISH.accel_count; }
-    uint8_t get_primary_accel(void) const { return _RISH.primary_accel; };
+    uint8_t get_first_usable_accel(void) const { return _RISH.first_usable_accel; };
 
     bool use_accel(uint8_t instance) const { return _RISI[instance].use_accel; }
     const Vector3f     &get_accel(uint8_t i) const { return accel_filtered[i]; }
@@ -30,7 +30,7 @@ public:
 
     // gyro stuff
     uint8_t get_gyro_count(void) const { return _RISH.gyro_count; }
-    uint8_t get_primary_gyro(void) const { return _RISH.primary_gyro; };
+    uint8_t get_first_usable_gyro(void) const { return _RISH.first_usable_gyro; };
 
     bool use_gyro(uint8_t instance) const { return _RISI[instance].use_gyro; }
     const Vector3f     &get_gyro(uint8_t i) const { return gyro_filtered[i]; }

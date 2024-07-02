@@ -268,8 +268,8 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
             continue;
         }
 
-        if (strncmp(&de->d_name[length-4], ".lua", 4)) {
-            // doesn't end in .lua
+        if ((de->d_name[0] == '.') || strncmp(&de->d_name[length-4], ".lua", 4)) {
+            // starts with . (hidden file) or doesn't end in .lua
             continue;
         }
 
@@ -550,8 +550,11 @@ void lua_scripts::run(void) {
             if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
-            // copy name for logging, cant do it after as script reschedule moves the pointers
-            const char * script_name = scripts->name;
+            // take a copy of the script name for the purposes of
+            // logging statistics.  "scripts" may become invalid
+            // during the "run_next_script" call, below.
+            char script_name[128+1] {};
+            strncpy_noterm(script_name, scripts->name, 128);
 
 #if DISABLE_INTERRUPTS_FOR_SCRIPT_RUN
             void *istate = hal.scheduler->disable_interrupts_save();
@@ -560,6 +563,10 @@ void lua_scripts::run(void) {
             const int startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             const uint32_t loadEnd = AP_HAL::micros();
 
+            // NOTE!  the base pointer of our scripts linked list,
+            // *and all its contents* may become invalid as part of
+            // "run_next_script"!  So do *NOT* attempt to access
+            // anything that was in *scripts after this call.
             run_next_script(L);
 
             const uint32_t runEnd = AP_HAL::micros();

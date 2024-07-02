@@ -652,7 +652,7 @@ public:
 
     AP_Int32 flight_options;
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     AP_Float rangefinder_filt;
 #endif
 

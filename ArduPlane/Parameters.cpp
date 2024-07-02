@@ -764,6 +764,7 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(parachute,		"CHUTE_", AP_Parachute),
 #endif
 
+#if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,            "RNGFND", RangeFinder),
@@ -774,6 +775,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(rangefinder_landing,    "RNGFND_LANDING",   0),
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     // @Group: TERRAIN_

@@ -314,9 +314,9 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle
 // @Field: As: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
-// @Field: SAs: DCM's airspeed estimate, NaN if not available
 // @Field: AsT: airspeed type ( old estimate or source of new estimate)
 // @FieldValueEnum: AsT: AP_AHRS::AirspeedEstimateType
+// @Field: SAs: DCM's airspeed estimate, NaN if not available
 // @Field: E2T: equivalent to true airspeed ratio
 // @Field: GU: groundspeed undershoot when flying with minimum groundspeed
 

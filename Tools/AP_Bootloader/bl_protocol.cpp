@@ -505,8 +505,16 @@ bootloader(unsigned timeout)
         led_off(LED_ACTIVITY);
 
         do {
-            /* if we have a timeout and the timer has expired, return now */
-            if (timeout && !timer[TIMER_BL_WAIT]) {
+            /* if we have a timeout and the timer has expired and serial forward is not busy, return now */
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+            bool ser_forward_active = update_otg2_serial_forward();
+#endif
+            if (timeout && !timer[TIMER_BL_WAIT]
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+            // do serial forward only when idle
+            && !ser_forward_active
+#endif
+            ) {
                 return;
             }
 

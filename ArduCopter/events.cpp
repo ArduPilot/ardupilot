@@ -379,41 +379,46 @@ void Copter::failsafe_deadreckon_check()
 //  this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_RTL_or_land_with_pause(ModeReason reason)
 {
+#if MODE_RTL_ENABLED
     // attempt to switch to RTL, if this fails then switch to Land
-    if (!set_mode(Mode::Number::RTL, reason)) {
-        // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause(reason);
-    } else {
-        // alert pilot to mode change
+    if (set_mode(Mode::Number::RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
+        return;
     }
+#endif
+    // set mode to land will trigger mode change notification to pilot
+    set_mode_land_with_pause(reason);
 }
 
 // set_mode_SmartRTL_or_land_with_pause - sets mode to SMART_RTL if possible or LAND with 4 second delay before descent starts
 // this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_SmartRTL_or_land_with_pause(ModeReason reason)
 {
+#if MODE_SMARTRTL_ENABLED
     // attempt to switch to SMART_RTL, if this failed then switch to Land
-    if (!set_mode(Mode::Number::SMART_RTL, reason)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
-        set_mode_land_with_pause(reason);
-    } else {
+    if (set_mode(Mode::Number::SMART_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
+        return;
     }
+#endif
+    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
+    set_mode_land_with_pause(reason);
 }
 
 // set_mode_SmartRTL_or_RTL - sets mode to SMART_RTL if possible or RTL if possible or LAND with 4 second delay before descent starts
 // this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
 {
+#if MODE_SMARTRTL_ENABLED
     // attempt to switch to SmartRTL, if this failed then attempt to RTL
     // if that fails, then land
-    if (!set_mode(Mode::Number::SMART_RTL, reason)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
-        set_mode_RTL_or_land_with_pause(reason);
-    } else {
+    if (set_mode(Mode::Number::SMART_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
+        return;
     }
+#endif
+    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
+    set_mode_RTL_or_land_with_pause(reason);
 }
 
 // Sets mode to Auto and jumps to DO_LAND_START, as set with AUTO_RTL param

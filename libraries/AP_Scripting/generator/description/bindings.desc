@@ -135,6 +135,7 @@ singleton AP_GPS method have_vertical_velocity boolean uint8_t 0 ud->num_sensors
 singleton AP_GPS method get_antenna_offset Vector3f uint8_t 0 ud->num_sensors()
 singleton AP_GPS method first_unconfigured_gps boolean uint8_t'Null
 singleton AP_GPS method gps_yaw_deg boolean uint8_t 0 ud->num_sensors() float'Null float'Null uint32_t'Null
+singleton AP_GPS method time_epoch_usec uint64_t uint8_t 0 ud->num_sensors()
 
 include AP_Math/AP_Math.h
 
@@ -220,7 +221,7 @@ singleton AP_Proximity method get_backend AP_Proximity_Backend uint8_t'skip_chec
 include AP_RangeFinder/AP_RangeFinder.h
 include AP_RangeFinder/AP_RangeFinder_Backend.h
 
-userdata RangeFinder::RangeFinder_State depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+userdata RangeFinder::RangeFinder_State depends AP_RANGEFINDER_ENABLED
 userdata RangeFinder::RangeFinder_State rename RangeFinder_State
 userdata RangeFinder::RangeFinder_State field last_reading_ms uint32_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field last_reading_ms rename last_reading
@@ -233,7 +234,7 @@ userdata RangeFinder::RangeFinder_State field signal_quality_pct rename signal_q
 userdata RangeFinder::RangeFinder_State field voltage_mv uint16_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field voltage_mv rename voltage
 
-ap_object AP_RangeFinder_Backend depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+ap_object AP_RangeFinder_Backend depends AP_RANGEFINDER_ENABLED
 ap_object AP_RangeFinder_Backend method distance float
 ap_object AP_RangeFinder_Backend method signal_quality_pct float
 ap_object AP_RangeFinder_Backend method signal_quality_pct rename signal_quality
@@ -243,7 +244,7 @@ ap_object AP_RangeFinder_Backend method status uint8_t
 ap_object AP_RangeFinder_Backend manual handle_script_msg lua_range_finder_handle_script_msg 1 1
 ap_object AP_RangeFinder_Backend method get_state void RangeFinder::RangeFinder_State'Ref
 
-singleton RangeFinder depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+singleton RangeFinder depends AP_RANGEFINDER_ENABLED
 singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
 singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
@@ -295,6 +296,7 @@ singleton GCS method get_high_latency_status depends HAL_HIGH_LATENCY2_ENABLED =
 
 singleton GCS method enable_high_latency_connections void boolean
 singleton GCS method enable_high_latency_connections depends HAL_HIGH_LATENCY2_ENABLED == 1
+singleton GCS manual run_command_int lua_GCS_command_int 2 1
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
@@ -391,18 +393,21 @@ singleton RC_Channels method lua_rc_channel RC_Channel uint8_t 1 NUM_RC_CHANNELS
 singleton RC_Channels method lua_rc_channel rename get_channel
 singleton RC_Channels method get_aux_cached boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX uint8_t'Null
 
-include AP_SerialManager/AP_SerialManager.h
+include AP_Scripting/AP_Scripting_SerialAccess.h
+-- don't let user create access objects
+userdata AP_Scripting_SerialAccess creation null -1
+userdata AP_Scripting_SerialAccess method begin void uint32_t 1U UINT32_MAX
+userdata AP_Scripting_SerialAccess method write uint32_t uint8_t'skip_check
+userdata AP_Scripting_SerialAccess manual writestring lua_serial_writestring 1 1
+userdata AP_Scripting_SerialAccess method read int16_t
+userdata AP_Scripting_SerialAccess manual readstring lua_serial_readstring 1 1
+userdata AP_Scripting_SerialAccess method available uint32_t
+userdata AP_Scripting_SerialAccess method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_RTS_DE
 
-ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
-ap_object AP_HAL::UARTDriver method read int16_t
-ap_object AP_HAL::UARTDriver manual readstring AP_HAL__UARTDriver_readstring 1 1
-ap_object AP_HAL::UARTDriver method write uint32_t uint8_t'skip_check
-ap_object AP_HAL::UARTDriver method available uint32_t
-ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_RTS_DE
-
-singleton AP_SerialManager rename serial
-singleton AP_SerialManager depends HAL_GCS_ENABLED
-singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t'skip_check
+-- serial is not a real C++ type here, but its name never gets used in C++ as we only have manual methods
+singleton serial depends HAL_GCS_ENABLED
+singleton serial manual find_serial lua_serial_find_serial 1 1
+singleton serial manual find_simulated_device lua_serial_find_simulated_device 2 1 depends AP_SCRIPTING_SERIALDEVICE_ENABLED
 
 include AP_Baro/AP_Baro.h
 singleton AP_Baro depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BARO))
@@ -541,8 +546,11 @@ singleton Sub depends APM_BUILD_TYPE(APM_BUILD_ArduSub)
 singleton Sub method get_and_clear_button_count uint8_t uint8_t 1 4
 singleton Sub method is_button_pressed boolean uint8_t 1 4
 singleton Sub method rangefinder_alt_ok boolean
+singleton Sub method rangefinder_alt_ok depends AP_RANGEFINDER_ENABLED
 singleton Sub method get_rangefinder_target_cm float
+singleton Sub method get_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 singleton Sub method set_rangefinder_target_cm boolean float'skip_check
+singleton Sub method set_rangefinder_target_cm depends AP_RANGEFINDER_ENABLED
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -621,6 +629,8 @@ singleton hal.analogin depends !defined(HAL_DISABLE_ADC_DRIVER)
 singleton hal.analogin rename analog
 singleton hal.analogin literal
 singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal
+singleton hal.analogin method mcu_temperature float
+singleton hal.analogin method mcu_temperature depends HAL_WITH_MCU_MONITORING
 
 include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -854,24 +864,47 @@ global manual micros lua_micros 0 1
 global manual mission_receive lua_mission_receive 0 5 depends AP_MISSION_ENABLED
 
 userdata uint32_t creation lua_new_uint32_t 1
-userdata uint32_t manual_operator __add uint32_t___add
-userdata uint32_t manual_operator __sub uint32_t___sub
-userdata uint32_t manual_operator __mul uint32_t___mul
-userdata uint32_t manual_operator __div uint32_t___div
-userdata uint32_t manual_operator __mod uint32_t___mod
+userdata uint32_t operator_getter coerce_to_uint32_t
+userdata uint32_t operator +
+userdata uint32_t operator -
+userdata uint32_t operator *
+userdata uint32_t operator /
+-- We know name of the generated function so we can point at it again with a manual operator so idiv is the same as div
 userdata uint32_t manual_operator __idiv uint32_t___div
-userdata uint32_t manual_operator __band uint32_t___band
-userdata uint32_t manual_operator __bor uint32_t___bor
-userdata uint32_t manual_operator __bxor uint32_t___bxor
-userdata uint32_t manual_operator __shl uint32_t___shl
-userdata uint32_t manual_operator __shr uint32_t___shr
-userdata uint32_t manual_operator __eq uint32_t___eq
-userdata uint32_t manual_operator __lt uint32_t___lt
-userdata uint32_t manual_operator __le uint32_t___le
-userdata uint32_t manual_operator __bnot uint32_t___bnot
+userdata uint32_t operator %
+userdata uint32_t operator &
+userdata uint32_t operator |
+userdata uint32_t operator ^
+userdata uint32_t operator <<
+userdata uint32_t operator >>
+userdata uint32_t operator ==
+userdata uint32_t operator <
+userdata uint32_t operator <=
+userdata uint32_t operator ~
 userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint 0 1
 userdata uint32_t manual tofloat uint32_t_tofloat 0 1
+
+userdata uint64_t creation lua_new_uint64_t 2
+userdata uint64_t operator_getter coerce_to_uint64_t
+userdata uint64_t operator +
+userdata uint64_t operator -
+userdata uint64_t operator *
+userdata uint64_t operator /
+userdata uint64_t operator %
+userdata uint64_t operator &
+userdata uint64_t operator |
+userdata uint64_t operator ^
+userdata uint64_t operator <<
+userdata uint64_t operator >>
+userdata uint64_t operator ==
+userdata uint64_t operator <
+userdata uint64_t operator <=
+userdata uint64_t operator ~
+userdata uint64_t manual_operator __tostring uint64_t___tostring
+userdata uint64_t manual toint uint64_t_toint 0 1
+userdata uint64_t manual tofloat uint64_t_tofloat 0 1
+userdata uint64_t manual split uint64_t_split 0 2
 
 global manual dirlist lua_dirlist 1 2
 global manual remove lua_removefile 1 3

@@ -401,7 +401,7 @@ function adjust_gain(pname, value)
       local FF = params[ffname]
       if FF:get() > 0 then
          -- if we have any FF on an axis then we don't couple I to P,
-         -- usually we want I = FF for a one sectond time constant for trim
+         -- usually we want I = FF for a one second time constant for trim
          return
       end
       param_changed[iname] = true

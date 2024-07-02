@@ -333,7 +333,9 @@ protected:
 #if HAL_BUTTON_ENABLED
     AP_Button button;
 #endif
+#if AP_RANGEFINDER_ENABLED
     RangeFinder rangefinder;
+#endif
 
 #if HAL_LOGGING_ENABLED
     AP_Logger logger;

@@ -4938,58 +4938,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 0.01 # size of target in radians, Y-axis
             )
 
+    def set_servo_gripper_parameters(self):
+        self.set_parameters({
+            "GRIP_ENABLE": 1,
+            "GRIP_TYPE": 1,
+            "SIM_GRPS_ENABLE": 1,
+            "SIM_GRPS_PIN": 8,
+            "SERVO8_FUNCTION": 28,
+        })
+
     def PayloadPlaceMission(self):
         """Test payload placing in auto."""
         self.context_push()
 
-        ex = None
-        try:
-            self.set_analog_rangefinder_parameters()
-            self.set_parameters({
-                "GRIP_ENABLE": 1,
-                "GRIP_TYPE": 1,
-                "SIM_GRPS_ENABLE": 1,
-                "SIM_GRPS_PIN": 8,
-                "SERVO8_FUNCTION": 28,
-            })
-            self.reboot_sitl()
+        self.set_analog_rangefinder_parameters()
+        self.set_servo_gripper_parameters()
+        self.reboot_sitl()
 
-            self.load_mission("copter_payload_place.txt")
-            if self.mavproxy is not None:
-                self.mavproxy.send('wp list\n')
+        self.load_mission("copter_payload_place.txt")
+        if self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
 
-            self.set_parameter("AUTO_OPTIONS", 3)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
 
-            self.arm_vehicle()
+        self.arm_vehicle()
 
-            self.wait_text("Gripper load releas", timeout=90)
-            dist_limit = 1
-            # this is a copy of the point in the mission file:
-            target_loc = mavutil.location(-35.363106,
-                                          149.165436,
-                                          0,
-                                          0)
-            dist = self.get_distance(target_loc, self.mav.location())
-            self.progress("dist=%f" % (dist,))
-            if dist > dist_limit:
-                raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
-                                           (dist, dist_limit))
+        self.wait_text("Gripper load releas", timeout=90)
+        dist_limit = 1
+        # this is a copy of the point in the mission file:
+        target_loc = mavutil.location(-35.363106,
+                                      149.165436,
+                                      0,
+                                      0)
+        dist = self.get_distance(target_loc, self.mav.location())
+        self.progress("dist=%f" % (dist,))
+        if dist > dist_limit:
+            raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
+                                       (dist, dist_limit))
 
-            self.wait_disarmed()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle(force=True)
-            ex = e
+        self.wait_disarmed()
 
         self.context_pop()
         self.reboot_sitl()
         self.progress("All done")
-
-        if ex is not None:
-            raise ex
 
     def Weathervane(self):
         '''Test copter weathervaning'''
@@ -5152,26 +5145,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def TestGripperMission(self):
         '''Test Gripper mission items'''
-        self.context_push()
-        ex = None
-        try:
-            self.load_mission("copter-gripper-mission.txt")
-            self.change_mode('LOITER')
-            self.wait_ready_to_arm()
-            self.assert_vehicle_location_is_at_startup_location()
-            self.arm_vehicle()
-            self.change_mode('AUTO')
-            self.set_rc(3, 1500)
-            self.wait_statustext("Gripper Grabbed", timeout=60)
-            self.wait_statustext("Gripper Released", timeout=60)
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.change_mode('LAND')
-            ex = e
-        self.context_pop()
+        num_wp = self.load_mission("copter-gripper-mission.txt")
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.assert_vehicle_location_is_at_startup_location()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.set_rc(3, 1500)
+        self.wait_statustext("Gripper Grabbed", timeout=60)
+        self.wait_statustext("Gripper Released", timeout=60)
+        self.wait_waypoint(num_wp-1, num_wp-1)
         self.wait_disarmed()
-        if ex is not None:
-            raise ex
 
     def SplineLastWaypoint(self):
         '''Test Spline as last waypoint'''
@@ -9241,13 +9225,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
 
-        util.run_cmd(
-            ['build/sitl/tool/Replay', current_log_filepath],
-            directory=util.topdir(),
-            checkfail=True,
-            show=True,
-            output=True,
-        )
+        self.run_replay(current_log_filepath)
 
         self.context_pop()
 
@@ -11521,6 +11499,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()  # because we set home
 
+    def GripperReleaseOnThrustLoss(self):
+        '''tests that gripper is released on thrust loss if option set'''
+
+        self.context_push()
+        self.set_servo_gripper_parameters()
+        self.reboot_sitl()
+
+        self.takeoff(30, mode='LOITER')
+        self.set_parameters({
+            "SIM_ENGINE_FAIL": 1,
+            "SIM_ENGINE_MUL": 0.5,
+            "FLIGHT_OPTIONS": 4,
+        })
+
+        self.wait_statustext("Gripper Load Released", timeout=60)
+
+        self.context_pop()
+        self.do_RTL()
+        self.reboot_sitl()
+
+    def assert_home_position_not_set(self):
+        try:
+            self.poll_home_position()
+        except NotAchievedException:
+            return
+
+        # if home.lng != 0: etc
+
+        raise NotAchievedException("Home is set when it shouldn't be")
+
+    def REQUIRE_POSITION_FOR_ARMING(self):
+        '''check FlightOption::REQUIRE_POSITION_FOR_ARMING works'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_GPS_NUMSATS": 3,  # EKF does not like < 6
+        })
+        self.reboot_sitl()
+        self.change_mode('STABILIZE')
+        self.wait_prearm_sys_status_healthy()
+        self.assert_home_position_not_set()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.change_mode('LOITER')
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+
+        self.change_mode('STABILIZE')
+        self.set_parameters({
+            "FLIGHT_OPTIONS": 8,
+        })
+        self.assert_prearm_failure("Need Position Estimate", other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11611,6 +11642,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GuidedForceArm,
             self.GuidedWeatherVane,
             self.Clamp,
+            self.GripperReleaseOnThrustLoss,
+            self.REQUIRE_POSITION_FOR_ARMING,
         ])
         return ret
 

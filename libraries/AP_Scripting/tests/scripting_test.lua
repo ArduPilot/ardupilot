@@ -35,6 +35,34 @@ function test_offset(ofs_e, ofs_n)
   return true
 end
 
+function test_uint64()
+  local pass = true
+
+  local zero = uint64_t()
+  local max = uint64_t(-1, -1)
+
+  pass = pass and (zero - 1) == max
+  pass = pass and ~max == zero
+  pass = pass and max > zero
+  pass = pass and (((zero + 1) + 1.1) + uint32_t(1)) == uint64_t(0, 3)
+  pass = pass and tostring(zero) == "0"
+  pass = pass and (uint64_t(15) & uint64_t(130)) == uint32_t(2)
+  pass = pass and (uint64_t(1) | uint64_t(2)) == uint64_t(3)
+  pass = pass and (uint64_t(1) << 1) == uint64_t(2)
+  pass = pass and (uint64_t(16) >> 1) == uint64_t(8)
+  pass = pass and type(zero:tofloat()) == "number"
+  pass = pass and zero:tofloat() == 0
+
+  local high, low
+  high, low = zero:split()
+  pass = pass and high == uint32_t(0) and low == uint32_t(0)
+
+  high, low = max:split()
+  pass = pass and high == uint32_t(-1) and low == uint32_t(-1)
+
+  return pass
+end
+
 function update()
   local all_tests_passed = true
   local require_test_local = require('test/nested')
@@ -53,6 +81,7 @@ function update()
   end
   -- each test should run then and it's result with the previous ones
   all_tests_passed = test_offset(500, 200) and all_tests_passed
+  all_tests_passed = test_uint64() and all_tests_passed
 
   if all_tests_passed then
     gcs:send_text(3, "Internal tests passed")

@@ -70,4 +70,5 @@ enum class ModeReason : uint8_t {
   DEADRECKON_FAILSAFE = 50,
   MODE_TAKEOFF_FAILSAFE = 51,
   DDS_COMMAND = 52,
+  AUX_FUNCTION = 53,
 };

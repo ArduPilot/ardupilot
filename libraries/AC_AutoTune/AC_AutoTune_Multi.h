@@ -182,9 +182,9 @@ private:
     void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const;
 
     // parameters
-    AP_Int8  axis_bitmask;        // axes to be tuned
-    AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
-    AP_Float min_d;               // minimum rate d gain allowed during tuning
+    AP_Int8  axis_bitmask;      // axes to be tuned
+    AP_Float aggressiveness;    // aircraft response aggressiveness to be tuned
+    AP_Float min_d;             // minimum rate d gain allowed during tuning
 };
 
 #endif  // AC_AUTOTUNE_ENABLED
