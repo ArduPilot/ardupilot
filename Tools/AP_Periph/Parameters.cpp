@@ -407,6 +407,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels, "OUT",     SRV_Channels),
 
+    // @Param: RC_SPEED
+    // @DisplayName: ESC Update Speed
+    // @Description: Speed in Hz that ESC PWM outputs (function is MotorN) will update at
+    // @Units: Hz
+    // @Range: 50 490
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(rc_speed, "RC_SPEED", 490), // Copter and QuadPlane default
+
     // @Param: ESC_PWM_TYPE
     // @DisplayName: Output PWM type
     // @Description: This selects the output PWM type, allowing for normal PWM continuous output, OneShot, brushed or DShot motor output

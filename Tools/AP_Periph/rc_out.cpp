@@ -66,6 +66,9 @@ void AP_Periph_FW::rcout_init()
     // setup ESCs with the desired PWM type, allowing for DShot
     SRV_Channels::init(esc_mask, (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get());
 
+    // run PWM ESCs at configured frequency
+    hal.rcout->set_freq(esc_mask, g.rc_speed.get());
+
     // run DShot at 1kHz
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), 400);
 #if HAL_WITH_ESC_TELEM
