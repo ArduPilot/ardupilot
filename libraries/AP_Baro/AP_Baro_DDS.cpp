@@ -47,6 +47,7 @@ void AP_Baro_DDS::update(void)
 void AP_Baro_DDS::handle_external(
     const AP_ExternalAHRS::baro_data_message_t &pkt)
 {
+    //! @todo(srmainwaring) should match this->_instance
     if (pkt.instance != 0) {
         return;
     }
