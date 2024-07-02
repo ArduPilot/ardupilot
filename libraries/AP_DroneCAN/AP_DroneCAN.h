@@ -144,6 +144,7 @@ public:
         USE_HIMARK_SERVO          = (1U<<6),
         USE_HOBBYWING_ESC         = (1U<<7),
         ENABLE_STATS              = (1U<<8),
+        // LOG_NODE_STATUS        = (1U<<8), reserve for future use 
     };
 
     // check if a option is set
