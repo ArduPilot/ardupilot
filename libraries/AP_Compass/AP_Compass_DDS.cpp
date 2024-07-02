@@ -22,7 +22,7 @@ AP_Compass_DDS::AP_Compass_DDS()
 {
     // _instance is not set until compass is registered
     auto dev_id = AP_HAL::Device::make_bus_id(
-        AP_HAL::Device::BUS_TYPE_DDS, 0, 0/*_instance*/, DEVTYPE_DDS);
+                      AP_HAL::Device::BUS_TYPE_DDS, 0, 0/*_instance*/, DEVTYPE_DDS);
 
     register_compass(dev_id, _instance);
     set_dev_id(_instance, dev_id);
