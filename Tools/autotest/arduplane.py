@@ -4170,6 +4170,88 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=180)
 
+    def CatapultTakeoff(self):
+        '''Test that a catapult takeoff works correctly'''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "TKOFF_LVL_ALT": 30.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
+        })
+
+        # Record desired target speed.
+        speed_cruise = self.get_parameter("AIRSPEED_CRUISE")
+
+        # Load and start mission.
+        self.load_mission("catapult.txt", strict=True)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we're midway through the climb.
+        test_alt = 50
+        self.wait_altitude(test_alt, test_alt+2, relative=True)
+
+        # Ensure that by then the aircraft does not overspeed.
+        self.wait_airspeed(speed_cruise-2, speed_cruise+2, minimum_duration=2, timeout=4)
+
+        # Wait for landing waypoint.
+        self.wait_current_waypoint(11, timeout=1200)
+        self.wait_disarmed(120)
+
+    def TakeoffMinThrottle(self):
+        '''Test that the minimum throttle during the first takeoff stage.
+
+        If TKOFF_LVL_ALT is set and TKOFF_THR_MAX is set, then the throttle
+        should TKOFF_THR_MAX until the aircraft reaches TKOFF_LVL_ALT. This
+        might cause overspeed, but is desirable.
+        '''
+
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "TKOFF_LVL_ALT": 30.0,
+            "TKOFF_ALT": 100.0,
+            "TKOFF_THR_MINACC": 3.0,
+            "TKOFF_THR_MAX": 90.0,
+            "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Throw the catapult.
+        self.set_servo(7, 2000)
+
+        # Wait until we've climbed past min airspeed but before TKOFF_LVL_ALT.
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(test_alt-5, test_alt, relative=True)
+
+        # Ensure that by then the aircraft still goes full throttle.
+        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+
+        # Wait for the takeoff to complete.
+        target_alt = self.get_parameter("TKOFF_ALT")
+        self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        self.fly_home_land_and_disarm()
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -5503,6 +5585,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AHRS_ORIENTATION,
             self.AHRSTrim,
             self.LandingDrift,
+            self.CatapultTakeoff,
+            self.TakeoffMinThrottle,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,

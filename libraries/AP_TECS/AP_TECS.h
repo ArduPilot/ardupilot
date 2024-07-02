@@ -49,7 +49,6 @@ public:
                                int32_t EAS_dem_cm,
                                enum AP_FixedWing::FlightStage flight_stage,
                                float distance_beyond_land_wp,
-                               int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
                                float load_factor,
@@ -142,6 +141,12 @@ public:
     // reset on next loop
     void reset(void) {
         _need_reset = true;
+    }
+
+    // set settings that are necessary during the takeoff stage
+    void set_tkoff_settings(const int32_t pitch, const float alt) {
+        _ptchMinCO_cd = pitch;
+        _tkoff_max_thr_alt = alt;
     }
 
     // this supports the TECS_* user settable parameters
@@ -419,6 +424,14 @@ private:
     // need to reset on next loop
     bool _need_reset;
 
+    // minimum pitch angle to hold during takeoff stage, in centidegrees
+    int32_t _ptchMinCO_cd ;
+    // altitude below which to have full throttle during takeoff stage
+    float _tkoff_max_thr_alt;
+
+    // Checks if we reset at the beginning of takeoff.
+    bool _flag_have_reset_after_takeoff;
+
     float _SKE_weighting;
 
     AP_Int8 _use_synthetic_airspeed;
@@ -468,7 +481,7 @@ private:
     void _update_pitch(void);
 
     // Initialise states and variables
-    void _initialise_states(int32_t ptchMinCO_cd, float hgt_afe);
+    void _initialise_states(float hgt_afe);
 
     // Calculate specific total energy rate limits
     void _update_STE_rate_lim(void);
@@ -478,4 +491,8 @@ private:
 
     // current time constant
     float timeConstant(void) const;
+
+    // Reply if we are in the first stage of a takeoff
+    // Corresponds to the initial full-throttle segment
+    bool _in_takeoff_first_stage(void);
 };

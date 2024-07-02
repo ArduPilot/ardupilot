@@ -222,7 +222,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: TKOFF_IGAIN
     // @DisplayName: Controller integrator during takeoff
-    // @Description: This is the integrator gain on the control loop during takeoff. When set to 0 then TECS_INTEG_GAIN is used. Increase to increase the rate at which speed and height offsets are trimmed out. Typically values higher than TECS_INTEG_GAIN work best
+    // @Description: This is the integrator gain on the control loop during takeoff. Increase to increase the rate at which speed and height offsets are trimmed out.
     // @Range: 0.0 0.5
     // @Increment: 0.02
     // @User: Advanced
@@ -574,7 +574,7 @@ void AP_TECS::_update_height_demand(void)
             if (_using_airspeed_for_throttle) {
                 // large height errors will result in the throttle saturating
                 max_climb_condition   |= (_thr_clip_status == clipStatus::MAX) &&
-                                            !((_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) || (_flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING));
+                                            !(_in_takeoff_first_stage() || (_flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING));
                 max_descent_condition |= (_thr_clip_status == clipStatus::MIN) && !_landing.is_flaring();
             }
             const float hgt_dem_alpha = _DT / MAX(_DT + _hgt_dem_tconst, _DT);
@@ -770,12 +770,9 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         // Calculate integrator state, constraining state
         // Set integrator to a max throttle value during climbout
         _integTHR_state = _integTHR_state + (_STE_error * _get_i_gain()) * _DT * K_STE2Thr;
-        if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-            if (!_flags.reached_speed_takeoff) {
-                // ensure we run at full throttle until we reach the target airspeed
-                _throttle_dem = MAX(_throttle_dem, _THRmaxf - _integTHR_state);
-            }
-            _integTHR_state = integ_max;
+        if (_in_takeoff_first_stage() || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
+            // ensure we run at full throttle until we reach the target airspeed
+            _throttle_dem = MAX(_throttle_dem, _THRmaxf - _integTHR_state);
         } else {
             _integTHR_state = constrain_float(_integTHR_state, integ_min, integ_max);
         }
@@ -838,10 +835,8 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 float AP_TECS::_get_i_gain(void)
 {
     float i_gain = _integGain;
-    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        if (!is_zero(_integGain_takeoff)) {
-            i_gain = _integGain_takeoff;
-        }
+    if (_in_takeoff_first_stage() || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
+        i_gain = _integGain_takeoff;
     } else if (_flags.is_doing_auto_land) {
         if (!is_zero(_integGain_land)) {
             i_gain = _integGain_land;
@@ -955,7 +950,7 @@ void AP_TECS::_update_pitch(void)
         // height. This is needed as the usual relationship of speed
         // and height is broken by the VTOL motors
         _SKE_weighting = 0.0f;
-    } else if ( _flags.underspeed || _flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING || _flags.is_gliding) {
+    } else if ( _flags.underspeed || _in_takeoff_first_stage() || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING || _flags.is_gliding) {
         _SKE_weighting = 2.0f;
     } else if (_flags.is_doing_auto_land) {
         if (_spdWeightLand < 0) {
@@ -1013,7 +1008,7 @@ void AP_TECS::_update_pitch(void)
     // During climbout/takeoff, bias the demanded pitch angle so that zero speed error produces a pitch angle
     // demand equal to the minimum value (which is )set by the mission plan during this mode). Otherwise the
     // integrator has to catch up before the nose can be raised to reduce speed during climbout.
-    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
+    if (_in_takeoff_first_stage() || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         SEBdot_dem_total += _PITCHminf * gainInv;
     }
 
@@ -1084,9 +1079,9 @@ void AP_TECS::_update_pitch(void)
         // @Field: PEW: Potential energy weighting
         // @Field: KEW: Kinetic energy weighting
         // @Field: EBD: Energy balance demand
-        // @Field: EBE: Energy balance error
+        // @Field: EBE: Energy balance estimate
         // @Field: EBDD: Energy balance rate demand
-        // @Field: EBDE: Energy balance rate error
+        // @Field: EBDE: Energy balance rate estimate
         // @Field: EBDDT: Energy balance rate demand + Energy balance rate error*pitch_damping
         // @Field: Imin: Minimum integrator value
         // @Field: Imax: Maximum integrator value
@@ -1114,7 +1109,7 @@ void AP_TECS::_update_pitch(void)
 #endif
 }
 
-void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
+void AP_TECS::_initialise_states(float hgt_afe)
 {
     _flags.reset = false;
 
@@ -1160,7 +1155,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
 
     } else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        _PITCHminf            = CentiDegreesToRadians(ptchMinCO_cd);
+        _PITCHminf            = CentiDegreesToRadians(_ptchMinCO_cd);
         _hgt_afe              = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
@@ -1168,22 +1163,28 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_in_raw       = hgt_afe;
-        _TAS_dem_adj          = _TAS_dem;
-        _flags.reset          = true;
-        _post_TO_hgt_offset   = _climb_rate * _hgt_dem_tconst;
         _flags.underspeed     = false;
         _flags.badDescent     = false;
 
-        _max_climb_scaler = 1.0f;
-        _max_sink_scaler = 1.0f;
+        if (_in_takeoff_first_stage()) {
+            _post_TO_hgt_offset   = _climb_rate_limit * _hgt_dem_tconst; // Replacement prevents oscillating hgt_rate_dem.
+            _TAS_dem_adj = _TAS_dem;
+            _max_climb_scaler = 1.0f;
+            _max_sink_scaler = 1.0f;
+            _pitch_demand_lpf.reset(_ahrs.get_pitch());
+            _pitch_measured_lpf.reset(_ahrs.get_pitch());
+        }
 
-        _pitch_demand_lpf.reset(_ahrs.get_pitch());
-        _pitch_measured_lpf.reset(_ahrs.get_pitch());
+        if (!_flag_have_reset_after_takeoff) {
+            _flags.reset          = true;
+            _flag_have_reset_after_takeoff  = true;
+        }
     }
 
     if (_flight_stage != AP_FixedWing::FlightStage::TAKEOFF && _flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
         // reset takeoff speed flag when not in takeoff
         _flags.reached_speed_takeoff = false;
+        _flag_have_reset_after_takeoff = false;
     }
 }
 
@@ -1202,7 +1203,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     int32_t EAS_dem_cm,
                                     enum AP_FixedWing::FlightStage flight_stage,
                                     float distance_beyond_land_wp,
-                                    int32_t ptchMinCO_cd,
                                     int16_t throttle_nudge,
                                     float hgt_afe,
                                     float load_factor,
@@ -1238,7 +1238,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Don't allow height deamnd to continue changing in a direction that saturates vehicle manoeuvre limits
     // if vehicle is unable to follow the demanded climb or descent.
     const bool max_climb_condition = (_pitch_dem_unc > _PITCHmaxf || _thr_clip_status == clipStatus::MAX) &&
-                                    !(_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
+                                    !(_in_takeoff_first_stage() || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
     const bool max_descent_condition = _pitch_dem_unc < _PITCHminf || _thr_clip_status == clipStatus::MIN;
     if (max_climb_condition && _hgt_dem_in_raw > _hgt_dem_in_prev) {
         _hgt_dem_in = _hgt_dem_in_prev;
@@ -1249,12 +1249,22 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     }
 
     if (aparm.takeoff_throttle_max != 0 &&
-        (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
+        (_in_takeoff_first_stage() || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
         _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
     } else {
         _THRmaxf  = aparm.throttle_max * 0.01f;
     }
-    _THRminf  = aparm.throttle_min * 0.01f;
+
+    // Apply at least TKOFF throttle for the climbout phase.
+    if (_in_takeoff_first_stage()) {
+        _THRminf = _THRmaxf;
+    }
+    // Apply at least trim throttle during the whole takeoff climb.
+    else if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF ) {
+        _THRminf = aparm.throttle_cruise * 0.01f;
+    } else { // Otherwise, during normal situations let regular limit.
+        _THRminf = aparm.throttle_min * 0.01f;
+    }
 
     // min of 1% throttle range to prevent a numerical error
     _THRmaxf = MAX(_THRmaxf, _THRminf+0.01);
@@ -1335,7 +1345,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     }
 
     if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        if (!_flags.reached_speed_takeoff && _TAS_state >= _TAS_dem_adj) {
+        if (!_flags.reached_speed_takeoff && _TAS_state >= _TASmin && _TASmin > 0) {
             // we have reached our target speed in takeoff, allow for
             // normal throttle control
             _flags.reached_speed_takeoff = true;
@@ -1350,7 +1360,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
 
     // initialise selected states and variables if DT > 1 second or in climbout
-    _initialise_states(ptchMinCO_cd, hgt_afe);
+    _initialise_states(hgt_afe);
 
     // Calculate Specific Total Energy Rate Limits
     _update_STE_rate_lim();
@@ -1435,4 +1445,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     _flags_byte);
     }
 #endif
+}
+
+bool AP_TECS::_in_takeoff_first_stage(void)
+{
+    return (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) && (
+        !_flags.reached_speed_takeoff || (
+            _tkoff_max_thr_alt > 0 && _height < _tkoff_max_thr_alt
+        )
+    );
 }
