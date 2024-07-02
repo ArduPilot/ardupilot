@@ -99,6 +99,19 @@ void AP_BattMonitor_ESC::read(void)
         }
     }
 
+    // Max number of ESCs ever seen
+    esc_count = MAX(esc_count, voltage_escs);
+
+    // Set missing flag if the expected number of ESCs is not found
+    // The monitor remains healthy because it can still give a partial voltage and current reading
+    if (all_enabled) {
+        // If using all ESCs then the count must never reduce
+        missing_esc = voltage_escs != esc_count;
+    } else {
+        // If using a mask of ESCs all selected must be found
+        missing_esc = voltage_escs != __builtin_popcount(_mask);
+    }
+
     if (voltage_escs > 0) {
         _state.voltage = voltage_sum / voltage_escs;
         _state.healthy = true;
@@ -135,6 +148,12 @@ bool AP_BattMonitor_ESC::reset_remaining(float percentage)
     }
 
     return false;
+}
+
+// Return true if the monitor is missing an ESC
+bool AP_BattMonitor_ESC::missing() const
+{
+    return missing_esc || AP_BattMonitor_Backend::missing();
 }
 
 #endif // AP_BATTERY_ESC_ENABLED
