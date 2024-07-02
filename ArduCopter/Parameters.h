@@ -259,10 +259,10 @@ public:
         //
         // 160: Navigation parameters
         //
-        k_param_rtl_altitude = 160,
+        k_param_rtl_altitude_m = 160,
         k_param_crosstrack_gain,    // deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
-        k_param_rtl_alt_final,
+        k_param_rtl_alt_final_m,
         k_param_tilt_comp, // 164 deprecated - remove with next eeprom number change
 
 
@@ -370,7 +370,7 @@ public:
         k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
-        k_param_rtl_climb_min,
+        k_param_rtl_climb_min_m,
         k_param_rpm_sensor,
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
@@ -399,11 +399,30 @@ public:
     AP_Float        pilot_takeoff_alt;
 
 #if MODE_RTL_ENABLED == ENABLED
-    AP_Int32        rtl_altitude;
+    // The parameters RTL_ALTITUDE, RTL_ALTITUDE_FINAL and RTL_CLIMB_MIN are now in meters
+    // whereas they were previously in cm. By putting the parameter value into a variable 
+    // explicitly named _m and creating a define for the "legacy" variables, this change
+    // will work with no risk of breaking code that incorrectly uses the meter value when
+    // expecting cm. However this code is likely less efficient, so eventually might need
+    // to be refactored to correctly referent the _m variables directly.
+    AP_Float        rtl_altitude_m;
+    //AP_Int32        _rtl_altitude;
+    int32_t         rtl_altitude() {
+        return (int32_t)constrain_float((rtl_altitude_m.cast_to_float() * 100.0f) + 
+               (rtl_altitude_m < 0.0f ? -0.01f : 0.01f), (float)INT32_MIN, (float)INT32_MAX) ;
+    };     
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
-    AP_Int16        rtl_alt_final;
-    AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
+    AP_Float        rtl_alt_final_m;
+    int32_t         rtl_alt_final() {
+        return (int32_t)constrain_float(rtl_alt_final_m.cast_to_float() * 100.0f +
+                (rtl_alt_final_m < 0 ? -0.01f : 0.01f), (float)INT32_MIN, (float)INT32_MAX);
+    };     
+    AP_Float        rtl_climb_min_m;            // rtl minimum climb in meters
+    int16_t         rtl_climb_min() {
+        return (int32_t)constrain_float(rtl_climb_min_m.cast_to_float() * 100.0f +
+                (rtl_climb_min_m < 0 ? -0.01f : 0.01f), (float)INT32_MIN, (float)INT32_MAX);
+    };              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif

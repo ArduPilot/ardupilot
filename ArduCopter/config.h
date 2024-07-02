@@ -404,20 +404,20 @@
 #endif
 
 // RTL Mode
-#ifndef RTL_ALT_FINAL
- # define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+#ifndef RTL_FINAL_ALT
+ # define RTL_FINAL_ALT             0.0f       // the altitude, in meters, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
-#ifndef RTL_ALT
- # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
+#ifndef RTL_ALTITUDE_M
+ # define RTL_ALTITUDE_M            15.00f    // default alt to return to home in meters, 0 = Maintain current altitude
 #endif
 
 #ifndef RTL_ALT_MIN
  # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
 #endif
 
-#ifndef RTL_CLIMB_MIN_DEFAULT
- # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+#ifndef RTL_CLIMB_DEFAULT
+ # define RTL_CLIMB_DEFAULT   0.0f       // vehicle will always climb this many cm as first stage of RTL
 #endif
 
 #ifndef RTL_CONE_SLOPE_DEFAULT
