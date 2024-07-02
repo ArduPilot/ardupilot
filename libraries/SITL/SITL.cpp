@@ -676,6 +676,11 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @User: Advanced
     // @Values: 0:Disabled, 1:Enabled
     AP_GROUPINFO("GPS_JAM",       16, SIM,  gps_jam[0], 0),
+    // @Param: GPS_HDG_OFS
+    // @DisplayName: GPS heading offset
+    // @Description: GPS heading offset in degrees. how off the GPS heading is from the actual heading
+    // @User: Advanced
+    AP_GROUPINFO("GPS_HDG_OFS",  17, SIM,  gps_heading_offset[0], 0),
     // @Param: GPS2_DISABLE
     // @DisplayName: GPS 2 disable
     // @Description: Disables GPS 2
@@ -785,6 +790,12 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @User: Advanced
     // @Values: 0:Disabled, 1:Enabled
     AP_GROUPINFO("GPS2_JAM",      49, SIM,  gps_jam[1], 0),
+
+    // @Param: GPS2_HDG_OFS
+    // @DisplayName: GPS2 heading offset
+    // @Description: GPS heading offset in degrees. how off the GPS heading is from the actual heading
+    // @User: Advanced
+    AP_GROUPINFO("GPS2_HDG_OFS",  45, SIM,  gps_heading_offset[1], 0),
 
     AP_GROUPEND
 };

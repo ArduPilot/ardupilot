@@ -350,7 +350,7 @@ void GPS::update()
 
     d.latitude = latitude;
     d.longitude = longitude;
-    d.yaw_deg = _sitl->state.yawDeg;
+    d.yaw_deg = _sitl->state.yawDeg + _sitl->gps_heading_offset[idx];;
     d.roll_deg = _sitl->state.rollDeg;
     d.pitch_deg = _sitl->state.pitchDeg;
 
