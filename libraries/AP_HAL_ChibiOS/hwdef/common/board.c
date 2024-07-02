@@ -269,6 +269,30 @@ void __early_init(void) {
                      STM32_NOCACHE_MPU_REGION_2_SIZE |
                      MPU_RASR_ENABLE);
 #endif
+#if defined(DUAL_CORE)
+    // Turn off second core for now
+    if ((FLASH->OPTSR_CUR & FLASH_OPTSR_BCM4)) {
+        //unlock flash
+        if (FLASH->OPTCR & FLASH_OPTCR_OPTLOCK) {
+            /* Unlock sequence */
+            FLASH->OPTKEYR = 0x08192A3B;
+            FLASH->OPTKEYR = 0x4C5D6E7F;
+        }
+        while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        }
+        // enable CM4 boot as well, most likely its already enabled
+        FLASH->OPTSR_PRG &= ~FLASH_OPTSR_BCM4;
+        // start programming
+        FLASH->OPTCR |= FLASH_OPTCR_OPTSTART;
+        // wait for completion by checking busy bit
+        while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        }
+        // lock flash
+        FLASH->OPTCR |= FLASH_OPTCR_OPTLOCK;
+        while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        }
+    }
+#endif
 #endif
 }
 

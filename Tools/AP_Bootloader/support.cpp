@@ -506,7 +506,7 @@ bool update_otg2_serial_forward()
         chnWriteTimeout(&SDU2, data, n, TIME_IMMEDIATE);
     }
 
-    return (AP_HAL::millis() > otg2_serial_deadline_ms);
+    return (AP_HAL::millis() < otg2_serial_deadline_ms);
 }
 #endif
 
