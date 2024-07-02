@@ -638,9 +638,9 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 
         // convert mag field from FLU in telsa to FRD in milli gauss.
         mag.field = Vector3f(
-            rx_magnetometer_0_topic.magnetic_field.x * 1.0E7,
-            rx_magnetometer_0_topic.magnetic_field.y * -1.0E7,
-            rx_magnetometer_0_topic.magnetic_field.z * -1.0E7);
+                        rx_magnetometer_0_topic.magnetic_field.x * 1.0E7,
+                        rx_magnetometer_0_topic.magnetic_field.y * -1.0E7,
+                        rx_magnetometer_0_topic.magnetic_field.z * -1.0E7);
 
         AP::compass().handle_external(mag);
 #endif  // AP_COMPASS_DDS_ENABLED
@@ -653,7 +653,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             break;
         }
 
-// #if AP_GPS_DDS_ENABLED
+        // #if AP_GPS_DDS_ENABLED
         //! @todo(srmainwaring) sensor_msgs/NavSatFix is missing fields.
         AP_ExternalAHRS::gps_data_message_t gps;
         gps.gps_week = 0xFFFF;
@@ -671,12 +671,12 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         // gps.ned_vel_north;
         // gps.ned_vel_east;
         // gps.ned_vel_down;
- 
+
         uint8_t instance;
         if (AP::gps().get_first_external_instance(instance)) {
             AP::gps().handle_external(gps, instance);
         }
-// #endif  // AP_GPS_DDS_ENABLED
+        // #endif  // AP_GPS_DDS_ENABLED
         break;
     }
     case topics[to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB)].dr_id.id: {
