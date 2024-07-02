@@ -218,7 +218,7 @@ public:
 #if AP_BARO_MSP_ENABLED
     void handle_msp(const MSP::msp_baro_data_message_t &pkt);
 #endif
-#if (AP_BARO_EXTERNALAHRS_ENABLED || AP_BARO_DDS_ENABLED)
+#if AP_BARO_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
 
