@@ -833,6 +833,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.append("--start-time=%d" % start_time_UTC)
 
     cmd.append("--sim-address=%s" % cmd_opts.sim_address)
+    if opts.enable_fgview:
+        cmd.append("--enable-fgview")
 
     old_dir = os.getcwd()
     for i, i_dir in zip(instances, instance_dir):
@@ -1340,6 +1342,10 @@ group_sim.add_option("--enable-ppp", action='store_true',
                      help="Enable PPP networking")
 group_sim.add_option("--enable-networking-tests", action='store_true',
                      help="Enable networking tests")
+group_sim.add_option("--enable-fgview",
+                     action='store_true',
+                     default=False,
+                     help="Enable FlightGear view")
 
 parser.add_option_group(group_sim)
 
