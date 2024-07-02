@@ -541,6 +541,7 @@ void port_setbaud(uint32_t baudrate)
 void check_ecc_errors(void)
 {
     __disable_fault_irq();
+    // stm32_flash_corrupt(0x8012300);
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
     uint32_t buf[32];
     uint32_t ofs = 0;
@@ -553,11 +554,7 @@ void check_ecc_errors(void)
             break;
         }
 #endif
-        dmaStartMemCopy(dma,
-                        STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_BYTE |
-                        STM32_DMA_CR_MSIZE_BYTE,
-                        ofs+(uint8_t*)FLASH_BASE, buf, sizeof(buf));
-        dmaWaitCompletion(dma);
+        memcpy((uint8_t*)buf, (uint8_t*)FLASH_BASE+ofs, sizeof(buf));
         ofs += sizeof(buf);
     }
     dmaStreamFree(dma);

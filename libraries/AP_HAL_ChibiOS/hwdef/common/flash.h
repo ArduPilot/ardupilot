@@ -30,6 +30,9 @@ bool stm32_flash_ispageerased(uint32_t page);
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
 void stm32_flash_set_NRST_MODE(uint8_t nrst_mode);
+#if defined(STM32H7)
+void stm32_flash_corrupt(uint32_t addr);
+#endif
 #ifndef HAL_BOOTLOADER_BUILD
 bool stm32_flash_recent_erase(void);
 #endif
