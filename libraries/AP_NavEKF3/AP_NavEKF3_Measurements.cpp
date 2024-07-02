@@ -692,15 +692,7 @@ void NavEKF3_core::readGpsData()
     }
 
     if (gpsGoodToAlign && !have_table_earth_field) {
-        const auto &compass = dal.compass();
-        if (compass.have_scale_factor(magSelectIndex) &&
-            compass.auto_declination_enabled()) {
-            getEarthFieldTable(gpsloc);
-            if (frontend->_mag_ef_limit > 0) {
-                // initialise earth field from tables
-                stateStruct.earth_magfield = table_earth_field_ga;
-            }
-        }
+        setEarthFieldFromLocation(gpsloc);
     }
 
     // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin

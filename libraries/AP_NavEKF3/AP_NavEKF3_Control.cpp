@@ -668,6 +668,20 @@ bool NavEKF3_core::setOriginLLH(const Location &loc)
     return setOrigin(loc);
 }
 
+// populates the Earth magnetic field table using the given location
+void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
+{
+    const auto &compass = dal.compass();
+    if (compass.have_scale_factor(magSelectIndex) &&
+        compass.auto_declination_enabled()) {
+        getEarthFieldTable(loc);
+        if (frontend->_mag_ef_limit > 0) {
+            // initialise earth field from tables
+            stateStruct.earth_magfield = table_earth_field_ga;
+        }
+    }
+}
+
 // sets the local NED origin using a LLH location (latitude, longitude, height)
 // returns false is the origin has already been set
 bool NavEKF3_core::setOrigin(const Location &loc)
@@ -682,6 +696,13 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, EKF_origin.lat);
     validOrigin = true;
+
+    // but we do want to populate the WMM table even if we don't have a GPS at all
+    if (!stateStruct.quat.is_zero()) {
+        alignMagStateDeclination();
+        setEarthFieldFromLocation(EKF_origin);
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
 
     if (!frontend->common_origin_valid) {
