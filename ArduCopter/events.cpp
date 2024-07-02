@@ -39,6 +39,9 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
+        case FS_THR_ENABLED_TERMINATE:
+            desired_action = FailsafeAction::TERMINATE;
+            break;
         default:
             desired_action = FailsafeAction::LAND;
     }

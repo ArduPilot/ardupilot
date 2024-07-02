@@ -130,6 +130,7 @@ enum LoggingParameters {
 #define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
 #define FS_THR_ENABLED_AUTO_RTL_OR_RTL             6
 #define FS_THR_ENABLED_BRAKE_OR_LAND               7
+#define FS_THR_ENABLED_TERMINATE                   8
 
 // GCS failsafe definitions (FS_GCS_ENABLE parameter)
 #define FS_GCS_DISABLED                        0
