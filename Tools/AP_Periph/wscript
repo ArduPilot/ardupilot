@@ -82,6 +82,7 @@ def build(bld):
                      'AP_FETtecOneWire',
                      'GCS_MAVLink',
                      'AP_Relay'
+                     'AP_NMEA_Input',
                      ]
 
     bld.ap_stlib(

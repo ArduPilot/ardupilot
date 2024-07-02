@@ -5,9 +5,10 @@
 #if AP_AIRSPEED_NMEA_ENABLED
 
 #include "AP_Airspeed_Backend.h"
+#include <AP_NMEA_Input/AP_NMEA_Input.h>
 #include <AP_HAL/AP_HAL.h>
 
-class AP_Airspeed_NMEA : public AP_Airspeed_Backend
+class AP_Airspeed_NMEA : public AP_Airspeed_Backend, AP_NMEA_Input
 {
 public:
 
@@ -27,36 +28,21 @@ public:
 
 
 private:
-    // pointer to serial uart
-    AP_HAL::UARTDriver *_uart = nullptr; 
+    // methods required to be a AP_NMEA_Input
+    void handle_decode_success() override;
+    bool start_sentence_type(const char *term_type) override;
+    bool handle_term(uint8_t term_number, const char *term) override;
 
-    // add a single character to the buffer and attempt to decode
-    // returns true if a complete sentence was successfully decoded
-    // distance should be pulled directly from _distance_m member
-    bool decode(char c);
+    const char * sentence_mtw = "MTW";
+    const char * sentence_vhw = "VHW";
+    const char *_current_sentence_type;
 
-    // decode the just-completed term
-    // returns true if new sentence has just passed checksum test and is validated
-    bool decode_latest_term();
+    // variables for the sentence handlers:
+    float _sum = 0.0f;
+    uint16_t _count = 0;
 
-    // enum for handled messages
-    enum sentence_types : uint8_t {
-        TPYE_MTW = 0,
-        TYPE_VHW,
-    };
-
-
-    // message decoding related members
-    char _term[15];                         // buffer for the current term within the current sentence
-    uint8_t _term_offset;                   // offset within the _term buffer where the next character should be placed
-    uint8_t _term_number;                   // term index within the current sentence
     float _speed;                           // speed in m/s
     float _temp;                            // temp in deg c
-    uint8_t _checksum;                      // checksum accumulator
-    bool _term_is_checksum;                 // current term is the checksum
-    bool _sentence_done;                    // has the current term already been decoded
-    bool _sentence_valid;                   // is the decodeing valid so far
-    sentence_types _sentence_type;          // the sentence type currently being processed
 
     // Store the temp ready for a temp request
     float _temp_sum;

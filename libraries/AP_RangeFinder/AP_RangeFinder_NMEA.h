@@ -22,7 +22,7 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
-class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
+class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial, AP_NMEA_Input
 {
 
 public:
@@ -33,24 +33,27 @@ public:
         return NEW_NOTHROW AP_RangeFinder_NMEA(_state, _params);
     }
 
+    void init_serial(uint8_t serial_instance) override;
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_ULTRASOUND;
     }
 
+    // methods required to be a AP_NMEA_Input
+    void handle_decode_success() override;
+    bool start_sentence_type(const char *term_type) override;
+    bool handle_term(uint8_t term_number, const char *term) override;
+
 private:
 
     using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
-    /// enum for handled messages
-    enum sentence_types : uint8_t {
-        SONAR_UNKNOWN = 0,
-        SONAR_DBT,
-        SONAR_DPT,
-        SONAR_MTW,  // mean water temperature
-        SONAR_HDED, // hondex custom sonar message
-    };
+    const char *sentence_dbt = "DBT";
+    const char *sentence_dpt = "DPT";
+    const char *sentence_mtw = "MTW";
+    const char *sentence_hded = "HDED";
 
     // get a distance reading
     bool get_reading(float &reading_m) override;
@@ -60,27 +63,17 @@ private:
 
     uint16_t read_timeout_ms() const override { return 3000; }
 
-    // add a single character to the buffer and attempt to decode
-    // returns true if a distance was successfully decoded
-    // distance should be pulled directly from _distance_m member
-    bool decode(char c);
+    // variables for callbacks to accumulate into:
+    float sum;
+    uint16_t count;
 
-    // decode the just-completed term
-    // returns true if new sentence has just passed checksum test and is validated
-    bool decode_latest_term();
-
-    // message decoding related members
-    char _term[15];                         // buffer for the current term within the current sentence
-    uint8_t _term_offset;                   // offset within the _term buffer where the next character should be placed
-    uint8_t _term_number;                   // term index within the current sentence
     float _distance_m = -1.0f;              // distance in meters parsed from a term, -1 if no distance
     float _temp_unvalidated;                // unvalidated temperature in C (may have failed checksum)
     float _temp;                            // temperature in C (validated)
     uint32_t _temp_readtime_ms;             // system time we last read a validated temperature, 0 if never read
-    uint8_t _checksum;                      // checksum accumulator
-    bool _term_is_checksum;                 // current term is the checksum
-    sentence_types _sentence_type;          // the sentence type currently being processed
-    bool _sentence_done;                    // true if this sentence has already been decoded
+
+    const char *_current_sentence_type = nullptr;
 };
 
 #endif  // AP_RANGEFINDER_NMEA_ENABLED
+ 
