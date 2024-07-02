@@ -341,7 +341,7 @@ void SRV_Channels::set_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
         return;
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
+        if (channels[i].function.get() == function) {
             channels[i].set_output_pwm(value);
             channels[i].output_ch();
         }

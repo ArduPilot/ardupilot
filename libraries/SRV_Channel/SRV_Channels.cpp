@@ -449,14 +449,14 @@ void SRV_Channels::calc_pwm(void)
         slew->last_scaled_output = functions[slew->func].output_scaled;
     }
 
-    WITH_SEMAPHORE(_singleton->override_counter_sem);
-
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         // check if channel has been locked out for this loop
         // if it has, decrement the loop count for that channel
         if (override_counter[i] == 0) {
             channels[i].set_override(false);
         } else {
+            WITH_SEMAPHORE(_singleton->override_counter_sem);
+
             channels[i].set_override(true);
             override_counter[i]--;
         }
