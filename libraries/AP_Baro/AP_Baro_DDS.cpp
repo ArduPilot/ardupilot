@@ -14,13 +14,13 @@ AP_Baro_DDS::AP_Baro_DDS(AP_Baro &baro) :
 {
     _instance = _frontend.register_sensor();
 
-    auto devid = AP_HAL::Device::make_bus_id(
+    auto dev_id = AP_HAL::Device::make_bus_id(
         AP_HAL::Device::BUS_TYPE_DDS, 0, _instance, DEVTYPE_BARO_DDS);
-    set_bus_id(_instance, devid);
+    set_bus_id(_instance, dev_id);
 
     //! @todo(srmainwaring) remove debug info
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Baro_DDS: instance: %d, devid: %d",
-        _instance, devid);
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Baro_DDS: instance: %d, dev_id: %d",
+        _instance, dev_id);
 }
 
 AP_Baro_DDS::~AP_Baro_DDS() = default;
