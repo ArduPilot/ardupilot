@@ -8,6 +8,15 @@
 #include "AP_DAL.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+// request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+void AP_DAL_VisualOdom::request_align_yaw_to_ahrs()
+{
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+    auto *vo = AP::visualodom();
+    vo->request_align_yaw_to_ahrs();
+#endif
+}
+
 /*
    update position offsets to align to AHRS position
    should only be called when this library is not being used as the position source

@@ -27,6 +27,9 @@ public:
         return RVOH.pos_offset;
     }
 
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    void request_align_yaw_to_ahrs();
+
     // update position offsets to align to AHRS position
     // should only be called when this library is not being used as the position source
     void align_position_to_ahrs(bool align_xy, bool align_z);
