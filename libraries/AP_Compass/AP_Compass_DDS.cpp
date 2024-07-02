@@ -32,6 +32,7 @@ AP_Compass_DDS::AP_Compass_DDS()
 void AP_Compass_DDS::handle_external(
     const AP_ExternalAHRS::mag_data_message_t &pkt)
 {
+    //! @todo(srmainwaring) pkt does not have instance to cf this->_instance
     Vector3f field = pkt.field;
     accumulate_sample(field, _instance);
 }
