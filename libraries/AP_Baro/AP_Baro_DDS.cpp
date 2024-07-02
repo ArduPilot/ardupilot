@@ -2,9 +2,6 @@
 
 #if AP_BARO_DDS_ENABLED
 
-//! @todo(srmainwaring) remove debug info
-#include <GCS_MAVLink/GCS.h>
-
 extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "Baro"
@@ -17,10 +14,6 @@ AP_Baro_DDS::AP_Baro_DDS(AP_Baro &baro) :
     auto dev_id = AP_HAL::Device::make_bus_id(
         AP_HAL::Device::BUS_TYPE_DDS, 0, _instance, DEVTYPE_BARO_DDS);
     set_bus_id(_instance, dev_id);
-
-    //! @todo(srmainwaring) remove debug info
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Baro_DDS: instance: %d, dev_id: %d",
-        _instance, dev_id);
 }
 
 AP_Baro_DDS::~AP_Baro_DDS() = default;
@@ -29,9 +22,9 @@ void AP_Baro_DDS::update_healthy_flag(uint8_t instance)
 {
     _frontend.sensors[instance].healthy = healthy(instance);
 
-    //! @todo(srmainwaring) - find alternative
-    // Force calibration true. Baro calibration fails for DDS because the
-    // DDS client is not created until after the baro calibration has run. 
+    //! @todo(srmainwaring) - find alternative to overriding calibration flag.
+    // Calibration fails because this backend receives no data until the
+    // DDS client is created, which occurs after the baro calibration has run.
     _frontend.sensors[instance].calibrated = true;
 };
 
@@ -43,10 +36,6 @@ bool AP_Baro_DDS::healthy(uint8_t instance)
 void AP_Baro_DDS::update(void)
 {
     if (_count) {
-        //! @todo(srmainwaring) remove debug info
-        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Baro_DDS: count: %d, pressure: %f, temperature: %f",
-        //     _count, _sum_pressure/_count, _sum_temp/_count);
-
         WITH_SEMAPHORE(_sem);
         _copy_to_frontend(_instance, _sum_pressure/_count, _sum_temp/_count);
         _sum_pressure = 0;
