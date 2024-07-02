@@ -243,9 +243,9 @@ AC_CustomControl_PID::AC_CustomControl_PID(AC_CustomControl &frontend, AP_AHRS_V
     _p_angle_roll2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
     _p_angle_pitch2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
     _p_angle_yaw2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
-    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, dt),
-    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, dt),
-    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RPY_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f, dt)
+    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, dt),
+    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, dt),
+    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -256,3 +256,7 @@ AC_CustomControl_PID::AC_CustomControl_PID(AC_CustomControl &frontend, AP_AHRS_V
 12. Add reset functionality inside `reset` function of `AC_CustomControl_XYZ.cpp` file. It is user's responsibility to add proper controller resetting functionality. This highly depends on the controller and it should not be copy-pasted from another backend without testing it in SITL.
 
 13. You can access target attitude and target rate values using `atti_control->get_attitude_target_quat()` and `atti_control->rate_bf_targets()` functions, respectively. You can also access latest gyro measurement using `_ahrs->get_gyro_latest()` function. Take a look at other backends
+
+## Integral action Linear Quadratic Regulator controller
+
+1. This controller serves as an example on using this library for deploying your own attitude controllers. The LQR controller implemented here essentially works like an attitude PID controller, wherein the PID gains for each axis have been tuned by solving the Algebraic Riccati Equation (ARE) for the attitude state-space of a quadcopter. Details about quadcopter dynamics are documented here: https://ardupilot.org/copter/docs/systemid-mode-operation.html#identification-of-a-multicopter. For further details behind the mathematics and implementation of this attitude controller, refer to this publication: https://www.researchgate.net/publication/279448184_Quadrotor_Quaternion_Control and this article: https://www.mathworks.com/help/control/ref/ss.lqi.html 
