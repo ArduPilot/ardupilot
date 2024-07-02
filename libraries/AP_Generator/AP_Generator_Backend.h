@@ -32,6 +32,9 @@ public:
     virtual bool idle(void) { return false; }
     virtual bool run(void) { return false; }
 
+    // Error code returns 0 if no error or the error code return function is not implemented
+    virtual uint32_t get_errorcode(void) {return 0;}
+
     // Use generator mavlink message
     virtual void send_generator_status(const GCS_MAVLINK &channel) {}
 

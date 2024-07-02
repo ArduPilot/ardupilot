@@ -964,3 +964,8 @@ singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
 singleton AP_VisualOdom rename visual_odom
 singleton AP_VisualOdom method healthy boolean
 singleton AP_VisualOdom method quality int8_t
+
+include AP_Generator/AP_Generator.h  
+singleton AP_Generator depends HAL_GENERATOR_ENABLED
+singleton AP_Generator rename generator
+singleton AP_Generator method get_errorcode uint32_t
