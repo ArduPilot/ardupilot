@@ -54,7 +54,7 @@ void EFI_Hirth::update_receive()
     }
 
     // checksum is sum of all bytes except the received checksum:
-    const uint8_t expected_checksum = 256U - crc_sum_of_bytes(receive_buf, expected_bytes_in_message-1);
+    const uint8_t expected_checksum = 256U - cksum_sum8(receive_buf, expected_bytes_in_message-1);
     const uint8_t received_checksum = receive_buf[expected_bytes_in_message-1];
     if (expected_checksum == received_checksum) {
         PacketCode received_packet_code = PacketCode(receive_buf[1]);

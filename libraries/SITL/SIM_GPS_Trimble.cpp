@@ -337,7 +337,7 @@ bool DCOL_Parser::valid_csum() {
     uint8_t sum = (uint8_t)status;
     sum += (uint8_t)packet_type;
     sum += expected_payload_length;
-    sum += crc_sum_of_bytes(payload, expected_payload_length);
+    sum += cksum_sum8(payload, expected_payload_length);
     return sum == expected_csum;
 }
 

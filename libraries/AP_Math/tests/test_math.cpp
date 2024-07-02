@@ -683,14 +683,14 @@ TEST(MathTest, FIXEDWINGTURNRATE)
 
 TEST(CRCTest, parity)
 {
-    EXPECT_EQ(parity(0b1), 1);
-    EXPECT_EQ(parity(0b10), 1);
-    EXPECT_EQ(parity(0b100), 1);
+    EXPECT_EQ(cksum_byte_parity(0b1), 1);
+    EXPECT_EQ(cksum_byte_parity(0b10), 1);
+    EXPECT_EQ(cksum_byte_parity(0b100), 1);
 
-    EXPECT_EQ(parity(0b11), 0);
-    EXPECT_EQ(parity(0b110), 0);
-    EXPECT_EQ(parity(0b111), 1);
-    EXPECT_EQ(parity(0b11111111), 0);
+    EXPECT_EQ(cksum_byte_parity(0b11), 0);
+    EXPECT_EQ(cksum_byte_parity(0b110), 0);
+    EXPECT_EQ(cksum_byte_parity(0b111), 1);
+    EXPECT_EQ(cksum_byte_parity(0b11111111), 0);
 }
 
 TEST(MathTest, div1000)

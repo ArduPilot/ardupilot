@@ -112,7 +112,7 @@ void AP_RangeFinder_LeddarVu8::request_distances()
     const uint8_t req_buf_len = sizeof(req_buf);
 
     // fill in crc bytes
-    uint16_t crc = calc_crc_modbus(req_buf, req_buf_len - 2);
+    uint16_t crc = crc_modbus(req_buf, req_buf_len - 2);
     req_buf[req_buf_len - 2] = LOWBYTE(crc);
     req_buf[req_buf_len - 1] = HIGHBYTE(crc);
 
@@ -181,7 +181,7 @@ bool AP_RangeFinder_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16
         parsed_msg.state = ParseState::WAITING_FOR_ADDRESS;
 
         // check crc
-        uint16_t expected_crc = calc_crc_modbus(&parsed_msg.address, 3+parsed_msg.payload_recv);
+        uint16_t expected_crc = crc_modbus(&parsed_msg.address, 3+parsed_msg.payload_recv);
         if (expected_crc == parsed_msg.crc) {
             // calculate and return shortest distance
             reading_cm = 0;

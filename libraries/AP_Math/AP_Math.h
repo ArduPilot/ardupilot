@@ -9,6 +9,7 @@
 #include <AP_Param/AP_Param.h>
 
 #include "definitions.h"
+#include "checksum.h"
 #include "crc.h"
 #include "matrix3.h"
 #include "polygon.h"

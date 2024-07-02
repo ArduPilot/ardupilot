@@ -50,7 +50,7 @@ We return it packed inside the referenced NodeData structure */
 void AP_DroneCAN_DNA_Server::getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const
 {
     uint64_t hash = FNV_1_OFFSET_BASIS_64;
-    hash_fnv_1a(size, unique_id, &hash);
+    cksum_fnv_1a(size, unique_id, &hash);
 
     // xor-folding per http://www.isthe.com/chongo/tech/comp/fnv/
     hash = (hash>>56) ^ (hash&(((uint64_t)1<<56)-1));

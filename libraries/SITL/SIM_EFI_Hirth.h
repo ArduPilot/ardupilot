@@ -76,7 +76,7 @@ private:
         }
 
         void update_checksum() {
-            checksum = 256U - crc_sum_of_bytes((uint8_t*)this, length-1);
+            checksum = 256U - cksum_sum8((uint8_t*)this, length-1);
         }
     };
 

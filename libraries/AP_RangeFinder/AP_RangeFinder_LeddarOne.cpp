@@ -96,7 +96,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(float &reading_m)
 */
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
-    uint16_t crc = calc_crc_modbus(aBuffer, aLength);
+    uint16_t crc = crc_modbus(aBuffer, aLength);
 
     uint8_t lCRCLo = LOWBYTE(crc);
     uint8_t lCRCHi = HIGHBYTE(crc);

@@ -22,7 +22,7 @@
 
 #include "AP_ExternalAHRS_InertialLabs.h"
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
+#include <AP_Math/checksum.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
@@ -215,7 +215,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
     }
 
     // check checksum
-    const uint16_t crc1 = crc_sum_of_bytes_16(&buffer[2], buffer_ofs-4);
+    const uint16_t crc1 = cksum_sum16(&buffer[2], buffer_ofs-4);
     const uint16_t crc2 = le16toh_ptr(&buffer[buffer_ofs-2]);
     if (crc1 != crc2) {
         re_sync();

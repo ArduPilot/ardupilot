@@ -13,7 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  interfaces to ArduPilot collection of CRCs.
+  collection of CRC calculation functions
  */
 #pragma once
 
@@ -36,11 +36,6 @@ uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 
-// checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
-// sum, then adds those two bytes together.  Returns the complement of
-// the final sum.
-uint8_t crc_sum8_with_carry(const uint8_t *p, uint8_t len);
-
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
@@ -50,24 +45,7 @@ uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t 
 // https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
 uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc);
 
-uint16_t calc_crc_modbus(const uint8_t *buf, uint16_t len);
-
-uint16_t crc_fletcher16(const uint8_t * buffer, uint32_t len);
-
-// generate 64bit FNV1a hash from buffer
-#define FNV_1_OFFSET_BASIS_64 14695981039346656037UL
-void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
+uint16_t crc_modbus(const uint8_t *buf, uint16_t len);
 
 // CRC-64-WE using the polynomial of 0x42F0E1EBA9EA3693
 uint64_t crc_crc64(const uint32_t *data, uint16_t num_words);
-
-// return the parity of byte - "1" if there is an odd number of bits
-// set, "0" if there is an even number of bits set
-uint8_t parity(uint8_t byte);
-
-// sums the bytes in the supplied buffer, returns that sum mod 256
-// (i.e. shoved into a uint8_t)
-uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count);
-
-// sums the bytes in the supplied buffer, returns that sum mod 0xFFFF
-uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count);
