@@ -184,6 +184,8 @@ public:
     // pause and resume a mode
     virtual bool pause() { return false; };
     virtual bool resume() { return false; };
+
+    // handle situations where the vehicle is on the ground waiting for takeoff
     void make_safe_ground_handling(bool force_throttle_unlimited = false);
 
     // true if weathervaning is allowed in the current mode
