@@ -117,6 +117,9 @@ protected:
     void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
     void update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us);
 
+    // Return true if the monitor is missing
+    virtual bool missing() const;
+
 private:
     // resistance estimate
     uint32_t    _resistance_timer_ms;    // system time of last resistance estimate update

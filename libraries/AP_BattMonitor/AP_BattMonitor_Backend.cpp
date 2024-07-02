@@ -168,9 +168,8 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
         return AP_BattMonitor::Failsafe::Low;
     }
 
-    // 5 second health timeout
-    if ((now - _state.last_healthy_ms) > 5000) {
-        return AP_BattMonitor::Failsafe::Unhealthy;
+    if (missing()) {
+        return AP_BattMonitor::Failsafe::Missing;
     }
 
     // if we've gotten this far then battery is ok
@@ -203,6 +202,7 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
                                 !(_params._low_voltage > _params._critical_voltage);
 
     bool result = update_check(buflen, buffer, !_state.healthy, "unhealthy");
+    result = result && update_check(buflen, buffer, missing(), "missing");
     result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
     result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
     result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
@@ -257,6 +257,13 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
     } else {
         low_capacity = false;
     }
+}
+
+// Return true if the battery monitor is missing
+bool AP_BattMonitor_Backend::missing() const
+{
+    // Consider as missing if unhealthy for more than 5 seconds
+    return (AP_HAL::millis() - _state.last_healthy_ms) > 5000;
 }
 
 #if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
