@@ -620,9 +620,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 
         AP::baro().handle_external(baro);
 #endif
-        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/FluidPressure (pressure: %f) Pa.",
-        //     msg_prefix, rx_air_pressure_0_topic.fluid_pressure);
-
         break;
     }
     case topics[to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB)].dr_id.id: {
@@ -643,9 +640,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 
         AP::compass().handle_external(mag);
 #endif
-        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/MagneticField (%f, %f, %f) T.",
-        //     msg_prefix, rx_magnetometer_0_topic.magnetic_field.x, rx_magnetometer_0_topic.magnetic_field.y, rx_magnetometer_0_topic.magnetic_field.z);
-
         break;
     }
     case topics[to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB)].dr_id.id: {
@@ -656,9 +650,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
 // #if AP_GPS_DDS_ENABLED
-        //! @todo(srmainwaring) sensor_msgs/NavSatFix is missing fields
-        // required by FC.
-
+        //! @todo(srmainwaring) sensor_msgs/NavSatFix is missing fields.
         AP_ExternalAHRS::gps_data_message_t gps;
         gps.gps_week = 0xFFFF;
         // gps.ms_tow;
@@ -681,9 +673,6 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
             AP::gps().handle_external(gps, instance);
         }
 // #endif
-        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s Received sensor_msgs/NavSatFix (lat: %f, lon: %f, alt: %f).",
-        //     msg_prefix, rx_nav_sat_fix_0_topic.latitude, rx_nav_sat_fix_0_topic.longitude, rx_nav_sat_fix_0_topic.altitude);
-
         break;
     }
 #endif
