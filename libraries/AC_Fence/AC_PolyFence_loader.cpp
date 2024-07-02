@@ -968,7 +968,7 @@ bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint
                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Received incorrect type (want=%u got=%u)", (unsigned)expecting_type, (unsigned)new_items[i].type);
                return false;
             }
-            if (!is_positive(new_items[i].radius)) {
+            if (is_negative(new_items[i].radius)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Non-positive circle radius");
                 return false;
             }
@@ -1093,6 +1093,10 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
             return false;
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION: {
+            if (!is_positive(new_item.radius)) {  // radius must be positive
+                break;
+            }
+
             total_vertex_count++; // useful to make number of lines in QGC file match FENCE_TOTAL
             const bool store_as_int = (new_item.radius - int(new_item.radius) < 0.001);
             AC_PolyFenceType store_type = new_item.type;
