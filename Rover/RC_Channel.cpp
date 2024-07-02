@@ -52,6 +52,7 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STEERING:
     case AUX_FUNC::WIND_VANE_DIR_OFSSET:
+    case AUX_FUNC::REVERSE:
         break;
     case AUX_FUNC::SAILBOAT_MOTOR_3POS:
         do_aux_function_sailboat_motor_3pos(ch_flag);
@@ -249,6 +250,21 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
             && (rover.control_mode != &rover.mode_hold) && ch_flag == AuxSwitchPos::HIGH) {
             SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
+        }
+        break;
+    
+    // rover reverse switching
+    case AUX_FUNC::REVERSE:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            rover.g2.wp_nav.set_reversed(true);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            // do nothing
+            break;
+        case AuxSwitchPos::LOW:
+            rover.g2.wp_nav.set_reversed(false);
+            break;
         }
         break;
 
