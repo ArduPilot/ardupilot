@@ -23,6 +23,16 @@
 #endif
 
 /*
+  define for controlling how long the watchdog is set for.
+*/
+#ifndef STM32_WDG_TIMEOUT_MS
+#define STM32_WDG_TIMEOUT_MS 2048
+#endif
+#if STM32_WDG_TIMEOUT_MS > 4096 || STM32_WDG_TIMEOUT_MS < 20
+#error "Watchdog timeout out of range"
+#endif
+
+/*
   defines for working out if the reset was from the watchdog
  */
 #if defined(STM32H7)
@@ -68,16 +78,17 @@ static bool watchdog_enabled;
  */
 void stm32_watchdog_init(void)
 {
-    // setup for 2s reset
+    // setup the watchdog timeout
+    // t = 4 * 2^PR * (RLR+1) / 32KHz
     IWDGD.KR = 0x5555;
-    IWDGD.PR = 2; // div16
-    IWDGD.RLR = 0xFFF;
+    IWDGD.PR = 3; // changing this would change the definition of STM32_WDG_TIMEOUT_MS
+    IWDGD.RLR = STM32_WDG_TIMEOUT_MS - 1;
     IWDGD.KR = 0xCCCC;
     watchdog_enabled = true;
 }
 
 /*
-  pat the dog, to prevent a reset. If not called for 1s
+  pat the dog, to prevent a reset. If not called for STM32_WDG_TIMEOUT_MS
   after stm32_watchdog_init() then MCU will reset
  */
 void stm32_watchdog_pat(void)
