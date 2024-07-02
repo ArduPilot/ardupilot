@@ -4,7 +4,8 @@
 
 #if AP_ESC_TELEM_DDS_ENABLED
 
-class AP_ESC_Telem_DDS : public AP_ESC_Telem_Backend {
+class AP_ESC_Telem_DDS : public AP_ESC_Telem_Backend
+{
 public:
     AP_ESC_Telem_DDS();
 
