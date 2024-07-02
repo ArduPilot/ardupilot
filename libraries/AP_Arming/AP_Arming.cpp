@@ -60,6 +60,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -138,8 +139,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: CHECK
     // @DisplayName: Arm Checks to Perform (bitmask)
     // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. For most users it is recommended to leave this at the default of 1 (all checks enabled). You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72.
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
-    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
+    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT,21:ESC_Telem
+    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT,21:ESC_Telem
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
@@ -166,6 +167,15 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CRSDP_IGN", 11, AP_Arming, crashdump_ack.acked, 0),
 #endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
+#if HAL_WITH_ESC_TELEM
+    // @Param: ESC_CHECK
+    // @DisplayName: Required ESC Telemetry Check
+    // @Description: Check if ESC telemetry is required to arm the vehicle
+    // @Bitmask: 0:ESC 1,1:ESC 2,2:ESC 3,3:ESC 4,4:ESC 5,5:ESC 6,6:ESC 7,7:ESC 8,8:ESC 9,9:ESC 10,10:ESC 11,11:ESC 12,12:ESC 13,13:ESC 14,14:ESC 15,15:ESC 16,16:ESC 17
+    // @User: Advanced
+    AP_GROUPINFO("ESC_CHECK", 12, AP_Arming, esc_telem_check, 0),
+#endif // HAL_WITH_ESC_TELEM
 
     AP_GROUPEND
 };
@@ -1644,8 +1654,12 @@ bool AP_Arming::pre_arm_checks(bool report)
 #if AP_ARMING_CRASHDUMP_ACK_ENABLED
         & crashdump_checks(report)
 #endif
+#if HAL_WITH_ESC_TELEM
+        &  esc_telemetry_checks(report)
+#endif // HAL_WITH_ESC_TELEM
         &  serial_protocol_checks(report)
         &  estop_checks(report);
+
 
     if (!checks_result && last_prearm_checks_result) { // check went from true to false
         report_immediately = true;
@@ -1810,6 +1824,24 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 #endif
     return armed;
 }
+
+#if HAL_WITH_ESC_TELEM
+// check if esc telemetry is available
+bool AP_Arming::esc_telemetry_checks(bool display_failure)
+{
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_ESC_TELEM)) {
+        const AP_ESC_Telem& telem = AP::esc_telem();
+
+        // check ESCs are ready
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        if (!telem.pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg), esc_telem_check)) {
+            check_failed(ARMING_CHECK_ALL, display_failure, "ESC telem: %s", fail_msg);
+            return false;
+        }
+    }
+    return true;
+}
+#endif // HAL_WITH_ESC_TELEM
 
 //returns true if disarming occurred successfully
 bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)

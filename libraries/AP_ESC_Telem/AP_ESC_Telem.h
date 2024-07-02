@@ -82,6 +82,9 @@ public:
     // get mask of ESCs that sent valid telemetry data in the last
     // ESC_TELEM_DATA_TIMEOUT_MS
     uint32_t get_active_esc_mask() const;
+    
+    // pre arm check 
+    bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len, uint32_t esc_check_mask) const;
 
     // return an active ESC with the highest RPM for the purposes of reporting (e.g. in the OSD)
     uint8_t get_max_rpm_esc() const;
