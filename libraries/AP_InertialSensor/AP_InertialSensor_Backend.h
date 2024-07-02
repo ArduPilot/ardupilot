@@ -139,7 +139,7 @@ protected:
     HAL_Semaphore _sem;
 
     //Default Clip Limit
-    float _clip_limit = 15.5f * GRAVITY_MSS;
+    float _clip_limit = (16.0f - 0.5f) * GRAVITY_MSS;
 
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
