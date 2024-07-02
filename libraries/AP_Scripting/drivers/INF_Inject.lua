@@ -140,6 +140,7 @@ local function read_bytes(n)
    local ret = ""
    for _ = 1, n do
       local b = uart:read()
+      assert(b)
       state.chk0 = state.chk0 ~ b
       state.chk1 = state.chk1 ~ state.chk0
       ret = ret .. string.char(b)
@@ -168,7 +169,7 @@ end
 --]]
 local function check_input()
    local packet_size = 83
-   local n_bytes = uart:available():toint()
+   local n_bytes = uart:available()
    if n_bytes < packet_size then
       return false
    end

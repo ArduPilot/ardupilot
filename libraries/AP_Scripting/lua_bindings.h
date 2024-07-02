@@ -13,6 +13,7 @@ int lua_get_CAN_device2(lua_State *L);
 int lua_serial_find_serial(lua_State *L);
 int lua_serial_find_simulated_device(lua_State *L);
 int lua_serial_writestring(lua_State *L);
+int lua_serial_read(lua_State *L);
 int lua_serial_readstring(lua_State *L);
 int lua_dirlist(lua_State *L);
 int lua_removefile(lua_State *L);

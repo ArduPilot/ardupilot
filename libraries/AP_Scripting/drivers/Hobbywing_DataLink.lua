@@ -67,7 +67,9 @@ uart:begin(115200)
 local function read_bytes(n)
    local ret = ""
    for _ = 1, n do
-      ret = ret .. string.char(uart:read())
+      local b = uart:read()
+      assert(b)
+      ret = ret .. string.char(b)
    end
    return ret
 end
@@ -76,7 +78,7 @@ end
    discard pending bytes
 --]]
 local function discard_pending()
-   local n = uart:available():toint()
+   local n = uart:available()
    for _ = 1, n do
       uart:read()
    end
@@ -168,7 +170,7 @@ local telem_data = ESCTelemetryData()
    check for input and parse data
 --]]
 local function check_input()
-   local n_bytes = uart:available():toint()
+   local n_bytes = uart:available()
    if n_bytes < 160 then
       return
    end

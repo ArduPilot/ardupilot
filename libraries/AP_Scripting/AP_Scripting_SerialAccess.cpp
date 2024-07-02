@@ -24,9 +24,9 @@ void AP_Scripting_SerialAccess::begin(uint32_t baud)
     }
 }
 
-size_t AP_Scripting_SerialAccess::write(uint8_t c)
+bool AP_Scripting_SerialAccess::write(uint8_t c)
 {
-    return write(&c, 1);
+    return write(&c, 1) > 0;
 }
 
 size_t AP_Scripting_SerialAccess::write(const uint8_t *buffer, size_t size)
@@ -37,13 +37,9 @@ size_t AP_Scripting_SerialAccess::write(const uint8_t *buffer, size_t size)
     return ON_DEVICE_PORT(write, buffer, size);
 }
 
-int16_t AP_Scripting_SerialAccess::read(void)
+bool AP_Scripting_SerialAccess::read(uint8_t &c)
 {
-    uint8_t c;
-    if (read(&c, 1) != 1) {
-        return -1;
-    }
-    return c;
+    return read(&c, 1) > 0;
 }
 
 ssize_t AP_Scripting_SerialAccess::read(uint8_t* buffer, uint16_t count)
@@ -54,12 +50,15 @@ ssize_t AP_Scripting_SerialAccess::read(uint8_t* buffer, uint16_t count)
     return ON_DEVICE_PORT(read, buffer, count);
 }
 
-uint32_t AP_Scripting_SerialAccess::available(void)
+int32_t AP_Scripting_SerialAccess::available(void)
 {
+    uint32_t avail;
     if (!check_is_device_port()) {
-        return stream->available();
+        avail = stream->available();
+    } else {
+        avail = ON_DEVICE_PORT(available);
     }
-    return ON_DEVICE_PORT(available);
+    return MIN(avail, (uint32_t)INT32_MAX); // ensure result fits in a Lua integer
 }
 
 void AP_Scripting_SerialAccess::set_flow_control(enum AP_HAL::UARTDriver::flow_control fcs)

@@ -1234,12 +1234,12 @@ function AP_HAL__I2CDevice_ud:set_retries(retries) end
 local AP_Scripting_SerialAccess_ud = {}
 
 -- Start serial port with the given baud rate (no effect for device ports)
----@param baud_rate uint32_t_ud|integer|number
+---@param baud_rate integer
 function AP_Scripting_SerialAccess_ud:begin(baud_rate) end
 
 -- Writes a single byte
 ---@param value integer -- byte to write
----@return uint32_t_ud -- 1 if success else 0
+---@return boolean -- true if successfully written
 function AP_Scripting_SerialAccess_ud:write(value) end
 
 -- Writes a string. The number of bytes actually written, i.e. the length of the
@@ -1250,7 +1250,7 @@ function AP_Scripting_SerialAccess_ud:write(value) end
 function AP_Scripting_SerialAccess_ud:writestring(data) end
 
 -- Reads a single byte from the serial port
----@return integer -- byte, -1 if error or none available
+---@return integer|nil -- byte, or nil on error/none available
 function AP_Scripting_SerialAccess_ud:read() end
 
 -- Reads up to `count` bytes and returns the bytes read as a string. No bytes
@@ -1260,7 +1260,7 @@ function AP_Scripting_SerialAccess_ud:read() end
 function AP_Scripting_SerialAccess_ud:readstring(count) end
 
 -- Returns number of available bytes to read.
----@return uint32_t_ud
+---@return integer
 function AP_Scripting_SerialAccess_ud:available() end
 
 -- Set flow control option for serial port (no effect for device ports)
