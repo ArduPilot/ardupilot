@@ -1219,6 +1219,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
+        // TODO: this is only valid if packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING
         cmd.content.mount_control.pitch = packet.param1;
         cmd.content.mount_control.roll = packet.param2;
         cmd.content.mount_control.yaw = packet.param3;
@@ -1735,6 +1736,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.mount_control.pitch;
         packet.param2 = cmd.content.mount_control.roll;
         packet.param3 = cmd.content.mount_control.yaw;
+        packet.z = MAV_MOUNT_MODE_MAVLINK_TARGETING;
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
