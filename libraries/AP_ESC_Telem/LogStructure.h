@@ -4,7 +4,8 @@
 
 #define LOG_IDS_FROM_ESC_TELEM                  \
     LOG_ESC_MSG,                                \
-    LOG_EDT2_MSG
+    LOG_EDT2_MSG,                               \
+    LOG_ESCX_MSG
 
 // @LoggerMessage: ESC
 // @Description: Feedback received from ESCs
@@ -58,9 +59,27 @@ struct PACKED log_Edt2 {
     uint8_t status;
 };
 
-#define LOG_STRUCTURE_FROM_ESC_TELEM  \
+// @LoggerMessage: ESCX
+// @Description: Extended telemetry feedback received from ESCs
+// @Field: TimeUS: microseconds since system startup
+// @Field: Instance: ESC instance number
+// @Field: inpct: input duty cycle
+// @Field: outpct: output duty cycle
+// @Field: flags: manufacturer-specific status flags
+struct PACKED log_EscX {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t instance;
+    uint8_t input_duty;
+    uint8_t output_duty;
+    uint32_t flags;
+};
+
+#define LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_ESC_MSG, sizeof(log_Esc), \
-      "ESC",  "QBffffcfcf", "TimeUS,Instance,RPM,RawRPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qqvAOaO%", "F-00--BCB-" , true }, \
+      "ESC",  "QBeeffcfcf", "TimeUS,Instance,RPM,RawRPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qqvAOaO%", "F-BB--BCB-" , true }, \
     { LOG_EDT2_MSG, sizeof(log_Edt2), \
-      "EDT2",  "QBBBB", "TimeUS,Instance,Stress,MaxStress,Status", "s#---", "F----" , true },
+      "EDT2",  "QBBBB", "TimeUS,Instance,Stress,MaxStress,Status", "s#---", "F----" , true }, \
+    { LOG_ESCX_MSG, sizeof(log_EscX), \
+      "ESCX", "QBBBI", "TimeUS,Instance,inpct,outpct,flags", "s#%%-", "F----" , true },
 

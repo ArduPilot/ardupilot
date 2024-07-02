@@ -1448,6 +1448,34 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
 #endif
 }
 
+/*
+  handle Extended ESC status message
+ */
+void AP_DroneCAN::handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg)
+{
+#if HAL_WITH_ESC_TELEM && AP_EXTENDED_ESC_TELEM_ENABLE
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_index = msg.esc_index + esc_offset;
+
+    if (!is_esc_data_index_valid(esc_index)) {
+        return;
+    }
+
+    TelemetryData telemetryData {
+        .motor_temp_cdeg = (int16_t)(msg.motor_temperature_degC * 100),
+        .input_duty = msg.input_pct,
+        .output_duty = msg.output_pct,
+        .flags = (uint32_t)msg.status_flags,
+    };
+
+    update_telem_data(esc_index, telemetryData,
+        AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE
+        | AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY
+        | AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY
+        | AP_ESC_Telem_Backend::TelemetryType::FLAGS);
+#endif
+}
+
 bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     if (index > DRONECAN_SRV_NUMBER) {
         // printf("DroneCAN: invalid esc index: %d. max index allowed: %d\n\r", index, DRONECAN_SRV_NUMBER);

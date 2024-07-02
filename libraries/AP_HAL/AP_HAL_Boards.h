@@ -188,6 +188,10 @@
 #define AP_EXTENDED_DSHOT_TELEM_V2_ENABLED HAL_REQUIRES_BDSHOT_SUPPORT
 #endif
 
+#ifndef AP_EXTENDED_ESC_TELEM_ENABLE
+#define AP_EXTENDED_ESC_TELEM_ENABLE 0
+#endif
+
 // this is used as a general mechanism to make a 'small' build by
 // dropping little used features. We use this to allow us to keep
 // FMUv2 going for as long as possible

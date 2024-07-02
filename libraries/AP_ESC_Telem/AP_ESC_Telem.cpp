@@ -329,6 +329,44 @@ bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
     return true;
 }
 
+#if AP_EXTENDED_ESC_TELEM_ENABLE
+// get an individual ESC's input duty if available, returns true on success
+bool AP_ESC_Telem::get_input_duty(uint8_t esc_index, uint8_t& input_duty) const
+{
+    if (esc_index >= ESC_TELEM_MAX_ESCS
+        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY)) {
+        return false;
+    }
+    input_duty = _telem_data[esc_index].input_duty;
+    return true;
+}
+
+// get an individual ESC's output duty if available, returns true on success
+bool AP_ESC_Telem::get_output_duty(uint8_t esc_index, uint8_t& output_duty) const
+{
+    if (esc_index >= ESC_TELEM_MAX_ESCS
+        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY)) {
+        return false;
+    }
+    output_duty = _telem_data[esc_index].output_duty;
+    return true;
+}
+
+// get an individual ESC's status flags if available, returns true on success
+bool AP_ESC_Telem::get_flags(uint8_t esc_index, uint32_t& flags) const
+{
+    if (esc_index >= ESC_TELEM_MAX_ESCS
+        || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
+        || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::FLAGS)) {
+        return false;
+    }
+    flags = _telem_data[esc_index].flags;
+    return true;
+}
+#endif // AP_EXTENDED_ESC_TELEM_ENABLE
+
 // send ESC telemetry messages over MAVLink
 void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
@@ -492,6 +530,18 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
         telemdata.usage_s = new_data.usage_s;
     }
 
+#if AP_EXTENDED_ESC_TELEM_ENABLE
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY) {
+        _telem_data[esc_index].input_duty = new_data.input_duty;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY) {
+        _telem_data[esc_index].output_duty = new_data.output_duty;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::FLAGS) {
+        _telem_data[esc_index].flags = new_data.flags;
+    }
+#endif //AP_EXTENDED_ESC_TELEM_ENABLE
+
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::EDT2_STATUS) {
         telemdata.edt2_status = merge_edt2_status(telemdata.edt2_status, new_data.edt2_status);
@@ -631,6 +681,29 @@ void AP_ESC_Telem::update()
                     error_rate  : rpmdata.error_rate
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
+#if AP_EXTENDED_ESC_TELEM_ENABLE
+                // Write ESC extended status messages
+                //   id: starts from 0
+                //   input duty: duty cycle input to the ESC in percent
+                //   output duty: duty cycle output to the motor in percent
+                //   status flags: manufacurer-specific status flags
+                bool has_ext_data = telemdata.types & 
+                        (AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY |
+                         AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY |
+                         AP_ESC_Telem_Backend::TelemetryType::FLAGS);
+                if (has_ext_data) {
+                    const struct log_EscX pkt2{
+                        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESCX_MSG)),
+                        time_us     : AP_HAL::micros64(),
+                        instance    : i,
+                        input_duty  : telemdata.input_duty,
+                        output_duty : telemdata.output_duty,
+                        flags       : telemdata.flags,
+                    };
+                    AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+                }
+#endif //AP_EXTENDED_ESC_TELEM_ENABLE
                 _last_telem_log_ms[i] = telemdata.last_update_ms;
                 _last_rpm_log_us[i] = rpmdata.last_update_us;
             }
