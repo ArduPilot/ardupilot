@@ -724,6 +724,16 @@ void AP_ESC_Telem::set_rpm_scale(const uint8_t esc_index, const float scale_fact
 }
 #endif
 
+#if AP_ESC_TELEM_DDS_ENABLED
+void AP_ESC_Telem::handle_external()
+{
+    //! @todo(srmainwaring) handle external for each esc
+    // for (uint8_t i=0; i<_num_drivers; i++) {
+    //     drivers[i]->handle_external(pkt);
+    // }
+}
+#endif  // AP_ESC_TELEM_DDS_ENABLED
+
 AP_ESC_Telem *AP_ESC_Telem::_singleton = nullptr;
 
 /*

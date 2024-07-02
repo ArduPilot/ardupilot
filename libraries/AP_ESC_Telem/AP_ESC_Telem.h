@@ -115,6 +115,10 @@ public:
     void set_rpm_scale(const uint8_t esc_index, const float scale_factor);
 #endif
 
+#if AP_ESC_TELEM_DDS_ENABLED
+    void handle_external(/*todo_add_data_type*/);
+#endif
+
 private:
 
     // helper that validates RPM data

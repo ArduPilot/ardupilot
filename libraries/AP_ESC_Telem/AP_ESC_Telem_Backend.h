@@ -58,6 +58,10 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_ESC_Telem_Backend);
 
+#if AP_ESC_TELEM_DDS_ENABLED
+    virtual void handle_external(/*todo_add_data_type*/) {}
+#endif  // AP_ESC_TELEM_EXTERNAL_ENABLED
+
 protected:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
     void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate = 0.0f);
