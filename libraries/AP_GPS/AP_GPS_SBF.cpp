@@ -138,6 +138,19 @@ AP_GPS_SBF::read(void)
                                     config_string = nullptr;
                                 }
                                 break;
+                            case Config_State::Constellation:
+                                if ((params.gnss_mode&0x6F)!=0) {
+                                    //IMES not taken into account by Septentrio receivers
+                                    if (asprintf(&config_string, "sst, %s%s%s%s%s%s\n", (params.gnss_mode&(1U<<0))!=0 ? "GPS" : "",
+                                                            (params.gnss_mode&(1U<<1))!=0 ? ((params.gnss_mode&0x01)==0 ? "SBAS" : "+SBAS") : "",
+                                                            (params.gnss_mode&(1U<<2))!=0 ? ((params.gnss_mode&0x03)==0  ? "GALILEO" : "+GALILEO") : "",
+                                                            (params.gnss_mode&(1U<<3))!=0 ? ((params.gnss_mode&0x07)==0 ? "BEIDOU" : "+BEIDOU") : "",
+                                                            (params.gnss_mode&(1U<<5))!=0 ? ((params.gnss_mode&0x0F)==0 ? "QZSS" : "+QZSS") : "",
+                                                            (params.gnss_mode&(1U<<6))!=0 ? ((params.gnss_mode&0x2F)==0  ? "GLONASS" : "+GLONASS") : "") == -1) {
+                                        config_string=nullptr;
+                                    }
+                                }
+                                break;
                             case Config_State::Blob:
                                 if (asprintf(&config_string, "%s\n", _initialisation_blob[_init_blob_index]) == -1) {
                                     config_string = nullptr;
@@ -364,6 +377,9 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::SSO;
                                     break;
                                 case Config_State::SSO:
+                                    config_step = Config_State::Constellation;
+                                    break;
+                                case Config_State::Constellation:
                                     config_step = Config_State::Blob;
                                     break;
                                 case Config_State::Blob:
@@ -699,4 +715,5 @@ bool AP_GPS_SBF::prepare_for_arming(void) {
 
     return is_logging;
 }
+
 #endif
