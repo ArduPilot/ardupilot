@@ -16,5 +16,5 @@ BATT2_VOLT_MULT 20.000
 BATT2_AMP_PERVLT 17.000
 
 # setup the parameter for the two Relays GPIO others for reserve
-RELAY_PIN 1
-RELAY_PIN2 2
+RELAY1_PIN 1
+RELAY2_PIN 2

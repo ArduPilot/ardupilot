@@ -113,7 +113,7 @@ AP_VideoTX::PowerLevel AP_VideoTX::_power_levels[VTX_MAX_POWER_LEVELS] = {
     { 1,    200,  23, 16   },
     { 0x12, 400,  26, 0xFF }, // only in SA 2.1
     { 2,    500,  27, 25   },
-    //{ 0x13, 600,  28, 0xFF },
+    { 0x12, 600,  28, 0xFF }, // Tramp lies above power levels and always returns 25/100/200/400/600
     { 3,    800,  29, 40   },
     { 0x13, 1000, 30, 0xFF }, // only in SA 2.1
     { 0xFF, 0,    0,  0XFF, PowerActive::Inactive }  // slot reserved for a custom power level
@@ -342,13 +342,6 @@ void AP_VideoTX::update(void)
         return;
     }
 
-#if HAL_CRSF_TELEM_ENABLED
-    AP_CRSF_Telem* crsf = AP::crsf_telem();
-
-    if (crsf != nullptr) {
-        crsf->update();
-    }
-#endif
     // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
     if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
         if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {

@@ -2444,7 +2444,6 @@ class TestSuite(ABC):
             "SIM_WAVE_LENGTH",
             "SIM_WAVE_SPEED",
             "SIM_WIND_DIR_Z",
-            "SIM_WIND_T",
         ])
 
         vinfo_key = self.vehicleinfo_key()

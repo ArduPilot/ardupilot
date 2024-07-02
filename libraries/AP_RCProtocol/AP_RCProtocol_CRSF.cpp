@@ -160,7 +160,7 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 
 const uint16_t AP_RCProtocol_CRSF::RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES] = {
     4, 50, 150, 250,    // CRSF
-    4, 25, 50, 100, 150, 200, 250, 500  // ELRS
+    4, 25, 50, 100, 100, 150, 200, 250, 333, 500, 250, 500, 500, 1000, 50  // ELRS
 };
 
 AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_singleton;
@@ -204,7 +204,7 @@ const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const
 // return the link rate as defined by the LinkStatistics
 uint16_t AP_RCProtocol_CRSF::get_link_rate(ProtocolType protocol) const {
     if (protocol == ProtocolType::PROTOCOL_ELRS) {
-        return RF_MODE_RATES[_link_status.rf_mode + RFMode::ELRS_RF_MODE_4HZ];
+        return RF_MODE_RATES[_link_status.rf_mode + RFMode::CRSF_RF_MAX_MODES];
     } else if (protocol == ProtocolType::PROTOCOL_TRACER) {
         return 250;
     } else {
@@ -578,6 +578,11 @@ bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
     return true;
 }
 
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+    // Define the static tx powers array
+    constexpr uint16_t AP_RCProtocol_CRSF::tx_powers[];
+#endif
+
 // process link statistics to get RSSI
 void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
 {
@@ -590,6 +595,7 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         rssi_dbm = link->uplink_rssi_ant2;
     }
     _link_status.link_quality = link->uplink_status;
+
     if (_use_lq_for_rssi) {
         _link_status.rssi = derive_scaled_lq_value(link->uplink_status);
     } else{
@@ -604,7 +610,28 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         }
     }
 
-    _link_status.rf_mode = MIN(link->rf_mode, 7U);
+    // Define the max number of RFModes based on ELRS modes, which is larger than Crossfire
+    const uint8_t max_modes = (RFMode::RF_MODE_MAX_MODES - RFMode::CRSF_RF_MAX_MODES) - 1U; // Subtract 1 due to zero-indexing
+    _link_status.rf_mode = MIN(link->rf_mode, max_modes); // Cap to avoid memory spills in the conversion tables
+
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+    // Populate the extra data items
+    if (link->uplink_status > 0) {
+        _link_status.rssi_dbm = rssi_dbm;
+        _link_status.tx_power = -1;
+        if (link->uplink_tx_power < ARRAY_SIZE(AP_RCProtocol_CRSF::tx_powers)) {
+            _link_status.tx_power = AP_RCProtocol_CRSF::tx_powers[link->uplink_tx_power];
+        }
+        _link_status.snr = link->uplink_snr;
+        _link_status.active_antenna = link->active_antenna;
+    } else {
+        // This means LQ is zero, so set all values to "no signal" state
+        _link_status.rssi_dbm = -1;
+        _link_status.tx_power = -1;
+        _link_status.snr = INT8_MIN;
+        _link_status.active_antenna = -1;
+    }
+#endif
 }
 
 // process link statistics to get RX RSSI

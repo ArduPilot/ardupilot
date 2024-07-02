@@ -48,8 +48,18 @@ class AP_MSP;
 #define PARAM_INDEX(key, idx, group) (uint32_t(uint32_t(key) << 23 | uint32_t(idx) << 18 | uint32_t(group)))
 #define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
-#define AP_OSD_NUM_SYMBOLS 91
+#define AP_OSD_NUM_SYMBOLS 107
 #define OSD_MAX_INSTANCES 2
+
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+// For the moment, these extra panels only work with CRSF protocol based RC systems
+#define AP_OSD_EXTENDED_LNK_STATS 1
+#define AP_OSD_WARN_RSSI_DEFAULT -100   // Default value for OSD RSSI panel warning, in dbm
+#else
+#define AP_OSD_EXTENDED_LNK_STATS 0
+#define AP_OSD_WARN_RSSI_DEFAULT 30     // Default value for OSD RSSI panel warning, in %
+#endif
+
 /*
   class to hold one setting
  */
@@ -226,6 +236,15 @@ private:
 #endif
     AP_OSD_Setting sidebars{false, 4, 5};
 
+#if AP_OSD_EXTENDED_LNK_STATS
+    // Extended link stats data panels
+    AP_OSD_Setting rc_tx_power{false, 25, 12};
+    AP_OSD_Setting rc_rssi_dbm{false, 6, 2};
+    AP_OSD_Setting rc_snr{false, 23, 13};
+    AP_OSD_Setting rc_active_antenna{false, 27, 13};
+    AP_OSD_Setting rc_lq{false, 18, 2};
+#endif
+
     // MSP OSD only
     AP_OSD_Setting crosshair;
     AP_OSD_Setting home_dist{true, 1, 1};
@@ -239,6 +258,9 @@ private:
     // Per screen HD resolution options (currently supported only by DisplayPort)
     AP_Int8 txt_resolution;
     AP_Int8 font_index;
+#endif
+#if HAL_WITH_ESC_TELEM
+    AP_Int8 esc_index;
 #endif
 
     void draw_altitude(uint8_t x, uint8_t y);
@@ -313,6 +335,16 @@ private:
     void draw_fence(uint8_t x, uint8_t y);
 #endif
     void draw_rngf(uint8_t x, uint8_t y);
+
+#if AP_OSD_EXTENDED_LNK_STATS
+    // Extended link stats data panels
+    bool is_btfl_fonts();    
+    void draw_rc_tx_power(uint8_t x, uint8_t y);
+    void draw_rc_rssi_dbm(uint8_t x, uint8_t y);
+    void draw_rc_snr(uint8_t x, uint8_t y);
+    void draw_rc_active_antenna(uint8_t x, uint8_t y);    
+    void draw_rc_lq(uint8_t x, uint8_t y);
+#endif
 
     struct {
         bool load_attempted;
@@ -544,6 +576,11 @@ public:
     AP_Int8 failsafe_scr;
     AP_Int32 button_delay_ms;
 
+#if AP_OSD_EXTENDED_LNK_STATS
+    AP_Int8 warn_lq;
+    AP_Int8 warn_snr;
+#endif
+
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,
@@ -552,6 +589,9 @@ public:
         OPTION_DISABLE_CROSSHAIR = 1U<<4,
         OPTION_BF_ARROWS = 1U<<5,
         OPTION_AVIATION_AH = 1U<<6,
+#if AP_OSD_EXTENDED_LNK_STATS
+        OPTION_RF_MODE_ALONG_WITH_LQ = 1U<<7,
+#endif
     };
 
     enum {

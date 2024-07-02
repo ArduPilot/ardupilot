@@ -260,17 +260,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 // Return true if the estimate is valid
 bool NavEKF3_core::getPosD_local(float &posD) const
 {
-    // The EKF always has a height estimate regardless of mode of operation
-    // Correct for the IMU offset (EKF calculations are at the IMU)
-    // Also correct for changes to the origin height
-    if ((frontend->_originHgtMode & (1<<2)) == 0) {
-        // Any sensor height drift corrections relative to the WGS-84 reference are applied to the origin.
-        posD = outputDataNew.position.z + posOffsetNED.z;
-    } else {
-        // The origin height is static and corrections are applied to the local vertical position
-        // so that height returned by getLLH() = height returned by getOriginLLH - posD
-        posD = outputDataNew.position.z + posOffsetNED.z + 0.01f * (float)EKF_origin.alt - (float)ekfGpsRefHgt;
-    }
+    posD = outputDataNew.position.z + posOffsetNED.z;
 
     // Return the current height solution status
     return filterStatus.flags.vert_pos;

@@ -5,5 +5,5 @@ BRD_HEAT_TARG 45
 SERIAL2_BAUD 921600
 
 # setup the parameter for the two Relays GPIO others for reserve
-RELAY_PIN 1
-RELAY_PIN2 2
+RELAY1_PIN 1
+RELAY2_PIN 2

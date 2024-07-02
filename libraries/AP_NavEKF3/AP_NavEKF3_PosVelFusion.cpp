@@ -1273,6 +1273,11 @@ void NavEKF3_core::selectHeightForFusion()
             hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
+            // correct sensor so that local position height adjusts to match GPS
+            if (frontend->_originHgtMode & (1 << 1) && frontend->_originHgtMode & (1 << 2)) {
+                // offset has to be applied to the measurement, not the NED origin
+                hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+            }
             velPosObs[5] = -hgtMea;
             // enable fusion
             fuseHgtData = true;
@@ -1299,6 +1304,10 @@ void NavEKF3_core::selectHeightForFusion()
     } else if (baroDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) {
         // using Baro data
         hgtMea = baroDataDelayed.hgt - baroHgtOffset;
+        // correct sensor so that local position height adjusts to match GPS
+        if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
+            hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+        }
         // enable fusion
         fuseHgtData = true;
         // set the observation noise

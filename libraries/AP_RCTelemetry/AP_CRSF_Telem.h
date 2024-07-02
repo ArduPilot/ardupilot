@@ -232,8 +232,6 @@ public:
 
     // Process a frame from the CRSF protocol decoder
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
-    // process any changed settings and schedule for transmission
-    void update();
     // get next telemetry data for external consumers of SPort data
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
 

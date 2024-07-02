@@ -184,6 +184,22 @@ protected:
     static const uint8_t SYM_FENCE_DISABLED = 0xF6;
     static const uint8_t SYM_RNGFD = 0xF7;
     static const uint8_t SYM_LQ = 0xF8;
+    static const uint8_t SYM_WATT = 0xAE;
+    static const uint8_t SYM_WH = 0xAB;
+    static const uint8_t SYM_DB = 0xF9;
+    static const uint8_t SYM_DBM = 0xFA;
+    static const uint8_t SYM_SNR = 0xFB;
+    static const uint8_t SYM_ANT = 0xFC;
+    static const uint8_t SYM_ARROW_RIGHT = 0xFD;
+    static const uint8_t SYM_ARROW_LEFT = 0xFE;
+    static const uint8_t SYM_G = 0xDF;
+    static const uint8_t SYM_BATT_UNKNOWN = 0x97;
+    static const uint8_t SYM_ROLL = 0xA9;
+    static const uint8_t SYM_PITCH = 0xAF;
+    static const uint8_t SYM_DPS = 0xAA;
+    static const uint8_t SYM_HEADING = 0x89;
+    static const uint8_t SYM_RADIUS = 0x7A;
+    static const uint8_t SYM_FLAP = 0x23;
 
     static const uint8_t SYM_SIDEBAR_R_ARROW = 0x09;
     static const uint8_t SYM_SIDEBAR_L_ARROW = 0x0A;
@@ -290,5 +306,21 @@ protected:
         SYM_SIDEBAR_H,
         SYM_SIDEBAR_I,
         SYM_SIDEBAR_J,
+        SYM_WATT,
+        SYM_WH,
+        SYM_DB,
+        SYM_DBM,
+        SYM_SNR,
+        SYM_ANT,
+        SYM_ARROW_RIGHT,
+        SYM_ARROW_LEFT,
+        SYM_G,
+        SYM_BATT_UNKNOWN,
+        SYM_ROLL,
+        SYM_PITCH,
+        SYM_DPS,
+        SYM_HEADING,
+        SYM_RADIUS,
+        SYM_FLAP,
     };
 };

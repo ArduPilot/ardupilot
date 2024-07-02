@@ -200,10 +200,6 @@ void AP_Compass_IST8308::timer()
         return;
     }
 
-    if (stat & STAT1_VAL_DOR) {
-        printf("IST8308: data overrun\n");
-    }
-
     if (!_dev->read_registers(DATAX_L_REG, (uint8_t *) &buffer,
                               sizeof(buffer))) {
         return;

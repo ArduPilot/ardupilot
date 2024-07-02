@@ -166,6 +166,7 @@ private:
         A8,
         ZR10,
         ZR30,
+        ZT6,
         ZT30
     } _hardware_model;
 

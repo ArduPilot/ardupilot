@@ -26,6 +26,7 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include "SoftSerial.h"
+#include <AP_OSD/AP_OSD_config.h>
 
 #define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
@@ -253,28 +254,50 @@ public:
         PROTOCOL_ELRS
     };
 
+    // Source for ELRS RF modes: https://www.expresslrs.org/info/signal-health/#rf-mode-indexes-rfmd
     enum RFMode {
         CRSF_RF_MODE_4HZ = 0,
         CRSF_RF_MODE_50HZ,
         CRSF_RF_MODE_150HZ,
         CRSF_RF_MODE_250HZ,
-        ELRS_RF_MODE_4HZ,
+        CRSF_RF_MAX_MODES = 4,
+        ELRS_RF_MODE_4HZ = 4,
         ELRS_RF_MODE_25HZ,
         ELRS_RF_MODE_50HZ,
         ELRS_RF_MODE_100HZ,
+        ELRS_RF_MODE_100HZ_FULL,
         ELRS_RF_MODE_150HZ,
         ELRS_RF_MODE_200HZ,
         ELRS_RF_MODE_250HZ,
+        ELRS_RF_MODE_333HZ_FULL,        
         ELRS_RF_MODE_500HZ,
+        ELRS_RF_MODE_D250HZ,
+        ELRS_RF_MODE_D500HZ,
+        ELRS_RF_MODE_F500HZ,
+        ELRS_RF_MODE_F1000HZ,
+        ELRS_RF_MODE_D50HZ,
         RF_MODE_MAX_MODES,
         RF_MODE_UNKNOWN,
     };
+
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+    // These power levels are valid for both Crossfire and ELRS systems
+    static constexpr uint16_t tx_powers[] = { 0, 10, 25, 100, 500, 1000, 2000, 250, 50 };    
+#endif
 
     struct LinkStatus {
         int16_t rssi = -1;
         int16_t link_quality = -1;
         uint8_t rf_mode;
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+        // Add the extra data fields to be used by the OSD panels
+        int16_t tx_power = -1;
+        int8_t rssi_dbm = -1;
+        int8_t snr = INT8_MIN;
+        int8_t active_antenna = -1;
+#endif
     };
+
 
     // this will be used by AP_CRSF_Telem to access link status data
     // from within AP_RCProtocol_CRSF thread so no need for cross-thread synch

@@ -654,8 +654,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Param: _TCAL_OPTIONS
     // @DisplayName: Options for temperature calibration
-    // @Description: This enables optional temperature calibration features. Setting PersistParams will save the accelerometer and temperature calibration parameters in the bootloader sector on the next update of the bootloader.
-    // @Bitmask: 0:PersistParams
+    // @Description: This enables optional temperature calibration features. Setting of the Persist bits will save the temperature and/or accelerometer calibration parameters in the bootloader sector on the next update of the bootloader.
+    // @Bitmask: 0:PersistTemps, 1:PersistAccels
     // @User: Advanced
     AP_GROUPINFO("_TCAL_OPTIONS", 52, AP_InertialSensor, tcal_options, 0),
     

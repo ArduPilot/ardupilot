@@ -66,6 +66,11 @@ bool AP_CRSF_Telem::init(void)
         return false;
     }
 
+    // Someone explicitly configure CRSF control for VTX
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
+        AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::CRSF);
+    }
+
     return AP_RCTelemetry::init();
 }
 
@@ -253,7 +258,7 @@ AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
 
     if (!_crsf_version.pending && _crsf_version.use_rf_mode) {
         if (is_elrs()) {
-            return static_cast<AP_RCProtocol_CRSF::RFMode>(uint8_t(AP_RCProtocol_CRSF::RFMode::ELRS_RF_MODE_4HZ) + crsf->get_link_status().rf_mode);
+            return static_cast<AP_RCProtocol_CRSF::RFMode>(uint8_t(AP_RCProtocol_CRSF::RFMode::CRSF_RF_MAX_MODES) + crsf->get_link_status().rf_mode);
         }
         return static_cast<AP_RCProtocol_CRSF::RFMode>(crsf->get_link_status().rf_mode);
     } else if (is_tracer()) {
@@ -550,6 +555,8 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
         return;
     }
 
+    apvtx.set_provider_enabled(AP_VideoTX::VTXType::CRSF);
+
     apvtx.set_band(vtx->band);
     apvtx.set_channel(vtx->channel);
     if (vtx->is_in_user_frequency_mode) {
@@ -595,6 +602,8 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
     if (!apvtx.get_enabled()) {
         return;
     }
+
+    apvtx.set_provider_enabled(AP_VideoTX::VTXType::CRSF);
 
     apvtx.set_frequency_mhz(vtx->frequency);
 
@@ -727,11 +736,6 @@ void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_fr
     _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ;
 }
 
-// process any changed settings and schedule for transmission
-void AP_CRSF_Telem::update()
-{
-}
-
 void AP_CRSF_Telem::process_pending_requests()
 {
     // handle general parameter requests
@@ -762,7 +766,8 @@ void AP_CRSF_Telem::update_vtx_params()
 {
     AP_VideoTX& vtx = AP::vtx();
 
-    if (!vtx.get_enabled()) {
+    // This function does ugly things with the vtx parameters which will upset other providers
+    if (!vtx.get_enabled() || !vtx.is_provider_enabled(AP_VideoTX::VTXType::CRSF)) {
         return;
     }
 

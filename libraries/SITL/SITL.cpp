@@ -195,7 +195,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
     AP_GROUPINFO("WIND_DIR_Z",  10, SIM,  wind_dir_z,     0),
-    // @Param: WIND_T_
+    // @Param: WIND_T
     // @DisplayName: Wind Profile Type
     // @Description: Selects how wind varies from surface to WIND_T_ALT
     // @Values: 0:square law,1: none, 2:linear-see WIND_T_COEF

@@ -637,8 +637,8 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(count*2+4, 10)) {
-        debug("t=%lu timeout read page=%u offset=%u count=%u\n",
-              AP_HAL::millis(), page, offset, count);
+        debug("t=%lu timeout read page=%u offset=%u count=%u avail=%u\n",
+              AP_HAL::millis(), page, offset, count, uart.available());
         protocol_fail_count++;
         return false;
     }

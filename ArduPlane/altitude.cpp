@@ -711,9 +711,8 @@ void Plane::rangefinder_height_update(void)
     }
 
     if (rangefinder_state.in_range) {
-        // base correction is the difference between baro altitude and
-        // rangefinder estimate
-        float correction = adjusted_relative_altitude_cm()*0.01 - rangefinder_state.height_estimate;
+        // If not using terrain data, we expect zero correction when our height above target is equal to our rangefinder measurement
+        float correction = height_above_target() - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data

@@ -639,7 +639,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: MIN_GROUNDSPEED
     // @DisplayName: Minimum ground speed
-    // @Description: Minimum ground speed in cm/s when under airspeed control
+    // @Description: Minimum ground speed when under airspeed control
     // @Units: m/s
     // @User: Advanced
     ASCALAR(min_groundspeed,      "MIN_GROUNDSPEED",  MIN_GROUNDSPEED),
