@@ -53,6 +53,14 @@ public:
      */
     virtual bool update() = 0; /* front end */
 
+#if AP_INERTIALSENSOR_RATE_LOOP_WINDOW_ENABLED
+    /*
+     * Update the filter parameters. Called by the frontend to propagate
+     * filter parameters to the frontend structure via the
+     * update_gyro_filters() and update_accel_filters() functions
+     */
+    void update_filters() __RAMFUNC__; /* front end */
+#endif
     /*
      * optional function to accumulate more samples. This is needed for drivers that don't use a timer to gather samples
      */
@@ -269,9 +277,15 @@ protected:
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance) __RAMFUNC__; /* front end */
+    void update_gyro_filters(uint8_t instance) __RAMFUNC__; /* front end */
 
     // common accel update function for all backends
     void update_accel(uint8_t instance) __RAMFUNC__; /* front end */
+    void update_accel_filters(uint8_t instance) __RAMFUNC__; /* front end */
+
+    // catch updates to the primary gyro and accel
+    virtual void set_primary_gyro(uint8_t instance) {}
+    virtual void set_primary_accel(uint8_t instance) {}
 
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;

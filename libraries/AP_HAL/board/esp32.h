@@ -116,3 +116,4 @@
 // other big things..
 #define HAL_QUADPLANE_ENABLED 0
 #define HAL_GYROFFT_ENABLED 0
+#define HAL_INS_RATE_LOOP 0

@@ -53,6 +53,9 @@ public:
                             uint8_t *&buf_rx, uint16_t rx_len) WARN_IF_UNUSED;
     void bouncebuffer_finish(const uint8_t *buf_tx, uint8_t *buf_rx, uint16_t rx_len);
 
+    // control the minimum separation between cycles
+    void set_periodic_minimum(uint32_t min_usec) { periodic_min_us = min_usec; }
+
 private:
     struct callback_info {
         struct callback_info *next;
@@ -61,6 +64,7 @@ private:
         uint64_t next_usec;
     } *callbacks;
     uint8_t thread_priority;
+    uint32_t periodic_min_us;
     thread_t* thread_ctx;
     bool thread_started;
     AP_HAL::Device *hal_device;

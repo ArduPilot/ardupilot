@@ -381,6 +381,8 @@
 #include <AP_HAL_Linux/Semaphores.h>
 #define HAL_Semaphore Linux::Semaphore
 #define HAL_BinarySemaphore Linux::BinarySemaphore
+#include <AP_HAL_Linux/CondMutex.h>
+#define HAL_CondMutex Linux::CondMutex
 #endif
 
 #ifndef HAL_HAVE_HARDWARE_DOUBLE

@@ -6,6 +6,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
@@ -200,8 +201,14 @@ public:
     // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
     virtual void input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
+    // Command an angular velocity with angular velocity feedforward and smoothing without setting the attitude target
+    Vector3f input_rate_bf_roll_pitch_yaw_4(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+
     // Command an angular step (i.e change) in body frame angle
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
+
+    // Command an angular rate step (i.e change) in body frame rate
+    virtual void input_rate_step_bf_roll_pitch_yaw(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd);
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
     virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true);
@@ -213,6 +220,9 @@ public:
 
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
+
+    // optional variant to allow running with different dt
+    virtual void rate_controller_run_dt(float dt, const Vector3f& gyro) { rate_controller_run(); }
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
     void euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
@@ -241,6 +251,7 @@ public:
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
+    // these are currently only used by TradHeli, they can be removed when the rate step update is done in TradHeli
     // Set x-axis angular velocity in centidegrees/s
     void rate_bf_roll_target(float rate_cds) { _ang_vel_body.x = radians(rate_cds * 0.01f); }
 
@@ -287,7 +298,7 @@ public:
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw() / _p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
-    Vector3f rate_bf_targets() const { return _ang_vel_body + _sysid_ang_vel_body; }
+    Vector3f rate_bf_targets();
 
     // return the angular velocity of the target (setpoint) attitude rad/s
     const Vector3f& get_rate_ef_targets() const { return _euler_rate_target; }
@@ -479,6 +490,9 @@ protected:
     // rate controller input smoothing time constant
     AP_Float            _input_tc;
 
+    // latest gyro value use by the rate_controller
+    Vector3f            _rate_gyro;
+
     // Intersampling period in seconds
     float               _dt;
 
@@ -565,6 +579,9 @@ protected:
     const AP_AHRS_View&  _ahrs;
     const AP_MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+    // control access to _ang_vel_body updates
+    HAL_Semaphore _ang_vel_sem;
 
     static AC_AttitudeControl *_singleton;
 

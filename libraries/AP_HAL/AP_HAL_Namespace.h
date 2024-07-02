@@ -29,6 +29,7 @@ namespace AP_HAL {
     class Scheduler;
     class Semaphore;
     class BinarySemaphore;
+    class CondMutex;
     class OpticalFlow;
     class DSP;
 

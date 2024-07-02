@@ -31,19 +31,25 @@
 #define HAL_DEVICE_THREAD_STACK 1024
 #endif
 
+#ifndef DEFAULT_MIN_PERIOD_US
+#define DEFAULT_MIN_PERIOD_US 100
+#endif
+
 using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
-        thread_priority(_thread_priority)
+        thread_priority(_thread_priority),
+        periodic_min_us(DEFAULT_MIN_PERIOD_US)
 {
     bouncebuffer_init(&bounce_buffer_tx, 10, false);
     bouncebuffer_init(&bounce_buffer_rx, 10, false);
 }
 
 DeviceBus::DeviceBus(uint8_t _thread_priority, bool axi_sram) :
-        thread_priority(_thread_priority)
+        thread_priority(_thread_priority),
+        periodic_min_us(DEFAULT_MIN_PERIOD_US)
 {
     bouncebuffer_init(&bounce_buffer_tx, 10, axi_sram);
     bouncebuffer_init(&bounce_buffer_rx, 10, axi_sram);
@@ -93,8 +99,8 @@ void DeviceBus::bus_thread(void *arg)
         }
         // don't delay for less than 100usec, so one thread doesn't
         // completely dominate the CPU
-        if (delay < 100) {
-            delay = 100;
+        if (delay < binfo->periodic_min_us) {
+            delay = binfo->periodic_min_us;
         }
         hal.scheduler->delay_microseconds(delay);
     }

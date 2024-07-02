@@ -336,6 +336,11 @@ AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t pe
     return bus.register_periodic_callback(period_usec, cb, this);
 }
 
+void SPIDevice::set_periodic_minimum(uint32_t min_period_usec)
+{
+    return bus.set_periodic_minimum(min_period_usec);
+}
+
 bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
     return bus.adjust_timer(h, period_usec);

@@ -872,6 +872,10 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 // run notch update at either loop rate or 200Hz
 void AP_Vehicle::update_dynamic_notch_at_specified_rate()
 {
+    if (using_rate_thread) {
+        return;
+    }
+
     for (auto &notch : ins.harmonic_notches) {
         if (notch.params.hasOption(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
             update_dynamic_notch(notch);

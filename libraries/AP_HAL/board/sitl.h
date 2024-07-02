@@ -53,6 +53,8 @@
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
 #define HAL_BinarySemaphore HALSITL::BinarySemaphore
+#include <AP_HAL_SITL/CondMutex.h>
+#define HAL_CondMutex HALSITL::CondMutex
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES

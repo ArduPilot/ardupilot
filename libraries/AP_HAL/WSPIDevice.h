@@ -148,6 +148,9 @@ public:
 
     virtual bool is_busy() = 0;
 
+    /* See AP_HAL::Device::set_periodic_minimum() */
+    void set_periodic_minimum(uint32_t min_period_usec) override {}
+
     virtual AP_HAL::Semaphore* get_semaphore() override = 0;
 
 protected:

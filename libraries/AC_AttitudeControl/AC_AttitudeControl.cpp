@@ -155,6 +155,14 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
 constexpr Vector3f AC_AttitudeControl::VECTORF_111;
 
+    // Return angular velocity in radians used in the angular velocity controller
+Vector3f AC_AttitudeControl::rate_bf_targets()
+{
+    WITH_SEMAPHORE(_ang_vel_sem);
+
+    return _ang_vel_body + _sysid_ang_vel_body;
+}
+
 // get the slew yaw rate limit in deg/s
 float AC_AttitudeControl::get_slew_yaw_max_degs() const
 {
@@ -167,15 +175,18 @@ float AC_AttitudeControl::get_slew_yaw_max_degs() const
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
+    // take a copy of the last gyro used by the rate controller before using it
+    Vector3f gyro = _rate_gyro;
     // Initialize the attitude variables to the current attitude
     _ahrs.get_quat_body_to_ned(_attitude_target);
     _attitude_target.to_euler(_euler_angle_target);
     _attitude_ang_error.initialise();
 
     // Initialize the angular rate variables to the current rate
-    _ang_vel_target = _ahrs.get_gyro();
+    _ang_vel_target = gyro;
     ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
-    _ang_vel_body = _ahrs.get_gyro();
 
     // Initialize remaining variables
     _thrust_error_angle = 0.0f;
@@ -187,6 +198,8 @@ void AC_AttitudeControl::relax_attitude_controllers()
 
     // Reset the I terms
     reset_rate_controller_I_terms();
+    // finally update the attitude target
+    _ang_vel_body = gyro;
 }
 
 void AC_AttitudeControl::reset_rate_controller_I_terms()
@@ -458,6 +471,14 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
 // Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
+    _ang_vel_body = input_rate_bf_roll_pitch_yaw_4(roll_rate_bf_cds, pitch_rate_bf_cds, yaw_rate_bf_cds);
+}
+
+// Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
+Vector3f AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_4(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
+{
     // Convert from centidegrees on public interface to radians
     float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
     float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
@@ -475,12 +496,15 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     _attitude_target.to_euler(_euler_angle_target);
     // Convert body-frame angular velocity into euler angle derivative of desired attitude
     ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
-    _ang_vel_body = _ang_vel_target;
+
+    return _ang_vel_target;
 }
 
 // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     // Convert from centidegrees on public interface to radians
     float roll_rate_rads = radians(roll_rate_bf_cds * 0.01f);
     float pitch_rate_rads = radians(pitch_rate_bf_cds * 0.01f);
@@ -498,7 +522,8 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
         _attitude_ang_error.from_axis_angle(attitude_error);
     }
 
-    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+    // take a copy of the latest gyro value used by the rate controller
+    Vector3f gyro_latest = _rate_gyro;
     attitude_ang_error_update_quat.from_axis_angle(Vector3f{(_ang_vel_target.x-gyro_latest.x) * _dt, (_ang_vel_target.y-gyro_latest.y) * _dt, (_ang_vel_target.z-gyro_latest.z) * _dt});
     _attitude_ang_error = attitude_ang_error_update_quat * _attitude_ang_error;
 
@@ -524,11 +549,13 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
 
     // Compute the angular velocity target from the integrated rate error
     _attitude_ang_error.to_axis_angle(attitude_error);
-    _ang_vel_body = update_ang_vel_target_from_att_error(attitude_error);
-    _ang_vel_body += _ang_vel_target;
+    Vector3f ang_vel_body = update_ang_vel_target_from_att_error(attitude_error);
+    ang_vel_body += _ang_vel_target;
 
     // ensure Quaternions stay normalized
     _attitude_ang_error.normalize();
+    // finally update the attitude target
+    _ang_vel_body = ang_vel_body;
 }
 
 // Command an angular step (i.e change) in body frame angle
@@ -555,6 +582,22 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
 
     // Call quaternion attitude controller
     attitude_controller_run_quat();
+}
+
+// Command an rate step (i.e change) in body frame rate
+// Used to command a step in rate without exciting the orthogonal axis during autotune
+// Done as a single thread-safe function to avoid intermediate zero values being seen by the attitude controller
+void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd)
+{
+    WITH_SEMAPHORE(_ang_vel_sem);
+
+    Vector3f ang_vel_body = input_rate_bf_roll_pitch_yaw_4(0.0f, 0.0f, 0.0f);
+    // Set x-axis angular velocity in centidegrees/s
+    ang_vel_body.x = radians(roll_rate_step_bf_cd * 0.01f);
+    ang_vel_body.y = radians(pitch_rate_step_bf_cd * 0.01f);
+    ang_vel_body.z = radians(yaw_rate_step_bf_cd * 0.01f);
+    // finally update the attitude target
+    _ang_vel_body = ang_vel_body;
 }
 
 // Command a thrust vector and heading rate
@@ -708,6 +751,8 @@ Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vecto
 // Calculates the body frame angular velocities to follow the target attitude
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
+    WITH_SEMAPHORE(_ang_vel_sem);
+
     // This represents a quaternion rotation in NED frame to the body
     Quaternion attitude_body;
     _ahrs.get_quat_body_to_ned(attitude_body);
@@ -717,29 +762,29 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     thrust_heading_rotation_angles(_attitude_target, attitude_body, attitude_error, _thrust_angle, _thrust_error_angle);
 
     // Compute the angular velocity corrections in the body frame from the attitude error
-    _ang_vel_body = update_ang_vel_target_from_att_error(attitude_error);
+    Vector3f ang_vel_body = update_ang_vel_target_from_att_error(attitude_error);
 
     // ensure angular velocity does not go over configured limits
-    ang_vel_limit(_ang_vel_body, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
+    ang_vel_limit(ang_vel_body, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
     // rotation from the target frame to the body frame
     Quaternion rotation_target_to_body = attitude_body.inverse() * _attitude_target;
 
     // target angle velocity vector in the body frame
     Vector3f ang_vel_body_feedforward = rotation_target_to_body * _ang_vel_target;
-
+    Vector3f gyro = _rate_gyro;
     // Correct the thrust vector and smoothly add feedforward and yaw input
     _feedforward_scalar = 1.0f;
     if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE * 2.0f) {
-        _ang_vel_body.z = _ahrs.get_gyro().z;
+        ang_vel_body.z = gyro.z;
     } else if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE) {
         _feedforward_scalar = (1.0f - (_thrust_error_angle - AC_ATTITUDE_THRUST_ERROR_ANGLE) / AC_ATTITUDE_THRUST_ERROR_ANGLE);
-        _ang_vel_body.x += ang_vel_body_feedforward.x * _feedforward_scalar;
-        _ang_vel_body.y += ang_vel_body_feedforward.y * _feedforward_scalar;
-        _ang_vel_body.z += ang_vel_body_feedforward.z;
-        _ang_vel_body.z = _ahrs.get_gyro().z * (1.0 - _feedforward_scalar) + _ang_vel_body.z * _feedforward_scalar;
+        ang_vel_body.x += ang_vel_body_feedforward.x * _feedforward_scalar;
+        ang_vel_body.y += ang_vel_body_feedforward.y * _feedforward_scalar;
+        ang_vel_body.z += ang_vel_body_feedforward.z;
+        ang_vel_body.z = gyro.z * (1.0 - _feedforward_scalar) + ang_vel_body.z * _feedforward_scalar;
     } else {
-        _ang_vel_body += ang_vel_body_feedforward;
+        ang_vel_body += ang_vel_body_feedforward;
     }
 
     if (_rate_bf_ff_enabled) {
@@ -754,6 +799,8 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Record error to handle EKF resets
     _attitude_ang_error = attitude_body.inverse() * _attitude_target;
+    // finally update the attitude target
+    _ang_vel_body = ang_vel_body;
 }
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.

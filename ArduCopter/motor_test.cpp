@@ -158,6 +158,12 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             ap.motor_test = true;
 
             EXPECT_DELAY_MS(3000);
+
+            // wait for rate thread to stop running due to motor test
+            while (using_rate_thread) {
+                hal.scheduler->delay(1);
+            }
+
             // enable and arm motors
             if (!motors->armed()) {
                 motors->output_min();  // output lowest possible value to motors

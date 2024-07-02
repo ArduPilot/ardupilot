@@ -46,6 +46,7 @@ public:
 
     /* update accel and gyro state */
     bool update() override __RAMFUNC__; /* front end */
+
     void accumulate() override; /* front end */
 
     /*
@@ -112,6 +113,7 @@ private:
     bool _accumulate_sensor_rate_sampling(uint8_t *samples, uint8_t n_samples) __RAMFUNC__;
 
     bool _check_raw_temp(int16_t t2) __RAMFUNC__;
+    void set_primary_gyro(uint8_t instance) override;
 
     int16_t _raw_temp;
     
@@ -144,6 +146,7 @@ private:
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device::PeriodicHandle periodic_handle;
     AP_Invensense_AuxiliaryBus *_auxiliary_bus;
 
     // which sensor type this is

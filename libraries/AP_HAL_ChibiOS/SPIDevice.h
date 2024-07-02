@@ -138,6 +138,9 @@ public:
     /* See AP_HAL::Device::adjust_periodic_callback() */
     bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec) override;
 
+    /* See AP_HAL::Device::set_periodic_minimum() */
+    void set_periodic_minimum(uint32_t min_period_usec) override;
+
     bool set_chip_select(bool set) override;
 
     bool acquire_bus(bool acquire, bool skip_cs);

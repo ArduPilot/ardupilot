@@ -1244,6 +1244,9 @@ class ChibiOSHWDef(object):
 #ifndef CH_CFG_USE_MUTEXES
 #define CH_CFG_USE_MUTEXES FALSE
 #endif
+#ifndef CH_CFG_USE_CONDVARS
+#define CH_CFG_USE_CONDVARS FALSE
+#endif
 #ifndef CH_CFG_USE_EVENTS
 #define CH_CFG_USE_EVENTS FALSE
 #endif

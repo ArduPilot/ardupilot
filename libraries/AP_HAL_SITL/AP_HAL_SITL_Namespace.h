@@ -16,6 +16,7 @@ class RCInput;
 class Util;
 class Semaphore;
 class BinarySemaphore;
+class CondMutex;
 class GPIO;
 class DigitalSource;
 class DSP;

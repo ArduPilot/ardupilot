@@ -311,6 +311,7 @@ BUILD_OPTIONS = [
     Feature('Sensors', 'IMU_ON_UART', 'AP_SERIALMANAGER_IMUOUT_ENABLED', 'Enable sending raw IMU data on a serial port', 0, None), # NOQA: E501
 
     Feature('Other', 'HarmonicNotches', 'AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED', 'Enable InertialSensor Harmonic Notches', 0, None),  # noqa
+    Feature('Other', 'RateLoopThread', 'AP_INERTIALSENSOR_RATE_LOOP_WINDOW_ENABLED', 'Enable Rate Loop Thread', 0, None),  # noqa
     Feature('Other', 'GyroFFT', 'HAL_GYROFFT_ENABLED', 'Enable In-Flight Gyro FFT calculations', 0, None),
     Feature('Other', 'NMEA_OUTPUT', 'HAL_NMEA_OUTPUT_ENABLED', 'Enable NMEA Output', 0, None),
     Feature('Other', 'SDCARD_FORMATTING', 'AP_FILESYSTEM_FORMAT_ENABLED', 'Enable formatting of microSD cards', 0, None),

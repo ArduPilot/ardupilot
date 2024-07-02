@@ -24,7 +24,7 @@ public:
                                             enum Rotation rotation);
 
     /* update accel and gyro state */
-    bool update() override;
+    bool update() override __RAMFUNC__;
     void accumulate() override;
 
     void start() override;
@@ -74,6 +74,7 @@ private:
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
     bool accumulate_highres_samples(const struct FIFODataHighRes *data, uint8_t n_samples);
 
+    void set_primary_gyro(uint8_t instance) override;
     // reset FIFO configure1 register
     uint8_t fifo_config1;
 

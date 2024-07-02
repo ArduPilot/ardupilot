@@ -57,6 +57,8 @@
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
 #define HAL_BinarySemaphore ChibiOS::BinarySemaphore
+#include <AP_HAL_ChibiOS/CondMutex.h>
+#define HAL_CondMutex ChibiOS::CondMutex
 #endif
 
 /* string names for well known SPI devices */
