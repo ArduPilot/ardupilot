@@ -62,6 +62,9 @@ void ModeStabilize::run()
         break;
     }
 
+    // reduce gains when landed;
+    attitude_control->landed_gain_reduction(copter.ap.land_complete);
+    
     // call attitude controller
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 

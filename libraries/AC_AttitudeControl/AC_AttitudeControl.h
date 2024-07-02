@@ -163,6 +163,9 @@ public:
     // reset rate controller I terms smoothly to zero in 0.5 seconds
     void reset_rate_controller_I_terms_smoothly();
 
+    // Reduce attitude control gains while landed to stop ground resonance
+    void landed_gain_reduction(bool landed);
+
     // Sets attitude target to vehicle attitude and sets all rates to zero
     // If reset_rate is false rates are not reset to allow the rate controllers to run
     void reset_target_and_rate(bool reset_rate = true);
@@ -479,6 +482,11 @@ protected:
     // rate controller input smoothing time constant
     AP_Float            _input_tc;
 
+    // Controller gain multiplyer to be used when landed
+    AP_Float            _land_roll_mult;
+    AP_Float            _land_pitch_mult;
+    AP_Float            _land_yaw_mult;
+
     // Intersampling period in seconds
     float               _dt;
 
@@ -560,6 +568,9 @@ protected:
 
     // PD scale used for last loop, used for logging
     Vector3f            _pd_scale_used;
+
+    // ratio of normal gain to landed gain
+    float               _landed_gain_ratio;
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
