@@ -370,32 +370,32 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     // by default current_alt_cm and alt_target_cm are alt-above-EKF-origin
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
-    float current_alt_cm = inertial_nav.get_position_z_up_cm();
+    int32_t current_alt_cm = static_cast<int32_t>(inertial_nav.get_position_z_up_cm());
     float terrain_offset;   // terrain's altitude in cm above the ekf origin
-    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset(terrain_offset)) {
+    // Record the takeoff target and set the location to current position as we always takeoff from current position.
+    // we use now takeoff_loc instead of dest_loc to ensure we are getting altitude offset from the current position and not whatever inside the mission command
+    takeoff_loc = Location(copter.current_loc.lat, copter.current_loc.lng, dest_loc.alt, dest_loc.get_alt_frame());
+
+    if ((takeoff_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset(terrain_offset)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
-        current_alt_cm -= terrain_offset;
+        current_alt_cm -= static_cast<int32_t>(terrain_offset);
 
         // specify alt_target_cm as alt-above-terrain
-        alt_target_cm = dest_loc.alt;
+        alt_target_cm = takeoff_loc.alt;
         alt_target_terrain = true;
     } else {
-        // set horizontal target
-        Location dest(dest_loc);
-        dest.lat = copter.current_loc.lat;
-        dest.lng = copter.current_loc.lng;
-
         // get altitude target above EKF origin
-        if (!dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
+        if (!takeoff_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
             // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
             LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
             // fall back to altitude above current altitude
-            alt_target_cm = current_alt_cm + dest.alt;
+            alt_target_cm = current_alt_cm + takeoff_loc.alt;
         }
     }
 
+
     // sanity check target
-    int32_t alt_target_min_cm = current_alt_cm + (copter.ap.land_complete ? 100 : 0);
+    const int32_t alt_target_min_cm = current_alt_cm + (copter.ap.land_complete ? 100 : 0);
     alt_target_cm = MAX(alt_target_cm, alt_target_min_cm);
 
     // initialise yaw
@@ -1040,7 +1040,10 @@ void ModeAuto::takeoff_run()
     // if the user doesn't want to raise the throttle we can set it automatically
     // note that this can defeat the disarm check on takeoff
     if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
-        copter.set_auto_armed(true);
+        if (motors->armed() && !copter.ap.auto_armed) {
+            takeoff_start(takeoff_loc);  // reload the takeoff command after arming home update and restart takeoff start sequence
+            copter.set_auto_armed(true);
+        }
     }
     auto_takeoff.run();
 }
