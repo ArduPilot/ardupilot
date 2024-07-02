@@ -1067,7 +1067,7 @@ int lua_print(lua_State *L) {
     return 0;
 }
 
-#if (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RANGEFINDER))
+#if AP_RANGEFINDER_ENABLED
 int lua_range_finder_handle_script_msg(lua_State *L) {
     // Arg 1 => self (an instance of rangefinder_backend)
     // Arg 2 => a float distance or a RangeFinder_State user data
@@ -1091,7 +1091,7 @@ int lua_range_finder_handle_script_msg(lua_State *L) {
     lua_pushboolean(L, result);
     return 1;
 }
-#endif
+#endif  // AP_RANGEFINDER_ENABLED
 
 /*
   lua wants to abort, and doesn't have access to a panic function

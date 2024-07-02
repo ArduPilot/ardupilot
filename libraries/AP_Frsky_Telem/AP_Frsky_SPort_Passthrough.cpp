@@ -683,7 +683,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 {
+#if AP_RANGEFINDER_ENABLED
     const RangeFinder *_rng = RangeFinder::get_singleton();
+#endif
 
     float roll;
     float pitch;
@@ -693,7 +695,11 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((pitch * RAD_TO_DEG * 100 + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
+#if AP_RANGEFINDER_ENABLED
     attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+#else
+    attiandrng |= prep_number(0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+#endif
     return attiandrng;
 }
 

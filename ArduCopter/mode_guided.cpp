@@ -128,6 +128,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
+#if AP_RANGEFINDER_ENABLED
     if (wp_nav->rangefinder_used_and_healthy() &&
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
         takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
@@ -138,7 +139,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         // provide target altitude as alt-above-terrain
         alt_target_cm = takeoff_alt_cm;
         alt_target_terrain = true;
-    } else {
+    } else
+#endif
+    {
         // interpret altitude as alt-above-home
         Location target_loc = copter.current_loc;
         target_loc.set_alt_cm(takeoff_alt_cm, Location::AltFrame::ABOVE_HOME);

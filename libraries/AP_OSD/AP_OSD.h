@@ -33,6 +33,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
 #include <AC_Fence/AC_Fence_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 class AP_OSD_Backend;
 class AP_MSP;
@@ -334,7 +335,9 @@ private:
 #if AP_FENCE_ENABLED
     void draw_fence(uint8_t x, uint8_t y);
 #endif
+#if AP_RANGEFINDER_ENABLED
     void draw_rngf(uint8_t x, uint8_t y);
+#endif
 
 #if AP_OSD_EXTENDED_LNK_STATS
     // Extended link stats data panels

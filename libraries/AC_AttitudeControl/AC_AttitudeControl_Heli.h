@@ -71,10 +71,13 @@ public:
     void set_hover_roll_trim_scalar(float scalar) override {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle for learn hover collective. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_cd() override { return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim, -1000.0f,1000.0f);}
+    float get_roll_trim_cd() override;
 
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
+
+    // calculate total body frame throttle required to produce the given earth frame throttle
+    float get_throttle_boosted(float throttle_in);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) override;
@@ -82,8 +85,15 @@ public:
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
     
+    // Command a thrust vector in the earth frame and a heading angle and/or rate
+    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true) override;
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds) override;
+
     // enable/disable inverted flight
-    void set_inverted_flight(bool inverted) override;
+    void set_inverted_flight(bool inverted) override { _inverted_flight = inverted; }
+
+    // accessor for inverted flight flag
+    bool get_inverted_flight() override { return _inverted_flight; }
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
@@ -102,7 +112,6 @@ private:
 
     // true in inverted flight mode
     bool _inverted_flight;
-    uint16_t _transition_count;
 
     // Integrate vehicle rate into _att_error_rot_vec_rad
     void integrate_bf_rate_error_to_angle_errors();
@@ -127,7 +136,7 @@ private:
     float _passthrough_yaw;
 
     // get_roll_trim - angle in centi-degrees to be added to roll angle. Used by helicopter to counter tail rotor thrust in hover
-    float get_roll_trim_rad() override { return constrain_float(radians(_hover_roll_trim_scalar * _hover_roll_trim * 0.01f), -radians(10.0f),radians(10.0f));}
+    float get_roll_trim_rad() override { return radians(get_roll_trim_cd() * 0.01); }
 
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim

@@ -36,7 +36,7 @@ void Copter::crash_check()
     }
 
     // exit immediately if in force flying
-    if (force_flying && !flightmode->is_landing()) {
+    if (get_force_flying() && !flightmode->is_landing()) {
         crash_counter = 0;
         return;
     }
