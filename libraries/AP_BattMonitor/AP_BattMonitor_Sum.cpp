@@ -54,6 +54,7 @@ AP_BattMonitor_Sum::read()
     float current_sum = 0;
     uint8_t current_count = 0;
 
+    bool all_healthy = true;
     for (uint8_t i=0; i<_mon.num_instances(); i++) {
         if (i == _instance) {
             // never include self
@@ -68,6 +69,7 @@ AP_BattMonitor_Sum::read()
             continue;
         }
         if (!_mon.healthy(i)) {
+            all_healthy = false;
             continue;
         }
         voltage_sum += _mon.voltage(i);
@@ -78,6 +80,13 @@ AP_BattMonitor_Sum::read()
             current_count++;
         }
     }
+
+    // The monitor remains healthy because it can still give a partial voltage and current reading
+    // A missing failsafe will be triggered if not all healthy for 5 seconds
+    if (all_healthy) {
+        _last_all_healthy_ms = AP_HAL::millis();
+    }
+
     const uint32_t tnow_us = AP_HAL::micros();
     const uint32_t dt_us = tnow_us - _state.last_time_micros;
 
@@ -96,6 +105,13 @@ AP_BattMonitor_Sum::read()
     if (_state.healthy) {
         _state.last_time_micros = tnow_us;
     }
+}
+
+// Return true if the monitor is missing a instance
+bool AP_BattMonitor_Sum::missing() const
+{
+    const bool all_healthy = (AP_HAL::millis() - _last_all_healthy_ms) < 5000;
+    return !all_healthy || AP_BattMonitor_Backend::missing();
 }
 
 #endif  // AP_BATTERY_SUM_ENABLED
