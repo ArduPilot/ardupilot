@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <deque>
+#include <vector>
 #include <AP_Math/AP_Math.h>
 
 #include <errno.h>
@@ -266,25 +268,67 @@ void UARTDriver::_flush(void)
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
     const auto _txspace = txspace();
-    if (_txspace < size) {
+    if (_txspace < size && latencyQueueWrite.empty()) {
+        // If we're using a latecy queue, we don't actually care about txspace
+        // at this point, as we're not going to write to the device yet.
         size = _txspace;
     }
     if (size <= 0) {
         return 0;
     }
 
-        /*
-          simulate byte loss at the link layer
-         */
-        uint8_t lost_byte = 0;
+    uint8_t lost_byte = 0;
 #if !defined(HAL_BUILD_AP_PERIPH)
-        SITL::SIM *_sitl = AP::sitl();
+    SITL::SIM *_sitl = AP::sitl();
 
-        if (_sitl && _sitl->uart_byte_loss_pct > 0) {
-            if (fabsf(rand_float()) < _sitl->uart_byte_loss_pct.get() * 0.01 * size) {
-                lost_byte = 1;
+    // simulate byte loss at the link layer
+    if (_sitl && _sitl->uart_byte_loss_pct > 0) {
+        if (fabsf(rand_float()) < _sitl->uart_byte_loss_pct.get() * 0.01 * size) {
+            lost_byte = 1;
+        }
+    }
+
+    // simulate whole packet loss rate per uart driver
+    const float pkt_loss_pct = _sitl ? _sitl->uart_pkt_loss_pct[_portNumber].get() : 0;
+    if (_sitl && pkt_loss_pct > 0) {
+        if (fabsf(rand_float()) < pkt_loss_pct * 0.01) {
+            // Pretend we wrote the whole packet
+            return size;
+        }
+    }
+
+    // simulate communication delay
+    const float delay_us = _sitl ? _sitl->uart_pkt_delay[_portNumber].get() * 1000000 : 0;
+    if (delay_us > 0 || !latencyQueueWrite.empty()) {
+        // Copy data to a new vector
+        std::vector<uint8_t> dataVec(buffer, buffer + size);
+
+        // Push to deque
+        uint64_t now = AP_HAL::micros64();
+        latencyQueueWrite.push_back({now, dataVec});
+
+        // Check and send data if latency period is passed
+        while (!latencyQueueWrite.empty()) {
+            TimestampedData& front = latencyQueueWrite.front();
+            if (front.data.size() > _writebuffer.space()) {
+                break; // Not enough space in writebuffer
+            }
+            if (now - front.timestamp_us >= delay_us) {
+                _writebuffer.write(front.data.data(), front.data.size());
+                latencyQueueWrite.pop_front();
+            } else {
+                break; // The rest of the queue has not reached the latency period
             }
         }
+
+        if (_unbuffered_writes) {
+            handle_writing_from_writebuffer_to_device();
+        }
+
+        // Return the number of bytes that have landed on the queue
+        return size;
+    }
+
 #endif // HAL_BUILD_AP_PERIPH
 
     // Include lost byte in tx count, we think we sent it even though it was never added to the write buffer
@@ -965,6 +1009,48 @@ void UARTDriver::handle_reading_from_device_to_readbuffer()
             return;
         }
     }
+
+#if !defined(HAL_BUILD_AP_PERIPH)
+    // Simulate packet loss
+    const float _packet_loss_pct = _sitl ? _sitl->uart_pkt_loss_pct[_portNumber].get() : 0;
+    if (_packet_loss_pct > 0) {
+        if (fabsf(rand_float()) < _packet_loss_pct * 0.01) {
+            // Pretend we read nothing
+            return;
+        }
+    }
+
+    // Simulate communication delay
+    const float delay_us = _sitl ? _sitl->uart_pkt_delay[_portNumber].get() * 1000000 : 0;
+    if (delay_us > 0 || !latencyQueueRead.empty()) {
+        uint64_t now = AP_HAL::micros64();
+        if (nread > 0) {
+            // Copy data to a new vector
+            std::vector<uint8_t> dataVec(buf, buf + nread);
+
+            // Push to deque
+            latencyQueueRead.push_back({now, dataVec});
+        }
+
+        // Pop data from the queue if latency period is passed
+        while (!latencyQueueRead.empty()) {
+            TimestampedData& front = latencyQueueRead.front();
+            if (front.data.size() > _readbuffer.space()) {
+                break; // Not enough space in the buffer
+            }
+            if (now - front.timestamp_us >= delay_us) {
+                _readbuffer.write(front.data.data(), front.data.size());
+                latencyQueueRead.pop_front();
+                _receive_timestamp = now;
+            } else {
+                break; // The rest of the queue has not reached the latency period
+            }
+        }
+        return;
+    }
+#endif // HAL_BUILD_AP_PERIPH
+
+    // Handle normal operation
     if (nread > 0) {
         _readbuffer.write((uint8_t *)buf, nread);
         _receive_timestamp = AP_HAL::micros64();
@@ -1052,4 +1138,3 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
 #endif
 
 #endif // CONFIG_HAL_BOARD
-

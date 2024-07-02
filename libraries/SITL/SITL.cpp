@@ -551,6 +551,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPINFO("OSD_ROWS",     54, SIM,  osd_rows, 16),
 #endif
 
+    AP_SUBGROUPEXTENSION("",      62, SIM,  var_uart),
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
@@ -866,6 +867,137 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @User: Advanced
     AP_GROUPINFO("MAG_SAVE_IDS", 37, SIM, mag_save_ids, 1),
 
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo SIM::var_uart[] =
+{
+    // @Param: S0_PKT_LOSS
+    // @DisplayName: UART 0 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 0. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S0_PKT_LOSS",    1, SIM,  uart_pkt_loss_pct[0], 0),
+    // @Param: S1_PKT_LOSS
+    // @DisplayName: UART 1 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 1. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S1_PKT_LOSS",    2, SIM,  uart_pkt_loss_pct[1], 0),
+    // @Param: S2_PKT_LOSS
+    // @DisplayName: UART 2 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 2. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S2_PKT_LOSS",    3, SIM,  uart_pkt_loss_pct[2], 0),
+    // @Param: S3_PKT_LOSS
+    // @DisplayName: UART 3 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 3. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S3_PKT_LOSS",    4, SIM,  uart_pkt_loss_pct[3], 0),
+    // @Param: S4_PKT_LOSS
+    // @DisplayName: UART 4 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 4. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S4_PKT_LOSS",    5, SIM,  uart_pkt_loss_pct[4], 0),
+    // @Param: S5_PKT_LOSS
+    // @DisplayName: UART 5 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 5. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S5_PKT_LOSS",    6, SIM,  uart_pkt_loss_pct[5], 0),
+    // @Param: S6_PKT_LOSS
+    // @DisplayName: UART 6 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 6. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S6_PKT_LOSS",    7, SIM,  uart_pkt_loss_pct[6], 0),
+    // @Param: S7_PKT_LOSS
+    // @DisplayName: UART 7 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 7. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S7_PKT_LOSS",    8, SIM,  uart_pkt_loss_pct[7], 0),
+    // @Param: S8_PKT_LOSS
+    // @DisplayName: UART 8 Packet Loss
+    // @Description: Sets percentage of incoming/outgoing packet loss on UART 8. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("S8_PKT_LOSS",    9, SIM,  uart_pkt_loss_pct[8], 0),
+    // @Param: S0_DELAY
+    // @DisplayName: UART 0 Delay
+    // @Description: Sets in/out delay in seconds for UART 0 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S0_DELAY",   10, SIM,  uart_pkt_delay[0], 0),
+    // @Param: S1_DELAY
+    // @DisplayName: UART 1 Delay
+    // @Description: Sets in/out delay in seconds for UART 1 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S1_DELAY",   11, SIM,  uart_pkt_delay[1], 0),
+    // @Param: S2_DELAY
+    // @DisplayName: UART 2 Delay
+    // @Description: Sets in/out delay in seconds for UART 2 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S2_DELAY",   12, SIM,  uart_pkt_delay[2], 0),
+    // @Param: S3_DELAY
+    // @DisplayName: UART 3 Delay
+    // @Description: Sets in/out delay in seconds for UART 3 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S3_DELAY",   13, SIM,  uart_pkt_delay[3], 0),
+    // @Param: S4_DELAY
+    // @DisplayName: UART 4 Delay
+    // @Description: Sets in/out delay in seconds for UART 4 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S4_DELAY",   14, SIM,  uart_pkt_delay[4], 0),
+    // @Param: S5_DELAY
+    // @DisplayName: UART 5 Delay
+    // @Description: Sets in/out delay in seconds for UART 5 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S5_DELAY",   15, SIM,  uart_pkt_delay[5], 0),
+    // @Param: S6_DELAY
+    // @DisplayName: UART 6 Delay
+    // @Description: Sets in/out delay in seconds for UART 6 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S6_DELAY",   16, SIM,  uart_pkt_delay[6], 0),
+    // @Param: S7_DELAY
+    // @DisplayName: UART 7 Delay
+    // @Description: Sets in/out delay in seconds for UART 7 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S7_DELAY",   17, SIM,  uart_pkt_delay[7], 0),
+    // @Param: S8_DELAY
+    // @DisplayName: UART 8 Delay
+    // @Description: Sets in/out delay in seconds for UART 8 to simulate ping time. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("S8_DELAY",   18, SIM,  uart_pkt_delay[8], 0),
     AP_GROUPEND
 };
 
