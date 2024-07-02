@@ -4,7 +4,8 @@
 
 #if AP_BARO_DDS_ENABLED
 
-class AP_Baro_DDS : public AP_Baro_Backend {
+class AP_Baro_DDS : public AP_Baro_Backend
+{
 public:
     AP_Baro_DDS(AP_Baro &baro);
     virtual ~AP_Baro_DDS();

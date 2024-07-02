@@ -12,7 +12,7 @@ AP_Baro_DDS::AP_Baro_DDS(AP_Baro &baro) :
     _instance = _frontend.register_sensor();
 
     auto dev_id = AP_HAL::Device::make_bus_id(
-        AP_HAL::Device::BUS_TYPE_DDS, 0, _instance, DEVTYPE_BARO_DDS);
+                      AP_HAL::Device::BUS_TYPE_DDS, 0, _instance, DEVTYPE_BARO_DDS);
     set_bus_id(_instance, dev_id);
 }
 
@@ -28,7 +28,7 @@ void AP_Baro_DDS::update_healthy_flag(uint8_t instance)
     _frontend.sensors[instance].calibrated = true;
 };
 
-bool AP_Baro_DDS::healthy(uint8_t instance) 
+bool AP_Baro_DDS::healthy(uint8_t instance)
 {
     return _last_sample_time != 0;
 }
