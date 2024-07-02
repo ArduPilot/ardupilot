@@ -306,6 +306,17 @@ submodules at specific revisions.
     g.add_option('--enable-dronecan-tests', action='store_true',
                  default=False,
                  help="Enables DroneCAN tests in sitl")
+
+    g.add_option('--trusted-flight-issuer', 
+                 type='string',
+                 default=None,
+                 help="Aerobridge trusted flight valid token issuer")
+
+    g.add_option('--trusted-flight-root-certificate', 
+                 type='string',
+                 default=None,
+                 help="Aerobridge trusted flight root certificate")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -563,6 +574,12 @@ def configure(cfg):
 
     cfg.start_msg('Unit tests')
     if cfg.env.HAS_GTEST:
+        cfg.end_msg('enabled')
+    else:
+        cfg.end_msg('disabled', color='YELLOW')
+
+    cfg.start_msg('Aerobridge Trusted Flight')
+    if cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_root_certificate:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')

@@ -473,7 +473,59 @@ class Board:
                 )
 
 
+        def log_error_msg(msg):
+            from waflib import Logs
+            Logs.pprint('RED', msg)
 
+        if cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_root_certificate:
+            sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+            from AP_AerobridgeTrustedFlight.utils.helpers import get_certificate_from_file, validate_certificate
+
+            root_certificate = get_certificate_from_file(cfg.options.trusted_flight_root_certificate)
+            validate_certificate(root_certificate, root_certificate)
+
+            # prepare a temp file to embed issuer string into ROMFS
+            trusted_flight_issuer_file = cfg.bldnode.make_node('trusted_flight_issuer.tmp').abspath()
+            with open(trusted_flight_issuer_file, 'w') as f:
+                f.write(cfg.options.trusted_flight_issuer.strip())
+
+            env.ROMFS_FILES += [
+                ('trusted_flight/root_ca.crt', cfg.options.trusted_flight_root_certificate),
+                ('trusted_flight/token_issuer', trusted_flight_issuer_file)
+            ]
+
+            env.AP_LIBRARIES += [
+                'modules/l8w8jwt/src/*.c',
+                'modules/l8w8jwt/lib/mbedtls/library/*c',
+                'AP_AerobridgeTrustedFlight'
+            ]
+
+            env.INCLUDES += [
+                cfg.srcnode.find_dir('modules/l8w8jwt/include/').abspath(),
+                cfg.srcnode.find_dir('modules/l8w8jwt/lib/checknum/include/').abspath(),
+                cfg.srcnode.find_dir('modules/l8w8jwt/lib/chillbuff/include/').abspath(),
+                cfg.srcnode.find_dir('modules/l8w8jwt/lib/jsmn/').abspath(),
+                cfg.srcnode.find_dir('modules/l8w8jwt/lib/mbedtls/include/').abspath(),
+                cfg.srcnode.find_dir('modules/l8w8jwt/lib/mbedtls/library/').abspath()
+            ]
+
+            env.GIT_SUBMODULES += ['l8w8jwt']
+
+            mbedtls_config_file = cfg.srcnode.find_dir('libraries/AP_AerobridgeTrustedFlight').abspath() + '/trusted_flight_mbedtls_config.h'
+
+            env.CXXFLAGS += ['-DAP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED']            
+            env.DEFINES.update(
+                L8W8JWT_SMALL_STACK = 1,
+                L8W8JWT_PLATFORM_TIME_ALT = 1,
+                CHECKNUM_STATIC = 1,
+                CHILLBUFF_PLATFORM_REALLOC_ALT = 1,
+                MBEDTLS_CONFIG_FILE = f'"{mbedtls_config_file}"'
+            )
+
+        elif cfg.options.trusted_flight_issuer or cfg.options.trusted_flight_root_certificate:
+            log_error_msg('Trusted Flight Issuer or Trusted Flight Root Certificate not provided. Please provide both to enable Trusted Flights feature or none to disable the feature.')
+            exit (1)
+    
         if cfg.options.build_dates:
             env.build_dates = True
 
