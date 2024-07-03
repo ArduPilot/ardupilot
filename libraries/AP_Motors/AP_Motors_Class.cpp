@@ -109,7 +109,7 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
         // note that PWM_MIN/MAX has been forced to 1000/2000
         SRV_Channels::set_output_scaled(function, float(pwm) - _motor_pwm_scaled.offset);
     } else {
-        SRV_Channels::output_pwm_chan(chan, pwm);
+        SRV_Channels::output_pwm_chan(motor_servo_map[chan], pwm);
     }
 }
 
@@ -226,6 +226,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
+        SRV_Channels::find_channel(function, motor_servo_map[motor_num]);
     }
 }
 
