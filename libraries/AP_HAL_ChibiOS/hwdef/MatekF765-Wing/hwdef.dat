@@ -131,10 +131,10 @@ PE10 UART7_CTS UART7
 PE9  UART7_RTS UART7
 
 # telem1-UART7 RTS and CTS as GPIO in alternative configs
-PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2) # Cts7 pin as GPIO 1 (set RELAY_PINx = 1 to use it)
-PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2) # Rts7 pin as GPIO 2 (set RELAY_PINx = 2 to use it)
-PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(3) # Cts7 pin as GPIO 1 (set RELAY_PINx = 1 to use it)
-PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(3) # Rts7 pin as GPIO 2 (set RELAY_PINx = 2 to use it)
+PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2) # Cts7 pin as GPIO 1 (set RELAYx_PIN = 1 to use it)
+PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2) # Rts7 pin as GPIO 2 (set RELAYx_PIN = 2 to use it)
+PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(3) # Cts7 pin as GPIO 1 (set RELAYx_PIN = 1 to use it)
+PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(3) # Rts7 pin as GPIO 2 (set RELAYx_PIN = 2 to use it)
 
 # alternative configs:
 # 1: bidirectional receiver protocol on RX6 pin

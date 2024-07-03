@@ -245,7 +245,7 @@ void SoloGimbal::update_fast() {
         // single gyro mode - one of the first two gyros are unhealthy or don't exist
         // just read primary gyro
         Vector3f dAng;
-        readVehicleDeltaAngle(ins.get_primary_gyro(), dAng);
+        readVehicleDeltaAngle(ins.get_first_usable_gyro(), dAng);
         _vehicle_delta_angles += dAng;
     }
 }

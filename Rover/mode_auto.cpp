@@ -626,16 +626,25 @@ void ModeAuto::exit_mission()
     // send message
     gcs().send_text(MAV_SEVERITY_NOTICE, "Mission Complete");
 
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_LOITER && start_loiter()) {
-        return;
-    }
-
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_ACRO && rover.set_mode(rover.mode_acro, ModeReason::MISSION_END)) {
-        return;
-    }
-
-    if (g2.mis_done_behave == MIS_DONE_BEHAVE_MANUAL && rover.set_mode(rover.mode_manual, ModeReason::MISSION_END)) {
-        return;
+    switch ((DoneBehaviour)g2.mis_done_behave) {
+    case DoneBehaviour::HOLD:
+        // the default "start_stop" behaviour is used
+        break;
+    case DoneBehaviour::LOITER:
+        if (start_loiter()) {
+            return;
+        }
+        break;
+    case DoneBehaviour::ACRO:
+        if (rover.set_mode(rover.mode_acro, ModeReason::MISSION_END)) {
+            return;
+        }
+        break;
+    case DoneBehaviour::MANUAL:
+        if (rover.set_mode(rover.mode_manual, ModeReason::MISSION_END)) {
+            return;
+        }
+        break;
     }
 
     start_stop();

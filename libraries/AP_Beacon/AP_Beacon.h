@@ -40,12 +40,14 @@ public:
     static AP_Beacon *get_singleton() { return _singleton; }
 
     // external position backend types (used by _TYPE parameter)
-    enum AP_BeaconType {
-        AP_BeaconType_None   = 0,
-        AP_BeaconType_Pozyx  = 1,
-        AP_BeaconType_Marvelmind = 2,
-        AP_BeaconType_Nooploop  = 3,
-        AP_BeaconType_SITL   = 10
+    enum class Type : uint8_t {
+        None   = 0,
+        Pozyx  = 1,
+        Marvelmind = 2,
+        Nooploop  = 3,
+#if AP_BEACON_SITL_ENABLED
+        SITL   = 10
+#endif
     };
 
     // The AP_BeaconState structure is filled in by the backend driver
@@ -125,7 +127,7 @@ private:
     static bool get_next_boundary_point(const Vector2f* boundary, uint8_t num_points, uint8_t current_index, float start_angle, uint8_t& next_index, float& next_angle);
 
     // parameters
-    AP_Int8 _type;
+    AP_Enum<Type> _type;
     AP_Float origin_lat;
     AP_Float origin_lon;
     AP_Float origin_alt;

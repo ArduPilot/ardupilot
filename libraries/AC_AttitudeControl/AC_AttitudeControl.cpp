@@ -227,15 +227,16 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 //    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
 
 // Command a Quaternion attitude with feedforward and smoothing
-// attitude_desired_quat: is updated on each time_step by the integral of the angular velocity
-void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target)
+// attitude_desired_quat: is updated on each time_step by the integral of the body frame angular velocity
+void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body)
 {
     Quaternion attitude_error_quat = _attitude_target.inverse() * attitude_desired_quat;
     Vector3f attitude_error_angle;
     attitude_error_quat.to_axis_angle(attitude_error_angle);
 
     // Limit the angular velocity
-    ang_vel_limit(ang_vel_target, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
+    ang_vel_limit(ang_vel_body, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
+    Vector3f ang_vel_target = attitude_desired_quat * ang_vel_body;
 
     if (_rate_bf_ff_enabled) {
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler

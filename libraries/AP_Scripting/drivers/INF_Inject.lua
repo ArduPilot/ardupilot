@@ -9,6 +9,15 @@ local PARAM_TABLE_PREFIX = "EFI_INF_"
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
+local CMD_CDI1 = 1
+local CMD_CDI2 = 2
+local CMD_OIL_PUMP = 3
+-- local CMD_SHUTDOWN = 4
+-- local CMD_PRE_INJECTION = 5
+local CMD_THROTTLE = 6
+
+local K_THROTTLE = 70
+
 -- bind a parameter to a variable given
 local function bind_param(name)
     local p = Parameter()
@@ -42,6 +51,24 @@ EFI_INF_ENABLE = bind_add_param("ENABLE", 1, 1)
   // @User: Standard
 --]]
 EFI_INF_OPTIONS = bind_add_param("OPTIONS", 2, 0)
+
+--[[
+  // @Param: EFI_INF_THR_HZ
+  // @DisplayName: EFI INF-Inject throttle rate
+  // @Description: EFI INF throttle output rate
+  // @Range: 0 50
+  // @Units: Hz
+  // @User: Standard
+--]]
+EFI_INF_THR_HZ = bind_add_param("THR_HZ", 3, 0)
+
+--[[
+  // @Param: EFI_INF_IGN_AUX
+  // @DisplayName: EFI INF-Inject ignition aux function
+  // @Description: EFI INF throttle ignition aux function
+  // @User: Standard
+--]]
+EFI_INF_IGN_AUX = bind_add_param("IGN_AUX", 4, 300)
 
 local OPTION_LOGGING = (1<<0)
 
@@ -86,7 +113,12 @@ state.chk0 = 0
 state.chk1 = 0
 state.total_fuel_g = 0.0
 
+local last_throttle_send_ms = uint32_t(0)
+local last_ignition_send_ms = uint32_t(0)
+local last_ign_sw_pos = -1
+
 local file_handle = nil
+local efi_device_id = nil
 
 --[[
    log a set of bytes
@@ -163,7 +195,7 @@ local function check_input()
    end
 
    -- look for basic data table 2
-   local _, _, dtype, num, _, ack = string.unpack("<BBBBIB", read_bytes(9))
+   local _, _, dtype, num, device_id, ack = string.unpack("<BBBBIB", read_bytes(9))
    if dtype ~= 0x02 then
       return false
    end
@@ -235,9 +267,16 @@ local function check_input()
 
    gcs:send_named_float('VOL_SRV', state.vol_svr)
    gcs:send_named_float('VOL_PUMP', state.vol_pump)
+   gcs:send_named_float('AMP_PUMP', state.amp_pump)
+   gcs:send_named_float('PWM_OUT2', state.PWM_OUT2)
    gcs:send_named_float('INF_ETEMP', state.tmp_env)
    gcs:send_named_float('INF_TEMP1', state.tmp0)
    gcs:send_named_float('INF_TEMP2', state.tmp1)
+
+   if not efi_device_id then
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("EFI DeviceID: %u", device_id))
+      efi_device_id = device_id
+   end
 
    return true
 end
@@ -274,6 +313,86 @@ local function update_EFI()
    efi_backend:handle_scripting(efi_state)
 end
 
+local function get_checksum(pkt)
+   local chk0 = 0
+   local chk1 = 0
+   for i=1,#pkt do
+      local b = string.byte(pkt,i,i)
+      chk0 = chk0 ~ b
+      chk1 = chk1 ~ chk0
+    end
+   return (chk1 << 8) | chk0
+end
+
+--[[
+   send command packet
+--]]
+local function send_packet(cmd, content)
+   local pkt = string.pack("<BBBBBBIBBI",
+                           0xB5, 0x62,
+                           0xc3, 0xa1, 18, 20,
+                           efi_device_id, 0x50,
+                           cmd, content)
+   local crc = get_checksum(pkt)
+   pkt = pkt .. string.pack("<HBB", crc, 0x0d, 0x0a)
+   for i=1,#pkt do
+      local b = string.byte(pkt,i,i)
+      uart:write(b)
+   end
+end
+
+--[[
+   send throttle commands
+--]]
+local function update_throttle()
+   if EFI_INF_THR_HZ:get() <= 0 then
+      return
+   end
+   local now_ms = millis()
+   local rate_ms = 1000.0 / EFI_INF_THR_HZ:get()
+   if now_ms - last_throttle_send_ms < rate_ms then
+      return
+   end
+   last_throttle_send_ms = now_ms
+   local thr_k = SRV_Channels:get_output_scaled(K_THROTTLE)*10
+
+   send_packet(CMD_THROTTLE, thr_k)
+end
+
+--[[
+   send ignition commands
+--]]
+local function update_ignition()
+   local aux_fn = EFI_INF_IGN_AUX:get()
+   if not aux_fn then
+      return
+   end
+   local sw_pos = rc:get_aux_cached(aux_fn)
+   if not sw_pos then
+      return
+   end
+   local now_ms = millis()
+   if sw_pos == last_ign_sw_pos and now_ms - last_ignition_send_ms < 1000 then
+      return
+   end
+   last_ignition_send_ms = now_ms
+   local command = 0
+   if sw_pos >= 1 then
+      command = 1
+   end
+   if sw_pos ~= last_ign_sw_pos then
+      onoff = "OFF"
+      if command == 1 then
+         onoff = "ON"
+      end
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("EFI_INF: ignition %s", onoff))
+   end
+   last_ign_sw_pos = sw_pos
+   send_packet(CMD_CDI1, command)
+   send_packet(CMD_CDI2, command)
+   send_packet(CMD_OIL_PUMP, command)
+end
+
 
 --[[
    main update function
@@ -282,7 +401,10 @@ local function update()
    if check_input() then
       update_EFI()
    end
-
+   if efi_device_id then
+      update_throttle()
+      update_ignition()
+   end
    return update, 10
 end
 

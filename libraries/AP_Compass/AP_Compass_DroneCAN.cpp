@@ -223,7 +223,7 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
 // @Field: Mz: z axis field
 
     // just log it for now
-    AP::logger().WriteStreaming("MAGH", "TimeUS,Node,Sensor,Bus,Mx,My,Mz", "s#-----", "F-----", "QBBBfff",
+    AP::logger().WriteStreaming("MAGH", "TimeUS,Node,Sensor,Bus,Mx,My,Mz", "s#-----", "F------", "QBBBfff",
                                 transfer.timestamp_usec,
                                 transfer.source_node_id,
                                 ap_dronecan->get_driver_index(),

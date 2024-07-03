@@ -207,6 +207,7 @@ class ExtractFeatures(object):
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
+            ('AP_SCRIPTING_SERIALDEVICE_ENABLED', r'AP_Scripting_SerialDevice::init',),
 
             ('AP_NOTIFY_TONEALARM_ENABLED', r'AP_ToneAlarm::init'),
             ('AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', r'AP_Notify::handle_play_tune'),

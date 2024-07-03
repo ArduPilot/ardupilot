@@ -36,7 +36,7 @@ void Copter::crash_check()
     }
 
     // exit immediately if in force flying
-    if (force_flying && !flightmode->is_landing()) {
+    if (get_force_flying() && !flightmode->is_landing()) {
         crash_counter = 0;
         return;
     }
@@ -102,7 +102,7 @@ void Copter::thrust_loss_check()
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
 
     // no-op if suppressed by flight options param
-    if ((copter.g2.flight_options & uint32_t(FlightOptions::DISABLE_THRUST_LOSS_CHECK)) != 0) {
+    if (copter.option_is_enabled(FlightOption::DISABLE_THRUST_LOSS_CHECK)) {
         return;
     }
 
@@ -171,7 +171,7 @@ void Copter::thrust_loss_check()
         // the motors library disables this when it is no longer needed to achieve the commanded output
 
 #if AP_GRIPPER_ENABLED
-        if ((copter.g2.flight_options & uint32_t(FlightOptions::RELEASE_GRIPPER_ON_THRUST_LOSS)) != 0) {
+        if (copter.option_is_enabled(FlightOption::RELEASE_GRIPPER_ON_THRUST_LOSS)) {
             gripper.release();
         }
 #endif
@@ -182,7 +182,7 @@ void Copter::thrust_loss_check()
 void Copter::yaw_imbalance_check()
 {
     // no-op if suppressed by flight options param
-    if ((copter.g2.flight_options & uint32_t(FlightOptions::DISABLE_YAW_IMBALANCE_WARNING)) != 0) {
+    if (copter.option_is_enabled(FlightOption::DISABLE_YAW_IMBALANCE_WARNING)) {
         return;
     }
 

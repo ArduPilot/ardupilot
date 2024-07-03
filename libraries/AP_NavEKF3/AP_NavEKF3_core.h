@@ -60,6 +60,7 @@
 
 // mag fusion final reset altitude (using NED frame so altitude is negative)
 #define EKF3_MAG_FINAL_RESET_ALT 2.5f
+#define EKF3_MAG_FINAL_RESET_ALT_SUB 0.5f
 
 // learning rate for mag biases when using GPS yaw
 #define EK3_GPS_MAG_LEARN_RATE 0.005f
@@ -109,10 +110,12 @@
 #define WIND_VEL_VARIANCE_MIN 0.25f
 
 // maximum number of downward facing rangefinder instances available
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
 #if RANGEFINDER_MAX_INSTANCES > 1
 #define DOWNWARD_RANGEFINDER_MAX_INSTANCES 2
 #else
 #define DOWNWARD_RANGEFINDER_MAX_INSTANCES 1
+#endif
 #endif
 
 // number of continuous valid GPS velocity samples required to reset yaw
@@ -231,6 +234,9 @@ public:
     // The altitude element of the location is not used.
     // Returns true if the set was successful
     bool setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
+
+    // Popoluates the WMM data structure with the field at the given location
+    void setEarthFieldFromLocation(const Location &loc);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -1050,7 +1056,9 @@ private:
     EKF_obs_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
     EKF_obs_buffer_t<baro_elements> storedBaro;    // Baro data buffer
     EKF_obs_buffer_t<tas_elements> storedTAS;      // TAS data buffer
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     EKF_obs_buffer_t<range_elements> storedRange;  // Range finder data buffer
+#endif
     EKF_IMU_buffer_t<output_elements> storedOutput;// output state buffer
     Matrix3F prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
@@ -1292,9 +1300,11 @@ private:
     ftype rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     ftype storedRngMeas[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];              // Ringbuffer of stored range measurements for dual range sensors
     uint32_t storedRngMeasTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];    // Ringbuffers of stored range measurement times for dual range sensors
     uint8_t rngMeasIndex[DOWNWARD_RANGEFINDER_MAX_INSTANCES];                // Current range measurement ringbuffer index for dual range sensors
+#endif
 
     // body frame odometry fusion
 #if EK3_FEATURE_BODY_ODOM

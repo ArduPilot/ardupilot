@@ -25,7 +25,6 @@
 #include "AP_ExternalAHRS_backend.h"
 
 class AP_ExternalAHRS_VectorNav : public AP_ExternalAHRS_backend {
-
 public:
     AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *frontend, AP_ExternalAHRS::state_t &state);
 
@@ -45,13 +44,13 @@ public:
     }
 
     // Get model/type name
-    const char* get_name() const override;
+    const char *get_name() const override;
 
 protected:
-
     uint8_t num_gps_sensors(void) const override {
         return 1;
     }
+
 private:
     AP_HAL::UARTDriver *uart;
     int8_t port_num;
@@ -79,7 +78,7 @@ private:
     uint32_t last_pkt2_ms;
 
     enum class TYPE {
-        VN_INS,  // Full INS mode, requiring GNSS. Used by VN-2X0 and VN-3X0
+        VN_INS,   // Full INS mode, requiring GNSS. Used by VN-2X0 and VN-3X0
         VN_AHRS,  // IMU-only mode, used by VN-1X0
     } type;
 
@@ -92,13 +91,14 @@ private:
     bool decode(char c);
     bool decode_latest_term();
     struct NMEA_parser {
-        char term[20];            // buffer for the current term within the current sentence
-        uint8_t term_offset;      // offset within the _term buffer where the next character should be placed
-        uint8_t term_number;      // term index within the current sentence
-        uint8_t checksum;         // checksum accumulator
-        bool term_is_checksum;    // current term is the checksum
-        bool sentence_valid;      // is current sentence valid so far
-        bool sentence_done;       // true if this sentence has already been decoded
+        char term[20];          // buffer for the current term within the current sentence
+        uint8_t term_offset;    // offset within the _term buffer where the next character should be
+                                // placed
+        uint8_t term_number;    // term index within the current sentence
+        uint8_t checksum;       // checksum accumulator
+        bool term_is_checksum;  // current term is the checksum
+        bool sentence_valid;    // is current sentence valid so far
+        bool sentence_done;     // true if this sentence has already been decoded
     } nmea;
 };
 

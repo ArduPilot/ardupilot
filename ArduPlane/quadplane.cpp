@@ -279,7 +279,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Bitmask: 19: CompleteTransition-to fixed wing if Q_TRANS_FAIL timer times out instead of QLAND
     // @Bitmask: 20: Force RTL mode-forces RTL mode on rc failsafe in VTOL modes overriding bit 5(USE_QRTL)
     // @Bitmask: 21: Tilt rotor-tilt motors up when disarmed in FW modes (except manual) to prevent ground strikes.
-    // @Bitmask: 22: Scale FF by the ratio of VTOL/plane angle P gains in VTOL modes rather than reducing VTOL angle P based on airspeed.
+    // @Bitmask: 22: Scale FF by the ratio of VTOL to plane angle P gains in Position 1 phase of transition into VTOL flight as well as reducing VTOL angle P based on airspeed.
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -2218,6 +2218,16 @@ void QuadPlane::poscontrol_init_approach(void)
  */
 void QuadPlane::log_QPOS(void)
 {
+// @LoggerMessage: QPOS
+// @Description: Quadplane position data
+// @Field: TimeUS: Time since system startup
+// @Field: State: Position control state
+// @FieldValueEnum: State: QuadPlane::position_control_state
+// @Field: Dist: Distance to next waypoint
+// @Field: TSpd: Target speed
+// @Field: TAcc: Target acceleration
+// @Field: OShoot: True if landing point is overshot or heading off by more than 60 degrees
+
     AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist,TSpd,TAcc,OShoot", "QBfffB",
                                 AP_HAL::micros64(),
                                 poscontrol.get_state(),
@@ -3767,7 +3777,11 @@ float QuadPlane::forward_throttle_pct()
         // approach the landing point when landing below the takeoff point
         vel_forward.last_pct = vel_forward.integrator;
     } else if ((in_vtol_land_final() && motors->limit.throttle_lower) ||
+#if AP_RANGEFINDER_ENABLED
               (plane.g.rangefinder_landing && (plane.rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow))) {
+#else
+              false) {
+#endif
         // we're in the settling phase of landing or using a rangefinder that is out of range low, disable fwd motor
         vel_forward.last_pct = 0;
         vel_forward.integrator = 0;

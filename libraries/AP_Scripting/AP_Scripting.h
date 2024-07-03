@@ -39,6 +39,14 @@
 class SocketAPM;
 #endif
 
+#ifndef AP_SCRIPTING_SERIALDEVICE_ENABLED
+#define AP_SCRIPTING_SERIALDEVICE_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
+#endif
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+#include "AP_Scripting_SerialDevice.h"
+#endif
+
 class AP_Scripting
 {
 public:
@@ -48,6 +56,10 @@ public:
     CLASS_NO_COPY(AP_Scripting);
 
     void init(void);
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    void init_serialdevice_ports(void);
+#endif
 
     void update();
 
@@ -137,6 +149,10 @@ public:
     };
     command_block_list *mavlink_command_block_list;
     HAL_Semaphore mavlink_command_block_list_sem;
+
+    #if AP_SCRIPTING_SERIALDEVICE_ENABLED
+        AP_Scripting_SerialDevice _serialdevice;
+    #endif
 
 private:
 

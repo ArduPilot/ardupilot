@@ -86,7 +86,7 @@ void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
 {
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
-        rover.set_mode(mode, ModeReason::RC_COMMAND);
+        rover.set_mode(mode, ModeReason::AUX_FUNCTION);
         break;
     case AuxSwitchPos::MIDDLE:
         // do nothing

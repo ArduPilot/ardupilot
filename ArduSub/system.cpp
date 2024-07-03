@@ -129,7 +129,7 @@ void Sub::init_ardupilot()
     last_pilot_heading = ahrs.yaw_sensor;
 
     // initialise rangefinder
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     init_rangefinder();
 #endif
 

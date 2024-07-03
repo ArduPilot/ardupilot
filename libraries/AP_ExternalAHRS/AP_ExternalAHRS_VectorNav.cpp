@@ -66,8 +66,8 @@ extern const AP_HAL::HAL &hal;
             VelU
 
 */
-static const uint8_t vn_ins_pkt1_header[] { 0x34, 0x2E, 0x07, 0x06, 0x01, 0x12, 0x06 };
-#define VN_INS_PKT1_LENGTH 170 // includes header and CRC
+static const uint8_t vn_ins_pkt1_header[]{0x34, 0x2E, 0x07, 0x06, 0x01, 0x12, 0x06};
+#define VN_INS_PKT1_LENGTH 170  // includes header and CRC
 
 struct PACKED VN_INS_packet1 {
     float uncompMag[3];
@@ -87,7 +87,8 @@ struct PACKED VN_INS_packet1 {
 };
 
 // check packet size for 4 groups
-static_assert(sizeof(VN_INS_packet1)+2+3*2+2 == VN_INS_PKT1_LENGTH, "incorrect VN_INS_packet1 length");
+static_assert(sizeof(VN_INS_packet1) + 2 + 3 * 2 + 2 == VN_INS_PKT1_LENGTH,
+              "incorrect VN_INS_packet1 length");
 
 /*
   header for 5Hz GNSS data
@@ -113,8 +114,8 @@ static_assert(sizeof(VN_INS_packet1)+2+3*2+2 == VN_INS_PKT1_LENGTH, "incorrect V
             NumSats
             Fix
 */
-static const uint8_t vn_ins_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x00 };
-#define VN_INS_PKT2_LENGTH 92 // includes header and CRC
+static const uint8_t vn_ins_pkt2_header[]{0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x00};
+#define VN_INS_PKT2_LENGTH 92  // includes header and CRC
 
 struct PACKED VN_INS_packet2 {
     uint64_t timeGPS;
@@ -129,10 +130,11 @@ struct PACKED VN_INS_packet2 {
 };
 
 // check packet size for 4 groups
-static_assert(sizeof(VN_INS_packet2)+2+4*2+2 == VN_INS_PKT2_LENGTH, "incorrect VN_INS_packet2 length");
+static_assert(sizeof(VN_INS_packet2) + 2 + 4 * 2 + 2 == VN_INS_PKT2_LENGTH,
+              "incorrect VN_INS_packet2 length");
 
 /*
-header for 50Hz IMU data, used in TYPE::VN_AHRS only 
+header for 50Hz IMU data, used in TYPE::VN_AHRS only
   assumes the following VN-100 config:
     $VNWRG,75,3,80,14,073E,0004*66
 
@@ -152,8 +154,8 @@ header for 50Hz IMU data, used in TYPE::VN_AHRS only
             0x0004:
                 Quaternion
 */
-static const uint8_t vn_ahrs_pkt1_header[] { 0x14, 0x3E, 0x07, 0x04, 0x00 };
-#define VN_AHRS_PKT1_LENGTH 104 // includes header and CRC
+static const uint8_t vn_ahrs_pkt1_header[]{0x14, 0x3E, 0x07, 0x04, 0x00};
+#define VN_AHRS_PKT1_LENGTH 104  // includes header and CRC
 
 struct PACKED VN_AHRS_packet1 {
     float uncompMag[3];
@@ -167,15 +169,15 @@ struct PACKED VN_AHRS_packet1 {
     float quaternion[4];
 };
 
-static_assert(sizeof(VN_AHRS_packet1)+2+2*2+2 == VN_AHRS_PKT1_LENGTH, "incorrect VN_AHRS_packet1 length");
+static_assert(sizeof(VN_AHRS_packet1) + 2 + 2 * 2 + 2 == VN_AHRS_PKT1_LENGTH,
+              "incorrect VN_AHRS_packet1 length");
 
 // constructor
 AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
-                                                     AP_ExternalAHRS::state_t &_state) :
-    AP_ExternalAHRS_backend(_frontend, _state)
-{
+                                                     AP_ExternalAHRS::state_t &_state)
+    : AP_ExternalAHRS_backend(_frontend, _state) {
     auto &sm = AP::serialmanager();
-    uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
+    uart     = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
     if (!uart) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VectorNav ExternalAHRS no UART");
         return;
@@ -183,8 +185,8 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
     port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
 
-    bufsize = MAX(MAX(VN_INS_PKT1_LENGTH, VN_INS_PKT2_LENGTH), VN_AHRS_PKT1_LENGTH);
-    pktbuf = NEW_NOTHROW uint8_t[bufsize];
+    bufsize       = MAX(MAX(VN_INS_PKT1_LENGTH, VN_INS_PKT2_LENGTH), VN_AHRS_PKT1_LENGTH);
+    pktbuf        = NEW_NOTHROW uint8_t[bufsize];
     last_ins_pkt1 = NEW_NOTHROW VN_INS_packet1;
     last_ins_pkt2 = NEW_NOTHROW VN_INS_packet2;
 
@@ -192,7 +194,9 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
         AP_BoardConfig::allocation_error("VectorNav ExternalAHRS");
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_VectorNav::update_thread, void), "AHRS", 2048, AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
+    if (!hal.scheduler->thread_create(
+            FUNCTOR_BIND_MEMBER(&AP_ExternalAHRS_VectorNav::update_thread, void), "AHRS", 2048,
+            AP_HAL::Scheduler::PRIORITY_SPI, 0)) {
         AP_HAL::panic("VectorNav Failed to start ExternalAHRS update thread");
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VectorNav ExternalAHRS initialised");
@@ -203,8 +207,7 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
   returns true if the function should be called again straight away
  */
 #define SYNC_BYTE 0xFA
-bool AP_ExternalAHRS_VectorNav::check_uart()
-{
+bool AP_ExternalAHRS_VectorNav::check_uart() {
     if (!setup_complete) {
         return false;
     }
@@ -216,7 +219,7 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
         return false;
     }
     if (pktoffset < bufsize) {
-        ssize_t nread = uart->read(&pktbuf[pktoffset], MIN(n, unsigned(bufsize-pktoffset)));
+        ssize_t nread = uart->read(&pktbuf[pktoffset], MIN(n, unsigned(bufsize - pktoffset)));
         if (nread <= 0) {
             return false;
         }
@@ -232,41 +235,44 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
     }
 
     if (type == TYPE::VN_INS) {
-        match_header1 = (0 == memcmp(&pktbuf[1], vn_ins_pkt1_header, MIN(sizeof(vn_ins_pkt1_header), unsigned(pktoffset-1))));
-        match_header2 = (0 == memcmp(&pktbuf[1], vn_ins_pkt2_header, MIN(sizeof(vn_ins_pkt2_header), unsigned(pktoffset-1))));
+        match_header1 = (0 == memcmp(&pktbuf[1], vn_ins_pkt1_header,
+                                     MIN(sizeof(vn_ins_pkt1_header), unsigned(pktoffset - 1))));
+        match_header2 = (0 == memcmp(&pktbuf[1], vn_ins_pkt2_header,
+                                     MIN(sizeof(vn_ins_pkt2_header), unsigned(pktoffset - 1))));
     } else {
-        match_header3 = (0 == memcmp(&pktbuf[1], vn_ahrs_pkt1_header, MIN(sizeof(vn_ahrs_pkt1_header), unsigned(pktoffset-1))));
+        match_header3 = (0 == memcmp(&pktbuf[1], vn_ahrs_pkt1_header,
+                                     MIN(sizeof(vn_ahrs_pkt1_header), unsigned(pktoffset - 1))));
     }
     if (!match_header1 && !match_header2 && !match_header3) {
         goto reset;
     }
 
     if (match_header1 && pktoffset >= VN_INS_PKT1_LENGTH) {
-        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_INS_PKT1_LENGTH-1, 0);
+        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_INS_PKT1_LENGTH - 1, 0);
         if (crc == 0) {
             // got pkt1
-            process_ins_packet1(&pktbuf[sizeof(vn_ins_pkt1_header)+1]);
-            memmove(&pktbuf[0], &pktbuf[VN_INS_PKT1_LENGTH], pktoffset-VN_INS_PKT1_LENGTH);
+            process_ins_packet1(&pktbuf[sizeof(vn_ins_pkt1_header) + 1]);
+            memmove(&pktbuf[0], &pktbuf[VN_INS_PKT1_LENGTH], pktoffset - VN_INS_PKT1_LENGTH);
             pktoffset -= VN_INS_PKT1_LENGTH;
         } else {
             goto reset;
         }
     } else if (match_header2 && pktoffset >= VN_INS_PKT2_LENGTH) {
-        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_INS_PKT2_LENGTH-1, 0);
+        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_INS_PKT2_LENGTH - 1, 0);
         if (crc == 0) {
             // got pkt2
-            process_ins_packet2(&pktbuf[sizeof(vn_ins_pkt2_header)+1]);
-            memmove(&pktbuf[0], &pktbuf[VN_INS_PKT2_LENGTH], pktoffset-VN_INS_PKT2_LENGTH);
+            process_ins_packet2(&pktbuf[sizeof(vn_ins_pkt2_header) + 1]);
+            memmove(&pktbuf[0], &pktbuf[VN_INS_PKT2_LENGTH], pktoffset - VN_INS_PKT2_LENGTH);
             pktoffset -= VN_INS_PKT2_LENGTH;
         } else {
             goto reset;
         }
     } else if (match_header3 && pktoffset >= VN_AHRS_PKT1_LENGTH) {
-        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_AHRS_PKT1_LENGTH-1, 0);
+        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_AHRS_PKT1_LENGTH - 1, 0);
         if (crc == 0) {
             // got AHRS pkt
-            process_ahrs_packet(&pktbuf[sizeof(vn_ahrs_pkt1_header)+1]);
-            memmove(&pktbuf[0], &pktbuf[VN_AHRS_PKT1_LENGTH], pktoffset-VN_AHRS_PKT1_LENGTH);
+            process_ahrs_packet(&pktbuf[sizeof(vn_ahrs_pkt1_header) + 1]);
+            memmove(&pktbuf[0], &pktbuf[VN_AHRS_PKT1_LENGTH], pktoffset - VN_AHRS_PKT1_LENGTH);
             pktoffset -= VN_AHRS_PKT1_LENGTH;
         } else {
             goto reset;
@@ -275,7 +281,7 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
     return true;
 
 reset:
-    uint8_t *p = (uint8_t *)memchr(&pktbuf[1], SYNC_BYTE, pktoffset-1);
+    uint8_t *p = (uint8_t *)memchr(&pktbuf[1], SYNC_BYTE, pktoffset - 1);
     if (p) {
         uint8_t newlen = pktoffset - (p - pktbuf);
         memmove(&pktbuf[0], p, newlen);
@@ -289,8 +295,7 @@ reset:
 // Send command and wait for response
 // Only run from thread! This blocks until a response is received
 #define READ_REQUEST_RETRY_MS 500
-void AP_ExternalAHRS_VectorNav::send_command_blocking()
-{
+void AP_ExternalAHRS_VectorNav::send_command_blocking() {
     uint32_t request_sent = 0;
     while (true) {
         hal.scheduler->delay(1);
@@ -313,47 +318,45 @@ void AP_ExternalAHRS_VectorNav::send_command_blocking()
 
 // add a single character to the buffer and attempt to decode
 // returns true if a complete sentence was successfully decoded
-bool AP_ExternalAHRS_VectorNav::decode(char c)
-{
+bool AP_ExternalAHRS_VectorNav::decode(char c) {
     switch (c) {
-    case ',':
-        // end of a term, add to checksum
-        nmea.checksum ^= c;
-        FALLTHROUGH;
-    case '\r':
-    case '\n':
-    case '*':
-    {
-        if (nmea.sentence_done) {
+        case ',':
+            // end of a term, add to checksum
+            nmea.checksum ^= c;
+            FALLTHROUGH;
+        case '\r':
+        case '\n':
+        case '*': {
+            if (nmea.sentence_done) {
+                return false;
+            }
+            if (nmea.term_is_checksum) {
+                nmea.sentence_done = true;
+                uint8_t checksum   = 16 * char_to_hex(nmea.term[0]) + char_to_hex(nmea.term[1]);
+                return ((checksum == nmea.checksum) && nmea.sentence_valid);
+            }
+
+            // null terminate and decode latest term
+            nmea.term[nmea.term_offset] = 0;
+            if (nmea.sentence_valid) {
+                nmea.sentence_valid = decode_latest_term();
+            }
+
+            // move onto next term
+            nmea.term_number++;
+            nmea.term_offset      = 0;
+            nmea.term_is_checksum = (c == '*');
             return false;
         }
-        if (nmea.term_is_checksum) {
-            nmea.sentence_done = true;
-            uint8_t checksum = 16 * char_to_hex(nmea.term[0]) + char_to_hex(nmea.term[1]);
-            return ((checksum == nmea.checksum) && nmea.sentence_valid);
-        }
 
-        // null terminate and decode latest term
-        nmea.term[nmea.term_offset] = 0;
-        if (nmea.sentence_valid) {
-            nmea.sentence_valid = decode_latest_term();
-        }
-
-        // move onto next term
-        nmea.term_number++;
-        nmea.term_offset = 0;
-        nmea.term_is_checksum = (c == '*');
-        return false;
-    }
-
-    case '$': // sentence begin
-        nmea.sentence_valid = true;
-        nmea.term_number = 0;
-        nmea.term_offset = 0;
-        nmea.checksum = 0;
-        nmea.term_is_checksum = false;
-        nmea.sentence_done = false;
-        return false;
+        case '$':  // sentence begin
+            nmea.sentence_valid   = true;
+            nmea.term_number      = 0;
+            nmea.term_offset      = 0;
+            nmea.checksum         = 0;
+            nmea.term_is_checksum = false;
+            nmea.sentence_done    = false;
+            return false;
     }
 
     // ordinary characters are added to term
@@ -369,8 +372,7 @@ bool AP_ExternalAHRS_VectorNav::decode(char c)
 
 // decode the most recently consumed term
 // returns true if new term is valid
-bool AP_ExternalAHRS_VectorNav::decode_latest_term()
-{
+bool AP_ExternalAHRS_VectorNav::decode_latest_term() {
     // Check the first two terms (In most cases header + reg number) that they match the sent
     // message. If not, the response is invalid.
     switch (nmea.term_number) {
@@ -382,13 +384,13 @@ bool AP_ExternalAHRS_VectorNav::decode_latest_term()
                 AP_HAL::panic("VectorNav received VN error response");
             }
             break;
-        case 1: 
+        case 1:
             if (strncmp(nmea.term, message_to_send + 6,
                         nmea.term_offset) != 0) {  // Start after "VNXXX,"
                 return false;
             }
             break;
-        case 2: 
+        case 2:
             if (strncmp(nmea.term, "VN-", 3) == 0) {
                 // This term is the model number
                 strncpy(model_name, nmea.term, sizeof(model_name));
@@ -426,12 +428,13 @@ void AP_ExternalAHRS_VectorNav::initialize() {
         type = TYPE::VN_AHRS;
 
         // This assumes unit is still configured at its default rate of 800hz
-        hal.util->snprintf(message_to_send, sizeof(message_to_send),
-                           "VNWRG,75,3,%u,14,073E,0004\0", unsigned(800 / get_rate()));
+        hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,75,3,%u,14,073E,0004\0",
+                           unsigned(800 / get_rate()));
         send_command_blocking();
     } else {
         // Default to setup for sensors other than VN-100 or VN-110
-        // This assumes unit is still configured at its default IMU rate of 400hz for VN-300, 800hz for others
+        // This assumes unit is still configured at its default IMU rate of 400hz for VN-300, 800hz
+        // for others
         uint16_t imu_rate = 800;  // Default for everything but VN-300
         if (strncmp(model_name, "VN-300", 6) == 0) {
             imu_rate = 400;
@@ -462,8 +465,7 @@ void AP_ExternalAHRS_VectorNav::update_thread() {
     }
 }
 
-const char* AP_ExternalAHRS_VectorNav::get_name() const
-{
+const char *AP_ExternalAHRS_VectorNav::get_name() const {
     if (setup_complete) {
         return model_name;
     }
@@ -473,12 +475,11 @@ const char* AP_ExternalAHRS_VectorNav::get_name() const
 /*
   process INS mode INS packet
  */
-void AP_ExternalAHRS_VectorNav::process_ins_packet1(const uint8_t *b)
-{
+void AP_ExternalAHRS_VectorNav::process_ins_packet1(const uint8_t *b) {
     const struct VN_INS_packet1 &pkt1 = *(struct VN_INS_packet1 *)b;
     const struct VN_INS_packet2 &pkt2 = *last_ins_pkt2;
 
-    last_pkt1_ms = AP_HAL::millis();
+    last_pkt1_ms   = AP_HAL::millis();
     *last_ins_pkt1 = pkt1;
 
     const bool use_uncomp = option_is_set(AP_ExternalAHRS::OPTIONS::VN_UNCOMP_IMU);
@@ -487,31 +488,32 @@ void AP_ExternalAHRS_VectorNav::process_ins_packet1(const uint8_t *b)
         WITH_SEMAPHORE(state.sem);
         if (use_uncomp) {
             state.accel = Vector3f{pkt1.uncompAccel[0], pkt1.uncompAccel[1], pkt1.uncompAccel[2]};
-            state.gyro = Vector3f{pkt1.uncompAngRate[0], pkt1.uncompAngRate[1], pkt1.uncompAngRate[2]};
+            state.gyro =
+                Vector3f{pkt1.uncompAngRate[0], pkt1.uncompAngRate[1], pkt1.uncompAngRate[2]};
         } else {
             state.accel = Vector3f{pkt1.accel[0], pkt1.accel[1], pkt1.accel[2]};
-            state.gyro = Vector3f{pkt1.gyro[0], pkt1.gyro[1], pkt1.gyro[2]};
+            state.gyro  = Vector3f{pkt1.gyro[0], pkt1.gyro[1], pkt1.gyro[2]};
         }
 
-        state.quat = Quaternion{pkt1.quaternion[3], pkt1.quaternion[0], pkt1.quaternion[1], pkt1.quaternion[2]};
+        state.quat = Quaternion{pkt1.quaternion[3], pkt1.quaternion[0], pkt1.quaternion[1],
+                                pkt1.quaternion[2]};
         state.have_quaternion = true;
 
-        state.velocity = Vector3f{pkt1.velNED[0], pkt1.velNED[1], pkt1.velNED[2]};
+        state.velocity      = Vector3f{pkt1.velNED[0], pkt1.velNED[1], pkt1.velNED[2]};
         state.have_velocity = true;
 
-        state.location = Location{int32_t(pkt1.positionLLA[0] * 1.0e7),
-                                  int32_t(pkt1.positionLLA[1] * 1.0e7),
-                                  int32_t(pkt1.positionLLA[2] * 1.0e2),
-                                  Location::AltFrame::ABSOLUTE};
+        state.location =
+            Location{int32_t(pkt1.positionLLA[0] * 1.0e7), int32_t(pkt1.positionLLA[1] * 1.0e7),
+                     int32_t(pkt1.positionLLA[2] * 1.0e2), Location::AltFrame::ABSOLUTE};
         state.last_location_update_us = AP_HAL::micros();
-        state.have_location = true;
+        state.have_location           = true;
     }
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::baro_data_message_t baro;
-        baro.instance = 0;
-        baro.pressure_pa = pkt1.pressure*1e3;
+        baro.instance    = 0;
+        baro.pressure_pa = pkt1.pressure * 1e3;
         baro.temperature = pkt2.temp;
 
         AP::baro().handle_external(baro);
@@ -522,7 +524,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_packet1(const uint8_t *b)
     {
         AP_ExternalAHRS::mag_data_message_t mag;
         mag.field = Vector3f{pkt1.mag[0], pkt1.mag[1], pkt1.mag[2]};
-        mag.field *= 1000; // to mGauss
+        mag.field *= 1000;  // to mGauss
 
         AP::compass().handle_external(mag);
     }
@@ -531,8 +533,8 @@ void AP_ExternalAHRS_VectorNav::process_ins_packet1(const uint8_t *b)
     {
         AP_ExternalAHRS::ins_data_message_t ins;
 
-        ins.accel = state.accel;
-        ins.gyro = state.gyro;
+        ins.accel       = state.accel;
+        ins.gyro        = state.gyro;
         ins.temperature = pkt2.temp;
 
         AP::ins().handle_external(ins);
@@ -542,43 +544,41 @@ void AP_ExternalAHRS_VectorNav::process_ins_packet1(const uint8_t *b)
 /*
   process INS mode GNSS packet
  */
-void AP_ExternalAHRS_VectorNav::process_ins_packet2(const uint8_t *b)
-{
+void AP_ExternalAHRS_VectorNav::process_ins_packet2(const uint8_t *b) {
     const struct VN_INS_packet2 &pkt2 = *(struct VN_INS_packet2 *)b;
     const struct VN_INS_packet1 &pkt1 = *last_ins_pkt1;
 
-    last_pkt2_ms = AP_HAL::millis();
+    last_pkt2_ms   = AP_HAL::millis();
     *last_ins_pkt2 = pkt2;
 
     AP_ExternalAHRS::gps_data_message_t gps;
 
     // get ToW in milliseconds
-    gps.gps_week = pkt2.timeGPS / (AP_MSEC_PER_WEEK * 1000000ULL);
-    gps.ms_tow = (pkt2.timeGPS / 1000000ULL) % (60*60*24*7*1000ULL);
-    gps.fix_type = pkt2.GPS1Fix;
+    gps.gps_week           = pkt2.timeGPS / (AP_MSEC_PER_WEEK * 1000000ULL);
+    gps.ms_tow             = (pkt2.timeGPS / 1000000ULL) % (60 * 60 * 24 * 7 * 1000ULL);
+    gps.fix_type           = pkt2.GPS1Fix;
     gps.satellites_in_view = pkt2.numGPS1Sats;
 
     gps.horizontal_pos_accuracy = pkt1.posU;
-    gps.vertical_pos_accuracy = pkt1.posU;
+    gps.vertical_pos_accuracy   = pkt1.posU;
     gps.horizontal_vel_accuracy = pkt1.velU;
 
     gps.hdop = pkt2.GPS1DOP[4];
     gps.vdop = pkt2.GPS1DOP[3];
 
-    gps.latitude = pkt2.GPS1posLLA[0] * 1.0e7;
-    gps.longitude = pkt2.GPS1posLLA[1] * 1.0e7;
+    gps.latitude     = pkt2.GPS1posLLA[0] * 1.0e7;
+    gps.longitude    = pkt2.GPS1posLLA[1] * 1.0e7;
     gps.msl_altitude = pkt2.GPS1posLLA[2] * 1.0e2;
 
     gps.ned_vel_north = pkt2.GPS1velNED[0];
-    gps.ned_vel_east = pkt2.GPS1velNED[1];
-    gps.ned_vel_down = pkt2.GPS1velNED[2];
+    gps.ned_vel_east  = pkt2.GPS1velNED[1];
+    gps.ned_vel_down  = pkt2.GPS1velNED[2];
 
     if (gps.fix_type >= 3 && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
-        state.origin = Location{int32_t(pkt2.GPS1posLLA[0] * 1.0e7),
-                                int32_t(pkt2.GPS1posLLA[1] * 1.0e7),
-                                int32_t(pkt2.GPS1posLLA[2] * 1.0e2),
-                                Location::AltFrame::ABSOLUTE};
+        state.origin =
+            Location{int32_t(pkt2.GPS1posLLA[0] * 1.0e7), int32_t(pkt2.GPS1posLLA[1] * 1.0e7),
+                     int32_t(pkt2.GPS1posLLA[2] * 1.0e2), Location::AltFrame::ABSOLUTE};
         state.have_origin = true;
     }
     uint8_t instance;
@@ -590,8 +590,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_packet2(const uint8_t *b)
 /*
   process AHRS mode AHRS packet
  */
-void AP_ExternalAHRS_VectorNav::process_ahrs_packet(const uint8_t *b)
-{
+void AP_ExternalAHRS_VectorNav::process_ahrs_packet(const uint8_t *b) {
     const struct VN_AHRS_packet1 &pkt = *(struct VN_AHRS_packet1 *)b;
 
     last_pkt1_ms = AP_HAL::millis();
@@ -605,18 +604,19 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_packet(const uint8_t *b)
             state.gyro = Vector3f{pkt.uncompAngRate[0], pkt.uncompAngRate[1], pkt.uncompAngRate[2]};
         } else {
             state.accel = Vector3f{pkt.accel[0], pkt.accel[1], pkt.accel[2]};
-            state.gyro = Vector3f{pkt.gyro[0], pkt.gyro[1], pkt.gyro[2]};
+            state.gyro  = Vector3f{pkt.gyro[0], pkt.gyro[1], pkt.gyro[2]};
         }
 
-        state.quat = Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
+        state.quat =
+            Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
         state.have_quaternion = true;
     }
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::baro_data_message_t baro;
-        baro.instance = 0;
-        baro.pressure_pa = pkt.pressure*1e3;
+        baro.instance    = 0;
+        baro.pressure_pa = pkt.pressure * 1e3;
         baro.temperature = pkt.temp;
 
         AP::baro().handle_external(baro);
@@ -631,7 +631,7 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_packet(const uint8_t *b)
         } else {
             mag.field = Vector3f{pkt.mag[0], pkt.mag[1], pkt.mag[2]};
         }
-        mag.field *= 1000; // to mGauss
+        mag.field *= 1000;  // to mGauss
 
         AP::compass().handle_external(mag);
     }
@@ -640,8 +640,8 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_packet(const uint8_t *b)
     {
         AP_ExternalAHRS::ins_data_message_t ins;
 
-        ins.accel = state.accel;
-        ins.gyro = state.gyro;
+        ins.accel       = state.accel;
+        ins.gyro        = state.gyro;
         ins.temperature = pkt.temp;
 
         AP::ins().handle_external(ins);
@@ -667,24 +667,19 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_packet(const uint8_t *b)
     // @Field: Q3: Attitude quaternion 3
     // @Field: Q4: Attitude quaternion 4
 
-    AP::logger().WriteStreaming("EAH3", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ,Q1,Q2,Q3,Q4",
-                       "sdPGGGoooEEE----", "F000000000000000",
-                       "Qfffffffffffffff",
-                       AP_HAL::micros64(),
-                       pkt.temp, pkt.pressure*1e3,
-                       use_uncomp ? pkt.uncompMag[0] : pkt.mag[0],
-                       use_uncomp ? pkt.uncompMag[1] : pkt.mag[1], 
-                       use_uncomp ? pkt.uncompMag[2] : pkt.mag[2],
-                       state.accel[0], state.accel[1], state.accel[2],
-                       state.gyro[0], state.gyro[1], state.gyro[2],
-                       state.quat[0], state.quat[1], state.quat[2], state.quat[3]);
+    AP::logger().WriteStreaming(
+        "EAH3", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ,Q1,Q2,Q3,Q4", "sdPGGGoooEEE----",
+        "F000000000000000", "Qfffffffffffffff", AP_HAL::micros64(), pkt.temp, pkt.pressure * 1e3,
+        use_uncomp ? pkt.uncompMag[0] : pkt.mag[0], use_uncomp ? pkt.uncompMag[1] : pkt.mag[1],
+        use_uncomp ? pkt.uncompMag[2] : pkt.mag[2], state.accel[0], state.accel[1], state.accel[2],
+        state.gyro[0], state.gyro[1], state.gyro[2], state.quat[0], state.quat[1], state.quat[2],
+        state.quat[3]);
+
 #endif  // HAL_LOGGING_ENABLED
 }
 
-
 // get serial port number for the uart
-int8_t AP_ExternalAHRS_VectorNav::get_port(void) const
-{
+int8_t AP_ExternalAHRS_VectorNav::get_port(void) const {
     if (!uart) {
         return -1;
     }
@@ -692,8 +687,7 @@ int8_t AP_ExternalAHRS_VectorNav::get_port(void) const
 };
 
 // accessors for AP_AHRS
-bool AP_ExternalAHRS_VectorNav::healthy(void) const
-{
+bool AP_ExternalAHRS_VectorNav::healthy(void) const {
     const uint32_t now = AP_HAL::millis();
     if (type == TYPE::VN_AHRS) {
         return (now - last_pkt1_ms < 40);
@@ -701,8 +695,7 @@ bool AP_ExternalAHRS_VectorNav::healthy(void) const
     return (now - last_pkt1_ms < 40 && now - last_pkt2_ms < 500);
 }
 
-bool AP_ExternalAHRS_VectorNav::initialised(void) const
-{
+bool AP_ExternalAHRS_VectorNav::initialised(void) const {
     if (!setup_complete) {
         return false;
     }
@@ -712,8 +705,7 @@ bool AP_ExternalAHRS_VectorNav::initialised(void) const
     return last_pkt1_ms != 0 && last_pkt2_ms != 0;
 }
 
-bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
-{
+bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const {
     if (!setup_complete) {
         hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav setup failed");
         return false;
@@ -739,8 +731,7 @@ bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure
   get filter status. We don't know the meaning of the status bits yet,
   so assume all OK if we have GPS lock
  */
-void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) const
-{
+void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) const {
     memset(&status, 0, sizeof(status));
     if (type == TYPE::VN_INS) {
         if (last_ins_pkt1 && last_ins_pkt2) {
@@ -753,12 +744,12 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
 
             const struct VN_INS_packet2 &pkt2 = *last_ins_pkt2;
             if (pkt2.GPS1Fix >= 3) {
-                status.flags.horiz_vel = true;
-                status.flags.horiz_pos_rel = true;
-                status.flags.horiz_pos_abs = true;
+                status.flags.horiz_vel          = true;
+                status.flags.horiz_pos_rel      = true;
+                status.flags.horiz_pos_abs      = true;
                 status.flags.pred_horiz_pos_rel = true;
                 status.flags.pred_horiz_pos_abs = true;
-                status.flags.using_gps = true;
+                status.flags.using_gps          = true;
             }
         }
     } else {
@@ -770,8 +761,7 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
 }
 
 // send an EKF_STATUS message to GCS
-void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
-{
+void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const {
     if (!last_ins_pkt1) {
         return;
     }
@@ -815,13 +805,12 @@ void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
 
     // send message
     const struct VN_INS_packet1 &pkt1 = *(struct VN_INS_packet1 *)last_ins_pkt1;
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       pkt1.velU/vel_gate, pkt1.posU/pos_gate, pkt1.posU/hgt_gate,
-                                       mag_var, 0, 0);
+    const float vel_gate              = 5;
+    const float pos_gate              = 5;
+    const float hgt_gate              = 5;
+    const float mag_var               = 0;
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, pkt1.velU / vel_gate,
+                                       pkt1.posU / pos_gate, pkt1.posU / hgt_gate, mag_var, 0, 0);
 }
 
 #endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED

@@ -313,6 +313,10 @@ AP_HW_MountainEagleH743              1444
 
 AP_HW_SakuraRC-H743                  2714
 
+# IDs 4200-4220 reserved for HAKRC
+AP_HW_HAKRC_F405                     4200
+AP_HW_HAKRC_F405Wing                 4201
+
 # IDs 5000-5099 reserved for Carbonix
 # IDs 5100-5199 reserved for SYPAQ Systems
 # IDs 5200-5209 reserved for Airvolute
@@ -358,6 +362,9 @@ AP_HW_ZeroOne_X6                     5600
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
+
+# IDs 7000-7099 reserved for CUAV
+AP_HW_CUAV-7-NANO                    7000
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140

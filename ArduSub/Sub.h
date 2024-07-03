@@ -232,7 +232,18 @@ private:
     } failsafe;
 
     bool any_failsafe_triggered() const {
-        return (failsafe.pilot_input || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain);
+        return (
+            failsafe.pilot_input
+            || battery.has_failsafed()
+            || failsafe.gcs
+            || failsafe.ekf
+            || failsafe.terrain
+            || failsafe.leak
+            || failsafe.internal_pressure
+            || failsafe.internal_temperature
+            || failsafe.crash
+            || failsafe.sensor_health
+        );
     }
 
     // sensor health for logging
@@ -614,10 +625,10 @@ public:
     // For Lua scripting, so index is 1..4, not 0..3
     uint8_t get_and_clear_button_count(uint8_t index);
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     float get_rangefinder_target_cm() const WARN_IF_UNUSED { return mode_surftrak.get_rangefinder_target_cm(); }
     bool set_rangefinder_target_cm(float new_target_cm) { return mode_surftrak.set_rangefinder_target_cm(new_target_cm); }
-#endif // RANGEFINDER_ENABLED
+#endif // AP_RANGEFINDER_ENABLED
 #endif // AP_SCRIPTING_ENABLED
 };
 

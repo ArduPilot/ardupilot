@@ -142,36 +142,12 @@ void GPS_NOVA::publish(const GPS_Data *d)
 void GPS_NOVA::nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen)
 {
     write_to_autopilot((char*)header, headerlength);
-write_to_autopilot((char*)payload, payloadlen);
+    write_to_autopilot((char*)payload, payloadlen);
 
-    uint32_t crc = CalculateBlockCRC32(headerlength, header, (uint32_t)0);
-    crc = CalculateBlockCRC32(payloadlen, payload, crc);
+    uint32_t crc = crc_crc32((uint32_t)0, header, headerlength);
+    crc = crc_crc32(crc, payload, payloadlen);
 
     write_to_autopilot((char*)&crc, 4);
-}
-
-#define CRC32_POLYNOMIAL 0xEDB88320L
-uint32_t GPS_NOVA::CRC32Value(uint32_t icrc)
-{
-    int i;
-    uint32_t crc = icrc;
-    for ( i = 8 ; i > 0; i-- )
-    {
-        if ( crc & 1 )
-            crc = ( crc >> 1 ) ^ CRC32_POLYNOMIAL;
-        else
-            crc >>= 1;
-    }
-    return crc;
-}
-
-uint32_t GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc)
-{
-    while ( length-- != 0 )
-    {
-        crc = ((crc >> 8) & 0x00FFFFFFL) ^ (CRC32Value(((uint32_t) crc ^ *buffer++) & 0xff));
-    }
-    return( crc );
 }
 
 #endif  // AP_SIM_GPS_NOVA_ENABLED

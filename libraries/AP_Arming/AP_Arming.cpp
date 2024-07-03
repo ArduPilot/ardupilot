@@ -603,7 +603,7 @@ bool AP_Arming::gps_checks(bool report)
 
         // Any failure messages from GPS backends
         char failure_msg[50] = {};
-        if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
+        if (!AP::gps().pre_arm_checks(failure_msg, ARRAY_SIZE(failure_msg))) {
             if (failure_msg[0] != '\0') {
                 check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
             }
@@ -916,6 +916,7 @@ bool AP_Arming::mission_checks(bool report)
 
 bool AP_Arming::rangefinder_checks(bool report)
 {
+#if AP_RANGEFINDER_ENABLED
     if (check_enabled(ARMING_CHECK_RANGEFINDER)) {
         RangeFinder *range = RangeFinder::get_singleton();
         if (range == nullptr) {
@@ -928,6 +929,7 @@ bool AP_Arming::rangefinder_checks(bool report)
             return false;
         }
     }
+#endif
 
     return true;
 }
@@ -1046,6 +1048,11 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 
+        if (AP_Param::get_eeprom_full()) {
+            check_failed(ARMING_CHECK_PARAMETERS, report, "parameter storage full");
+            return false;
+        }
+        
         // check main loop rate is at least 90% of expected value
         const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
         const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();

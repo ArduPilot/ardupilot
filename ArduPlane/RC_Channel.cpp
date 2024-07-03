@@ -43,7 +43,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
+        plane.set_mode_by_number(number, ModeReason::AUX_FUNCTION);
         break;
     }
     default:

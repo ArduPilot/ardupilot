@@ -7,7 +7,7 @@
 
 #include "AP_Logger_Block.h"
 
-#if HAL_LOGGING_DATAFLASH_ENABLED
+#if HAL_LOGGING_FLASH_JEDEC_ENABLED
 
 class AP_Logger_Flash_JEDEC : public AP_Logger_Block {
 public:
@@ -46,4 +46,4 @@ private:
     bool read_cache_valid;
 };
 
-#endif // HAL_LOGGING_DATAFLASH_ENABLED
+#endif // HAL_LOGGING_FLASH_JEDEC_ENABLED

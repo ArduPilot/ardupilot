@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 using namespace Linux;
 

@@ -60,7 +60,11 @@ bool AP_Logger_Backend::Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Fill_Format(s, pkt);
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
+    if (!WriteCriticalBlock(&pkt, sizeof(pkt))) {
+        return false;
+    }
+    _formats_written.set(s->msg_type);
+    return true;
 }
 
 /*

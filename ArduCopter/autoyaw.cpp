@@ -111,6 +111,9 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
 
     // calculate final angle as relative to vehicle heading or absolute
     if (relative_angle) {
+        if (_mode == Mode::HOLD) {
+            _yaw_angle_cd = copter.ahrs.yaw_sensor;
+        }
         _fixed_yaw_offset_cd = angle_deg * 100.0 * (direction >= 0 ? 1.0 : -1.0);
     } else {
         // absolute angle

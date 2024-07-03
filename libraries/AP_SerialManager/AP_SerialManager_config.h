@@ -71,6 +71,9 @@
 #define AP_SERIALMANAGER_CAN_D1_PORT_1         41 // CAN_D1_UC_S1_*
 #define AP_SERIALMANAGER_CAN_D2_PORT_1         51 // CAN_D2_UC_S1_*
 
+// serial device simulation ports registered by AP_Scripting will use IDs starting at 61 for the first port
+#define AP_SERIALMANAGER_SCR_PORT_1         61 // SCR_SDEV1_*
+
  // console default baud rates and buffer sizes
 #ifdef DEFAULT_SERIAL0_BAUD
 #define AP_SERIALMANAGER_CONSOLE_BAUD          DEFAULT_SERIAL0_BAUD

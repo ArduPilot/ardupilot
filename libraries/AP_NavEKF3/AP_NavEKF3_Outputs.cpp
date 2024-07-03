@@ -68,12 +68,16 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
+#if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
         }
         height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+#else
+        return false;
+#endif
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
         if (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
             height -= terrainState;

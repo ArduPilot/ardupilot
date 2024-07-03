@@ -38,30 +38,20 @@ void AutoTune::run()
     // apply SIMPLE mode transform to pilot inputs
     copter.update_simple_mode();
 
-    // reset target lean angles and heading while landed
-    if (copter.ap.land_complete) {
-        // we are landed, shut down
-        float target_climb_rate = get_pilot_desired_climb_rate_cms();
-
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f) {
-            copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        } else {
-            copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-        }
-        copter.attitude_control->reset_rate_controller_I_terms_smoothly();
-        copter.attitude_control->reset_yaw_target_and_rate();
-
-        float target_roll, target_pitch, target_yaw_rate;
-        get_pilot_desired_rp_yrate_cd(target_roll, target_pitch, target_yaw_rate);
-
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-        copter.pos_control->relax_z_controller(0.0f);
-        copter.pos_control->update_z_controller();
-    } else {
-        // run autotune mode
-        AC_AutoTune::run();
+    // disarm when the landing detector says we've landed and spool state is ground idle
+    if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+        copter.arming.disarm(AP_Arming::Method::LANDED);
     }
+
+    // if not armed set throttle to zero and exit immediately
+    if (copter.ap.land_complete) {
+        copter.flightmode->make_safe_ground_handling();
+        return;
+    }
+
+    // run autotune mode
+    AC_AutoTune::run();
+
 }
 
 
