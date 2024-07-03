@@ -822,8 +822,8 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         filt_att_fdbk_from_velxy_cd.apply(att_fdbk, AP::scheduler().get_loop_period_s());
     } else {
         target_angle_cd = 0.0f;
-        trim_yaw_tgt_reading = (float)attitude_control->get_att_target_euler_cd().z;
-        trim_yaw_heading_reading = (float)ahrs_view->yaw_sensor;
+        trim_yaw_tgt_reading_cd = (float)attitude_control->get_att_target_euler_cd().z;
+        trim_yaw_heading_reading_cd = (float)ahrs_view->yaw_sensor;
         dwell_start_time_ms = now;
         filt_att_fdbk_from_velxy_cd.reset(Vector2f(0.0f,0.0f));
         settle_time--;
@@ -865,17 +865,17 @@ void AC_AutoTune_Heli::dwell_test_run(sweep_info &test_data)
         break;
     case YAW:
     case YAW_D:
-        attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
+        attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading_cd + target_angle_cd), false);
         command_reading = motors->get_yaw();
         if (test_calc_type == DRB) {
             tgt_rate_reading = radians(target_angle_cd * 0.01f);
-            gyro_reading = radians((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading - target_angle_cd)) * 0.01f);
+            gyro_reading = radians((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd - target_angle_cd)) * 0.01f);
         } else if (test_calc_type == RATE) {
             tgt_rate_reading = attitude_control->rate_bf_targets().z;
             gyro_reading = ahrs_view->get_gyro().z;
         } else {
-            tgt_rate_reading = radians((wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) * 0.01f);
-            gyro_reading = radians((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) * 0.01f);
+            tgt_rate_reading = radians((wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading_cd)) * 0.01f);
+            gyro_reading = radians((wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading_cd)) * 0.01f);
         }
         break;
     }

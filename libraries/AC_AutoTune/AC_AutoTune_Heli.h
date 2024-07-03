@@ -276,8 +276,8 @@ private:
     // trim variables for determining trim state prior to test starting
     Vector3f trim_attitude_cd;                      // trim attitude before starting test
     float trim_command;                             // trim target yaw reading before starting test
-    float trim_yaw_tgt_reading;                     // trim target yaw reading before starting test
-    float trim_yaw_heading_reading;                 // trim heading reading before starting test
+    float trim_yaw_tgt_reading_cd;                     // trim target yaw reading before starting test
+    float trim_yaw_heading_reading_cd;                 // trim heading reading before starting test
 
     LowPassFilterFloat  command_filt;               // filtered command - filtering intended to remove noise
     LowPassFilterFloat  target_rate_filt;           // filtered target rate in radians/second - filtering intended to remove noise
