@@ -6,6 +6,7 @@
 #include <Filter/DerivativeFilter.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger_config.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U

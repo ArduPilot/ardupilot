@@ -109,7 +109,7 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
         // note that PWM_MIN/MAX has been forced to 1000/2000
         SRV_Channels::set_output_scaled(function, float(pwm) - _motor_pwm_scaled.offset);
     } else {
-        SRV_Channels::set_output_pwm(function, pwm);
+        SRV_Channels::output_pwm_chan(chan, pwm);
     }
 }
 
