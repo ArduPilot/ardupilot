@@ -35,9 +35,9 @@ jobs:
       matrix:
         board: [
             sitl, # For simulation
-            CubeOrangePlus-bdshot, # Legacy support
+            # CubeOrangePlus-bdshot, # Legacy support
             CubeOrangePlus-dv, # CubeOrangePlus with bdshot and ODID enabled
-            CubeOrange-dv, # For my obsolete devkit
+            # CubeOrange-dv, # For my obsolete devkit
         ]
 
     steps:
