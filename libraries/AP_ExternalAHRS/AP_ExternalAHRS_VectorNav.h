@@ -61,25 +61,27 @@ private:
     void update_thread();
     bool check_uart();
 
-    void process_packet1(const uint8_t *b);
-    void process_packet2(const uint8_t *b);
-    void process_packet_VN_100(const uint8_t *b);
+    void process_ins_packet1(const uint8_t *b);
+    void process_ins_packet2(const uint8_t *b);
+    void process_ahrs_packet(const uint8_t *b);
     void wait_register_responce(const uint8_t register_num);
 
     uint8_t *pktbuf;
     uint16_t pktoffset;
     uint16_t bufsize;
 
-    struct VN_packet1 *last_pkt1;
-    struct VN_packet2 *last_pkt2;
+    struct VN_INS_packet1 *last_ins_pkt1;
+    struct VN_INS_packet2 *last_ins_pkt2;
 
     uint32_t last_pkt1_ms;
     uint32_t last_pkt2_ms;
 
     enum class TYPE {
-        VN_300,
-        VN_100,
+        VN_INS,  // Full INS mode, requiring GNSS. Used by VN-2X0 and VN-3X0
+        VN_AHRS,  // IMU-only mode, used by VN-1X0
     } type;
+
+    bool has_dual_gnss = false;
 
     char model_name[25];
 
