@@ -263,10 +263,6 @@ private:
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
     float    trim_meas_rate;                        // trim measured gyro rate
 
-    //variables from rate FF test
-    float trim_command_reading;
-    float trim_heading;
-
     // variables from dwell test
     LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;
     LowPassFilterFloat filt_command_reading;        // filtered command reading to keep oscillation centered
@@ -274,8 +270,6 @@ private:
     LowPassFilterFloat filt_tgt_rate_reading;       // filtered target rate reading to keep oscillation centered
 
     // trim variables for determining trim state prior to test starting
-    Vector3f trim_attitude_cd;                      // trim attitude before starting test
-    float trim_command;                             // trim target yaw reading before starting test
     float trim_yaw_tgt_reading_cd;                     // trim target yaw reading before starting test
     float trim_yaw_heading_reading_cd;                 // trim heading reading before starting test
 
