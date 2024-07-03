@@ -217,6 +217,9 @@ public:
         KILL_IMU3 =          110, // disable third IMU (for IMU failure testing)
         LOWEHEISER_STARTER = 111,  // allows for manually running starter
         AHRS_TYPE =          112, // change AHRS_EKF_TYPE
+        KILL_MAG1 =          113, // disable first magnetometer (for magnetometer failure testing)
+        KILL_MAG2 =          114, // disable second magnetometer (for magnetometer failure testing)
+        KILL_MAG3 =          115, // disable third magnetometer (for magnetometer failure testing)
 
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
