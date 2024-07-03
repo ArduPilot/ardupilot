@@ -117,6 +117,9 @@ void Sub::failsafe_ekf_check()
 
     if (compass_variance < g.fs_ekf_thresh && vel_variance < g.fs_ekf_thresh) {
         last_ekf_good_ms = AP_HAL::millis();
+        if (failsafe.ekf) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF recovered");
+        }
         failsafe.ekf = false;
         AP_Notify::flags.ekf_bad = false;
         return;
@@ -124,6 +127,9 @@ void Sub::failsafe_ekf_check()
 
     // Bad EKF for 2 solid seconds triggers failsafe
     if (AP_HAL::millis() < last_ekf_good_ms + 2000) {
+        if (failsafe.ekf) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF recovered");
+        }
         failsafe.ekf = false;
         AP_Notify::flags.ekf_bad = false;
         return;
