@@ -188,5 +188,7 @@ jobs:
           echo $PATH
           ./waf configure --board ${{matrix.config}}
           ./waf
+          ./waf configure --board ${{matrix.config}} --debug
+          ./waf
           ccache -s
           ccache -z
