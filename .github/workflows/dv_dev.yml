@@ -85,5 +85,6 @@ jobs:
           path: |
             build/${{ matrix.board }}/bin/arducopter
             build/${{ matrix.board }}/bin/arducopter.apj
-          retention-days: 7
+            dv/parameters/${{ matrix.board }}.param
+            retention-days: 7
           compression-level: 0
