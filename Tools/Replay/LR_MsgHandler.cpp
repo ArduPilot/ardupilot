@@ -243,7 +243,15 @@ void LR_MsgHandler_RMGH::process_message(uint8_t *msgbytes)
 
 void LR_MsgHandler_RMGI::process_message(uint8_t *msgbytes)
 {
+    if (compass_data_stopped) {
+        return;
+    }
     MSG_CREATE(RMGI, msgbytes);
+    if (stop_compass_ms != 0 && msg.last_update_usec > (stop_compass_ms * 1000)) {
+        ::printf("Compass data stopped at %u ms\n", stop_compass_ms);
+        compass_data_stopped = true;
+        return;
+    }
     AP::dal().handle_message(msg);
 }
 

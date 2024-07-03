@@ -217,8 +217,15 @@ public:
 class LR_MsgHandler_RMGI : public LR_MsgHandler
 {
 public:
+    LR_MsgHandler_RMGI(log_Format &_f, uint32_t compass_stop_ms) :
+        LR_MsgHandler(_f),
+        stop_compass_ms(compass_stop_ms)
+        {}
     using LR_MsgHandler::LR_MsgHandler;
     void process_message(uint8_t *msg) override;
+private:
+    uint32_t stop_compass_ms;
+    bool compass_data_stopped;
 };
 class LR_MsgHandler_RBCH : public LR_MsgHandler
 {

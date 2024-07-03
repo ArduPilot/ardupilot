@@ -76,7 +76,14 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS", AP_GPS),
-    
+
+    // @Param: COMPASS_DROP_MS
+    // @DisplayName: Time since boot from when to stop Compass data
+    // @Description: Time since boot from when to stop Compass data
+    // @Range: 0 10000
+    // @User: Advanced
+    GSCALAR(compass_stop_ms, "COMPASS_STOP_MS", 0),
+
     AP_VAREND
 };
 
@@ -239,6 +246,8 @@ void Replay::setup()
         ::printf("open(%s): %m\n", filename);
         exit(1);
     }
+    ::printf("Compass will stop at %u ms", (unsigned int)_vehicle.g.compass_stop_ms);
+    reader.set_stop_compass_data_ms(_vehicle.g.compass_stop_ms);
 }
 
 void Replay::loop()
