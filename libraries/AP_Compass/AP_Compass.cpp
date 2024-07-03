@@ -2228,6 +2228,20 @@ void Compass::force_save_calibration(void)
     }
 }
 
+#if AP_COMPASS_KILL_MAG_ENABLED
+/*
+  update IMU kill mask, used for testing IMU failover
+ */
+void Compass::kill_mag(uint8_t mag_idx, bool kill_it)
+{
+    if (kill_it) {
+        mag_kill_mask |= (1U<<mag_idx);
+    } else {
+        mag_kill_mask &= ~(1U<<mag_idx);
+    }
+}
+#endif // AP_COMPASS_KILL_MAG_ENABLED
+
 // singleton instance
 Compass *Compass::_singleton;
 
