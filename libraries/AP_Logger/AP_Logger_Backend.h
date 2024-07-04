@@ -208,7 +208,6 @@ protected:
     uint16_t _cached_oldest_log;
 
     uint32_t _dropped;
-    uint32_t _log_file_size_bytes;
     // should we rotate when we next stop logging
     bool _rotate_pending;
 
