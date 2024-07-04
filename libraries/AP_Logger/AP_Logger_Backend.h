@@ -159,6 +159,9 @@ public:
     // Returns true if the FMT message has ever been written.
     bool Write_Emit_FMT(uint8_t msg_type);
 
+    // output a FMT message if not already done so
+    void Safe_Write_Emit_FMT(uint8_t msg_type);
+
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
     bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false, bool is_streaming=false);
