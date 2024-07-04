@@ -11552,6 +11552,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def AutoContinueOnRCFailsafe(self):
+        '''check LOITER when entered after RC failsafe is ignored in auto'''
+        self.set_parameters({
+            "FS_OPTIONS": 1,  # 1 is "RC continue if in auto"
+        })
+
+        self.upload_simple_relhome_mission([
+            #                                      N   E  U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 60, 0, 10),
+        ])
+
+        self.takeoff(mode='LOITER')
+        self.set_rc(1, 1200)
+        self.delay_sim_time(1)  # build up some pilot desired stuff
+        self.change_mode('AUTO')
+        self.wait_waypoint(2, 2)
+        self.set_parameters({
+            'SIM_RC_FAIL': 1,
+        })
+#        self.set_rc(1, 1500)  # note we are still in RC fail!
+        self.wait_waypoint(3, 3)
+        self.assert_mode_is('AUTO')
+        self.change_mode('LOITER')
+        self.wait_groundspeed(0, 0.1, minimum_duration=30, timeout=450)
+        self.do_RTL()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11605,6 +11634,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.WatchAlts,
             self.GuidedEKFLaneChange,
             self.Sprayer,
+            self.AutoContinueOnRCFailsafe,
             self.EK3_RNG_USE_HGT,
             self.TerrainDBPreArm,
             self.ThrottleGainBoost,
