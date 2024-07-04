@@ -145,6 +145,15 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
  */
 
 
+// output a FMT message if not already done so
+void AP_Logger_Backend::Safe_Write_Emit_FMT(uint8_t msg_type)
+{
+    if (have_emitted_format_for_type(LogMessages(msg_type))) {
+        return;
+    }
+    Write_Emit_FMT(msg_type);
+}
+
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -166,7 +175,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
         ls.units,
         ls.multipliers
     };
-    if (!_front.fill_log_write_logstructure(logstruct, msg_type)) {
+    if (!_front.fill_logstructure(logstruct, msg_type)) {
         // this is a bug; we've been asked to write out the FMT
         // message for a msg_type, but the frontend can't supply the
         // required information
@@ -393,28 +402,6 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 }
 #endif
 
-bool AP_Logger_Backend::emit_format_for_type(LogMessages a_type)
-{
-    // linearly scan the formats structure to find the format for the type:
-    for (uint8_t i=0; i< num_types(); i++) {
-        const auto &s { structure(i) };
-        if (s == nullptr) {
-            continue;
-        }
-        if (s->msg_type != a_type) {
-            continue;
-        }
-        // found the relevant structure.  Attempt to write it:
-        if (!Write_Format(s)) {
-            return false;
-        }
-        return true;
-    }
-    // didn't find the structure.  That's probably bad...
-    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    return false;
-}
-
 bool AP_Logger_Backend::ensure_format_emitted(const void *pBuffer, uint16_t size)
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -437,11 +424,11 @@ bool AP_Logger_Backend::ensure_format_emitted(const void *pBuffer, uint16_t size
         return true;
     }
     if (!have_emitted_format_for_type(LOG_FORMAT_MSG) &&
-        !emit_format_for_type(LOG_FORMAT_MSG)) {
+        !Write_Emit_FMT(LOG_FORMAT_MSG)) {
         return false;
     }
 
-    return emit_format_for_type(type);
+    return Write_Emit_FMT(type);
 }
 
 bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming)
