@@ -766,7 +766,7 @@ private:
     void correctDeltaVelocity(Vector3F &delVel, ftype delVelDT, uint8_t accel_index);
 
     // update IMU delta angle and delta velocity measurements
-    void readIMUData();
+    void readIMUData(bool startPredictEnabled);
 
     // update estimate of inactive bias states
     void learnInactiveBiases();
@@ -1193,7 +1193,6 @@ private:
     uint8_t magSelectIndex;         // Index of the magnetometer that is being used by the EKF
     bool runUpdates;                // boolean true when the EKF updates can be run
     uint32_t framesSincePredict;    // number of frames lapsed since EKF instance did a state prediction
-    bool startPredictEnabled;       // boolean true when the frontend has given permission to start a new state prediciton cycle
     uint8_t localFilterTimeStep_ms; // average number of msec between filter updates
     ftype posDownObsNoise;          // observation noise variance on the vertical position used by the state and covariance update step (m^2)
     Vector3F delAngCorrected;       // corrected IMU delta angle vector at the EKF time horizon (rad)
