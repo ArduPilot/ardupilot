@@ -458,6 +458,9 @@ private:
     // Update Demanded Throttle Non-Airspeed
     void _update_throttle_without_airspeed(int16_t throttle_nudge, float pitch_trim_deg);
 
+    // Constrain throttle demand and record clipping
+    void constrain_throttle();
+
     // get integral gain which is flight_stage dependent
     float _get_i_gain(void);
 
