@@ -394,7 +394,9 @@ void NavEKF3_core::InitialiseVariables()
     storedGPS.reset();
     storedBaro.reset();
     storedTAS.reset();
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     storedRange.reset();
+#endif
     storedOutput.reset();
 #if EK3_FEATURE_BEACON_FUSION
     rngBcn.storedRange.reset();
