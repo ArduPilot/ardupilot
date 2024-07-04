@@ -248,6 +248,9 @@ void AP_MotorsMulticopter::output()
     // update throttle filter
     update_throttle_filter();
 
+    // update servo map
+    update_servo_map();
+
     // calc filtered battery voltage and lift_max
     thr_lin.update_lift_max_from_batt_voltage();
 
@@ -342,6 +345,21 @@ void AP_MotorsMulticopter::update_throttle_filter()
     // calculate slope normalized from per-micro
     const float rate = fabsf(_throttle_slew.slope() * 1e6);
     _throttle_slew_rate = _throttle_slew_filter.apply(rate, _dt);
+}
+
+// update the throttle input filter
+void AP_MotorsMulticopter::update_servo_map()
+{
+    uint32_t now_ms = AP_HAL::millis();
+    // only allow motors to be remapped while not armed and at 2Hz
+    if (!armed() && now_ms - last_servo_map_update_ms > 500) {
+        last_servo_map_update_ms = now_ms;
+        // update the servo mapping
+        for (uint8_t motor_num = 0; motor_num < AP_MOTORS_MAX_NUM_MOTORS; motor_num++) {
+            SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
+            SRV_Channels::find_channel(function, motor_servo_map[motor_num]);
+        }
+    }
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max

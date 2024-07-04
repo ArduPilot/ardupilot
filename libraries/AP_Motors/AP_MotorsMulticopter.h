@@ -57,6 +57,9 @@ public:
     // return true if spool up is complete
     bool spool_up_complete() const { return _spool_state == SpoolState::THROTTLE_UNLIMITED; }
 
+    // update the servo map
+    void                update_servo_map();
+
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
@@ -195,6 +198,9 @@ protected:
 
     // array of motor output values
     float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
+
+    // last time the servo map was updated
+    uint32_t last_servo_map_update_ms;
 
     /* motor enabled, checking the override mask
        _motor_mask_override is only set for tilt quadplanes

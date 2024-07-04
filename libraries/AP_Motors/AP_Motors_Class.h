@@ -376,6 +376,8 @@ protected:
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
+    uint8_t motor_servo_map[AP_MOTORS_MAX_NUM_MOTORS];  // map of motor channels to servo channels to expedite lookups
+
     // return string corresponding to frame_class
     virtual const char* _get_frame_string() const = 0;
 
@@ -401,7 +403,6 @@ private:
     bool _interlock;         // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     bool _initialised_ok;    // 1 if initialisation was successful
     bool _spoolup_block;     // true if spoolup is blocked
-    uint8_t motor_servo_map[AP_MOTORS_MAX_NUM_MOTORS];  // map of motor channels to servo channels to expedite lookups
 
     static AP_Motors *_singleton;
 };
