@@ -541,7 +541,7 @@ void AP_Logger_Block::stop_logging_async(void)
 void AP_Logger_Block::start_new_log(void)
 {
     if (erase_started) {
-        // already erasing
+        // currently erasing
         return;
     }
 

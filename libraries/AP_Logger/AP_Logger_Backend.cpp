@@ -100,7 +100,6 @@ void AP_Logger_Backend::start_new_log_reset_variables()
     _dropped = 0;
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
-    _log_file_size_bytes = 0;
     _formats_written.clearall();
 }
 
@@ -709,7 +708,6 @@ void AP_Logger_Backend::df_stats_gather(const uint16_t bytes_written, uint32_t s
     }
     stats.buf_space_sigma += space_remaining;
     stats.bytes += bytes_written;
-    _log_file_size_bytes += bytes_written;
     stats.blocks++;
 }
 
