@@ -97,13 +97,12 @@ void AP_Proximity_LightWareSF45B::process_replies()
     }
 
     // process up to 1K of characters per iteration
-    uint32_t nbytes = MIN(_uart->available(), 1024U);
-    while (nbytes-- > 0) {
-        const int16_t r = _uart->read();
-        if ((r < 0) || (r > 0xFF)) {
-            continue;
+    for (auto i=0; i<1024; i++) {
+        uint8_t r;
+        if (!_uart->read(r)) {
+            break;
         }
-        if (parse_byte((uint8_t)r)) {
+        if (parse_byte(r)) {
             process_message();
         }
     }

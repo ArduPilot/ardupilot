@@ -62,12 +62,10 @@ bool AP_Proximity_TeraRangerTower::read_sensor_data()
     }
 
     uint16_t message_count = 0;
-    int16_t nbytes = _uart->available();
-
-    while (nbytes-- > 0) {
-        int16_t c = _uart->read();
-        if (c==-1) {
-            return false;
+    for (auto i=0; i<INT16_MAX; i++) {  // process at most n bytes
+        uint8_t c;
+        if (!_uart->read(c)) {
+            break;
         }
         if (char(c) == 'T' ) {
             buffer_count = 0;
