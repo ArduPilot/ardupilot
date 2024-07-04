@@ -12,10 +12,10 @@ local SWEEP_ACTION_CHANNEL = 6 -- RCIN channel to start a SWEEP when high (>1700
 local SWEEP_CHOICE_CHANNEL = 7 -- RCIN channel to choose elevator (low) or rudder (high)
 local SWEEP_FUCNTION = 1 -- which control surface (SERVOx_FUNCTION) number will have a SWEEP happen
 -- A (Servo 1, Function 4), E (Servo 2, Function 19), and R (Servo 4, Function 21)
-local SWEEP_MAGNITUDE = 200 -- defined out of 45 deg used for set_output_scaled
+local SWEEP_MAGNITUDE = 50 -- defined out of 45 deg used for set_output_scaled
 local SWEEP_TIME = 120000 -- period of SWEEP signal in ms
 local start_freq = 0.05 -- start freqeuncy in hz
-local end_freqeuncy = 5 -- end freqeuncy in Hz
+local end_freqeuncy = 5.00 -- end freqeuncy in Hz
 local k = (end_freqeuncy-start_freq)/SWEEP_TIME -- rate of change of frequency in sweep
 local t_i = 0
 local amplitude_sent = 0
@@ -42,7 +42,8 @@ local input = 9
 local start_freq_rads = 2 * math.pi * start_freq
 local end_freq_rads = 2 * math.pi * end_freqeuncy
 local B = math.log(end_freq_rads / start_freq_rads)
-local k = B / SWEEP_TIME
+local k = (end_freqeuncy - start_freq)*1000 / SWEEP_TIME
+local callback_time = 40
 
 
 local interesting_data = {}
@@ -74,7 +75,6 @@ local function write_to_dataflash()
 function SWEEP(pre_SWEEP_elevator, pre_SWEEP_aileron, pre_SWEEP_rudder, pre_SWEEP_throttle)
     local now = millis()
     local SWEEP_choice_pwm = rc:get_pwm(SWEEP_CHOICE_CHANNEL)
-    local callback_time = 10
     if rc:get_pwm(SWEEP_ACTION_CHANNEL) < 1700 then
         pre_SWEEP_elevator = SRV_Channels:get_output_pwm(K_ELEVATOR)
         pre_SWEEP_aileron = SRV_Channels:get_output_pwm(K_AILERON)
@@ -121,11 +121,11 @@ function SWEEP(pre_SWEEP_elevator, pre_SWEEP_aileron, pre_SWEEP_rudder, pre_SWEE
         if start_time == -1 then
             start_time = now
             gcs:send_text(6, "STARTING SWEEP " .. SWEEP_srv_chan)
-            retry_set_mode(MODE_MANUAL)
+            retry_set_mode(MODE_FBWA)
         end
         if now < (start_time + (SWEEP_TIME)) then
             gcs:send_text(6, "in sweep loop" .. SWEEP_srv_chan)
-            t_i = tonumber(tostring(now - start_time))
+            t_i = tonumber(tostring(now - start_time))/1000
             amplitude_sent = SWEEP_MAGNITUDE*math.sin(tonumber(2*math.pi*(start_freq * t_i + (k / 2) * t_i*t_i)))
             -- amplitude_sent = SWEEP_MAGNITUDE * math.sin(start_freq_rads * (math.exp(k * t_i) - 1) / k)
             amplitude_sent = math.floor(amplitude_sent)
@@ -144,7 +144,7 @@ function SWEEP(pre_SWEEP_elevator, pre_SWEEP_aileron, pre_SWEEP_rudder, pre_SWEE
                 interesting_data[acc_y] = acc:y()
                 interesting_data[acc_z] = acc:z()
                 interesting_data[RcOut] = op
-                interesting_data[t_log] = t_i/1000
+                interesting_data[t_log] = t_i
                 interesting_data[input] = amplitude_sent
                 write_to_dataflash()
             else
@@ -173,4 +173,4 @@ local pre_SWEEP_elevator = SRV_Channels:get_output_pwm(K_ELEVATOR)
 local pre_SWEEP_aileron = SRV_Channels:get_output_pwm(K_AILERON)
 local pre_SWEEP_rudder = SRV_Channels:get_output_pwm(K_RUDDER)
 local pre_SWEEP_throttle = SRV_Channels:get_output_pwm(K_THROTTLE)
-return SWEEP(pre_SWEEP_elevator, pre_SWEEP_aileron, pre_SWEEP_rudder, pre_SWEEP_throttle), 40
+return SWEEP(pre_SWEEP_elevator, pre_SWEEP_aileron, pre_SWEEP_rudder, pre_SWEEP_throttle), callback_time
