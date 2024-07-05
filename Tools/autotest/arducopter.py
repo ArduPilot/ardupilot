@@ -11644,6 +11644,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.Clamp,
             self.GripperReleaseOnThrustLoss,
             self.REQUIRE_POSITION_FOR_ARMING,
+            self.LoggingFormat,
         ])
         return ret
 
