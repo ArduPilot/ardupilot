@@ -413,7 +413,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
 {
     uint8_t gdl90FrameBuffer[GDL90_TX_MAX_FRAME_LENGTH] {};
 
-    const uint16_t frameCrc = crc16_ccitt_GDL90((uint8_t*)&message.raw, length, 0);
+    const uint16_t frameCrc = cksum_GDL90((uint8_t*)&message.raw, length);
 
     // Set flag byte in frame buffer
     gdl90FrameBuffer[0] = GDL90_FLAG_BYTE;
@@ -491,7 +491,7 @@ bool AP_ADSB_uAvionix_UCP::parseByte(const uint8_t data, GDL90_RX_MESSAGE &msg, 
 
             // NOTE: status.length contains messageId, payload and CRC16. So status.length-3 is effective payload length
             msg.crc = (uint16_t)crc_LSB | ((uint16_t)crc_MSB << 8);
-            const uint16_t crc = crc16_ccitt_GDL90((uint8_t*)&msg.raw, status.length-2, 0);
+            const uint16_t crc = cksum_GDL90((uint8_t*)&msg.raw, status.length-2);
             if (crc == msg.crc) {
                 status.prev_data = data;
                 // NOTE: this is the only path that returns true
