@@ -41,10 +41,6 @@ uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
 uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t out);
 
-// CRC16_CCITT algorithm using the GDL90 parser method which is non-standard
-// https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
-uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc);
-
 uint16_t crc_modbus(const uint8_t *buf, uint16_t len);
 
 // CRC-64-WE using the polynomial of 0x42F0E1EBA9EA3693

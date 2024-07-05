@@ -449,14 +449,6 @@ uint16_t crc16_ccitt_r(const uint8_t *buf, uint32_t len, uint16_t crc, uint16_t 
 	return crc;
 }
 
-uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc)
-{
-    for (uint32_t i = 0; i < len; i++) {
-        crc = crc16tab[crc >> 8] ^ (crc << 8) ^ (uint16_t) *buf++;
-    }
-    return crc;
-}
-
 /**
  * Calculate Modbus CRC16 for array of bytes
  * 

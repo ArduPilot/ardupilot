@@ -25,6 +25,10 @@ uint16_t cksum_fletcher16(const uint8_t * buffer, uint32_t len);
 #define FNV_1_OFFSET_BASIS_64 14695981039346656037UL
 void cksum_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
 
+// used by GDL90 ADSB protocol. claims to be a CRC, and uses one, but is not.
+// https://www.faa.gov/nextgen/programs/adsb/archival/media/gdl90_public_icd_reva.pdf
+uint16_t cksum_GDL90(const uint8_t *buf, uint32_t len);
+
 // checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
 // sum, then adds those two bytes together.  Returns the complement of
 // the final sum.

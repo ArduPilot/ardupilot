@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include "checksum.h"
+#include "crc.h"
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
@@ -42,6 +43,16 @@ void cksum_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
         *hash ^= (uint64_t)buf[i];
         *hash *= FNV_1_PRIME_64;
     }
+}
+
+uint16_t cksum_GDL90(const uint8_t *buf, uint32_t len)
+{
+    uint8_t zero = 0;
+    uint16_t result = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        result = crc16_ccitt(&zero, 1, result) ^ *buf++;
+    }
+    return result;
 }
 
 // simple 8 bit checksum used by FPort
