@@ -1260,7 +1260,12 @@ class ChibiOSHWDef(object):
 #endif
 #define STM32_FLASH_DISABLE_ISR 0
 ''')
-            if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
+            # get bootloader flash space, if larger than 128k we can enable Heap
+            flash_size = self.get_config('FLASH_USE_MAX_KB', type=int, default=0)
+            if flash_size == 0:
+                flash_size = self.get_config('FLASH_SIZE_KB', type=int)
+            flash_length = min(flash_size, self.get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
+            if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw and flash_length < 128:
                 f.write('''
 #ifndef CH_CFG_USE_MEMCORE
 #define CH_CFG_USE_MEMCORE FALSE
