@@ -78,7 +78,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
             struct i2c_integral_frame frame;
             success = tdev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame));
             if (success) {
-                printf("Found PX4Flow on bus %u\n", bus);
+                printf("Found PX4Flow on bus %u\n", unsigned(bus));
                 dev = std::move(tdev);
                 break;
             }
