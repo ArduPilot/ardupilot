@@ -17,6 +17,7 @@
 #if AP_BARO_SPL06_ENABLED
 
 #include <utility>
+#include <strings.h>
 #include <AP_Math/definitions.h>
 
 extern const AP_HAL::HAL &hal;
