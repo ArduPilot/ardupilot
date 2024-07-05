@@ -97,3 +97,9 @@
 #ifndef AP_BARO_PROBE_EXT_PARAMETER_ENABLED
 #define AP_BARO_PROBE_EXT_PARAMETER_ENABLED AP_BARO_PROBE_EXTERNAL_I2C_BUSES || AP_BARO_MSP_ENABLED
 #endif
+
+#ifndef AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
+// default to using the extended functions when doing double precision EKF (which implies more flash space and faster MCU)
+// this allows for using the simple model with the --ekf-single configure option
+#define AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED HAL_WITH_EKF_DOUBLE || AP_SIM_ENABLED
+#endif
