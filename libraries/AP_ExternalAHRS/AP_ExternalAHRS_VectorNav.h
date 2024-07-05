@@ -61,10 +61,12 @@ private:
     void update_thread();
     bool check_uart();
 
+    void initialize();
+
     void process_ins_packet1(const uint8_t *b);
     void process_ins_packet2(const uint8_t *b);
     void process_ahrs_packet(const uint8_t *b);
-    void wait_register_responce(const uint8_t register_num);
+    void send_command_blocking();
 
     uint8_t *pktbuf;
     uint16_t pktoffset;
@@ -83,22 +85,21 @@ private:
 
     bool has_dual_gnss = false;
 
-    char model_name[25];
+    char model_name[20];
 
+    char message_to_send[50];
     // NMEA parsing for setup
     bool decode(char c);
     bool decode_latest_term();
     struct NMEA_parser {
-        char term[25];            // buffer for the current term within the current sentence
+        char term[20];            // buffer for the current term within the current sentence
         uint8_t term_offset;      // offset within the _term buffer where the next character should be placed
         uint8_t term_number;      // term index within the current sentence
         uint8_t checksum;         // checksum accumulator
         bool term_is_checksum;    // current term is the checksum
         bool sentence_valid;      // is current sentence valid so far
         bool sentence_done;       // true if this sentence has already been decoded
-        uint8_t register_number;  // VectorNAV register number were reading
     } nmea;
-
 };
 
 #endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
