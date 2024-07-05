@@ -112,10 +112,10 @@ void *_malloc_r(_reent *x, size_t size)
     return ret;
 }
 
-#elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && CONFIG_HAL_BOARD != HAL_BOARD_QURT
 /*
   wrapper around malloc to ensure all memory is initialised as zero
-  ChibiOS has its own wrapper
+  ChibiOS and QURT have their own wrappers
  */
 extern "C" {
     void *__wrap_malloc(size_t size);
