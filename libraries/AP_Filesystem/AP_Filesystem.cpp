@@ -16,6 +16,9 @@
 #include "AP_Filesystem.h"
 
 #include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_FILE_READING_ENABLED
+
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_Math/AP_Math.h>
@@ -202,7 +205,9 @@ AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
         (strlen(pathname) == 1 && pathname[0] == '/')) {
         virtual_dirent.backend_ofs = 0;
         virtual_dirent.d_off = 0;
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         virtual_dirent.de.d_type = DT_DIR;
+#endif
     } else {
         virtual_dirent.backend_ofs = 255;
     }
@@ -430,3 +435,4 @@ AP_Filesystem &FS()
 }
 }
 
+#endif // AP_FILESYSTEM_FILE_READING_ENABLED
