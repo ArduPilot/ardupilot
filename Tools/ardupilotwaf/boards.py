@@ -43,7 +43,10 @@ class Board:
     def configure(self, cfg):
         cfg.env.TOOLCHAIN = cfg.options.toolchain or self.toolchain
         cfg.env.ROMFS_FILES = []
-        cfg.load('toolchain')
+        if hasattr(self,'configure_toolchain'):
+            self.configure_toolchain(cfg)
+        else:
+            cfg.load('toolchain')
         cfg.load('cxx_checks')
 
         # don't check elf symbols by default
@@ -198,6 +201,8 @@ class Board:
             cfg.msg("Configured VSCode Intellisense:", 'no', color='YELLOW')
 
     def cc_version_gte(self, cfg, want_major, want_minor):
+        if cfg.env.TOOLCHAIN == "custom":
+            return True
         (major, minor, patchlevel) = cfg.env.CC_VERSION
         return (int(major) > want_major or
                 (int(major) == want_major and int(minor) >= want_minor))
@@ -206,6 +211,8 @@ class Board:
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
         env.DEFINES = {}
+
+        env.with_can = self.with_can
 
         # potentially set extra defines from an environment variable:
         if cfg.options.define is not None:
@@ -1646,3 +1653,99 @@ class SITL_x86_64_linux_gnu(SITL_static):
 
 class SITL_arm_linux_gnueabihf(SITL_static):
     toolchain = 'arm-linux-gnueabihf'
+
+class QURT(Board):
+    '''support for QURT based boards'''
+    toolchain = 'custom'
+
+    def __init__(self):
+        self.with_can = False
+
+    def configure_toolchain(self, cfg):
+        cfg.env.CXX_NAME = 'gcc'
+        cfg.env.HEXAGON_SDK_DIR = "/opt/hexagon-sdk/4.1.0.4-lite"
+        cfg.env.CC_VERSION = ('4','1','0')
+        cfg.env.TOOLCHAIN_DIR = cfg.env.HEXAGON_SDK_DIR + "/tools/HEXAGON_Tools/8.4.05/Tools"
+        cfg.env.COMPILER_CC = cfg.env.TOOLCHAIN_DIR + "/bin/hexagon-clang"
+        cfg.env.COMPILER_CXX = cfg.env.TOOLCHAIN_DIR + "/bin/hexagon-clang++"
+        cfg.env.LINK_CXX = cfg.env.HEXAGON_SDK_DIR + "/tools/HEXAGON_Tools/8.4.05/Tools/bin/hexagon-link"
+        cfg.env.CXX = ["ccache", cfg.env.COMPILER_CXX]
+        cfg.env.CC = ["ccache", cfg.env.COMPILER_CC]
+        cfg.env.CXX_TGT_F = ['-c', '-o']
+        cfg.env.CC_TGT_F = ['-c', '-o']
+        cfg.env.CCLNK_SRC_F = []
+        cfg.env.CXXLNK_SRC_F = []
+        cfg.env.CXXLNK_TGT_F = ['-o']
+        cfg.env.CCLNK_TGT_F = ['-o']
+        cfg.env.CPPPATH_ST = '-I%s'
+        cfg.env.DEFINES_ST = '-D%s'
+        cfg.env.AR = cfg.env.HEXAGON_SDK_DIR + "/tools/HEXAGON_Tools/8.4.05/Tools/bin/hexagon-ar"
+        cfg.env.ARFLAGS = 'rcs'
+        cfg.env.cxxstlib_PATTERN = 'lib%s.a'
+        cfg.env.cstlib_PATTERN = 'lib%s.a'
+        cfg.env.LIBPATH_ST = '-L%s'
+        cfg.env.LIB_ST = '-l%s'
+        cfg.env.SHLIB_MARKER = ''
+        cfg.env.STLIBPATH_ST = '-L%s'
+        cfg.env.STLIB_MARKER = ''
+        cfg.env.STLIB_ST = '-l%s'
+        cfg.env.LDFLAGS = [
+            '-lgcc',
+            cfg.env.TOOLCHAIN_DIR + '/target/hexagon/lib/v66/G0/pic/finiS.o'
+        ]
+
+    def configure_env(self, cfg, env):
+        super(QURT, self).configure_env(cfg, env)
+
+        env.BOARD_CLASS = "QURT"
+        env.HEXAGON_APP = "libardupilot.so"
+        env.INCLUDES += [cfg.env.HEXAGON_SDK_DIR + "/rtos/qurt/computev66/include/qurt"]
+        env.INCLUDES += [cfg.env.HEXAGON_SDK_DIR + "/rtos/qurt/computev66/include/posix"]
+
+        CFLAGS = "-MD -mv66 -fPIC -mcpu=hexagonv66 -G0 -fdata-sections -ffunction-sections -fomit-frame-pointer -fmerge-all-constants -fno-signed-zeros -fno-trapping-math -freciprocal-math -fno-math-errno -fno-strict-aliasing -fvisibility=hidden -fno-rtti -fmath-errno"
+        env.CXXFLAGS += CFLAGS.split()
+        env.CFLAGS += CFLAGS.split()
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_QURT',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SIM_ENABLED = 0,
+        )
+
+        env.LINKFLAGS = [
+            "-march=hexagon",
+            "-mcpu=hexagonv66",
+            "-shared",
+            "-call_shared",
+            "-G0",
+            cfg.env.TOOLCHAIN_DIR + "/target/hexagon/lib/v66/G0/pic/initS.o",
+            f"-L{cfg.env.TOOLCHAIN_DIR}/target/hexagon/lib/v66/G0/pic",
+            "-Bsymbolic",
+            cfg.env.TOOLCHAIN_DIR + "/target/hexagon/lib/v66/G0/pic/libgcc.a",
+            "--wrap=malloc",
+            "--wrap=calloc",
+            "--wrap=free",
+            "--wrap=realloc",
+            "--wrap=printf",
+            "--wrap=strdup",
+            "--wrap=__stack_chk_fail",
+            "-lc"
+        ]
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
+        env.AP_LIBRARIES += [
+            'AP_HAL_QURT',
+        ]
+
+    def build(self, bld):
+        super(QURT, self).build(bld)
+        bld.load('qurt')
+
+    def get_name(self):
+        # get name of class
+        return self.__class__.__name__
+    
