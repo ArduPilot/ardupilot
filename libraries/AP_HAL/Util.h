@@ -5,6 +5,10 @@
 #include "AP_HAL_Namespace.h"
 #include <AP_Logger/AP_Logger_config.h>
 
+#ifndef ENABLE_HEAP
+#define ENABLE_HEAP 0
+#endif
+
 class ExpandingString;
 
 class AP_HAL::Util {
@@ -149,7 +153,7 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) = 0;
     virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) = 0;
