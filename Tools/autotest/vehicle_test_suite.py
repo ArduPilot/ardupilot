@@ -4522,6 +4522,63 @@ class TestSuite(ABC):
         self.onboard_logging_log_disarmed()
         self.onboard_logging_not_log_disarmed()
 
+    def LoggingFormatSanityChecks(self, path):
+        dfreader = self.dfreader_for_path(path)
+        first_message = dfreader.recv_match()
+        if first_message.get_type() != 'FMT':
+            raise NotAchievedException("Expected first message to be a FMT message")
+        if first_message.Name != 'FMT':
+            raise NotAchievedException("Expected first message to be the FMT FMT message")
+
+        self.progress("Ensuring DCM format is received")  # it's a WriteStreaming message...
+        while True:
+            m = dfreader.recv_match(type='FMT')
+            if m is None:
+                raise NotAchievedException("Did not find DCM format")
+            if m.Name != 'DCM':
+                continue
+            self.progress("Found DCM format")
+            break
+
+        self.progress("No message should appear before its format")
+        dfreader.rewind()
+        seen_formats = set()
+        while True:
+            m = dfreader.recv_match()
+            if m is None:
+                break
+            m_type = m.get_type()
+            if m_type == 'FMT':
+                seen_formats.add(m.Name)
+                continue
+            if m_type not in seen_formats:
+                raise ValueError(f"{m_type} seen before its format")
+        #  print(f"{m_type} OK")
+
+    def LoggingFormat(self):
+        '''ensure formats are emmitted appropriately'''
+
+        self.context_push()
+        self.set_parameter('LOG_FILE_DSRMROT', 1)
+        self.wait_ready_to_arm()
+        for i in range(3):
+            self.arm_vehicle()
+            self.delay_sim_time(5)
+            path = self.current_onboard_log_filepath()
+            self.disarm_vehicle()
+            self.LoggingFormatSanityChecks(path)
+        self.context_pop()
+
+        self.context_push()
+        for i in range(3):
+            self.set_parameter("LOG_DISARMED", 1)
+            self.reboot_sitl()
+            self.delay_sim_time(5)
+            path = self.current_onboard_log_filepath()
+            self.set_parameter("LOG_DISARMED", 0)
+            self.LoggingFormatSanityChecks(path)
+        self.context_pop()
+
     def TestLogDownloadMAVProxy(self, upload_logs=False):
         """Download latest log."""
         filename = "MAVProxy-downloaded-log.BIN"
