@@ -404,7 +404,15 @@ void AP_ExternalAHRS_VectorNav::initialize() {
     // Open port in the thread
     uart->begin(baudrate, 1024, 512);
 
-    hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,06,0");
+    // Pause asynchronous communications to simplify packet finding
+    hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNASY,0");
+    send_command_blocking();
+
+    // Stop ASCII async outputs for both UARTs. If only active UART is disabled, we get a baudrate
+    // overflow on the other UART when configuring binary outputs (reg 75 and 76) to both UARTs
+    hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,06,1");
+    send_command_blocking();
+    hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,06,2");
     send_command_blocking();
 
     // Read Model Number Register, ID 1
@@ -438,6 +446,9 @@ void AP_ExternalAHRS_VectorNav::initialize() {
         send_command_blocking();
     }
 
+    // Resume asynchronous communications
+    hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNASY,1");
+    send_command_blocking();
     setup_complete = true;
 }
 
