@@ -753,8 +753,10 @@ class sitl(Board):
         ]
 
         # wrap malloc to ensure memory is zeroed
-        # don't do this on MacOS as ld doesn't support --wrap
-        if platform.system() != 'Darwin':
+        if cfg.env.DEST_OS == 'cygwin':
+            # on cygwin we need to wrap _malloc_r instead
+            env.LINKFLAGS += ['-Wl,--wrap,_malloc_r']
+        elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
         
         if cfg.options.enable_sfml:
