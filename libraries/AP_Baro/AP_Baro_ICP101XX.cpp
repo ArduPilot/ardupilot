@@ -109,7 +109,7 @@ bool AP_Baro_ICP101XX::init()
     
     dev->get_semaphore()->give();
 
-    dev->register_periodic_callback(measure_interval/2, FUNCTOR_BIND_MEMBER(&AP_Baro_ICP101XX::timer, void));
+    dev->register_periodic_callback(measure_interval, FUNCTOR_BIND_MEMBER(&AP_Baro_ICP101XX::timer, void));
 
     return true;
 
