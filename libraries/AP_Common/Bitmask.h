@@ -39,16 +39,12 @@ public:
     }
 
     Bitmask &operator=(const Bitmask&other) {
-        memcpy(bits, other.bits, sizeof(bits[0])*other.numwords);
+        memcpy(bits, other.bits, sizeof(bits[0])*numwords);
         return *this;
     }
 
     bool operator==(const Bitmask&other) {
-        if (other.numbits != numbits) {
-            return false;
-        } else {
-            return memcmp(bits, other.bits, sizeof(bits[0])*numwords) == 0;
-        }
+        return memcmp(bits, other.bits, sizeof(bits[0])*numwords) == 0;
     }
 
     bool operator!=(const Bitmask&other) {
