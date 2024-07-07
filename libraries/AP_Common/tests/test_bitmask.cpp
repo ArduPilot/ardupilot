@@ -48,6 +48,12 @@ void bitmask_tests(void)
     x2 = x;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    x.clear(N+1);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(x.clear(N+1), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bitmask_range");
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     x.set(N+1);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     EXPECT_EXIT(x.set(N+1), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bitmask_range");
@@ -58,7 +64,8 @@ void bitmask_tests(void)
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    EXPECT_EQ(x2.get(N+1), x.get(N+1));
+    EXPECT_EQ(false, x.get(N+1));
+    EXPECT_EQ(false, x2.get(N+1));
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     EXPECT_EXIT(x2.get(N+1), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bitmask_range");
 #endif
@@ -81,8 +88,10 @@ void bitmask_setall(void)
     Bitmask<N> x;
     EXPECT_EQ(-1, x.first_set());
     EXPECT_EQ(false, x.get(N-4));
+    EXPECT_EQ(0, x.count());
     x.setall();
     EXPECT_EQ(0, x.first_set());
+    EXPECT_EQ(N, x.count());
     x.clear(0);
     EXPECT_EQ(1, x.first_set());
     x.clear(1);
@@ -93,6 +102,7 @@ void bitmask_setall(void)
     EXPECT_EQ(-1, x.first_set());
     EXPECT_EQ(false, x.get(N-4));
     EXPECT_EQ(true, x.empty());
+    EXPECT_EQ(0, x.count());
 }
 
 TEST(Bitmask, SetAll31) { bitmask_setall<31>(); }
@@ -116,6 +126,7 @@ void bitmask_assignment(void)
 
     Bitmask<N> y;
     y = x;
+    EXPECT_EQ(true, x == y);
     x.clear(0);
     EXPECT_EQ(true, y.get(0));
     EXPECT_EQ(true, y.get(5));
