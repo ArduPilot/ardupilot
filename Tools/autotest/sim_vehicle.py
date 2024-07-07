@@ -1340,6 +1340,10 @@ group_sim.add_option("--enable-ppp", action='store_true',
                      help="Enable PPP networking")
 group_sim.add_option("--enable-networking-tests", action='store_true',
                      help="Enable networking tests")
+group_sim.add_option("--rc-override",
+                     type='int',
+                     default=1,
+                     help="Enable MAVLink RC Override")
 
 parser.add_option_group(group_sim)
 
