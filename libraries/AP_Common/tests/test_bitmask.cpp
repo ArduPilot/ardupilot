@@ -64,10 +64,16 @@ void bitmask_tests(void)
 #endif
 }
 
-TEST(Bitmask, Tests)
-{
-    bitmask_tests<49>();
-}
+// bitmasks are composed of 32 bit words, so test those boundaries
+TEST(Bitmask, Tests31) { bitmask_tests<31>(); }
+TEST(Bitmask, Tests32) { bitmask_tests<32>(); }
+TEST(Bitmask, Tests33) { bitmask_tests<33>(); }
+TEST(Bitmask, Tests47) { bitmask_tests<47>(); }
+TEST(Bitmask, Tests48) { bitmask_tests<48>(); }
+TEST(Bitmask, Tests49) { bitmask_tests<49>(); }
+TEST(Bitmask, Tests63) { bitmask_tests<63>(); }
+TEST(Bitmask, Tests64) { bitmask_tests<64>(); }
+TEST(Bitmask, Tests65) { bitmask_tests<65>(); }
 
 template<int N>
 void bitmask_setall(void)
@@ -89,10 +95,15 @@ void bitmask_setall(void)
     EXPECT_EQ(true, x.empty());
 }
 
-TEST(Bitmask, SetAll)
-{
-    bitmask_setall<49>();
-}
+TEST(Bitmask, SetAll31) { bitmask_setall<31>(); }
+TEST(Bitmask, SetAll32) { bitmask_setall<32>(); }
+TEST(Bitmask, SetAll33) { bitmask_setall<33>(); }
+TEST(Bitmask, SetAll47) { bitmask_setall<47>(); }
+TEST(Bitmask, SetAll48) { bitmask_setall<48>(); }
+TEST(Bitmask, SetAll49) { bitmask_setall<49>(); }
+TEST(Bitmask, SetAll63) { bitmask_setall<63>(); }
+TEST(Bitmask, SetAll64) { bitmask_setall<64>(); }
+TEST(Bitmask, SetAll65) { bitmask_setall<65>(); }
 
 template<int N>
 void bitmask_assignment(void)
@@ -112,10 +123,15 @@ void bitmask_assignment(void)
     EXPECT_EQ(true, y.get(N-1));
 }
 
-TEST(Bitmask, Assignment)
-{
-    bitmask_assignment<49>();
-}
+TEST(Bitmask, Assignment31) { bitmask_assignment<31>(); }
+TEST(Bitmask, Assignment32) { bitmask_assignment<32>(); }
+TEST(Bitmask, Assignment33) { bitmask_assignment<33>(); }
+TEST(Bitmask, Assignment47) { bitmask_assignment<47>(); }
+TEST(Bitmask, Assignment48) { bitmask_assignment<48>(); }
+TEST(Bitmask, Assignment49) { bitmask_assignment<49>(); }
+TEST(Bitmask, Assignment63) { bitmask_assignment<63>(); }
+TEST(Bitmask, Assignment64) { bitmask_assignment<64>(); }
+TEST(Bitmask, Assignment65) { bitmask_assignment<65>(); }
 
 AP_GTEST_PANIC()
 AP_GTEST_MAIN()
