@@ -23,28 +23,28 @@
 
 #include <AP_InternalError/AP_InternalError.h>
 
-template<uint16_t num_bits>
+template<uint16_t NUMBITS>
 class Bitmask {
-    static_assert(num_bits > 0, "must store something");
+    static constexpr uint16_t NUMWORDS = ((NUMBITS+31)/32);
+
+    static_assert(NUMBITS > 0, "must store something");
     // for first_set()'s return value
-    static_assert(num_bits <= INT16_MAX, "must fit in int16_t");
+    static_assert(NUMBITS <= INT16_MAX, "must fit in int16_t");
     // so that 1U << bits is in range
     static_assert(sizeof(unsigned int) >= sizeof(uint32_t), "int too small");
 
 public:
-    Bitmask() :
-        numbits(num_bits),
-        numwords((num_bits+31)/32) {
+    Bitmask() {
         clearall();
     }
 
     Bitmask &operator=(const Bitmask&other) {
-        memcpy(bits, other.bits, sizeof(bits[0])*numwords);
+        memcpy(bits, other.bits, sizeof(bits[0])*NUMWORDS);
         return *this;
     }
 
     bool operator==(const Bitmask&other) {
-        return memcmp(bits, other.bits, sizeof(bits[0])*numwords) == 0;
+        return memcmp(bits, other.bits, sizeof(bits[0])*NUMWORDS) == 0;
     }
 
     bool operator!=(const Bitmask&other) {
@@ -66,13 +66,13 @@ public:
     // set all bits
     void setall(void) {
         // set all words to 111...
-        for (uint16_t i=0; i<numwords; i++) {
+        for (uint16_t i=0; i<NUMWORDS; i++) {
             bits[i] = 0xffffffff;
         }
         // ensure out-of-range bits in the last word, if any exist, are 0
-        uint16_t num_valid_bits = numbits % 32;
+        uint16_t num_valid_bits = NUMBITS % 32;
         if (num_valid_bits) { // word has out of range bits
-            bits[numwords-1] = (1U << num_valid_bits) - 1;
+            bits[NUMWORDS-1] = (1U << num_valid_bits) - 1;
         }
     }
 
@@ -97,7 +97,7 @@ public:
 
     // clear all bits
     void clearall(void) {
-        memset(bits, 0, numwords*sizeof(bits[0]));
+        memset(bits, 0, NUMWORDS*sizeof(bits[0]));
     }
 
     // return true if given bitnumber is set
@@ -112,7 +112,7 @@ public:
 
     // return true if all bits are clear
     bool empty(void) const {
-        for (uint16_t i=0; i<numwords; i++) {
+        for (uint16_t i=0; i<NUMWORDS; i++) {
             if (bits[i] != 0) {
                 return false;
             }
@@ -123,7 +123,7 @@ public:
     // return number of bits set
     uint16_t count() const {
         uint16_t sum = 0;
-        for (uint16_t i=0; i<numwords; i++) {
+        for (uint16_t i=0; i<NUMWORDS; i++) {
             sum += __builtin_popcount(bits[i]);
         }
         return sum;
@@ -131,7 +131,7 @@ public:
 
     // return first bit set, or -1 if none set
     int16_t first_set() const {
-        for (uint16_t i=0; i<numwords; i++) {
+        for (uint16_t i=0; i<NUMWORDS; i++) {
             if (bits[i] != 0) {
                 return i*32 + __builtin_ffs(bits[i]) - 1;
             }
@@ -141,19 +141,17 @@ public:
 
     // return number of bits available
     uint16_t size() const {
-        return numbits;
+        return NUMBITS;
     }
 
 private:
     bool validate(uint16_t bit) const {
-        if (bit >= numbits) {
+        if (bit >= NUMBITS) {
             INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
             return false;
         }
         return true;
     }
 
-    uint16_t numbits;
-    uint16_t numwords;
-    uint32_t bits[(num_bits+31)/32];
+    uint32_t bits[NUMWORDS];
 };
