@@ -25,6 +25,12 @@
 
 template<uint16_t num_bits>
 class Bitmask {
+    static_assert(num_bits > 0, "must store something");
+    // for first_set()'s return value
+    static_assert(num_bits <= INT16_MAX, "must fit in int16_t");
+    // so that 1U << bits is in range
+    static_assert(sizeof(unsigned int) >= sizeof(uint32_t), "int too small");
+
 public:
     Bitmask() :
         numbits(num_bits),
@@ -122,13 +128,7 @@ public:
     uint16_t count() const {
         uint16_t sum = 0;
         for (uint16_t i=0; i<numwords; i++) {
-            if (sizeof(bits[i]) <= sizeof(int)) {
-                sum += __builtin_popcount(bits[i]);
-            } else if (sizeof(bits[i]) <= sizeof(long)) {
-                sum += __builtin_popcountl(bits[i]);
-            } else {
-                sum += __builtin_popcountll(bits[i]);
-            }
+            sum += __builtin_popcount(bits[i]);
         }
         return sum;
     }
@@ -136,18 +136,9 @@ public:
     // return first bit set, or -1 if none set
     int16_t first_set() const {
         for (uint16_t i=0; i<numwords; i++) {
-            if (bits[i] == 0) {
-                continue;
+            if (bits[i] != 0) {
+                return i*32 + __builtin_ffs(bits[i]) - 1;
             }
-            int fs;
-            if (sizeof(bits[i]) <= sizeof(int)) {
-                fs = __builtin_ffs(bits[i]);
-            } else if (sizeof(bits[i]) <= sizeof(long)) {
-                fs = __builtin_ffsl(bits[i]);
-            } else {
-                fs = __builtin_ffsll(bits[i]);
-            }
-            return i*32 + fs - 1;
         }
         return -1;
     }
