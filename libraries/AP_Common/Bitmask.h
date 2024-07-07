@@ -65,13 +65,15 @@ public:
 
     // set all bits
     void setall(void) {
-        // set all words to 111... except the last one.
-        for (uint16_t i=0; i<numwords-1; i++) {
+        // set all words to 111...
+        for (uint16_t i=0; i<numwords; i++) {
             bits[i] = 0xffffffff;
         }
-        // set most of the last word to 111.., leaving out-of-range bits to be 0
+        // ensure out-of-range bits in the last word, if any exist, are 0
         uint16_t num_valid_bits = numbits % 32;
-        bits[numwords-1] = (1 << num_valid_bits) - 1;
+        if (num_valid_bits) { // word has out of range bits
+            bits[numwords-1] = (1U << num_valid_bits) - 1;
+        }
     }
 
     // clear given bitnumber
