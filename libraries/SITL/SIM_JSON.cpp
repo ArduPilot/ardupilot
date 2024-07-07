@@ -323,14 +323,15 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
         airspeed_pitot = state.airspeed;
     } else {
+        
+        // wind is not supported yet for JSON sim, assume zero for now        
+        wind_ef.zero(); 
+
+        // velocity relative to airmass in Earth's frame
+        velocity_air_ef = velocity_ef - wind_ef;
+
         // velocity relative to airmass in body frame
-        velocity_air_bf = dcm.transposed() * velocity_ef;
-
-        // airspeed
-        airspeed = velocity_air_bf.length();
-
-        // airspeed as seen by a fwd pitot tube (limited to 120m/s)
-        airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
+        velocity_air_bf = dcm.transposed() * velocity_air_ef;
 
         // airspeed fix for eas2tas
         update_eas_airspeed();
