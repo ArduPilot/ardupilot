@@ -964,6 +964,9 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     case MAV_CMD_NAV_WAYPOINT:
         nan_mask = ~(1 << 3); // param 4 can be nan
         break;
+    case MAV_CMD_NAV_LOITER_UNLIM:
+        nan_mask = ~(1 << 3); // param 4 can be nan
+        break;
     case MAV_CMD_NAV_LAND:
         nan_mask = ~(1 << 3); // param 4 can be nan
         break;
