@@ -6,7 +6,6 @@
 //   level measured using the range finder.
 void Copter::SurfaceTracking::update_surface_offset()
 {
-#if AP_RANGEFINDER_ENABLED
     // check for timeout
     const uint32_t now_ms = millis();
     const bool timeout = (now_ms - last_update_ms) > SURFACE_TRACKING_TIMEOUT_MS;
@@ -43,10 +42,6 @@ void Copter::SurfaceTracking::update_surface_offset()
             reset_target = true;
         }
     }
-#else
-    copter.pos_control->set_pos_offset_z_cm(0);
-    copter.pos_control->set_pos_offset_target_z_cm(0);
-#endif
 }
 
 
