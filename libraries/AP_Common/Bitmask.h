@@ -53,10 +53,8 @@ public:
 
     // set given bitnumber
     void set(uint16_t bit) {
-        // ignore an invalid bit number
-        if (bit >= numbits) {
-            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
-            return;
+        if (!validate(bit)) {
+            return; // ignore access of invalid bit
         }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
@@ -78,6 +76,9 @@ public:
 
     // clear given bitnumber
     void clear(uint16_t bit) {
+        if (!validate(bit)) {
+            return; // ignore access of invalid bit
+        }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
         bits[word] &= ~(1U << ofs);
@@ -99,14 +100,11 @@ public:
 
     // return true if given bitnumber is set
     bool get(uint16_t bit) const {
+        if (!validate(bit)) {
+            return false; // pretend invalid bit is not set
+        }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        if (bit >= numbits) {
-            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
-            return false;
-        }
-#endif
         return (bits[word] & (1U << ofs)) != 0;
     }
 
@@ -160,6 +158,14 @@ public:
     }
 
 private:
+    bool validate(uint16_t bit) const {
+        if (bit >= numbits) {
+            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
+            return false;
+        }
+        return true;
+    }
+
     uint16_t numbits;
     uint16_t numwords;
     uint32_t bits[(num_bits+31)/32];
