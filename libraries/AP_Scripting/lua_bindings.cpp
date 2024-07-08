@@ -16,6 +16,7 @@
 #include "lua_boxed_numerics.h"
 #include <AP_Scripting/lua_generated_bindings.h>
 
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
 
