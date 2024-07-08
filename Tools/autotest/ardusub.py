@@ -382,6 +382,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
         self.context_pop()
+        self.reboot_sitl()  # e.g. revert rangefinder configuration
 
     def SimTerrainMission(self):
         """Mission at a constant height above synthetic sea floor"""
@@ -421,6 +422,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
         self.context_pop()
+        self.reboot_sitl()  # e.g. revert rangefinder configuration
 
     def ModeChanges(self, delta=0.2):
         """Check if alternating between ALTHOLD, STABILIZE, POSHOLD and SURFTRAK (mode 21) affects altitude"""
