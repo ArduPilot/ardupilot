@@ -21,6 +21,8 @@
 #include "AP_HAL_Namespace.h"
 #include "utility/functor.h"
 
+#include <utility>
+
 /*
  * This is an interface abstracting I2C and SPI devices
  */
