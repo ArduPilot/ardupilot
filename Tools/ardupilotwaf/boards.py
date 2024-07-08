@@ -983,7 +983,6 @@ class esp32(Board):
         
         # this makes sure we get the correct subtype
         env.DEFINES.update(
-            ENABLE_HEAP = 0,
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
             HAL_HAVE_HARDWARE_DOUBLE = '1',
         )
