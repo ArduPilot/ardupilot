@@ -21,9 +21,6 @@ APJ_BOARD_ID 146
 
 FLASH_SIZE_KB 2048
 
-# setup build for a peripheral firmware
-env AP_PERIPH 1
-
 EXT_FLASH_SIZE_MB 32
 
 # bootloader is installed at zero offset
