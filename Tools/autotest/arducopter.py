@@ -2421,8 +2421,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ex = e
 
         self.set_rc(2, 1500)
-        self.context_pop()
         self.reboot_sitl(force=True)
+        self.context_pop()
 
         if ex is not None:
             raise ex
@@ -2503,8 +2503,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
 
         if ex is not None:
@@ -5640,10 +5640,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
-
         self.mav.mav.srcSystem = old_srcSystem
         self.disarm_vehicle(force=True)
+
+        self.context_pop()
+
         self.reboot_sitl() # to handle MNT1_TYPE changing
 
         if ex is not None:
@@ -7149,8 +7150,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
         self.progress("All done")
 
@@ -7415,9 +7416,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_current_onboard_log_contains_message("PRX")
         self.assert_current_onboard_log_contains_message("PRXR")
 
-        self.context_pop()
-
         self.disarm_vehicle(force=True)
+
+        self.context_pop()
         self.reboot_sitl()
 
     def ProximitySensors(self):
@@ -7567,8 +7568,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
         if ex is not None:
             raise ex
@@ -9227,9 +9228,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.run_replay(current_log_filepath)
 
+        replay_log_filepath = self.current_onboard_log_filepath()
+
         self.context_pop()
 
-        replay_log_filepath = self.current_onboard_log_filepath()
         self.progress("Replay log path: %s" % str(replay_log_filepath))
 
         check_replay = util.load_local_module("Tools/Replay/check_replay.py")
@@ -10398,9 +10400,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_servo_channel_value(pump_ch, pump_ch_min)
 
+        self.disarm_vehicle(force=True)
+
         self.context_pop()
 
-        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         self.progress("Sprayer OK")
@@ -11344,7 +11347,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.delay_sim_time(1500)
 
+        self.disarm_vehicle(force=True)
+
         self.context_pop()
+
         self.reboot_sitl(force=True)
 
     def GuidedForceArm(self):
@@ -11409,6 +11415,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.install_message_hook_context(check_altitude)
 
         self.delay_sim_time(1500)
+
+        self.disarm_vehicle(force=True)
 
         self.context_pop()
         self.reboot_sitl(force=True)
@@ -11507,6 +11515,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.takeoff(30, mode='LOITER')
+        self.context_push()
+        self.context_collect('STATUSTEXT')
         self.set_parameters({
             "SIM_ENGINE_FAIL": 1,
             "SIM_ENGINE_MUL": 0.5,
@@ -11514,9 +11524,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.wait_statustext("Gripper Load Released", timeout=60)
-
         self.context_pop()
+
         self.do_RTL()
+        self.context_pop()
         self.reboot_sitl()
 
     def assert_home_position_not_set(self):

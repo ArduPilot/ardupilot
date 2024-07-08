@@ -205,6 +205,7 @@ class Context(object):
     def __init__(self):
         self.parameters = []
         self.sitl_commandline_customised = False
+        self.reboot_sitl_was_done = False
         self.message_hooks = []
         self.collections = {}
         self.heartbeat_interval_ms = 1000
@@ -2223,7 +2224,12 @@ class TestSuite(ABC):
                                        0,
                                        0)
 
-    def reboot_sitl(self, required_bootcount=None, force=False, check_position=True):
+    def reboot_sitl(self,
+                    required_bootcount=None,
+                    force=False,
+                    check_position=True,
+                    mark_context=True,
+                    ):
         """Reboot SITL instance and wait for it to reconnect."""
         if self.armed() and not force:
             raise NotAchievedException("Reboot attempted while armed")
@@ -2232,6 +2238,8 @@ class TestSuite(ABC):
         self.do_heartbeats(force=True)
         if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
             self.assert_simstate_location_is_at_startup_location()
+        if mark_context:
+            self.context_get().reboot_sitl_was_done = True
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -6290,6 +6298,9 @@ class TestSuite(ABC):
                 f.close()
             self.start_SITL(wipe=False)
             self.set_streamrate(self.sitl_streamrate())
+        elif dead.reboot_sitl_was_done:
+            self.progress("Doing implicit context-pop reboot")
+            self.reboot_sitl(mark_context=False)
 
     # the following method is broken under Python2; can't **build_opts
     # def context_start_custom_binary(self, extra_defines={}):
@@ -10070,7 +10081,6 @@ Also, ignores heartbeats not from our target system'''
             self.print_exception_caught(e)
             self.disarm_vehicle()
             ex = e
-        self.context_pop()
         self.mavproxy_unload_module(mavproxy, 'dataflash_logger')
 
         # the following things won't work - but they shouldn't die either:
@@ -10089,6 +10099,8 @@ Also, ignores heartbeats not from our target system'''
         # no response to this...
 
         self.mavproxy_unload_module(mavproxy, 'log')
+
+        self.context_pop()
 
         self.stop_mavproxy(mavproxy)
         self.reboot_sitl()

@@ -729,9 +729,10 @@ class AutoTestHelicopter(AutoTestCopter):
                 raise NotAchievedException("Never saw an airspeed1")
             if airspeed[1] is None:
                 raise NotAchievedException("Never saw an airspeed2")
-            self.context_pop()
             if not self.current_onboard_log_contains_message("ARSP"):
                 raise NotAchievedException("Expected ARSP log message")
+            self.disarm_vehicle()
+            self.context_pop()
 
         self.reboot_sitl()
 
