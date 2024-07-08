@@ -305,6 +305,10 @@ void AP_ExternalAHRS_VectorNav::send_command_blocking()
         while (nbytes-- > 0) {
             char c = uart->read();
             if (decode(c)) {
+                if (nmea.error_response) {
+                    // Received a valid VNERR. Try to resend after the timeout length
+                    break;
+                }
                 return;
             }
         }
@@ -353,6 +357,7 @@ bool AP_ExternalAHRS_VectorNav::decode(char c)
         nmea.checksum = 0;
         nmea.term_is_checksum = false;
         nmea.sentence_done = false;
+        nmea.error_response = false;
         return false;
     }
 
@@ -378,10 +383,14 @@ bool AP_ExternalAHRS_VectorNav::decode_latest_term()
             if (strncmp(nmea.term, message_to_send, nmea.term_offset) != 0) {  // ignore sync byte in comparison
                 return false;
             } else if (strncmp(nmea.term, "VNERR", nmea.term_offset) == 0) {
-                AP_HAL::panic("VectorNav received VN error response");
+                nmea.error_response = true;  // Message will be printed on next term 
             }
             break;
         case 1: 
+            if (nmea.error_response) {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "VectorNav received VNERR code: %s", nmea.term);
+                break;
+            }
             if (strncmp(nmea.term, message_to_send + 6,
                         nmea.term_offset) != 0) {  // Start after "VNXXX,"
                 return false;

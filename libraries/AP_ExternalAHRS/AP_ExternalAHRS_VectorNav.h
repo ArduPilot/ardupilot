@@ -99,6 +99,7 @@ private:
         bool term_is_checksum;    // current term is the checksum
         bool sentence_valid;      // is current sentence valid so far
         bool sentence_done;       // true if this sentence has already been decoded
+        bool error_response;      // true if received a VNERR response
     } nmea;
 };
 
