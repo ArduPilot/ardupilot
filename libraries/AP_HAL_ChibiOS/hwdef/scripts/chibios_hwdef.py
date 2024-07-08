@@ -758,7 +758,7 @@ class ChibiOSHWDef(object):
     def has_sdcard_spi(self):
         '''check for sdcard connected to spi bus'''
         for dev in self.spidev:
-            if(dev[0] == 'sdcard'):
+            if dev[0] == 'sdcard':
                 return True
         return False
 
@@ -1923,11 +1923,13 @@ INCLUDE common.ld
                 f.write("%s, " % self.get_extra_bylabel(dev + "_TXINV", "POL", "0"))
 
                 # USB endpoint ID, not used
-                f.write("0, ") 
+                f.write("0, ")
 
                 # Find and add RTS alt fuction number if avalable
                 def get_RTS_alt_function():
-                    # Typicaly we do software RTS control, so there is no requirement for the pin to have valid UART RTS alternative function
+                    # Typicaly we do software RTS control, so there is
+                    # no requirement for the pin to have valid UART
+                    # RTS alternative function
                     # If it does this enables hardware flow control for RS-485
                     lib = self.get_mcu_lib(self.mcu_type)
                     if (rts_line == "0") or (rts_line_name not in self.bylabel) or not hasattr(lib, "AltFunction_map"):
