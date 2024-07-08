@@ -172,7 +172,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def RngfndQuality(self):
         """Check lua Range Finder quality information flow"""
         self.context_push()
-        self.context_collect('STATUSTEXT')
 
         ex = None
         try:
@@ -192,6 +191,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
             self.reboot_sitl()
 
+            self.context_collect('STATUSTEXT')
             self.wait_statustext(complete_str, timeout=20, check_context=True)
             found_failure = self.statustext_in_collections(failure_str)
 
