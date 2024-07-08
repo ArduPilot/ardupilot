@@ -112,7 +112,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(alt-alt_epsilon, alt+alt_epsilon, relative=True, timeout=timeout)
         self.context_pop()
 
-    def takeoff_in_FBWA(self, alt=150, alt_max=None, relative=True, mode=None, timeout=30):
+    def takeoff_in_FBWA(self, alt=150, alt_max=None, relative=True, mode=None, timeout=30, throttle=2000):
         if alt_max is None:
             alt_max = alt + 30
 
@@ -141,7 +141,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # hit the gas harder now, and give it some more elevator
         self.set_rc_from_map({
             2: 1100,
-            3: 2000,
+            3: throttle,
         })
 
         # gain a bit of altitude
@@ -5433,6 +5433,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             other_prearm_failures_fatal=False,
         )
 
+    def AutoTakeoffWhileFlying(self):
+        '''switch to auto with a takeoff in it while flying'''
+        self.set_parameters({
+            'TKOFF_THR_MINACC': 100,  # m/s/s, unlikely
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 30),
+        ])
+        self.wait_ready_to_arm()
+        self.takeoff_in_FBWA(3, throttle=1450)
+        self.set_rc(3, 1200)
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(3)
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5546,6 +5563,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GuidedAttitudeNoGPS,
             self.ScriptStats,
             self.GPSPreArms,
+            self.AutoTakeoffWhileFlying,
         ])
         return ret
 
