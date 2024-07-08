@@ -106,6 +106,7 @@ brand_map = {
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
     "MicoAir405v2" : ("MicoAir F405 v2.1", "MicoAir"),
     "MicoAir405Mini" : ("MicoAir F405 Mini", "MicoAir"),
+    "GEPRCF745BTHD": ("TAKER F745 BT","GEPRC"),
 }
 
 class Firmware():
