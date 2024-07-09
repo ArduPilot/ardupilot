@@ -124,13 +124,22 @@ const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
     AP_GROUPINFO("DE_PIN", 1, AP_IrisOrca, _pin_de, -1),
 
     // @Param: MAX_TRAVEL
-    // @DisplayName: Shaft max travel distance
-    // @Description: Iris Orca travel distance as measured from the zero position, which will be at one end of the actuator after zeroing.
+    // @DisplayName: Shaft max physical travel distance
+    // @Description: The max physical travel distance as measured from the zero position, which will be at one end of the actuator after zeroing.
     // @Units: mm
     // @Range: 0 300
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MAX_TRAVEL", 2, AP_IrisOrca, _max_travel_mm, 261),
+
+    // @Param: PAD_TRAVEL
+    // @DisplayName: Pad travel distance
+    // @Description: Amount to pad the physical travel distance by to ensure the actuator does not reach the physical end stops during normal motion.
+    // @Units: mm
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("PAD_TRAVEL", 3, AP_IrisOrca, _pad_travel_mm, 10),
 
     // @Param: REVERSE_DIR
     // @DisplayName: Reverse direction
@@ -500,10 +509,10 @@ void AP_IrisOrca::send_auto_zero_mode_cmd()
 // send an actuator speed position command as a value from 0 to max_travel_mm
 void AP_IrisOrca::send_actuator_position_cmd()
 {
-    // convert yaw output to actuator output in range 0 to _max_travel_mm * 1000
+    // convert yaw output to actuator output in range _pad_travel_mm to _max_travel_mm - _pad_travel_mm
     _actuator_position_desired = constrain_uint32(
         (SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t::k_steering) + 1) * _max_travel_mm * 0.5 * 1000, 
-        0, _max_travel_mm * 1000);
+        _pad_travel_mm * 1000, _max_travel_mm * 1000 - (_pad_travel_mm * 1000));
     // reverse direction if required
     if (_reverse_direction) {
         _actuator_position_desired = _max_travel_mm * 1000 - _actuator_position_desired;
