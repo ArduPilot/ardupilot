@@ -1130,10 +1130,10 @@ bool AP_Torqeedo::add_byte_to_message(uint8_t byte_to_add, uint8_t msg_buff[], u
 // value is taken directly from SRV_Channel
 // for tiller connection this sends the "Remote (0x01)" message
 // for motor connection this sends the "Motor Drive (0x82)" message
-void AP_Torqeedo::send_motor_speed_cmd()
+void AP_Torqeedo::send_motor_speed_cmd(bool set_zero_speed)
 {
     // calculate desired motor speed
-    if (!hal.util->get_soft_armed()) {
+    if (!hal.util->get_soft_armed() || set_zero_speed) {
         _motor_speed_desired = 0;
     } else {
         // convert throttle output to motor output in range -1000 to +1000
@@ -1349,16 +1349,22 @@ void AP_Torqeedo::update_esc_telem(float rpm, float voltage, float current_amps,
 void AP_Torqeedo::press_on_off_button()
 {
     if (_type == ConnectionType::TYPE_TILLER) {
+        // send zero speed command to motor
+        // Torqeedo requires a zero speed command at wake/error clear
+        send_motor_speed_cmd(true);
+
         if (_pin_onoff > -1) {
             hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
             hal.gpio->write(_pin_onoff, 1);
             hal.scheduler->delay(500);
             hal.gpio->write(_pin_onoff, 0);
+            hal.scheduler->delay(500);
         } else {
             // use serial port's RTS pin to turn on battery
             _uart->set_RTS_pin(true);
             hal.scheduler->delay(500);
             _uart->set_RTS_pin(false);
+            hal.scheduler->delay(500);
         }
     }
 }
