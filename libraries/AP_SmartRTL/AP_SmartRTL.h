@@ -48,6 +48,11 @@ public:
     // this may fail if the IO thread has taken the path semaphore
     bool peek_point(Vector3f& point);
 
+    // returns the semaphore responsible for path protection:
+    HAL_Semaphore &path_semaphore(void) {
+        return _path_sem;
+    }
+
     // clear return path and set return location if position_ok is true.  This should be called as part of the arming procedure
     // if position_ok is false, SmartRTL will not be available.
     // example sketches use the method that allows providing vehicle position directly
