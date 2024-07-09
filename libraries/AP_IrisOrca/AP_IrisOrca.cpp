@@ -132,6 +132,13 @@ const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MAX_TRAVEL", 2, AP_IrisOrca, _max_travel_mm, 261),
 
+    // @Param: REVERSE_DIR
+    // @DisplayName: Reverse direction
+    // @Description: Reverse the direction of the actuator
+    // @Values: 0:Normal,1:Reverse
+    // @User: Standard
+    AP_GROUPINFO("REVERSE_DIR", 3, AP_IrisOrca, _reverse_direction, 0),
+
     // @Param: PAD_TRAVEL
     // @DisplayName: Pad travel distance
     // @Description: Amount to pad the physical travel distance by to ensure the actuator does not reach the physical end stops during normal motion.
@@ -139,14 +146,7 @@ const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("PAD_TRAVEL", 3, AP_IrisOrca, _pad_travel_mm, 10),
-
-    // @Param: REVERSE_DIR
-    // @DisplayName: Reverse direction
-    // @Description: Reverse the direction of the actuator
-    // @Values: 0:Normal,1:Reverse
-    // @User: Standard
-    AP_GROUPINFO("REVERSE_DIR", 3, AP_IrisOrca, _reverse_direction, 0),
+    AP_GROUPINFO("PAD_TRAVEL", 4, AP_IrisOrca, _pad_travel_mm, 10),
 
     AP_GROUPEND
 };
