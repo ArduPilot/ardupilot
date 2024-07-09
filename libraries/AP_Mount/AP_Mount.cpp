@@ -163,6 +163,7 @@ void AP_Mount::init()
         case Type::Topotek:
             _backends[instance] = NEW_NOTHROW AP_Mount_Topotek(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_TOPOTEK_ENABLED
         }
