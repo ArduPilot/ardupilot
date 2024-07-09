@@ -321,7 +321,8 @@ void Sub::failsafe_gcs_check()
     uint32_t tnow = AP_HAL::millis();
 
     // Check if we have gotten a GCS heartbeat recently (GCS sysid must match SYSID_MYGCS parameter)
-    if (tnow - gcs_last_seen_ms < FS_GCS_TIMEOUT_MS) {
+    const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g.failsafe_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
+    if (tnow - gcs_last_seen_ms < gcs_timeout_ms) {
         // Log event if we are recovering from previous gcs failsafe
         if (failsafe.gcs) {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);

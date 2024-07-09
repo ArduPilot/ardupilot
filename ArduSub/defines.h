@@ -79,8 +79,8 @@ enum LoggingParameters {
 #ifndef FS_GCS
 # define FS_GCS                        DISABLED
 #endif
-#ifndef FS_GCS_TIMEOUT_MS
-# define FS_GCS_TIMEOUT_MS             2500    // gcs failsafe triggers after this number of milliseconds with no GCS heartbeat
+#ifndef FS_GCS_TIMEOUT_S
+# define FS_GCS_TIMEOUT_S             5.0    // gcs failsafe triggers after this number of seconds with no GCS heartbeat
 #endif
 
 // missing terrain data failsafe
