@@ -307,15 +307,13 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW ExternalLED()); // despite the name this is a built in set of onboard LED's
 #endif
 
-#if defined(HAL_HAVE_PIXRACER_LED)
+#if AP_NOTIFY_GPIO_LED_RGB_ENABLED
                 ADD_BACKEND(NEW_NOTHROW PixRacerLED());
-#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if AP_NOTIFY_VRBOARD_LED_ENABLED
+#elif AP_NOTIFY_VRBOARD_LED_ENABLED
                 ADD_BACKEND(NEW_NOTHROW VRBoard_LED());
-  #else
+#elif AP_NOTIFY_GPIO_LED_3_ENABLED
                 ADD_BACKEND(NEW_NOTHROW AP_BoardLED());
-  #endif
-#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
+#elif AP_NOTIFY_GPIO_LED_2_ENABLED
                 ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
 #endif
                 break;
