@@ -26,6 +26,7 @@ OSCILLATOR_HZ 8000000
 # --------------------- LED -----------------------
 PA14 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
 PA13 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
