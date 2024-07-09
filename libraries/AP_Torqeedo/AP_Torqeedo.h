@@ -191,8 +191,9 @@ private:
     bool add_byte_to_message(uint8_t byte_to_add, uint8_t msg_buff[], uint8_t msg_buff_size, uint8_t &num_bytes) const;
 
     // send a motor speed command as a value from -1000 to +1000
-    // value is taken directly from SRV_Channel
-    void send_motor_speed_cmd();
+    // value is taken directly from SRV_Channel unless set_zero_speed is true
+    // (if set_zero_speed is true then the motor speed is set to zero)
+    void send_motor_speed_cmd(bool set_zero_speed = false);
 
     // send request to motor to reply with a particular message
     // msg_id can be INFO, STATUS or PARAM
