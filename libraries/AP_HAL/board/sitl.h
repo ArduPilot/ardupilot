@@ -39,10 +39,14 @@
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #define HAL_BARO_DEFAULT HAL_BARO_NONE
-#define AP_NOTIFY_GPIO_LED_3_ENABLED 1
-#define HAL_GPIO_A_LED_PIN        61
-#define HAL_GPIO_B_LED_PIN        48
-#define HAL_GPIO_C_LED_PIN        117
+
+// simulated LEDs are disabled by default as they lead to a large
+// amount of SIM_GPIO_MASK mavlink traffic
+
+// #define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
+#define AP_NOTIFY_GPIO_LED_RGB_RED_PIN    8  // these are set in SIM_PIN_MASK
+#define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN  9
+#define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN  10
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 1
