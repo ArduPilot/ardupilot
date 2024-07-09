@@ -36,6 +36,7 @@
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN        61
     #define HAL_GPIO_B_LED_PIN        48
     #define HAL_GPIO_C_LED_PIN        117
@@ -122,6 +123,7 @@
     #define HAL_BATT_MONITOR_DEFAULT AP_BattMonitor::Type::BEBOP
     #define HAL_GPIO_SCRIPT "/data/ftp/internal_000/ardupilot/gpio.sh"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN 0
     #define HAL_GPIO_B_LED_PIN 1
     #define HAL_GPIO_C_LED_PIN 2
@@ -143,6 +145,7 @@
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
@@ -158,6 +161,7 @@
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN 69
     #define HAL_GPIO_B_LED_PIN 68
     #define HAL_GPIO_C_LED_PIN 45
@@ -186,6 +190,7 @@
     // We don't want any probing on the internal buses
     #define HAL_LINUX_I2C_INTERNAL_BUS_MASK 0
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
+    #define AP_NOTIFY_GPIO_LED_2_ENABLED 1
     #define HAL_GPIO_A_LED_PIN 66
     #define HAL_GPIO_B_LED_PIN 67
     #define HAL_GPIO_LED_ON    1
@@ -197,6 +202,7 @@
     #define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
     #define HAL_NUM_CAN_IFACES 1
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN 59
     #define HAL_GPIO_B_LED_PIN 58
     #define HAL_GPIO_C_LED_PIN 57
@@ -216,6 +222,7 @@
     #define HAL_INS_PROBE_LIST HAL_INS_PROBE1; HAL_INS_PROBE2
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN        17
     #define HAL_GPIO_B_LED_PIN        18
     #define HAL_GPIO_C_LED_PIN        22
@@ -227,6 +234,7 @@
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
@@ -243,6 +251,7 @@
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(MS56XX, 1, 0x77)
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN        24
     #define HAL_GPIO_B_LED_PIN        25
     #define HAL_GPIO_C_LED_PIN        16
@@ -278,6 +287,7 @@
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #define HAL_NUM_CAN_IFACES 1
     #define HAL_CAN_DRIVER_DEFAULT 1
+    #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
     #define HAL_GPIO_A_LED_PIN        22
     #define HAL_GPIO_B_LED_PIN        27
     #define HAL_GPIO_C_LED_PIN        6
@@ -313,6 +323,7 @@
 
     
     #ifdef OBAL_NOTIFY_LED
+        #define AP_NOTIFY_GPIO_LED_3_ENABLED 1
         #define HAL_GPIO_A_LED_PIN        27 // You can choose between 27,22,4,12
         #define HAL_GPIO_C_LED_PIN        22 // You can choose between 27,22,4,12
         #define HAL_GPIO_B_LED_PIN        4 // You can choose between 27,22,4,12
