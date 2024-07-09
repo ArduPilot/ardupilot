@@ -32,6 +32,8 @@
 #include <AP_RCTelemetry/AP_GHST_Telem.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#include <AP_HAL/GPIO.h>
+
 /*
  * GHST protocol
  *
@@ -55,6 +57,8 @@
  */
 
 extern const AP_HAL::HAL& hal;
+
+#define TOGGLE_PIN_DEBUG(pin) do { hal.gpio->toggle(pin); } while (0)
 
 //#define GHST_DEBUG
 //#define GHST_DEBUG_CHARS

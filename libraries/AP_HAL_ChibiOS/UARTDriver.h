@@ -134,6 +134,9 @@ public:
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
 
 private:
+    // whether TX DMA is fully set up
+    bool is_tx_dma_active() const { return tx_dma_enabled && dma_handle != nullptr; }
+
     const SerialDef &sdef;
     bool rx_dma_enabled;
     bool tx_dma_enabled;
@@ -225,7 +228,9 @@ private:
     bool half_duplex;
     event_listener_t hd_listener;
     eventflags_t hd_tx_active;
+    bool rx_dma_active;
     void half_duplex_setup_tx(void);
+    void half_duplex_setup_rx(void);
 #endif
 
     // set to true for unbuffered writes (low latency writes)
@@ -239,6 +244,7 @@ private:
 
 #ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
+    static void half_duplex_irq_cb(void* sd);
 #endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
@@ -247,6 +253,7 @@ private:
     void dma_tx_allocate(Shared_DMA *ctx);
     void dma_tx_deallocate(Shared_DMA *ctx);
     void dma_rx_enable(void);
+    void dma_rx_disable(void);
 #endif
     void update_rts_line(void);
 
