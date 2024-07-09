@@ -1809,21 +1809,41 @@ function sub:set_rangefinder_target_cm(new_target_cm) end
 -- desc
 quadplane = {}
 
--- desc
+-- true when in the airbrake stage of VTOL approach
 ---@return boolean
-function quadplane:in_assisted_flight() end
+function quadplane:in_vtol_airbrake() end
 
--- desc
+-- true when in the position control stage of VTOL landing
 ---@return boolean
-function quadplane:in_vtol_mode() end
+function quadplane:in_vtol_land_poscontrol() end
 
--- true in descent phase of VTOL landing
+-- true when in any stage of VTOL approach and landing
+---@return boolean
+function quadplane:in_vtol_land_sequence() end
+
+-- true when in the final stage of VTOL landing
+---@return boolean
+function quadplane:in_vtol_land_final() end
+
+-- true when in the approach phase of VTOL landing
+---@return boolean
+function quadplane:in_vtol_land_approach() end
+
+-- true when in descent phase of VTOL landing
 ---@return boolean
 function quadplane:in_vtol_land_descent() end
 
 -- abort a VTOL landing, climbing back up
 ---@return boolean
 function quadplane:abort_landing() end
+
+-- true when in VTOL assisted flight
+---@return boolean
+function quadplane:in_assisted_flight() end
+
+-- true when in VTOL modes
+---@return boolean
+function quadplane:in_vtol_mode() end
 
 
 -- desc
