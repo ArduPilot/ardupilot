@@ -298,8 +298,6 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW DiscoLED());
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
                 ADD_BACKEND(NEW_NOTHROW NavigatorLED());
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-            ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
