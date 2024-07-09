@@ -232,7 +232,6 @@ void Copter::yaw_imbalance_check()
 #if PARACHUTE == ENABLED
 
 // Code to detect a crash main ArduCopter code
-#define PARACHUTE_CHECK_TRIGGER_SEC         1       // 1 second of loss of control triggers the parachute
 #define PARACHUTE_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees off from target indicates a loss of control
 
 // parachute_check - disarms motors and triggers the parachute if serious loss of control has been detected
@@ -302,7 +301,7 @@ void Copter::parachute_check()
     }
 
     // increment counter
-    if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
+    if (control_loss_count < (parachute.get_chute_timeout()*scheduler.get_loop_rate_hz())) {
         control_loss_count++;
     }
 
@@ -317,8 +316,8 @@ void Copter::parachute_check()
 
     // To-Do: add check that the vehicle is actually falling
 
-    // check if loss of control for at least 1 second
-    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
+    // check if loss of control for at least time defined in CHUTE_TIMEOUT parameter
+    } else if (control_loss_count >= (parachute.get_chute_timeout()*scheduler.get_loop_rate_hz())) {
         // reset control loss counter
         control_loss_count = 0;
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);

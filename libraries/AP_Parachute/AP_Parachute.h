@@ -21,6 +21,7 @@
 
 #define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0      // default critical sink speed in m/s to trigger emergency parachute
 #define AP_PARACHUTE_OPTIONS_DEFAULT            0      // default parachute options: enabled disarm after parachute release
+#define AP_PARACHUTE_TIMEOUT_DEFAULT            1.0f   // default parachute control loss timeout
 
 #ifndef HAL_PARACHUTE_ENABLED
 // default to parachute enabled to match previous configs
@@ -90,6 +91,9 @@ public:
     // Return the relay index that would be used for param conversion to relay functions
     bool get_legacy_relay_index(int8_t &index) const;
 
+    // Return the CHUTE_TIMEOUT parameter value
+    float get_chute_timeout() const { return _timeout; }
+
     static const struct AP_Param::GroupInfo        var_info[];
 
     // get singleton instance
@@ -105,6 +109,8 @@ private:
     AP_Int16    _alt_min;       // min altitude the vehicle should have before parachute is released
     AP_Int16    _delay_ms;      // delay before chute release for motors to stop
     AP_Float    _critical_sink;      // critical sink rate to trigger emergency parachute
+    AP_Int32    _options;       // optional behaviour for parachute bitmask
+    AP_Float    _timeout;       // loss of control timeout value in seconds
 
     // internal variables
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
@@ -118,8 +124,6 @@ private:
         HoldOpen = (1U<<0),
         SkipDisarmBeforeParachuteRelease = (1U<<1),
     };
-
-    AP_Int32    _options;
 };
 
 namespace AP {
