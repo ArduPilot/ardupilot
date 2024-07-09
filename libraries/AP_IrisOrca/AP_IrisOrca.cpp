@@ -130,7 +130,7 @@ const AP_Param::GroupInfo AP_IrisOrca::var_info[] = {
     // @Range: 0 300
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("MAX_TRAVEL", 2, AP_IrisOrca, _max_travel_mm, 261),
+    AP_GROUPINFO("MAX_TRAVEL", 2, AP_IrisOrca, _max_travel_mm, 205),
 
     // @Param: REVERSE_DIR
     // @DisplayName: Reverse direction
