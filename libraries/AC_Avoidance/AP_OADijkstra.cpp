@@ -249,7 +249,7 @@ bool AP_OADijkstra::some_fences_enabled() const
         (fence->polyfence().get_exclusion_circle_count() == 0)) {
         return false;
     }
-    return ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) > 0);
+    return ((fence->get_enabled_fences() & AC_Fence::Type::POLYGON) > 0);
 }
 
 // return error message for a given error id

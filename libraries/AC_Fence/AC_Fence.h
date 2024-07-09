@@ -10,12 +10,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
 
-// bit masks for enabled fence types.  Used for TYPE parameter
-#define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
-#define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
-#define AC_FENCE_TYPE_POLYGON                       4       // polygon horizontal fence
-#define AC_FENCE_TYPE_ALT_MIN                       8       // low alt fence which usually initiates an RTL
-
 // valid actions should a fence be breached
 #define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
 #define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
@@ -40,6 +34,14 @@ public:
         ALWAYS_ENABLED = 1,
         ENABLE_DISABLE_FLOOR_ONLY = 2,
         ONLY_WHEN_ARMED = 3
+    };
+
+    // bit masks for enabled fence types.  Used for TYPE parameter
+    enum class Type {
+        ALT_MAX = 1,       // high alt fence which usually initiates an RTL
+        CIRCLE  = 2,       // circular horizontal fence (usually initiates an RTL)
+        POLYGON = 4,       // polygon horizontal fence
+        ALT_MIN = 8,       // low alt fence which usually initiates an RTL
     };
 
     AC_Fence();
@@ -222,7 +224,7 @@ private:
 
 
     // breach information
-    uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
+    uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. Type::ALT_MIN, Type::CIRCLE)
     uint32_t        _breach_time;           // time of last breach in milliseconds
     uint16_t        _breach_count;          // number of times we have breached the fence
     uint32_t _last_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences

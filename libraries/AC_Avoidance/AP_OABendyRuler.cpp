@@ -467,7 +467,7 @@ bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, con
     if (fence == nullptr) {
         return false;
     }
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::CIRCLE) == 0) {
         return false;
     }
 
@@ -497,7 +497,7 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
     if (fence == nullptr) {
         return false;
     }
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::ALT_MAX) == 0) {
         return false;
     }
 
@@ -534,7 +534,7 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
     }
 
     // exclusion polygons enabled along with polygon fences
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::POLYGON) == 0) {
         return false;
     }
 
@@ -605,7 +605,7 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
     }
 
     // inclusion/exclusion circles enabled along with polygon fences
-    if ((fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON) == 0) {
+    if ((fence->get_enabled_fences() & AC_Fence::Type::POLYGON) == 0) {
         return false;
     }
 

@@ -501,7 +501,7 @@ void ModeRTL::compute_return_target()
     //       if terrain altitudes are being used, the code below which reduces the return_target's altitude can lead to
     //       the vehicle not climbing at all as RTL begins.  This can be overly conservative and it might be better
     //       to apply the fence alt limit independently on the origin_point and return_target
-    if ((copter.fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
+    if ((copter.fence.get_enabled_fences() & AC_Fence::Type::ALT_MAX) != 0) {
         // get return target as alt-above-home so it can be compared to fence's alt
         if (rtl_path.return_target.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt)) {
             float fence_alt = copter.fence.get_safe_alt_max()*100.0f;

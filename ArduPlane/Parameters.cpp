@@ -1383,7 +1383,7 @@ void Plane::load_parameters(void)
     if (fence_type_new && !fence_type_new->configured()) {
         // If we find the new parameter and it hasn't been configured
         // attempt to upgrade the altitude fences.
-        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
+        int8_t fence_type_new_val = AC_Fence::Type::POLYGON;
         AP_Int16 fence_alt_min_old;
         AP_Param::ConversionInfo fence_alt_min_info_old = {
             Parameters::k_param_fence_minalt,
@@ -1394,7 +1394,7 @@ void Plane::load_parameters(void)
         if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
             if (fence_alt_min_old.configured()) {
                 //
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
+                fence_type_new_val |= AC_Fence::Type::ALT_MIN;
             }
         }
 
@@ -1407,7 +1407,7 @@ void Plane::load_parameters(void)
         };
         if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
             if (fence_alt_max_old.configured()) {
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
+                fence_type_new_val |= AC_Fence::Type::ALT_MAX;
             }
         }
 
