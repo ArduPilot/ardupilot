@@ -741,7 +741,9 @@ private:
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
 
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     uint8_t imu_kill_mask;
+#endif
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
 public:
