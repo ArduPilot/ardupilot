@@ -287,7 +287,7 @@ reset:
 }
 
 // Send command and wait for response
-// Only run from thread! This blocks until a response is received
+// Only run from thread! This blocks and retries until a non-error response is received
 #define READ_REQUEST_RETRY_MS 500
 void AP_ExternalAHRS_VectorNav::send_command_blocking()
 {
@@ -380,33 +380,30 @@ bool AP_ExternalAHRS_VectorNav::decode_latest_term()
     // message. If not, the response is invalid.
     switch (nmea.term_number) {
         case 0:
-            if (strncmp(nmea.term, message_to_send, nmea.term_offset) != 0) {  // ignore sync byte in comparison
+            if (strncmp(nmea.term, message_to_send, nmea.term_offset) != 0) {
                 return false;
-            } else if (strncmp(nmea.term, "VNERR", nmea.term_offset) == 0) {
+            }
+            if (strncmp(nmea.term, "VNERR", nmea.term_offset) == 0) {
                 nmea.error_response = true;  // Message will be printed on next term 
             }
-            break;
+            return true;
         case 1: 
             if (nmea.error_response) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "VectorNav received VNERR code: %s", nmea.term);
-                break;
-            }
-            if (strncmp(nmea.term, message_to_send + 6,
-                        nmea.term_offset) != 0) {  // Start after "VNXXX,"
+            } else if (strncmp(nmea.term, message_to_send + 6,
+                       nmea.term_offset) != 0) {  // Start after "VNXXX,"
                 return false;
             }
-            break;
+            return true;
         case 2: 
             if (strncmp(nmea.term, "VN-", 3) == 0) {
                 // This term is the model number
                 strncpy(model_name, nmea.term, sizeof(model_name));
-                break;
             }
-            break;
+            return true;
         default:
-            break;
+            return true;
     }
-    return true;
 }
 
 void AP_ExternalAHRS_VectorNav::initialize() {
