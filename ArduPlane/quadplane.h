@@ -636,31 +636,6 @@ private:
     QAutoTune qautotune;
 #endif
 
-    /*
-      are we in the approach phase of a VTOL landing?
-     */
-    bool in_vtol_land_approach(void) const;
-
-    /*
-      are we in the final landing phase of a VTOL landing?
-     */
-    bool in_vtol_land_final(void) const;
-
-    /*
-      are we in any of the phases of a VTOL landing?
-     */
-    bool in_vtol_land_sequence(void) const;
-
-    /*
-      see if we are in the VTOL position control phase of a landing
-    */
-    bool in_vtol_land_poscontrol(void) const;
-
-    /*
-      are we in the airbrake phase of a VTOL landing?
-     */
-    bool in_vtol_airbrake(void) const;
-
     // returns true if the vehicle should currently be doing a spiral landing
     bool landing_with_fixed_wing_spiral_approach(void) const;
 
@@ -720,6 +695,32 @@ public:
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
                                         uint16_t throttle_value, float timeout_sec,
                                         uint8_t motor_count);
+
+    /*
+      are we in the approach phase of a VTOL landing?
+     */
+    bool in_vtol_land_approach(void) const;
+
+    /*
+      are we in the final landing phase of a VTOL landing?
+     */
+    bool in_vtol_land_final(void) const;
+
+    /*
+      are we in any of the phases of a VTOL landing?
+     */
+    bool in_vtol_land_sequence(void) const;
+
+    /*
+      see if we are in the VTOL position control phase of a landing
+    */
+    bool in_vtol_land_poscontrol(void) const;
+
+    /*
+      are we in the airbrake phase of a VTOL landing?
+     */
+    bool in_vtol_airbrake(void) const;
+
 private:
     void motor_test_stop();
 
