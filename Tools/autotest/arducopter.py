@@ -1115,6 +1115,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("All Battery failsafe tests complete")
 
+    def BatteryMissing(self):
+        ''' Test battery missing pre-arm and failsafe'''
+        self.context_push()
+
+        # Sum monitor on primary with two analog monitors
+        # analog can be made unhealthy by setting a invalid pin
+        self.set_parameters({
+            'BATT_MONITOR': 10,
+            'BATT2_MONITOR': 3,
+            'BATT3_MONITOR': 3,
+        })
+        self.context_push()
+
+        # Should be good to arm with no changes
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Make one monitor unhealthy, this should result in missing prearm
+        self.set_parameters({
+            'BATT2_VOLT_PIN': -1,
+        })
+
+        self.drain_mav()
+
+        # Battery 2 should go unhealthy immediately
+        self.assert_prearm_failure("Battery 2 unhealthy", other_prearm_failures_fatal=False)
+
+        # Sum goes missing after 5 seconds, because its a lower number instance its pre-arm takes priority
+        self.assert_prearm_failure("Battery 1 missing", other_prearm_failures_fatal=False, timeout=20)
+
+        # With both monitors unhealthy the sum should also be unhealthy
+        self.set_parameters({
+            'BATT3_VOLT_PIN': -1,
+        })
+
+        self.drain_mav()
+        self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
+
+        # Return both monitors to health
+        self.context_pop()
+        self.wait_ready_to_arm()
+
+        # take off and then trigger in flight
+        self.takeoff(10, mode="LOITER")
+        self.set_parameters({
+            'BATT2_VOLT_PIN': -1,
+        })
+
+        # Sum monitor will change to missing if one monitor goes unhealthy
+        self.wait_statustext("Battery 1 is missing")
+
+        # Should also see failsafe individually
+        self.set_parameters({
+            'BATT3_VOLT_PIN': -1,
+        })
+
+        self.wait_statustext("Battery 3 is missing")
+
+        # Done, reset params and reboot to clear failsafe
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def VibrationFailsafe(self):
         '''Test Vibration Failsafe'''
         self.context_push()
@@ -10449,6 +10512,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = ([
              self.BatteryFailsafe,
+             self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
              self.StabilityPatch,
