@@ -168,6 +168,10 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
         return;
     }
     _imu._gyro[instance] = gyro;
+#if HAL_GYROFFT_ENABLED
+    // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
+    _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
+#endif
     _imu._gyro_healthy[instance] = true;
 
     // publish delta angle
@@ -774,10 +778,6 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
-#if HAL_GYROFFT_ENABLED
-        // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
-        _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
-#endif
         _imu._new_gyro_data[instance] = false;
     }
 
