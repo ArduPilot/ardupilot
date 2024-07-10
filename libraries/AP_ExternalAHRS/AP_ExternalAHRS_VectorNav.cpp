@@ -353,7 +353,7 @@ void AP_ExternalAHRS_VectorNav::send_command_blocking()
         while (nbytes-- > 0) {
             char c = uart->read();
             if (decode(c)) {
-                if (nmea.error_response) {
+                if (nmea.error_response && nmea.sentence_done) {
                     // Received a valid VNERR. Try to resend after the timeout length
                     break;
                 }
@@ -428,11 +428,10 @@ bool AP_ExternalAHRS_VectorNav::decode_latest_term()
     // message. If not, the response is invalid.
     switch (nmea.term_number) {
         case 0:
-            if (strncmp(nmea.term, message_to_send, nmea.term_offset) != 0) {
-                return false;
-            }
             if (strncmp(nmea.term, "VNERR", nmea.term_offset) == 0) {
                 nmea.error_response = true;  // Message will be printed on next term 
+            } else if (strncmp(nmea.term, message_to_send, nmea.term_offset) != 0) {
+                return false;
             }
             return true;
         case 1: 
