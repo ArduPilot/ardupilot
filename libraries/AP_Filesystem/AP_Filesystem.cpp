@@ -321,19 +321,31 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
 {
     const Backend &backend = backend_by_fd(fd);
 
+    // we will need to seek back to the right location at the end
+    auto offset_start = backend.fs.lseek(fd, 0, SEEK_CUR);
+    if (offset_start < 0) {
+        return false;
+    }
+
+    auto n = backend.fs.read(fd, buf, buflen);
+    if (n <= 0) {
+        return false;
+    }
+
     uint8_t i = 0;
-    for (; i<buflen-1; i++) {
-        if (backend.fs.read(fd, &buf[i], 1) <= 0) {
-            if (i==0) {
-                return false;
-            }
-            break;
-        }
+    for (; i < n; i++) {
         if (buf[i] == '\r' || buf[i] == '\n') {
             break;
         }
     }
     buf[i] = '\0';
+
+    // get back to the right offset
+    if (backend.fs.lseek(fd, offset_start+i+1, SEEK_SET) != offset_start+i+1) {
+        // we need to fail if we can't seek back or the caller may loop or get corrupt data
+        return false;
+    }
+
     return true;
 }
 
