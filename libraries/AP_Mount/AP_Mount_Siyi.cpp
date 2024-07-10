@@ -916,7 +916,7 @@ bool AP_Mount_Siyi::set_lens(uint8_t lens)
     }
 
     // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
-    static CameraImageType cam_image_type_table[9] = {
+    static const CameraImageType cam_image_type_table[] {
         CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
         CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL,          // 5
         CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
@@ -927,6 +927,10 @@ bool AP_Mount_Siyi::set_lens(uint8_t lens)
         CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM,             // 6
         CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE,          // 8
     };
+
+    if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+        return false;
+    }
 
     // send desired image type to camera
     return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type_table[lens]);
