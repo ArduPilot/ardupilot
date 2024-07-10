@@ -66,7 +66,7 @@ private:
     void process_ins_packet1(const uint8_t *b);
     void process_ins_packet2(const uint8_t *b);
     void process_ahrs_packet(const uint8_t *b);
-    void send_command_blocking();
+    void run_command(const char *fmt, ...);
 
     uint8_t *pktbuf;
     uint16_t pktoffset;
