@@ -477,9 +477,10 @@ void AP_ExternalAHRS_VectorNav::initialize() {
         // VN-1X0
         type = TYPE::VN_AHRS;
 
-        // This assumes unit is still configured at its default rate of 800hz
-        hal.util->snprintf(message_to_send, sizeof(message_to_send),
-                           "VNWRG,75,3,%u,14,073E,0004", unsigned(800 / get_rate()));
+        // These assumes unit is still configured at its default rate of 800hz
+        hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,75,3,%u,01,0721", unsigned(800 / get_rate()));
+        send_command_blocking();
+        hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,76,3,16,11,0001,0104");
         send_command_blocking();
     } else {
         // Default to setup for sensors other than VN-100 or VN-110
@@ -491,11 +492,11 @@ void AP_ExternalAHRS_VectorNav::initialize() {
         if (strncmp(model_name, "VN-3", 4) == 0) {
             has_dual_gnss = true;
         }
-        hal.util->snprintf(message_to_send, sizeof(message_to_send),
-                           "VNWRG,75,3,%u,34,072E,0106,0612", unsigned(imu_rate / get_rate()));
+        hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,75,3,%u,01,0721", unsigned(imu_rate / get_rate()));
         send_command_blocking();
-        hal.util->snprintf(message_to_send, sizeof(message_to_send),
-                           "VNWRG,76,3,%u,4E,0002,0010,20B8,0018", unsigned(imu_rate / 5));
+        hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,76,3,%u,31,0001,0104,0613", unsigned(imu_rate / 50));
+        send_command_blocking();
+        hal.util->snprintf(message_to_send, sizeof(message_to_send), "VNWRG,77,3,%u,49,0003,26B8,0018", unsigned(imu_rate / 5));
         send_command_blocking();
     }
 
@@ -580,8 +581,7 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_ahrs_packet(const uint8_t *b) {
 
     last_pkt2_ms = AP_HAL::millis();
 
-    state.quat =
-        Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
+    state.quat = Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
     state.have_quaternion = true;
 }
 
