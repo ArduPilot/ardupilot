@@ -305,8 +305,11 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     msg.power_supply_technology = 0; //POWER_SUPPLY_TECHNOLOGY_UNKNOWN
 
     if (battery.has_cell_voltages(instance)) {
-        const uint16_t* cellVoltages = battery.get_cell_voltages(instance).cells;
-        std::copy(cellVoltages, cellVoltages + AP_BATT_MONITOR_CELLS_MAX, msg.cell_voltage);
+        const auto &cells = battery.get_cell_voltages(instance);
+        const uint8_t ncells_max = MIN(ARRAY_SIZE(msg.cell_voltage), ARRAY_SIZE(cells.cells));
+        for (uint8_t i=0; i< ncells_max; i++) {
+            msg.cell_voltage[i] = cells.cells[i] * 0.001;
+        }
     }
 }
 
