@@ -717,6 +717,11 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::KILL_IMU2:
     case AUX_FUNC::KILL_IMU3:
 #endif
+#if AP_COMPASS_KILL_MAG_ENABLED
+    case AUX_FUNC::KILL_MAG1:
+    case AUX_FUNC::KILL_MAG2:
+    case AUX_FUNC::KILL_MAG3:
+#endif
     case AUX_FUNC::MISSION_RESET:
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
@@ -1561,6 +1566,20 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         AP::ins().kill_imu(2, ch_flag == AuxSwitchPos::HIGH);
         break;
 #endif  // AP_INERTIALSENSOR_KILL_IMU_ENABLED
+
+#if AP_COMPASS_KILL_MAG_ENABLED
+    case AUX_FUNC::KILL_MAG1:
+        AP::compass().kill_mag(0, ch_flag == AuxSwitchPos::HIGH);
+        break;
+
+    case AUX_FUNC::KILL_MAG2:
+        AP::compass().kill_mag(1, ch_flag == AuxSwitchPos::HIGH);
+        break;
+
+    case AUX_FUNC::KILL_MAG3:
+        AP::compass().kill_mag(2, ch_flag == AuxSwitchPos::HIGH);
+        break;
+#endif  // AP_COMPASS_KILL_MAG_ENABLED
 
 #if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_TRIGGER:

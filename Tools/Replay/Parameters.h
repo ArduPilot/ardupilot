@@ -17,8 +17,10 @@ public:
         k_param_logger,
         k_param_NavEKF3,
         k_param_gps,
+        k_param_compass_stop_ms,
     };
     AP_Int8 dummy;
+    AP_Int32 compass_stop_ms;
 };
 
 extern const AP_Param::Info var_info[];

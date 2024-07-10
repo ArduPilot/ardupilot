@@ -20,12 +20,15 @@ public:
 
     static bool in_list(const char *type, const char *list[]);
 
+    void set_stop_compass_data_ms(uint32_t time_ms) { stop_compass_data_ms = time_ms; }
+
 protected:
 
 private:
 
     NavEKF2 &ekf2;
     NavEKF3 &ekf3;
+    uint32_t stop_compass_data_ms;
 
     struct LogStructure *_log_structure;
     uint8_t _log_structure_count;

@@ -94,6 +94,9 @@ define HAL_DISPLAY_ENABLED 0
 # remove support for killing IMUs at runtime - a developer feature:
 define AP_INERTIALSENSOR_KILL_IMU_ENABLED 0
 
+# remove support for killing MAGs at runtime - a developer feature:
+define AP_COMPASS_KILL_MAG_ENABLED 0
+
 # shortened names in @SYS/taskinfo.txt
 define AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED 0
 

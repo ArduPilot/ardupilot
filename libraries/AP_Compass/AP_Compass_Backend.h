@@ -103,7 +103,6 @@ protected:
     void publish_raw_field(const Vector3f &mag, uint8_t instance);
     void correct_field(Vector3f &mag, uint8_t i);
     void publish_filtered_field(const Vector3f &mag, uint8_t instance);
-    void set_last_update_usec(uint32_t last_update, uint8_t instance);
 
     void accumulate_sample(Vector3f &field, uint8_t instance,
                            uint32_t max_samples = 10);

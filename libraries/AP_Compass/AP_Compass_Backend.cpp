@@ -60,6 +60,10 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
 
 void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint8_t instance)
 {
+    if ((1U<<instance) & _compass.mag_kill_mask) {
+        return;
+    }
+
     // note that we do not set last_update_usec here as otherwise the
     // EKF and DCM would end up consuming compass data at the full
     // sensor rate. We want them to consume only the filtered fields
@@ -139,6 +143,10 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
 void AP_Compass_Backend::accumulate_sample(Vector3f &field, uint8_t instance,
                                            uint32_t max_samples)
 {
+    if ((1U<<instance) & _compass.mag_kill_mask) {
+        return;
+    }
+
     /* rotate raw_field from sensor frame to body frame */
     rotate_field(field, instance);
 
@@ -166,6 +174,10 @@ void AP_Compass_Backend::accumulate_sample(Vector3f &field, uint8_t instance,
 void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
                                                    const Vector3f *scaling)
 {
+    if ((1U<<instance) & _compass.mag_kill_mask) {
+        return;
+    }
+
     WITH_SEMAPHORE(_sem);
 
     Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
@@ -190,18 +202,16 @@ void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
  */
 void AP_Compass_Backend::publish_filtered_field(const Vector3f &mag, uint8_t instance)
 {
+    if ((1U<<instance) & _compass.mag_kill_mask) {
+        return;
+    }
+
     Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
 
     state.field = mag;
 
     state.last_update_ms = AP_HAL::millis();
     state.last_update_usec = AP_HAL::micros();
-}
-
-void AP_Compass_Backend::set_last_update_usec(uint32_t last_update, uint8_t instance)
-{
-    Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
-    state.last_update_usec = last_update;
 }
 
 /*

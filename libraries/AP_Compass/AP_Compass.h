@@ -365,6 +365,10 @@ public:
     // get the first compass marked for use by COMPASSx_USE
     uint8_t get_first_usable(void) const { return _first_usable; }
 
+
+    // for killing an Mag for testing purposes
+    void kill_mag(uint8_t mag_idx, bool kill_it);
+
 private:
     static Compass *_singleton;
 
@@ -663,6 +667,8 @@ private:
     bool suppress_devid_save;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
+
+    uint8_t mag_kill_mask; // bitmask of mags to kill
 };
 
 namespace AP {
