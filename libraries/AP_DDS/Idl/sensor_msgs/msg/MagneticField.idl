@@ -1,0 +1,41 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from sensor_msgs/msg/MagneticField.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module sensor_msgs {
+  module msg {
+    typedef double double__9[9];
+    @verbatim (language="comment", text=
+      "Measurement of the Magnetic Field vector at a specific location." "\n"
+      "" "\n"
+      "If the covariance of the measurement is known, it should be filled in." "\n"
+      "If all you know is the variance of each measurement, e.g. from the datasheet," "\n"
+      "just put those along the diagonal." "\n"
+      "A covariance matrix of all zeros will be interpreted as \"covariance unknown\"," "\n"
+      "and to use the data a covariance will have to be assumed or gotten from some" "\n"
+      "other source.")
+    struct MagneticField {
+      @verbatim (language="comment", text=
+        "timestamp is the time the" "\n"
+        "field was measured" "\n"
+        "frame_id is the location and orientation" "\n"
+        "of the field measurement")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "x, y, and z components of the" "\n"
+        "field vector in Tesla" "\n"
+        "If your sensor does not output 3 axes," "\n"
+        "put NaNs in the components not reported.")
+      geometry_msgs::msg::Vector3 magnetic_field;
+
+      @verbatim (language="comment", text=
+        "Row major about x, y, z axes" "\n"
+        "0 is interpreted as variance unknown")
+      double__9 magnetic_field_covariance;
+    };
+  };
+};

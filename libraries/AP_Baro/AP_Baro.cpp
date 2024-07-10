@@ -42,6 +42,7 @@
 #include "AP_Baro_ICM20789.h"
 #include "AP_Baro_LPS2XH.h"
 #include "AP_Baro_FBM320.h"
+#include "AP_Baro_DDS.h"
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_Dummy.h"
 #include "AP_Baro_DroneCAN.h"
@@ -558,6 +559,10 @@ void AP_Baro::init(void)
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
         ADD_BACKEND(AP_Baro_DroneCAN::probe(*this));
     }
+#endif
+
+#if AP_BARO_DDS_ENABLED
+    ADD_BACKEND(NEW_NOTHROW AP_Baro_DDS(*this));
 #endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED

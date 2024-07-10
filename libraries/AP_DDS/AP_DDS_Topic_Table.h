@@ -16,7 +16,9 @@ enum class TopicIndex: uint8_t {
     NAV_SAT_FIX_PUB,
     STATIC_TRANSFORMS_PUB,
     BATTERY_STATE_PUB,
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     IMU_PUB,
+#endif
     LOCAL_POSE_PUB,
     LOCAL_VELOCITY_PUB,
     GEOPOSE_PUB,
@@ -26,6 +28,13 @@ enum class TopicIndex: uint8_t {
     DYNAMIC_TRANSFORMS_SUB,
     VELOCITY_CONTROL_SUB,
     GLOBAL_POSITION_SUB,
+
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    SENSOR_FLUID_PRESSURE_0_SUB,
+    SENSOR_MAGNETOMETER_0_SUB,
+    SENSOR_NAV_SAT_0_SUB,
+    SENSOR_ESC_TELEM_0_SUB,
+#endif
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -100,6 +109,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 5,
         },
     },
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::IMU_PUB),
         .pub_id = to_underlying(TopicIndex::IMU_PUB),
@@ -116,6 +126,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 5,
         },
     },
+#endif
     {
         .topic_id = to_underlying(TopicIndex::LOCAL_POSE_PUB),
         .pub_id = to_underlying(TopicIndex::LOCAL_POSE_PUB),
@@ -260,4 +271,71 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
             .depth = 5,
         },
     },
+
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB),
+        .pub_id = to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB),
+        .sub_id = to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/in/sensors/air_pressure0",
+        .type_name = "sensor_msgs::msg::dds_::FluidPressure_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB),
+        .pub_id = to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB),
+        .sub_id = to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/in/sensors/magnetometer0",
+        .type_name = "sensor_msgs::msg::dds_::MagneticField_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB),
+        .pub_id = to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB),
+        .sub_id = to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/in/sensors/navsat0",
+        .type_name = "sensor_msgs::msg::dds_::NavSatFix_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB),
+        .pub_id = to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB),
+        .sub_id = to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/in/sensors/esc_telem0",
+        .type_name = "mavros_msgs::msg::dds_::ESCTelemetry_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif
 };

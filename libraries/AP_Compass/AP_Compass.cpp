@@ -42,6 +42,9 @@
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
 #include "AP_Compass_ExternalAHRS.h"
 #endif
+#if AP_COMPASS_DDS_ENABLED
+#include "AP_Compass_DDS.h"
+#endif
 #include "AP_Compass.h"
 #include "Compass_learn.h"
 #include <stdio.h>
@@ -1320,6 +1323,10 @@ void Compass::_probe_external_i2c_compasses(void)
  */
 void Compass::_detect_backends(void)
 {
+#if AP_COMPASS_DDS_ENABLED
+    ADD_BACKEND(DRIVER_DDS, NEW_NOTHROW AP_Compass_DDS());
+#endif
+
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (serial_port >= 0) {

@@ -3,6 +3,9 @@
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
@@ -32,7 +35,9 @@
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
@@ -47,7 +52,12 @@ sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
-
+#if AP_DDS_SENSOR_SUBS_ENABLED
+sensor_msgs_msg_FluidPressure AP_DDS_Client::rx_air_pressure_0_topic {};
+sensor_msgs_msg_MagneticField AP_DDS_Client::rx_magnetometer_0_topic {};
+sensor_msgs_msg_NavSatFix AP_DDS_Client::rx_nav_sat_fix_0_topic {};
+mavros_msgs_msg_ESCTelemetry AP_DDS_Client::rx_esc_telem_0_topic {};
+#endif  // AP_COMPASS_DDS_ENABLED
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -434,6 +444,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     }
 }
 
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 {
     update_topic(msg.header.stamp);
@@ -471,6 +482,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity_covariance[0] = -1;
     msg.linear_acceleration_covariance[0] = -1;
 }
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
@@ -594,6 +606,93 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+#if AP_DDS_SENSOR_SUBS_ENABLED
+    case topics[to_underlying(TopicIndex::SENSOR_FLUID_PRESSURE_0_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_FluidPressure_deserialize_topic(ub, &rx_air_pressure_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+#if AP_BARO_DDS_ENABLED
+        AP_ExternalAHRS::baro_data_message_t baro;
+        baro.instance = 0;
+        baro.pressure_pa = rx_air_pressure_0_topic.fluid_pressure;
+
+        //! @todo(srmainwaring) sensor_msgs/FluidPressure does not provide temp.
+        baro.temperature = 30.17;
+
+        AP::baro().handle_external(baro);
+#endif  // AP_BARO_DDS_ENABLED
+        break;
+    }
+    case topics[to_underlying(TopicIndex::SENSOR_MAGNETOMETER_0_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_MagneticField_deserialize_topic(ub, &rx_magnetometer_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+#if AP_COMPASS_DDS_ENABLED
+        AP_ExternalAHRS::mag_data_message_t mag;
+
+        // convert mag field from FLU in telsa to FRD in milli gauss.
+        mag.field = Vector3f(
+                        rx_magnetometer_0_topic.magnetic_field.x * 1.0E7,
+                        rx_magnetometer_0_topic.magnetic_field.y * -1.0E7,
+                        rx_magnetometer_0_topic.magnetic_field.z * -1.0E7);
+
+        AP::compass().handle_external(mag);
+#endif  // AP_COMPASS_DDS_ENABLED
+        break;
+    }
+    case topics[to_underlying(TopicIndex::SENSOR_NAV_SAT_0_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_NavSatFix_deserialize_topic(ub, &rx_nav_sat_fix_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+        // #if AP_GPS_DDS_ENABLED
+        //! @todo(srmainwaring) sensor_msgs/NavSatFix is missing fields.
+        AP_ExternalAHRS::gps_data_message_t gps;
+        gps.gps_week = 0xFFFF;
+        // gps.ms_tow;
+        // gps.fix_type;
+        // gps.satellites_in_view;
+        // gps.horizontal_pos_accuracy;
+        // gps.vertical_pos_accuracy;
+        // gps.horizontal_vel_accuracy;
+        // gps.hdop;
+        // gps.vdop;
+        gps.longitude = static_cast<int32_t>(rx_nav_sat_fix_0_topic.longitude * 1E7);
+        gps.latitude = static_cast<int32_t>(rx_nav_sat_fix_0_topic.latitude * 1E7);
+        gps.msl_altitude = static_cast<int32_t>(rx_nav_sat_fix_0_topic.altitude * 1E2);
+        // gps.ned_vel_north;
+        // gps.ned_vel_east;
+        // gps.ned_vel_down;
+
+        uint8_t instance;
+        if (AP::gps().get_first_external_instance(instance)) {
+            AP::gps().handle_external(gps, instance);
+        }
+        // #endif  // AP_GPS_DDS_ENABLED
+        break;
+    }
+    case topics[to_underlying(TopicIndex::SENSOR_ESC_TELEM_0_SUB)].dr_id.id: {
+        const bool success = mavros_msgs_msg_ESCTelemetry_deserialize_topic(ub, &rx_esc_telem_0_topic);
+
+        if (success == false) {
+            break;
+        }
+
+#if AP_ESC_TELEM_DDS_ENABLED
+        //! @todo(srmainwaring) populate message for handle_external();
+        AP::esc_telem().handle_external();
+#endif // AP_ESC_TELEM_DDS_ENABLED
+        break;
+    }
+#endif  // AP_DDS_SENSOR_SUBS_ENABLED
     }
 
 }
@@ -1034,6 +1133,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1048,6 +1148,7 @@ void AP_DDS_Client::write_imu_topic()
         }
     }
 }
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 
 void AP_DDS_Client::write_geo_pose_topic()
 {
@@ -1128,11 +1229,13 @@ void AP_DDS_Client::update()
         write_tx_local_velocity_topic();
     }
 
+#if AP_DDS_EXPERIMENTAL_PUBS_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
+#endif  // AP_DDS_EXPERIMENTAL_PUBS_ENABLED
 
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);

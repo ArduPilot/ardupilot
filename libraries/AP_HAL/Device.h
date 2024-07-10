@@ -35,6 +35,7 @@ public:
         BUS_TYPE_MSP     = 5,
         BUS_TYPE_SERIAL  = 6,
         BUS_TYPE_WSPI    = 7,
+        BUS_TYPE_DDS     = 8,
     };
 
     enum Speed {
@@ -350,7 +351,8 @@ protected:
       parameter protocol without loss of information.
      */
     struct DeviceStructure {
-        enum BusType bus_type : 3;
+        //! @todo(srmainwaring) check changing this size does not break
+        enum BusType bus_type : 4;
         uint8_t bus: 5;    // which instance of the bus type
         uint8_t address;   // address on the bus (eg. I2C address)
         uint8_t devtype;   // device class specific device type
