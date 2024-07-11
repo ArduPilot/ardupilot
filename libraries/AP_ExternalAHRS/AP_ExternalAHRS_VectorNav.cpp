@@ -70,8 +70,8 @@ struct PACKED VN_AHRS_imu_packet {
     float temp;
     float pressure;
 };
-static_assert(sizeof(VN_AHRS_imu_packet) + 1 + 1 + 1 * 2 + 2 ==
-                  VN_AHRS_IMU_LENGTH,  // syncByte + groupByte + 1 typeWord + CRC
+static_assert(sizeof(VN_AHRS_imu_packet) + 1 + sizeof(vn_ahrs_imuPkt_header) + 2 ==
+                  VN_AHRS_IMU_LENGTH,  // syncByte + header + CRC
               "incorrect VN_AHRS_imu length");
 
 #define VN_AHRS_AHRS_LENGTH 44  // includes header and CRC
@@ -81,8 +81,8 @@ struct PACKED VN_AHRS_ahrs_packet {
     float quaternion[4];
     float yprU[3];
 };
-static_assert(sizeof(VN_AHRS_ahrs_packet) + 1 + 1 + 2 * 2 + 2 ==
-                  VN_AHRS_AHRS_LENGTH,  // syncByte + groupByte + 2 typeWord + CRC
+static_assert(sizeof(VN_AHRS_ahrs_packet) + 1 + sizeof(vn_ahrs_ahrsPkt_header) + 2 ==
+                  VN_AHRS_AHRS_LENGTH,  // syncByte + header + CRC
               "incorrect VN_AHRS_ahrs length");
 
 /*
@@ -155,8 +155,8 @@ struct PACKED VN_INS_imu_packet {
     float temp;
     float pressure;
 };
-static_assert(sizeof(VN_INS_imu_packet) + 1 + 2 + sizeof(vn_ins_imuPkt_header) ==
-                  VN_INS_IMU_LENGTH,  //    syncByte + groupByte + 1 typeWord + CRC
+static_assert(sizeof(VN_INS_imu_packet) + 1 + sizeof(vn_ins_imuPkt_header) + 2 ==
+                  VN_INS_IMU_LENGTH,  // syncByte + header + CRC
               "incorrect VN_INS_imu length");
 
 #define VN_INS_INS_LENGTH 92  // includes header and CRC
@@ -171,8 +171,8 @@ struct PACKED VN_INS_ins_packet {
     float posU;
     float velU;
 };
-static_assert(sizeof(VN_INS_ins_packet) + 1 + 1 + 3 * 2 + 2 ==
-                  VN_INS_INS_LENGTH,  //    syncByte + groupByte + 3 typeWord + CRC
+static_assert(sizeof(VN_INS_ins_packet) + 1 + sizeof(vn_ins_insPkt_header) + 2 ==
+                  VN_INS_INS_LENGTH,  // syncByte + header + CRC
               "incorrect VN_INS_ins length");
 
 #define VN_INS_GNSS_LENGTH 110  // includes header and CRC
@@ -190,8 +190,8 @@ struct PACKED VN_INS_gnss_packet {
     uint8_t numSats2;
     uint8_t fix2;
 };
-static_assert(sizeof(VN_INS_gnss_packet) + 1 + 1 + 3 * 2 + 2 ==
-                  VN_INS_GNSS_LENGTH,  //    syncByte + groupByte + 3 typeWord + CRC
+static_assert(sizeof(VN_INS_gnss_packet) + 1 + sizeof(vn_ins_gnssPkt_header) + 2 ==
+                  VN_INS_GNSS_LENGTH,  // syncByte + header + CRC
               "incorrect VN_INS_gnss length");
 
 // constructor
