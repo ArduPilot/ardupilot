@@ -62,10 +62,10 @@ Header for AHRS packet
 static const uint8_t vn_ahrs_imuPkt_header[]{0x16, 0x01, 0x21, 0x07};
 struct PACKED VN_AHRS_imu_packet {
     uint64_t timeStartup;
+    float gyro[3];
+    float accel[3];
     float uncompAngRate[3];
     float uncompAccel[3];
-    float accel[3];
-    float gyro[3];
     float mag[3];
     float temp;
     float pressure;
@@ -144,18 +144,18 @@ union Ins_Status {
 };
 
 #define VN_INS_IMU_LENGTH 82  // includes header and CRC
-static const uint8_t vn_ins_imuPkt_header[]{0x16, 0x01, 0x21, 0x07};
+static const uint8_t vn_ins_imuPkt_header[]{0x01, 0x21, 0x07};
 struct PACKED VN_INS_imu_packet {
     uint64_t timeStartup;
+    float gyro[3];
+    float accel[3];
     float uncompAngRate[3];
     float uncompAccel[3];
-    float accel[3];
-    float gyro[3];
     float mag[3];
     float temp;
     float pressure;
 };
-static_assert(sizeof(VN_INS_imu_packet) + 1 + 1 + 1 * 2 + 2 ==
+static_assert(sizeof(VN_INS_imu_packet) + 1 + 2 + sizeof(vn_ins_imuPkt_header) ==
                   VN_INS_IMU_LENGTH,  //    syncByte + groupByte + 1 typeWord + CRC
               "incorrect VN_INS_imu length");
 
@@ -292,7 +292,7 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
             goto reset;
         }
     } else if (match_header3 && pktoffset >= VN_INS_IMU_LENGTH) {
-        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_INS_INS_LENGTH - 1, 0);
+        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_INS_IMU_LENGTH - 1, 0);
         if (crc == 0) {
             // got pkt1
             process_ins_imu_packet(&pktbuf[sizeof(vn_ins_imuPkt_header) + 1]);
@@ -659,6 +659,8 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
     const struct VN_INS_gnss_packet &pkt = *(struct VN_INS_gnss_packet *)b;
     AP_ExternalAHRS::gps_data_message_t gps;
 
+    last_pkt3_ms          = AP_HAL::millis();
+    
     // get ToW in milliseconds
     gps.gps_week           = pkt.timeGps / (AP_MSEC_PER_WEEK * 1000000ULL);
     gps.ms_tow             = (pkt.timeGps / 1000000ULL) % (60 * 60 * 24 * 7 * 1000ULL);
