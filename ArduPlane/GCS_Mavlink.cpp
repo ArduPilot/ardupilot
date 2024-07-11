@@ -1083,6 +1083,12 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+    case MAV_CMD_SET_HAGL:
+        plane.handle_external_hagl(packet);
+        return MAV_RESULT_ACCEPTED;
+#endif
+        
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
