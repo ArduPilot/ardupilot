@@ -210,6 +210,20 @@ private:
     AP_FixedWing::Rangefinder_State rangefinder_state;
 #endif
 
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+    struct {
+        // allow for external height above ground estimate
+        float hagl;
+        uint32_t last_update_ms;
+        uint32_t timeout_ms;
+    } external_hagl;
+    bool get_external_HAGL(float &height_agl);
+    void handle_external_hagl(const mavlink_command_int_t &packet);
+#endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+
+    float get_landing_height(bool &using_rangefinder);
+
+
 #if AP_RPM_ENABLED
     AP_RPM rpm_sensor;
 #endif
