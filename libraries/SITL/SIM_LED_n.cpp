@@ -90,6 +90,7 @@ void SIM_LED_n<NUM_LEDS>::init()
     pthread_create(&thread, NULL, update_thread_start, this);
 }
 
+template class SIM_LED_n<1>;
 template class SIM_LED_n<2>;
 template class SIM_LED_n<3>;
 
