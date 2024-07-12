@@ -9,14 +9,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <AP_Math/AP_Math.h>
-
-
-#if 0
 #include <GCS_MAVLink/GCS.h>
-#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
-#else
-#define Debug(fmt, args ...)
-#endif
+#include <stdio.h>
 
 const AP_Param::GroupInfo AP_HobbyWing_DataLink::var_info[] = {
     // @Param: _OFS
@@ -39,6 +33,7 @@ const AP_Param::GroupInfo AP_HobbyWing_DataLink::var_info[] = {
 
 void AP_HobbyWing_DataLink::init()
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_HobbyWing_DataLink::init");
     uart.begin(115200);
     uart.set_options(AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
 
@@ -70,21 +65,21 @@ bool AP_HobbyWing_DataLink::read_uart(uint8_t *_packet, uint8_t packet_len, uint
     const uint64_t dt_us = this_frame_us - last_frame_us;
     if (dt_us < frame_gap_us) {
         // insufficient frame gap; discard this input
-        Debug(MAV_SEVERITY_INFO, "Bad frame gap");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bad frame gap");
         goto OUT_DISCARD;
     }
     last_frame_us = this_frame_us;
 
     if (n > packet_len) {
-        // too many bytes available from the uart.  That's corruption,
+        // too many buffers available from the uart.  That's corruption,
         // assuming scheduling is good.
-        Debug(MAV_SEVERITY_INFO, "Bad size");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bad size expected=%d actual=%ld", packet_len, n);
         goto OUT_DISCARD;
     }
 
     if (uart.read(_packet, packet_len) != packet_len) {
         // strange - this shouldn't fail
-        Debug(MAV_SEVERITY_INFO, "Bad read");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bad read expected=%d actual=%ld", packet_len, n);
         goto OUT_DISCARD;
     }
 
@@ -102,19 +97,46 @@ OUT_DISCARD:
 
 void AP_HobbyWing_DataLink::update()
 {
-    // packet is allocated with the object to avoid large stack size
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_HobbyWing_DataLink::update");
+    uint8_t* data = (uint8_t*)&packet;
+    int headerRead = readHeader();
+
+    if(headerRead <= 0)
+    {
+        //header not found
+        return;
+    }
+
+    int bytes_to_read = PACKAGE_SIZE - headerRead;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Header read=%d bytes to read=%d", headerRead, bytes_to_read);
+
+    bool package_read_successfully = false;
+    // header read successfully, read rest of the packet
+    while (!package_read_successfully)
+    {
+        auto available = uart.available();
+        if(available < bytes_to_read)
+        {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Available bytes less then bytes to read expected=%d available=%d", bytes_to_read, available);
+            hal.scheduler->delay_microseconds(1500000);
+            continue;
+        }
+        auto bytes_read = uart.read(&data[headerRead], bytes_to_read);
+        if(bytes_read != bytes_to_read)
+        {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bytes read not succesfully expected=%d actual=%d", bytes_to_read, bytes_read);
+            return;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes read succesfully bytes_read=%d", bytes_read);
+        package_read_successfully = true;
+    }
+
+    // add check for frame gap
 
     // TODO: what's the true length of this frame gap?
-    if (!read_uart((uint8_t*)&packet, sizeof(packet), 10000)) {
-        return;
-    }
-
-    // check for valid frame header
-    if (packet.header != 0x9b || packet.length != 160) {
-        // bad header byte after a frame gap, or packet length byte wrong:
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bad header");
-        return;
-    }
+    // if (!read_uart((uint8_t*)&packet, sizeof(packet), 10000)) {
+    //     return;
+    // }
 
     if (packet.calc_checksum() != packet.crc) {
         // checksum failure
@@ -191,6 +213,78 @@ void AP_HobbyWing_DataLink::check_seq(uint16_t this_seq)
         }
     }
     last_seq = this_seq;
+}
+
+int AP_HobbyWing_DataLink::readHeader()
+{
+    int headerPosition = -1;
+    uint8_t first_chunk[HEADER_SIZE];
+    uint8_t second_chunk[HEADER_SIZE];
+
+    std::fill(first_chunk,first_chunk + HEADER_SIZE-1,0);
+    std::fill(second_chunk,second_chunk + HEADER_SIZE-1,0);
+
+    uint32_t available = uart.available();
+    if(available < HEADER_SIZE)
+    {
+        return 0;
+    }
+    uart.read(first_chunk, HEADER_SIZE);
+
+    while (true)
+    {
+        available = uart.available();
+        if(available < HEADER_SIZE)
+        {
+            hal.scheduler->delay_microseconds(1500);
+            continue;
+        }
+        uart.read(second_chunk, HEADER_SIZE);
+
+        //join chunks
+        uint8_t data[HEADER_SIZE * 2];
+        for(int i=0; i<HEADER_SIZE; i++) {
+            data[i] = first_chunk[i];
+            data[HEADER_SIZE + i] = second_chunk[i];
+        }
+
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Joined chunks %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+
+        //find header
+        for(int i=0; i<= HEADER_SIZE; i++)
+        {
+            if(data[i] == HEADER_START_BYTE_VALUE &&
+                data[i+1] == HEADER_PACKAGE_LENGTH_BYTE_VALUE &&
+                data[i+2] == HEADER_PACKAGE_PROTOCOL_BYTE_VALUE &&
+                data[i+3] == HEADER_PACKAGE_REAL_DATA_BYTE_VALUE)
+            {
+                //header found
+                headerPosition = i;
+                break;
+            }
+        }
+        if(headerPosition >= 0)
+        {
+            //header found,
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "header found position=%d", headerPosition);
+            uint8_t *bytes = (uint8_t*)&packet;
+            for(int i = headerPosition; i < HEADER_SIZE * 2; i++)
+            {
+                //Copy header and rest package
+                int byte_position = i - headerPosition;
+                bytes[byte_position] = data[i];
+            }
+            //how many bytes copied to packet
+            return HEADER_SIZE - headerPosition;
+        }
+
+        //header not found, continue finding header
+        for(int i = 0; i< HEADER_SIZE; i++)
+        {
+            first_chunk[i] = second_chunk[i];
+        }
+    }
+
 }
 
 #endif  // AP_HOBBYWING_DATALINK_ENABLED

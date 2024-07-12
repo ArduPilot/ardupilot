@@ -9,7 +9,7 @@
 #if AP_HOBBYWING_DATALINK_ENABLED
 
 #include "AP_ESC_Telem_Backend.h"
-
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <AP_Param/AP_Param.h>
 
@@ -18,8 +18,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    AP_HobbyWing_DataLink(AP_HAL::UARTDriver &_uart)
-        : uart(_uart) {
+    AP_HobbyWing_DataLink(AP_HAL::UARTDriver &_uart, const AP_HAL::HAL& _hal)
+        : uart(_uart), hal(_hal) {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
@@ -38,6 +38,13 @@ public:
     void update_telemetry();
 
 private:
+
+    constexpr static uint32_t PACKAGE_SIZE = 160;
+    constexpr static uint32_t HEADER_SIZE = 4;
+    constexpr static uint8_t HEADER_START_BYTE_VALUE = 0x9B;
+    constexpr static uint8_t HEADER_PACKAGE_LENGTH_BYTE_VALUE = 158;
+    constexpr static uint8_t HEADER_PACKAGE_PROTOCOL_BYTE_VALUE = 1;
+    constexpr static uint8_t HEADER_PACKAGE_REAL_DATA_BYTE_VALUE = 2;
 
     bool read_uart(uint8_t *packet, uint8_t packet_len, uint16_t frame_gap_us);
 
@@ -77,6 +84,7 @@ private:
 
     struct ESCInfo esc_info[8];  // FIXME: static_assert this to ARRAY_SIZE(packet.ESCData)
 
+    const AP_HAL::HAL &hal;
     AP_HAL::UARTDriver &uart;
     uint64_t last_frame_us;
 
@@ -87,6 +95,9 @@ private:
 
     AP_Int8 offset;
     AP_Int8 motor_poles;
+
+    //how many bytes readed
+    int readHeader();
 
 };
 

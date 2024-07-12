@@ -202,7 +202,7 @@ void AP_ESC_Telem::init()
     {
         AP_HAL::UARTDriver *uart { AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_HobbyWing_DataLink, 0) };
         if (uart != nullptr) {
-            datalink = new AP_HobbyWing_DataLink(*uart);
+            datalink = new AP_HobbyWing_DataLink(*uart, hal);
         }
     }
 #endif
@@ -247,7 +247,7 @@ void AP_ESC_Telem::thread_main()
 #endif
 
     while (true) {
-        hal.scheduler->delay_microseconds(1500);
+        hal.scheduler->delay_microseconds(1500000);
         for (uint8_t i=0; i<num_escs; i++) {
             escs[i]->update();
         }

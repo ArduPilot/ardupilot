@@ -8,7 +8,7 @@
 #endif
 
 #ifndef AP_ESC_TELEM_BACKEND_DEFAULT_ENABLED
-#define AP_ESC_TELEM_BACKEND_DEFAULT_ENABLED (HAL_WITH_ESC_TELEM && BOARD_FLASH_SIZE > 1024)
+#define AP_ESC_TELEM_BACKEND_DEFAULT_ENABLED 1
 #endif
 
 // enable the driver itself if the ESC telem backend is enabled.  An

@@ -91,7 +91,7 @@ static float get_temperature(uint16_t temperature_raw)
     float ntcR_Rref = (voltage * ESC_HW4_NTC_R1 / (ESC_HW4_V_REF - voltage)) / ESC_HW4_NTC_R_REF;
     if (ntcR_Rref < 0.001)
         return 0;
-    float temperature = 1 / (log(ntcR_Rref) / ESC_HW4_NTC_BETA + 1 / 298.15) - 273.15;
+    float temperature = 1 / (logf(ntcR_Rref) / ESC_HW4_NTC_BETA + 1 / 298.15) - 273.15;
 
     return temperature;
 }
