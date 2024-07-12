@@ -323,7 +323,7 @@ uint8_t AP_DroneCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
 }
 
 //Check if we have received Node Status from this node_id
-bool AP_DroneCAN_DNA_Server::isNodeSeen(uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::isNodeSeen(uint8_t node_id) const
 {
     if (node_id > MAX_NODE_ID) {
         return false;

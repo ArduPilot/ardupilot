@@ -34,6 +34,10 @@
 #define AP_FILESYSTEM_SYS_ENABLED 1
 #endif
 
+#ifndef AP_FILESYSTEM_DRONECAN_ENABLED
+#define AP_FILESYSTEM_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
+#endif
+
 // AP_FILESYSTEM_FILE_WRITING_ENABLED is true if you could expect to
 // be able to open and write a non-virtual file.  Notably this
 // excludes virtual files like SYSFS, and the magic param/mission

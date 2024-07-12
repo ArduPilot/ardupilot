@@ -68,6 +68,14 @@
 #include "AP_DroneCAN_serial.h"
 #endif
 
+#ifndef AP_DRONECAN_FILE_SERVER_ENABLED
+#define AP_DRONECAN_FILE_SERVER_ENABLED (BOARD_FLASH_SIZE>1024)
+#endif
+
+#if AP_DRONECAN_FILE_SERVER_ENABLED || AP_FILESYSTEM_DRONECAN_ENABLED
+#include "AP_DroneCAN_Filesystem.h"
+#endif
+
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
 class CANSensor;
@@ -94,6 +102,9 @@ public:
     bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) override;
     
     uint8_t get_driver_index() const { return _driver_index; }
+
+    // Ask DNA Server if given node ID had been seen
+    bool seen_node_id(uint8_t node_id) const;
 
     // define string with length structure
     struct string { uint8_t len; uint8_t data[128]; };
@@ -170,6 +181,10 @@ public:
     // Hardpoint for relay
     // Needs to be public so relay can edge trigger as well as streaming
     Canard::Publisher<uavcan_equipment_hardpoint_Command> relay_hardpoint{canard_iface};
+#endif
+
+#if AP_FILESYSTEM_DRONECAN_ENABLED
+    AP_DroneCAN_Filesystem_Client filesystem{canard_iface};
 #endif
 
 private:
@@ -392,6 +407,11 @@ private:
     void handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp);
     void handle_param_save_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_ExecuteOpcodeResponse& rsp);
     void handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req);
+
+#if AP_DRONECAN_FILE_SERVER_ENABLED
+    AP_DroneCAN_Filesystem_Server filesystem_server{canard_iface};
+#endif
+
 };
 
 #endif // #if HAL_ENABLE_DRONECAN_DRIVERS
