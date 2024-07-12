@@ -1249,6 +1249,12 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPPTR(glider_ptr, "GLD_",  3, SIM::ModelParm, Glider),
 #endif
 
+#if AP_SIM_SLUNGPAYLOAD_ENABLED
+    // @Group: SLUP_
+    // @Path: ./SIM_SlungPayload.cpp
+    AP_SUBGROUPINFO(slung_payload_sim, "SLUP_", 4, SIM::ModelParm, SlungPayloadSim),
+#endif
+
     AP_GROUPEND
 };
     
