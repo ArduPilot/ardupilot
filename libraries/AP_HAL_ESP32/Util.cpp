@@ -243,15 +243,13 @@ bool Util::get_system_id(char buf[50])
 
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
-    len = MIN(12, len);
-
-
     uint8_t base_mac_addr[6] = {0};
     esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
     if (ret != ESP_OK) {
         ret = esp_efuse_mac_get_default(base_mac_addr);
     }
 
+    len = MIN(len, ARRAY_SIZE(base_mac_addr));
     memcpy(buf, (const void *)base_mac_addr, len);
 
     return true;
