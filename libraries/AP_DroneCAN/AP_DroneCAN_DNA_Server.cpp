@@ -148,10 +148,10 @@ bool AP_DroneCAN_DNA_Server::isNodeIDVerified(uint8_t node_id) const
 
 /* Go through Server Records, and fetch node id that matches the provided
 Unique IDs hash.
-Returns 255 if no Node ID was detected */
+Returns 0 if no Node ID was detected */
 uint8_t AP_DroneCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
 {
-    uint8_t node_id = 255;
+    uint8_t node_id = 0;
     NodeData node_data, cmp_node_data;
     getHash(cmp_node_data, unique_id, size);
 
@@ -230,7 +230,7 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
     // Making sure that the server is started with the same node ID
     const uint8_t stored_own_node_id = getNodeIDForUniqueID(own_unique_id, own_unique_id_len);
     static bool reset_done;
-    if (stored_own_node_id != 255) {
+    if (stored_own_node_id != 0) {
         if (stored_own_node_id != node_id) {
             /* We have a different node id recorded against our own unique id
             This calls for a reset */
@@ -304,7 +304,7 @@ uint8_t AP_DroneCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
         candidate--;
     }
     // Not found
-    return 255;
+    return 0;
 }
 
 //Check if we have received Node Status from this node_id
@@ -472,7 +472,7 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
         /* Node Id was not allocated by us, or during this boot, let's register this in our records
         Check if we allocated this Node before */
         uint8_t prev_node_id = getNodeIDForUniqueID(rsp.hardware_version.unique_id, 16);
-        if (prev_node_id != 255) {
+        if (prev_node_id != 0) {
             //yes we did, remove this registration
             freeNodeID(prev_node_id);
         }
@@ -545,9 +545,9 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
     if (rcvd_unique_id_offset == 16) {
         //We have received the full Unique ID, time to do allocation
         uint8_t resp_node_id = getNodeIDForUniqueID((const uint8_t*)rcvd_unique_id, 16);
-        if (resp_node_id == 255) {
+        if (resp_node_id == 0) {
             resp_node_id = findFreeNodeID(msg.node_id > MAX_NODE_ID ? 0 : msg.node_id);
-            if (resp_node_id != 255) {
+            if (resp_node_id != 0) {
                 addNodeIDForUniqueID(resp_node_id, (const uint8_t*)rcvd_unique_id, 16);
                 rsp.node_id = resp_node_id;
             } else {
