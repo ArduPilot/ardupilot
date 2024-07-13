@@ -155,7 +155,7 @@ uint8_t AP_DroneCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], 
     NodeData node_data, cmp_node_data;
     getHash(cmp_node_data, unique_id, size);
 
-    for (int i = MAX_NODE_ID; i >= 0; i--) {
+    for (int i = MAX_NODE_ID; i > 0; i--) {
         if (!isNodeIDOccupied(i)) { // No point in checking NodeID that's not taken
             continue;
         }
@@ -221,7 +221,7 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
 
     /* Go through our records and look for valid NodeData, to initialise
     occupation mask */
-    for (uint8_t i = 0; i <= MAX_NODE_ID; i++) {
+    for (uint8_t i = 1; i <= MAX_NODE_ID; i++) {
         if (isValidNodeDataAvailable(i)) {
             occupation_mask.set(i);
         }
@@ -272,6 +272,7 @@ void AP_DroneCAN_DNA_Server::reset()
     occupation_mask.clearall();
 
     //Just write empty Node Data to the Records
+    // ensure node ID 0 is cleared even if we can't use it so we know the state
     for (uint8_t i = 0; i <= MAX_NODE_ID; i++) {
         writeNodeData(node_data, i);
     }
@@ -418,7 +419,7 @@ Or register if the node id is available and not recorded for the
 received Unique ID */
 void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoResponse& rsp)
 {
-    if (transfer.source_node_id > MAX_NODE_ID) {
+    if (transfer.source_node_id > MAX_NODE_ID || transfer.source_node_id == 0) {
         return;
     }
     /*
@@ -545,7 +546,7 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
         //We have received the full Unique ID, time to do allocation
         uint8_t resp_node_id = getNodeIDForUniqueID((const uint8_t*)rcvd_unique_id, 16);
         if (resp_node_id == 255) {
-            resp_node_id = findFreeNodeID(msg.node_id);
+            resp_node_id = findFreeNodeID(msg.node_id > MAX_NODE_ID ? 0 : msg.node_id);
             if (resp_node_id != 255) {
                 addNodeIDForUniqueID(resp_node_id, (const uint8_t*)rcvd_unique_id, 16);
                 rsp.node_id = resp_node_id;
