@@ -84,6 +84,10 @@ extern const AP_HAL::HAL& hal;
 #define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
 #endif
 
+#ifndef AP_DRONECAN_DEFAULT_NODE
+#define AP_DRONECAN_DEFAULT_NODE 10
+#endif
+
 #define AP_DRONECAN_GETSET_TIMEOUT_MS 100       // timeout waiting for response from node after 0.1 sec
 
 #define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
@@ -96,11 +100,11 @@ extern const AP_HAL::HAL& hal;
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: NODE
-    // @DisplayName: DroneCAN node that is used for this network
-    // @Description: DroneCAN node should be set implicitly
-    // @Range: 1 250
+    // @DisplayName: Own node ID
+    // @Description: DroneCAN node ID used by the driver itself on this network
+    // @Range: 1 125
     // @User: Advanced
-    AP_GROUPINFO("NODE", 1, AP_DroneCAN, _dronecan_node, 10),
+    AP_GROUPINFO("NODE", 1, AP_DroneCAN, _dronecan_node, AP_DRONECAN_DEFAULT_NODE),
 
     // @Param: SRV_BM
     // @DisplayName: Output channels to be transmitted as servo over DroneCAN
@@ -326,6 +330,11 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called more than once\n\r");
         return;
     }
+    uint8_t node = _dronecan_node;
+    if (node < 1 || node > 125) { // reset to default if invalid
+        _dronecan_node.set(AP_DRONECAN_DEFAULT_NODE);
+        node = AP_DRONECAN_DEFAULT_NODE;
+    }
 
     node_info_rsp.name.len = hal.util->snprintf((char*)node_info_rsp.name.data, sizeof(node_info_rsp.name.data), "org.ardupilot:%u", driver_index);
 
@@ -348,16 +357,16 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to allocate memory pool\n\r");
         return;
     }
-    canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), _dronecan_node);
+    canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), node);
 
     if (!hal.util->get_system_id_unformatted(unique_id, uid_len)) {
         return;
     }
-    unique_id[uid_len - 1] += _dronecan_node;
+    unique_id[uid_len - 1] += node;
     memcpy(node_info_rsp.hardware_version.unique_id, unique_id, uid_len);
 
     //Start Servers
-    if (!_dna_server.init(unique_id, uid_len, _dronecan_node)) {
+    if (!_dna_server.init(unique_id, uid_len, node)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to start DNA Server\n\r");
         return;
     }
