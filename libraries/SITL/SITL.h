@@ -229,8 +229,9 @@ public:
 
 #if HAL_NUM_CAN_IFACES
     enum class CANTransport : uint8_t {
-      MulticastUDP = 0,
-      SocketCAN = 1
+      None = 0,
+      MulticastUDP = 1,
+      SocketCAN = 2,
     };
     AP_Enum<CANTransport> can_transport[HAL_NUM_CAN_IFACES];
 #endif
