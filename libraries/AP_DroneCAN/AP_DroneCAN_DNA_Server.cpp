@@ -202,8 +202,10 @@ bool AP_DroneCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
 {
     NodeData node_data;
     readNodeData(node_data, node_id);
+
+    uint8_t empty_hwid[sizeof(NodeData::hwid_hash)] = {0};
     uint8_t crc = crc_crc8(node_data.hwid_hash, sizeof(node_data.hwid_hash));
-    if (crc == node_data.crc && node_data.crc != 0) {
+    if (crc == node_data.crc && memcmp(&node_data.hwid_hash[0], &empty_hwid[0], sizeof(empty_hwid)) != 0) {
         return true;
     }
     return false;
