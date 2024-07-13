@@ -12,6 +12,12 @@ LOG_BITMASK      65535
 # mag field varies quite a lot between batteries
 ARMING_MAGTHRESH 200
 
+# IMU orientation
+AHRS_ORIENTATION 8
+
+# compass orientation
+COMPASS_ORIENT 8
+
 # filtering
 INS_GYRO_FILTER  40
 INS_HNTCH_ENABLE 1
@@ -55,6 +61,9 @@ BATT_VOLT_PIN    1
 BATT_CURR_PIN    2
 BATT_VOLT_MULT   1
 BATT_AMP_PERVLT  1
+# on the test board we have a current offset of -16.8A
+# we need to check if this applies to all versions of this vehicle
+BATT_AMP_OFFSET -16.8
 
 # 2S battery range
 MOT_BAT_VOLT_MAX 8.400000
