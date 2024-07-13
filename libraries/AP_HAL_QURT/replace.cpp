@@ -147,7 +147,7 @@ int slpi_link_client_init(void)
     return 0;
 }
 
-typedef void (*mavlink_data_callback_t)(const struct qurt_mavlink_msg *msg, void* p);
+typedef void (*mavlink_data_callback_t)(const struct qurt_rpc_msg *msg, void* p);
 
 static mavlink_data_callback_t mav_cb;
 static void *mav_cb_ptr;
@@ -161,11 +161,11 @@ void register_mavlink_data_callback(mavlink_data_callback_t func, void *p)
 
 int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
 {
-    if (data_len_in_bytes < QURT_MAVLINK_MSG_HEADER_LEN) {
+    if (data_len_in_bytes < QURT_RPC_MSG_HEADER_LEN) {
         return 0;
     }
-    const auto *msg = (struct qurt_mavlink_msg *)data;
-    if (msg->data_length + QURT_MAVLINK_MSG_HEADER_LEN != data_len_in_bytes) {
+    const auto *msg = (struct qurt_rpc_msg *)data;
+    if (msg->data_length + QURT_RPC_MSG_HEADER_LEN != data_len_in_bytes) {
         return 0;
     }
     if (msg->seq != expected_seq) {
@@ -207,4 +207,15 @@ int __wrap_printf(const char *fmt, ...)
 char *__wrap_strdup(const char *s)
 {
     return strndup(s, strlen(s));
+}
+
+/*
+  send a RPC message to the host
+ */
+bool qurt_rpc_send(struct qurt_rpc_msg &msg)
+{
+    if (msg.data_length > sizeof(msg.data)) {
+        return false;
+    }
+    return sl_client_send_data((const uint8_t*)&msg, msg.data_length + QURT_RPC_MSG_HEADER_LEN) >= 0;
 }

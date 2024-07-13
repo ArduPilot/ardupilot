@@ -163,8 +163,7 @@ void RCOutput::handle_esc_feedback(const struct esc_response_v2 &pkt)
 void RCOutput::handle_power_status(const struct esc_power_status &pkt)
 {
     esc_voltage = pkt.voltage * 0.001;
-    const int16_t current_offset = 2048; // why this offset?
-    esc_current = (pkt.current+current_offset) * 0.008;
+    esc_current = pkt.current * 0.008;
 }
 
 // check for responses

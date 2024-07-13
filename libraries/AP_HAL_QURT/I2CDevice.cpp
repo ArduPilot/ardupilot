@@ -27,10 +27,10 @@ using namespace QURT;
 
   bus1: mag
   bus2: power manager
-  bus4: external spare bus
-  bus5: barometer (internal)
+  bus5: barometer (internal)*
+  bus4: external spare bus (unused)
 */
-static uint8_t i2c_bus_ids[] = { 1, 2, 4, 5 };
+static uint8_t i2c_bus_ids[] = { 1, 2, 5 };
 
 static uint32_t i2c_internal_mask = (1U<<3);
 
@@ -44,6 +44,11 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
+    if (busnum >= ARRAY_SIZE(i2c_bus_ids)) {
+        bus.fd = -1;
+        HAP_PRINTF("Invalid I2C bus %u", unsigned(busnum));
+        return;
+    }
     HAP_PRINTF("Constructing I2CDevice %u 0x%02x %u", unsigned(busnum), unsigned(address), unsigned(bus_clock));
 
     if (bus.fd == -2) {

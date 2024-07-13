@@ -142,7 +142,7 @@ void UARTDriver_Console::printf(const char *fmt, ...)
 /*
   methods for UARTDriver_MAVLinkUDP
  */
-typedef void (*mavlink_data_callback_t)(const struct qurt_mavlink_msg *msg, void* p);
+typedef void (*mavlink_data_callback_t)(const struct qurt_rpc_msg *msg, void* p);
 extern void register_mavlink_data_callback(mavlink_data_callback_t func, void *p);
 
 UARTDriver_MAVLinkUDP::UARTDriver_MAVLinkUDP(void)
@@ -150,10 +150,10 @@ UARTDriver_MAVLinkUDP::UARTDriver_MAVLinkUDP(void)
     register_mavlink_data_callback(_mavlink_data_cb, (void *) this);
 }
 
-void UARTDriver_MAVLinkUDP::_mavlink_data_cb(const struct qurt_mavlink_msg *msg, void *p)
+void UARTDriver_MAVLinkUDP::_mavlink_data_cb(const struct qurt_rpc_msg *msg, void *p)
 {
     auto *driver = (UARTDriver_MAVLinkUDP *)p;
-    driver->_readbuf.write(msg->mav_msg, msg->data_length);
+    driver->_readbuf.write(msg->data, msg->data_length);
 }
 
 /*
@@ -177,17 +177,15 @@ bool UARTDriver_MAVLinkUDP::_write_pending_bytes(void)
         return false;
     }
 
-    struct qurt_mavlink_msg msg;
-    if (n > sizeof(msg.mav_msg)) {
+    struct qurt_rpc_msg msg;
+    if (n > sizeof(msg.data)) {
         return false;
     }
+    msg.msg_id = QURT_MSG_ID_MAVLINK_MSG;
     msg.seq = seq++;
-    msg.data_length = n;
-    n = _writebuf.read(msg.mav_msg, n);
-    if (n > 0) {
-        (void) sl_client_send_data((const uint8_t*)&msg, n + QURT_MAVLINK_MSG_HEADER_LEN);
-    }
-    return n > 0;
+    msg.data_length = _writebuf.read(msg.data, n);
+
+    return qurt_rpc_send(msg);
 }
 
 /*

@@ -213,6 +213,14 @@ void Scheduler::reboot(bool hold_in_bootloader)
     HAP_PRINTF("**** REBOOT REQUESTED ****");
     // delay for printf to appear on USB monitor
     qurt_timer_sleep(10000);
+
+    // tell host we want to reboot
+    struct qurt_rpc_msg msg {};
+    msg.msg_id = QURT_MSG_ID_REBOOT;
+    qurt_rpc_send(msg);
+
+    // wait for RPC to get through
+    qurt_timer_sleep(10000);
     exit(1);
 }
 
