@@ -62,6 +62,9 @@ class AP_DroneCAN_DNA_Server
     //Generates 6Byte long hash from the specified unique_id
     void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
 
+    //Reset the Server Record
+    void reset();
+
     //Reads the Server Record from storage for specified node id
     bool readNodeData(NodeData &data, uint8_t node_id);
 
@@ -112,9 +115,6 @@ public:
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id);
-
-    //Reset the Server Record
-    void reset();
 
     /* Checks if the node id has been verified against the record
     Specific CAN drivers are expected to check use this method to 
