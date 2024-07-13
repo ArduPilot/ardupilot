@@ -124,10 +124,9 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
     while (AP_HAL::micros64() < wait_time_usec) {
         struct sitl_input input {};
-        sitl_model->update(input);
+        sitl_model->update(input); // delays up to 1 millisecond
         sim_update();
         update_voltage_current(input, 0);
-        usleep(100);
     }
 }
 
@@ -195,7 +194,7 @@ void SimMCast::multicast_read(void)
         printf("Waiting for multicast state\n");
     }
     struct SITL::sitl_fdm state;
-    while (sock.recv((void*)&state, sizeof(state), 0) != sizeof(state)) {
+    while (sock.recv((void*)&state, sizeof(state), 1) != sizeof(state)) {
         // nop
     }
     if (_sitl->state.timestamp_us == 0) {
