@@ -33,6 +33,7 @@ extern const AP_HAL::HAL& hal;
 #define NODEDATA_MAGIC 0xAC01
 #define NODEDATA_MAGIC_LEN 2
 #define MAX_NODE_ID    125
+#define NODEDATA_LOC(node_id) ((node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN)
 
 #define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
@@ -43,7 +44,10 @@ AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardI
     allocation_sub(allocation_cb, driver_index),
     node_status_sub(node_status_cb, driver_index),
     node_info_client(_canard_iface, node_info_cb)
-{}
+{
+    // storage size must be synced with StorageCANDNA entry in StorageManager.cpp
+    static_assert(NODEDATA_LOC(MAX_NODE_ID+1) <= 1024, "DNA storage too small");
+}
 
 /* Method to generate 6byte hash from the Unique ID.
 We return it packed inside the referenced NodeData structure */
@@ -62,52 +66,43 @@ void AP_DroneCAN_DNA_Server::getHash(NodeData &node_data, const uint8_t unique_i
 }
 
 //Read Node Data from Storage Region
-bool AP_DroneCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
+void AP_DroneCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
-        return false;
+        return;
     }
+
     WITH_SEMAPHORE(storage_sem);
-    if (!storage.read_block(&data, (node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN, sizeof(struct NodeData))) {
-        //This will fall through to Prearm Check
-        server_state = STORAGE_FAILURE;
-        return false;
-    }
-    return true;
+    storage.read_block(&data, NODEDATA_LOC(node_id), sizeof(struct NodeData));
 }
 
 //Write Node Data to Storage Region
-bool AP_DroneCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
+void AP_DroneCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
-        return false;
+        return;
     }
+
     WITH_SEMAPHORE(storage_sem);
-    if (!storage.write_block((node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN,
-                             &data, sizeof(struct NodeData))) {
-        server_state = STORAGE_FAILURE;
-        return false;
-    }
-    return true;
+    storage.write_block(NODEDATA_LOC(node_id), &data, sizeof(struct NodeData));
 }
 
 /* Set Occupation Mask, handy for keeping track of all node ids that
 are allocated and all that are available. */
-bool AP_DroneCAN_DNA_Server::setOccupationMask(uint8_t node_id)
+void AP_DroneCAN_DNA_Server::setOccupationMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
-        return false;
+        return;
     }
     occupation_mask.set(node_id);
-    return true;
 }
 
 /* Remove Node Data from Server Record in Storage,
 and also clear Occupation Mask */
-bool AP_DroneCAN_DNA_Server::freeNodeID(uint8_t node_id)
+void AP_DroneCAN_DNA_Server::freeNodeID(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
-        return false;
+        return;
     }
 
     struct NodeData node_data;
@@ -118,8 +113,6 @@ bool AP_DroneCAN_DNA_Server::freeNodeID(uint8_t node_id)
 
     //Clear Occupation Mask
     occupation_mask.clear(node_id);
-
-    return true;
 }
 
 /* Sets the verification mask. This is to be called, once
@@ -166,9 +159,7 @@ uint8_t AP_DroneCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], 
         if (!isNodeIDOccupied(i)) { // No point in checking NodeID that's not taken
             continue;
         }
-        if (!readNodeData(node_data, i)) {
-            break;  //Storage module has failed, report that as no NodeID detected
-        }
+        readNodeData(node_data, i);
         if (memcmp(node_data.hwid_hash, cmp_node_data.hwid_hash, sizeof(NodeData::hwid_hash)) == 0) {
             node_id = i;
             break;
@@ -179,7 +170,7 @@ uint8_t AP_DroneCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], 
 
 /* Hash the Unique ID and add it to the Server Record
 for specified Node ID. */
-bool AP_DroneCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
+void AP_DroneCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
 {
     NodeData node_data;
     getHash(node_data, unique_id, size);
@@ -187,14 +178,9 @@ bool AP_DroneCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t
     node_data.crc = crc_crc8(node_data.hwid_hash, sizeof(node_data.hwid_hash));
 
     //Write Data to the records
-    if (!writeNodeData(node_data, node_id)) {
-        server_state = FAILED_TO_ADD_NODE;
-        fault_node_id = node_id;
-        return false;
-    }
+    writeNodeData(node_data, node_id);
 
     setOccupationMask(node_id);
-    return true;
 }
 
 //Checks if a valid Server Record is present for specified Node ID
@@ -255,9 +241,7 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
                 reset_done = true;
             }
             //Add ourselves to the Server Record
-            if (!addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len)) {
-                return false;
-            }
+            addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len);
         }
     } else {
         //We have no record of our own Unique ID do a reset
@@ -268,9 +252,7 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
             reset_done = true;
         }
         //Add ourselves to the Server Record
-        if (!addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len)) {
-            return false;
-        }
+        addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len);
     }
     /* Also add to seen node id this is to verify
     if any duplicates are on the bus carrying our Node ID */
@@ -565,9 +547,8 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
         if (resp_node_id == 255) {
             resp_node_id = findFreeNodeID(msg.node_id);
             if (resp_node_id != 255) {
-                if (addNodeIDForUniqueID(resp_node_id, (const uint8_t*)rcvd_unique_id, 16)) {
-                    rsp.node_id = resp_node_id;
-                }
+                addNodeIDForUniqueID(resp_node_id, (const uint8_t*)rcvd_unique_id, 16);
+                rsp.node_id = resp_node_id;
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
             }
@@ -588,20 +569,12 @@ bool AP_DroneCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) 
     switch (server_state) {
     case HEALTHY:
         return true;
-    case STORAGE_FAILURE: {
-        snprintf(fail_msg, fail_msg_len, "Failed to access storage!");
-        return false;
-    }
     case DUPLICATE_NODES: {
         if (_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
             // ignore error
             return true;
         }
         snprintf(fail_msg, fail_msg_len, "Duplicate Node %s../%d!", fault_node_name, fault_node_id);
-        return false;
-    }
-    case FAILED_TO_ADD_NODE: {
-        snprintf(fail_msg, fail_msg_len, "Failed to add Node %d!", fault_node_id);
         return false;
     }
     case NODE_STATUS_UNHEALTHY: {

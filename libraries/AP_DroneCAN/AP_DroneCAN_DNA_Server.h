@@ -25,9 +25,7 @@ class AP_DroneCAN_DNA_Server
 
     enum ServerState {
         NODE_STATUS_UNHEALTHY = -5,
-        STORAGE_FAILURE = -3,
         DUPLICATE_NODES = -2,
-        FAILED_TO_ADD_NODE = -1,
         HEALTHY = 0
     };
 
@@ -66,15 +64,15 @@ class AP_DroneCAN_DNA_Server
     void reset();
 
     //Reads the Server Record from storage for specified node id
-    bool readNodeData(NodeData &data, uint8_t node_id);
+    void readNodeData(NodeData &data, uint8_t node_id);
 
     //Writes the Server Record from storage for specified node id
-    bool writeNodeData(const NodeData &data, uint8_t node_id);
+    void writeNodeData(const NodeData &data, uint8_t node_id);
 
     //Methods to set, clear and report NodeIDs allocated/registered so far
-    bool setOccupationMask(uint8_t node_id);
+    void setOccupationMask(uint8_t node_id);
     bool isNodeIDOccupied(uint8_t node_id) const;
-    bool freeNodeID(uint8_t node_id);
+    void freeNodeID(uint8_t node_id);
 
     //Set the mask to report that the unique id matches the record
     void setVerificationMask(uint8_t node_id);
@@ -83,7 +81,7 @@ class AP_DroneCAN_DNA_Server
     uint8_t getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size);
 
     //Add Node ID info to the record and setup necessary mask fields
-    bool addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
+    void addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
 
     //Finds next available free Node, starting from preferred NodeID
     uint8_t findFreeNodeID(uint8_t preferred);
