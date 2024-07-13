@@ -14,7 +14,7 @@ def build(bld):
     STUB_SO = bld.bldnode.find_or_declare('slpi_link_stub.so')
     MAIN_CPP = bld.srcnode.make_node('libraries/AP_HAL_QURT/ap_host/src/main.cpp')
     IFADDR_CPP = bld.srcnode.make_node('libraries/AP_HAL_QURT/ap_host/src/getifaddrs.cpp')
-    AP_HOST = bld.bldnode.find_or_declare('ap_host')
+    AP_HOST = bld.bldnode.find_or_declare('ardupilot')
 
     bld(
         # build slpi stub library
