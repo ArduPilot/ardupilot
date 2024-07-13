@@ -92,7 +92,7 @@ public:
     }
 
 private:
-    static void _mavlink_data_cb(const struct qurt_mavlink_msg *msg, void *p);
+    static void _mavlink_data_cb(const struct qurt_rpc_msg *msg, void *p);
     uint32_t seq;
 };
 

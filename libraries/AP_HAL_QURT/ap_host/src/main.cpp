@@ -27,8 +27,13 @@ static int socket_fd;
 static bool connected;
 static struct sockaddr_in remote_addr;
 
-#define UDP_OUT_PORT 14551
 #define SO_NAME "ArduPilot.so"
+
+// setup for mavlink to localhost
+#define MAVLINK_UDP_LOCALHOST 1
+#define MAVLINK_UDP_PORT_LOCAL 14558
+#define MAVLINK_UDP_PORT_REMOTE 14559
+
 
 // directory for logs, parameters, terrain etc
 #define DATA_DIRECTORY "/data/APM"
@@ -55,6 +60,8 @@ static void shutdown_signal_handler(int signo)
     return;
 }
 
+static void slpi_init(void);
+
 static uint32_t num_params = 0;
 static uint32_t expected_seq = 0;
 
@@ -63,12 +70,12 @@ static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
     if (enable_debug) {
         printf("Got %u bytes in receive callback\n", length_in_bytes);
     }
-    const auto *msg = (const struct qurt_mavlink_msg *)data;
-    if (length_in_bytes < QURT_MAVLINK_MSG_HEADER_LEN) {
+    const auto *msg = (const struct qurt_rpc_msg *)data;
+    if (length_in_bytes < QURT_RPC_MSG_HEADER_LEN) {
         printf("Invalid length_in_bytes %d", length_in_bytes);
         return;
     }
-    if (msg->data_length + QURT_MAVLINK_MSG_HEADER_LEN != length_in_bytes) {
+    if (msg->data_length + QURT_RPC_MSG_HEADER_LEN != length_in_bytes) {
         printf("Invalid lengths %d %d\n", msg->data_length, length_in_bytes);
         return;
     }
@@ -80,16 +87,30 @@ static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
     switch (msg->msg_id) {
     case QURT_MSG_ID_MAVLINK_MSG: {
         if (_running) {
-            const auto bytes_sent = sendto(socket_fd, msg->mav_msg, msg->data_length, 0, (struct sockaddr *)&remote_addr, sizeof(remote_addr));
+            const auto bytes_sent = sendto(socket_fd, msg->data, msg->data_length, 0, (struct sockaddr *)&remote_addr, sizeof(remote_addr));
             if (bytes_sent <= 0) {
                 fprintf(stderr, "Send to GCS failed\n");
             }
         }
         break;
     }
+    case QURT_MSG_ID_REBOOT: {
+        printf("Rebooting\n");
+        exit(0);
+        break;
+    }
     default:
         fprintf(stderr, "Got unknown message id %d\n", msg->msg_id);
         break;
+    }
+}
+
+static void slpi_init(void)
+{
+    int r;
+    while ((r=slpi_link_init(enable_remote_debug, &receive_callback, SO_NAME)) != 0) {
+        fprintf(stderr, "slpi_link_init error %d %s, retrying\n", r, strerror(errno));
+        sleep(1);
     }
 }
 
@@ -135,14 +156,7 @@ int main()
         return -1;
     }
 
-    if (slpi_link_init(enable_remote_debug, &receive_callback, SO_NAME) != 0) {
-        fprintf(stderr, "Error with init\n");
-        sleep(1);
-        slpi_link_reset();
-        return -1;
-    } else if (enable_debug) {
-        printf("slpi_link_initialize succeeded\n");
-    }
+    slpi_init();
 
     //initialize socket and structure
     socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -151,6 +165,24 @@ int main()
         return -1;
     }
 
+#if MAVLINK_UDP_LOCALHOST
+    // send to mavlink router on localhost
+    remote_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    remote_addr.sin_family = AF_INET;
+    remote_addr.sin_port = htons(MAVLINK_UDP_PORT_REMOTE);
+
+    struct sockaddr_in local {};
+    local.sin_addr.s_addr = INADDR_ANY;
+    local.sin_family = AF_INET;
+    local.sin_port = htons(MAVLINK_UDP_PORT_LOCAL);
+
+    if (bind(socket_fd, (struct sockaddr *)&local, sizeof(local)) == 0) {
+        printf("Bind localhost OK\n");
+    } else {
+        printf("Bind failed: %s", strerror(errno));
+    }
+#else
+    // broadcast directly to the local network broadcast address
     const char *bcast_address = get_ipv4_broadcast();
     printf("Broadcast address=%s\n", bcast_address);
     inet_aton(bcast_address, &remote_addr.sin_addr);
@@ -166,7 +198,10 @@ int main()
 
     if (bind(socket_fd, (struct sockaddr *)&any, sizeof(any)) == 0) {
         printf("Bind OK\n");
+    } else {
+        printf("Bind failed: %s", strerror(errno));
     }
+#endif
 
     printf("Waiting for receive\n");
 
@@ -175,10 +210,10 @@ int main()
     uint32_t next_seq = 0;
 
     while (_running) {
-        struct qurt_mavlink_msg msg {};
+        struct qurt_rpc_msg msg {};
         struct sockaddr_in from;
         socklen_t fromlen = sizeof(from);
-        uint32_t bytes_received = recvfrom(socket_fd, msg.mav_msg, sizeof(msg.mav_msg), 0,
+        uint32_t bytes_received = recvfrom(socket_fd, msg.data, sizeof(msg.data), 0,
                                            (struct sockaddr*)&from, &fromlen);
         if (bytes_received > 0 && !connected) {
             remote_addr = from;
@@ -189,14 +224,15 @@ int main()
             fprintf(stderr, "Received failed");
             continue;
         }
-        if (bytes_received > sizeof(msg.mav_msg)) {
+        if (bytes_received > sizeof(msg.data)) {
             printf("Invalid bytes_received %d\n", bytes_received);
             continue;
         }
+        msg.msg_id = QURT_MSG_ID_MAVLINK_MSG;
         msg.data_length = bytes_received;
         msg.seq = next_seq++;
         // printf("Message received. %d bytes\n", bytes_received);
-        if (slpi_link_send((const uint8_t*) &msg, bytes_received + QURT_MAVLINK_MSG_HEADER_LEN)) {
+        if (slpi_link_send((const uint8_t*) &msg, bytes_received + QURT_RPC_MSG_HEADER_LEN)) {
             fprintf(stderr, "slpi_link_send_data failed\n");
         }
     }

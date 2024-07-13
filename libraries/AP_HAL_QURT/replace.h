@@ -9,6 +9,7 @@
 
 #include <types.h>
 #include <dirent.h>
+#include "ap_host/src/protocol.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,3 +48,9 @@ extern volatile uint32_t _last_counter;
 
 // missing defines from math.h
 #define M_SQRT1_2 0.70710678118654752440
+
+#ifdef __cplusplus
+// send a message to the host
+bool qurt_rpc_send(struct qurt_rpc_msg &msg);
+#endif
+
