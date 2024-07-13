@@ -30,8 +30,12 @@
 #include <stdio.h>
 extern const AP_HAL::HAL& hal;
 
+// FORMAT REVISION DREAMS (things to address if the nodedata needs to be changed substantially)
+// * have DNA server accept only a 16 byte local UID to avoid overhead from variable sized hash
+// * have a real empty flag for entries and/or use a CRC which is not zero for an input of all zeros
+
 #define NODEDATA_MAGIC 0xAC01
-#define NODEDATA_MAGIC_LEN 2
+#define NODEDATA_MAGIC_LEN 2 // uint16_t
 #define MAX_NODE_ID    125
 #define NODEDATA_LOC(node_id) ((node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN)
 
@@ -151,21 +155,18 @@ Unique IDs hash.
 Returns 0 if no Node ID was detected */
 uint8_t AP_DroneCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
 {
-    uint8_t node_id = 0;
     NodeData node_data, cmp_node_data;
     getHash(cmp_node_data, unique_id, size);
 
     for (int i = MAX_NODE_ID; i > 0; i--) {
-        if (!isNodeIDOccupied(i)) { // No point in checking NodeID that's not taken
-            continue;
-        }
-        readNodeData(node_data, i);
-        if (memcmp(node_data.hwid_hash, cmp_node_data.hwid_hash, sizeof(NodeData::hwid_hash)) == 0) {
-            node_id = i;
-            break;
+        if (isNodeIDOccupied(i)) {
+            readNodeData(node_data, i);
+            if (memcmp(node_data.hwid_hash, cmp_node_data.hwid_hash, sizeof(NodeData::hwid_hash)) == 0) {
+                return i; // node ID found
+            }
         }
     }
-    return node_id;
+    return 0; // not found
 }
 
 /* Hash the Unique ID and add it to the Server Record
@@ -210,7 +211,7 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
     uint16_t magic;
     {
         WITH_SEMAPHORE(storage_sem);
-        storage.read_block(&magic, 0, NODEDATA_MAGIC_LEN);
+        magic = storage.read_uint16(0);
     }
     if (magic != NODEDATA_MAGIC) {
         //Its not there a reset should write it in the Storage
@@ -232,21 +233,8 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
     // Making sure that the server is started with the same node ID
     const uint8_t stored_own_node_id = getNodeIDForUniqueID(own_unique_id, own_unique_id_len);
     static bool reset_done;
-    if (stored_own_node_id != 0) {
-        if (stored_own_node_id != node_id) {
-            /* We have a different node id recorded against our own unique id
-            This calls for a reset */
-            if (!reset_done) {
-                /* ensure we only reset once per power cycle
-                else we will wipe own record on next init(s) */
-                reset();
-                reset_done = true;
-            }
-            //Add ourselves to the Server Record
-            addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len);
-        }
-    } else {
-        //We have no record of our own Unique ID do a reset
+    if (stored_own_node_id != node_id) { // cannot match if not found
+        // We have no matching record of our own Unique ID do a reset
         if (!reset_done) {
             /* ensure we only reset once per power cycle
             else we will wipe own record on next init(s) */
@@ -280,8 +268,7 @@ void AP_DroneCAN_DNA_Server::reset()
     }
     WITH_SEMAPHORE(storage_sem);
     //Ensure we mark magic at the end
-    uint16_t magic = NODEDATA_MAGIC;
-    storage.write_block(0, &magic, NODEDATA_MAGIC_LEN);
+    storage.write_uint16(0, NODEDATA_MAGIC);
 }
 
 /* Go through the Occupation mask for available Node ID
@@ -289,8 +276,11 @@ based on pseudo code provided in
 uavcan/protocol/dynamic_node_id/1.Allocation.uavcan */
 uint8_t AP_DroneCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
 {
+    if (preferred == 0) {
+        preferred = 125;
+    }
     // Search up
-    uint8_t candidate = (preferred > 0) ? preferred : 125;
+    uint8_t candidate = preferred;
     while (candidate <= 125) {
         if (!isNodeIDOccupied(candidate)) {
             return candidate;
@@ -298,7 +288,7 @@ uint8_t AP_DroneCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
         candidate++;
     }
     //Search down
-    candidate = (preferred > 0) ? preferred : 125;
+    candidate = preferred;
     while (candidate > 0) {
         if (!isNodeIDOccupied(candidate)) {
             return candidate;
