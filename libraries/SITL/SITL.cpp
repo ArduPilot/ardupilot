@@ -133,7 +133,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: CAN_TYPE1
     // @DisplayName: transport type for first CAN interface
     // @Description: transport type for first CAN interface
-    // @Values: 0:MulticastUDP,1:SocketCAN
+    // @Values: 0:None,1:MulticastUDP,2:SocketCAN
     // @User: Advanced
     AP_GROUPINFO("CAN_TYPE1", 30, SIM,  can_transport[0], uint8_t(CANTransport::MulticastUDP)),
 #endif
@@ -142,7 +142,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: CAN_TYPE2
     // @DisplayName: transport type for second CAN interface
     // @Description: transport type for second CAN interface
-    // @Values: 0:MulticastUDP,1:SocketCAN
+    // @Values: 0:None,1:MulticastUDP,2:SocketCAN
     // @User: Advanced
     AP_GROUPINFO("CAN_TYPE2", 31, SIM,  can_transport[1], uint8_t(CANTransport::MulticastUDP)),
 #endif
