@@ -187,7 +187,7 @@ int AP_HobbyWing_DataLink::readHeader()
         }
         else
         {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "First chunk read not succesfully expected=%d actual=%d", HEADER_SIZE, bytes_read);
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "First chunk read not succesfully expected=%d actual=%ld", HEADER_SIZE, (long int)bytes_read);
         }
         return 0;
     }
@@ -197,7 +197,7 @@ int AP_HobbyWing_DataLink::readHeader()
     if(bytes_read != HEADER_SIZE)
     {
         //read false, read from the beginning
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Second chunk read not succesfully expected=%d actual=%d", HEADER_SIZE, bytes_read);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Second chunk read not succesfully expected=%d actual=%d", HEADER_SIZE, (long int)bytes_read);
         first_chunk_filled = false;
         return 0;
     }
