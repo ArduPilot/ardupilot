@@ -242,7 +242,7 @@ int AP_HobbyWing_DataLink::readHeader()
     for(int i = 0; i< HEADER_SIZE; i++)
     {
         header_first_chunk[i] = header_second_chunk[i];
-        std::fill(header_second_chunk,header_second_chunk + HEADER_SIZE-1,0);
+        header_second_chunk[i] = 0;
     }
     return 0;
 
@@ -250,9 +250,10 @@ int AP_HobbyWing_DataLink::readHeader()
 
 void AP_HobbyWing_DataLink::resetChunks()
 {
-    std::fill(header_first_chunk,header_first_chunk + HEADER_SIZE-1,0);
-    std::fill(header_second_chunk,header_second_chunk + HEADER_SIZE-1,0);
-
+    for(int i = 0; i< HEADER_SIZE; i++) {
+        header_first_chunk[i] = 0;
+        header_second_chunk[i] = 0;
+    }
 }
 
 #endif  // AP_HOBBYWING_DATALINK_ENABLED
