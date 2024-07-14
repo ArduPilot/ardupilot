@@ -138,8 +138,8 @@ void AP_HobbyWing_DataLink::update()
     if (packet_checksum != packet.crc) {
         // checksum failure
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Checksum failure expected=%d actual=%d", packet.crc, packet_checksum);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes in the end of the package [155]=%02x [156]=%02x [157]=%02x [158]=%02x [159]=%02x",
-            data[155], data[156],  data[157],  data[158],  data[159]);
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes in the end of the package [155]=%02x [156]=%02x [157]=%02x [158]=%02x [159]=%02x",
+            // data[155], data[156],  data[157],  data[158],  data[159]);
         return;
     }
 
