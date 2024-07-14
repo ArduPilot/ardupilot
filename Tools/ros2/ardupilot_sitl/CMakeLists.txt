@@ -81,12 +81,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Install DDS profile.
-install(FILES
-  ${ARDUPILOT_ROOT}/libraries/AP_DDS/dds_xrce_profile.xml
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
 # Install additional default params.
 install(DIRECTORY
   config/default_params
@@ -96,6 +90,12 @@ install(DIRECTORY
 # Install autotest default params.
 install(DIRECTORY
   ${ARDUPILOT_ROOT}/Tools/autotest/default_params
+  DESTINATION share/${PROJECT_NAME}/config/
+)
+
+# Install additional autotest model params.
+install(DIRECTORY
+  ${ARDUPILOT_ROOT}/Tools/autotest/models
   DESTINATION share/${PROJECT_NAME}/config/
 )
 

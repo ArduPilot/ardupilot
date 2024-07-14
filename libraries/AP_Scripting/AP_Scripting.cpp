@@ -224,10 +224,9 @@ void AP_Scripting::init(void) {
 MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &packet) {
     switch ((SCRIPTING_CMD)packet.param1) {
         case SCRIPTING_CMD_REPL_START:
-            return repl_start() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
         case SCRIPTING_CMD_REPL_STOP:
-            repl_stop();
-            return MAV_RESULT_ACCEPTED;
+            return MAV_RESULT_DENIED;
+
         case SCRIPTING_CMD_STOP:
             _restart = false;
             _stop = true;
@@ -243,41 +242,6 @@ MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &
     return MAV_RESULT_UNSUPPORTED;
 }
 #endif
-
-bool AP_Scripting::repl_start(void) {
-    if (terminal.session) { // it's already running, this is fine
-        return true;
-    }
-
-    // nuke the old folder and all contents
-    struct stat st;
-    if ((AP::FS().stat(REPL_DIRECTORY, &st) == -1) &&
-        (AP::FS().unlink(REPL_DIRECTORY)  == -1) &&
-        (errno != EEXIST)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: Unable to delete old REPL %s", strerror(errno));
-    }
-
-    // create a new folder
-    AP::FS().mkdir(REPL_DIRECTORY);
-    // delete old files in case we couldn't
-    AP::FS().unlink(REPL_DIRECTORY "/in");
-    AP::FS().unlink(REPL_DIRECTORY "/out");
-
-    // make the output pointer
-    terminal.output_fd = AP::FS().open(REPL_OUT, O_WRONLY|O_CREAT|O_TRUNC);
-    if (terminal.output_fd == -1) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: %s", "Unable to make new REPL");
-        return false;
-    }
-
-    terminal.session = true;
-    return true;
-}
-
-void AP_Scripting::repl_stop(void) {
-    terminal.session = false;
-    // can't do any more cleanup here, closing the open FD's is the REPL's responsibility
-}
 
 /*
   avoid optimisation of the thread function. This avoids nasty traps
@@ -295,7 +259,7 @@ void AP_Scripting::thread(void) {
         _restart = false;
         _init_failed = false;
 
-        lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options, terminal);
+        lua_scripts *lua = NEW_NOTHROW lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options);
         if (lua == nullptr || !lua->heap_allocated()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Scripting: %s", "Unable to allocate memory");
             _init_failed = true;
@@ -376,7 +340,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
 
     if (mission_data == nullptr) {
         // load buffer
-        mission_data = new ObjectBuffer<struct AP_Scripting::scripting_mission_cmd>(mission_cmd_queue_size);
+        mission_data = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::scripting_mission_cmd>(mission_cmd_queue_size);
         if (mission_data != nullptr && mission_data->get_size() == 0) {
             delete mission_data;
             mission_data = nullptr;

@@ -91,7 +91,6 @@ class AutoTestHelicopter(AutoTestCopter):
             raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
-        self.set_rc(8, 1000)
         self.land_and_disarm()
         self.mav.wait_heartbeat()
 
@@ -199,25 +198,25 @@ class AutoTestHelicopter(AutoTestCopter):
             if not isinstance(defaults, list):
                 defaults = [defaults]
             self.customise_SITL_commandline(
-                ["--defaults", ','.join(defaults), ],
+                [],
+                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
             self.takeoff(10)
             self.do_RTL()
-            self.set_rc(8, 1000)
 
     def governortest(self):
         '''Test Heli Internal Throttle Curve and Governor'''
         self.customise_SITL_commandline(
-            ["--defaults", ','.join(self.model_defaults_filepath('heli-gas')), ],
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-gas'),
             model="heli-gas",
             wipe=True,
         )
         self.set_parameter("H_RSC_MODE", 4)
         self.takeoff(10)
         self.do_RTL()
-        self.set_rc(8, 1000)
 
     def hover(self):
         self.progress("Setting hover collective")
@@ -278,7 +277,6 @@ class AutoTestHelicopter(AutoTestCopter):
             ex = e
 
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         self.context_pop()
 
@@ -316,7 +314,6 @@ class AutoTestHelicopter(AutoTestCopter):
             ex = e
 
         self.land_and_disarm()
-        self.set_rc(8, 1000)
 
         self.context_pop()
 
@@ -365,8 +362,12 @@ class AutoTestHelicopter(AutoTestCopter):
                            timeout=timeout)
         self.context_collect('STATUSTEXT')
         self.progress("Triggering autorotate by raising interlock")
+        self.set_rc(3, 1000)
         self.set_rc(8, 1000)
+
         self.wait_statustext("SS Glide Phase", check_context=True)
+
+        self.change_mode('STABILIZE')
         self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
                              check_context=True,
                              regex=True)
@@ -842,6 +843,127 @@ class AutoTestHelicopter(AutoTestCopter):
         if ex is not None:
             raise ex
 
+    def AutoTune(self):
+        """Test autotune mode"""
+        # test roll and pitch FF tuning
+        self.set_parameters({
+            "ATC_ANG_RLL_P": 4.5,
+            "ATC_RAT_RLL_P": 0,
+            "ATC_RAT_RLL_I": 0.1,
+            "ATC_RAT_RLL_D": 0,
+            "ATC_RAT_RLL_FF": 0.15,
+            "ATC_ANG_PIT_P": 4.5,
+            "ATC_RAT_PIT_P": 0,
+            "ATC_RAT_PIT_I": 0.1,
+            "ATC_RAT_PIT_D": 0,
+            "ATC_RAT_PIT_FF": 0.15,
+            "ATC_ANG_YAW_P": 4.5,
+            "ATC_RAT_YAW_P": 0.18,
+            "ATC_RAT_YAW_I": 0.024,
+            "ATC_RAT_YAW_D": 0.003,
+            "ATC_RAT_YAW_FF": 0.024,
+            "AUTOTUNE_AXES": 3,
+            "AUTOTUNE_SEQ": 1,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+
+        # test pitch rate P and Rate D tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 2,
+            "AUTOTUNE_SEQ": 2,
+            "AUTOTUNE_GN_MAX": 2.0,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+
+        # test Roll rate P and Rate D tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 1,
+            "AUTOTUNE_SEQ": 2,
+            "AUTOTUNE_GN_MAX": 1.8,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+
+        # test Roll and pitch angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 3,
+            "AUTOTUNE_SEQ": 4,
+            "AUTOTUNE_GN_MAX": 2.0,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+
+        # test yaw FF, rate P and Rate D, and angle P tuning
+        self.set_parameters({
+            "AUTOTUNE_AXES": 4,
+            "AUTOTUNE_SEQ": 7,
+            "AUTOTUNE_GN_MAX": 2.0,
+            })
+
+        # Conduct testing from althold
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        self.wait_statustext('AutoTune: Success', timeout=1000)
+        now = self.get_sim_time()
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.land_and_disarm()
+
+    def land_and_disarm(self, **kwargs):
+        super(AutoTestHelicopter, self).land_and_disarm(**kwargs)
+        self.progress("Killing rotor speed")
+        self.set_rc(8, 1000)
+
+    def do_RTL(self, **kwargs):
+        super(AutoTestHelicopter, self).do_RTL(**kwargs)
+        self.progress("Killing rotor speed")
+        self.set_rc(8, 1000)
+
     def tests(self):
         '''return list of all tests'''
         ret = vehicle_test_suite.TestSuite.tests(self)
@@ -859,6 +981,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.TurbineStart,
             self.NastyMission,
             self.PIDNotches,
+            self.AutoTune,
         ])
         return ret
 

@@ -6,11 +6,7 @@ def build(bld):
     bld.ap_stlib(
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
-        ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AP_Beacon',
-            'AP_Arming',
-            'AP_RCMapper',
-        ],
+        ap_libraries=bld.ap_common_vehicle_libraries(),
     )
 
     bld.ap_program(

@@ -69,6 +69,12 @@ extern "C"
 #define MEMP_MEM_MALLOC 1
 #define LWIP_NETCONN_SEM_PER_THREAD 0
 
+/**
+ * SO_REUSE==1: Enable SO_REUSEADDR option.
+ */
+#ifndef SO_REUSE
+#define SO_REUSE                   1
+#endif
 
 #define NO_SYS                     0
 #define LWIP_SOCKET                (NO_SYS==0)

@@ -1862,10 +1862,14 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     static const int aspd_interval = 10; //units between large tick marks
     int alt_interval = (osd->units == AP_OSD::UNITS_AVIATION || osd->units == AP_OSD::UNITS_IMPERIAL) ? 20 : 10;
 
+    // Height values taking into account configurable vertical extension
+    const int bar_total_height = 7 + (osd->sidebar_v_ext * 2);
+    const int bar_middle = bar_total_height / 2;     // Integer division
+
     // render airspeed ladder
     int aspd_symbol_index = fmodf(scaled_aspd, aspd_interval) / aspd_interval * total_sectors;
-    for (int i = 0; i < 7; i++){
-        if (i == 3) {
+    for (int i = 0; i < bar_total_height; i++){
+        if (i == bar_middle) {
             // the middle section of the ladder with the currrent airspeed
             backend->write(x, y+i, false, "%3d%c%c", (int) scaled_aspd, u_icon(SPEED), SYMBOL(SYM_SIDEBAR_R_ARROW));
         } else {
@@ -1877,12 +1881,12 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     // render the altitude ladder
     // similar formula to above, but accounts for negative altitudes
     int alt_symbol_index = fmodf(fmodf(scaled_alt, alt_interval) + alt_interval, alt_interval) / alt_interval * total_sectors;
-    for (int i = 0; i < 7; i++){
-        if (i == 3) {
+    for (int i = 0; i < bar_total_height; i++){
+        if (i == bar_middle) {
             // the middle section of the ladder with the currrent altitude
-            backend->write(x+16, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
+            backend->write(x + 16 + osd->sidebar_h_offset, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
         } else {
-            backend->write(x+16, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
+            backend->write(x + 16 + osd->sidebar_h_offset, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
         }
         alt_symbol_index = (alt_symbol_index + 12) % 18;
     }

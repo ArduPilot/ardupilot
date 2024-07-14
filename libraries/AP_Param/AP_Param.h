@@ -430,6 +430,11 @@ public:
     ///
     static bool load_all();
 
+    // return true if eeprom is full, used for arming check
+    static bool get_eeprom_full(void) {
+        return eeprom_full;
+    }
+
     // returns storage space used:
     static uint16_t storage_used() { return sentinal_offset; }
 
@@ -495,11 +500,17 @@ public:
       values without changing the parameter indexes. This will return
       true if the parameter was converted from an old parameter value
     */
-    bool convert_parameter_width(ap_var_type old_ptype, float scale_factor=1.0);
+    bool convert_parameter_width(ap_var_type old_ptype, float scale_factor=1.0) {
+        return _convert_parameter_width(old_ptype, scale_factor, false);
+    }
     bool convert_centi_parameter(ap_var_type old_ptype) {
         return convert_parameter_width(old_ptype, 0.01f);
     }
-    
+    // Converting bitmasks should be done bitwise rather than numerically
+    bool convert_bitmask_parameter_width(ap_var_type old_ptype) {
+        return _convert_parameter_width(old_ptype, 1.0, true);
+    }
+
     // convert a single parameter with scaling
     enum {
         CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
@@ -785,6 +796,13 @@ private:
     // return true if the parameter is configured in EEPROM/FRAM
     bool configured_in_storage(void) const;
 
+    /*
+      convert width of a parameter, allowing update to wider scalar
+      values without changing the parameter indexes. This will return
+      true if the parameter was converted from an old parameter value
+    */
+    bool _convert_parameter_width(ap_var_type old_ptype, float scale_factor, bool bitmask);
+
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
 
@@ -852,6 +870,8 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+
+    static bool eeprom_full;
 };
 
 namespace AP {

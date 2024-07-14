@@ -33,11 +33,8 @@ bool AP_Airspeed_SITL::get_temperature(float &temperature)
     // this was mostly swiped from SIM_Airspeed_DLVR:
     const float sim_alt = sitl->state.altitude;
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-
     // To Do: Add a sensor board temperature offset parameter
-    temperature = (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
+    temperature = AP_Baro::get_temperatureC_for_alt_amsl(sim_alt);
 
     return true;
 }

@@ -326,7 +326,7 @@ AP_GPS_GSOF::process_message(void)
                 if ((vflag & 1) == 1)
                 {
                     state.ground_speed = SwapFloat(msg.data, a + 1);
-                    state.ground_course = degrees(SwapFloat(msg.data, a + 5));
+                    state.ground_course = wrap_360(degrees(SwapFloat(msg.data, a + 5)));
                     fill_3d_velocity();
                     state.velocity.z = -SwapFloat(msg.data, a + 9);
                     state.have_vertical_velocity = true;

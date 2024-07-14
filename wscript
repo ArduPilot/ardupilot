@@ -441,6 +441,11 @@ configuration in order to save typing.
                  type='int',
                  default=0,
                  help='zero time on boot in microseconds')
+
+    g.add_option('--enable-new-checking',
+        action='store_true',
+        default=False,
+        help='enables checking of new to ensure NEW_NOTHROW is used')
     
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
@@ -528,7 +533,6 @@ def configure(cfg):
     cfg.msg('Setting board to', cfg.options.board)
     cfg.get_board().configure(cfg)
 
-    cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
     cfg.load('dronecangen')
@@ -657,6 +661,8 @@ def list_ap_periph_boards(ctx):
 def ap_periph_boards(ctx):
     return boards.get_ap_periph_boards()
 
+vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'plane', 'rover', 'sub']
+
 def generate_tasklist(ctx, do_print=True):
     boardlist = boards.get_boards_names()
     ap_periph_targets = boards.get_ap_periph_boards()
@@ -674,12 +680,12 @@ def generate_tasklist(ctx, do_print=True):
             elif 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
-                if 'sitl' in board or 'SITL' in board:
-                    task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'replay']
-                elif 'linux' in board:
-                    task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub']
+                if boards.is_board_based(board, boards.sitl):
+                    task['targets'] = vehicles + ['replay']
+                elif boards.is_board_based(board, boards.linux):
+                    task['targets'] = vehicles
                 else:
-                    task['targets'] = ['antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader']
+                    task['targets'] = vehicles + ['bootloader']
                     task['buildOptions'] = '--upload'
             tasks.append(task)
         tlist.write(json.dumps(tasks))
@@ -901,7 +907,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'blimp', 'bootloader','iofirmware','AP_Periph','replay'):
+for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,

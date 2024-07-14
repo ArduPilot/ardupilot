@@ -177,40 +177,30 @@ void LoggerMessageWriter_DFLogStart::process()
         stage = Stage::RUNNING_SUBWRITERS;
         FALLTHROUGH;
 
-    case Stage::RUNNING_SUBWRITERS:
-        if (!_writesysinfo.finished()) {
-            _writesysinfo.process();
-            if (!_writesysinfo.finished()) {
-                return;
-            }
-        }
+    case Stage::RUNNING_SUBWRITERS: {
+        LoggerMessageWriter *subwriters[] {
+            &_writesysinfo,
 #if AP_MISSION_ENABLED
-        if (!_writeentiremission.finished()) {
-            _writeentiremission.process();
-            if (!_writeentiremission.finished()) {
-                return;
-            }
-        }
+            &_writeentiremission,
 #endif
 #if HAL_LOGGER_RALLY_ENABLED
-        if (!_writeallrallypoints.finished()) {
-            _writeallrallypoints.process();
-            if (!_writeallrallypoints.finished()) {
-                return;
-            }
-        }
+            &_writeallrallypoints,
 #endif
 #if HAL_LOGGER_FENCE_ENABLED
-        if (!_writeallpolyfence.finished()) {
-            _writeallpolyfence.process();
-            if (!_writeallpolyfence.finished()) {
-                return;
+            &_writeallpolyfence,
+#endif
+        };
+        for (auto *sw : subwriters) {
+            if (!sw->finished()) {
+                sw->process();
+                if (!sw->finished()) {
+                    return;
+                }
             }
         }
-#endif
         stage = Stage::VEHICLE_MESSAGES;
         FALLTHROUGH;
-
+    }
     case Stage::VEHICLE_MESSAGES:
         // we guarantee 200 bytes of space for the vehicle startup
         // messages.  This allows them to be simple functions rather

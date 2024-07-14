@@ -2,6 +2,10 @@
    parameter reversion utility. This helps with manual tuning
    in-flight by giving a way to instantly revert parameters to the startup parameters
 --]]
+
+---@diagnostic disable: param-type-mismatch
+
+
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 local PARAM_TABLE_KEY = 31
@@ -56,6 +60,7 @@ local PSC_prefixes = { "PSC", "Q_P" }
 local PID_prefixes = { "_RAT_RLL_", "_RAT_PIT_", "_RAT_YAW_" }
 local PID_suffixes = { "FF", "P", "I", "D", "D_FF", "PDMX", "NEF", "NTF", "IMAX", "FLTD", "FLTE", "FLTT", "SMAX" }
 local angle_axes = { "RLL", "PIT", "YAW" }
+local rate_limit_axes = { "R", "P", "Y"}
 local PSC_types = { "ACCZ", "VELZ", "POSZ", "VELXY", "POSXY" }
 local OTHER_PARAMS = { "INS_GYRO_FILTER", "INS_ACCEL_FILTER", "PTCH2SRV_TCONST", "RLL2SRV_TCONST" }
 
@@ -86,6 +91,13 @@ end
 for _, atc in ipairs(ATC_prefixes) do
    for _, axis in ipairs(angle_axes) do
       add_param(atc .. "_ANG_" .. axis .. "_P" )
+   end
+end
+
+-- add angular rate limits
+for _, atc in ipairs(ATC_prefixes) do
+   for _, axis in ipairs(rate_limit_axes) do
+      add_param(atc .. "_RATE_" .. axis .. "_MAX")
    end
 end
 

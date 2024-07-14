@@ -70,7 +70,7 @@ public:
     static const int STORAGE_PRIO = 6; */
 
     static const int SPI_PRIORITY = 24; //      if your primary imu is spi, this should be above the i2c value, spi is better.
-    static const int MAIN_PRIO    = 22; //	cpu0: we want schuler running at full tilt.
+    static const int MAIN_PRIO    = 15; //	at prio 22, we get 262hz, at prio 24 , we get ~90hz, at prio 15, we get 400hz, does this want to be even lower?
     static const int I2C_PRIORITY = 5;  //      if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
     static const int TIMER_PRIO   = 22; //      a low priority mere might cause wifi thruput to suffer
     static const int RCIN_PRIO    = 15;

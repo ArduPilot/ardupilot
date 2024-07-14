@@ -47,15 +47,15 @@ void RGBLed::_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     }
 }
 
-RGBLed::rgb_source_t RGBLed::rgb_source() const
+RGBLed::Source RGBLed::rgb_source() const
 {
-    return rgb_source_t(pNotify->_rgb_led_override.get());
+    return Source(pNotify->_rgb_led_override.get());
 }
 
 // set_rgb - set color as a combination of red, green and blue values
 void RGBLed::set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
-    if (rgb_source() == mavlink) {
+    if (rgb_source() == Source::mavlink) {
         // don't set if in override mode
         return;
     }
@@ -196,16 +196,16 @@ void RGBLed::update()
     uint32_t current_colour_sequence = 0;
 
     switch (rgb_source()) {
-    case mavlink:
+    case Source::mavlink:
         update_override();
         return; // note this is a return not a break!
-    case standard:
+    case Source::standard:
         current_colour_sequence = get_colour_sequence();
         break;
-    case obc:
+    case Source::obc:
         current_colour_sequence = get_colour_sequence_obc();
         break;
-    case traffic_light:
+    case Source::traffic_light:
         current_colour_sequence = get_colour_sequence_traffic_light();
         break;
     }
@@ -235,7 +235,7 @@ void RGBLed::update()
 */
 void RGBLed::handle_led_control(const mavlink_message_t &msg)
 {
-    if (rgb_source() != mavlink) {
+    if (rgb_source() != Source::mavlink) {
         // ignore LED_CONTROL commands if not in LED_OVERRIDE mode
         return;
     }

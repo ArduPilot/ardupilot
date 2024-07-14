@@ -282,11 +282,11 @@ public:
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
-    enum Mis_Done_Behave {
-        MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2,
-        MIS_DONE_BEHAVE_MANUAL    = 3
+    enum class DoneBehaviour : uint8_t {
+        HOLD      = 0,
+        LOITER    = 1,
+        ACRO      = 2,
+        MANUAL    = 3,
     };
 
 protected:

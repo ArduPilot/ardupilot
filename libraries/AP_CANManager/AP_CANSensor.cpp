@@ -197,7 +197,7 @@ MultiCAN::MultiCAN(ForwardCanFrame cf, AP_CAN::Protocol can_type, const char *dr
         CANSensor(driver_name)
 {
     if (callbacks == nullptr) {
-        callbacks = new MultiCANLinkedList();
+        callbacks = NEW_NOTHROW MultiCANLinkedList();
     }
     if (callbacks == nullptr) {
         AP_BoardConfig::allocation_error("Failed to create multican callback");
@@ -220,7 +220,7 @@ void MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
 // register a callback for a CAN frame by adding it to the linked list
 void MultiCAN::MultiCANLinkedList::register_callback(ForwardCanFrame callback)
 {
-    CANSensor_Multi* newNode = new CANSensor_Multi();
+    CANSensor_Multi* newNode = NEW_NOTHROW CANSensor_Multi();
     if (newNode == nullptr) {
         AP_BoardConfig::allocation_error("Failed to create multican node");
     }

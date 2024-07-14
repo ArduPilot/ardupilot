@@ -10,9 +10,13 @@ import json, base64, zlib
 try:
     import monocypher
 except ImportError:
-    print("Please install monocypher with: python3 -m pip install pymonocypher")
+    print("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
     sys.exit(1)
 
+if monocypher.__version__ != "3.1.3.2":
+    Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+    return None
+    
 key_len = 32
 sig_len = 64
 sig_version = 30437

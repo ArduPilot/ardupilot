@@ -134,6 +134,9 @@ SPIDEV icm42688   SPI1 DEVID1 GYRO1_CS   MODE3   1*MHZ   8*MHZ
 IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180
 DMA_NOSHARE TIM3_UP TIM2_UP TIM4_UP TIM8_UP SPI1*
 DMA_PRIORITY TIM3_UP TIM2_UP TIM4_UP TIM8_UP SPI1*
+# IMU for the older version of the board
+SPIDEV mpu6000 SPI1 DEVID1 GYRO1_CS MODE3 1*MHZ 4*MHZ
+IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types

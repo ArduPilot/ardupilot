@@ -58,6 +58,7 @@
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #define UBLOX_MAX_RXM_RAWX_SATS 32
+#define UBLOX_MAX_EXTENSIONS 8
 #define UBLOX_GNSS_SETTINGS 1
 #ifndef UBLOX_TIM_TM2_LOGGING
     #define UBLOX_TIM_TM2_LOGGING (BOARD_FLASH_SIZE>1024)
@@ -68,6 +69,7 @@
 #define UBX_TIMEGPS_VALID_WEEK_MASK 0x2
 
 #define UBLOX_MAX_PORTS 6
+#define UBLOX_MODULE_LEN 9
 
 #define RATE_POSLLH 1
 #define RATE_STATUS 1
@@ -99,9 +101,10 @@
 #define CONFIG_TMODE_MODE    (1<<16)
 #define CONFIG_RTK_MOVBASE   (1<<17)
 #define CONFIG_TIM_TM2       (1<<18)
-#define CONFIG_M10           (1<<19)
-#define CONFIG_L5            (1<<20)
-#define CONFIG_LAST          (1<<21) // this must always be the last bit
+#define CONFIG_F9            (1<<19)
+#define CONFIG_M10           (1<<20)
+#define CONFIG_L5            (1<<21)
+#define CONFIG_LAST          (1<<22) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -518,7 +521,7 @@ private:
     struct PACKED ubx_mon_ver {
         char swVersion[30];
         char hwVersion[10];
-        char extension[50]; // extensions are not enabled
+        char extension[30*UBLOX_MAX_EXTENSIONS]; // extensions are not enabled
     };
     struct PACKED ubx_nav_svinfo_header {
         uint32_t itow;
@@ -719,6 +722,12 @@ private:
                                                  // flagging state in the driver
     };
 
+    enum ubx_hardware_variant {
+        UBLOX_F9_ZED, // comes from MON_VER extension strings
+        UBLOX_F9_NEO, // comes from MON_VER extension strings
+        UBLOX_UNKNOWN_HARDWARE_VARIANT = 0xff
+    };
+
     enum config_step {
         STEP_PVT = 0,
         STEP_NAV_RATE, // poll NAV rate
@@ -742,6 +751,8 @@ private:
         STEP_VERSION,
         STEP_RTK_MOVBASE, // setup moving baseline
         STEP_TIM_TM2,
+        STEP_F9,
+        STEP_F9_VALIDATE,
         STEP_M10,
         STEP_L5,
         STEP_LAST
@@ -765,13 +776,16 @@ private:
     uint32_t        _last_cfg_sent_time;
     uint8_t         _num_cfg_save_tries;
     uint32_t        _last_config_time;
+    uint32_t        _f9_config_time;
     uint16_t        _delay_time;
     uint8_t         _next_message;
     uint8_t         _ublox_port;
     bool            _have_version;
     struct ubx_mon_ver _version;
+    char            _module[UBLOX_MODULE_LEN];
     uint32_t        _unconfigured_messages;
     uint8_t         _hardware_generation;
+    uint8_t         _hardware_variant;
     uint32_t        _last_pvt_itow;
     uint32_t        _last_relposned_itow;
     uint32_t        _last_relposned_ms;
@@ -798,8 +812,17 @@ private:
     
     bool havePvtMsg;
 
+    // structure for list of config key/value pairs for
+    // specific configurations
+    struct PACKED config_list {
+        ConfigKey key;
+        // support up to 4 byte values, assumes little-endian
+        uint32_t value;
+    };
+
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     bool        _configure_valset(ConfigKey key, const void *value, uint8_t layers=UBX_VALSET_LAYER_ALL);
+    bool        _configure_list_valset(const config_list *list, uint8_t count, uint8_t layers=UBX_VALSET_LAYER_ALL);
     bool        _configure_valget(ConfigKey key);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
@@ -828,14 +851,6 @@ private:
     }
 #endif
 
-    // structure for list of config key/value pairs for
-    // specific configurations
-    struct PACKED config_list {
-        ConfigKey key;
-        // support up to 4 byte values, assumes little-endian
-        uint32_t value;
-    };
-
     // return size of a config key payload
     uint8_t config_key_size(ConfigKey key) const;
 
@@ -848,6 +863,13 @@ private:
 
     // return true if GPS is capable of F9 config
     bool supports_F9_config(void) const;
+
+    // is the config key a GNSS key
+    bool is_gnss_key(ConfigKey key) const;
+
+    // populate config_GNSS for F9P
+    uint8_t populate_F9_gnss(void);
+    uint8_t last_configured_gnss;
 
     uint8_t _pps_freq = 1;
 #ifdef HAL_GPIO_PPS
@@ -863,6 +885,7 @@ private:
         uint32_t unconfig_bit;
         uint8_t layers;
         int8_t fetch_index;
+        int8_t set_index;
     } active_config;
 
 #if GPS_MOVING_BASELINE
@@ -882,6 +905,8 @@ private:
     static const config_list config_M10[];
     static const config_list config_L5_ovrd_ena[];
     static const config_list config_L5_ovrd_dis[];
+    // scratch space for GNSS config
+    config_list* config_GNSS;
 };
 
 #endif

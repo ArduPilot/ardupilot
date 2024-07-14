@@ -237,6 +237,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 175:Camera Lens
     // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
     // @Values{Copter, Rover, Plane, Blimp}: 177:Mount LRF enable
+    // @Values{Copter}: 178:FlightMode Pause/Resume
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -624,6 +625,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     switch (ch_option) {
     // the following functions do not need to be initialised:
     case AUX_FUNC::ARMDISARM:
+    case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::BATTERY_MPPT_ENABLE:
     case AUX_FUNC::CAMERA_TRIGGER:
     case AUX_FUNC::CLEAR_WP:
@@ -672,7 +674,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     // not really aux functions:
     case AUX_FUNC::LOWEHEISER_THROTTLE:
         break;
+#if HAL_ADSB_ENABLED
     case AUX_FUNC::AVOID_ADSB:
+#endif
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::FENCE:
     case AUX_FUNC::GPS_DISABLE:
@@ -828,6 +832,14 @@ bool RC_Channel::read_aux()
         return false;
     }
 
+    if (!switch_state.initialised) {
+        switch_state.initialised = true;
+        if (init_position_on_first_radio_read((AUX_FUNC)option.get())) {
+            switch_state.current_position = (int8_t)new_position;
+            switch_state.debounce_position = (int8_t)new_position;
+        }
+    }
+
     if (!debounce_completed((int8_t)new_position)) {
         return false;
     }
@@ -845,6 +857,26 @@ bool RC_Channel::read_aux()
     return true;
 }
 
+// returns true if the first time we successfully read the
+// channel's three-position-switch position we should record that
+// position as the current position *without* executing the
+// associated auxiliary function.  e.g. do not attempt to arm a
+// vehicle when the user turns on their transmitter with the arm
+// switch high!
+bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
+{
+    switch (func) {
+    case AUX_FUNC::ARMDISARM_AIRMODE:
+    case AUX_FUNC::ARMDISARM:
+    case AUX_FUNC::ARM_EMERGENCY_STOP:
+    case AUX_FUNC::PARACHUTE_RELEASE:
+
+        // we do not want to process 
+        return true;
+    default:
+        return false;
+    }
+}
 
 void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 {
@@ -1125,7 +1157,6 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
     if (sprayer == nullptr) {
         return;
     }
-
     sprayer->run(ch_flag == AuxSwitchPos::HIGH);
     // if we are disarmed the pilot must want to test the pump
     sprayer->test_pump((ch_flag == AuxSwitchPos::HIGH) && !hal.util->get_soft_armed());
@@ -1312,9 +1343,11 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         do_aux_function_mission_reset(ch_flag);
         break;
 
+#if HAL_ADSB_ENABLED
     case AUX_FUNC::AVOID_ADSB:
         do_aux_function_avoid_adsb(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
@@ -1765,7 +1798,7 @@ RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC opti
 // duplicate_options_exist - returns true if any options are duplicated
 bool RC_Channels::duplicate_options_exist()
 {
-    uint8_t auxsw_option_counts[256] = {};
+    uint8_t auxsw_option_counts[512] = {};
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         const RC_Channel *c = channel(i);
         if (c == nullptr) {

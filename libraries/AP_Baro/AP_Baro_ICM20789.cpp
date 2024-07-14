@@ -80,7 +80,7 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
     if (!dev || !dev_imu) {
         return nullptr;
     }
-    AP_Baro_ICM20789 *sensor = new AP_Baro_ICM20789(baro, std::move(dev), std::move(dev_imu));
+    AP_Baro_ICM20789 *sensor = NEW_NOTHROW AP_Baro_ICM20789(baro, std::move(dev), std::move(dev_imu));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

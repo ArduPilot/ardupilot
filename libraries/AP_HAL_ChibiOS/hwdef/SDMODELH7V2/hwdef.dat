@@ -1,0 +1,18 @@
+include ../KakuteH7-bdshot/hwdef.dat
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_SDMODELH7V2
+
+# VTX power switch
+PB11 VTX_PWR OUTPUT HIGH PUSHPULL GPIO(81)
+define RELAY2_PIN_DEFAULT 81
+
+# Camera control
+PE9 CAM_C OUTPUT LOW GPIO(84)
+define RELAY4_PIN_DEFAULT 84
+
+# BetaFlight motor order
+define HAL_FRAME_TYPE_DEFAULT 12
+
+# builtin compass
+COMPASS IST8310 I2C:0:0x0E false ROTATION_PITCH_180

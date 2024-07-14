@@ -127,7 +127,7 @@ bool AP_Networking_ChibiOS::init()
     }
 #endif
 
-    thisif = new netif;
+    thisif = NEW_NOTHROW netif;
     if (thisif == nullptr) {
         return false;
     }

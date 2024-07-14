@@ -143,6 +143,6 @@ jobs:
         shell: bash
         run: |
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
-          Tools/scripts/build_tests/test_ccache.py --boards MatekF405,MatekF405-bdshot --min-cache-pct=75
-          Tools/scripts/build_tests/test_ccache.py --boards Durandal,Pixhawk6X --min-cache-pct=70
+          Tools/scripts/build_tests/test_ccache.py --boards MatekF405-bdshot,MatekF405-TE-bdshot --min-cache-pct=75
+          Tools/scripts/build_tests/test_ccache.py --boards Durandal-bdshot,Pixhawk6X --min-cache-pct=70
 

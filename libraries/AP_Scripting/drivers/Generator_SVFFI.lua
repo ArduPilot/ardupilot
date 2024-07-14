@@ -3,6 +3,9 @@
    See http://www.svffi.com/en/
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: missing-parameter
+
 local PARAM_TABLE_KEY = 42
 local PARAM_TABLE_PREFIX = "EFI_SVF_"
 

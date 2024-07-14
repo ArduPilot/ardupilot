@@ -33,6 +33,7 @@
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
 #define CRSF_HEADER_LEN     2U       // header length
 #define CRSF_FRAME_PAYLOAD_MAX (CRSF_FRAMELEN_MAX - CRSF_HEADER_LEN)     // maximum size of the frame length field in a packet
+#define CRSF_FRAME_LENGTH_MIN 2 // min value for _frame.length
 #define CRSF_BAUDRATE      416666U
 #define ELRS_BAUDRATE      420000U
 #define CRSF_TX_TIMEOUT    500000U   // the period after which the transmitter is considered disconnected (matches copters failsafe)
@@ -79,7 +80,9 @@ public:
 
     enum FrameType {
         CRSF_FRAMETYPE_GPS = 0x02,
+        CRSF_FRAMETYPE_VARIO = 0x07,
         CRSF_FRAMETYPE_BATTERY_SENSOR = 0x08,
+        CRSF_FRAMETYPE_BARO_VARIO = 0x09,
         CRSF_FRAMETYPE_HEARTBEAT = 0x0B,
         CRSF_FRAMETYPE_VTX = 0x0F,
         CRSF_FRAMETYPE_VTX_TELEM = 0x10,

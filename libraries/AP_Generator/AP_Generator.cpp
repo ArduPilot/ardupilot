@@ -67,19 +67,19 @@ void AP_Generator::init()
 
 #if AP_GENERATOR_IE_650_800_ENABLED
         case Type::IE_650_800:
-            _driver_ptr = new AP_Generator_IE_650_800(*this);
+            _driver_ptr = NEW_NOTHROW AP_Generator_IE_650_800(*this);
             break;
 #endif
 
 #if AP_GENERATOR_IE_2400_ENABLED
         case Type::IE_2400:
-            _driver_ptr = new AP_Generator_IE_2400(*this);
+            _driver_ptr = NEW_NOTHROW AP_Generator_IE_2400(*this);
             break;
 #endif
 
 #if AP_GENERATOR_RICHENPOWER_ENABLED
         case Type::RICHENPOWER:
-            _driver_ptr = new AP_Generator_RichenPower(*this);
+            _driver_ptr = NEW_NOTHROW AP_Generator_RichenPower(*this);
             break;
 #endif
     }

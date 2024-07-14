@@ -47,6 +47,11 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             mavlink_gps_input_t packet;
             mavlink_msg_gps_input_decode(&msg, &packet);
 
+            // check if target instance belongs to incoming gps data.
+            if (state.instance != packet.gps_id) {
+                return;
+            }
+
             bool have_alt    = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_ALT) == 0);
             bool have_hdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_HDOP) == 0);
             bool have_vdop   = ((packet.ignore_flags & GPS_INPUT_IGNORE_FLAG_VDOP) == 0);
@@ -140,9 +145,15 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             break;
             }
 
+#if AP_MAVLINK_MSG_HIL_GPS_ENABLED
         case MAVLINK_MSG_ID_HIL_GPS: {
             mavlink_hil_gps_t packet;
             mavlink_msg_hil_gps_decode(&msg, &packet);
+
+            // check if target instance belongs to incoming gps data.
+            if (state.instance != packet.id) {
+                return;
+            }
 
             state.time_week = 0;
             state.time_week_ms  = packet.time_usec/1000;
@@ -176,6 +187,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             _new_data = true;
             break;
             }
+#endif  // AP_MAVLINK_MSG_HIL_GPS_ENABLED
         default:
             // ignore all other messages
             break;

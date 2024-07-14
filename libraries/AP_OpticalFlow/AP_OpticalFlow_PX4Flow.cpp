@@ -40,7 +40,7 @@ extern const AP_HAL::HAL& hal;
 // detect the device
 AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(AP_OpticalFlow &_frontend)
 {
-    AP_OpticalFlow_PX4Flow *sensor = new AP_OpticalFlow_PX4Flow(_frontend);
+    AP_OpticalFlow_PX4Flow *sensor = NEW_NOTHROW AP_OpticalFlow_PX4Flow(_frontend);
     if (!sensor) {
         return nullptr;
     }

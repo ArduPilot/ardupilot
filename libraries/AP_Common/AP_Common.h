@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <type_traits>
+#include <new>
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))
@@ -183,4 +184,11 @@ template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
      static_assert(std::is_integral<T>::value, "Integral required.");
      ((value) &= ~((T)(1U) << (bitnumber)));
  }
+
+/*
+  See the comments in libraries/AP_Common/c++.cpp
+ */
+#ifndef NEW_NOTHROW
+#define NEW_NOTHROW new(std::nothrow)
+#endif
 

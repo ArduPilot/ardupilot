@@ -48,9 +48,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
 
     // check for reverse tricopter
-    if (frame_type == MOTOR_FRAME_TYPE_PLUSREV) {
-        _pitch_reversed = true;
-    }
+    _pitch_reversed = frame_type == MOTOR_FRAME_TYPE_PLUSREV;
 
     _mav_type = MAV_TYPE_TRICOPTER;
 
@@ -62,11 +60,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
 void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // check for reverse tricopter
-    if (frame_type == MOTOR_FRAME_TYPE_PLUSREV) {
-        _pitch_reversed = true;
-    } else {
-        _pitch_reversed = false;
-    }
+    _pitch_reversed = frame_type == MOTOR_FRAME_TYPE_PLUSREV;
 
     set_initialised_ok((frame_class == MOTOR_FRAME_TRI) && SRV_Channels::function_assigned(SRV_Channel::k_motor7));
 }
@@ -286,7 +280,8 @@ void AP_MotorsTri::output_armed_stabilizing()
 void AP_MotorsTri::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // output to motors and servos
-    switch (motor_seq) {
+    if (!_pitch_reversed) {
+        switch (motor_seq) {
         case 1:
             // front right motor
             rc_write(AP_MOTORS_MOT_1, pwm);
@@ -306,6 +301,29 @@ void AP_MotorsTri::_output_test_seq(uint8_t motor_seq, int16_t pwm)
         default:
             // do nothing
             break;
+        }
+    } else {
+        switch (motor_seq) {
+        case 1:
+            // front motor
+            rc_write(AP_MOTORS_MOT_4, pwm);
+            break;
+        case 2:
+            // front servo
+            rc_write(AP_MOTORS_CH_TRI_YAW, pwm);
+            break;
+        case 3:
+            // back right motor
+            rc_write(AP_MOTORS_MOT_1, pwm);
+            break;
+        case 4:
+            // back left motor
+            rc_write(AP_MOTORS_MOT_2, pwm);
+            break;
+        default:
+            // do nothing
+            break;
+        }
     }
 }
 
@@ -360,6 +378,30 @@ float AP_MotorsTri::get_roll_factor(uint8_t i)
     return ret;
 }
 
+// This function is currently only used by AP_Motors_test
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+float AP_MotorsTri::get_pitch_factor_json(uint8_t i)
+{
+    float ret = 0.0f;
+
+    switch (i) {
+    case AP_MOTORS_MOT_1: // front motors
+    case AP_MOTORS_MOT_2:
+        ret = 0.5f;
+        break;
+    case AP_MOTORS_MOT_4: // rear motor
+        ret = -1.0f;
+        break;
+    }
+
+    if (_pitch_reversed) {
+        ret *= -1.0f;
+    }
+
+    return ret;
+}
+#endif // APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+
 // Run arming checks
 bool AP_MotorsTri::arming_checks(size_t buflen, char *buffer) const
 {
@@ -374,3 +416,38 @@ bool AP_MotorsTri::arming_checks(size_t buflen, char *buffer) const
     // run base class checks
     return AP_MotorsMulticopter::arming_checks(buflen, buffer);
 }
+
+// This function is currently only used by AP_Motors_test
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+// Get the testing order for the motors
+uint8_t AP_MotorsTri::get_motor_test_order(uint8_t i)
+{
+    if (!_pitch_reversed) {
+        switch (i) {
+        case AP_MOTORS_MOT_1: // front right motor
+            return 1;
+        case AP_MOTORS_MOT_4: // back motor
+            return 2;
+        case AP_MOTORS_CH_TRI_YAW: // back servo
+            return 3;
+        case AP_MOTORS_MOT_2: // front left motor
+            return 4;
+        default:
+            return 0;
+        }
+    } else {
+        switch (i) {
+        case AP_MOTORS_MOT_4: // front motor
+            return 1;
+        case AP_MOTORS_CH_TRI_YAW: // front servo
+            return 2;
+        case AP_MOTORS_MOT_1: // back right motor
+            return 3;
+        case AP_MOTORS_MOT_2: // back left motor
+            return 4;
+        default:
+            return 0;
+        }
+    }
+}
+#endif // APM_BUILD_TYPE(APM_BUILD_UNKNOWN)

@@ -33,7 +33,7 @@ public:
     AP_MotorsHeli_Single(uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(speed_hz),
         _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC),
-        _swashplate(AP_MOTORS_MOT_1, AP_MOTORS_MOT_2, AP_MOTORS_MOT_3, AP_MOTORS_MOT_5)
+        _swashplate(AP_MOTORS_MOT_1, AP_MOTORS_MOT_2, AP_MOTORS_MOT_3, AP_MOTORS_MOT_5, 1U)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -76,6 +76,11 @@ public:
 
     // Thrust Linearization handling
     Thrust_Linearization thr_lin {*this};
+
+#if HAL_LOGGING_ENABLED
+    // Blade angle logging - called at 10 Hz
+    void Log_Write(void) override;
+#endif
 
     // var_info
     static const struct AP_Param::GroupInfo var_info[];

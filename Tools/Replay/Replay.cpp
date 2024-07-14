@@ -161,7 +161,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
                 ::printf("Usage: -p NAME=VALUE\n");
                 exit(1);
             }
-            struct user_parameter *u = new user_parameter;
+            struct user_parameter *u = NEW_NOTHROW user_parameter;
             strncpy(u->name, gopt.optarg, eq-gopt.optarg);
             u->value = atof(eq+1);
             u->next = user_parameters;
@@ -310,7 +310,7 @@ void Replay::load_param_file(const char *pfilename)
         if (!parse_param_line(line, &pname, value)) {
             continue;
         }
-        struct user_parameter *u = new user_parameter;
+        struct user_parameter *u = NEW_NOTHROW user_parameter;
         strncpy_noterm(u->name, pname, sizeof(u->name));
         u->value = value;
         u->next = user_parameters;

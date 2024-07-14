@@ -770,7 +770,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
     WITH_SEMAPHORE(_semaphore);
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(pin);
+            _channels[j] = NEW_NOTHROW AnalogSource(pin);
             return _channels[j];
         }
     }

@@ -62,6 +62,9 @@ void AP_Mount::init()
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
+    // keep track of number of serial instances for initialisation
+    uint8_t serial_instance = 0;
+
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         switch (get_mount_type(instance)) {
@@ -69,20 +72,20 @@ void AP_Mount::init()
             break;
 #if HAL_MOUNT_SERVO_ENABLED
         case Type::Servo:
-            _backends[instance] = new AP_Mount_Servo(*this, _params[instance], true, instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Servo(*this, _params[instance], true, instance);
             _num_instances++;
             break;
 #endif
 #if HAL_SOLO_GIMBAL_ENABLED
         case Type::SoloGimbal:
-            _backends[instance] = new AP_Mount_SoloGimbal(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
         case Type::Alexmos:
-            _backends[instance] = new AP_Mount_Alexmos(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Alexmos(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif
@@ -90,7 +93,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
         case Type::SToRM32:
-            _backends[instance] = new AP_Mount_SToRM32(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_SToRM32(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif
@@ -98,15 +101,16 @@ void AP_Mount::init()
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         case Type::SToRM32_serial:
-            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_SToRM32_serial(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif
 
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
         case Type::Gremsy:
-            _backends[instance] = new AP_Mount_Gremsy(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Gremsy(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_MOUNT_GREMSY_ENABLED
@@ -114,7 +118,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)
         case Type::BrushlessPWM:
-            _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
             break;
 #endif
@@ -122,15 +126,16 @@ void AP_Mount::init()
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
         case Type::Siyi:
-            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Siyi(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_SIYI_ENABLED
 
 #if HAL_MOUNT_SCRIPTING_ENABLED
         // check for Scripting gimbal
         case Type::Scripting:
-            _backends[instance] = new AP_Mount_Scripting(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Scripting(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
@@ -138,7 +143,7 @@ void AP_Mount::init()
 #if HAL_MOUNT_XACTI_ENABLED
         // check for Xacti gimbal
         case Type::Xacti:
-            _backends[instance] = new AP_Mount_Xacti(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Xacti(*this, _params[instance], instance);
             _num_instances++;
             break;
 #endif // HAL_MOUNT_XACTI_ENABLED
@@ -146,8 +151,9 @@ void AP_Mount::init()
 #if HAL_MOUNT_VIEWPRO_ENABLED
         // check for Xacti gimbal
         case Type::Viewpro:
-            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Mount_Viewpro(*this, _params[instance], instance, serial_instance);
             _num_instances++;
+            serial_instance++;
             break;
 #endif // HAL_MOUNT_VIEWPRO_ENABLED
         }
@@ -263,6 +269,7 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 }
 
 // set angle target in degrees
+// roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
@@ -1014,7 +1021,10 @@ void AP_Mount::convert_params()
     // convert MNT_TYPE to MNT1_TYPE
     int8_t mnt_type = 0;
     IGNORE_RETURN(AP_Param::get_param_by_index(this, 19, AP_PARAM_INT8, &mnt_type));
-    if (mnt_type > 0) {
+    if (mnt_type == 0) {
+        // if the mount was not previously set, no need to perform the upgrade logic
+        return;
+    } else if (mnt_type > 0) {
         int8_t stab_roll = 0;
         int8_t stab_pitch = 0;
         IGNORE_RETURN(AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &stab_roll));
@@ -1024,8 +1034,9 @@ void AP_Mount::convert_params()
             // conversion is still done even if HAL_MOUNT_SERVO_ENABLED is false
             mnt_type = 7;  // (int8_t)Type::BrushlessPWM;
         }
+        // if the mount was previously set, then we need to save the upgraded mount type
+        _params[0].type.set_and_save(mnt_type);
     }
-    _params[0].type.set_and_save(mnt_type);
 
     // convert MNT_JSTICK_SPD to MNT1_RC_RATE
     int8_t jstick_spd = 0;

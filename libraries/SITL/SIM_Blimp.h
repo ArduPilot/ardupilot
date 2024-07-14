@@ -51,7 +51,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Blimp(frame_str);
+        return NEW_NOTHROW Blimp(frame_str);
     }
 
 protected:

@@ -43,7 +43,7 @@ and how to use the "PWR:VBAT" jumper.
  - SERIAL1 -> UART1 (DMA-enabled, MSP DisplayPort OSD)
  - SERIAL2 -> UART2 (DMA-enabled, GPS)
  - SERIAL3 -> UART3 (DMA-enabled, RCin)
- - SERIAL4 -> UART4 (spare)
+ - SERIAL4 -> UART4 (ESC telemetry)
  - SERIAL5 -> UART5 (spare)
  - SERIAL6 -> UART6 (spare, PWM 9 and 10 by default, use BRD_ALT_CONFIG = 1 for UART)
  - SERIAL7 -> UART7 (spare, RX is on HD connector for RC input, TX is not connected to external pad)
@@ -87,29 +87,64 @@ In addition to voltage sensing, the board also has an input for an external curr
 
 ## Loading Firmware
 
-The RADIX 2 HD uses a proprietary bootloader. To load firmware, download the firmware binary file
-from the [BrainFPV website](https://www.brainfpv.com/firmware) and copy it to the USB drive
-that appears when connecting the RADIX 2 HD to your computer when it is in bootloader mode
-(hold the BOOT button and release when connecting to USB).
+The RADIX 2 HD uses a proprietary bootloader which needs a firmware file in a custom
+file format. There are several ways of obtaining the firmware file, as explained below.
+Once you have obtained the file, copy it to the USB drive that appears when connecting
+the RADIX 2 HD to your computer when it is in bootloader mode (hold the BOOT button and
+release when connecting to USB). Once it finishes copying, safely remove the drive.
+At this point the RADIX 2 HD will reboot and run the ArduPilot firmware.
 
-Note: When using Ardupilot, it is necessary to have a microSD card inserted, without it
+Note: When using ArduPilot, it is necessary to have a microSD card inserted, without it
 the firmware won't run.
 
-Alternatively, you can create your own firmware file using the [BrainFPV Firmware Packer](https://github.com/BrainFPV/brainfpv_fw_packer).
-To create a file for Ardupilot, install the BrainFPV Firmware Packer:
+### Option 1: Download the Firmware File the BrainFPV Website
 
-    pip install git+https://github.com/BrainFPV/brainfpv_fw_packer.git
+The easiest way to get firmware files for your RADIX 2 HD is to download them from the
+BrainFPV website. You can do so [here](https://www.brainfpv.com/firmware).
 
-After that, build the Copter firmware:
+### Option 2: Download the Firmware From the ArduPilot Build Server
+
+Download the ELF file from the [ArduPilot Build Server](https://firmware.ardupilot.org/).
+Make sure you download the file for the "RADIX2HD" target. For example, the ELF file for ArduCopter
+is called "arducopter.elf".
+
+In order to use the ELF file with your RADIX 2 HD, it needs to be converted using the
+[BrainFPV Firmware Packer](https://github.com/BrainFPV/brainfpv_fw_packer). This utility
+is implemented in Python, so you will need a Python installation.
+
+If you are using Linux, use your package manager to install Python 3. If you are using
+Windows, download the Python 3 installer from the [Python Website](https://www.python.org/downloads/)
+and run it. When installing, make sure to select "Add Python to PATH", so you will
+be able to use Python from the Windows Command Prompt.
+
+After installing Python, start the Command Prompt and install the BrainFPV Firmware Packer
+using the following command:
+
+    pip install https://github.com/BrainFPV/brainfpv_fw_packer/archive/main.zip
+
+After installing it, you can use the following command to convert the "arducopter.elf" (or other vehicle elf file)
+file to a "arducopter.bin" file that can be used with the RADIX 2 HD:
+
+    brainfpv_fw_packer.py --name arducopter --in arducopter.elf --out arducopter.bin ^
+                          --dev radix2hd -t firmware -b 0x90400000 -z --noheader
+
+### Option 3: Compile the Firmware Yourself
+
+If you have a working [ArduPilot build environment](https://ardupilot.org/dev/docs/building-the-code.html),
+you can compile the firmware yourself and then convert it to the format needed by the BrainFPV
+bootloader. You will also need the [BrainFPV Firmware Packer](https://github.com/BrainFPV/brainfpv_fw_packer)
+to do so. Install it using the "pip install" command shown above.
+
+For Copter, build the firmware as follows:
 
     ./waf configure --board RADIX2HD
     ./waf copter
 
-Finally, use the firmware packer script to create the firmware file that can be used with the
+other vehicles can be built, but the RADIX 2 HD is used primarily for copter applications.
+Then use the firmware packer script to create the firmware file that can be used with the
 BrainFPV bootloader:
 
     ./libraries/AP_HAL_ChibiOS/hwdef/RADIX2HD/pack_firmware.sh copter
 
 To use it, copy the resulting `arducopter_{VERSION}_brainfpv.bin` to the USB drive that appears
-when the RADIX 2 HD is in bootloader mode. Once it finishes copying, safely remove the drive.
-At this point the RADIX 2 HD will reboot and run the Copter firmware.
+when the RADIX 2 HD is in bootloader mode.

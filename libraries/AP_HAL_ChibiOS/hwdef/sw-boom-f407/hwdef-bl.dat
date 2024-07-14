@@ -1,0 +1,39 @@
+# MCU class and specific type
+MCU STM32F4xx STM32F407xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 64
+FLASH_SIZE_KB 512
+
+# board ID for firmware load
+APJ_BOARD_ID 6001
+
+env AP_PERIPH 1
+
+define CAN_APP_NODE_NAME "sw-boom-f407-bl"
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# activity led
+PC8 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+PD5 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# can2 is the tail boom section, disable it
+#PB5 CAN2_RX CAN2
+#PB6 CAN2_TX CAN2
+PC14 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW HIGH
+
+# setup important outputs
+PA5  SAGETECH_MAINT OUTPUT GPIO(0) HIGH # force sagetech to maintenance mode
+PD15 CHARGER_EN     OUTPUT GPIO(3) LOW # disable the charger
+PB10 BAT_HEATER OUTPUT PUSHPULL SPEED_LOW LOW # disable the battery heater
+
+define HAL_USE_SERIAL FALSE

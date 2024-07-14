@@ -146,6 +146,20 @@ private:
     static const uint8_t SYM_RNGFD = 0x7F;
     static const uint8_t SYM_LQ = 0xF8;
 
+    static const uint8_t SYM_SIDEBAR_L_ARROW = 0x02;
+    static const uint8_t SYM_SIDEBAR_R_ARROW = 0x03;
+    static const uint8_t SYM_SIDEBAR_A = 0x13;
+    static const uint8_t SYM_SIDEBAR_B = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_C = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_D = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_E = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_F = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_G = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_H = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_I = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_J = SYM_SIDEBAR_A;
+
+
     static constexpr uint8_t symbols[AP_OSD_NUM_SYMBOLS] {
         SYM_M,
         SYM_KM,
@@ -226,6 +240,18 @@ private:
         SYM_FENCE_DISABLED,
         SYM_RNGFD,
         SYM_LQ,
+        SYM_SIDEBAR_L_ARROW,
+        SYM_SIDEBAR_R_ARROW,
+        SYM_SIDEBAR_A,
+        SYM_SIDEBAR_B,
+        SYM_SIDEBAR_C,
+        SYM_SIDEBAR_D,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_H,
+        SYM_SIDEBAR_I,
+        SYM_SIDEBAR_J,
     };
 
     bool _blink_on;

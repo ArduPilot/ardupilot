@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AP_RCTelemetry_config.h"
+
+#if HAL_CRSF_TELEM_ENABLED
+
 #include "AP_CRSF_Telem.h"
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -30,7 +34,7 @@
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CRSF_TELEM_ENABLED
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -66,6 +70,11 @@ bool AP_CRSF_Telem::init(void)
         return false;
     }
 
+    // Someone explicitly configure CRSF control for VTX
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
+        AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::CRSF);
+    }
+
     return AP_RCTelemetry::init();
 }
 
@@ -81,6 +90,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     // CRSF telemetry rate is 150Hz (4ms) max, so these rates must fit
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
     add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
+    add_scheduler_entry(50, 200);   // baro_vario        5Hz
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -152,6 +162,8 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
         // standard telemetry for high data rates
         set_scheduler_entry(BATTERY, 1000, 1000);       // 1Hz
         set_scheduler_entry(ATTITUDE, 1000, 1000);      // 1Hz
+        set_scheduler_entry(BARO_VARIO, 1000, 1000);    // 1Hz
+        set_scheduler_entry(VARIO, 1000, 1000);         // 1Hz
         // custom telemetry for high data rates
         set_scheduler_entry(GPS, 550, 500);            // 2.0Hz
         set_scheduler_entry(PASSTHROUGH, 100, 100);    // 8Hz
@@ -160,6 +172,8 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
         // standard telemetry for low data rates
         set_scheduler_entry(BATTERY, 1000, 2000);       // 0.5Hz
         set_scheduler_entry(ATTITUDE, 1000, 3000);      // 0.33Hz
+        set_scheduler_entry(BARO_VARIO, 1000, 3000);    // 0.33Hz
+        set_scheduler_entry(VARIO, 1000, 3000);         // 0.33Hz
         if (is_elrs()) {
             // ELRS custom telemetry for low data rates
             set_scheduler_entry(GPS, 550, 1000);            // 1.0Hz
@@ -320,6 +334,8 @@ void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 void AP_CRSF_Telem::disable_tx_entries()
 {
     disable_scheduler_entry(ATTITUDE);
+    disable_scheduler_entry(BARO_VARIO);
+    disable_scheduler_entry(VARIO);
     disable_scheduler_entry(BATTERY);
     disable_scheduler_entry(GPS);
     disable_scheduler_entry(FLIGHT_MODE);
@@ -334,6 +350,8 @@ void AP_CRSF_Telem::disable_tx_entries()
 void AP_CRSF_Telem::enable_tx_entries()
 {
     enable_scheduler_entry(ATTITUDE);
+    enable_scheduler_entry(BARO_VARIO);
+    enable_scheduler_entry(VARIO);
     enable_scheduler_entry(BATTERY);
     enable_scheduler_entry(GPS);
     enable_scheduler_entry(FLIGHT_MODE);
@@ -427,6 +445,12 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             break;
         case PARAMETERS: // update parameter settings
             process_pending_requests();
+            break;
+        case BARO_VARIO:
+            calc_baro_vario();
+            break;
+        case VARIO:
+            calc_vario();
             break;
         case ATTITUDE:
             calc_attitude();
@@ -554,6 +578,8 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
         return;
     }
 
+    apvtx.set_provider_enabled(AP_VideoTX::VTXType::CRSF);
+
     apvtx.set_band(vtx->band);
     apvtx.set_channel(vtx->channel);
     if (vtx->is_in_user_frequency_mode) {
@@ -599,6 +625,8 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
     if (!apvtx.get_enabled()) {
         return;
     }
+
+    apvtx.set_provider_enabled(AP_VideoTX::VTXType::CRSF);
 
     apvtx.set_frequency_mhz(vtx->frequency);
 
@@ -731,11 +759,6 @@ void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_fr
     _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ;
 }
 
-// process any changed settings and schedule for transmission
-void AP_CRSF_Telem::update()
-{
-}
-
 void AP_CRSF_Telem::process_pending_requests()
 {
     // handle general parameter requests
@@ -766,7 +789,8 @@ void AP_CRSF_Telem::update_vtx_params()
 {
     AP_VideoTX& vtx = AP::vtx();
 
-    if (!vtx.get_enabled()) {
+    // This function does ugly things with the vtx parameters which will upset other providers
+    if (!vtx.get_enabled() || !vtx.is_provider_enabled(AP_VideoTX::VTXType::CRSF)) {
         return;
     }
 
@@ -910,6 +934,60 @@ void AP_CRSF_Telem::calc_battery()
 
     _telem_size = sizeof(BatteryFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR;
+
+    _telem_pending = true;
+}
+
+uint16_t AP_CRSF_Telem::get_altitude_packed()
+{
+    int32_t altitude_dm = get_nav_alt_m(Location::AltFrame::ABOVE_HOME) * 10;
+
+    enum : int32_t {
+        ALT_MIN_DM = 10000,                     // minimum altitude in dm
+        ALT_THRESHOLD_DM = 0x8000 - ALT_MIN_DM, // altitude of precision changing in dm
+        ALT_MAX_DM = 0x7ffe * 10 - 5,           // maximum altitude in dm
+    };
+
+    if (altitude_dm < -ALT_MIN_DM) { // less than minimum altitude
+        return 0; // minimum
+    }
+    if (altitude_dm > ALT_MAX_DM) { // more than maximum
+        return 0xFFFEU; // maximum
+    }
+    if(altitude_dm < ALT_THRESHOLD_DM) { //dm-resolution range
+        return uint16_t(altitude_dm + ALT_MIN_DM);
+    }
+    return uint16_t((altitude_dm + 5) / 10) | uint16_t(0x8000); // meter-resolution range
+}
+
+int8_t AP_CRSF_Telem::get_vertical_speed_packed()
+{
+    float vspeed = get_vspeed_ms();
+    float vertical_speed_cm_s = vspeed * 100.0f;
+    const int16_t Kl = 100; // linearity constant;
+    const float Kr = .026f; // range constant;
+    int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
+    return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_baro_vario()
+{
+    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
+
+    _telem_size = sizeof(BaroVarioFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BARO_VARIO;
+
+    _telem_pending = true;
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_vario()
+{
+    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem_size = sizeof(VarioFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
 
     _telem_pending = true;
 }
@@ -1196,7 +1274,7 @@ void AP_CRSF_Telem::calc_parameter() {
 
     _pending_request.frame_type = 0;
     _telem_pending = true;
-#endif
+#endif  // OSD_PARAM_ENABLED
 }
 
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
@@ -1346,7 +1424,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     _pending_request.frame_type = 0;
     _telem_pending = true;
 }
-#endif
+#endif  // HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
 
 // write parameter information back into AP - assumes we already know the encoding for floats
 void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write_frame)
@@ -1416,7 +1494,7 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
     default:
         break;
     }
-#endif
+#endif  // OSD_PARAM_ENABLED
 }
 
 // get status text data
@@ -1560,7 +1638,7 @@ AP_CRSF_Telem *AP_CRSF_Telem::get_singleton(void) {
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_CRSF_Telem object then try to allocate one
-        new AP_CRSF_Telem();
+        NEW_NOTHROW AP_CRSF_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init();
@@ -1575,4 +1653,4 @@ namespace AP {
     }
 };
 
-#endif
+#endif  // HAL_CRSF_TELEM_ENABLED

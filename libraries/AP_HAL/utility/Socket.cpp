@@ -467,7 +467,7 @@ SOCKET_CLASS_NAME *SOCKET_CLASS_NAME::accept(uint32_t timeout_ms)
     if (newfd == -1) {
         return nullptr;
     }
-    auto *ret = new SOCKET_CLASS_NAME(false, newfd);
+    auto *ret = NEW_NOTHROW SOCKET_CLASS_NAME(false, newfd);
     if (ret != nullptr) {
         ret->connected = true;
         ret->reuseaddress();
@@ -504,7 +504,7 @@ void SOCKET_CLASS_NAME::close(void)
  */
 SOCKET_CLASS_NAME *SOCKET_CLASS_NAME::duplicate(void)
 {
-    auto *ret = new SOCKET_CLASS_NAME(datagram, fd);
+    auto *ret = NEW_NOTHROW SOCKET_CLASS_NAME(datagram, fd);
     if (ret == nullptr) {
         return nullptr;
     }

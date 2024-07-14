@@ -8,7 +8,7 @@ bool ModeRTL::_enter()
     }
 
     // initialise waypoint navigation library
-    g2.wp_nav.init(MAX(0, g2.rtl_speed));
+    g2.wp_nav.init(MAX(0.0f, g2.rtl_speed));
 
     // set target to the closest rally point or home
 #if HAL_RALLY_ENABLED

@@ -147,7 +147,6 @@ void ModeGuided::update_target_altitude()
         }
         plane.guided_state.last_target_alt = temp.alt;
         plane.set_target_altitude_location(temp);
-        plane.altitude_error_cm = plane.calc_altitude_error_cm();
     } else 
 #endif // OFFBOARD_GUIDED == ENABLED
         {

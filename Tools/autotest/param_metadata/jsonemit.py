@@ -62,6 +62,10 @@ class JSONEmit(Emit):
                 except KeyError:
                     pass
 
+            # Remove __field_text key
+            if '__field_text' in param.__dict__:
+                param.__dict__.pop('__field_text')
+
             # Get range section if available
             range_json = {}
             if 'Range' in param.__dict__:

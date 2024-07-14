@@ -77,7 +77,14 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Range: 0 50
     // @User: Advanced
     AP_GROUPINFO("OFS_MAX",  4, AP_Terrain, offset_max, 30),
-    
+
+    // @Param: CACHE_SZ
+    // @DisplayName: Terrain cache size
+    // @Description: The number of 32x28 cache blocks to keep in memory. Each block uses about 1800 bytes of memory
+    // @Range: 0 128
+    // @User: Advanced
+    AP_GROUPINFO("CACHE_SZ",  5, AP_Terrain, config_cache_size, TERRAIN_GRID_BLOCK_CACHE_SIZE),
+
     AP_GROUPEND
 };
 
@@ -488,13 +495,13 @@ bool AP_Terrain::allocate(void)
     if (cache != nullptr) {
         return true;
     }
-    cache = (struct grid_cache *)calloc(TERRAIN_GRID_BLOCK_CACHE_SIZE, sizeof(cache[0]));
+    cache = (struct grid_cache *)calloc(config_cache_size, sizeof(cache[0]));
     if (cache == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
         memory_alloc_failed = true;
         return false;
     }
-    cache_size = TERRAIN_GRID_BLOCK_CACHE_SIZE;
+    cache_size = config_cache_size;
     return true;
 }
 

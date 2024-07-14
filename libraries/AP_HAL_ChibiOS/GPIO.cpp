@@ -285,14 +285,14 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        return new IOMCU_DigitalSource(pin);
+        return NEW_NOTHROW IOMCU_DigitalSource(pin);
     }
 #endif
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (!g) {
         return nullptr;
     }
-    return new DigitalSource(g->pal_line);
+    return NEW_NOTHROW DigitalSource(g->pal_line);
 }
 
 extern const AP_HAL::HAL& hal;

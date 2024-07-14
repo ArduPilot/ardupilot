@@ -52,3 +52,11 @@ run_program(["./waf", "clean"])
 run_program(["./waf", "iofirmware"])
 shutil.copy('build/iomcu_f103_8MHz/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_f103_8MHz_lowpolh.bin')
 shutil.copy('build/iomcu_f103_8MHz/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_f103_8MHz_highpolh.bin')
+
+run_program(["./waf", "configure", "--board", 'iomcu-f103-8MHz-dshot'])
+run_program(["./waf", "clean"])
+run_program(["./waf", "iofirmware"])
+shutil.copy('build/iomcu-f103-8MHz-dshot/bin/iofirmware_lowpolh.bin',
+            'Tools/IO_Firmware/iofirmware_f103_8MHz_dshot_lowpolh.bin')
+shutil.copy('build/iomcu-f103-8MHz-dshot/bin/iofirmware_highpolh.bin',
+            'Tools/IO_Firmware/iofirmware_f103_8MHz_dshot_highpolh.bin')

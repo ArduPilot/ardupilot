@@ -45,7 +45,7 @@ AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t
                 // match with previous ID only
                 continue;
             }
-            backend = new AP_Airspeed_DroneCAN(_frontend, _instance);
+            backend = NEW_NOTHROW AP_Airspeed_DroneCAN(_frontend, _instance);
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                                    LOG_TAG,

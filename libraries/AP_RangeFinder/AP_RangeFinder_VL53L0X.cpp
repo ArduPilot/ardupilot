@@ -229,7 +229,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_
 		return nullptr;
 	}
     AP_RangeFinder_VL53L0X *sensor
-        = new AP_RangeFinder_VL53L0X(_state, _params, std::move(dev));
+        = NEW_NOTHROW AP_RangeFinder_VL53L0X(_state, _params, std::move(dev));
 
     if (!sensor) {
         delete sensor;

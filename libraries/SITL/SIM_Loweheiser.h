@@ -15,7 +15,7 @@
 /*
   Simulator for the Loweheiser EFI/generator
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:loweheiser --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:loweheiser --speedup=1 --console
 
 param set SIM_EFI_TYPE 2
 param set SERIAL5_PROTOCOL 2
@@ -57,7 +57,7 @@ long SET_MESSAGE_INTERVAL 225 100000
 
 # run SITL against real generator:
 DEV=/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=uart:$DEV:115200 --speedup=1 --console
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=uart:$DEV:115200 --speedup=1 --console
 
 # run generator test script against simulator:
 python ./libraries/AP_Generator/scripts/test-loweheiser.py tcp:localhost:5762

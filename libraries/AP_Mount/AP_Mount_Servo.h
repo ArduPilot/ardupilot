@@ -31,6 +31,12 @@ public:
     // update mount position - should be called periodically
     void update() override;
 
+    // returns true if this mount can control its roll
+    bool has_roll_control() const override;
+
+    // returns true if this mount can control its tilt
+    bool has_pitch_control() const override;
+
     // returns true if this mount can control its pan (required for multicopters)
     bool has_pan_control() const override;
 

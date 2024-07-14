@@ -38,6 +38,7 @@
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
 #include "SIM_HobbyWing_Platinum_PRO_v3.h"
+#include "ServoModel.h"
 
 namespace SITL {
 
@@ -103,6 +104,7 @@ public:
         return velocity_ef;
     }
 
+    // return TAS airspeed in earth frame
     const Vector3f &get_velocity_air_ef(void) const {
         return velocity_air_ef;
     }
@@ -128,6 +130,9 @@ public:
 
     // get position relative to home
     Vector3d get_position_relhome() const;
+
+    // get air density in kg/m^3
+    float get_air_density(float alt_amsl) const;
 
     // distance the rangefinder is perceiving
     float rangefinder_range() const;
@@ -179,15 +184,15 @@ protected:
     Vector3f gyro;                       // rad/s
     Vector3f velocity_ef;                // m/s, earth frame
     Vector3f wind_ef;                    // m/s, earth frame
-    Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame
+    Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame (true airspeed)
     Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
     Vector3d position;                   // meters, NED from origin
     float mass;                          // kg
     float external_payload_mass;         // kg
     Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
-    float airspeed;                      // m/s, apparent airspeed
-    float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
-    float battery_voltage = 0.0f;
+    float airspeed;                      // m/s, EAS airspeed
+    float airspeed_pitot;                // m/s, EAS airspeed, as seen by fwd pitot tube
+    float battery_voltage;
     float battery_current;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
@@ -244,6 +249,8 @@ protected:
     bool use_time_sync = true;
     float last_speedup = -1.0f;
     const char *config_ = "";
+    float eas2tas = 1.0;
+    float air_density = SSL_AIR_DENSITY;
 
     // allow for AHRS_ORIENTATION
     AP_Int8 *ahrs_orientation;
@@ -260,6 +267,7 @@ protected:
     } ground_behavior;
 
     bool use_smoothing;
+    bool disable_origin_movement;
 
     float ground_height_difference() const;
 
@@ -300,9 +308,9 @@ protected:
     void update_wind(const struct sitl_input &input);
 
     // return filtered servo input as -1 to 1 range
-    float filtered_idx(float v, uint8_t idx);
     float filtered_servo_angle(const struct sitl_input &input, uint8_t idx);
     float filtered_servo_range(const struct sitl_input &input, uint8_t idx);
+    void filtered_servo_setup(uint8_t idx, uint16_t pwm_min, uint16_t pwm_max, float deflection_deg);
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
@@ -315,6 +323,18 @@ protected:
 
     // get local thermal updraft
     float get_local_updraft(const Vector3d &currentPos);
+
+    // update EAS speeds
+    void update_eas_airspeed();
+
+    // clamp support
+    class Clamp {
+    public:
+        bool clamped(class Aircraft&, const struct sitl_input &input);  // true if the vehicle is currently clamped down
+    private:
+        bool currently_clamped;
+        bool grab_attempted;  // avoid warning multiple times about missed grab
+    } clamp;
 
 private:
     uint64_t last_time_us;
@@ -336,7 +356,7 @@ private:
         Location location;
     } smoothing;
 
-    LowPassFilterFloat servo_filter[5];
+    ServoModel servo_filter[16];
 
     Buzzer *buzzer;
     Sprayer *sprayer;

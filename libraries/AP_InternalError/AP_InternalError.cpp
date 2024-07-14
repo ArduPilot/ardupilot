@@ -85,22 +85,19 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
 {
     buffer[0] = 0;
     uint32_t buffer_used = 0;
+    const char *format = "%s"; // no comma before the first item
     for (uint8_t i=0; i<ARRAY_SIZE(error_bit_descriptions); i++) {
         if (buffer_used >= len) {
             break;
         }
         if (internal_errors & (1U<<i)) {
-            const char *format;
-            if (buffer_used == 0) {
-                format = "%s";
-            } else {
-                format = ",%s";
-            }
-            const size_t written = hal.util->snprintf((char*)&buffer[buffer_used],
+            const int written = hal.util->snprintf((char*)&buffer[buffer_used],
                                                       len-buffer_used,
                                                       format,
                                                       error_bit_descriptions[i]);
-            if (written <= 0) {
+            format = ",%s"; // once we write something, need commas thereafter
+
+            if (written < 0) {
                 break;
             }
             buffer_used += written;

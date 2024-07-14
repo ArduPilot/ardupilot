@@ -92,25 +92,25 @@ void AP_OAPathPlanner::init()
         return;
     case OA_PATHPLAN_BENDYRULER:
         if (_oabendyruler == nullptr) {
-            _oabendyruler = new AP_OABendyRuler();
+            _oabendyruler = NEW_NOTHROW AP_OABendyRuler();
             AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
         }
         break;
     case OA_PATHPLAN_DIJKSTRA:
 #if AP_FENCE_ENABLED
         if (_oadijkstra == nullptr) {
-            _oadijkstra = new AP_OADijkstra(_options);
+            _oadijkstra = NEW_NOTHROW AP_OADijkstra(_options);
         }
 #endif
         break;
     case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
 #if AP_FENCE_ENABLED
         if (_oadijkstra == nullptr) {
-            _oadijkstra = new AP_OADijkstra(_options);
+            _oadijkstra = NEW_NOTHROW AP_OADijkstra(_options);
         }
 #endif
         if (_oabendyruler == nullptr) {
-            _oabendyruler = new AP_OABendyRuler();
+            _oabendyruler = NEW_NOTHROW AP_OABendyRuler();
             AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
         }
         break;

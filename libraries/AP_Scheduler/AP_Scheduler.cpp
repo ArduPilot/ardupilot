@@ -21,6 +21,8 @@
 
 #include "AP_Scheduler_config.h"
 
+#if AP_SCHEDULER_ENABLED
+
 #include "AP_Scheduler.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -123,7 +125,7 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
 
     _num_tasks = _num_vehicle_tasks + _num_common_tasks;
 
-   _last_run = new uint16_t[_num_tasks];
+   _last_run = NEW_NOTHROW uint16_t[_num_tasks];
     _tick_counter = 0;
 
     // setup initial performance counters
@@ -539,3 +541,5 @@ AP_Scheduler &scheduler()
 }
 
 };
+
+#endif  // AP_SCHEDULER_ENABLED

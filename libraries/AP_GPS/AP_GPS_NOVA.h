@@ -39,8 +39,6 @@ private:
 
     bool parse(uint8_t temp);
     bool process_message();
-    uint32_t CRC32Value(uint32_t icrc);
-    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     static const uint8_t NOVA_PREAMBLE1 = 0xaa;
     static const uint8_t NOVA_PREAMBLE2 = 0x44;

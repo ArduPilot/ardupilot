@@ -29,9 +29,6 @@ protected:
     int32_t global_position_int_alt() const override;
     int32_t global_position_int_relative_alt() const override;
 
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
-
     void send_banner() override;
 
     void send_nav_controller_output() const override;
@@ -51,6 +48,7 @@ private:
     MAV_STATE vehicle_system_status() const override;
 
     int16_t vfr_hud_throttle() const override;
+    float vfr_hud_alt() const override;
 
     MAV_RESULT handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet);

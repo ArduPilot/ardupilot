@@ -2,6 +2,7 @@
 
 #if AP_CAMERA_ENABLED
 
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -201,42 +202,42 @@ void AP_Camera::init()
         switch ((CameraType)_params[instance].type.get()) {
 #if AP_CAMERA_SERVO_ENABLED
         case CameraType::SERVO:
-            _backends[instance] = new AP_Camera_Servo(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_Servo(*this, _params[instance], instance);
             break;
 #endif
 #if AP_CAMERA_RELAY_ENABLED
         case CameraType::RELAY:
-            _backends[instance] = new AP_Camera_Relay(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_Relay(*this, _params[instance], instance);
             break;
 #endif
 #if AP_CAMERA_SOLOGIMBAL_ENABLED
         // check for GoPro in Solo camera
         case CameraType::SOLOGIMBAL:
-            _backends[instance] = new AP_Camera_SoloGimbal(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_SoloGimbal(*this, _params[instance], instance);
             break;
 #endif
 #if AP_CAMERA_MOUNT_ENABLED
         // check for Mount camera
         case CameraType::MOUNT:
-            _backends[instance] = new AP_Camera_Mount(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_Mount(*this, _params[instance], instance);
             break;
 #endif
 #if AP_CAMERA_MAVLINK_ENABLED
         // check for MAVLink enabled camera driver
         case CameraType::MAVLINK:
-            _backends[instance] = new AP_Camera_MAVLink(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_MAVLink(*this, _params[instance], instance);
             break;
 #endif
 #if AP_CAMERA_MAVLINKCAMV2_ENABLED
         // check for MAVLink Camv2 driver
         case CameraType::MAVLINK_CAMV2:
-            _backends[instance] = new AP_Camera_MAVLinkCamV2(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_MAVLinkCamV2(*this, _params[instance], instance);
             break;
 #endif
 #if AP_CAMERA_SCRIPTING_ENABLED
         // check for Scripting driver
         case CameraType::SCRIPTING:
-            _backends[instance] = new AP_Camera_Scripting(*this, _params[instance], instance);
+            _backends[instance] = NEW_NOTHROW AP_Camera_Scripting(*this, _params[instance], instance);
             break;
 #endif
         case CameraType::NONE:
@@ -430,6 +431,44 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
+}
+
+// send a mavlink message; returns false if there was not space to
+// send the message, true otherwise
+bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message msg_id)
+{
+    const auto chan = link.get_chan();
+
+    switch (msg_id) {
+    case MSG_CAMERA_FEEDBACK:
+        CHECK_PAYLOAD_SIZE2(CAMERA_FEEDBACK);
+        send_feedback(chan);
+        break;
+    case MSG_CAMERA_INFORMATION:
+        CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
+        send_camera_information(chan);
+        break;
+    case MSG_CAMERA_SETTINGS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_SETTINGS);
+        send_camera_settings(chan);
+        break;
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    case MSG_CAMERA_FOV_STATUS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_FOV_STATUS);
+        send_camera_fov_status(chan);
+        break;
+#endif
+    case MSG_CAMERA_CAPTURE_STATUS:
+        CHECK_PAYLOAD_SIZE2(CAMERA_CAPTURE_STATUS);
+        send_camera_capture_status(chan);
+        break;
+
+    default:
+        // should not reach this; should only be called for specific IDs
+        break;
+    }
+
+    return true;
 }
 
 // set camera trigger distance in a mission

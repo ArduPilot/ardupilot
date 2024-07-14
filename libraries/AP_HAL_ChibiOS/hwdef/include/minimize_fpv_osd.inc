@@ -6,10 +6,9 @@ include minimize_common.inc
 
 define AP_OPTICALFLOW_ENABLED 0
 
-define AP_GPS_BACKEND_DEFAULT_ENABLED 0
-define AP_GPS_UBLOX_ENABLED 1
+# minimize_common.py removes backends except for a select few.  Add
+# some back in:
 define AP_GPS_NMEA_ENABLED 1
-define HAL_MSP_GPS_ENABLED HAL_MSP_SENSORS_ENABLED
 
 define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
 define AP_MOTORS_FRAME_QUAD_ENABLED 1

@@ -94,7 +94,7 @@ AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, AP_OpticalFlow
 // detect the device
 AP_OpticalFlow_Pixart *AP_OpticalFlow_Pixart::detect(const char *devname, AP_OpticalFlow &_frontend)
 {
-    AP_OpticalFlow_Pixart *sensor = new AP_OpticalFlow_Pixart(devname, _frontend);
+    AP_OpticalFlow_Pixart *sensor = NEW_NOTHROW AP_OpticalFlow_Pixart(devname, _frontend);
     if (!sensor) {
         return nullptr;
     }

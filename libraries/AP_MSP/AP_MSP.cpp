@@ -63,12 +63,12 @@ AP_MSP::AP_MSP()
 bool AP_MSP::init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_SerialManager::SerialProtocol protocol)
 {
     if (protocol == AP_SerialManager::SerialProtocol_MSP) {
-        _backends[backend_idx] = new AP_MSP_Telem_Generic(uart);
+        _backends[backend_idx] = NEW_NOTHROW AP_MSP_Telem_Generic(uart);
     } else if (protocol == AP_SerialManager::SerialProtocol_DJI_FPV) {
-        _backends[backend_idx] = new AP_MSP_Telem_DJI(uart);
+        _backends[backend_idx] = NEW_NOTHROW AP_MSP_Telem_DJI(uart);
 #if HAL_WITH_MSP_DISPLAYPORT
     } else if (protocol == AP_SerialManager::SerialProtocol_MSP_DisplayPort) {
-        _backends[backend_idx] = new AP_MSP_Telem_DisplayPort(uart);
+        _backends[backend_idx] = NEW_NOTHROW AP_MSP_Telem_DisplayPort(uart);
 #endif
     } else {
         return false;

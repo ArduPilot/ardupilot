@@ -94,9 +94,8 @@ void VectorNav::send_packet1(void)
     pkt.uncompAngRate[1] = radians(fdm.pitchRate + gyro_noise * rand_float());
     pkt.uncompAngRate[2] = radians(fdm.yawRate + gyro_noise * rand_float());
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(fdm.altitude * 0.001f, sigma, delta, theta);
-    pkt.pressure = SSL_AIR_PRESSURE * delta * 0.001 + rand_float() * 0.01;
+    const float pressure_Pa = AP_Baro::get_pressure_for_alt_amsl(fdm.altitude);
+    pkt.pressure = pressure_Pa*0.001 + rand_float() * 0.01;
 
     pkt.mag[0] = fdm.bodyMagField.x*0.001;
     pkt.mag[1] = fdm.bodyMagField.y*0.001;
@@ -153,7 +152,8 @@ void VectorNav::send_packet2(void)
     simulation_timeval(&tv);
 
     pkt.timeGPS = tv.tv_usec * 1000ULL;
-    pkt.temp = 23.5;
+
+    pkt.temp = AP_Baro::get_temperatureC_for_alt_amsl(fdm.altitude);
     pkt.numGPS1Sats = 19;
     pkt.GPS1Fix = 3;
     pkt.GPS1posLLA[0] = fdm.latitude;

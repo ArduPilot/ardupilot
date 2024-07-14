@@ -8,6 +8,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/ap_message.h>
 #include "AP_Camera_Params.h"
 #include "AP_Camera_shareddefs.h"
 
@@ -86,22 +87,9 @@ public:
     // handle MAVLink command from GCS to control the camera
     MAV_RESULT handle_command(const mavlink_command_int_t &packet);
 
-    // send camera feedback message to GCS
-    void send_feedback(mavlink_channel_t chan);
-
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan);
-
-    // send camera settings message to GCS
-    void send_camera_settings(mavlink_channel_t chan);
-
-#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
-    // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan);
-#endif
-
-    // send camera capture status message to GCS
-    void send_camera_capture_status(mavlink_channel_t chan);
+    // send a mavlink message; returns false if there was not space to
+    // send the message, true otherwise
+    bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time);
@@ -231,6 +219,23 @@ private:
 
     // perform any required parameter conversion
     void convert_params();
+
+    // send camera feedback message to GCS
+    void send_feedback(mavlink_channel_t chan);
+
+    // send camera information message to GCS
+    void send_camera_information(mavlink_channel_t chan);
+
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan);
+
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    // send camera field of view status
+    void send_camera_fov_status(mavlink_channel_t chan);
+#endif
+
+    // send camera capture status message to GCS
+    void send_camera_capture_status(mavlink_channel_t chan);
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

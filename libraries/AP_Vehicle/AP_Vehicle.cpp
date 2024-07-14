@@ -367,9 +367,11 @@ void AP_Vehicle::setup()
     networking.init();
 #endif
 
+#if AP_SCHEDULER_ENABLED
     // Register scheduler_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
+#endif
 
 #if HAL_MSP_ENABLED
     // call MSP init before init_ardupilot to allow for MSP sensors
@@ -431,7 +433,11 @@ void AP_Vehicle::setup()
 
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
+#if AP_SCHEDULER_ENABLED
     gyro_fft.init(AP::scheduler().get_loop_rate_hz());
+#else
+    gyro_fft.init(1000);
+#endif
 #endif
 #if HAL_RUNCAM_ENABLED
     runcam.init();
@@ -524,8 +530,13 @@ void AP_Vehicle::setup()
 
 void AP_Vehicle::loop()
 {
+#if AP_SCHEDULER_ENABLED
     scheduler.loop();
     G_Dt = scheduler.get_loop_period_s();
+#else
+    hal.scheduler->delay(1);
+    G_Dt = 0.001;
+#endif
 
     if (!done_safety_init) {
         /*
@@ -552,6 +563,7 @@ void AP_Vehicle::loop()
     }
 }
 
+#if AP_SCHEDULER_ENABLED
 /*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here.
@@ -712,6 +724,7 @@ void AP_Vehicle::scheduler_delay_callback()
     logger.EnableWrites(true);
 #endif
 }
+#endif  // AP_SCHEDULER_ENABLED
 
 // if there's been a watchdog reset, notify the world via a statustext:
 void AP_Vehicle::send_watchdog_reset_statustext()
@@ -1031,6 +1044,10 @@ void AP_Vehicle::one_Hz_update(void)
     scripting.update();
 #endif
 
+#if HAL_LOGGING_ENABLED
+    hal.util->uart_log();
+#endif
+
 }
 
 void AP_Vehicle::check_motor_noise()
@@ -1070,7 +1087,7 @@ void AP_Vehicle::check_motor_noise()
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()
 {
-    dds_client = new AP_DDS_Client();
+    dds_client = NEW_NOTHROW AP_DDS_Client();
     if (dds_client == nullptr) {
         return false;
     }

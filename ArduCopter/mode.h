@@ -3,6 +3,7 @@
 #include "Copter.h"
 #include <AP_Math/chirp.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h> // TODO why is this needed if Copter.h includes this
+
 class Parameters;
 class ParametersG2;
 
@@ -231,12 +232,12 @@ protected:
     virtual float throttle_hover() const;
 
     // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
-    enum AltHoldModeState {
-        AltHold_MotorStopped,
-        AltHold_Takeoff,
-        AltHold_Landed_Ground_Idle,
-        AltHold_Landed_Pre_Takeoff,
-        AltHold_Flying
+    enum class AltHoldModeState {
+        MotorStopped,
+        Takeoff,
+        Landed_Ground_Idle,
+        Landed_Pre_Takeoff,
+        Flying
     };
     AltHoldModeState get_alt_hold_state(float target_climb_rate_cms);
 
@@ -341,7 +342,9 @@ public:
         // rate_cds(): desired yaw rate in centidegrees/second:
         float rate_cds();
 
+        // returns a yaw in degrees, direction of vehicle travel:
         float look_ahead_yaw();
+
         float roi_yaw() const;
 
         // auto flight mode's yaw mode
@@ -551,6 +554,12 @@ public:
     // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
     bool jump_to_landing_sequence_auto_RTL(ModeReason reason);
 
+    // Join mission after DO_RETURN_PATH_START waypoint, if succeeds pretend to be Auto RTL mode
+    bool return_path_start_auto_RTL(ModeReason reason);
+
+    // Try join return path else do land start
+    bool return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reason);
+
     // lua accessors for nav script time support
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
@@ -586,6 +595,9 @@ private:
         IgnorePilotYaw                     = (1 << 2U),
         AllowWeatherVaning                 = (1 << 7U),
     };
+
+    // Enter auto rtl pseudo mode
+    bool enter_auto_rtl(ModeReason reason);
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -1115,7 +1127,7 @@ protected:
 private:
 
     // enum for GUID_OPTIONS parameter
-    enum class Options : int32_t {
+    enum class Option : uint32_t {
         AllowArmingFromTX   = (1U << 0),
         // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw      = (1U << 2),
@@ -1125,6 +1137,9 @@ private:
         WPNavUsedForPosControl = (1U << 6),
         AllowWeatherVaning = (1U << 7)
     };
+
+    // returns true if the Guided-mode-option is set (see GUID_OPTIONS)
+    bool option_is_enabled(Option option) const;
 
     // wp controller
     void wp_control_start();
@@ -1620,22 +1635,29 @@ protected:
 private:
 
     void log_data() const;
+    bool is_poscontrol_axis_type() const;
 
     enum class AxisType {
-        NONE = 0,           // none
-        INPUT_ROLL = 1,     // angle input roll axis is being excited
-        INPUT_PITCH = 2,    // angle pitch axis is being excited
-        INPUT_YAW = 3,      // angle yaw axis is being excited
-        RECOVER_ROLL = 4,   // angle roll axis is being excited
-        RECOVER_PITCH = 5,  // angle pitch axis is being excited
-        RECOVER_YAW = 6,    // angle yaw axis is being excited
-        RATE_ROLL = 7,      // rate roll axis is being excited
-        RATE_PITCH = 8,     // rate pitch axis is being excited
-        RATE_YAW = 9,       // rate yaw axis is being excited
-        MIX_ROLL = 10,      // mixer roll axis is being excited
-        MIX_PITCH = 11,     // mixer pitch axis is being excited
-        MIX_YAW = 12,       // mixer pitch axis is being excited
-        MIX_THROTTLE = 13,  // mixer throttle axis is being excited
+        NONE = 0,               // none
+        INPUT_ROLL = 1,         // angle input roll axis is being excited
+        INPUT_PITCH = 2,        // angle pitch axis is being excited
+        INPUT_YAW = 3,          // angle yaw axis is being excited
+        RECOVER_ROLL = 4,       // angle roll axis is being excited
+        RECOVER_PITCH = 5,      // angle pitch axis is being excited
+        RECOVER_YAW = 6,        // angle yaw axis is being excited
+        RATE_ROLL = 7,          // rate roll axis is being excited
+        RATE_PITCH = 8,         // rate pitch axis is being excited
+        RATE_YAW = 9,           // rate yaw axis is being excited
+        MIX_ROLL = 10,          // mixer roll axis is being excited
+        MIX_PITCH = 11,         // mixer pitch axis is being excited
+        MIX_YAW = 12,           // mixer pitch axis is being excited
+        MIX_THROTTLE = 13,      // mixer throttle axis is being excited
+        DISTURB_POS_LAT = 14,   // lateral body axis measured position is being excited
+        DISTURB_POS_LONG = 15,  // longitudinal body axis measured position is being excited
+        DISTURB_VEL_LAT = 16,   // lateral body axis measured velocity is being excited
+        DISTURB_VEL_LONG = 17,  // longitudinal body axis measured velocity is being excited
+        INPUT_VEL_LAT = 18,     // lateral body axis commanded velocity is being excited
+        INPUT_VEL_LONG = 19,    // longitudinal body axis commanded velocity is being excited
     };
 
     AP_Int8 axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
@@ -1652,7 +1674,9 @@ private:
     float waveform_freq_rads;   // Instantaneous waveform frequency
     float time_const_freq;      // Time at constant frequency before chirp starts
     int8_t log_subsample;       // Subsample multiple for logging.
-
+    Vector2f target_vel;        // target velocity for position controller modes
+    Vector2f target_pos;       // target positon
+    Vector2f input_vel_last;    // last cycle input velocity
     // System ID states
     enum class SystemIDModeState {
         SYSTEMID_STATE_STOPPED,

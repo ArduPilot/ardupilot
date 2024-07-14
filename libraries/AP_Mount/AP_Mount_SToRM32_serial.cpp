@@ -4,20 +4,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-
-// init - performs any required initialisation for this instance
-void AP_Mount_SToRM32_serial::init()
-{
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
-    if (_port) {
-        _initialised = true;
-    }
-    AP_Mount_Backend::init();
-
-}
 
 // update mount position - should be called periodically
 void AP_Mount_SToRM32_serial::update()
@@ -142,7 +128,7 @@ bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
     if (with_control) {
         required_tx += sizeof(AP_Mount_SToRM32_serial::cmd_set_angles_struct);
     }
-    return (_reply_type == ReplyType_UNKNOWN) && (_port->txspace() >= required_tx);
+    return (_reply_type == ReplyType_UNKNOWN) && (_uart->txspace() >= required_tx);
 }
 
 
@@ -167,7 +153,7 @@ void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target
         return;
     }
 
-    if ((size_t)_port->txspace() < sizeof(cmd_set_angles_data)) {
+    if ((size_t)_uart->txspace() < sizeof(cmd_set_angles_data)) {
         return;
     }
 
@@ -181,7 +167,7 @@ void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target
     cmd_set_angles_data.crc = crc_calculate(&buf[1], sizeof(cmd_set_angles_data)-3);
 
     for (uint8_t i = 0;  i != sizeof(cmd_set_angles_data) ; i++) {
-        _port->write(buf[i]);
+        _uart->write(buf[i]);
     }
 
     // store time of send
@@ -194,11 +180,11 @@ void AP_Mount_SToRM32_serial::get_angles() {
         return;
     }
 
-    if (_port->txspace() < 1) {
+    if (_uart->txspace() < 1) {
         return;
     }
 
-    _port->write('d');
+    _uart->write('d');
 };
 
 
@@ -220,14 +206,14 @@ void AP_Mount_SToRM32_serial::read_incoming() {
     uint8_t data;
     int16_t numc;
 
-    numc = _port->available();
+    numc = _uart->available();
 
     if (numc < 0 ) {
         return;
     }
 
     for (int16_t i = 0; i < numc; i++) {        // Process bytes received
-        data = _port->read();
+        data = _uart->read();
         if (_reply_type == ReplyType_UNKNOWN) {
             continue;
         }

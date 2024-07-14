@@ -52,7 +52,7 @@ void AP_DroneCAN_Serial::init(AP_DroneCAN *_dronecan)
         if (Canard::allocate_sub_arg_callback(dronecan, &handle_tunnel_targetted, dronecan->get_driver_index()) == nullptr) {
             AP_BoardConfig::allocation_error("serial_tunnel_sub");
         }
-        targetted = new Canard::Publisher<uavcan_tunnel_Targetted>(dronecan->get_canard_iface());
+        targetted = NEW_NOTHROW Canard::Publisher<uavcan_tunnel_Targetted>(dronecan->get_canard_iface());
         if (targetted == nullptr) {
             AP_BoardConfig::allocation_error("serial_tunnel_pub");
         }
@@ -132,7 +132,7 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
  */
 void AP_DroneCAN_Serial::Port::init(void)
 {
-    baudrate = state.baud;
+    baudrate = AP_SerialManager::map_baudrate(state.baud);
     begin(baudrate, 0, 0);
 }
 
@@ -194,12 +194,12 @@ bool AP_DroneCAN_Serial::Port::init_buffers(const uint32_t size_rx, const uint32
     }
     WITH_SEMAPHORE(sem);
     if (readbuffer == nullptr) {
-        readbuffer = new ByteBuffer(size_rx);
+        readbuffer = NEW_NOTHROW ByteBuffer(size_rx);
     } else {
         readbuffer->set_size_best(size_rx);
     }
     if (writebuffer == nullptr) {
-        writebuffer = new ByteBuffer(size_tx);
+        writebuffer = NEW_NOTHROW ByteBuffer(size_tx);
     } else {
         writebuffer->set_size_best(size_tx);
     }

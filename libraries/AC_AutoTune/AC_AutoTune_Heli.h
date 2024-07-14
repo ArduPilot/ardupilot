@@ -156,6 +156,18 @@ private:
         DRB     = 2,
     };
 
+    float target_angle_max_rp_cd() const override;
+
+    float target_angle_max_y_cd() const override;
+
+    float target_angle_min_rp_cd() const override;
+
+    float target_angle_min_y_cd() const override;
+
+    float angle_lim_max_rp_cd() const override;
+
+    float angle_lim_neg_rpy_cd() const override;
+
     // Feedforward test used to determine Rate FF gain
     void rate_ff_test_init();
     void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);

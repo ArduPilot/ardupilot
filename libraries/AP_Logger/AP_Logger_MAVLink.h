@@ -21,7 +21,7 @@ public:
 
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_MAVLink(front, ls);
+        return NEW_NOTHROW AP_Logger_MAVLink(front, ls);
     }
 
     // initialisation

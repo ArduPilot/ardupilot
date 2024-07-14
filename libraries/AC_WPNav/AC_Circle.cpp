@@ -43,13 +43,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control) :
     _inav(inav),
     _ahrs(ahrs),
-    _pos_control(pos_control),
-    _yaw(0.0f),
-    _angle(0.0f),
-    _angle_total(0.0f),
-    _angular_vel(0.0f),
-    _angular_vel_max(0.0f),
-    _angular_accel(0.0f)
+    _pos_control(pos_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 

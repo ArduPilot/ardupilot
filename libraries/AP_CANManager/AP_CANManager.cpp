@@ -129,7 +129,7 @@ void AP_CANManager::init()
 #endif
     // We only allocate log buffer only when under debug
     if (_loglevel != AP_CANManager::LOG_NONE) {
-        _log_buf = new char[LOG_BUFFER_SIZE];
+        _log_buf = NEW_NOTHROW char[LOG_BUFFER_SIZE];
         _log_pos = 0;
     }
 
@@ -152,7 +152,7 @@ void AP_CANManager::init()
         if (hal_mutable.can[i] == nullptr) {
             // So if this interface is not allocated allocate it here,
             // also pass the index of the CANBus
-            hal_mutable.can[i] = new HAL_CANIface(i);
+            hal_mutable.can[i] = NEW_NOTHROW HAL_CANIface(i);
         }
 
         // Initialise the interface we just allocated
@@ -201,7 +201,7 @@ void AP_CANManager::init()
         // Allocate the set type of Driver
 #if HAL_ENABLE_DRONECAN_DRIVERS
         if (drv_type[drv_num] == AP_CAN::Protocol::DroneCAN) {
-            _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_DroneCAN(drv_num);
+            _drivers[drv_num] = _drv_param[drv_num]._uavcan = NEW_NOTHROW AP_DroneCAN(drv_num);
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::allocation_error("uavcan %d", i + 1);
@@ -213,7 +213,7 @@ void AP_CANManager::init()
 #endif
 #if HAL_PICCOLO_CAN_ENABLE
          if (drv_type[drv_num] == AP_CAN::Protocol::PiccoloCAN) {
-            _drivers[drv_num] = _drv_param[drv_num]._piccolocan = new AP_PiccoloCAN;
+            _drivers[drv_num] = _drv_param[drv_num]._piccolocan = NEW_NOTHROW AP_PiccoloCAN;
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::allocation_error("PiccoloCAN %d", drv_num + 1);
@@ -266,7 +266,7 @@ void AP_CANManager::init()
     WITH_SEMAPHORE(_sem);
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if ((AP_CAN::Protocol) _drv_param[i]._driver_type.get() == AP_CAN::Protocol::DroneCAN) {
-            _drivers[i] = _drv_param[i]._uavcan = new AP_DroneCAN(i);
+            _drivers[i] = _drv_param[i]._uavcan = NEW_NOTHROW AP_DroneCAN(i);
 
             if (_drivers[i] == nullptr) {
                 AP_BoardConfig::allocation_error("uavcan %d", i + 1);
@@ -312,7 +312,7 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
         if (hal_mutable.can[i] == nullptr) {
             // if this interface is not allocated allocate it here,
             // also pass the index of the CANBus
-            hal_mutable.can[i] = new HAL_CANIface(i);
+            hal_mutable.can[i] = NEW_NOTHROW HAL_CANIface(i);
         }
 
         // Initialise the interface we just allocated
@@ -467,7 +467,7 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg)
         uint8_t buffer_size = 20;
         while (frame_buffer == nullptr && buffer_size > 0) {
             // we'd like 20 frames, but will live with less
-            frame_buffer = new ObjectBuffer<BufferFrame>(buffer_size);
+            frame_buffer = NEW_NOTHROW ObjectBuffer<BufferFrame>(buffer_size);
             if (frame_buffer != nullptr && frame_buffer->get_size() != 0) {
                 // register a callback for when frames can't be sent immediately
                 hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_CANManager::process_frame_buffer, void));
@@ -577,7 +577,7 @@ void AP_CANManager::handle_can_filter_modify(const mavlink_message_t &msg)
             // common case of replacing with identical list
             return;
         }
-        new_ids = new uint16_t[p.num_ids];
+        new_ids = NEW_NOTHROW uint16_t[p.num_ids];
         if (new_ids != nullptr) {
             num_new_ids = p.num_ids;
             memcpy((void*)new_ids, (const void *)p.ids, p.num_ids*sizeof(uint16_t));
@@ -590,7 +590,7 @@ void AP_CANManager::handle_can_filter_modify(const mavlink_message_t &msg)
             // nothing changing
             return;
         }
-        new_ids = new uint16_t[can_forward.num_filter_ids+p.num_ids];
+        new_ids = NEW_NOTHROW uint16_t[can_forward.num_filter_ids+p.num_ids];
         if (new_ids == nullptr) {
             return;
         }

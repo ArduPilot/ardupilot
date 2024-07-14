@@ -160,6 +160,7 @@ public:
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
         uint8_t     instance;                  // instance number of this backend
+        Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
     };
 
@@ -219,10 +220,13 @@ public:
     /// returns the highest failsafe action that has been triggered
     int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
-    /// get_type - returns battery monitor type
-    enum Type get_type() const { return get_type(AP_BATT_PRIMARY_INSTANCE); }
-    enum Type get_type(uint8_t instance) const {
+    /// configured_type - returns battery monitor type as configured in parameters
+    enum Type configured_type(uint8_t instance) const {
         return (Type)_params[instance]._type.get();
+    }
+    /// allocated_type - returns battery monitor type as allocated
+    enum Type allocated_type(uint8_t instance) const {
+        return state[instance].type;
     }
 
     /// get_serial_number - returns battery serial number

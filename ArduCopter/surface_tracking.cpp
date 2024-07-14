@@ -13,9 +13,8 @@ void Copter::SurfaceTracking::update_surface_offset()
     if (((surface == Surface::GROUND) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) ||
         ((surface == Surface::CEILING) && copter.rangefinder_up_ok() && (copter.rangefinder_up_state.glitch_count == 0))) {
 
-        // calculate surfaces height above the EKF origin
-        // e.g. if vehicle is 10m above the EKF origin and rangefinder reports alt of 3m.  curr_surface_alt_above_origin_cm is 7m (or 700cm)
-        RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
+        // Get the appropriate surface distance state, the terrain offset is calculated in the surface distance lib. 
+        AP_SurfaceDistance &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
 
         // update position controller target offset to the surface's alt above the EKF origin
         copter.pos_control->set_pos_offset_target_z_cm(rf_state.terrain_offset_cm);

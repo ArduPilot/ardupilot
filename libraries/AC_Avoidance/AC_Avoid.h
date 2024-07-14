@@ -211,14 +211,15 @@ private:
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
-    AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
-    AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
-    AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
-    AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
-    AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
-    AP_Float _accel_max;        // maximum acceleration while simple avoidance is active
-    AP_Float _backup_deadzone;  // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
+    AP_Int16 _angle_max;           // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Float _dist_max;            // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
+    AP_Float _margin;              // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
+    AP_Int8 _behavior;             // avoidance behaviour (slide or stop)
+    AP_Float _backup_speed_xy_max; // Maximum speed that will be used to back away horizontally (in m/s)
+    AP_Float _backup_speed_z_max;  // Maximum speed that will be used to back away verticality (in m/s)
+    AP_Float _alt_min;             // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;           // maximum acceleration while simple avoidance is active
+    AP_Float _backup_deadzone;     // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude

@@ -121,6 +121,8 @@ Install the lua script in the APM/SCRIPTS directory on the flight
 controllers microSD card, then set SCR_ENABLE to 1. Reboot, and
 refresh parameters. Then set QUIK_ENABLE to 1.
 
+IF vectored yaw ((tilt rotors) or TVBS tailsitter(motors on tilting servos), set Q_A_RAT_YAW_FLTE = 0 before running yaw tuning.
+
 You will then need to setup a 3 position switch on an available RC
 input channel for controlling the tune (or 2 position if you set
 QUIK_AUTO_SAVE). If for example channel 6 is available with a 3

@@ -86,7 +86,7 @@ AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
         return nullptr;
     }
 
-    AP_Compass_IST8310 *sensor = new AP_Compass_IST8310(std::move(dev), force_external, rotation);
+    AP_Compass_IST8310 *sensor = NEW_NOTHROW AP_Compass_IST8310(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -112,6 +112,22 @@ bool AP_Compass_IST8310::init()
 
     // high retries for init
     _dev->set_retries(10);
+
+    /*
+      unfortunately the IST8310 employs the novel concept of a
+      writeable WHOAMI register. The register can become corrupt due
+      to bus noise, and what is worse it persists the corruption even
+      across a power cycle. If you power it off for 30s or more then
+      it will reset to the default of 0x10, but for less than that the
+      value of WAI is unreliable.
+
+      To avoid this issue we do a reset of the device before we probe
+      the WAI register. This is nasty as we don't yet know we've found
+      a real IST8310, but it is the best we can do given the bad
+      hardware design of the sensor
+     */
+    _dev->write_register(CNTL2_REG, CNTL2_VAL_SRST);
+    hal.scheduler->delay(10);
 
     uint8_t whoami;
     if (!_dev->read_registers(WAI_REG, &whoami, 1) ||

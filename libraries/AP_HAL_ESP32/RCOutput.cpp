@@ -312,9 +312,9 @@ void RCOutput::safety_update(void)
     }
 
 #ifdef HAL_GPIO_PIN_SAFETY_IN
-    //TODO replace palReadLine
-    // handle safety button
-    bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
+    gpio_set_direction((gpio_num_t)HAL_GPIO_PIN_SAFETY_IN, GPIO_MODE_INPUT);
+    gpio_set_pull_mode((gpio_num_t)HAL_GPIO_PIN_SAFETY_IN, GPIO_PULLDOWN_ONLY);
+    bool safety_pressed = gpio_get_level((gpio_num_t)HAL_GPIO_PIN_SAFETY_IN);
     if (safety_pressed) {
         AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
         if (safety_press_count < 255) {
@@ -335,8 +335,7 @@ void RCOutput::safety_update(void)
 #ifdef HAL_GPIO_PIN_LED_SAFETY
     led_counter = (led_counter+1) % 16;
     const uint16_t led_pattern = safety_state==AP_HAL::Util::SAFETY_DISARMED?0x5500:0xFFFF;
-    palWriteLine(HAL_GPIO_PIN_LED_SAFETY, (led_pattern & (1U << led_counter))?0:1);
-    //TODO replace palReadwrite
+    gpio_set_level((gpio_num_t)HAL_GPIO_PIN_LED_SAFETY, (led_pattern & (1U << led_counter))?0:1);
 #endif
 }
 

@@ -282,4 +282,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     mantic.vm.boot_timeout = 1200
   end
+
+  # 24.04 end of standard support Jun 2029
+  # note the use of "bento" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "noble", autostart: false do |noble|
+    noble.vm.box = "bento/ubuntu-24.04"
+    noble.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    noble.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (noble)"
+    end
+    noble.vm.boot_timeout = 1200
+  end
+  config.vm.define "noble-desktop", autostart: false do |noble|
+    noble.vm.box = "bento/ubuntu-24.04"
+    noble.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    noble.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (noble-desktop)"
+      vb.gui = true
+    end
+    noble.vm.boot_timeout = 1200
+  end
 end

@@ -137,6 +137,7 @@ bool ekf_imu_buffer::init(uint32_t size)
     _size = size;
     _youngest = 0;
     _oldest = 0;
+    _filled = false;
     return true;
 }
 
@@ -151,13 +152,14 @@ void ekf_imu_buffer::push_youngest_element(const void *element)
         return;
     }
     // push youngest to the buffer
-    _youngest = (_youngest+1) % _size;
+    _youngest++;
+    if (_youngest == _size) {
+        _youngest = 0;
+        _filled = true;
+    }
     memcpy(get_offset(_youngest), element, elsize);
     // set oldest data index
     _oldest = (_youngest+1) % _size;
-    if (_oldest == 0) {
-        _filled = true;
-    }
 }
 
 // retrieve the oldest data from the ring buffer tail

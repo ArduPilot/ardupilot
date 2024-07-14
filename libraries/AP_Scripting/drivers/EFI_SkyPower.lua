@@ -12,6 +12,12 @@ CAN_D1_BITRATE 500000 (500 kbit/s)
 
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+
+
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
 local SCRIPT_NAME       = "EFI: Skypower CAN"

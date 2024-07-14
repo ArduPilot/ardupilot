@@ -100,7 +100,7 @@ void ModePosHold::run()
     // state machine
     switch (poshold_state) {
 
-    case AltHold_MotorStopped:
+    case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate(false);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
@@ -115,14 +115,14 @@ void ModePosHold::run()
         init_wind_comp_estimate();
         break;
 
-    case AltHold_Landed_Ground_Idle:
+    case AltHoldModeState::Landed_Ground_Idle:
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         attitude_control->reset_yaw_target_and_rate();
         init_wind_comp_estimate();
         FALLTHROUGH;
 
-    case AltHold_Landed_Pre_Takeoff:
+    case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
 
@@ -131,7 +131,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::PILOT_OVERRIDE;
         break;
 
-    case AltHold_Takeoff:
+    case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
@@ -152,7 +152,7 @@ void ModePosHold::run()
         pitch_mode = RPMode::PILOT_OVERRIDE;
         break;
 
-    case AltHold_Flying:
+    case AltHoldModeState::Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate

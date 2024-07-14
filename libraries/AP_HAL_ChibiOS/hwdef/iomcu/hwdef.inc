@@ -106,9 +106,8 @@ define SERIAL_BUFFERS_SIZE 32
 define HAL_USE_EMPTY_IO TRUE
 define PORT_INT_REQUIRED_STACK 64
 
-# avoid timer and RCIN threads to save memory
+# avoid timer threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_RCIN_THREAD
 define HAL_NO_MONITOR_THREAD
 define HAL_NO_RCOUT_THREAD  # also disables LED thread
 
@@ -139,7 +138,6 @@ define PORT_INT_REQUIRED_STACK 64
 MAIN_STACK 0x180
 PROCESS_STACK 0x250
 
-define HAL_DISABLE_LOOP_DELAY
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
 define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0

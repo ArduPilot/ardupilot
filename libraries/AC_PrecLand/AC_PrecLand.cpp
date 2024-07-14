@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
-    // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo, 4:SITL
+    // @Values: 0:None, 1:MAVLink, 2:IRLock, 3:SITL_Gazebo, 4:SITL
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
@@ -229,7 +229,7 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     const uint16_t inertial_buffer_size = MAX((uint16_t)roundf(_lag * MIN(update_rate_hz, AP::scheduler().get_loop_rate_hz())), 1);
 
     // instantiate ring buffer to hold inertial history, return on failure so no backends are created
-    _inertial_history = new ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
+    _inertial_history = NEW_NOTHROW ObjectArray<inertial_data_frame_s>(inertial_buffer_size);
     if (_inertial_history == nullptr) {
         return;
     }
@@ -243,23 +243,23 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
         // companion computer
 #if AC_PRECLAND_COMPANION_ENABLED
         case Type::COMPANION:
-            _backend = new AC_PrecLand_Companion(*this, _backend_state);
+            _backend = NEW_NOTHROW AC_PrecLand_Companion(*this, _backend_state);
             break;
         // IR Lock
 #endif
 #if AC_PRECLAND_IRLOCK_ENABLED
         case Type::IRLOCK:
-            _backend = new AC_PrecLand_IRLock(*this, _backend_state);
+            _backend = NEW_NOTHROW AC_PrecLand_IRLock(*this, _backend_state);
             break;
 #endif
 #if AC_PRECLAND_SITL_GAZEBO_ENABLED
         case Type::SITL_GAZEBO:
-            _backend = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
+            _backend = NEW_NOTHROW AC_PrecLand_SITL_Gazebo(*this, _backend_state);
             break;
 #endif
 #if AC_PRECLAND_SITL_ENABLED
         case Type::SITL:
-            _backend = new AC_PrecLand_SITL(*this, _backend_state);
+            _backend = NEW_NOTHROW AC_PrecLand_SITL(*this, _backend_state);
             break;
 #endif
     }

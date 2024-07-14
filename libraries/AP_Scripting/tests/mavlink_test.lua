@@ -1,3 +1,6 @@
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: missing-parameter
+
 local mavlink_msgs = require("mavlink/mavlink_msgs")
 
 local msg_map = {}

@@ -115,7 +115,7 @@ void AP_Networking::Port::thread_create(AP_HAL::MemberProc proc)
  */
 void AP_Networking::Port::udp_client_init(void)
 {
-    sock = new SocketAPM(true);
+    sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         return;
     }
@@ -133,7 +133,7 @@ void AP_Networking::Port::udp_client_init(void)
  */
 void AP_Networking::Port::udp_server_init(void)
 {
-    sock = new SocketAPM(true);
+    sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         return;
     }
@@ -151,7 +151,7 @@ void AP_Networking::Port::udp_server_init(void)
  */
 void AP_Networking::Port::tcp_server_init(void)
 {
-    listen_sock = new SocketAPM(false);
+    listen_sock = NEW_NOTHROW SocketAPM(false);
     if (listen_sock == nullptr) {
         return;
     }
@@ -165,7 +165,7 @@ void AP_Networking::Port::tcp_server_init(void)
  */
 void AP_Networking::Port::tcp_client_init(void)
 {
-    sock = new SocketAPM(false);
+    sock = NEW_NOTHROW SocketAPM(false);
     if (sock != nullptr) {
         sock->set_blocking(true);
         thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::Port::tcp_client_loop, void));
@@ -286,7 +286,7 @@ void AP_Networking::Port::tcp_client_loop(void)
             hal.scheduler->delay_microseconds(100);
         }
         if (sock == nullptr) {
-            sock = new SocketAPM(false);
+            sock = NEW_NOTHROW SocketAPM(false);
             if (sock == nullptr) {
                 continue;
             }
@@ -444,12 +444,12 @@ bool AP_Networking::Port::init_buffers(const uint32_t size_rx, const uint32_t si
     }
     WITH_SEMAPHORE(sem);
     if (readbuffer == nullptr) {
-        readbuffer = new ByteBuffer(size_rx);
+        readbuffer = NEW_NOTHROW ByteBuffer(size_rx);
     } else {
         readbuffer->set_size_best(size_rx);
     }
     if (writebuffer == nullptr) {
-        writebuffer = new ByteBuffer(size_tx);
+        writebuffer = NEW_NOTHROW ByteBuffer(size_tx);
     } else {
         writebuffer->set_size_best(size_tx);
     }

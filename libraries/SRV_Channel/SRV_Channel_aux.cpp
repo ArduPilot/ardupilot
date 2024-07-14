@@ -794,7 +794,7 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Aux_servo_function_t function, flo
     }
 
     // add new item
-    slew_list *new_slew = new slew_list(function);
+    slew_list *new_slew = NEW_NOTHROW slew_list(function);
     if (new_slew == nullptr) {
         return;
     }

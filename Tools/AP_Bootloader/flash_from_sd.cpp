@@ -342,7 +342,7 @@ bool flash_from_sd()
         return false;
     }
 
-    verifier = new ABinVerifier{verify_abin_path};
+    verifier = NEW_NOTHROW ABinVerifier{verify_abin_path};
     if (!verifier->run()) {
         goto out;
     }
@@ -354,7 +354,7 @@ bool flash_from_sd()
         return false;
     }
 
-    flasher = new ABinFlasher{flash_abin_path};
+    flasher = NEW_NOTHROW ABinFlasher{flash_abin_path};
     if (!flasher->run()) {
         goto out;
     }

@@ -54,6 +54,8 @@
 #include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
 
+#include <SITL/SIM_ELRS.h>
+
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
 #include "HAL_SITL_Class.h"
@@ -89,7 +91,7 @@ public:
 
     // create a simulated serial device; type of device is given by
     // name parameter
-    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg);
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
 
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
@@ -237,6 +239,9 @@ public:
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
 
+    // Simulated ELRS radio
+    SITL::ELRS *elrs;
+
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor
     float _sonar_pin_voltage() const;
@@ -247,6 +252,10 @@ public:
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
     void multicast_state_send(void);
+
+    // number of times we have paused the simulation for 1ms because
+    // the TCP queue is full:
+    uint32_t _serial_0_outqueue_full_count;
 
 protected:
     enum vehicle_type _vehicle;

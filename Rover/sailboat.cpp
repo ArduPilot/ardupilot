@@ -275,9 +275,9 @@ void Sailboat::relax_sails()
 // calculate throttle and mainsail angle required to attain desired speed (in m/s)
 void Sailboat::get_throttle_and_set_mainsail(float desired_speed, float &throttle_out)
 {
+    throttle_out = 0.0f;
     if (!sail_enabled()) {
         relax_sails();
-        throttle_out = 0.0f;
         return;
     }
 
@@ -292,8 +292,6 @@ void Sailboat::get_throttle_and_set_mainsail(float desired_speed, float &throttl
                                                                         rover.g.speed_cruise,
                                                                         rover.g.throttle_cruise * 0.01f,
                                                                         rover.G_Dt);
-    } else {
-        throttle_out = 0.0f;
     }
 
     if (motor_state == UseMotor::USE_MOTOR_ALWAYS) {

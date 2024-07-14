@@ -234,7 +234,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             nav_controller->nav_bearing_cd() * 0.01,
             nav_controller->target_bearing_cd() * 0.01,
             MIN(plane.auto_state.wp_distance, UINT16_MAX),
-            plane.altitude_error_cm * 0.01,
+            plane.calc_altitude_error_cm() * 0.01,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             nav_controller->crosstrack_error());
     }
@@ -781,25 +781,25 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 }
 
 
-bool GCS_MAVLINK_Plane::set_home_to_current_location(bool _lock)
+bool Plane::set_home_to_current_location(bool _lock)
 {
-    if (!plane.set_home_persistently(AP::gps().location())) {
+    if (!set_home_persistently(AP::gps().location())) {
         return false;
     }
     if (_lock) {
         AP::ahrs().lock_home();
     }
-    if ((plane.control_mode == &plane.mode_rtl)
+    if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
-            || (plane.control_mode == &plane.mode_qrtl)
+            || (control_mode == &mode_qrtl)
 #endif
                                                         ) {
         // if in RTL head to the updated home location
-        plane.control_mode->enter();
+        control_mode->enter();
     }
     return true;
 }
-bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
+bool Plane::set_home(const Location& loc, bool _lock)
 {
     if (!AP::ahrs().set_home(loc)) {
         return false;
@@ -807,13 +807,13 @@ bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
     if (_lock) {
         AP::ahrs().lock_home();
     }
-    if ((plane.control_mode == &plane.mode_rtl)
+    if ((control_mode == &mode_rtl)
 #if HAL_QUADPLANE_ENABLED
-            || (plane.control_mode == &plane.mode_qrtl)
+            || (control_mode == &mode_qrtl)
 #endif
                                                         ) {
         // if in RTL head to the updated home location
-        plane.control_mode->enter();
+        control_mode->enter();
     }
     return true;
 }
@@ -1463,7 +1463,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
         return (plane.control_mode != &plane.mode_qstabilize) ? 0.01 * (global_position_current.alt + quadplane.pos_control->get_pos_error_z_cm()) : 0;
     }
 #endif
-    return 0.01 * (global_position_current.alt + plane.altitude_error_cm);
+    return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const

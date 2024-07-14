@@ -679,10 +679,8 @@ void Sub::do_set_home(const AP_Mission::Mission_Command& cmd)
             // silently ignore this failure
         }
     } else {
-        if (!far_from_EKF_origin(cmd.content.location)) {
-            if (!set_home(cmd.content.location, false)) {
-                // silently ignore this failure
-            }
+        if (!set_home(cmd.content.location, false)) {
+            // silently ignore this failure
         }
     }
 }

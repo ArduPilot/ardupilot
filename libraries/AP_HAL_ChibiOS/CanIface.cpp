@@ -847,7 +847,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
     mode_ = mode;
 
     if (can_ifaces[0] == nullptr) {
-        can_ifaces[0] = new CANIface(0);
+        can_ifaces[0] = NEW_NOTHROW CANIface(0);
         Debug("Failed to allocate CAN iface 0");
         if (can_ifaces[0] == nullptr) {
             return false;

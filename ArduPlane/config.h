@@ -219,10 +219,6 @@
 #define PARACHUTE HAL_PARACHUTE_ENABLED
 #endif
 
-#ifndef OSD_ENABLED
- #define OSD_ENABLED DISABLED
-#endif
-
 #ifndef OFFBOARD_GUIDED
  #define OFFBOARD_GUIDED 1
 #endif

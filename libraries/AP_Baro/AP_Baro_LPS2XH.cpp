@@ -69,7 +69,7 @@ AP_Baro_Backend *AP_Baro_LPS2XH::probe(AP_Baro &baro,
         return nullptr;
     }
 
-    AP_Baro_LPS2XH *sensor = new AP_Baro_LPS2XH(baro, std::move(dev));
+    AP_Baro_LPS2XH *sensor = NEW_NOTHROW AP_Baro_LPS2XH(baro, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -86,7 +86,7 @@ AP_Baro_Backend *AP_Baro_LPS2XH::probe_InvensenseIMU(AP_Baro &baro,
         return nullptr;
     }
 
-    AP_Baro_LPS2XH *sensor = new AP_Baro_LPS2XH(baro, std::move(dev));
+    AP_Baro_LPS2XH *sensor = NEW_NOTHROW AP_Baro_LPS2XH(baro, std::move(dev));
     if (sensor) {
         if (!sensor->_imu_i2c_init(imu_address)) {
             delete sensor;

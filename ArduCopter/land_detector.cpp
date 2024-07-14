@@ -100,11 +100,19 @@ void Copter::update_land_detector()
         }
 #endif
 
+        // check for aggressive flight requests - requested roll or pitch angle below 15 degrees
+        const Vector3f angle_target = attitude_control->get_att_target_euler_cd();
+        bool large_angle_request = angle_target.xy().length() > LAND_CHECK_LARGE_ANGLE_CD;
+
+        // check for large external disturbance - angle error over 30 degrees
+        const float angle_error = attitude_control->get_att_error_angle_deg();
+        bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
+
         // check that the airframe is not accelerating (not falling or braking after fast forward flight)
         bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX * land_detector_scalar);
 
         // check that vertical speed is within 1m/s of zero
-        bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100 * land_detector_scalar;
+        bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100.0 * LAND_DETECTOR_VEL_Z_MAX * land_detector_scalar;
 
         // if we have a healthy rangefinder only allow landing detection below 2 meters
         bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
@@ -116,7 +124,7 @@ void Copter::update_land_detector()
         const bool WoW_check = true;
 #endif
 
-        if (motor_at_lower_limit && throttle_mix_at_min && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
+        if (motor_at_lower_limit && throttle_mix_at_min && !large_angle_request && !large_angle_error && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
             // landed criteria met - increment the counter and check if we've triggered
             if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;
@@ -156,14 +164,39 @@ void Copter::set_land_complete(bool b)
 
     // tell AHRS flying state
     set_likely_flying(!b);
-    
-    // trigger disarm-on-land if configured
-    bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
-    const bool mode_disarms_on_land = flightmode->allows_arming(AP_Arming::Method::LANDING) && !flightmode->has_manual_throttle();
 
-    if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
-        arming.disarm(AP_Arming::Method::LANDED);
+    if (!b) {
+        // not landed, no further action
+        return;
     }
+
+    // landed; trigger disarm-on-land if configured
+    if ((g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) == 0) {
+        // not configured to disarm on landing detection
+        return;
+    }
+
+    if (!motors->armed()) {
+        // we are not currently armed, so we don't need to disarm:
+        // n.b. should this be checking vehicle-armed rather than motors-armed?
+        return;
+    }
+
+    if (flightmode->has_manual_throttle()) {
+        // we do not use the landing detector to disarm if the vehicle
+        // is in e.g. STABILIZE.  The normal DISARM_DELAY logic applies.
+        return;
+    }
+
+    // the flightmode may not allow disarm on landing.  Note that this
+    // check returns false for the LAND flight mode - it checks the
+    // landing detector (ap.land_complete) itself.
+    if (!flightmode->allows_arming(AP_Arming::Method::LANDING)) {
+        return;
+    }
+
+    // all checks passed, disarm the vehicle:
+    arming.disarm(AP_Arming::Method::LANDED);
 }
 
 // set land complete maybe flag

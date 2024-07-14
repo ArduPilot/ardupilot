@@ -20,6 +20,7 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 class ExpandingString;
 
@@ -98,8 +99,14 @@ public:
 #endif
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
-    virtual void uart_info(ExpandingString &str) override;
+    void uart_info(ExpandingString &str) override;
+
+#if HAL_LOGGING_ENABLED
+    // Log UART message for each serial port
+    void uart_log() override;
 #endif
+#endif // HAL_UART_STATS_ENABLED
+
 #if HAL_USE_PWM == TRUE
     void timer_info(ExpandingString &str) override;
 #endif
@@ -160,5 +167,19 @@ private:
 
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
+#endif
+
+#if HAL_UART_STATS_ENABLED
+    struct uart_stats {
+        AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
+#if HAL_WITH_IO_MCU
+        AP_HAL::UARTDriver::StatsTracker io;
+#endif
+        uint32_t last_ms;
+    };
+    uart_stats sys_uart_stats;
+#if HAL_LOGGING_ENABLED
+    uart_stats log_uart_stats;
+#endif
 #endif
 };

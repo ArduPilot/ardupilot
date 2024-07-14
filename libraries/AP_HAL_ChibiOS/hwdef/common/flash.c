@@ -520,10 +520,16 @@ bool stm32_flash_erasepage(uint32_t page)
     FLASH->CR |= FLASH_CR_STRT;
 #elif defined(STM32G4)
     FLASH->CR = FLASH_CR_PER;
-    // rather oddly, PNB is a 7 bit field that the ref manual says can
-    // contain 8 bits we assume that for 512k single bank devices
-    // there is an 8th bit
+#ifdef FLASH_CR_BKER_Pos
+    /*
+      we assume dual bank mode, we set the bottom 7 bits of the page
+      into PNB and the 8th bit into BKER
+    */
+    FLASH->CR |= (page&0x7F)<<FLASH_CR_PNB_Pos | (page>>7)<<FLASH_CR_BKER_Pos;
+#else
+    // this is a single bank only varient
     FLASH->CR |= page<<FLASH_CR_PNB_Pos;
+#endif
     FLASH->CR |= FLASH_CR_STRT;
 #elif defined(STM32L4PLUS)
     FLASH->CR |= FLASH_CR_PER;

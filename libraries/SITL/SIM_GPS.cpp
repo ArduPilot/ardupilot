@@ -234,49 +234,49 @@ void GPS::check_backend_allocation()
 
 #if AP_SIM_GPS_UBLOX_ENABLED
     case Type::UBLOX:
-        backend = new GPS_UBlox(*this, instance);
+        backend = NEW_NOTHROW GPS_UBlox(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_NMEA_ENABLED
     case Type::NMEA:
-        backend = new GPS_NMEA(*this, instance);
+        backend = NEW_NOTHROW GPS_NMEA(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_SBP_ENABLED
     case Type::SBP:
-        backend = new GPS_SBP(*this, instance);
+        backend = NEW_NOTHROW GPS_SBP(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_SBP2_ENABLED
     case Type::SBP2:
-        backend = new GPS_SBP2(*this, instance);
+        backend = NEW_NOTHROW GPS_SBP2(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_NOVA_ENABLED
     case Type::NOVA:
-        backend = new GPS_NOVA(*this, instance);
+        backend = NEW_NOTHROW GPS_NOVA(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_MSP_ENABLED
     case Type::MSP:
-        backend = new GPS_MSP(*this, instance);
+        backend = NEW_NOTHROW GPS_MSP(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_TRIMBLE_ENABLED
     case Type::TRIMBLE:
-        backend = new GPS_Trimble(*this, instance);
+        backend = NEW_NOTHROW GPS_Trimble(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_FILE_ENABLED
     case Type::FILE:
-        backend = new GPS_FILE(*this, instance);
+        backend = NEW_NOTHROW GPS_FILE(*this, instance);
         break;
 #endif
     };
@@ -462,10 +462,9 @@ GPS_Data GPS::interpolate_data(const GPS_Data &d, uint32_t delay_ms)
     return _gps_history[N-1];
 }
 
-float GPS_Data::heading() const
+float GPS_Data::ground_track_rad() const
 {
-    const auto velocity = Vector2d{speedE, speedN};
-    return velocity.angle();
+    return atan2f(speedE, speedN);
 }
 
 float GPS_Data::speed_2d() const

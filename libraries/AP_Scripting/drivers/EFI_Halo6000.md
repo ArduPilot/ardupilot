@@ -31,6 +31,16 @@ control.
 This is the rate in Hz at which NAMED_VALUE_FLOAT messages are used to
 send additional telemetry data to the GCS for display to the operator.
 
+## EFI_H6K_FUELTOT
+
+This is the total fuel tank capacity in litres
+
+## EFI_H6K_OPTIONS
+
+This provides additional options. Currently just one option is
+available. If you set EFI_H6K_OPTIONS to 1 then all CAN frames will be
+logged in the message CANF.
+
 # Operation
 
 This driver should be loaded by placing the lua script in the

@@ -4,7 +4,7 @@
 
   // set 0 in 4.6, remove feature in 4.7:
 #ifndef AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
-#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 1
+#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 0
 #endif
 
 #include "defines.h"
@@ -31,8 +31,6 @@ protected:
 
     bool persist_streamrates() const override { return true; }
 
-    bool set_home_to_current_location(bool lock) override;
-    bool set_home(const Location& loc, bool lock) override;
     uint64_t capabilities() const override;
 
     void send_nav_controller_output() const override;

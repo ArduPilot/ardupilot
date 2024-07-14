@@ -49,8 +49,9 @@ struct GPS_Data {
     float speed_acc;
     uint8_t num_sats;
 
-    // Get heading [rad], where 0 = North in WGS-84 coordinate system
-    float heading() const WARN_IF_UNUSED;
+    // Get course over ground [rad], where 0 = North in WGS-84 coordinate system.
+    // Calculated from 2D velocity.
+    float ground_track_rad() const WARN_IF_UNUSED;
 
     // Get 2D speed [m/s] in WGS-84 coordinate system
     float speed_2d() const WARN_IF_UNUSED;

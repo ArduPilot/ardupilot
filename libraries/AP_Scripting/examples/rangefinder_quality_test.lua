@@ -10,6 +10,9 @@
 -- "RNGFND1_MIN_CM": 10,
 -- "RNGFND1_MAX_CM": 5000,
 
+---@diagnostic disable: cast-local-type
+
+
 -- UPDATE_PERIOD_MS is the time between when a distance is set and
 -- when it is read. There is a periodic task that copies the set distance to
 -- the state structure that it is read from. If UPDATE_PERIOD_MS is too short this periodic

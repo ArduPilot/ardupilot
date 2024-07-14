@@ -70,7 +70,7 @@ void LM2755::init()
     // create objects for each of the channels to handle the dynamics
     // of updating each.  The channel gets references to the relevant
     // configuration bytes.
-    d1 = new LEDChannel(
+    d1 = NEW_NOTHROW LEDChannel(
         byte[(uint8_t)LM2755DevReg::D1_HIGH_LEVEL],
         byte[(uint8_t)LM2755DevReg::D1_LOW_LEVEL],
         byte[(uint8_t)LM2755DevReg::D1_DELAY],
@@ -79,7 +79,7 @@ void LM2755::init()
         byte[(uint8_t)LM2755DevReg::D1_RAMP_DOWN_STEP_TIME],
         byte[(uint8_t)LM2755DevReg::D1_TIMING]
         );
-    d2 = new LEDChannel(
+    d2 = NEW_NOTHROW LEDChannel(
         byte[(uint8_t)LM2755DevReg::D2_HIGH_LEVEL],
         byte[(uint8_t)LM2755DevReg::D2_LOW_LEVEL],
         byte[(uint8_t)LM2755DevReg::D2_DELAY],
@@ -88,7 +88,7 @@ void LM2755::init()
         byte[(uint8_t)LM2755DevReg::D2_RAMP_DOWN_STEP_TIME],
         byte[(uint8_t)LM2755DevReg::D2_TIMING]
         );
-    d3 = new LEDChannel(
+    d3 = NEW_NOTHROW LEDChannel(
         byte[(uint8_t)LM2755DevReg::D3_HIGH_LEVEL],
         byte[(uint8_t)LM2755DevReg::D3_LOW_LEVEL],
         byte[(uint8_t)LM2755DevReg::D3_DELAY],

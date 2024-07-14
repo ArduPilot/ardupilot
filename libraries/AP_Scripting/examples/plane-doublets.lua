@@ -8,6 +8,9 @@
 -- starting a doublet
 -- Charlie Johnson, Oklahoma State University 2020
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
+
 local DOUBLET_ACTION_CHANNEL = 6 -- RCIN channel to start a doublet when high (>1700)
 local DOUBLET_CHOICE_CHANNEL = 7 -- RCIN channel to choose elevator (low) or rudder (high)
 local DOUBLET_FUCNTION = 19 -- which control surface (SERVOx_FUNCTION) number will have a doublet happen

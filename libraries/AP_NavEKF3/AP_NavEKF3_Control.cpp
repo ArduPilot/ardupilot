@@ -64,6 +64,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
         inhibitWindStates = true;
+        lastAspdEstIsValid = false;
         updateStateIndexLim();
     } else if (inhibitWindStates && canEstimateWind &&
                (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
@@ -77,7 +78,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
             ftype trueAirspeedVariance;
-            const bool haveAirspeedMeasurement = usingDefaultAirspeed || (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
+            const bool haveAirspeedMeasurement = (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
             if (haveAirspeedMeasurement) {
                 trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
                 const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
@@ -209,6 +210,24 @@ void NavEKF3_core::updateStateIndexLim()
     }
 }
 
+// set the default yaw source
+void NavEKF3_core::setYawSource()
+{
+    AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
+    if (wasLearningCompass_ms > 0) {
+        // can't use compass while it is being calibrated
+        if (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS) {
+            yaw_source = AP_NavEKF_Source::SourceYaw::NONE;
+        } else if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
+            yaw_source = AP_NavEKF_Source::SourceYaw::GPS;
+        }
+    }
+    if (yaw_source != yaw_source_last) {
+        yaw_source_last = yaw_source;
+        yaw_source_reset = true;
+    }
+}
+
 // Set inertial navigation aiding mode
 void NavEKF3_core::setAidingMode()
 {
@@ -217,6 +236,8 @@ void NavEKF3_core::setAidingMode()
 
     // Save the previous status so we can detect when it has changed
     PV_AidingModePrev = PV_AidingMode;
+
+    setYawSource();
 
     // Check that the gyro bias variance has converged
     checkGyroCalStatus();
@@ -317,8 +338,17 @@ void NavEKF3_core::setAidingMode()
             // Check if attitude drift has been constrained by a measurement source
             bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
 
-            // check if velocity drift has been constrained by a measurement source
-            bool velAiding = gpsVelUsed || airSpdUsed || dragUsed || optFlowUsed || bodyOdmUsed;
+            // Check if velocity drift has been constrained by a measurement source
+            // Currently these are all the same source as will stabilise attitude because we do not currently have
+            // a sensor that only observes attitude
+            velAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+
+            // Store the last valid airspeed estimate
+            windStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || optFlowUsed || rngBcnUsed || bodyOdmUsed);
+            if (windStateIsObservable) {
+                lastAirspeedEstimate = (stateStruct.velocity - Vector3F(stateStruct.wind_vel.x, stateStruct.wind_vel.y, 0.0F)).length();
+                lastAspdEstIsValid = true;
+            }
 
             // check if position drift has been constrained by a measurement source
             bool posAiding = posUsed || rngBcnUsed;
@@ -583,9 +613,8 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 // return true if we should use the compass
 bool NavEKF3_core::use_compass(void) const
 {
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if ((yaw_source != AP_NavEKF_Source::SourceYaw::COMPASS) &&
-        (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
+    if ((yaw_source_last != AP_NavEKF_Source::SourceYaw::COMPASS) &&
+        (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
         // not using compass as a yaw source
         return false;
     }
@@ -598,14 +627,13 @@ bool NavEKF3_core::use_compass(void) const
 // are we using (aka fusing) a non-compass yaw?
 bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-        yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+        yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
     return false;
@@ -615,7 +643,7 @@ bool NavEKF3_core::using_noncompass_for_yaw(void) const
 bool NavEKF3_core::using_extnav_for_yaw() const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV) {
         return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
 #endif
@@ -634,14 +662,9 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 }
 
 // sets the local NED origin using a LLH location (latitude, longitude, height)
-// returns false if absolute aiding and GPS is being used or if the origin is already set
+// returns false if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
-    if ((PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
-        // reject attempts to set the origin if GPS is being used or if the origin is already set
-        return false;
-    }
-
     return setOrigin(loc);
 }
 
@@ -671,9 +694,11 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     return true;
 }
 
-// record a yaw reset event
-void NavEKF3_core::recordYawReset()
+// record all requested yaw resets completed
+void NavEKF3_core::recordYawResetsCompleted()
 {
+    gpsYawResetRequest = false;
+    magYawResetRequest = false;
     yawAlignComplete = true;
     if (inFlight) {
         finalInflightYawInit = true;
@@ -685,9 +710,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-        (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
+    if (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+        (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
         const Vector3F delAngBiasVarVec { P[10][10], P[11][11], P[12][12] };

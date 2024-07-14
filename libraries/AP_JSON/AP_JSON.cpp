@@ -56,7 +56,7 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
         ::printf("failed to open json %s\n", filename);
         return nullptr;
     }
-    char *buf = new char[st.st_size+1];
+    char *buf = NEW_NOTHROW char[st.st_size+1];
     if (buf == nullptr) {
         AP::FS().close(fd);
         ::printf("failed to allocate json %s\n", filename);
@@ -72,7 +72,7 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
 
     char *start = strchr(buf, '{');
     if (!start) {
-        ::printf("Invalid json %s", filename);
+        ::printf("Invalid json %s\n", filename);
         delete[] buf;
         return nullptr;
     }
@@ -87,15 +87,15 @@ AP_JSON::value *AP_JSON::load_json(const char *filename)
         } while (*p != '\n' && *p != '\r' && *p);
     }
 
-    AP_JSON::value *obj = new AP_JSON::value;
+    AP_JSON::value *obj = NEW_NOTHROW AP_JSON::value;
     if (obj == nullptr) {
-        ::printf("Invalid allocate json for %s", filename);
+        ::printf("Invalid allocate json for %s\n", filename);
         delete[] buf;
         return nullptr;
     }
     std::string err = AP_JSON::parse(*obj, start);
     if (!err.empty()) {
-        ::printf("parse failed for json %s", filename);
+        ::printf("parse failed for json %s\n", filename);
         delete obj;
         delete[] buf;
         return nullptr;
@@ -133,9 +133,9 @@ AP_JSON::value::value(int type, bool) : type_(type), u_()
     break
         INIT(boolean_, false);
         INIT(number_, 0.0);
-        INIT(string_, new std::string());
-        INIT(array_, new array());
-        INIT(object_, new object());
+        INIT(string_, NEW_NOTHROW std::string());
+        INIT(array_, NEW_NOTHROW array());
+        INIT(object_, NEW_NOTHROW object());
 #undef INIT
     default:
         break;
@@ -154,42 +154,42 @@ AP_JSON::value::value(double n) : type_(number_type), u_()
 
 AP_JSON::value::value(const std::string &s) : type_(string_type), u_()
 {
-    u_.string_ = new std::string(s);
+    u_.string_ = NEW_NOTHROW std::string(s);
 }
 
 AP_JSON::value::value(const array &a) : type_(array_type), u_()
 {
-    u_.array_ = new array(a);
+    u_.array_ = NEW_NOTHROW array(a);
 }
 
 AP_JSON::value::value(const object &o) : type_(object_type), u_()
 {
-    u_.object_ = new object(o);
+    u_.object_ = NEW_NOTHROW object(o);
 }
 
 AP_JSON::value::value(std::string &&s) : type_(string_type), u_()
 {
-    u_.string_ = new std::string(std::move(s));
+    u_.string_ = NEW_NOTHROW std::string(std::move(s));
 }
 
 AP_JSON::value::value(array &&a) : type_(array_type), u_()
 {
-    u_.array_ = new array(std::move(a));
+    u_.array_ = NEW_NOTHROW array(std::move(a));
 }
 
 AP_JSON::value::value(object &&o) : type_(object_type), u_()
 {
-    u_.object_ = new object(std::move(o));
+    u_.object_ = NEW_NOTHROW object(std::move(o));
 }
 
 AP_JSON::value::value(const char *s) : type_(string_type), u_()
 {
-    u_.string_ = new std::string(s);
+    u_.string_ = NEW_NOTHROW std::string(s);
 }
 
 AP_JSON::value::value(const char *s, size_t len) : type_(string_type), u_()
 {
-    u_.string_ = new std::string(s, len);
+    u_.string_ = NEW_NOTHROW std::string(s, len);
 }
 
 void AP_JSON::value::clear()
@@ -220,9 +220,9 @@ AP_JSON::value::value(const value &x) : type_(x.type_), u_()
   case p##type:             \
     u_.p = v;               \
     break
-        INIT(string_, new std::string(*x.u_.string_));
-        INIT(array_, new array(*x.u_.array_));
-        INIT(object_, new object(*x.u_.object_));
+        INIT(string_, NEW_NOTHROW std::string(*x.u_.string_));
+        INIT(array_, NEW_NOTHROW array(*x.u_.array_));
+        INIT(object_, NEW_NOTHROW object(*x.u_.object_));
 #undef INIT
     default:
         u_ = x.u_;
@@ -291,9 +291,9 @@ GET(double, u_.number_)
     setter                                                             \
   }
 SET(bool, boolean, u_.boolean_ = _val;)
-SET(std::string, string, u_.string_ = new std::string(_val);)
-SET(array, array, u_.array_ = new array(_val);)
-SET(object, object, u_.object_ = new object(_val);)
+SET(std::string, string, u_.string_ = NEW_NOTHROW std::string(_val);)
+SET(array, array, u_.array_ = NEW_NOTHROW array(_val);)
+SET(object, object, u_.object_ = NEW_NOTHROW object(_val);)
 SET(double, number, u_.number_ = _val;)
 #undef SET
 
@@ -303,9 +303,9 @@ SET(double, number, u_.number_ = _val;)
     type_ = jtype##_type;                                              \
     setter                                                             \
   }
-MOVESET(std::string, string, u_.string_ = new std::string(std::move(_val));)
-MOVESET(array, array, u_.array_ = new array(std::move(_val));)
-MOVESET(object, object, u_.object_ = new object(std::move(_val));)
+MOVESET(std::string, string, u_.string_ = NEW_NOTHROW std::string(std::move(_val));)
+MOVESET(array, array, u_.array_ = NEW_NOTHROW array(std::move(_val));)
+MOVESET(object, object, u_.object_ = NEW_NOTHROW object(std::move(_val));)
 #undef MOVESET
 
 bool AP_JSON::value::evaluate_as_boolean() const

@@ -22,9 +22,15 @@ echo USING VAGRANT_USER:$VAGRANT_USER
 
 cd /home/$VAGRANT_USER
 
+IS_BENTO=0
+if [ -e /etc/update-motd.d/99-bento ]; then
+    IS_BENTO=1
+fi
 
-# artful rootfs is 2GB without resize:
-sudo resize2fs /dev/sda1
+# artful rootfs is 2GB without resize.  Do not resize if using Bento:
+if [ ! $IS_BENTO ]; then
+    sudo resize2fs /dev/sda1
+fi
 
 echo "calling pre-reqs script..."
 sudo -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y

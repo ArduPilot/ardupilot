@@ -34,13 +34,13 @@ void LP5562::init()
     // currently use this device but is a structure we use elsewhere.
     // Note that this assumed that the LED Map register is set to its
     // default value.
-    b = new LEDChannel(
+    b = NEW_NOTHROW LEDChannel(
         byte[(uint8_t)LP5562DevReg::B_PWM]
         );
-    g = new LEDChannel(
+    g = NEW_NOTHROW LEDChannel(
         byte[(uint8_t)LP5562DevReg::G_PWM]
         );
-    r = new LEDChannel(
+    r = NEW_NOTHROW LEDChannel(
         byte[(uint8_t)LP5562DevReg::R_PWM]
         );
 

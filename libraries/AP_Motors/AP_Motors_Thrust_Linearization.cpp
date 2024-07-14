@@ -3,6 +3,7 @@
 #include "AP_Motors_Class.h"
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define AP_MOTORS_BATT_VOLT_FILT_HZ 0.5 // battery voltage filtered at 0.5hz
@@ -193,7 +194,7 @@ float Thrust_Linearization::get_compensation_gain() const
 
 #if AP_MOTORS_DENSITY_COMP == 1
     // air density ratio is increasing in density / decreasing in altitude
-    const float air_density_ratio = AP::baro().get_air_density_ratio();
+    const float air_density_ratio = AP::ahrs().get_air_density_ratio();
     if (air_density_ratio > 0.3 && air_density_ratio < 1.5) {
         ret *= 1.0 / constrain_float(air_density_ratio, 0.5, 1.25);
     }

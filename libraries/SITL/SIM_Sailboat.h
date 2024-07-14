@@ -34,7 +34,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Sailboat(frame_str);
+        return NEW_NOTHROW Sailboat(frame_str);
     }
 
     bool on_ground() const override {return true;};

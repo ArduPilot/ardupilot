@@ -14,6 +14,7 @@
 #include <SITL/SIM_Helicopter.h>
 #include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_Glider.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_BalanceBot.h>
@@ -38,6 +39,8 @@
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
 #include <SITL/SIM_NoVehicle.h>
+#include <SITL/SIM_StratoBlimp.h>
+
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -93,16 +96,6 @@ void SITL_State::_usage(void)
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
-           "\t--uartA device           (deprecated) set device string for SERIAL0\n"
-           "\t--uartC device           (deprecated) set device string for SERIAL1\n" // ordering captures the historical use of uartB as SERIAL3
-           "\t--uartD device           (deprecated) set device string for SERIAL2\n"
-           "\t--uartB device           (deprecated) set device string for SERIAL3\n"
-           "\t--uartE device           (deprecated) set device string for SERIAL4\n"
-           "\t--uartF device           (deprecated) set device string for SERIAL5\n"
-           "\t--uartG device           (deprecated) set device string for SERIAL6\n"
-           "\t--uartH device           (deprecated) set device string for SERIAL7\n"
-           "\t--uartI device           (deprecated) set device string for SERIAL8\n"
-           "\t--uartJ device           (deprecated) set device string for SERIAL9\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -113,6 +106,7 @@ void SITL_State::_usage(void)
            "\t--serial7 device         set device string for SERIAL7\n"
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
+           "\t--uartA device           alias for --serial0 (do not use)\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -142,6 +136,7 @@ static const struct {
     { "djix",               MultiCopter::create },
     { "cwx",                MultiCopter::create },
     { "hexa",               MultiCopter::create },
+    { "hexax",              MultiCopter::create },
     { "hexa-cwx",           MultiCopter::create },
     { "hexa-dji",           MultiCopter::create },
     { "octa",               MultiCopter::create },
@@ -170,6 +165,7 @@ static const struct {
     { "last_letter",        last_letter::create },
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
+    { "glider",             Glider::create },
     { "plane",              Plane::create },
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
@@ -183,6 +179,9 @@ static const struct {
     { "JSON",               JSON::create },
     { "blimp",              Blimp::create },
     { "novehicle",          NoVehicle::create },
+#if AP_SIM_STRATOBLIMP_ENABLED
+    { "stratoblimp",        StratoBlimp::create },
+#endif
 };
 
 void SITL_State::_set_signal_handlers(void) const
@@ -307,7 +306,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"enable-fgview",   false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
-        {"uartA",           true,   0, CMDLINE_UARTA},
+        // {"uartA",           true,   0, CMDLINE_UARTA}, // alias for serial0
         {"uartB",           true,   0, CMDLINE_UARTB},
         {"uartC",           true,   0, CMDLINE_UARTC},
         {"uartD",           true,   0, CMDLINE_UARTD},
@@ -318,6 +317,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartI",           true,   0, CMDLINE_UARTI},
         {"uartJ",           true,   0, CMDLINE_UARTJ},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
+        {"uartA",           true,   0, CMDLINE_SERIAL0}, // for MissionPlanner compatibility
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
         {"serial3",         true,   0, CMDLINE_SERIAL3},
@@ -384,13 +384,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_SPEEDUP", speedup};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             sim_rate_hz = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_RATE_HZ", sim_rate_hz};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_RATE_HZ=%f\n", sim_rate_hz);
             break;
         case 'C':
@@ -466,11 +466,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             static const uint8_t mapping[] = { 0, 3, 1, 2, 4, 5, 6, 7, 8, 9 };
             int serial_idx = mapping[uart_idx];
             char uart_letter = (char)(uart_idx)+'A';
-            printf("WARNING: deprecated option --uart%c will be removed in a "
-                "future release. Use --serial%d instead.\n",
-                uart_letter, serial_idx);
-            _serial_path[serial_idx] = gopt.optarg;
-            break;
+            printf("ERROR: Removed option --uart%c supplied. "
+                "Use --serial%d instead.\n", uart_letter, serial_idx);
+            exit(1);
         }
         case CMDLINE_SERIAL0:
         case CMDLINE_SERIAL1:
@@ -515,7 +513,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 exit(1);
             }
             temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }

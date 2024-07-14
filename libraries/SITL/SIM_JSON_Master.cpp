@@ -49,7 +49,7 @@ void JSON_Master::init(const int32_t num_slaves)
         }
 
         printf("Slave %u: listening on %u\n", list->instance, port);
-        list->next = new socket_list;
+        list->next = NEW_NOTHROW socket_list;
         list = list->next;
 
         initialized = true;

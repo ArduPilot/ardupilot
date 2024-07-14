@@ -3,6 +3,9 @@
 --
 -- CAUTION: This script only works for Plane
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- store the batt info as { instance, filtered, capacity, margin_mah }
 -- instance: the battery monitor instance (zero indexed)
 -- filtered: internal variable for current draw

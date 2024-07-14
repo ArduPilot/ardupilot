@@ -23,6 +23,12 @@
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
+
 void setup();
 void loop();
 
@@ -280,6 +286,39 @@ static bool test_protocol_bytesonly(const char *name, uint32_t baudrate,
     return ret;
 }
 
+/*
+  test with random data
+ */
+static void test_random(void)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    const uint32_t baudrates[] = { 115200, 100000, 416666, 420000 };
+    const uint32_t test_bytes = 1000000;
+    int fd = open("/dev/urandom", O_RDONLY);
+    if (fd == -1) {
+        printf("Can't open /dev/urandom\n");
+        return;
+    }
+    uint8_t *buf = (uint8_t *)malloc(test_bytes);
+    for (const auto b : baudrates) {
+        printf("Testing random with baud %u\n", unsigned(b));
+        rcprot = new AP_RCProtocol();
+        rcprot->init();
+        if (::read(fd, buf, test_bytes) != test_bytes) {
+            printf("Failed to read from /dev/urandom\n");
+            break;
+        }
+        for (uint32_t i=0; i<test_bytes; i++) {
+            rcprot->process_byte(buf[i], b);
+        }
+        delete rcprot;
+        rcprot = nullptr;
+    }
+    free(buf);
+    close(fd);
+#endif
+}
+
 //Main loop where the action takes place
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
 void loop()
@@ -478,6 +517,11 @@ void loop()
     test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 3, 0, true);
     test_protocol("FPORT2_16CH", 115200, fport2_16ch_bytes, sizeof(fport2_16ch_bytes), fport2_16ch_output, ARRAY_SIZE(fport2_16ch_output), 3, 0, true);
     test_protocol("FPORT2_24CH", 115200, fport2_24ch_bytes, sizeof(fport2_24ch_bytes), fport2_24ch_output, ARRAY_SIZE(fport2_24ch_output), 3, 0, true);
+
+    /*
+      now test with random data to ensure we don't have any logic bugs that can cause a crash of the parser
+     */
+    test_random();
 
     if (test_count++ == 10) {
         if (test_failures == 0) {

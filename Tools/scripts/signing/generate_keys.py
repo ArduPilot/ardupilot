@@ -9,9 +9,12 @@ import base64
 try:
     import monocypher
 except ImportError:
-    print("Please install monocypher with: python3 -m pip install pymonocypher")
+    print("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
     sys.exit(1)
 
+if monocypher.__version__ != "3.1.3.2":
+    Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+    sys.exit(1)
 
 if len(sys.argv) != 2:
     print("Usage: generate_keys.py BASENAME")

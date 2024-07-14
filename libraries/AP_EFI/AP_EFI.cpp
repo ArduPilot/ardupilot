@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting,8:Hirth,9:MAV
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting,8:Hirth,9:MAVLink
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -98,42 +98,42 @@ void AP_EFI::init(void)
         break;
 #if AP_EFI_SERIAL_MS_ENABLED
     case Type::MegaSquirt:
-        backend = new AP_EFI_Serial_MS(*this);
+        backend = NEW_NOTHROW AP_EFI_Serial_MS(*this);
         break;
 #endif
 #if AP_EFI_SERIAL_LUTAN_ENABLED
     case Type::Lutan:
-        backend = new AP_EFI_Serial_Lutan(*this);
+        backend = NEW_NOTHROW AP_EFI_Serial_Lutan(*this);
         break;
 #endif
 #if AP_EFI_NWPWU_ENABLED
     case Type::NWPMU:
-        backend = new AP_EFI_NWPMU(*this);
+        backend = NEW_NOTHROW AP_EFI_NWPMU(*this);
         break;
 #endif
 #if AP_EFI_DRONECAN_ENABLED
     case Type::DroneCAN:
-        backend = new AP_EFI_DroneCAN(*this);
+        backend = NEW_NOTHROW AP_EFI_DroneCAN(*this);
         break;
 #endif
 #if AP_EFI_CURRAWONG_ECU_ENABLED
     case Type::CurrawongECU:
-        backend = new AP_EFI_Currawong_ECU(*this);
+        backend = NEW_NOTHROW AP_EFI_Currawong_ECU(*this);
         break;
 #endif
 #if AP_EFI_SCRIPTING_ENABLED
     case Type::SCRIPTING:
-        backend = new AP_EFI_Scripting(*this);
+        backend = NEW_NOTHROW AP_EFI_Scripting(*this);
         break;
 #endif        
 #if AP_EFI_SERIAL_HIRTH_ENABLED        
     case Type::Hirth:
-        backend = new AP_EFI_Serial_Hirth(*this);
+        backend = NEW_NOTHROW AP_EFI_Serial_Hirth(*this);
         break;
 #endif
 #if AP_EFI_MAV_ENABLED
     case Type::MAV:
-            backend = new AP_EFI_MAV(*this);
+            backend = NEW_NOTHROW AP_EFI_MAV(*this);
             break;
 #endif
     default:

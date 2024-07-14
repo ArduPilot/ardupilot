@@ -243,9 +243,9 @@ private:
     // output pwm values
     struct {
         uint8_t num_channels;
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
         uint16_t safety_mask;
-        uint16_t failsafe_pwm[IOMCU_MAX_CHANNELS];
+        uint16_t failsafe_pwm[IOMCU_MAX_RC_CHANNELS];
         uint8_t failsafe_pwm_set;
         uint8_t failsafe_pwm_sent;
         uint16_t channel_mask;
@@ -253,7 +253,7 @@ private:
 
     // read back pwm values
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     } pwm_in;
 
     // output rates

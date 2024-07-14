@@ -4,6 +4,8 @@
    Also need LOG_DISARMED set to 1 if running this while disarmed.
 --]]
 
+---@diagnostic disable: param-type-mismatch
+
 local can_driver = CAN:get_device(25)
 
 if not can_driver then

@@ -40,10 +40,9 @@ uint32_t lua_scripts::loaded_checksum;
 uint32_t lua_scripts::running_checksum;
 HAL_Semaphore lua_scripts::crc_sem;
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal)
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options)
     : _vm_steps(vm_steps),
-      _debug_options(debug_options),
-     terminal(_terminal)
+      _debug_options(debug_options)
 {
     _heap.create(heap_size, 4);
 }
@@ -458,19 +457,6 @@ void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     return _heap.change_size(ptr, osize, nsize);
 }
 
-void lua_scripts::repl_cleanup (void) {
-    if (terminal.session) {
-        terminal.session = false;
-        if (terminal.output_fd != -1) {
-            AP::FS().close(terminal.output_fd);
-            terminal.output_fd = -1;
-            AP::FS().unlink(REPL_DIRECTORY "/in");
-            AP::FS().unlink(REPL_DIRECTORY "/out");
-            AP::FS().unlink(REPL_DIRECTORY);
-        }
-    }
-}
-
 void lua_scripts::run(void) {
     bool succeeded_initial_load = false;
 
@@ -493,8 +479,6 @@ void lua_scripts::run(void) {
         }
         scripts = nullptr;
         overtime = false;
-        // end any open REPL sessions
-        repl_cleanup();
     }
 
     lua_state = lua_newstate(alloc, NULL);
@@ -539,12 +523,6 @@ void lua_scripts::run(void) {
 #endif // __clang_analyzer__
 
     while (AP_Scripting::get_singleton()->should_run()) {
-        // handle terminal data if we have any
-        if (terminal.session) {
-            doREPL(L);
-            continue;
-        }
-
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {
             AP_HAL::panic("Lua: Stack should be empty before running scripts");

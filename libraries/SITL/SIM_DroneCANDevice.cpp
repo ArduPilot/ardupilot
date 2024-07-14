@@ -92,11 +92,10 @@ void DroneCANDevice::update_baro() {
     }
 
 #if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    float sigma, delta, theta;
 
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
+    float p, t_K;
+    AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, t_K);
+    float T = KELVIN_TO_C(t_K);
 
     AP_Baro_SITL::temperature_adjustment(p, T);
     T = C_TO_KELVIN(T);
@@ -131,11 +130,8 @@ void DroneCANDevice::update_airspeed() {
     // this was mostly swiped from SIM_Airspeed_DLVR:
     const float sim_alt = AP::sitl()->state.altitude;
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-
     // To Do: Add a sensor board temperature offset parameter
-    msg.static_air_temperature = SSL_AIR_TEMPERATURE * theta + 25.0;
+    msg.static_air_temperature = C_TO_KELVIN(AP_Baro::get_temperatureC_for_alt_amsl(sim_alt));
 
     static Canard::Publisher<uavcan_equipment_air_data_RawAirData> raw_air_pub{CanardInterface::get_test_iface()};
     raw_air_pub.broadcast(msg);

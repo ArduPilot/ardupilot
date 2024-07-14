@@ -120,7 +120,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
         // AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
-    } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
+    } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!sub.set_home_to_current_location(false)) {
             // ignore this failure

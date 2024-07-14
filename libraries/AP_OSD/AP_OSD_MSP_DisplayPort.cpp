@@ -123,7 +123,7 @@ void AP_OSD_MSP_DisplayPort::setup_defaults(void)
 
 AP_OSD_Backend *AP_OSD_MSP_DisplayPort::probe(AP_OSD &osd)
 {
-    AP_OSD_MSP_DisplayPort *backend = new AP_OSD_MSP_DisplayPort(osd);
+    AP_OSD_MSP_DisplayPort *backend = NEW_NOTHROW AP_OSD_MSP_DisplayPort(osd);
     if (!backend) {
         return nullptr;
     }

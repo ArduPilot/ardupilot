@@ -50,7 +50,7 @@ int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
 #endif
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     if (uart_num == -1) {
-        uart_num = g.rangefinder_port;
+        uart_num = g.rangefinder_port[0];
     }
 #endif
 #ifdef HAL_PERIPH_ENABLE_ADSB
@@ -79,7 +79,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* canard_ins, CanardRxT
         return;
     }
     if (uart_monitor.buffer == nullptr) {
-        uart_monitor.buffer = new ByteBuffer(1024);
+        uart_monitor.buffer = NEW_NOTHROW ByteBuffer(1024);
         if (uart_monitor.buffer == nullptr) {
             return;
         }

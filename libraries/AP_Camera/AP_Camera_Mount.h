@@ -22,6 +22,8 @@
 
 #if AP_CAMERA_MOUNT_ENABLED
 
+#include "AP_Camera.h"
+
 class AP_Camera_Mount : public AP_Camera_Backend
 {
 public:
@@ -54,8 +56,10 @@ public:
     // set camera lens as a value from 0 to 5
     bool set_lens(uint8_t lens) override;
 
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
     bool set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source) override;
+#endif  // AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;

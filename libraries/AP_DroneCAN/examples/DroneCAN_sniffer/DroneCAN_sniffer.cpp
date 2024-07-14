@@ -120,7 +120,7 @@ void DroneCAN_sniffer::init(void)
     // we need to mutate the HAL to install new CAN interfaces
     AP_HAL::HAL& hal_mutable = AP_HAL::get_HAL_mutable();
 
-    hal_mutable.can[driver_index] = new HAL_CANIface(driver_index);
+    hal_mutable.can[driver_index] = NEW_NOTHROW HAL_CANIface(driver_index);
     
     if (hal_mutable.can[driver_index] == nullptr) {
         AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
@@ -132,7 +132,7 @@ void DroneCAN_sniffer::init(void)
         debug_dronecan("Can not initialised\n");
         return;
     }
-    _uavcan_iface_mgr = new CanardInterface{driver_index};
+    _uavcan_iface_mgr = NEW_NOTHROW CanardInterface{driver_index};
 
     if (_uavcan_iface_mgr == nullptr) {
         return;
@@ -145,12 +145,12 @@ void DroneCAN_sniffer::init(void)
 
     _uavcan_iface_mgr->init(node_memory_pool, sizeof(node_memory_pool), 9);
 
-    node_status_pub = new Canard::Publisher<uavcan_protocol_NodeStatus>{*_uavcan_iface_mgr};
+    node_status_pub = NEW_NOTHROW Canard::Publisher<uavcan_protocol_NodeStatus>{*_uavcan_iface_mgr};
     if (node_status_pub == nullptr) {
         return;
     }
 
-    node_info_srv = new Canard::Server<uavcan_protocol_GetNodeInfoRequest>{*_uavcan_iface_mgr, *Canard::allocate_static_callback(cb_GetNodeInfoRequest)};
+    node_info_srv = NEW_NOTHROW Canard::Server<uavcan_protocol_GetNodeInfoRequest>{*_uavcan_iface_mgr, *Canard::allocate_static_callback(cb_GetNodeInfoRequest)};
     if (node_info_srv == nullptr) {
         return;
     }

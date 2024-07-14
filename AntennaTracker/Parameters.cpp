@@ -518,7 +518,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Pitch,2:Yaw
     // @Bitmask: 0:Pitch,1:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
@@ -556,7 +555,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @DisplayName: Auto mode options
     // @Description: 1: Scan for unknown target
     // @User: Standard
-    // @Values: 0:None, 1: Scan for unknown target in auto mode
     // @Bitmask: 0:Scan for unknown target
     GSCALAR(auto_opts,              "AUTO_OPTIONS",        0),
 

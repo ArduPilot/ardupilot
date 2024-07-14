@@ -183,9 +183,9 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
 
     bufsize = MAX(MAX(VN_PKT1_LENGTH, VN_PKT2_LENGTH), VN_100_PKT1_LENGTH);
-    pktbuf = new uint8_t[bufsize];
-    last_pkt1 = new VN_packet1;
-    last_pkt2 = new VN_packet2;
+    pktbuf = NEW_NOTHROW uint8_t[bufsize];
+    last_pkt1 = NEW_NOTHROW VN_packet1;
+    last_pkt2 = NEW_NOTHROW VN_packet2;
 
     if (!pktbuf || !last_pkt1 || !last_pkt2) {
         AP_BoardConfig::allocation_error("VectorNav ExternalAHRS");

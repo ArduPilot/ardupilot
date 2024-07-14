@@ -44,7 +44,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new FlightAxis(frame_str);
+        return NEW_NOTHROW FlightAxis(frame_str);
     }
 
     struct state {

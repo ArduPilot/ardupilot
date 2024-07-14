@@ -82,7 +82,7 @@ void ModeGuided::update()
             }
             if (have_attitude_target) {
                 // run steering and throttle controllers
-                float steering_out = attitude_control.get_steering_out_rate(radians(_desired_yaw_rate_cds / 100.0f),
+                float steering_out = attitude_control.get_steering_out_rate(radians(_desired_yaw_rate_cds * 0.01f),
                                                                             g2.motors.limit.steer_left,
                                                                             g2.motors.limit.steer_right,
                                                                             rover.G_Dt);
@@ -443,5 +443,5 @@ bool ModeGuided::limit_breached() const
 // scurves provide path planning and object avoidance but cannot handle fast updates to the destination (for fast updates use position controller input shaping)
 bool ModeGuided::use_scurves_for_navigation() const
 {
-    return ((rover.g2.guided_options.get() & uint32_t(Options::SCurvesUsedForNavigation)) != 0);
+    return ((g2.guided_options.get() & uint32_t(Options::SCurvesUsedForNavigation)) != 0);
 }

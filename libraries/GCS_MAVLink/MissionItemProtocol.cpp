@@ -73,6 +73,8 @@ void MissionItemProtocol::handle_mission_count(
         // the upload count may have changed; free resources and
         // allocate them again:
         free_upload_resources();
+        receiving = false;
+        link = nullptr;
     }
 
     if (packet.count > max_items()) {
@@ -218,6 +220,19 @@ void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
                                                             const mavlink_message_t &msg,
                                                             const mavlink_mission_write_partial_list_t &packet)
 {
+    if (!mavlink2_requirement_met(_link, msg)) {
+        return;
+    }
+
+    if (receiving) {
+        // someone is already uploading a mission.  Deny ability to
+        // write a partial list here as they might be trying to
+        // overwrite a subset of the waypoints which the current
+        // transfer is uploading, and that may lead to storing a whole
+        // bunch of empty items.
+        send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+        return;
+    }
 
     // start waypoint receiving
     if ((unsigned)packet.start_index > item_count() ||

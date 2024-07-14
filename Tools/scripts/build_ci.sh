@@ -345,6 +345,18 @@ for t in $CI_BUILD_TARGET; do
         $waf bootloader
         continue
     fi
+
+    if [ "$t" == "new-check" ]; then
+        echo "Building Pixhawk6X with new check"
+        $waf configure --board Pixhawk6X --enable-new-checking
+        $waf clean
+        $waf
+        echo "Building Pixhawk6X-PPPGW with new check"
+        $waf configure --board Pixhawk6X-PPPGW --enable-new-checking
+        $waf clean
+        $waf AP_Periph
+        continue
+    fi
     
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
@@ -422,7 +434,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building signed firmwares"
         sudo apt-get update
         sudo apt-get install -y python3-dev
-        python3 -m pip install pymonocypher
+        python3 -m pip install pymonocypher==3.1.3.2
         ./Tools/scripts/signing/generate_keys.py testkey
         $waf configure --board CubeOrange-ODID --signed-fw --private-key testkey_private_key.dat
         $waf copter

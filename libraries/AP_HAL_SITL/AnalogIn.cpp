@@ -69,7 +69,7 @@ void AnalogIn::init() {
 }
 
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin) {
-    return new ADCSource(_sitlState, pin);
+    return NEW_NOTHROW ADCSource(_sitlState, pin);
 }
 
 #endif

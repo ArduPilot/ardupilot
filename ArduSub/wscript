@@ -14,10 +14,7 @@ def build(bld):
             'AP_JSButton',
             'AP_LeakDetector',
             'AP_Motors',
-            'AP_RCMapper',
-            'AP_Beacon',
             'AP_TemperatureSensor',
-            'AP_Arming',
         ],
     )
 

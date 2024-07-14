@@ -1,5 +1,7 @@
 -- Example of saving the current mission to a file on the SD card on arming
 
+---@diagnostic disable: need-check-nil
+
 local function save_to_SD()
 
   -- check if there is a mission to save

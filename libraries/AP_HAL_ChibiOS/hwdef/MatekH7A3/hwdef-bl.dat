@@ -8,7 +8,7 @@ MCU STM32H7xx STM32H7A3xx
 APJ_BOARD_ID AP_HW_MatekH7A3
 
 # crystal frequency, setup to use external oscillator
-OSCILLATOR_HZ 8000000
+OSCILLATOR_HZ 16000000
 
 FLASH_SIZE_KB 2048
 

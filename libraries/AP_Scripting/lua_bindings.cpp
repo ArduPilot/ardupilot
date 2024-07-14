@@ -64,13 +64,13 @@ int lua_mavlink_init(lua_State *L) {
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
     if (data.rx_buffer == nullptr) {
-        data.rx_buffer = new ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+        data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
         if (data.rx_buffer == nullptr) {
             return luaL_error(L, "Failed to allocate mavlink rx buffer");
         }
     }
     if (data.accept_msg_ids == nullptr) {
-        data.accept_msg_ids = new uint32_t[num_msgs];
+        data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
         if (data.accept_msg_ids == nullptr) {
             return luaL_error(L, "Failed to allocate mavlink rx registry");
         }
@@ -203,7 +203,7 @@ int lua_mavlink_block_command(lua_State *L) {
     }
 
     // Add new list item
-    AP_Scripting::command_block_list *new_item = new AP_Scripting::command_block_list;
+    AP_Scripting::command_block_list *new_item = NEW_NOTHROW AP_Scripting::command_block_list;
     if (new_item == nullptr) {
         lua_pushboolean(L, false);
         return 1;
@@ -381,9 +381,8 @@ int AP_Logger_Write(lua_State *L) {
         switch(fmt_cat[index]) {
             // logger variable types not available to scripting
             // 'd': double
-            // 'Q': uint64_t
             // 'q': int64_t
-            // 'a': arrays
+            // 'a': int16_t[32]
             case 'b': { // int8_t
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
@@ -496,6 +495,18 @@ int AP_Logger_Write(lua_State *L) {
                 offset += sizeof(uint32_t);
                 break;
             }
+            case 'Q': { // uint64_t
+                void * ud = luaL_testudata(L, arg_index, "uint64_t");
+                if (ud == nullptr) {
+                    luaM_free(L, buffer);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                uint64_t tmp = *static_cast<uint64_t *>(ud);
+                memcpy(&buffer[offset], &tmp, sizeof(uint64_t));
+                offset += sizeof(uint64_t);
+                break;
+            }
             case 'N': { // char[16]
                 charlen = 16;
                 break;
@@ -577,7 +588,7 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    scripting->_i2c_dev[scripting->num_i2c_devices] = new AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
+    scripting->_i2c_dev[scripting->num_i2c_devices] = NEW_NOTHROW AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
     if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
@@ -676,10 +687,16 @@ int lua_get_CAN_device(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev == nullptr) {
-        scripting->_CAN_dev = new ScriptingCANSensor(AP_CAN::Protocol::Scripting);
+        scripting->_CAN_dev = NEW_NOTHROW ScriptingCANSensor(AP_CAN::Protocol::Scripting);
         if (scripting->_CAN_dev == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
+    }
+
+    if (!scripting->_CAN_dev->initialized()) {
+        // Driver not initialized, probably because there is no can driver set to scripting
+        // Return nil
+        return 0;
     }
 
     new_ScriptingCANBuffer(L);
@@ -701,10 +718,16 @@ int lua_get_CAN_device2(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev2 == nullptr) {
-        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
+        scripting->_CAN_dev2 = NEW_NOTHROW ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
         if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
+    }
+
+    if (!scripting->_CAN_dev2->initialized()) {
+        // Driver not initialized, probably because there is no can driver set to scripting 2
+        // Return nil
+        return 0;
     }
 
     new_ScriptingCANBuffer(L);
@@ -772,7 +795,7 @@ int lua_get_PWMSource(lua_State *L) {
         return luaL_argerror(L, 1, "no PWMSources available");
     }
 
-    scripting->_pwm_source[scripting->num_pwm_source] = new AP_HAL::PWMSource;
+    scripting->_pwm_source[scripting->num_pwm_source] = NEW_NOTHROW AP_HAL::PWMSource;
     if (scripting->_pwm_source[scripting->num_pwm_source] == nullptr) {
         return luaL_argerror(L, 1, "PWMSources device nullptr");
     }
@@ -794,7 +817,7 @@ int lua_get_SocketAPM(lua_State *L) {
     const uint8_t datagram = get_uint8_t(L, 1);
     auto *scripting = AP::scripting();
 
-    auto *sock = new SocketAPM(datagram);
+    auto *sock = NEW_NOTHROW SocketAPM(datagram);
     if (sock == nullptr) {
         return luaL_argerror(L, 1, "SocketAPM device nullptr");
     }

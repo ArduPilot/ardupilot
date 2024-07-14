@@ -591,6 +591,11 @@ public:
     AP_Int8 warn_snr;
 #endif
 
+#if HAL_OSD_SIDEBAR_ENABLE
+    AP_Int8 sidebar_h_offset;
+    AP_Int8 sidebar_v_ext;
+#endif
+
     enum {
         OPTION_DECIMAL_PACK = 1U<<0,
         OPTION_INVERTED_WIND = 1U<<1,

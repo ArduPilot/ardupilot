@@ -13,6 +13,7 @@ void AP_Baro::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
         time_us       : time_us,
         instance      : baro_instance,
         altitude      : get_altitude(baro_instance),
+        altitude_AMSL : get_altitude_AMSL(baro_instance),
         pressure      : get_pressure(baro_instance),
         temperature   : (int16_t)(get_temperature(baro_instance) * 100 + 0.5f),
         climbrate     : get_climb_rate(),

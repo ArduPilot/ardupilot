@@ -29,6 +29,12 @@ bool AP_ExternalControl_Rover::set_linear_velocity_and_yaw_rate(const Vector3f &
     return true;
 }
 
+bool AP_ExternalControl_Rover::set_global_position(const Location& loc)
+{
+    // set_target_location only checks if the rover is in guided mode or not
+    return rover.set_target_location(loc);
+}
+
 bool AP_ExternalControl_Rover::ready_for_external_control()
 {
     return rover.control_mode->in_guided_mode() && rover.arming.is_armed();

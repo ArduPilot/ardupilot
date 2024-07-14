@@ -331,6 +331,9 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
         // airspeed as seen by a fwd pitot tube (limited to 120m/s)
         airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
+
+        // airspeed fix for eas2tas
+        update_eas_airspeed();
     }
 
     // Convert from a meters from origin physics to a lat long alt

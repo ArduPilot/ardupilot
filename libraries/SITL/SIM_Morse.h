@@ -43,7 +43,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Morse(frame_str);
+        return NEW_NOTHROW Morse(frame_str);
     }
 
 private:

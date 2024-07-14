@@ -945,7 +945,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     }
 #else
     if (!group.dma_handle) {
-        group.dma_handle = new Shared_DMA(group.dma_up_stream_id, SHARED_DMA_NONE,
+        group.dma_handle = NEW_NOTHROW Shared_DMA(group.dma_up_stream_id, SHARED_DMA_NONE,
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_allocate, void, Shared_DMA *),
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_deallocate, void, Shared_DMA *));
         if (!group.dma_handle) {
@@ -1531,16 +1531,15 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (auto &group : pwm_group_list) {
         if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
+            dmaStreamFreeI(group.dma);
 #if defined(STM32F1)
             // leaving the peripheral running on IOMCU plays havoc with the UART that is
             // also sharing this channel, we only turn it off rather than resetting so
             // that we don't have to worry about line modes etc
             if (group.pwm_started && group.dma_handle->is_shared()) {
-                group.pwm_drv->tim->CR1   = 0;
-                group.pwm_drv->tim->DIER  = 0;
+                bdshot_disable_pwm_f1(group);
             }
 #endif
-            dmaStreamFreeI(group.dma);
             group.dma = nullptr;
             chSysUnlock();
         }
@@ -2566,7 +2565,7 @@ bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
         for (uint8_t j = 0; j < 4; j++) {
             delete[] grp->serial_led_data[j];
             grp->serial_led_data[j] = nullptr;
-            grp->serial_led_data[j] = new SerialLed[grp->serial_nleds];
+            grp->serial_led_data[j] = NEW_NOTHROW SerialLed[grp->serial_nleds];
             if (grp->serial_led_data[j] == nullptr) {
                 // if allocation failed clear all memory
                  for (uint8_t k = 0; k < 4; k++) {

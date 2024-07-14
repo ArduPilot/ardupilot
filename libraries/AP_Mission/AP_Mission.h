@@ -681,6 +681,9 @@ public:
     bool jump_to_abort_landing_sequence(void);
 #endif
 
+    // find the closest point on the mission after a DO_RETURN_PATH_START and before DO_LAND_START or landing
+    bool jump_to_closest_mission_leg(const Location &current_loc);
+
     // check which is the shortest route to landing an RTL via a DO_LAND_START or continuing on the current mission plan
     bool is_best_land_sequence(const Location &current_loc);
 
@@ -693,6 +696,11 @@ public:
     // get in_landing_sequence flag
     bool get_in_landing_sequence_flag() const {
         return _flags.in_landing_sequence;
+    }
+
+    // get in_return_path flag
+    bool get_in_return_path_flag() const {
+        return _flags.in_return_path;
     }
 
     // force mission to resume when start_or_resume() is called
@@ -780,6 +788,7 @@ private:
         bool do_cmd_all_done;        // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
         bool in_landing_sequence;   // true if the mission has jumped to a landing
         bool resuming_mission;      // true if the mission is resuming and set false once the aircraft attains the interrupted WP
+        bool in_return_path;        // true if the mission has passed a DO_RETURN_PATH_START waypoint either in the course of the mission or via a `jump_to_closest_mission_leg` call
     } _flags;
 
     // mission WP resume history
@@ -844,6 +853,10 @@ private:
 
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
+
+    // Approximate the distance traveled to return to the mission path. DO_JUMP commands are observed in look forward.
+    // Stop searching once reaching a landing or do-land-start
+    bool distance_to_mission_leg(uint16_t index, float &rejoin_distance, uint16_t &rejoin_index, const Location& current_loc);
 
     // calculate the location of a resume cmd wp
     bool calc_rewind_pos(Mission_Command& rewind_cmd);

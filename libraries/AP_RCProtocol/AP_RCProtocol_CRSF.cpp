@@ -276,6 +276,11 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
         return false;
     }
 
+    if (_frame.length < CRSF_FRAME_LENGTH_MIN) {
+        // invalid short frame
+        return false;
+    }
+
     // decode whatever we got and expect
     if (_frame_ofs >= _frame.length + CRSF_HEADER_LEN) {
         const uint8_t crc = crc8_dvb_s2_update(0, &_frame_bytes[CRSF_HEADER_LEN], _frame.length - 1);

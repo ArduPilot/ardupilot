@@ -19,7 +19,11 @@ import subprocess
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
-    tmp_str = bldnode.find_node('include_dirs').read()
+    include_dirs_node = bldnode.find_node('include_dirs')
+    if include_dirs_node is None:
+        _dynamic_env_data['include_dirs'] = []
+        return
+    tmp_str = include_dirs_node.read()
     tmp_str = tmp_str.replace(';\n','')
     tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
     # split, coping with separator
@@ -144,27 +148,6 @@ class set_default_parameters(Task.Task):
             defaults.save()
 
 
-def check_elf_symbols(task):
-    '''
-    check for disallowed symbols in elf file, such as C++ exceptions
-    '''
-    elfpath = task.inputs[0].abspath()
-
-    if not task.env.vehicle_binary or task.env.SIM_ENABLED:
-        # we only want to check symbols for vehicle binaries, allowing examples
-        # to use C++ exceptions. We also allow them in simulator builds
-        return
-
-    # we use string find on these symbols, so this catches all types of throw
-    # calls this should catch all uses of exceptions unless the compiler
-    # manages to inline them
-    blacklist = ['std::__throw']
-
-    nmout = subprocess.getoutput("%s -C %s" % (task.env.get_flat('NM'), elfpath))
-    for b in blacklist:
-        if nmout.find(b) != -1:
-            raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
-
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
@@ -176,8 +159,6 @@ class generate_bin(Task.Task):
     def keyword(self):
         return "Generating"
     def run(self):
-        check_elf_symbols(self)
-
         if self.env.HAS_EXTERNAL_FLASH_SECTIONS:
             ret = self.split_sections()
             if (ret < 0):
@@ -257,8 +238,13 @@ def sign_firmware(image, private_keyfile):
     try:
         import monocypher
     except ImportError:
-        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
         return None
+
+    if monocypher.__version__ != "3.1.3.2":
+        Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+        return None
+
     try:
         key = open(private_keyfile, 'r').read()
     except Exception as ex:
@@ -556,7 +542,6 @@ def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
-    cfg.find_program('arm-none-eabi-nm', var='NM')
     env = cfg.env
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):

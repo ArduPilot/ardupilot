@@ -47,8 +47,6 @@ define DMA_RESERVE_SIZE 0
 MAIN_STACK 0x800
 PROCESS_STACK 0x800
 
-define HAL_DISABLE_LOOP_DELAY
-
 # Add CS pins to ensure they are high in bootloader
 PB12 RM3100_CS CS
 PA8 BARO_CS CS

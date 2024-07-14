@@ -241,7 +241,7 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     //       ->  o                     o ->              | -> |
     // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
 
-    // intersection = new Vector3(E.x + t1 * d.x, secondPoint.y, E.y + t1 * d.y);
+    // intersection = NEW_NOTHROW Vector3(E.x + t1 * d.x, secondPoint.y, E.y + t1 * d.y);
     //   intersection.x = seg_start.x + t1 * seg_end_minus_start.x;
     //   intersection.y = seg_start.y + t1 * seg_end_minus_start.y;
 

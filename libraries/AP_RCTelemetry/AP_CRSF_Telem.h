@@ -64,6 +64,15 @@ public:
         uint8_t remaining; // ( percent )
     };
 
+    struct PACKED BaroVarioFrame {
+        uint16_t altitude_packed; // Altitude above start (calibration) point.
+        int8_t vertical_speed_packed; // vertical speed.
+    };
+
+    struct PACKED VarioFrame {
+        int16_t v_speed; // vertical speed cm/s
+    };
+
     struct PACKED VTXFrame {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
@@ -201,6 +210,8 @@ public:
     union PACKED BroadcastFrame {
         GPSFrame gps;
         HeartbeatFrame heartbeat;
+        BaroVarioFrame baro_vario;
+        VarioFrame vario;
         BatteryFrame battery;
         VTXFrame vtx;
         AttitudeFrame attitude;
@@ -232,8 +243,6 @@ public:
 
     // Process a frame from the CRSF protocol decoder
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
-    // process any changed settings and schedule for transmission
-    void update();
     // get next telemetry data for external consumers of SPort data
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
     // start bind request
@@ -244,6 +253,8 @@ private:
     enum SensorType {
         HEARTBEAT,
         PARAMETERS,
+        BARO_VARIO,
+        VARIO,
         ATTITUDE,
         VTX_PARAMETERS,
         BATTERY,
@@ -267,6 +278,10 @@ private:
     void calc_parameter_ping();
     void calc_heartbeat();
     void calc_battery();
+    uint16_t get_altitude_packed();
+    int8_t get_vertical_speed_packed();
+    void calc_baro_vario();
+    void calc_vario();
     void calc_gps();
     void calc_attitude();
     void calc_flight_mode();

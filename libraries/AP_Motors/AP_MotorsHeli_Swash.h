@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Param/AP_Param.h>
+#include <AP_Logger/AP_Logger.h>
 
 // swashplate types
 enum SwashPlateType {
@@ -19,7 +20,7 @@ enum SwashPlateType {
 class AP_MotorsHeli_Swash {
 public:
 
-    AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3);
+    AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3, uint8_t instance);
 
     // configure - configure the swashplate settings for any updated parameters
     void configure();
@@ -38,6 +39,11 @@ public:
 
     // Get function output mask
     uint32_t get_output_mask() const;
+
+#if HAL_LOGGING_ENABLED
+    // Write SWSH log for this instance of swashplate
+    void write_log(float cyclic_scaler, float col_ang_min, float col_ang_max, int16_t col_min, int16_t col_max) const;
+#endif
 
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -75,7 +81,13 @@ private:
     float                _pitchFactor[_max_num_servos];             // Pitch axis scaling of servo output based on servo position
     float                _collectiveFactor[_max_num_servos];        // Collective axis scaling of servo output based on servo position
     float                _output[_max_num_servos];                  // Servo output value
-    uint8_t              _motor_num[_max_num_servos];               // Motor function to use for output
+    const uint8_t        _motor_num[_max_num_servos];               // Motor function to use for output
+    const uint8_t        _instance;                                 // Swashplate instance. Used for logging.
+
+    // Variables stored for logging
+    float _roll_input;
+    float _pitch_input;
+    float _collective_input_scaled;
 
     // parameters
     AP_Int8  _swashplate_type;                   // Swash Type Setting

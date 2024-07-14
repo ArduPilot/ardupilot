@@ -65,7 +65,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
+    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
@@ -136,27 +136,27 @@ void AP_DAL::init_sensors(void)
 
     auto *rng = AP::rangefinder();
     if (rng && rng->num_sensors() > 0) {
-        alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
+        alloc_failed |= (_rangefinder = NEW_NOTHROW AP_DAL_RangeFinder) == nullptr;
     }
 
 #if AP_AIRSPEED_ENABLED
     auto *aspeed = AP::airspeed();
     if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
-        alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
+        alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
 
 #if AP_BEACON_ENABLED
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
-        alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
+        alloc_failed |= (_beacon = NEW_NOTHROW AP_DAL_Beacon) == nullptr;
     }
 #endif
 
 #if HAL_VISUALODOM_ENABLED
     auto *vodom = AP::visualodom();
     if (vodom != nullptr && vodom->enabled()) {
-        alloc_failed |= (_visualodom = new AP_DAL_VisualOdom) == nullptr;
+        alloc_failed |= (_visualodom = NEW_NOTHROW AP_DAL_VisualOdom) == nullptr;
     }
 #endif
 

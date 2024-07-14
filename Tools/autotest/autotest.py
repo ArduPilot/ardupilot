@@ -287,7 +287,9 @@ __bin_names = {
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
+    "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
     "CAN": "arducopter",
+    "BattCAN": "arducopter",
 }
 
 
@@ -358,11 +360,15 @@ tester_class_map = {
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
+    "test.BattCAN": arducopter.AutoTestBattCAN,
 }
 
 supplementary_test_binary_map = {
     "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
                  "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
+    "test.BattCAN": [
+        "sitl_periph_battmon:AP_Periph:0:Tools/autotest/default_params/periph-battmon.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+    ],
 }
 
 
@@ -445,6 +451,10 @@ def run_step(step):
         vehicle_binary = 'bin/AP_Periph'
         board = 'sitl_periph_universal'
 
+    if step == 'build.SITLPeriphBattMon':
+        vehicle_binary = 'bin/AP_Periph'
+        board = 'sitl_periph_battmon'
+
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
 
@@ -497,7 +507,6 @@ def run_step(step):
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
         "disable_breakpoints": opts.disable_breakpoints,
-        "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
         "num_aux_imus" : opts.num_aux_imus,
@@ -865,10 +874,6 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
-    parser.add_option("--frame",
-                      type='string',
-                      default=None,
-                      help='specify frame type')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -1085,6 +1090,9 @@ if __name__ == "__main__":
 
         'build.SITLPeriphUniversal',
         'test.CAN',
+
+        'build.SITLPeriphBattMon',
+        'test.BattCAN',
 
         # convertgps disabled as it takes 5 hours
         # 'convertgpx',

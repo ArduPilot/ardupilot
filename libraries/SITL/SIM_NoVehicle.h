@@ -33,7 +33,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new NoVehicle(frame_str);
+        return NEW_NOTHROW NoVehicle(frame_str);
     }
 };
 

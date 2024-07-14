@@ -8,7 +8,7 @@ ignore = {"111", -- Setting an undefined global variable.
           "614"} -- Trailing whitespace in a comment.
 
 -- These lua scripts are not for running on AP
-exclude_files = {"Tools/CHDK-Scripts/*", "modules/*", "libraries/AP_Scripting/tests/luacheck.lua"}
+exclude_files = {"Tools/CHDK-Scripts/*", "modules/*", "libraries/AP_Scripting/tests/luacheck.lua", "lua-language-server/*"}
 
 -- Grab AP globals from docs file
 stds.ArduPilot = {}

@@ -38,9 +38,10 @@ define HAL_USE_ADC FALSE
 
 # disable unnecessary threads
 define HAL_NO_MONITOR_THREAD
-define HAL_NO_RCIN_THREAD
 define HAL_NO_RCOUT_THREAD
 define HAL_NO_TIMER_THREAD
+undef HAL_RCIN_THREAD_ENABLED
+define HAL_RCIN_THREAD_ENABLED 0
 
 # maintain GPS port number compatibility with MatekL431-Periph
 SERIAL_ORDER EMPTY USART2 USART3

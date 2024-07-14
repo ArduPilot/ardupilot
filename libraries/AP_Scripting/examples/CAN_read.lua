@@ -1,4 +1,5 @@
 -- This script is an example of reading from the CAN bus
+---@diagnostic disable: need-check-nil
 
 -- Load CAN driver1. The first will attach to a protocol of 10, the 2nd to a protocol of 12
 -- this allows the script to distinguish packets on two CAN interfaces

@@ -56,6 +56,9 @@
 --   b. SIM_WIND_SPD <-- sets wind speed in m/s
 --
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
+
 -- create and initialise parameters
 local PARAM_TABLE_KEY = 86  -- parameter table key must be used by only one script on a particular flight controller
 assert(param:add_table(PARAM_TABLE_KEY, "DR_", 9), 'could not add param table')

@@ -173,7 +173,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_PROTOCOL
     // @DisplayName: Console protocol selection
     // @Description: Control what protocol to use on the console. 
-    // @Values: 1:MAVlink1, 2:MAVLink2
+    // @Values: 1:MAVLink1, 2:MAVLink2
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),

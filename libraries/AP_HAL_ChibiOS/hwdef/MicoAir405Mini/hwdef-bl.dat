@@ -1,0 +1,37 @@
+# hw definition file for processing by chibios_pins.py
+# for the MicoAir405Mini hardware
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_MicoAir405Mini
+
+# crystal frequency & PPL, working at 168M
+OSCILLATOR_HZ 8000000
+STM32_PLLM_VALUE 8
+
+# chip flash size & bootloader & firmware
+FLASH_SIZE_KB 1024
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 48
+
+# LEDs
+PA8 LED_BOOTLOADER OUTPUT LOW  #blue
+PC4 LED_ACTIVITY  OUTPUT LOW  #green
+define HAL_LED_ON 0
+
+# order of UARTs and USB
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+#CS pin
+PB12 AT7456E_CS CS
+PC14 BMI270_CS  CS
+PC13 DPS310_CS  CS
+PC9  SDCARD_CS  CS

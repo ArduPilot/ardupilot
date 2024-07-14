@@ -41,11 +41,6 @@ repos:
         -   id: check-xml
         -   id: check-yaml
 
-  -   repo: https://github.com/lsst-ts/pre-commit-xmllint
-      rev: 6f36260b537bf9a42b6ea5262c915ae50786296e
-      hooks:
-        - id: format-xmllint
-          files: libraries/AP_DDS/dds_xrce_profile.xml
   -   repo: https://github.com/psf/black
       rev: 23.7.0
       hooks:

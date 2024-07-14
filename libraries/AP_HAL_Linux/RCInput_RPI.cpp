@@ -534,8 +534,8 @@ void RCInput_RPI::init()
     set_physical_addresses();
     // Init memory for buffer and for DMA control blocks.
     // See comments in "init_ctrl_data()" to understand values "2" and "15"
-    circle_buffer = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, _version);
-    con_blocks = new Memory_table(RCIN_RPI_BUFFER_LENGTH * 15, _version);
+    circle_buffer = NEW_NOTHROW Memory_table(RCIN_RPI_BUFFER_LENGTH * 2, _version);
+    con_blocks = NEW_NOTHROW Memory_table(RCIN_RPI_BUFFER_LENGTH * 15, _version);
 
     init_registers();
 

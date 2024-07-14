@@ -10,6 +10,8 @@
 --     if GPS speed accuracy <= SCR_USER2 and GPS innovations <= SRC_USER3 then the GPS (primary source set) will be used
 --     otherwise wheel encoders (secondary source set) will be used
 -- luacheck: only 0
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
 
 local source_prev = 0               -- previous source, defaults to primary source
 local sw_source_prev = -1           -- previous source switch position

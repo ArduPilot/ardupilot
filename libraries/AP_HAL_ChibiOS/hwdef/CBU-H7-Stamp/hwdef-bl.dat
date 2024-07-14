@@ -1,0 +1,93 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the CBUnmanned H743 Stamp hardware
+
+# default to all pins low to avoid ESD issues
+#DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_CBU_StampH743
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# flash size
+FLASH_SIZE_KB 2048
+
+env OPTIMIZE -Os
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART1 UART2
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins
+PI9 IMU1_CS CS
+PH5 IMU2_CS CS
+PI4 IMU3_CS CS
+PE4 SP4_CS1 CS
+
+PA3 USART2_RX USART2
+PD5 USART2_TX USART2
+
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+PE3 LED_ACTIVITY OUTPUT HIGH
+define HAL_LED_ON 1
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+# enable DFU by default
+ENABLE_DFU_BOOT 1
+
+# support flashing from SD card:
+# power enable pins
+PC13 VDD_3V3_SD_CARD_EN OUTPUT HIGH
+
+PI11 IMU1_PWR_EN OUTPUT HIGH
+PF4 IMU2_PWR_EN OUTPUT HIGH
+PE7 IMU3_PWR_EN OUTPUT HIGH
+PG8 MAG_PWR_EN OUTPUT HIGH
+PG15 Ethernet_PWR_EN OUTPUT HIGH
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# microSD support
+PD6  SDMMC2_CK SDMMC2
+PD7  SDMMC2_CMD SDMMC2
+PB14 SDMMC2_D0 SDMMC2
+PB15 SDMMC2_D1 SDMMC2
+PG11 SDMMC2_D2 SDMMC2
+PB4  SDMMC2_D3 SDMMC2
+define FATFS_HAL_DEVICE SDCD2
+
+DMA_PRIORITY SDMMC* ADC* UART* USART* SPI* TIM*
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1

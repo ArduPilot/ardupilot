@@ -101,9 +101,9 @@ void MicroStrain::send_imu_packet(void)
     // Add ambient pressure field
     packet.payload[packet.payload_size++] = 0x06; // Ambient Pressure Field Size
     packet.payload[packet.payload_size++] = 0x17; // Descriptor
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(fdm.altitude * 0.001f, sigma, delta, theta);
-    put_float(packet, SSL_AIR_PRESSURE * delta * 0.001 + rand_float() * 0.1);
+
+    float pressure_Pa = AP_Baro::get_pressure_for_alt_amsl(fdm.altitude);
+    put_float(packet, pressure_Pa*0.001 + rand_float() * 0.1);
 
     // Add scaled magnetometer field
     packet.payload[packet.payload_size++] = 0x0E; // Scaled Magnetometer Field Size

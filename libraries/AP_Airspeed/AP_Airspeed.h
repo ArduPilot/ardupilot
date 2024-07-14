@@ -171,6 +171,7 @@ public:
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
         DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
         USE_EKF_CONSISTENCY                                   = (1<<3),
+        REPORT_OFFSET                                         = (1<<4),   // report offset cal to GCS
     };
 
     enum airspeed_type {

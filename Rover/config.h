@@ -75,8 +75,3 @@
 #ifndef ADVANCED_FAILSAFE
   #define ADVANCED_FAILSAFE DISABLED
 #endif
-
-#ifndef OSD_ENABLED
- #define OSD_ENABLED DISABLED
-#endif
-

@@ -159,6 +159,7 @@ jobs:
             CubeOrange-PPP,
             SOHW,
             Pixhawk6X-PPPGW,
+            new-check,
         ]
         toolchain: [
             chibios,

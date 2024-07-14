@@ -26,8 +26,12 @@ class AStyleChecker(object):
         ]
         self.files_to_check = [
             pathlib.Path(s) for s in [
+                'ArduCopter/AP_ExternalControl_Copter.cpp',
+                'ArduCopter/AP_ExternalControl_Copter.h',
                 'libraries/AP_ExternalAHRS/AP_ExternalAHRS_MicroStrain7.cpp',
                 'libraries/AP_ExternalAHRS/AP_ExternalAHRS_MicroStrain7.h',
+                'Rover/AP_ExternalControl_Rover.cpp',
+                'Rover/AP_ExternalControl_Rover.h',
             ]
         ]
         self.dry_run = dry_run

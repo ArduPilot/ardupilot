@@ -6,7 +6,7 @@
 
 #include "AP_Logger_File.h"
 #include "AP_Logger_Flash_JEDEC.h"
-#include "AP_Logger_W25N01GV.h"
+#include "AP_Logger_W25NXX.h"
 #include "AP_Logger_MAVLink.h"
 
 #include <AP_InternalError/AP_InternalError.h>
@@ -247,7 +247,7 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
             return;
         }
         LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
+            NEW_NOTHROW LoggerMessageWriter_DFLogStart();
         if (message_writer == nullptr)  {
             AP_BoardConfig::allocation_error("message writer");
         }
@@ -714,7 +714,7 @@ void AP_Logger::save_format_Replay(const void *pBuffer)
 {
     if (((uint8_t *)pBuffer)[2] == LOG_FORMAT_MSG) {
         struct log_Format *fmt = (struct log_Format *)pBuffer;
-        struct log_write_fmt *f = new log_write_fmt;
+        struct log_write_fmt *f = NEW_NOTHROW log_write_fmt;
         f->msg_type = fmt->type;
         f->msg_len = fmt->length;
         f->name = strndup(fmt->name, sizeof(fmt->name));
@@ -1639,13 +1639,13 @@ void AP_Logger::log_file_content(const char *filename)
 void AP_Logger::log_file_content(FileContent &file_content, const char *filename)
 {
     WITH_SEMAPHORE(file_content.sem);
-    auto *file = new file_list;
+    auto *file = NEW_NOTHROW file_list;
     if (file == nullptr) {
         return;
     }
     // make copy to allow original to go out of scope
     const size_t len = strlen(filename)+1;
-    char * tmp_filename = new char[len];
+    char * tmp_filename = NEW_NOTHROW char[len];
     if (tmp_filename == nullptr) {
         delete file;
         return;

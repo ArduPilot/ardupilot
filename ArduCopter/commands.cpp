@@ -63,11 +63,6 @@ bool Copter::set_home(const Location& loc, bool lock)
         return false;
     }
 
-    // check home is close to EKF origin
-    if (far_from_EKF_origin(loc)) {
-        return false;
-    }
-
     // set ahrs home (used for RTL)
     if (!ahrs.set_home(loc)) {
         return false;
@@ -80,20 +75,4 @@ bool Copter::set_home(const Location& loc, bool lock)
 
     // return success
     return true;
-}
-
-// far_from_EKF_origin - checks if a location is too far from the EKF origin
-//  returns true if too far
-bool Copter::far_from_EKF_origin(const Location& loc)
-{
-    // check distance to EKF origin
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        if (labs(ekf_origin.alt - loc.alt)*0.01 > EKF_ORIGIN_MAX_ALT_KM*1000.0) {
-            return true;
-        }
-    }
-
-    // close enough to origin
-    return false;
 }

@@ -21,7 +21,7 @@
 #include <AP_Param/AP_Param.h>
 
 #define VTX_MAX_CHANNELS 8
-#define VTX_MAX_POWER_LEVELS 9
+#define VTX_MAX_POWER_LEVELS 10
 
 class AP_VideoTX {
 public:
@@ -72,6 +72,12 @@ public:
         Unknown,
         Active,
         Inactive
+    };
+
+    enum VTXType {
+        CRSF = 1U<<0,
+        SmartAudio = 1U<<1,
+        Tramp = 1U<<2
     };
 
     struct PowerLevel {
@@ -164,6 +170,10 @@ public:
     void set_configuration_finished(bool configuration_finished) { _configuration_finished = configuration_finished; }
     bool is_configuration_finished() { return _configuration_finished; }
 
+    // manage VTX backends
+    bool is_provider_enabled(VTXType type) const { return (_types & type) != 0; }
+    void set_provider_enabled(VTXType type) { _types |= type; }
+
     static AP_VideoTX *singleton;
 
 private:
@@ -197,6 +207,9 @@ private:
     bool _defaults_set;
     // true when configuration have been applied successfully to the VTX
     bool _configuration_finished;
+
+    // types of VTX providers
+    uint8_t _types;
 };
 
 namespace AP {

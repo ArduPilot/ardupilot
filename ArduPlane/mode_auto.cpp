@@ -167,8 +167,16 @@ bool ModeAuto::is_landing() const
 void ModeAuto::run()
 {
     if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_ALTITUDE_WAIT) {
-        // Wiggle servos
-        plane.set_servos_idle();
+
+        wiggle_servos();
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0.0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0.0);
+
+        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttle);
+        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleLeft);
+        SRV_Channels::set_output_to_trim(SRV_Channel::k_throttleRight);
 
         // Relax attitude control
         reset_controllers();

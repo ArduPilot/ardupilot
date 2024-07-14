@@ -391,7 +391,7 @@ void AP_YawController::autotune_start(void)
         gains.tau.set(0.5);
         gains.rmax_pos.set(90);
 
-        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_YAW, aparm, rate_pid);
+        autotune = NEW_NOTHROW AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_YAW, aparm, rate_pid);
         if (autotune == nullptr) {
             if (!failed_autotune_alloc) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed yaw allocation");
