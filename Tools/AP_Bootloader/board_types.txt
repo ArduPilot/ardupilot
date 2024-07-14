@@ -272,7 +272,7 @@ AP_HW_mRoKitCANrevC                  1147
 AP_HW_BotBloxSwitch                  1148
 AP_HW_MatekH7A3                      1149
 AP_HW_MicoAir405v2                   1150
-AP_HW_ORAQF405PRO                    1155
+AP_HW_ORQAF405PRO                    1155
 AP_HW_CBU_StampH743                  1156
 AP_HW_FOXEERF405_V2                  1157
 AP_HW_CSKY405                        1158
@@ -320,7 +320,7 @@ AP_HW_JFB200                         1200
 AP_HW_SKYSTARSF405V2                 1201
 AP_HW_MicoAir743-Lite                1202
 AP_HW_X-MAV-AP-H743R1                1203
-
+AP_HW_ORQAH743PRO                    1204
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
