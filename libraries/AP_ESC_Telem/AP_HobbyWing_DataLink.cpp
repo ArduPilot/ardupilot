@@ -63,7 +63,7 @@ void AP_HobbyWing_DataLink::update()
     }
 
     // header read successfully
-    int bytes_to_read = PACKAGE_SIZE - header_read;
+    uint32_t bytes_to_read = PACKAGE_SIZE - header_read;
     // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Header read=%d bytes to read=%d", header_read, bytes_to_read);
 
     // header read successfully, read rest of the packet
