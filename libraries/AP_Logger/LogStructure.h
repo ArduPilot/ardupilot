@@ -1082,7 +1082,7 @@ struct PACKED log_VER {
 // @Field: NumPts: number of points currently in use
 // @Field: MaxPts: maximum number of points that could be used
 // @Field: Action: most recent internal action taken by SRTL library
-// @FieldValueEnum: Action: AP_SmartRTL::SRTL_Actions
+// @FieldValueEnum: Action: AP_SmartRTL::Action
 // @Field: N: point associated with most recent action (North component)
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
@@ -1283,7 +1283,7 @@ LOG_STRUCTURE_FROM_FENCE \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
-      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" , true }, \
+      "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEEE", "F-0000" , true }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
       "WENC",  "Qfbfb", "TimeUS,Dist0,Qual0,Dist1,Qual1", "sm-m-", "F0-0-" , true }, \
     { LOG_ADSB_MSG, sizeof(log_ADSB), \

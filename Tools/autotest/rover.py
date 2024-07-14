@@ -334,8 +334,8 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
         if ex:
             raise ex
@@ -578,9 +578,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
+        self.disarm_vehicle(force=True)
         self.context_pop()
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex:
             raise ex
@@ -1133,8 +1133,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.disarm_vehicle()
+        self.context_pop()
         self.reboot_sitl()
 
         if ex is not None:
@@ -1223,8 +1223,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.disarm_vehicle()
+        self.context_pop()
         self.reboot_sitl()
 
         if ex is not None:
@@ -3696,7 +3696,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 #        oldalt = downloaded_items[changealt_item].z
         want_newalt = 37.2
         mavproxy.send('wp changealt %u %f\n' % (changealt_item, want_newalt))
-        self.delay_sim_time(5)
+        self.delay_sim_time(15)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         if abs(downloaded_items[changealt_item].z - want_newalt) > 0.0001:
             raise NotAchievedException(
@@ -3952,11 +3952,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 continue
             t = m.get_type()
             if t == "POSITION_TARGET_GLOBAL_INT":
-                print("Target: (%s)" % str(m))
+                self.progress("Target: (%s)" % str(m))
             elif t == "GLOBAL_POSITION_INT":
-                print("Position: (%s)" % str(m))
+                self.progress("Position: (%s)" % str(m))
             elif t == "FENCE_STATUS":
-                print("Fence: %s" % str(m))
+                self.progress("Fence: %s" % str(m))
                 if m.breach_status != 0:
                     seen_fence_breach = True
                     self.progress("Fence breach detected!")
@@ -5311,13 +5311,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.install_test_modules_context()
         self.install_mavlink_module_context()
-        for script in [
-                "scripting_test.lua",
-                "math.lua",
-                "strings.lua",
-                "mavlink_test.lua",
-        ]:
-            self.install_test_script_context(script)
+
+        self.install_test_scripts_context([
+            "scripting_test.lua",
+            "math.lua",
+            "strings.lua",
+            "mavlink_test.lua",
+        ])
 
         self.context_collect('STATUSTEXT')
         self.context_collect('NAMED_VALUE_FLOAT')
@@ -5428,6 +5428,28 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def test_scripting_serial_loopback(self):
+        self.start_subtest("Scripting serial loopback test")
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_SDEV_EN": 1,
+            "SCR_SDEV1_PROTO": 28,
+        })
+        self.install_test_script_context("serial_loopback.lua")
+        self.reboot_sitl()
+
+        for success_text in [
+                "driver -> device good",
+                "device -> driver good",
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def Scripting(self):
         '''Scripting test'''
         self.test_scripting_set_home_to_vehicle_location()
@@ -5436,6 +5458,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_scripting_simple_loop()
         self.test_scripting_internal_test()
         self.test_scripting_auxfunc()
+        self.test_scripting_serial_loopback()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
@@ -6901,6 +6924,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter('FENCE_TYPE', 6)
         self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
 
+    def OpticalFlow(self):
+        '''lightly test OpticalFlow'''
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, False, False, False, verbose=True)
+
+        self.context_push()
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.set_parameter("FLOW_TYPE", 10)
+
+        self.reboot_sitl()
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, True, True, True, verbose=True)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6991,6 +7028,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.MissionRetransfer,
             self.FenceFullAndPartialTransfer,
             self.MissionPolyEnabledPreArm,
+            self.OpticalFlow,
         ])
         return ret
 

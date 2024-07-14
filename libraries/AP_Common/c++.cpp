@@ -84,11 +84,38 @@ void operator delete[](void * ptr)
     if (ptr) free(ptr);
 }
 
-
-#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#ifdef CYGWIN_BUILD
 /*
   wrapper around malloc to ensure all memory is initialised as zero
-  ChibiOS has its own wrapper
+  cygwin needs to wrap _malloc_r
+ */
+#undef _malloc_r
+extern "C" {
+    void *__wrap__malloc_r(_reent *r, size_t size);
+    void *__real__malloc_r(_reent *r, size_t size);
+    void *_malloc_r(_reent *r, size_t size);
+}
+void *__wrap__malloc_r(_reent *r, size_t size)
+{
+    void *ret = __real__malloc_r(r, size);
+    if (ret != nullptr) {
+        memset(ret, 0, size);
+    }
+    return ret;
+}
+void *_malloc_r(_reent *x, size_t size)
+{
+    void *ret = __real__malloc_r(x, size);
+    if (ret != nullptr) {
+        memset(ret, 0, size);
+    }
+    return ret;
+}
+
+#elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && CONFIG_HAL_BOARD != HAL_BOARD_QURT
+/*
+  wrapper around malloc to ensure all memory is initialised as zero
+  ChibiOS and QURT have their own wrappers
  */
 extern "C" {
     void *__wrap_malloc(size_t size);

@@ -90,7 +90,7 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 
 void *Util::allocate_heap_memory(size_t size)
 {

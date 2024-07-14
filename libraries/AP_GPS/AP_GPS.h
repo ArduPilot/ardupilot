@@ -201,8 +201,8 @@ public:
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
         uint32_t gps_yaw_time_ms;           ///< timestamp of last GPS yaw reading
         bool  gps_yaw_configured;           ///< GPS is configured to provide yaw
-        uint16_t hdop;                      ///< horizontal dilution of precision in cm
-        uint16_t vdop;                      ///< vertical dilution of precision in cm
+        uint16_t hdop;                      ///< horizontal dilution of precision, scaled by a factor of 100 (155 means the HDOP value is 1.55)
+        uint16_t vdop;                      ///< vertical dilution of precision, scaled by a factor of 100 (155 means the VDOP value is 1.55)
         uint8_t num_sats;                   ///< Number of visible satellites
         Vector3f velocity;                  ///< 3D velocity in m/s, in NED format
         float speed_accuracy;               ///< 3D velocity RMS accuracy estimate in m/s
@@ -551,9 +551,10 @@ public:
     // returns true if all GPS instances have passed all final arming checks/state changes
     bool prepare_for_arming(void);
 
-    // returns true if all GPS backend drivers haven't seen any failure
-    // this is for backends to be able to spout pre arm error messages
-    bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
+    // returns true if all GPS backend drivers are OK with the concept
+    // of the vehicle arming.  this is for backends to be able to
+    // spout pre arm error messages
+    bool pre_arm_checks(char failure_msg[], uint16_t failure_msg_len);
 
     // returns false if any GPS drivers are not performing their logging appropriately
     bool logging_failed(void) const;

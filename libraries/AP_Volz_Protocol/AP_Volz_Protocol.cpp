@@ -12,6 +12,22 @@
 
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+
+#define SET_EXTENDED_POSITION_CMD      0xDC
+
+// Extended Position Data Format defines -100 as 0x0080 decimal 128, we map this to a PWM of 1000 (if range is default)
+#define PWM_POSITION_MIN               1000
+#define ANGLE_POSITION_MIN            -100.0
+#define EXTENDED_POSITION_MIN          0x0080
+
+// Extended Position Data Format defines +100 as 0x0F80 decimal 3968, we map this to a PWM of 2000 (if range is default)
+#define PWM_POSITION_MAX               2000
+#define ANGLE_POSITION_MAX             100.0
+#define EXTENDED_POSITION_MAX          0x0F80
+
+#define UART_BUFSIZE_RX                128
+#define UART_BUFSIZE_TX                128
 
 extern const AP_HAL::HAL& hal;
 
@@ -22,6 +38,12 @@ const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16,16:Channel17,17:Channel18,18:Channel19,19:Channel20,20:Channel21,21:Channel22,22:Channel23,23:Channel24,24:Channel25,25:Channel26,26:Channel27,28:Channel29,29:Channel30,30:Channel31,31:Channel32
     // @User: Standard
     AP_GROUPINFO("MASK",  1, AP_Volz_Protocol, bitmask, 0),
+
+    // @Param: RANGE
+    // @DisplayName: Range of travel
+    // @Description: Range to map between 1000 and 2000 PWM. Default value of 200 gives full +-100 deg range of extended position command. This results in 0.2 deg movement per US change in PWM. If the full range is not needed it can be reduced to increase resolution. 40 deg range gives 0.04 deg movement per US change in PWM, this is higher resolution than possible with the VOLZ protocol so further reduction in range will not improve resolution. Reduced range does allow PWMs outside the 1000 to 2000 range, with 40 deg range 750 PWM results in a angle of -30 deg, 2250 would be +30 deg. This is still limited by the 200 deg maximum range of the actuator.
+    // @Units: deg
+    AP_GROUPINFO("RANGE", 2, AP_Volz_Protocol, range, 200),
 
     AP_GROUPEND
 };
@@ -35,89 +57,133 @@ AP_Volz_Protocol::AP_Volz_Protocol(void)
 
 void AP_Volz_Protocol::init(void)
 {
-    AP_SerialManager &serial_manager = AP::serialmanager();
+    if (uint32_t(bitmask.get()) == 0) {
+        // No servos enabled
+        return;
+    }
+
+    const AP_SerialManager &serial_manager = AP::serialmanager();
     port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Volz,0);
-    update_volz_bitmask(bitmask);
+    if (port == nullptr) {
+        // No port configured
+        return;
+    }
+
+    // Create thread to handle output
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Volz_Protocol::loop, void),
+                                          "Volz",
+                                           1024, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
+        AP_BoardConfig::allocation_error("Volz thread");
+    }
 }
 
-void AP_Volz_Protocol::update()
+void AP_Volz_Protocol::loop()
 {
-    if (!initialised) {
-        initialised = true;
-        init();
-    }
-    
-    if (port == nullptr) {
-        return;
-    }
+    const uint32_t baudrate = 115200;
+    port->begin(baudrate, UART_BUFSIZE_RX, UART_BUFSIZE_TX);
+    port->set_unbuffered_writes(true);
+    port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 
-    if (last_used_bitmask != uint32_t(bitmask.get())) {
-        update_volz_bitmask(bitmask);
-    }
+    // Calculate the amount of time it should take to send a command
+    // Multiply by 10 to convert from bit rate to byte rate (8 data bits + start and stop bits)
+    // B/s to s/B, 1000000 converts to microseconds, multiply by number of bytes
+    // 6 bytes at 11520 bytes per second takes 520 us
+    const uint16_t send_us =  (sizeof(CMD) * 1000000 * 10) / baudrate;
 
-    uint32_t now = AP_HAL::micros();
-    if (now - last_volz_update_time < volz_time_frame_micros ||
-        port->txspace() < VOLZ_DATA_FRAME_SIZE) {
-        return;
-    }
+    // receive packet is same length as sent, double to allow some time for the servo respond
+    const uint16_t receive_us = send_us * 2;
 
-    last_volz_update_time = now;
+    // This gives a total time of 1560ms, message rate of 641 Hz.
+    // One servo at 641Hz, two at 320.5 each, three at 213.7 each ect...
 
-    uint8_t i;
-    uint16_t value;
+    while (port != nullptr) {
 
-    // loop for all channels
-    for (i=0; i<NUM_SERVO_CHANNELS; i++) {
-        // check if current channel is needed for Volz protocol
-        if (last_used_bitmask & (1U<<i)) {
+        // Wait the expected amount of time for the send and receive to complete so we don't step on the response
+        hal.scheduler->delay_microseconds(send_us + receive_us);
 
-            SRV_Channel *c = SRV_Channels::srv_channel(i);
-            if (c == nullptr) {
+        while (port->txspace() < sizeof(CMD)) {
+            // Wait until there is enough space to transmit a full command
+            hal.scheduler->delay_microseconds(100);
+        }
+
+        // loop for all channels
+        for (uint8_t i=0; i<ARRAY_SIZE(servo_pwm); i++) {
+            // Send each channels in turn
+            const uint8_t index = (last_sent_index + 1 + i) % ARRAY_SIZE(servo_pwm);
+            if ((uint32_t(bitmask.get()) & (1U<<index)) == 0) {
+                // Not configured to send
                 continue;
             }
-            
-            // check if current channel PWM is within range
-            if (c->get_output_pwm() < VOLZ_PWM_POSITION_MIN) {
-                value = 0;
-            } else {
-                value = c->get_output_pwm() - VOLZ_PWM_POSITION_MIN;
+            last_sent_index = index;
+
+            // Get PWM from saved array
+            const uint16_t pwm = servo_pwm[index];
+            if (pwm == 0) {
+                // Never use zero PWM, the check in update should ensure this never happens
+                // If we were to use zero the range extrapolation would result in a -100 deg angle request
+                continue;
             }
 
-            // scale the PWM value to Volz value
-            value = value * VOLZ_SCALE_VALUE / (VOLZ_PWM_POSITION_MAX - VOLZ_PWM_POSITION_MIN);
-            value = value + VOLZ_EXTENDED_POSITION_MIN;
+            // Map PWM to angle, this is a un-constrained interpolation
+            // ratio = 0 at PWM_POSITION_MIN to 1 at PWM_POSITION_MAX
+            const float ratio = (float(pwm) - PWM_POSITION_MIN) / (PWM_POSITION_MAX - PWM_POSITION_MIN);
+            // Convert ratio to +-0.5 and multiply by stroke
+            const float angle = (ratio - 0.5) * constrain_float(range, 0.0, 200.0);
 
-            // make sure value stays in range
-            if (value > VOLZ_EXTENDED_POSITION_MAX) {
-                value = VOLZ_EXTENDED_POSITION_MAX;
-            }
+            // Map angle to command out of full range, add 0.5 so that float to int truncation rounds correctly
+            const uint16_t value = linear_interpolate(EXTENDED_POSITION_MIN, EXTENDED_POSITION_MAX, angle, ANGLE_POSITION_MIN, ANGLE_POSITION_MAX) + 0.5;
 
             // prepare Volz protocol data.
-            uint8_t data[VOLZ_DATA_FRAME_SIZE];
+            CMD cmd;
+            cmd.ID = SET_EXTENDED_POSITION_CMD;
+            cmd.actuator_id = index + 1; // send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
+            cmd.arg1 = HIGHBYTE(value);
+            cmd.arg2 = LOWBYTE(value);
 
-            data[0] = VOLZ_SET_EXTENDED_POSITION_CMD;
-            data[1] = i + 1;		// send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
-            data[2] = HIGHBYTE(value);
-            data[3] = LOWBYTE(value);
-
-            send_command(data);
+            send_command(cmd);
+            break;
         }
     }
 }
 
-// calculate CRC for volz serial protocol and send the data.
-void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE])
+// Called each time the servo outputs are sent
+void AP_Volz_Protocol::update()
 {
-    uint8_t i,j;
+    if (!initialised) {
+        // One time setup
+        initialised = true;
+        init();
+    }
+
+    if (port == nullptr) {
+        // no point if we don't have a valid port
+        return;
+    }
+
+    // take semaphore and loop for all channels
+    for (uint8_t i=0; i<ARRAY_SIZE(servo_pwm); i++) {
+        const SRV_Channel *c = SRV_Channels::srv_channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        // 0 PMW should stop outputting, for example in "safe"
+        // There is no way to de-power, move to trim
+        const uint16_t pwm = c->get_output_pwm();
+        servo_pwm[i] = (pwm == 0) ? c->get_trim() : pwm;
+    }
+}
+
+// calculate CRC for volz serial protocol and send the data.
+void AP_Volz_Protocol::send_command(CMD &cmd)
+{
     uint16_t crc = 0xFFFF;
 
     // calculate Volz CRC value according to protocol definition
-    for(i=0; i<4; i++) {
+    for(uint8_t i=0; i<4; i++) {
         // take input data into message that will be transmitted.
-        crc = ((data[i] << 8) ^ crc);
+        crc = (cmd.data[i] << 8) ^ crc;
 
-        for(j=0; j<8; j++) {
-
+        for(uint8_t j=0; j<8; j++) {
             if (crc & 0x8000) {
                 crc = (crc << 1) ^ 0x8005;
             } else {
@@ -127,37 +193,9 @@ void AP_Volz_Protocol::send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE])
     }
 
     // add CRC result to the message
-    data[4] = HIGHBYTE(crc);
-    data[5] = LOWBYTE(crc);
-    port->write(data, VOLZ_DATA_FRAME_SIZE);
-}
-
-void AP_Volz_Protocol::update_volz_bitmask(uint32_t new_bitmask)
-{
-    uint8_t count = 0;
-    last_used_bitmask = new_bitmask;
-
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (new_bitmask & (1U<<i)) {
-            count++;
-        }
-    }
-
-    // have a safety margin of 20% to allow for not having full uart
-    // utilisation. We really don't want to start filling the uart
-    // buffer or we'll end up with servo lag
-    const float safety = 1.3;
-
-    // each channel take about 425.347us to transmit so total time will be ~ number of channels * 450us
-    // rounded to 450 to make sure we don't go over the baud rate.
-    uint32_t channels_micros = count * 450 * safety;
-
-    // limit the minimum to 2500 will result a max refresh frequency of 400hz.
-    if (channels_micros < 2500) {
-        channels_micros = 2500;
-    }
-
-    volz_time_frame_micros = channels_micros;
+    cmd.crc1 = HIGHBYTE(crc);
+    cmd.crc2 = LOWBYTE(crc);
+    port->write(cmd.data, sizeof(cmd));
 }
 
 #endif  // AP_VOLZ_ENABLED

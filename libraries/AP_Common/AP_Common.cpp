@@ -97,10 +97,12 @@ size_t strncpy_noterm(char *dest, const char *src, size_t n)
  */
 int16_t char_to_hex(char a)
 {
-    if (a >= 'A' && a <= 'F')
+    if (a >= 'A' && a <= 'F') {
         return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
+    } else if (a >= 'a' && a <= 'f') {
         return a - 'a' + 10;
-    else
+    } else if (a >= '0' && a <= '9') {
         return a - '0';
+    }
+    return 0;
 }

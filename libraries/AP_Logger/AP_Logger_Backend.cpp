@@ -100,7 +100,7 @@ void AP_Logger_Backend::start_new_log_reset_variables()
     _dropped = 0;
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
-    _log_file_size_bytes = 0;
+    _formats_written.clearall();
 }
 
 // We may need to make sure data is loggable before starting the
@@ -124,42 +124,6 @@ void AP_Logger_Backend::push_log_blocks() {
     WriteMoreStartupMessages();
 }
 
-// returns true if all format messages have been written, and thus it is OK
-// for other messages to go out to the log
-bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
-{
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
-    return true;
-#endif
-
-    if (_startup_messagewriter->fmt_done()) {
-        return true;
-    }
-
-    if (_writing_startup_messages) {
-        // we have been called by a messagewriter, so writing is OK
-        return true;
-    }
-
-    if (!_startup_messagewriter->finished() &&
-        !hal.scheduler->in_main_thread()) {
-        // only the main thread may write startup messages out
-        return false;
-    }
-
-    // we're not writing startup messages, so this must be some random
-    // caller hoping to write blocks out.  Push out log blocks - we
-    // might end up clearing the buffer.....
-    push_log_blocks();
-
-    //  even if we did finish writing startup messages, we can't
-    //  permit any message to go in as its timestamp will be before
-    //  any we wrote in.  Time going backwards annoys log readers.
-
-    // sorry!  currently busy writing out startup messages...
-    return false;
-}
-
 // source more messages from the startup message writer:
 void AP_Logger_Backend::WriteMoreStartupMessages()
 {
@@ -180,6 +144,15 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
  * support for Write():
  */
 
+
+// output a FMT message if not already done so
+void AP_Logger_Backend::Safe_Write_Emit_FMT(uint8_t msg_type)
+{
+    if (have_emitted_format_for_type(LogMessages(msg_type))) {
+        return;
+    }
+    Write_Emit_FMT(msg_type);
+}
 
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
@@ -202,7 +175,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
         ls.units,
         ls.multipliers
     };
-    if (!_front.fill_log_write_logstructure(logstruct, msg_type)) {
+    if (!_front.fill_logstructure(logstruct, msg_type)) {
         // this is a bug; we've been asked to write out the FMT
         // message for a msg_type, but the frontend can't supply the
         // required information
@@ -363,6 +336,23 @@ bool AP_Logger_Backend::StartNewLogOK() const
     return true;
 }
 
+// validate that pBuffer looks like a message, extract message type.
+// Returns false if this doesn't look like a valid message.
+bool AP_Logger_Backend::message_type_from_block(const void *pBuffer, uint16_t size, LogMessages &type) const
+{
+    if (size < 3) {
+        return false;
+    }
+    if (((uint8_t*)pBuffer)[0] != HEAD_BYTE1 ||
+        ((uint8_t*)pBuffer)[1] != HEAD_BYTE2) {
+        // Not passed a message
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+    type = LogMessages(((uint8_t*)pBuffer)[2]);
+    return true;
+}
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
                                                        uint16_t size)
@@ -381,11 +371,10 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
     if (size < 3) {
         AP_HAL::panic("Short prioritised block");
     }
-    if (((uint8_t*)pBuffer)[0] != HEAD_BYTE1 ||
-        ((uint8_t*)pBuffer)[1] != HEAD_BYTE2) {
+    LogMessages type;
+    if (!message_type_from_block(pBuffer, size, type)) {
         AP_HAL::panic("Not passed a message");
     }
-    const uint8_t type = ((uint8_t*)pBuffer)[2];
     uint8_t type_len;
     const char *name_src;
     const struct LogStructure *s = _front.structure_for_msg_type(type);
@@ -413,6 +402,35 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 }
 #endif
 
+bool AP_Logger_Backend::ensure_format_emitted(const void *pBuffer, uint16_t size)
+{
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // we trust that Replay will correctly emit formats as required
+    return true;
+#endif
+
+    // extract the ID:
+    LogMessages type;
+    if (!message_type_from_block(pBuffer, size, type)) {
+        return false;
+    }
+    if (have_emitted_format_for_type(type)) {
+        return true;
+    }
+
+    // make sure the FMT message has gone out!
+    if (type == LOG_FORMAT_MSG) {
+        // kind of?  Our caller is just about to emit this....
+        return true;
+    }
+    if (!have_emitted_format_for_type(LOG_FORMAT_MSG) &&
+        !Write_Emit_FMT(LOG_FORMAT_MSG)) {
+        return false;
+    }
+
+    return Write_Emit_FMT(type);
+}
+
 bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -433,6 +451,10 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
         if (!rate_limiter->should_log(msgbuf[2], writev_streaming)) {
             return false;
         }
+    }
+
+    if (!ensure_format_emitted(pBuffer, size)) {
+        return false;
     }
 
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
@@ -673,7 +695,6 @@ void AP_Logger_Backend::df_stats_gather(const uint16_t bytes_written, uint32_t s
     }
     stats.buf_space_sigma += space_remaining;
     stats.bytes += bytes_written;
-    _log_file_size_bytes += bytes_written;
     stats.blocks++;
 }
 

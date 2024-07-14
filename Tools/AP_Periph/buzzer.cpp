@@ -26,7 +26,8 @@ void AP_Periph_FW::handle_beep_command(CanardInstance* canard_instance, CanardRx
     if (!initialised) {
         initialised = true;
         hal.rcout->init();
-        hal.util->toneAlarm_init(AP_Notify::Notify_Buzz_Builtin);
+        // just one buzzer type supported:
+        hal.util->toneAlarm_init(uint8_t(AP_Notify::BuzzerType::BUILTIN));
     }
     buzzer_start_ms = AP_HAL::millis();
     buzzer_len_ms = req.duration*1000;

@@ -39,6 +39,9 @@
 #include "SIM_JSON_Master.h"
 #include "SIM_HobbyWing_Platinum_PRO_v3.h"
 #include "ServoModel.h"
+#include "SIM_GPIO_LED_2.h"
+#include "SIM_GPIO_LED_3.h"
+#include "SIM_GPIO_LED_RGB.h"
 
 namespace SITL {
 
@@ -375,6 +378,18 @@ private:
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice *dronecan;
 #endif
+
+
+#if AP_SIM_GPIO_LED_2_ENABLED
+    GPIO_LED_2 sim_led2{13, 14};  // pins to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_3_ENABLED
+    GPIO_LED_3 sim_led3{13, 14, 15};  // pins to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_RGB_ENABLED
+    GPIO_LED_RGB sim_ledrgb{8, 9, 10};  // pins to match sitl.h
+#endif
+
 
     class TMotorDataLink *tmotordatalink;
 };

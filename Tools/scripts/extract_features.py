@@ -207,6 +207,7 @@ class ExtractFeatures(object):
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
+            ('AP_SCRIPTING_SERIALDEVICE_ENABLED', r'AP_Scripting_SerialDevice::init',),
 
             ('AP_NOTIFY_TONEALARM_ENABLED', r'AP_ToneAlarm::init'),
             ('AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', r'AP_Notify::handle_play_tune'),
@@ -254,6 +255,7 @@ class ExtractFeatures(object):
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_MAVLINK_MSG_HIL_GPS_ENABLED', r'mavlink_msg_hil_gps_decode'),
+            ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Compass::_probe_external_i2c_compasses'),
         ]
 
     def progress(self, msg):

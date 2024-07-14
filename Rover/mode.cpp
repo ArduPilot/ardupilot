@@ -44,7 +44,8 @@ bool Mode::enter()
 
     // initialisation common to all modes
     if (ret) {
-        set_reversed(false);
+        // init reversed flag
+        init_reversed_flag();
 
         // clear sailboat tacking flags
         g2.sailboat.clear_tack();

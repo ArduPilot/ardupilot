@@ -77,7 +77,7 @@ public:
     // get the index of the current primary accelerometer sensor
     virtual uint8_t get_primary_accel_index(void) const {
 #if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_primary_accel();
+        return AP::ins().get_first_usable_accel();
 #else
         return 0;
 #endif
@@ -86,7 +86,7 @@ public:
     // get the index of the current primary gyro sensor
     virtual uint8_t get_primary_gyro_index(void) const {
 #if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_primary_gyro();
+        return AP::ins().get_first_usable_gyro();
 #else
         return 0;
 #endif

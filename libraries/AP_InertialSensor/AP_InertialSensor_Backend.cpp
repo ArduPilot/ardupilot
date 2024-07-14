@@ -164,7 +164,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
  */
 void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro) /* front end */
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     _imu._gyro[instance] = gyro;
@@ -263,7 +263,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
                                                             const Vector3f &gyro,
                                                             uint64_t sample_us)
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     float dt;
@@ -360,7 +360,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
  */
 void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const Vector3f &dangle)
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     float dt;
@@ -487,7 +487,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
  */
 void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel) /* front end */
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     _imu._accel[instance] = accel;
@@ -517,7 +517,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
                                                              uint64_t sample_us,
                                                              bool fsync_set)
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     float dt;
@@ -604,7 +604,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
  */
 void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, const Vector3f &dvel)
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     float dt;
@@ -746,7 +746,7 @@ void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
  */
 void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature) /* front end */
 {
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     _imu._temperature[instance] = temperature;
@@ -769,7 +769,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 {    
     WITH_SEMAPHORE(_sem);
 
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     if (_imu._new_gyro_data[instance]) {
@@ -808,7 +808,7 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
 {    
     WITH_SEMAPHORE(_sem);
 
-    if ((1U<<instance) & _imu.imu_kill_mask) {
+    if (has_been_killed(instance)) {
         return;
     }
     if (_imu._new_accel_data[instance]) {

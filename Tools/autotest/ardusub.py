@@ -382,6 +382,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
         self.context_pop()
+        self.reboot_sitl()  # e.g. revert rangefinder configuration
 
     def SimTerrainMission(self):
         """Mission at a constant height above synthetic sea floor"""
@@ -421,6 +422,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
         self.context_pop()
+        self.reboot_sitl()  # e.g. revert rangefinder configuration
 
     def ModeChanges(self, delta=0.2):
         """Check if alternating between ALTHOLD, STABILIZE, POSHOLD and SURFTRAK (mode 21) affects altitude"""
@@ -819,6 +821,37 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
+    def backup_home(self):
+        """Test ORIGIN_LAT and ORIGIN_LON parameters"""
+
+        self.context_push()
+        self.set_parameters({
+            'GPS1_TYPE': 0,              # Disable GPS
+            'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
+            'EK3_SRC1_VELXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
+            'ORIGIN_LAT': 47.607584,
+            'ORIGIN_LON': -122.343911,
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        # Wait for the EKF to be happy in constant position mode
+        self.wait_ready_to_arm_const_pos()
+
+        if self.current_onboard_log_contains_message('ORGN'):
+            raise NotAchievedException("Found unexpected ORGN message")
+
+        # This should set the origin and write a record to ORGN
+        self.arm_vehicle()
+
+        self.wait_statustext('Using backup location', check_context=True)
+
+        if not self.current_onboard_log_contains_message('ORGN'):
+            raise NotAchievedException("Did not find expected ORGN message")
+
+        self.disarm_vehicle()
+        self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -846,6 +879,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_CONDITION_YAW,
             self.TerrainMission,
             self.SetGlobalOrigin,
+            self.backup_home,
         ])
 
         return ret

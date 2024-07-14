@@ -189,9 +189,9 @@ class ChibiOSHWDef(object):
                     return 0
             return None
 
-        if function and function.endswith("_RTS") and (
+        if function and (function.endswith("_RTS") or function.endswith("_CTS_GPIO")) and (
                 function.startswith('USART') or function.startswith('UART')):
-            # we do software RTS
+            # we do software RTS and can do either software CTS or hardware CTS
             return None
 
         for label in self.af_labels:
@@ -758,7 +758,7 @@ class ChibiOSHWDef(object):
     def has_sdcard_spi(self):
         '''check for sdcard connected to spi bus'''
         for dev in self.spidev:
-            if(dev[0] == 'sdcard'):
+            if dev[0] == 'sdcard':
                 return True
         return False
 
@@ -1891,6 +1891,8 @@ INCLUDE common.ld
             rts_line_name = dev + '_RTS'
             rts_line = self.make_line(rts_line_name)
             cts_line = self.make_line(dev + '_CTS')
+            if cts_line == "0":
+                cts_line = self.make_line(dev + '_CTS_GPIO')
             if rts_line != "0":
                 have_rts_cts = True
                 f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % num)
@@ -1921,11 +1923,13 @@ INCLUDE common.ld
                 f.write("%s, " % self.get_extra_bylabel(dev + "_TXINV", "POL", "0"))
 
                 # USB endpoint ID, not used
-                f.write("0, ") 
+                f.write("0, ")
 
                 # Find and add RTS alt fuction number if avalable
                 def get_RTS_alt_function():
-                    # Typicaly we do software RTS control, so there is no requirement for the pin to have valid UART RTS alternative function
+                    # Typicaly we do software RTS control, so there is
+                    # no requirement for the pin to have valid UART
+                    # RTS alternative function
                     # If it does this enables hardware flow control for RS-485
                     lib = self.get_mcu_lib(self.mcu_type)
                     if (rts_line == "0") or (rts_line_name not in self.bylabel) or not hasattr(lib, "AltFunction_map"):
@@ -2927,12 +2931,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if ptype == 'OUTPUT' and re.match(r'US?ART\d+_(TXINV|RXINV)', label):
             return True
         m1 = re.match(r'USART(\d+)', ptype)
-        m2 = re.match(r'USART(\d+)_(RX|TX|CTS|RTS)', label)
+        m2 = re.match(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''usart numbers need to match'''
             return False
         m1 = re.match(r'UART(\d+)', ptype)
-        m2 = re.match(r'UART(\d+)_(RX|TX|CTS|RTS)', label)
+        m2 = re.match(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''uart numbers need to match'''
             return False

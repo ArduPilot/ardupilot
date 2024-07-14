@@ -1,0 +1,172 @@
+name: QURT Build
+
+on:
+  push:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'Blimp/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/Vicon/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/completion/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/geotag/**'
+      - 'Tools/gittools/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/simulink/**'
+      - 'Tools/vagrant/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotest
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
+
+  pull_request:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'Blimp/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotest
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: 'ardupilot-qurt'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Build QURT
+        run: |
+          ./waf configure --board QURT
+          ./waf copter
+          ./waf plane
+          ./waf rover
+          cp -a build/QURT/bin/arducopter build/QURT/ArduPilot.so
+          cp -a build/QURT/bin/arducopter build/QURT/ArduPilot_Copter.so
+          cp -a build/QURT/bin/arduplane build/QURT/ArduPilot_Plane.so
+          cp -a build/QURT/bin/ardurover build/QURT/ArduPilot_Rover.so
+
+      - name: Archive build
+        uses: actions/upload-artifact@v3
+        with:
+          name: qurt-binaries
+          path: |
+            build/QURT/ardupilot
+            build/QURT/ArduPilot_Copter.so
+            build/QURT/ArduPilot_Plane.so
+            build/QURT/ArduPilot_Rover.so
+            build/QURT/ArduPilot.so
+          retention-days: 7

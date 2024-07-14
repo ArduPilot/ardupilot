@@ -132,9 +132,9 @@ AP_Notify *AP_Notify::_singleton;
 #ifndef BUZZER_ENABLE_DEFAULT
 #if HAL_CANMANAGER_ENABLED
 // Enable Buzzer messages over UAVCAN
-#define BUZZER_ENABLE_DEFAULT (Notify_Buzz_Builtin | Notify_Buzz_UAVCAN)
+#define BUZZER_ENABLE_DEFAULT (uint8_t(BuzzerType::BUILTIN) | uint8_t(BuzzerType::UAVCAN))
 #else
-#define BUZZER_ENABLE_DEFAULT Notify_Buzz_Builtin
+#define BUZZER_ENABLE_DEFAULT uint8_t(BuzzerType::BUILTIN)
 #endif
 #endif
 
@@ -298,8 +298,6 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW DiscoLED());
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
                 ADD_BACKEND(NEW_NOTHROW NavigatorLED());
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-            ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
   #endif
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -307,15 +305,13 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW ExternalLED()); // despite the name this is a built in set of onboard LED's
 #endif
 
-#if defined(HAL_HAVE_PIXRACER_LED)
+#if AP_NOTIFY_GPIO_LED_RGB_ENABLED
                 ADD_BACKEND(NEW_NOTHROW PixRacerLED());
-#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN) && defined(HAL_GPIO_C_LED_PIN))
-  #if AP_NOTIFY_VRBOARD_LED_ENABLED
+#elif AP_NOTIFY_VRBOARD_LED_ENABLED
                 ADD_BACKEND(NEW_NOTHROW VRBoard_LED());
-  #else
+#elif AP_NOTIFY_GPIO_LED_3_ENABLED
                 ADD_BACKEND(NEW_NOTHROW AP_BoardLED());
-  #endif
-#elif (defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN))
+#elif AP_NOTIFY_GPIO_LED_2_ENABLED
                 ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
 #endif
                 break;

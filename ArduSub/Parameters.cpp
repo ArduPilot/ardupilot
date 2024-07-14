@@ -628,7 +628,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
@@ -706,7 +706,26 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 18 was scripting
 
-    // 19 was airspeed
+    // @Param: ORIGIN_LAT
+    // @DisplayName: Backup latitude for EKF origin
+    // @Description:  Backup EKF origin latitude used when not using a positioning system.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_LAT", 19, ParametersG2, backup_origin_lat, 0),
+
+    // @Param: ORIGIN_LON
+    // @DisplayName: Backup longitude for EKF origin
+    // @Description:  Backup EKF origin longitude used when not using a positioning system.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_LON", 20, ParametersG2, backup_origin_lon, 0),
+
+    // @Param: ORIGIN_ALT
+    // @DisplayName: Backup altitude (MSL) for EKF origin
+    // @Description:  Backup EKF origin altitude (MSL) used when not using a positioning system.
+    // @Units: m
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
     AP_GROUPEND
 };

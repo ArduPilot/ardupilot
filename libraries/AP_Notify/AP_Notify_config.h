@@ -37,6 +37,20 @@
 #define AP_NOTIFY_LP5562_ENABLED 1
 #endif
 
+#ifndef AP_NOTIFY_GPIO_LED_3_ENABLED
+#define AP_NOTIFY_GPIO_LED_3_ENABLED 0
+#endif
+
+// this isn't the second-generation of board LEDs, this is a setup
+// where there are two LEDs used:
+#ifndef AP_NOTIFY_GPIO_LED_2_ENABLED
+#define AP_NOTIFY_GPIO_LED_2_ENABLED 0
+#endif
+
+#ifndef AP_NOTIFY_GPIO_LED_RGB_ENABLED
+#define AP_NOTIFY_GPIO_LED_RGB_ENABLED 0
+#endif
+
 #ifndef AP_NOTIFY_IS31FL3195_ENABLED
 #define AP_NOTIFY_IS31FL3195_ENABLED 1
 #endif

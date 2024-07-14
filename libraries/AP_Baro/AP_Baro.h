@@ -118,8 +118,10 @@ public:
     // EAS2TAS for SITL
     static float get_EAS2TAS_for_alt_amsl(float alt_amsl);
 
+#if AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
     // lookup expected pressure for a given altitude. Used for SITL backend
     static void get_pressure_temperature_for_alt_amsl(float alt_amsl, float &pressure, float &temperature_K);
+#endif
 
     // lookup expected temperature in degrees C for a given altitude. Used for SITL backend
     static float get_temperatureC_for_alt_amsl(const float alt_amsl);

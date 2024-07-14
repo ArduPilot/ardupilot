@@ -297,14 +297,15 @@ bool Replay::parse_param_line(char *line, char **vname, float &value)
  */
 void Replay::load_param_file(const char *pfilename)
 {
-    FILE *f = fopen(pfilename, "r");
-    if (f == NULL) {
+    auto &fs = AP::FS();
+    int fd = fs.open(pfilename, O_RDONLY, true);
+    if (fd == -1) {
         printf("Failed to open parameter file: %s\n", pfilename);
         exit(1);
     }
     char line[100];
 
-    while (fgets(line, sizeof(line)-1, f)) {
+    while (fs.fgets(line, sizeof(line)-1, fd)) {
         char *pname;
         float value;
         if (!parse_param_line(line, &pname, value)) {
@@ -316,7 +317,7 @@ void Replay::load_param_file(const char *pfilename)
         u->next = user_parameters;
         user_parameters = u;
     }
-    fclose(f);
+    fs.close(fd);
 }
 
 Replay replay(replayvehicle);

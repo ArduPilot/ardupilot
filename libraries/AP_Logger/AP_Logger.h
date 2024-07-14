@@ -382,7 +382,6 @@ public:
         struct log_write_fmt *next;
         uint8_t msg_type;
         uint8_t msg_len;
-        uint8_t sent_mask; // bitmask of backends sent to
         const char *name;
         const char *fmt;
         const char *labels;
@@ -452,7 +451,7 @@ private:
     int16_t find_free_msg_type() const;
 
     // fill LogStructure with information about msg_type
-    bool fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
+    bool fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
 
     bool _armed;
 

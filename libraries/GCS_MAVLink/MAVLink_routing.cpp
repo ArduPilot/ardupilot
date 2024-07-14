@@ -199,7 +199,7 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
 #if ROUTING_DEBUG
                     ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
                              msg.msgid,
-                             (unsigned)in_link->get_chan(),
+                             (unsigned)in_link.get_chan(),
                              (unsigned)routes[i].channel,
                              (int)target_system,
                              (int)target_component);

@@ -281,67 +281,6 @@ I2CDeviceManager::I2CDeviceManager()
 }
 
 AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address)
-{
-    const char *dirname = "/sys/class/i2c-dev/";
-    struct dirent *de = nullptr;
-    DIR *d;
-
-    d = opendir(dirname);
-    if (!d) {
-        AP_HAL::panic("Could not get list of I2C buses");
-    }
-
-    for (de = readdir(d); de; de = readdir(d)) {
-        char *str_device, *abs_str_device;
-        const char *p;
-
-        if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0) {
-            continue;
-        }
-
-        if (asprintf(&str_device, "%s/%s", dirname, de->d_name) < 0) {
-            continue;
-        }
-
-        abs_str_device = realpath(str_device, nullptr);
-        if (!abs_str_device || !(p = startswith(abs_str_device, "/sys/devices/"))) {
-            free(abs_str_device);
-            free(str_device);
-            continue;
-        }
-
-        auto t = std::find_if(std::begin(devpaths), std::end(devpaths),
-                              [p](const char *prefix) {
-                                  return startswith(p, prefix) != nullptr;
-                              });
-
-        free(abs_str_device);
-        free(str_device);
-
-        if (t != std::end(devpaths)) {
-            unsigned int n;
-
-            /* Found the bus, try to create the device now */
-            if (sscanf(de->d_name, "i2c-%u", &n) != 1) {
-                AP_HAL::panic("I2CDevice: can't parse %s", de->d_name);
-            }
-            if (n > UINT8_MAX) {
-                AP_HAL::panic("I2CDevice: bus with number n=%u higher than %u",
-                              n, UINT8_MAX);
-            }
-
-            closedir(d);
-            return get_device(n, address);
-        }
-    }
-
-    /* not found */
-    closedir(d);
-    return nullptr;
-}
-
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              uint32_t bus_clock,
                              bool use_smbus,

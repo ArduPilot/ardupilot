@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: EKF Source Options
     // @Description: EKF Source Options
-    // @Bitmask: 0:FuseAllVelocities
+    // @Bitmask: 0:FuseAllVelocities, 1:AlignExtNavPosWhenUsingOptFlow
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, (int16_t)SourceOptions::FUSE_ALL_VELOCITIES),
 
@@ -257,11 +257,12 @@ void AP_NavEKF_Source::align_inactive_sources()
         return;
     }
 
-    // consider aligning XY position:
+    // consider aligning ExtNav XY position:
     bool align_posxy = false;
     if ((getPosXYSource() == SourceXY::GPS) ||
-        (getPosXYSource() == SourceXY::BEACON)) {
-        // only align position if active source is GPS or Beacon
+        (getPosXYSource() == SourceXY::BEACON) ||
+        ((getVelXYSource() == SourceXY::OPTFLOW) && option_is_set(SourceOptions::ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW))) {
+        // align ExtNav position if active source is GPS, Beacon or (optionally) Optflow
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
             if (_source_set[i].posxy == SourceXY::EXTNAV) {
                 // ExtNav could potentially be used, so align it
@@ -486,9 +487,16 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         return false;
     }
 
-    if (rangefinder_required && (dal.rangefinder() == nullptr || !dal.rangefinder()->has_orientation(ROTATION_PITCH_270))) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "RangeFinder");
-        return false;
+    if (rangefinder_required) {
+#if AP_RANGEFINDER_ENABLED
+        const bool have_rangefinder = (dal.rangefinder() != nullptr && dal.rangefinder()->has_orientation(ROTATION_PITCH_270));
+#else
+        const bool have_rangefinder = false;
+#endif
+        if (!have_rangefinder) {
+            hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "RangeFinder");
+            return false;
+        }
     }
 
     if (visualodom_required) {
