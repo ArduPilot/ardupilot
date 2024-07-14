@@ -97,51 +97,53 @@ OUT_DISCARD:
 
 void AP_HobbyWing_DataLink::update()
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_HobbyWing_DataLink::update");
     uint8_t* data = (uint8_t*)&packet;
-    int headerRead = readHeader();
 
-    if(headerRead <= 0)
+    if(header_read <= 0)
     {
-        //header not found
-        return;
-    }
+        header_read = readHeader();
 
-    int bytes_to_read = PACKAGE_SIZE - headerRead;
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Header read=%d bytes to read=%d", headerRead, bytes_to_read);
-
-    bool package_read_successfully = false;
-    // header read successfully, read rest of the packet
-    while (!package_read_successfully)
-    {
-        auto available = uart.available();
-        if(available < bytes_to_read)
+        if(header_read <= 0)
         {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Available bytes less then bytes to read expected=%d available=%d", bytes_to_read, available);
-            hal.scheduler->delay_microseconds(1500000);
-            continue;
-        }
-        auto bytes_read = uart.read(&data[headerRead], bytes_to_read);
-        if(bytes_read != bytes_to_read)
-        {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bytes read not succesfully expected=%d actual=%d", bytes_to_read, bytes_read);
+            //header not found
             return;
         }
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes read succesfully bytes_read=%d", bytes_read);
-        package_read_successfully = true;
     }
 
-    // add check for frame gap
+    // header read successfully
+    int bytes_to_read = PACKAGE_SIZE - header_read;
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Header read=%d bytes to read=%d", header_read, bytes_to_read);
 
-    // TODO: what's the true length of this frame gap?
-    // if (!read_uart((uint8_t*)&packet, sizeof(packet), 10000)) {
-    //     return;
-    // }
-
-    if (packet.calc_checksum() != packet.crc) {
-        // checksum failure
+    // header read successfully, read rest of the packet
+    auto available = uart.available();
+    if(available < bytes_to_read)
+    {
+        // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Available bytes less then bytes to read expected=%d available=%ld", bytes_to_read, available);
         return;
     }
+    auto bytes_read = uart.read(&data[header_read], bytes_to_read);
+    if(bytes_read != bytes_to_read) {
+        header_read = 0; // header read not successfully
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bytes read not succesfully expected=%d actual=%d", bytes_to_read, bytes_read);
+        return;
+    }
+
+
+    //Set header read 0, to show we must find header again
+    header_read = 0;
+
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes read succesfully");
+
+    uint16_t packet_checksum = packet.calc_checksum();
+    if (packet_checksum != packet.crc) {
+        // checksum failure
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Checksum failure expected=%d actual=%d", packet.crc, packet_checksum);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes in the end of the package [155]=%02x [156]=%02x [157]=%02x [158]=%02x [159]=%02x",
+            data[155], data[156],  data[157],  data[158],  data[159]);
+        return;
+    }
+
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Update telemetry");
 
     // extract packet sequence number and update count of dropped frames
     check_seq(be16toh(packet.counter));
@@ -218,72 +220,88 @@ void AP_HobbyWing_DataLink::check_seq(uint16_t this_seq)
 int AP_HobbyWing_DataLink::readHeader()
 {
     int headerPosition = -1;
-    uint8_t first_chunk[HEADER_SIZE];
-    uint8_t second_chunk[HEADER_SIZE];
-
-    std::fill(first_chunk,first_chunk + HEADER_SIZE-1,0);
-    std::fill(second_chunk,second_chunk + HEADER_SIZE-1,0);
 
     uint32_t available = uart.available();
     if(available < HEADER_SIZE)
     {
         return 0;
     }
-    uart.read(first_chunk, HEADER_SIZE);
 
-    while (true)
+    // if first chunk not filled, read first chunk
+    if(!first_chunk_filled)
     {
-        available = uart.available();
-        if(available < HEADER_SIZE)
+        auto bytes_read = uart.read(header_first_chunk, HEADER_SIZE);
+        if(bytes_read == HEADER_SIZE)
         {
-            hal.scheduler->delay_microseconds(1500);
-            continue;
+            first_chunk_filled = true;
         }
-        uart.read(second_chunk, HEADER_SIZE);
-
-        //join chunks
-        uint8_t data[HEADER_SIZE * 2];
-        for(int i=0; i<HEADER_SIZE; i++) {
-            data[i] = first_chunk[i];
-            data[HEADER_SIZE + i] = second_chunk[i];
-        }
-
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Joined chunks %02x %02x %02x %02x %02x %02x %02x %02x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-
-        //find header
-        for(int i=0; i<= HEADER_SIZE; i++)
+        else
         {
-            if(data[i] == HEADER_START_BYTE_VALUE &&
-                data[i+1] == HEADER_PACKAGE_LENGTH_BYTE_VALUE &&
-                data[i+2] == HEADER_PACKAGE_PROTOCOL_BYTE_VALUE &&
-                data[i+3] == HEADER_PACKAGE_REAL_DATA_BYTE_VALUE)
-            {
-                //header found
-                headerPosition = i;
-                break;
-            }
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "First chunk read not succesfully expected=%ld actual=%d", HEADER_SIZE, bytes_read);
         }
-        if(headerPosition >= 0)
-        {
-            //header found,
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "header found position=%d", headerPosition);
-            uint8_t *bytes = (uint8_t*)&packet;
-            for(int i = headerPosition; i < HEADER_SIZE * 2; i++)
-            {
-                //Copy header and rest package
-                int byte_position = i - headerPosition;
-                bytes[byte_position] = data[i];
-            }
-            //how many bytes copied to packet
-            return HEADER_SIZE - headerPosition;
-        }
+        return 0;
+    }
 
-        //header not found, continue finding header
-        for(int i = 0; i< HEADER_SIZE; i++)
+    // Read second chunk
+    auto bytes_read = uart.read(header_second_chunk, HEADER_SIZE);
+    if(bytes_read != HEADER_SIZE)
+    {
+        //read false, read from the beginning
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Second chunk read not succesfully expected=%ld actual=%d", HEADER_SIZE, bytes_read);
+        first_chunk_filled = false;
+        return 0;
+    }
+
+    // Second shunk read successfully, find header
+    uint8_t data[HEADER_SIZE * 2];
+    for(int i=0; i<HEADER_SIZE; i++) {
+        data[i] = header_first_chunk[i];
+        data[HEADER_SIZE + i] = header_second_chunk[i];
+    }
+
+    //find header
+    for(int i=0; i<= HEADER_SIZE; i++) {
+        if(data[i] == HEADER_START_BYTE_VALUE &&
+            data[i+1] == HEADER_PACKAGE_LENGTH_BYTE_VALUE &&
+            data[i+2] == HEADER_PACKAGE_PROTOCOL_BYTE_VALUE &&
+            data[i+3] == HEADER_PACKAGE_REAL_DATA_BYTE_VALUE)
         {
-            first_chunk[i] = second_chunk[i];
+            //header found
+            headerPosition = i;
+            break;
         }
     }
+
+    if(headerPosition >= 0) {
+        //header found,
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "header found position=%d", headerPosition);
+        uint8_t *bytes = (uint8_t*)&packet;
+        for(int i = headerPosition; i < HEADER_SIZE * 2; i++)
+        {
+            //Copy header and rest of the package package
+            int byte_position = i - headerPosition;
+            bytes[byte_position] = data[i];
+        }
+        //how many bytes copied to packet
+        // set first chunk not filled
+        first_chunk_filled = false;
+        return HEADER_SIZE * 2 - headerPosition;
+    }
+
+    //Header position not found, copy second chunk to the first one
+    for(int i = 0; i< HEADER_SIZE; i++)
+    {
+        header_first_chunk[i] = header_second_chunk[i];
+        std::fill(header_second_chunk,header_second_chunk + HEADER_SIZE-1,0);
+    }
+    return 0;
+
+}
+
+void AP_HobbyWing_DataLink::resetChunks()
+{
+    std::fill(header_first_chunk,header_first_chunk + HEADER_SIZE-1,0);
+    std::fill(header_second_chunk,header_second_chunk + HEADER_SIZE-1,0);
 
 }
 

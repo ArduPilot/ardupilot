@@ -18,8 +18,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    AP_HobbyWing_DataLink(AP_HAL::UARTDriver &_uart, const AP_HAL::HAL& _hal)
-        : uart(_uart), hal(_hal) {
+    AP_HobbyWing_DataLink(AP_HAL::UARTDriver &_uart)
+        : uart(_uart) {
         AP_Param::setup_object_defaults(this, var_info);
     }
 
@@ -82,9 +82,13 @@ private:
         };
     } packet;
 
+    uint8_t header_first_chunk[HEADER_SIZE];
+    uint8_t header_second_chunk[HEADER_SIZE];
+    bool first_chunk_filled = false; //if first chunk filled
+    int header_read = false;
+
     struct ESCInfo esc_info[8];  // FIXME: static_assert this to ARRAY_SIZE(packet.ESCData)
 
-    const AP_HAL::HAL &hal;
     AP_HAL::UARTDriver &uart;
     uint64_t last_frame_us;
 
@@ -98,6 +102,8 @@ private:
 
     //how many bytes readed
     int readHeader();
+
+    void resetChunks();
 
 };
 
