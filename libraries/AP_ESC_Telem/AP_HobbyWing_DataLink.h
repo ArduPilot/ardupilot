@@ -46,8 +46,6 @@ private:
     constexpr static uint8_t HEADER_PACKAGE_PROTOCOL_BYTE_VALUE = 1;
     constexpr static uint8_t HEADER_PACKAGE_REAL_DATA_BYTE_VALUE = 2;
 
-    bool read_uart(uint8_t *packet, uint8_t packet_len, uint16_t frame_gap_us);
-
     struct HWESC decoded[8];
     HAL_Semaphore decoded_sem;
     uint32_t decoded_received_us;

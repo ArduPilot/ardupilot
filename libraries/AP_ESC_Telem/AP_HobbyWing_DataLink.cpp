@@ -47,54 +47,6 @@ void AP_HobbyWing_DataLink::init()
     }
 }
 
-/*
-  update ESC telemetry - note that this is basically a copy of AP_HobbyWing_ESC::read_uart_v345.  Do we want a uart->read_packet(uint8_t *, uint8_t, frame_gap_us)?
- */
-bool AP_HobbyWing_DataLink::read_uart(uint8_t *_packet, uint8_t packet_len, uint16_t frame_gap_us)
-{
-    bool ret = false;
-
-    const uint32_t n = uart.available();
-
-    if (n < packet_len) {
-        // frame presumably still on its way in
-        return false;
-    }
-
-    const uint64_t this_frame_us = uart.receive_time_constraint_us(packet_len);
-    const uint64_t dt_us = this_frame_us - last_frame_us;
-    if (dt_us < frame_gap_us) {
-        // insufficient frame gap; discard this input
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bad frame gap");
-        goto OUT_DISCARD;
-    }
-    last_frame_us = this_frame_us;
-
-    if (n > packet_len) {
-        // too many buffers available from the uart.  That's corruption,
-        // assuming scheduling is good.
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bad size expected=%d actual=%ld", packet_len, n);
-        goto OUT_DISCARD;
-    }
-
-    if (uart.read(_packet, packet_len) != packet_len) {
-        // strange - this shouldn't fail
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bad read expected=%d actual=%ld", packet_len, n);
-        goto OUT_DISCARD;
-    }
-
-    // insert more sanity checks here if they can be found - e.g. PWM
-    // ranges, massive seqno badness etc etc
-
-    // successfully read a packet; discard any further data in
-    // the uart as we only want fresh data
-    ret = true;
-
-OUT_DISCARD:
-    uart.discard_input();
-    return ret;
-}
-
 void AP_HobbyWing_DataLink::update()
 {
     uint8_t* data = (uint8_t*)&packet;
@@ -128,12 +80,10 @@ void AP_HobbyWing_DataLink::update()
         return;
     }
 
-
     //Set header read 0, to show we must find header again
     header_read = 0;
 
     // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Bytes read succesfully");
-
     uint16_t packet_checksum = packet.calc_checksum();
     if (packet_checksum != packet.crc) {
         // checksum failure
