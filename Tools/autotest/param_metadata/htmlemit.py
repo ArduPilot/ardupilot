@@ -70,7 +70,7 @@ DO NOT EDIT
                         values = (param.__dict__[field]).split(',')
                         t += "<table><th>Value</th><th>Meaning</th>\n"
                         for value in values:
-                            v = value.split(':')
+                            v = value.split(':', 1)
                             if len(v) != 2:
                                 raise ValueError("Bad value (%s)" % v)
                             t += "<tr><td>%s</td><td>%s</td></tr>\n" % (v[0], v[1])

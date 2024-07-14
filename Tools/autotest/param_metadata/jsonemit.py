@@ -20,7 +20,7 @@ class JSONEmit(Emit):
         if main_key in dictionary:
             values = dictionary[main_key]
             for value in values.split(','):
-                key, description = value.split(":")
+                key, description = value.split(":", 1)
                 json_object[key.strip()] = description.strip()
         return json_object
 

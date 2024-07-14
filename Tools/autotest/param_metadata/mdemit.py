@@ -96,7 +96,7 @@ class MDEmit(Emit):
                         t += "\n\n|Value|Meaning|"
                         t += "\n|:---:|:---:|"
                         for value in values:
-                            v = value.split(':')
+                            v = value.split(':', 1)
                             if len(v) != 2:
                                 raise ValueError("Bad value (%s)" % v)
                             t += "\n|%s|%s|" % (v[0], v[1])

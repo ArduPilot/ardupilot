@@ -69,7 +69,7 @@ class XmlEmit(Emit):
                         values = (param.__dict__[field]).split(',')
                         nv_unsorted = {}
                         for value in values:
-                            v = value.split(':')
+                            v = value.split(':', 1)
                             if len(v) != 2:
                                 raise ValueError("Bad value (%s)" % v)
                             # i.e. numeric value, string label
