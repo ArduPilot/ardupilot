@@ -76,7 +76,7 @@ void AP_HobbyWing_DataLink::update()
     auto bytes_read = uart.read(&data[header_read], bytes_to_read);
     if(bytes_read != (int)bytes_to_read) {
         header_read = 0; // header read not successfully
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bytes read not succesfully expected=%ld actual=%d", bytes_to_read, bytes_read);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Bytes read not succesfully expected=%ld actual=%d", (long int)bytes_to_read, bytes_read);
         return;
     }
 
