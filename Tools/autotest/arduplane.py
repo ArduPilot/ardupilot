@@ -5465,7 +5465,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             other_prearm_failures_fatal=False,
         )
 
-
     def HobbyWing_DataLink(self):
         '''test support for DataLink devices'''
         self.context_push()
