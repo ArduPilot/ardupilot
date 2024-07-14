@@ -109,145 +109,145 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Description: Function assigned to this RC channel
     // @SortValues: AlphabeticalZeroAtTop
     // @Values{Copter, Rover, Plane, Blimp}: 0:Do Nothing
-    // @Values{Copter}: 2:FLIP Mode
-    // @Values{Copter}: 3:Simple Mode
-    // @Values{Copter, Rover, Plane}: 4:RTL
-    // @Values{Copter}: 5:Save Trim
-    // @Values{Rover}: 5:Save Trim (4.1 and lower)
-    // @Values{Copter, Rover}: 7:Save WP
-    // @Values{Copter, Rover, Plane}: 9:Camera Trigger
-    // @Values{Copter}: 10:RangeFinder Enable
-    // @Values{Copter, Rover, Plane}: 11:Fence Enable
-    // @Values{Copter}: 13:Super Simple Mode
-    // @Values{Copter}: 14:Acro Trainer
-    // @Values{Copter}: 15:Sprayer Enable
-    // @Values{Copter, Rover, Plane}: 16:AUTO Mode
-    // @Values{Copter}: 17:AUTOTUNE Mode
-    // @Values{Copter, Blimp}: 18:LAND Mode
-    // @Values{Copter, Rover}: 19:Gripper Release
-    // @Values{Copter}: 21:Parachute Enable
-    // @Values{Copter, Plane}: 22:Parachute Release
-    // @Values{Copter}: 23:Parachute 3pos
-    // @Values{Copter, Rover, Plane}: 24:Auto Mission Reset
-    // @Values{Copter}: 25:AttCon Feed Forward
-    // @Values{Copter}: 26:AttCon Accel Limits
-    // @Values{Copter, Rover, Plane}: 27:Retract Mount1
-    // @Values{Copter, Rover, Plane}: 28:Relay1 On/Off
-    // @Values{Copter, Plane}: 29:Landing Gear
-    // @Values{Copter}: 30:Lost Copter Sound
-    // @Values{Rover}: 30:Lost Rover Sound
-    // @Values{Plane}: 30:Lost Plane Sound
-    // @Values{Copter, Rover, Plane}: 31:Motor Emergency Stop
-    // @Values{Copter}: 32:Motor Interlock
-    // @Values{Copter}: 33:BRAKE Mode
-    // @Values{Copter, Rover, Plane}: 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off
-    // @Values{Copter}: 37:THROW Mode
-    // @Values{Copter, Plane}: 38:ADSB Avoidance Enable
-    // @Values{Copter}: 39:PrecLoiter Enable
-    // @Values{Copter, Rover}: 40:Proximity Avoidance Enable
-    // @Values{Copter, Rover, Plane}: 41:ArmDisarm (4.1 and lower)
-    // @Values{Copter, Rover}: 42:SMARTRTL Mode
-    // @Values{Copter, Plane}: 43:InvertedFlight Enable
-    // @Values{Copter}: 44:Winch Enable, 45:Winch Control
-    // @Values{Copter, Rover, Plane, Blimp}: 46:RC Override Enable
-    // @Values{Copter}: 47:User Function 1, 48:User Function 2, 49:User Function 3
-    // @Values{Rover}: 50:LearnCruise Speed
-    // @Values{Rover, Plane}: 51:MANUAL Mode
-    // @Values{Copter, Rover, Plane}: 52:ACRO Mode
-    // @Values{Rover}: 53:STEERING Mode
-    // @Values{Rover}: 54:HOLD Mode
-    // @Values{Copter, Rover, Plane}: 55:GUIDED Mode
-    // @Values{Copter, Rover, Plane}: 56:LOITER Mode
-    // @Values{Copter, Rover}: 57:FOLLOW Mode
-    // @Values{Copter, Rover, Plane}: 58:Clear Waypoints
-    // @Values{Rover}: 59:Simple Mode
-    // @Values{Copter}: 60:ZigZag Mode
-    // @Values{Copter}: 61:ZigZag SaveWP
-    // @Values{Copter, Rover, Plane}: 62:Compass Learn
-    // @Values{Rover}: 63:Sailboat Tack
-    // @Values{Plane}: 64:Reverse Throttle
-    // @Values{Copter, Rover, Plane, Blimp}: 65:GPS Disable
-    // @Values{Copter, Rover, Plane}: 66:Relay5 On/Off, 67:Relay6 On/Off
-    // @Values{Copter}: 68:STABILIZE Mode
-    // @Values{Copter}: 69:POSHOLD Mode
-    // @Values{Copter}: 70:ALTHOLD Mode
-    // @Values{Copter}: 71:FLOWHOLD Mode
-    // @Values{Copter,Rover,Plane}: 72:CIRCLE Mode
-    // @Values{Copter}: 73:DRIFT Mode
-    // @Values{Rover}: 74:Sailboat motoring 3pos
-    // @Values{Copter}: 75:SurfaceTrackingUpDown
-    // @Values{Copter}: 76:STANDBY Mode
-    // @Values{Plane}: 77:TAKEOFF Mode
-    // @Values{Copter, Rover, Plane}: 78:RunCam Control
-    // @Values{Copter, Rover, Plane}: 79:RunCam OSD Control
-    // @Values{Copter}: 80:VisOdom Align
-    // @Values{Rover}: 80:VisoOdom Align
-    // @Values{Copter, Rover, Plane, Blimp}: 81:Disarm
-    // @Values{Plane}: 82:QAssist 3pos
-    // @Values{Copter}: 83:ZigZag Auto
-    // @Values{Copter, Plane}: 84:AirMode
-    // @Values{Copter, Plane}: 85:Generator
-    // @Values{Plane}: 86:Non Auto Terrain Follow Disable
-    // @Values{Plane}: 87:Crow Select
-    // @Values{Plane}: 88:Soaring Enable
-    // @Values{Plane}: 89:Landing Flare
-    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF Pos Source
-    // @Values{Plane}: 91:Airspeed Ratio Calibration
-    // @Values{Plane}: 92:FBWA Mode
-    // @Values{Copter, Rover, Plane}: 94:VTX Power
-    // @Values{Plane}: 95:FBWA taildragger takeoff mode
-    // @Values{Plane}: 96:Trigger re-reading of mode switch
-    // @Values{Rover}: 97:Windvane home heading direction offset
-    // @Values{Plane}: 98:TRAINING Mode
-    // @Values{Copter}: 99:AUTO RTL
-    // @Values{Copter, Rover, Plane, Blimp}: 100:KillIMU1, 101:KillIMU2
-    // @Values{Copter, Rover, Plane}: 102:Camera Mode Toggle
-    // @Values{Copter, Rover, Plane}: 105:GPS Disable Yaw
-    // @Values{Rover, Plane}: 106:Disable Airspeed Use
-    // @Values{Plane}: 107:Enable FW Autotune
-    // @Values{Plane}: 108:QRTL Mode
-    // @Values{Copter}: 109:use Custom Controller
-    // @Values{Copter, Rover, Plane, Blimp}:  110:KillIMU3
-    // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:SwitchExternalAHRS
-    // @Values{Copter, Rover, Plane}: 113:Retract Mount2
-    // @Values{Plane}: 150:CRUISE Mode
-    // @Values{Copter}: 151:TURTLE Mode
-    // @Values{Copter}: 152:SIMPLE heading reset
-    // @Values{Copter, Rover, Plane}: 153:ArmDisarm (4.2 and higher)
-    // @Values{Blimp}: 153:ArmDisarm
-    // @Values{Copter}: 154:ArmDisarm with AirMode  (4.2 and higher)
-    // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode (4.2 and higher)
-    // @Values{Rover}: 155:Set steering trim to current servo and RC
-    // @Values{Plane}: 155:Set roll pitch and yaw trim to current servo and RC
-    // @Values{Rover}: 156:Torqeedo Clear Err
-    // @Values{Plane}: 157:Force FS Action to FBWA
-    // @Values{Copter, Plane}: 158:Optflow Calibration
-    // @Values{Copter}: 159:Force IS_Flying
-    // @Values{Plane}: 160:Weathervane Enable
-    // @Values{Copter}: 161:Turbine Start(heli)
-    // @Values{Copter, Rover, Plane}: 162:FFT Tune
-    // @Values{Copter, Rover, Plane}: 163:Mount Lock
-    // @Values{Copter, Rover, Plane, Blimp}: 164:Pause Stream Logging
-    // @Values{Copter, Rover, Plane}: 165:Arm/Emergency Motor Stop
-    // @Values{Copter, Rover, Plane, Blimp}: 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
-    // @Values{Plane}: 170:QSTABILIZE Mode
-    // @Values{Copter, Rover, Plane, Blimp}: 171:Calibrate Compasses
-    // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
-    // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
-    // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
-    // @Values{Copter, Rover, Plane, Blimp}: 175:Camera Lens
-    // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
-    // @Values{Copter, Rover, Plane, Blimp}: 177:Mount LRF enable
-    // @Values{Copter}: 178:FlightMode Pause/Resume
-    // @Values{Rover}: 201:Roll
-    // @Values{Rover}: 202:Pitch
-    // @Values{Rover}: 207:MainSail
-    // @Values{Rover, Plane}:  208:Flap
-    // @Values{Plane}: 209:VTOL Forward Throttle
-    // @Values{Plane}: 210:Airbrakes
-    // @Values{Rover}: 211:Walking Height
-    // @Values{Copter, Rover, Plane}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
-    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Copter}: 2:Mode:FLIP
+    // @Values{Copter}: 3:RC:Simple Mode
+    // @Values{Copter, Rover, Plane}: 4:Mode:RTL
+    // @Values{Copter}: 5:RC:Save Trim
+    // @Values{Rover}: 5:RC:Save Trim (4.1 and lower)
+    // @Values{Copter, Rover}: 7:Mission:Save WP
+    // @Values{Copter, Rover, Plane}: 9:Camera:Camera Trigger
+    // @Values{Copter}: 10:Sensors: RangeFinder Enable
+    // @Values{Copter, Rover, Plane}: 11:Misc: Fence Enable
+    // @Values{Copter}: 13:RC: Super Simple Mode
+    // @Values{Copter}: 14:RC: Acro Trainer
+    // @Values{Copter}: 15:Payload: Sprayer Enable
+    // @Values{Copter, Rover, Plane}: 16:Mode: AUTO Mode
+    // @Values{Copter}: 17:Mode: AUTOTUNE Mode
+    // @Values{Copter, Blimp}: 18:Mode: LAND Mode
+    // @Values{Copter, Rover}: 19:Payload: Gripper Release
+    // @Values{Copter}: 21:Parachute: Enable
+    // @Values{Copter, Plane}: 22:Parachute: Release
+    // @Values{Copter}: 23:Parachute: 3pos
+    // @Values{Copter, Rover, Plane}: 24:Mission: Auto Mission Reset
+    // @Values{Copter}: 25:Control: AttCon Feed Forward
+    // @Values{Copter}: 26:Control: AttCon Accel Limits
+    // @Values{Copter, Rover, Plane}: 27:Payload: Retract Mount1
+    // @Values{Copter, Rover, Plane}: 28:Payload: Relay1 On/Off
+    // @Values{Copter, Plane}: 29:Airframe: Landing Gear
+    // @Values{Copter}: 30:Airframe: Lost Copter Sound
+    // @Values{Rover}: 30:Airframe: Lost Rover Sound
+    // @Values{Plane}: 30:Airframe: Lost Plane Sound
+    // @Values{Copter, Rover, Plane}: 31:Arming: Motor Emergency Stop
+    // @Values{Copter}: 32:Arming: Motor Interlock
+    // @Values{Copter}: 33:Mode: BRAKE Mode
+    // @Values{Copter, Rover, Plane}: 34:Airframe: Relay2 On/Off, 35:Airframe: Relay3 On/Off, 36:Airframe: Relay4 On/Off
+    // @Values{Copter}: 37:Mode: THROW Mode
+    // @Values{Copter, Plane}: 38:Sensors: ADSB Avoidance Enable
+    // @Values{Copter}: 39:Sensors: PrecLoiter Enable
+    // @Values{Copter, Rover}: 40:Sensors: Proximity Avoidance Enable
+    // @Values{Copter, Rover, Plane}: 41:Arming: ArmDisarm (4.1 and lower)
+    // @Values{Copter, Rover}: 42:Mode: SMARTRTL Mode
+    // @Values{Copter, Plane}: 43:Control: InvertedFlight Enable
+    // @Values{Copter}: 44:Payload: Winch Enable, 45:Payload: Winch Control
+    // @Values{Copter, Rover, Plane, Blimp}: 46:RC: Override Enable
+    // @Values{Copter}: 47:User: Function 1, 48:User: Function 2, 49:User: Function 3
+    // @Values{Rover}: 50:Control: LearnCruise Speed
+    // @Values{Rover, Plane}: 51:Mode: MANUAL Mode
+    // @Values{Copter, Rover, Plane}: 52:Mode: ACRO Mode
+    // @Values{Rover}: 53:Mode: STEERING Mode
+    // @Values{Rover}: 54:Mode: HOLD Mode
+    // @Values{Copter, Rover, Plane}: 55:Mode: GUIDED Mode
+    // @Values{Copter, Rover, Plane}: 56:Mode: LOITER Mode
+    // @Values{Copter, Rover}: 57:Mode: FOLLOW Mode
+    // @Values{Copter, Rover, Plane}: 58:Mission: Clear Waypoints
+    // @Values{Rover}: 59:RC: Simple Mode
+    // @Values{Copter}: 60:ZigZag: ZigZag Mode
+    // @Values{Copter}: 61:ZigZag: SaveWP
+    // @Values{Copter, Rover, Plane}: 62:Sensors: Compass Learn
+    // @Values{Rover}: 63:Control: Sailboat Tack
+    // @Values{Plane}: 64:RC: Reverse Throttle
+    // @Values{Copter, Rover, Plane, Blimp}: 65:Dev; GPS Disable
+    // @Values{Copter, Rover, Plane}: 66:Payload: Relay5 On/Off, 67:Payload: Relay6 On/Off
+    // @Values{Copter}: 68:Mode: STABILIZE Mode
+    // @Values{Copter}: 69:Mode: POSHOLD Mode
+    // @Values{Copter}: 70:Mode: ALTHOLD Mode
+    // @Values{Copter}: 71:Mode: FLOWHOLD Mode
+    // @Values{Copter,Rover,Plane}: 72:Mode: CIRCLE Mode
+    // @Values{Copter}: 73:Mode: DRIFT Mode
+    // @Values{Rover}: 74:Control: Sailboat motoring 3pos
+    // @Values{Copter}: 75:Sensors: SurfaceTrackingUpDown
+    // @Values{Copter}: 76:Mode: STANDBY Mode
+    // @Values{Plane}: 77:Mode: TAKEOFF Mode
+    // @Values{Copter, Rover, Plane}: 78:Camera: RunCam Control
+    // @Values{Copter, Rover, Plane}: 79:Camera: RunCam OSD Control
+    // @Values{Copter}: 80:Sensors: VisOdom Align
+    // @Values{Rover}: 80:Sensors: VisoOdom Align
+    // @Values{Copter, Rover, Plane, Blimp}: 81:Arming: Disarm
+    // @Values{Plane}: 82:Control: QAssist 3pos
+    // @Values{Copter}: 83:Mode: ZigZag: ZigZag Auto
+    // @Values{Copter, Plane}: 84:Control: AirMode
+    // @Values{Copter, Plane}: 85:Generator: Control
+    // @Values{Plane}: 86:Control: Non Auto Terrain Follow Disable
+    // @Values{Plane}: 87:Airframe: Crow Select
+    // @Values{Plane}: 88:Soaring: Enable
+    // @Values{Plane}: 89:Control: Landing Flare
+    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF: Pos Source
+    // @Values{Plane}: 91:Sensors: Airspeed Ratio Calibration
+    // @Values{Plane}: 92:Mode: FBWA Mode
+    // @Values{Copter, Rover, Plane}: 94:Camera: VTX Power
+    // @Values{Plane}: 95:Control: FBWA taildragger takeoff mode
+    // @Values{Plane}: 96:RC: Trigger re-reading of mode switch
+    // @Values{Rover}: 97:Sensors: Windvane home heading direction offset
+    // @Values{Plane}: 98:Mode: TRAINING Mode
+    // @Values{Copter}: 99:Mission: AUTO RTL
+    // @Values{Copter, Rover, Plane, Blimp}: 100:Dev: KillIMU1, 101:Dev: KillIMU2
+    // @Values{Copter, Rover, Plane}: 102:Camera: Mode Toggle
+    // @Values{Copter, Rover, Plane}: 105:Dev: GPS Disable Yaw
+    // @Values{Rover, Plane}: 106:Sensors: Disable Airspeed Use
+    // @Values{Plane}: 107:Control: Enable FW Autotune
+    // @Values{Plane}: 108:Mode: QRTL Mode
+    // @Values{Copter}: 109:Control: use Custom Controller
+    // @Values{Copter, Rover, Plane, Blimp}:  110:Dev: KillIMU3
+    // @Values{Copter,Plane,Rover,Blimp,Sub,Tracker}: 112:AHRS: SwitchExternalAHRS
+    // @Values{Copter, Rover, Plane}: 113:Payload: Retract Mount2
+    // @Values{Plane}: 150:Mode: CRUISE Mode
+    // @Values{Copter}: 151:Mode: TURTLE Mode
+    // @Values{Copter}: 152:RC: SIMPLE heading reset
+    // @Values{Copter, Rover, Plane}: 153:Arming: ArmDisarm (4.2 and higher)
+    // @Values{Blimp}: 153:Arming: ArmDisarm
+    // @Values{Copter}: 154:Arming: ArmDisarm with AirMode  (4.2 and higher)
+    // @Values{Plane}: 154:Arming: ArmDisarm with Quadplane AirMode (4.2 and higher)
+    // @Values{Rover}: 155:RC: Set steering trim to current servo and RC
+    // @Values{Plane}: 155:RC: Set roll pitch and yaw trim to current servo and RC
+    // @Values{Rover}: 156:Airframe: Torqeedo Clear Err
+    // @Values{Plane}: 157:Control: Force FS Action to FBWA
+    // @Values{Copter, Plane}: 158:Sensors: Optflow Calibration
+    // @Values{Copter}: 159:Control: Force IS_Flying
+    // @Values{Plane}: 160:Sensors: Weathervane Enable
+    // @Values{Copter}: 161:Airframe: Turbine Start(heli)
+    // @Values{Copter, Rover, Plane}: 162:Sensors: FFT Tune
+    // @Values{Copter, Rover, Plane}: 163:Payload: Mount Lock
+    // @Values{Copter, Rover, Plane, Blimp}: 164:Misc: Pause Stream Logging
+    // @Values{Copter, Rover, Plane}: 165:Arming: Arm/Emergency Motor Stop
+    // @Values{Copter, Rover, Plane, Blimp}: 166:Camera: Record Video, 167:Camera: Zoom, 168:Camera: Manual Focus, 169:Camera: Auto Focus
+    // @Values{Plane}: 170:Mode: QSTABILIZE Mode
+    // @Values{Copter, Rover, Plane, Blimp}: 171:Sensors: Calibrate Compasses
+    // @Values{Copter, Rover, Plane, Blimp}: 172:Sensors: Battery MPPT Enable
+    // @Values{Plane}: 173:Mission: Plane AUTO Mode Landing Abort
+    // @Values{Copter, Rover, Plane, Blimp}: 174:Camera: Image Tracking
+    // @Values{Copter, Rover, Plane, Blimp}: 175:Camera: Lens
+    // @Values{Plane}: 176:Control: Quadplane Fwd Throttle Override enable
+    // @Values{Copter, Rover, Plane, Blimp}: 177:Payload: Mount LRF enable
+    // @Values{Copter}: 178:Control: FlightMode Pause/Resume
+    // @Values{Rover}: 201:RC: Roll
+    // @Values{Rover}: 202:RC: Pitch
+    // @Values{Rover}: 207:RC: MainSail
+    // @Values{Rover, Plane}: 208:Airframe: Flap
+    // @Values{Plane}: 209:Control: VTOL Forward Throttle
+    // @Values{Plane}: 210:Airframe: Airbrakes
+    // @Values{Rover}: 211:Aiframe: Walking Height
+    // @Values{Copter, Rover, Plane}: 212:RC: Mount1 Roll, 213:RC: Mount1 Pitch, 214:RC: Mount1 Yaw, 215:RC: Mount2 Roll, 216:RC: Mount2 Pitch, 217:RC: Mount2 Yaw
+    // @Values{Copter, Rover, Plane}: 300:Scripting: Function 1, 301:Scripting: Function 2, 302:Scripting: Function 3, 303:Scripting: Function 4, 304:Scripting: Function 5, 305:Scripting: Function 6, 306:Scripting: Function 7, 307:Scripting: Function 8
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 

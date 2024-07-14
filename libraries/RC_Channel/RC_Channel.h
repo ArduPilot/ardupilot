@@ -106,25 +106,25 @@ public:
     // Aux Switch enumeration
     enum class AUX_FUNC {
         DO_NOTHING =           0, // aux switch disabled
-        FLIP =                 2, // flip
-        SIMPLE_MODE =          3, // change to simple mode
-        RTL =                  4, // change to RTL flight mode
-        SAVE_TRIM =            5, // save current position as level
-        SAVE_WP =              7, // save mission waypoint or RTL if in auto mode
-        CAMERA_TRIGGER =       9, // trigger camera servo or relay
-        RANGEFINDER =         10, // allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
-        FENCE =               11, // allow enabling or disabling fence in flight
+        FLIP =                 2, // Copter: flip
+        SIMPLE_MODE =          3, // Copter/Heli/Blimp: change to simple mode
+        RTL =                  4, // Vehicle: change to RTL flight mode
+        SAVE_TRIM =            5, // RC: save current position as level
+        SAVE_WP =              7, // Mission: save mission waypoint or RTL if in auto mode
+        CAMERA_TRIGGER =       9, // Payload: trigger camera servo or relay
+        RANGEFINDER =         10, // RangeFinder: allow enabling or disabling rangefinder in flight which helps avoid surface tracking when you are far above the ground
+        FENCE =               11, // Fence: allow enabling or disabling fence in flight
         RESETTOARMEDYAW =     12, // UNUSED
-        SUPERSIMPLE_MODE =    13, // change to simple mode in middle, super simple at top
-        ACRO_TRAINER =        14, // low = disabled, middle = leveled, high = leveled and limited
-        SPRAYER =             15, // enable/disable the crop sprayer
+        SUPERSIMPLE_MODE =    13, // RC: change to simple mode in middle, super simple at top
+        ACRO_TRAINER =        14, // Copter/Heli: low = disabled, middle = leveled, high = leveled and limited
+        SPRAYER =             15, // Payload: enable/disable the crop sprayer
         AUTO =                16, // change to auto flight mode
         AUTOTUNE =            17, // auto tune
-        LAND =                18, // change to LAND flight mode
-        GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
-        PARACHUTE_ENABLE  =   21, // Parachute enable/disable
-        PARACHUTE_RELEASE =   22, // Parachute release
-        PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
+        LAND =                18, // Copter/Heli: change to LAND flight mode
+        GRIPPER =             19, // Payload: Operate cargo grippers low=off, middle=neutral, high=on
+        PARACHUTE_ENABLE  =   21, // Parachute: enable/disable
+        PARACHUTE_RELEASE =   22, // Parachute: release
+        PARACHUTE_3POS =      23, // Parachute: disable, enable, release with 3 position switch
         MISSION_RESET =       24, // Reset auto mission to start from first command
         ATTCON_FEEDFWD =      25, // enable/disable the roll and pitch rate feed forward
         ATTCON_ACCEL_LIM =    26, // enable/disable the roll, pitch and yaw accel limiting
