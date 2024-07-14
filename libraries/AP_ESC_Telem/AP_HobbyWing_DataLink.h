@@ -39,8 +39,8 @@ public:
 
 private:
 
-    constexpr static uint32_t PACKAGE_SIZE = 160;
-    constexpr static uint32_t HEADER_SIZE = 4;
+    constexpr static uint8_t PACKAGE_SIZE = 160;
+    constexpr static uint8_t HEADER_SIZE = 4;
     constexpr static uint8_t HEADER_START_BYTE_VALUE = 0x9B;
     constexpr static uint8_t HEADER_PACKAGE_LENGTH_BYTE_VALUE = 158;
     constexpr static uint8_t HEADER_PACKAGE_PROTOCOL_BYTE_VALUE = 1;

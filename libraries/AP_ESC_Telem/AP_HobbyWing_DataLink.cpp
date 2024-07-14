@@ -187,7 +187,7 @@ int AP_HobbyWing_DataLink::readHeader()
         }
         else
         {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "First chunk read not succesfully expected=%ld actual=%d", HEADER_SIZE, bytes_read);
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "First chunk read not succesfully expected=%d actual=%d", HEADER_SIZE, bytes_read);
         }
         return 0;
     }
@@ -197,20 +197,20 @@ int AP_HobbyWing_DataLink::readHeader()
     if(bytes_read != HEADER_SIZE)
     {
         //read false, read from the beginning
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Second chunk read not succesfully expected=%ld actual=%d", HEADER_SIZE, bytes_read);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Second chunk read not succesfully expected=%d actual=%d", HEADER_SIZE, bytes_read);
         first_chunk_filled = false;
         return 0;
     }
 
     // Second shunk read successfully, find header
     uint8_t data[HEADER_SIZE * 2];
-    for(int i=0; i<HEADER_SIZE; i++) {
+    for(uint8_t i=0; i<HEADER_SIZE; i++) {
         data[i] = header_first_chunk[i];
         data[HEADER_SIZE + i] = header_second_chunk[i];
     }
 
     //find header
-    for(int i=0; i<= HEADER_SIZE; i++) {
+    for(uint8_t i=0; i<= HEADER_SIZE; i++) {
         if(data[i] == HEADER_START_BYTE_VALUE &&
             data[i+1] == HEADER_PACKAGE_LENGTH_BYTE_VALUE &&
             data[i+2] == HEADER_PACKAGE_PROTOCOL_BYTE_VALUE &&
@@ -239,7 +239,7 @@ int AP_HobbyWing_DataLink::readHeader()
     }
 
     //Header position not found, copy second chunk to the first one
-    for(int i = 0; i< HEADER_SIZE; i++)
+    for(uint8_t i = 0; i< HEADER_SIZE; i++)
     {
         header_first_chunk[i] = header_second_chunk[i];
         header_second_chunk[i] = 0;
@@ -250,7 +250,7 @@ int AP_HobbyWing_DataLink::readHeader()
 
 void AP_HobbyWing_DataLink::resetChunks()
 {
-    for(int i = 0; i< HEADER_SIZE; i++) {
+    for(uint8_t i = 0; i< HEADER_SIZE; i++) {
         header_first_chunk[i] = 0;
         header_second_chunk[i] = 0;
     }
