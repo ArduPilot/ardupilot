@@ -341,10 +341,10 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
     // check if fence requires GPS
     bool fence_requires_gps = false;
-    #if AP_FENCE_ENABLED
+#if AP_FENCE_ENABLED
     // if circular or polygon fence is enabled we need GPS
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
-    #endif
+#endif
 
     // check if flight mode requires GPS
     bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
@@ -443,10 +443,10 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 
     // check if fence requires GPS
     bool fence_requires_gps = false;
-    #if AP_FENCE_ENABLED
+#if AP_FENCE_ENABLED
     // if circular or polygon fence is enabled we need GPS
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
-    #endif
+#endif
 
     if (mode_requires_gps || copter.option_is_enabled(Copter::FlightOption::REQUIRE_POSITION_FOR_ARMING)) {
         if (!copter.position_ok()) {
