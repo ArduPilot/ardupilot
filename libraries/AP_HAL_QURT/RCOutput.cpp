@@ -2,6 +2,7 @@
 
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -114,10 +115,24 @@ void RCOutput::send_receive(void)
         return;
     }
 
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+    uint32_t safety_mask = 0;
+
+    if (boardconfig != nullptr) {
+        // mask of channels to allow with safety on
+        safety_mask = boardconfig->get_safety_mask();
+    }
+    
     int16_t data[5] {};
 
     for (uint8_t i=0; i<4; i++) {
-        data[i] = pwm_to_esc(period[i]);
+        uint16_t v = period[i];
+        if (safety_on && (safety_mask & (1U<<i)) == 0) {
+            // when safety is on we send 0, which allows us to still
+            // get feedback telemetry data, including battery voltage
+            v = 0;
+        }
+        data[i] = pwm_to_esc(v);
     }
 
     need_write = false;
