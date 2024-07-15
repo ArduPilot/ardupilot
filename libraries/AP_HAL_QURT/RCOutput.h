@@ -56,10 +56,6 @@ private:
     void handle_esc_feedback(const struct esc_response_v2 &pkt);
     void handle_power_status(const struct esc_power_status &pkt);
 
-    // order is RL, FL, FR, RR, map to X frame
-    const uint8_t esc_map[4] {2, 0, 1, 3};
-    const uint8_t esc_map_rev[4] {1, 2, 0, 3};
-
     int fd = -1;
     uint16_t enable_mask;
     static const uint8_t channel_count = 4;
