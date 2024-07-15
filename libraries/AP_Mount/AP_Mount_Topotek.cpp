@@ -770,7 +770,7 @@ void AP_Mount_Topotek::request_track_status()
 // request gimbal version
 void AP_Mount_Topotek::request_gimbal_version()
 {
-    // sample command: #TPPD2rVSN00
+    // sample command: #TPUD2rVSN00
     send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION, false, 0);
 }
 
@@ -1024,29 +1024,50 @@ void AP_Mount_Topotek::gimbal_dist_info_analyse()
 // gimbal basic information analysis
 void AP_Mount_Topotek::gimbal_version_analyse()
 {
-    uint8_t major_ver = 0;
-    uint8_t minor_ver = 0;
-    uint8_t patch_ver = 0;
+    // version array with index 0=major, 1=minor, 2=patch
+    uint8_t version[3] {};
 
     // extract firmware version
+    // the version can be in the format "1.2.3" or "123"
     const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
-    if (data_buf_len >= 1) {
-        major_ver = char_to_hex(_msg_buff[10]);
+
+    // check for "."
+    bool constains_period = false;
+    for (uint8_t i = 0; i < data_buf_len; i++) {
+        constains_period |= _msg_buff[10 + i] == '.';
     }
-    if (data_buf_len >= 2) {
-        minor_ver = char_to_hex(_msg_buff[11]);
+
+    // if contains period, extract version number
+    uint32_t ver_num = 0;
+    uint8_t ver_count = 0;
+    if (constains_period) {
+        for (uint8_t i = 0; i < data_buf_len; i++) {
+            if (_msg_buff[10 + i] != '.') {
+                ver_num = ver_num * 10 + char_to_hex(_msg_buff[10 + i]);
+            } else {
+                version[ver_count++] = ver_num;
+                ver_num = 0;
+            }
+        }
+    } else {
+        if (data_buf_len >= 1) {
+            version[0] = char_to_hex(_msg_buff[10]);
+        }
+        if (data_buf_len >= 2) {
+            version[1] = char_to_hex(_msg_buff[11]);
+        }
+        if (data_buf_len >= 3) {
+            version[2] = char_to_hex(_msg_buff[12]);
+        }
     }
-    if (data_buf_len >= 3) {
-        patch_ver = char_to_hex(_msg_buff[12]);
-    }
-    _firmware_ver = (patch_ver << 16) | (minor_ver << 8) | (major_ver);
+    _firmware_ver = (version[2] << 16) | (version[1] << 8) | (version[0]);
 
     // display gimbal model and firmware version to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s v%u.%u.%u",
         send_message_prefix,
-        major_ver,
-        minor_ver,
-        patch_ver);
+        version[0],     // major version
+        version[1],     // minor version
+        version[2]);    // patch version
 
     _got_gimbal_version = true;
 }
