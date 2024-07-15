@@ -117,7 +117,7 @@ void RCOutput::send_receive(void)
     int16_t data[5] {};
 
     for (uint8_t i=0; i<4; i++) {
-        data[esc_map[i]] = pwm_to_esc(period[i]);
+        data[i] = pwm_to_esc(period[i]);
     }
 
     need_write = false;
@@ -140,7 +140,7 @@ void RCOutput::send_receive(void)
  */
 void RCOutput::handle_esc_feedback(const struct esc_response_v2 &pkt)
 {
-    const uint8_t idx = esc_map_rev[pkt.id_state>>4];
+    const uint8_t idx = pkt.id_state>>4;
     if (idx >= ARRAY_SIZE(period)) {
         return;
     }
