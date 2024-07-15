@@ -305,7 +305,7 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW ExternalLED()); // despite the name this is a built in set of onboard LED's
 #endif
 
-#if AP_NOTIFY_GPIO_LED_RGB_ENABLED
+#ifdef AP_NOTIFY_GPIO_LED_RGB_ENABLED
                 ADD_BACKEND(NEW_NOTHROW PixRacerLED());
 #elif AP_NOTIFY_VRBOARD_LED_ENABLED
                 ADD_BACKEND(NEW_NOTHROW VRBoard_LED());

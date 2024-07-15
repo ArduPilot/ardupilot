@@ -16,7 +16,7 @@
 
 #include "AP_Notify_config.h"
 
-#if AP_NOTIFY_GPIO_LED_RGB_ENABLED
+#ifdef AP_NOTIFY_GPIO_LED_RGB_ENABLED
 
 #include "RGBLed.h"
 
