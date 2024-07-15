@@ -7,6 +7,8 @@
 class QURT::RCOutput : public AP_HAL::RCOutput, AP_ESC_Telem_Backend
 {
 public:
+    friend class QURT::Util;
+
     void init() override;
     void set_freq(uint32_t chmask, uint16_t freq_hz) override;
     uint16_t get_freq(uint8_t ch) override;
@@ -27,6 +29,15 @@ public:
         return esc_current;
     }
 
+    /*
+      force the safety switch on, disabling output from the ESCs/servos
+     */
+    bool force_safety_on(void) override { safety_on = true; return true; }
+
+    /*
+      force the safety switch off, enabling output from the ESCs/servos
+     */
+    void force_safety_off(void) override { safety_on = false; }
 
 private:
     const uint32_t baudrate = 2000000;
@@ -68,4 +79,7 @@ private:
 
     float esc_voltage;
     float esc_current;
+
+    // start with safety on, gets disabled by AP_BoardConfig
+    bool safety_on = true;
 };
