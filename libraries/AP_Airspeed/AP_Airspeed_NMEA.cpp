@@ -32,16 +32,11 @@
 
 bool AP_Airspeed_NMEA::init()
 {
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_AirSpeed, 0);
-    if (_uart == nullptr) {
+    if (!AP_NMEA_Input::init(AP_SerialManager::SerialProtocol_AirSpeed, 0)) {
         return false;
     }
 
     set_bus_id(AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,0,0,0));
-
-    _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_AirSpeed, 0));
 
     // make sure this sensor cannot be used in the EKF
     set_use(0);
@@ -55,41 +50,24 @@ bool AP_Airspeed_NMEA::init()
 // read the from the sensor
 bool AP_Airspeed_NMEA::get_airspeed(float &airspeed)
 {
-    if (_uart == nullptr) {
-        return false;
-    }
-
     uint32_t now = AP_HAL::millis();
 
-    // read any available lines from the sensor
-    float sum = 0.0f;
-    uint16_t count = 0;
-    int16_t nbytes = _uart->available();
-    while (nbytes-- > 0) {
-        int16_t c = _uart->read();
-        if (c==-1) {
-            return false;
-        }
-        if (decode(char(c))) {
-            _last_update_ms = now;
-            if (_sentence_type == TYPE_VHW) {
-                sum += _speed;
-                count++;
-            } else {
-                _temp_sum += _temp;
-                _temp_count++;
-            }
-        }
-    }
+    _sum = 0;
+    _count = 0;
+    _temp_sum = 0;
+    _temp_count = 0;
 
-    if (count == 0) {
+    AP_NMEA_Input::update();
+
+    if (_count == 0) {
         // Cant return false because updates are too slow, return previous reading
         // Could return false after some timeout, however testing shows that the DST800 just stops sending the message at zero speed
         airspeed = _last_speed;
     } else {
         // return average of all measurements
-        airspeed = sum / count;
+        airspeed = _sum / _count;
         _last_speed = airspeed;
+        _last_update_ms = now;
     }
 
     return (now - _last_update_ms) < TIMEOUT_MS;
@@ -100,10 +78,6 @@ bool AP_Airspeed_NMEA::get_airspeed(float &airspeed)
 // this just reports the value
 bool AP_Airspeed_NMEA::get_temperature(float &temperature)
 {
-    if (_uart == nullptr) {
-        return false;
-    }
-
     if (_temp_count == 0) {
         temperature = _last_temp;
     } else {
@@ -117,104 +91,50 @@ bool AP_Airspeed_NMEA::get_temperature(float &temperature)
     return true;
 }
 
-
-// add a single character to the buffer and attempt to decode
-// returns true if a complete sentence was successfully decoded
-bool AP_Airspeed_NMEA::decode(char c)
+bool AP_Airspeed_NMEA::start_sentence_type(const char *term_type)
 {
-    switch (c) {
-    case ',':
-        // end of a term, add to checksum
-        _checksum ^= c;
-        FALLTHROUGH;
-    case '\r':
-    case '\n':
-    case '*':
-    {
-        if (!_sentence_done && _sentence_valid) {
-            // null terminate and decode latest term
-            _term[_term_offset] = 0;
-            bool valid_sentence = decode_latest_term();
-
-            // move onto next term
-            _term_number++;
-            _term_offset = 0;
-            _term_is_checksum = (c == '*');
-            return valid_sentence;
+    const char *valid_sentences[] {
+        sentence_mtw,
+        sentence_vhw,
+    };
+    for (auto valid_sentence : valid_sentences) {
+        if (strcmp(term_type, valid_sentence)) {
+            _current_sentence_type = valid_sentence;
+            _speed = -1000;
+            _temp = -400;
+            return true;
         }
-        return false;
     }
-
-    case '$': // sentence begin
-        _term_number = 0;
-        _term_offset = 0;
-        _checksum = 0;
-        _term_is_checksum = false;
-        _sentence_done = false;
-        _sentence_valid = true;
-        return false;
-    }
-
-    // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1) {
-        _term[_term_offset++] = c;
-    }
-    if (!_term_is_checksum) {
-        _checksum ^= c;
-    }
-
     return false;
 }
 
-// decode the most recently consumed term
-// returns true if new sentence has just passed checksum test and is validated
-bool AP_Airspeed_NMEA::decode_latest_term()
+bool AP_Airspeed_NMEA::handle_term(uint8_t _term_number, const char *_term)
 {
-    // handle the last term in a message
-    if (_term_is_checksum) {
-        _sentence_done = true;
-        uint8_t nibble_high = 0;
-        uint8_t nibble_low  = 0;
-        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
-            return false;
-        }
-        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
-        return checksum == _checksum;
-    }
-
-    // the first term determines the sentence type
-    if (_term_number == 0) {
-        // the first two letters of the NMEA term are the talker ID.
-        // we accept any two characters here.
-        // actually expecting YX for MTW and VW for VHW
-        if (_term[0] < 'A' || _term[0] > 'Z' ||
-            _term[1] < 'A' || _term[1] > 'Z') {
-            return false;
-        }
-        const char *term_type = &_term[2];
-        if (strcmp(term_type, "MTW") == 0) {
-            _sentence_type = TPYE_MTW;
-        } else if (strcmp(term_type, "VHW") == 0) {
-            _sentence_type = TYPE_VHW;
-        } else {
-            _sentence_valid = false;
-        }
-        return false;
-    }
-
-    if (_sentence_type == TPYE_MTW) {
+    if (_current_sentence_type == sentence_mtw) {
         // parse MTW messages
         if (_term_number == 1) {
             _temp = strtof(_term, NULL);
         }
-    } else if (_sentence_type == TYPE_VHW) {
+    } else if (_current_sentence_type == sentence_vhw) {
         // parse VHW messages
         if (_term_number == 7) {
             _speed = strtof(_term, NULL) * KM_PER_HOUR_TO_M_PER_SEC;
         }
     }
 
-    return false;
+    return true;
+}
+
+void AP_Airspeed_NMEA::handle_decode_success()
+{
+    if (_speed > -900) {
+        _sum += _speed;
+        _count++;
+    }
+    if (_temp > -300) {
+        _temp_sum += _temp;
+        _temp_count++;
+    }
 }
 
 #endif  // APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
