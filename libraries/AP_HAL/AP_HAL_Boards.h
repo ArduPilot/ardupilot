@@ -378,6 +378,8 @@
 
 #ifndef HAL_GPIO_LED_ON
 #define HAL_GPIO_LED_ON 0
+#elif HAL_GPIO_LED_ON == 0
+#error "Do not specify HAL_GPIO_LED_ON if you are setting it to the default, 0"
 #endif
 
 #ifdef HAL_GPIO_LED_OFF
