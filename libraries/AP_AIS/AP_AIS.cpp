@@ -92,30 +92,30 @@ void AP_AIS::init()
         return;
     }
 
-    _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_AIS, 0);
-    if (_uart == nullptr) {
-        return;
-    }
-
-    _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_AIS, 0));
+    AP_NMEA_Input::init(AP_SerialManager::SerialProtocol_AIS, 0);
 }
 
 // update AIS, expected to be called at 20hz
 void AP_AIS::update()
 {
-    if (!_uart || !enabled()) {
+    AP_NMEA_Input::update();
+
+    // remove expired items from the list
+    const uint32_t now =  AP_HAL::millis();
+    const uint32_t timeout = _time_out * 1000;
+    if (now < timeout) {
         return;
     }
-
-    // read any available lines
-    uint32_t nbytes = MIN(_uart->available(),1024U);
-    while (nbytes-- > 0) {
-        const int16_t byte = _uart->read();
-        if (byte == -1) {
-            break;
+    const uint32_t deadline = now - timeout;
+    for (uint16_t i = 0; i < _list.max_items(); i++) {
+        if (_list[i].last_update_ms < deadline && _list[i].last_update_ms != 0) {
+            clear_list_item(i);
         }
-        const char c = byte;
-        if (decode(c)) {
+    }
+}
+
+void AP_AIS::handle_decode_success()
+{
             const bool log_all = (_log_options & AIS_OPTIONS_LOG_ALL_RAW) != 0;
             const bool log_unsupported = ((_log_options & AIS_OPTIONS_LOG_UNSUPPORTED_RAW) != 0) && !log_all; // only log unsupported if not logging all
 
@@ -126,7 +126,7 @@ void AP_AIS::update()
                     log_raw(&_incoming);
                 }
 #endif
-                break;
+                return;
             }
 #if HAL_LOGGING_ENABLED
             if (log_all) {
@@ -153,7 +153,7 @@ void AP_AIS::update()
                         msg_parts[index] = i;
                         index++;
                         if (index >= _incoming.num) {
-                            break;
+                            return;
                         }
                     }
                 }
@@ -173,7 +173,7 @@ void AP_AIS::update()
                     for (uint8_t i = 0; i < index; i++) {
                         buffer_shift(msg_parts[i]);
                     }
-                    break;
+                    return;
                 }
 
                 // combine packets
@@ -208,7 +208,7 @@ void AP_AIS::update()
                     if (_AIVDM_buffer[i].num == 0 && _AIVDM_buffer[i].total == 0 && _AIVDM_buffer[i].ID == 0) {
                         _AIVDM_buffer[i] = _incoming;
                         fits_in = true;
-                        break;
+                        return;
                     }
                 }
                 if (!fits_in) {
@@ -223,21 +223,6 @@ void AP_AIS::update()
                     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1] = _incoming;
                 }
             }
-        }
-    }
-
-    // remove expired items from the list
-    const uint32_t now =  AP_HAL::millis();
-    const uint32_t timeout = _time_out * 1000;
-    if (now < timeout) {
-        return;
-    }
-    const uint32_t deadline = now - timeout;
-    for (uint16_t i = 0; i < _list.max_items(); i++) {
-        if (_list[i].last_update_ms < deadline && _list[i].last_update_ms != 0) {
-            clear_list_item(i);
-        }
-    }
 }
 
 // Send a AIS mavlink message
@@ -770,80 +755,20 @@ void AP_AIS::log_raw(const AIVDM *msg)
 }
 #endif
 
-// add a single character to the buffer and attempt to decode
-// returns true if a complete sentence was successfully decoded
-bool AP_AIS::decode(char c)
+bool AP_AIS::start_sentence_type(const char *term_type)
 {
-    switch (c) {
-    case ',':
-        // end of a term, add to checksum
-        _checksum ^= c;
-        FALLTHROUGH;
-    case '\r':
-    case '\n':
-    case '*':
-    {
-        if (_sentence_done) {
-            return false;
-        }
-
-        // null terminate and decode latest term
-        _term[_term_offset] = 0;
-        bool valid_sentence = decode_latest_term();
-
-        // move onto next term
-        _term_number++;
-        _term_offset = 0;
-        _term_is_checksum = (c == '*');
-        return valid_sentence;
-    }
-
-    case '!': // sentence begin
-        _sentence_valid = false;
-        _term_number = 0;
-        _term_offset = 0;
-        _checksum = 0;
-        _term_is_checksum = false;
-        _sentence_done = false;
+    if (strcmp(term_type, "AIVDM") != 0) {
         return false;
     }
 
-    // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1) {
-        _term[_term_offset++] = c;
-    }
-    if (!_term_is_checksum) {
-        _checksum ^= c;
-    }
+    // reset any state here
 
-    return false;
+    return true;
 }
 
-// decode the most recently consumed term
-// returns true if new sentence has just passed checksum test and is validated
-bool AP_AIS::decode_latest_term()
+
+bool AP_AIS::handle_term(uint8_t _term_number, const char *_term)
 {
-    // handle the last term in a message
-    if (_term_is_checksum) {
-        _sentence_done = true;
-        uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
-        return ((checksum == _checksum) && _sentence_valid);
-    }
-
-    // the first term determines the sentence type
-    if (_term_number == 0) {
-        if (strcmp(_term, "AIVDM") == 0) {
-            // we found the sentence type for AIS
-            _sentence_valid = true;
-        }
-        return false;
-    }
-
-    // if this is not the sentence we want then wait for another
-    if (!_sentence_valid) {
-        return false;
-    }
-
     switch (_term_number) {
         case 1:
             _incoming.total = strtol(_term, NULL, 10);
@@ -859,7 +784,7 @@ bool AP_AIS::decode_latest_term()
                 _incoming.ID = strtol(_term, NULL, 10);
              } else if (_incoming.num != 1 || _incoming.total != 1) {
                 // only allow no ID if this is a single part message
-                _sentence_valid = false;
+                return false;
             }
             break;
 
@@ -867,7 +792,7 @@ bool AP_AIS::decode_latest_term()
 
         case 5:
             if (strlen(_term) == 0) {
-                _sentence_valid = false;
+                return false;
             } else {
                 strcpy(_incoming.payload,_term);
             }
@@ -875,7 +800,7 @@ bool AP_AIS::decode_latest_term()
 
         //case 5, number of fill bits, discarded
     }
-    return false;
+    return true;
 }
 
 // get singleton instance
@@ -899,6 +824,10 @@ void AP_AIS::update() {};
 void AP_AIS::send(mavlink_channel_t chan) {};
 
 AP_AIS *AP_AIS::get_singleton() { return nullptr; }
+
+void AP_AIS::handle_decode_success() {}
+bool AP_AIS::start_sentence_type(const char *term_type) { return false; }
+bool AP_AIS::handle_term(uint8_t term_number, const char *term) { return false; }
 
 #endif // AP_AIS_DUMMY_METHODS_ENABLED
 
