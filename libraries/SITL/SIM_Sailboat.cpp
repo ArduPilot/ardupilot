@@ -32,6 +32,8 @@ namespace SITL {
 #define STEERING_SERVO_CH   0   // steering controlled by servo output 1
 #define MAINSAIL_SERVO_CH   3   // main sail controlled by servo output 4
 #define THROTTLE_SERVO_CH   2   // throttle controlled by servo output 3
+#define MOTORLEFT_SERVO_CH   0   // skid-steering left motor controlled by servo output 1
+#define MOTORRIGHT_SERVO_CH   2   // skid-steering right motor controlled by servo output 3
 #define DIRECT_WING_SERVO_CH 4
 
     // very roughly sort of a stability factors for waves
@@ -45,6 +47,7 @@ Sailboat::Sailboat(const char *frame_str) :
     sail_area(1.0)
 {
     motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
+    skid_steering = strstr(frame_str, "skid") != nullptr;
     lock_step_scheduled = true;
 }
 
@@ -97,13 +100,19 @@ float Sailboat::get_turn_circle(float steering) const
 // return yaw rate in deg/sec given a steering input (in the range -1 to +1) and speed in m/s
 float Sailboat::get_yaw_rate(float steering, float speed) const
 {
-    if (is_zero(steering) || is_zero(speed)) {
-        return 0;
+    float rate = 0.0f;
+    if (is_zero(steering) || (!skid_steering && is_zero(speed))) {
+        return rate;
+    } 
+    
+    if (is_zero(speed) && skid_steering) {
+        rate = steering * M_PI * 5;
+    } else {
+        float d = get_turn_circle(steering);
+        float c = M_PI * d;
+        float t = c / speed;
+        rate = 360.0f / t;
     }
-    float d = get_turn_circle(steering);
-    float c = M_PI * d;
-    float t = c / speed;
-    float rate = 360.0f / t;
     return rate;
 }
 
@@ -179,7 +188,14 @@ void Sailboat::update(const struct sitl_input &input)
     update_wind(input);
 
     // in sailboats the steering controls the rudder, the throttle controls the main sail position
-    float steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
+    float steering = 0.0f;
+    if (skid_steering) {
+        float steering_left = 2.0f*((input.servos[MOTORLEFT_SERVO_CH]-1000)/1000.0f - 0.5f);
+        float steering_right = 2.0f*((input.servos[MOTORRIGHT_SERVO_CH]-1000)/1000.0f - 0.5f);
+        steering = steering_left - steering_right;
+    } else {
+        steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
+    }
 
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
     // Note than the SITL wind direction is defined as the direction the wind is travelling to
@@ -257,8 +273,14 @@ void Sailboat::update(const struct sitl_input &input)
     // gives throttle force == hull drag at 10m/s
     float throttle_force = 0.0f;
     if (motor_connected) {
-        const uint16_t throttle_out = constrain_int16(input.servos[THROTTLE_SERVO_CH], 1000, 2000);
-        throttle_force = (throttle_out-1500) * 0.1f;
+        if (skid_steering) {
+            const uint16_t throttle_left = constrain_int16(input.servos[MOTORLEFT_SERVO_CH], 1000, 2000);
+            const uint16_t throttle_right = constrain_int16(input.servos[MOTORRIGHT_SERVO_CH], 1000, 2000);
+            throttle_force = (0.5f*(throttle_left + throttle_right)-1500) * 0.1f;
+        } else {
+            const uint16_t throttle_out = constrain_int16(input.servos[THROTTLE_SERVO_CH], 1000, 2000);
+            throttle_force = (throttle_out-1500) * 0.1f;           
+        }
     }
 
     // accel in body frame due acceleration from sail and deceleration from hull friction
