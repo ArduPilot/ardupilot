@@ -6104,6 +6104,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
     case MSG_CAMERA_FOV_STATUS:
 #endif
+    case MSG_CAMERA_CAPTURE_STATUS:
     case MSG_VIDEO_STREAM_INFO:
         {
             AP_Camera *camera = AP::camera();
