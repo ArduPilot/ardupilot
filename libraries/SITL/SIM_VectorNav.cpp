@@ -213,11 +213,13 @@ void VectorNav::update(void)
         send_packet2();
     }
 
-    // Strictly we should send this in responce to the request
-    // but sending it occasionally acheaves the same thing
-    if (now - last_type_us >= 1000000) {
-        last_type_us = now;
-        nmea_printf("$VNRRG,01,VN-300-SITL");
+    const ssize_t n = read_from_autopilot(&receive_buf[0], ARRAY_SIZE(receive_buf));
+    if (n > 0) {
+        if (strncmp(receive_buf, "$VNRRG,01", 9) == 0) {
+            nmea_printf("$VNRRG,01,VN-300-SITL");
+        } else {
+            nmea_printf("$%s", receive_buf);
+        }
     }
 
 }
