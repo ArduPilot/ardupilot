@@ -108,9 +108,7 @@ void AP_Mount_Topotek::update()
         break;
     case 6:
         // request tracking info
-        if (_is_tracking) {
-            request_track_status();
-        }
+        request_track_status();
         break;
     case 8:
         // get gimbal model name
@@ -127,11 +125,10 @@ void AP_Mount_Topotek::update()
     if (_is_tracking) {
         // cancel tracking if mode has changed
         if (_last_mode != _mode) {
+            _last_mode = _mode;
             cancel_tracking();
-        } else {
-            // image tracking is active so we do not send attitude targets
-            return;
         }
+        return;
     }
     _last_mode = _mode;
 
@@ -395,6 +392,11 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
     }
 
     if (send_tracking_cmd) {
+        // set the gimbal to the ready-to-track state when the gimbal tracking status is stopped
+        if (_last_tracking_state == TrackingStatus::STOPPED_TRACKING) {
+            send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_TRACKING, true, 2);
+        }
+
         // prepare data bytes
         uint8_t databuff[10];
         databuff[0] = HIGHBYTE(track_center_x);
@@ -406,7 +408,7 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
         databuff[6] = HIGHBYTE(track_height);
         databuff[7] = LOWBYTE(track_height);
         databuff[8] = 0;
-        databuff[9] = 0;
+        databuff[9] = (tracking_type == TrackingType::TRK_POINT) ? 9 : 1;   // when tracking point, enable fuzzy click function
 
         // send tracking command
         bool res = send_variablelen_packet(HeaderType::VARIABLE_LEN,
@@ -414,7 +416,12 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
                                            AP_MOUNT_TOPOTEK_ID3CHAR_START_TRACKING,
                                            true,
                                            (uint8_t*)databuff, ARRAY_SIZE(databuff));
-        _is_tracking |= res;
+
+        // display error message on failure
+        if (!res) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s tracking failed", send_message_prefix);
+        }
+
         return res;
     }
 
@@ -431,11 +438,11 @@ bool AP_Mount_Topotek::cancel_tracking()
         return false;
     }
 
+    // if gimbal is tracking-in-progress change to waiting state, otherwise stop
+    const uint8_t track_set = _last_tracking_state == TrackingStatus::TRACKING_IN_PROGRESS ? 1 : 0;
+
     // send tracking command
-    if (send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_TRACKING, true, 1)) {
-        return true;
-    }
-    return false;
+    return send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_TRACKING, true, track_set);
 }
 
 // set camera picture-in-picture mode
@@ -1001,7 +1008,7 @@ void AP_Mount_Topotek::gimbal_sdcard_analyse()
 void AP_Mount_Topotek::gimbal_track_analyse()
 {
     // ignore tracking state if unchanged
-    uint8_t tracking_state = _msg_buff[11];
+    TrackingStatus tracking_state = (TrackingStatus)_msg_buff[11];
     if (tracking_state == _last_tracking_state) {
         return;
     }
@@ -1010,15 +1017,17 @@ void AP_Mount_Topotek::gimbal_track_analyse()
     // inform user
     const char* tracking_str = "tracking";
     switch (tracking_state) {
-    case '0':
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s %s error", send_message_prefix, tracking_str);
-        break;
-    case '1':
+    case TrackingStatus::STOPPED_TRACKING:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s stopped", send_message_prefix, tracking_str);
         _is_tracking = false;
         break;
-    case '2':
+    case TrackingStatus::WAITING_FOR_TRACKING:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s waiting", send_message_prefix, tracking_str);
+        _is_tracking = false;
+        break;
+    case TrackingStatus::TRACKING_IN_PROGRESS:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s started", send_message_prefix, tracking_str);
+        _is_tracking = true;
         break;
     }
 }
