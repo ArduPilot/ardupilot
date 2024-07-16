@@ -1205,10 +1205,8 @@ int lua_GCS_command_int(lua_State *L)
 
     auto result = _gcs->lua_command_int_packet(pkt);
 
-    // map MAV_RESULT to a boolean
-    bool ok = result == MAV_RESULT_ACCEPTED;
-
-    lua_pushboolean(L, ok);
+    // Return the resulting MAV_RESULT
+    lua_pushinteger(L, result);
 
     return 1;
 }

@@ -2615,7 +2615,7 @@ function gcs:last_seen() end
 -- call a MAVLink MAV_CMD_xxx command via command_int interface
 ---@param command integer -- MAV_CMD_xxx
 ---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
----@return boolean
+---@return integer -- MAV_RESULT
 function gcs:run_command_int(command, params) end
 
 -- The relay library provides access to controlling relay outputs.
