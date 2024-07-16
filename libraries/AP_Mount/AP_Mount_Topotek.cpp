@@ -35,6 +35,7 @@ extern const AP_HAL::HAL& hal;
 # define AP_MOUNT_TOPOTEK_ID3CHAR_SD_CARD       "SDC"           // get SD card state, data bytes: 00:get remaining capacity, 01:get total capacity
 # define AP_MOUNT_TOPOTEK_ID3CHAR_TIME          "UTC"           // set time and date, data bytes: HHMMSSDDMMYY
 # define AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION   "VSN"           // get firmware version, data bytes always 00
+# define AP_MOUNT_TOPOTEK_ID3CHAR_GET_MODEL_NAME "PA2"          // get model name, data bytes always 00
 # define AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_MODE   "PTZ"           // set gimbal mode, data bytes: 00:stop, 01:up, 02:down, 03:left, 04:right, 05:home position, 06:lock, 07:follow, 08:lock/follow toggle, 09:calibration, 0A:one button down
 # define AP_MOUNT_TOPOTEK_ID3CHAR_YPR_RATE      "YPR"           // set the rate yaw, pitch and roll targets of the gimbal yaw in range -99 ~ +99
 # define AP_MOUNT_TOPOTEK_ID3CHAR_YAW_ANGLE     "GIY"           // set the yaw angle target in the range -150 ~ 150, speed 0 ~ 99 (0.1deg/sec)
@@ -109,6 +110,12 @@ void AP_Mount_Topotek::update()
         // request tracking info
         if (_is_tracking) {
             request_track_status();
+        }
+        break;
+    case 8:
+        // get gimbal model name
+        if (!_got_gimbal_model_name) {
+            request_gimbal_model_name();
         }
         break;
     }
@@ -510,6 +517,11 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
     static uint8_t model_name[32] {};
     const char cam_definition_uri[140] {};
 
+    // copy model name if available
+    if (_got_gimbal_model_name) {
+        strncpy((char*)model_name, (const char*)_model_name, ARRAY_SIZE(model_name));
+    }
+
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
                            CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
@@ -675,8 +687,8 @@ void AP_Mount_Topotek::read_incoming_packets()
         case ParseState::WAITING_FOR_ID1:
         case ParseState::WAITING_FOR_ID2:
         case ParseState::WAITING_FOR_ID3:
-            // sanity check all capital letters.  eg 'GAC'
-            if (b >= 'A' && b <= 'Z') {
+            // check all uppercase letters and numbers.  eg 'GAC'
+            if ((b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')) {
                 // advance to next state
                 _parser.state = (ParseState)((uint8_t)_parser.state+1);
                 break;
@@ -772,6 +784,13 @@ void AP_Mount_Topotek::request_gimbal_version()
 {
     // sample command: #TPUD2rVSN00
     send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION, false, 0);
+}
+
+// request gimbal model name
+void AP_Mount_Topotek::request_gimbal_model_name()
+{
+    // sample command: #TPUG2rPA200
+    send_fixedlen_packet(AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_GET_MODEL_NAME, false, 0);
 }
 
 // send angle target in radians to gimbal
@@ -1070,6 +1089,17 @@ void AP_Mount_Topotek::gimbal_version_analyse()
         version[2]);    // patch version
 
     _got_gimbal_version = true;
+}
+
+// gimbal model name message analysis
+void AP_Mount_Topotek::gimbal_model_name_analyse()
+{
+    strncpy((char *)_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
+
+    // display gimbal model name to user
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);
+
+    _got_gimbal_model_name = true;
 }
 
 // calculate checksum

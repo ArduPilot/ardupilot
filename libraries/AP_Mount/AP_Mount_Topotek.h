@@ -27,7 +27,7 @@
 #include <AP_Common/AP_Common.h>
 
 #define AP_MOUNT_TOPOTEK_PACKETLEN_MAX              36          // maximum number of bytes in a packet sent to or received from the gimbal
-#define AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM     6           // parse the number of gimbal command types
+#define AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM     7           // parse the number of gimbal command types
 
 class AP_Mount_Topotek : public AP_Mount_Backend_Serial
 {
@@ -168,6 +168,9 @@ private:
     // request gimbal version
     void request_gimbal_version();
 
+    // request gimbal model name
+    void request_gimbal_model_name();
+
     // send angle target in radians to gimbal
     void send_angle_target(const MountTarget& angle_rad);
 
@@ -194,6 +197,9 @@ private:
 
     // gimbal basic information analysis
     void gimbal_version_analyse();
+
+    // gimbal model name message analysis
+    void gimbal_model_name_analyse();
 
     // gimbal distance information analysis
     void gimbal_dist_info_analyse();
@@ -229,8 +235,10 @@ private:
     bool _sdcard_status;                                        // memory card status (received from gimbal)
     bool _last_lock;                                            // last lock mode sent to gimbal
     bool _got_gimbal_version;                                   // true if gimbal's version has been received
+    bool _got_gimbal_model_name;                                // true if gimbal's model name has been received
     bool _last_zoom_stop;                                       // true if zoom has been stopped (used to re-send in order to handle lost packets)
     bool _last_focus_stop;                                      // true if focus has been stopped (used to re-sent in order to handle lost packets)
+    uint8_t _model_name[16];                                    // gimbal model name
     uint8_t _sent_time_count;                                   // count of current time messages sent to gimbal
     uint32_t _firmware_ver;                                     // firmware version
     Vector3f _current_angle_rad;                                // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
@@ -260,6 +268,7 @@ private:
         {{"LRF"}, &AP_Mount_Topotek::gimbal_dist_info_analyse},
         {{"TRC"}, &AP_Mount_Topotek::gimbal_track_analyse},
         {{"VSN"}, &AP_Mount_Topotek::gimbal_version_analyse},
+        {{"PA2"}, &AP_Mount_Topotek::gimbal_model_name_analyse}
     };
 };
 
