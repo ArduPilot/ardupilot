@@ -213,6 +213,7 @@ void VectorNav::update(void)
         send_packet2();
     }
 
+    char receive_buf[50];
     const ssize_t n = read_from_autopilot(&receive_buf[0], ARRAY_SIZE(receive_buf));
     if (n > 0) {
         if (strncmp(receive_buf, "$VNRRG,01", 9) == 0) {
