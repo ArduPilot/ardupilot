@@ -45,8 +45,6 @@ private:
     uint32_t last_pkt2_us;
     uint32_t last_type_us;
 
-    char receive_buf[50];
-
     void send_packet1();
     void send_packet2();
     void nmea_printf(const char *fmt, ...);
