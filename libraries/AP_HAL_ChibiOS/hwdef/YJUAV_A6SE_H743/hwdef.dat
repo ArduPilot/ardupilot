@@ -226,9 +226,6 @@ PD2  SDMMC1_CMD SDMMC1
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
