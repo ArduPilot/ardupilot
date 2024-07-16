@@ -391,6 +391,11 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/rover-skid.parm"],
             },
+            "rover-omni3mecanum": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/rover-omni3mecanum.parm"],
+            },
             "rover-vectored": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
