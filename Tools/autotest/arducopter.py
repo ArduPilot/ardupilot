@@ -23912,6 +23912,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_heading(90, timeout=60, minimum_duration=10)
         self.do_RTL()
 
+    def FenceBreachWithOA(self):
+        '''test breaching the fence after we've done avoidance'''
+        self.set_parameters({
+            "OA_TYPE": 1,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(10, mode='GUIDED')
+        takeoff_loc = self.get_location()
+
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": 10,
+                "loc": self.offset_location_ne(takeoff_loc, 20, 0),
+            }),
+        ])
+
+        loc = self.offset_location_ne(takeoff_loc, 40, 0)
+        self.send_do_reposition(loc)
+        self.wait_location(loc)
+
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+        })
+
+        self.start_subtest("Breach fence, should RTL and disarm")
+        loc2 = self.offset_location_ne(takeoff_loc, -40, 0)
+        self.context_collect('STATUSTEXT')
+        self.send_do_reposition(loc2)
+
+        self.wait_mode('RTL')
+        # the stopping point is inside the exclusion circle, so RTL can't climb there first
+        self.wait_statustext('RTL: climb target fenced, climbing en route', check_context=True)
+        # leave the exclusion circle and fly around it to home; altitude is ignored
+        # as RTL arrives at RTL_ALT_M, not at the takeoff altitude
+        self.wait_location(takeoff_loc, height_accuracy=None, timeout=120)
+        self.wait_disarmed(timeout=60)
+
     def Clamp(self):
         '''test Copter docking clamp'''
         # the simulated clamp only grabs within 0.5m of home
@@ -26750,6 +26788,7 @@ return update, 1000
             self.COMMAND_LONG_positional_command_int_only,
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
+            self.FenceBreachWithOA,
             self.CompassMot,
             self.CompassMotFastRate,
             self.FarOrigin,
