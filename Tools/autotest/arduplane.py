@@ -1608,18 +1608,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # Test arming outside inclusion zone
             self.progress("Test arming while vehicle outside of inclusion zone")
             self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
-            locs = [
-                mavutil.location(1.000, 1.000, 0, 0),
-                mavutil.location(1.000, 1.001, 0, 0),
-                mavutil.location(1.001, 1.001, 0, 0),
-                mavutil.location(1.001, 1.000, 0, 0)
-            ]
-            self.upload_fences_from_locations(
-                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-                [
-                    locs
+            self.upload_fences_from_locations([(
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                    mavutil.location(1.000, 1.000, 0, 0),
+                    mavutil.location(1.000, 1.001, 0, 0),
+                    mavutil.location(1.001, 1.001, 0, 0),
+                    mavutil.location(1.001, 1.000, 0, 0)
                 ]
-            )
+            )])
             self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
             self.do_fence_enable()
             self.assert_fence_enabled()
@@ -1637,12 +1633,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.001, 0, 0),
                 mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
             ]
-            self.upload_fences_from_locations(
-                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-                [
-                    locs
-                ]
-            )
+            self.upload_fences_from_locations([
+                (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, locs),
+            ])
             self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
             self.do_fence_enable()
             self.assert_fence_enabled()
@@ -3720,12 +3713,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.001, 0, 0),
             mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
         ]
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                locs
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
+        ])
         self.delay_sim_time(1)
         self.wait_ready_to_arm()
         self.takeoff(alt=50)
@@ -3783,12 +3773,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.003, 0, 0),
             mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
         ]
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                locs
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
+        ])
         self.delay_sim_time(1)
         self.wait_ready_to_arm()
         self.takeoff(alt=50)

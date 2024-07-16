@@ -4195,22 +4195,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         here = self.mav.location()
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, 50, 40), # tr
-                    self.offset_location_ne(here, -50, 40), # tl,
-                ], [ # over the top of the vehicle
-                    self.offset_location_ne(here, -50, -50), # bl
-                    self.offset_location_ne(here, -50, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, -50), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+                self.offset_location_ne(here, -50, 40), # tl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, -50, -50), # bl
+                self.offset_location_ne(here, -50, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, -50), # tl,
+            ]),
+        ])
         self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
         self.drain_mav()
         self.assert_fence_breached()
@@ -4231,22 +4231,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         here = self.mav.location()
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, 50, 40), # tr
-                    self.offset_location_ne(here, -50, 40), # tl,
-                ], [ # over the top of the vehicle
-                    self.offset_location_ne(here, -50, -50), # bl
-                    self.offset_location_ne(here, -50, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, -50), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+                self.offset_location_ne(here, -50, 40), # tl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, -50, -50), # bl
+                self.offset_location_ne(here, -50, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, -50), # tl,
+            ]),
+        ])
         self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
         self.drain_mav()
         self.assert_fence_breached()
@@ -4605,22 +4605,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_reboot_survivability(self):
         here = self.mav.location()
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, 50, 40), # tr
-                    self.offset_location_ne(here, -50, 40), # tl,
-                ], [ # over the top of the vehicle
-                    self.offset_location_ne(here, -50, -50), # bl
-                    self.offset_location_ne(here, -50, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, -50), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+                self.offset_location_ne(here, -50, 40), # tl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, -50, -50), # bl
+                self.offset_location_ne(here, -50, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, -50), # tl,
+            ]),
+        ])
         self.reboot_sitl()
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         downloaded_len = len(downloaded_items)
@@ -4663,18 +4663,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_poly_fence_inclusion_overlapping_inclusion_circles(self, here, target_system=1, target_component=1):
         self.start_subtest("Overlapping circular inclusion")
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
-            [
-                {
-                    "radius": 30,
-                    "loc": self.offset_location_ne(here, -20, 0),
-                },
-                {
-                    "radius": 30,
-                    "loc": self.offset_location_ne(here, 20, 0),
-                },
-            ])
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION, {
+                "radius": 30,
+                "loc": self.offset_location_ne(here, -20, 0),
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION, {
+                "radius": 30,
+                "loc": self.offset_location_ne(here, 20, 0),
+            }),
+        ])
         if self.mavproxy is not None:
             # handy for getting pretty pictures
             self.mavproxy.send("fence list\n")
@@ -4702,20 +4700,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [
-                    self.offset_location_ne(here, -40, -20), # tl
-                    self.offset_location_ne(here, 50, -20), # tr
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, -40, 20), # bl,
-                ],
-                {
-                    "radius": 30,
-                    "loc": self.offset_location_ne(here, -20, 0),
-                },
-            ])
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(here, -40, -20), # tl
+                self.offset_location_ne(here, 50, -20), # tr
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, -40, 20), # bl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION, {
+                "radius": 30,
+                "loc": self.offset_location_ne(here, -20, 0),
+            }),
+        ])
 
         self.delay_sim_time(5)
         if self.mavproxy is not None:
@@ -4735,22 +4731,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [
-                    self.offset_location_ne(here, -20, -25), # tl
-                    self.offset_location_ne(here, 50, -25), # tr
-                    self.offset_location_ne(here, 50, 15), # br
-                    self.offset_location_ne(here, -20, 15), # bl,
-                ],
-                [
-                    self.offset_location_ne(here, 20, -20), # tl
-                    self.offset_location_ne(here, -50, -20), # tr
-                    self.offset_location_ne(here, -50, 20), # br
-                    self.offset_location_ne(here, 20, 20), # bl,
-                ],
-            ])
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(here, -20, -25), # tl
+                self.offset_location_ne(here, 50, -25), # tr
+                self.offset_location_ne(here, 50, 15), # br
+                self.offset_location_ne(here, -20, 15), # bl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(here, 20, -20), # tl
+                self.offset_location_ne(here, -50, -20), # tr
+                self.offset_location_ne(here, -50, 20), # br
+                self.offset_location_ne(here, 20, 20), # bl,
+            ]),
+        ])
 
         self.delay_sim_time(5)
         if self.mavproxy is not None:
@@ -4772,24 +4766,26 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_poly_fence_exclusion(self, here, target_system=1, target_component=1):
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, 50, 40), # tr
-                    self.offset_location_ne(here, -50, 40), # tl,
-                ], [ # west
-                    self.offset_location_ne(here, -50, -20), # tl
-                    self.offset_location_ne(here, 50, -20), # tr
-                    self.offset_location_ne(here, 50, -40), # br
-                    self.offset_location_ne(here, -50, -40), # bl,
-                ], {
-                    "radius": 30,
-                    "loc": self.offset_location_ne(here, -60, 0),
-                },
-            ])
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+                self.offset_location_ne(here, -50, 40), # tl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # west
+                self.offset_location_ne(here, -50, -20), # tl
+                self.offset_location_ne(here, 50, -20), # tr
+                self.offset_location_ne(here, 50, -40), # br
+                self.offset_location_ne(here, -50, -40), # bl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius": 30,
+                "loc": self.offset_location_ne(here, -60, 0),
+            }),
+        ])
         self.delay_sim_time(5)
         if self.mavproxy is not None:
             self.mavproxy.send("fence list\n")
@@ -5009,22 +5005,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_object_avoidance_guided_two_squares(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we can steer around obstacles in guided mode")
         here = self.mav.location()
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 10), # tl
-                    self.offset_location_ne(here, 50, 30), # tr
-                    self.offset_location_ne(here, -50, 40), # br,
-                ],
-                [ # further east (and south
-                    self.offset_location_ne(here, -60, 60), # bl
-                    self.offset_location_ne(here, 40, 70), # tl
-                    self.offset_location_ne(here, 40, 90), # tr
-                    self.offset_location_ne(here, -60, 80), # br,
-                ],
-            ])
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 10), # tl
+                self.offset_location_ne(here, 50, 30), # tr
+                self.offset_location_ne(here, -50, 40), # br,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # further east (and south
+                self.offset_location_ne(here, -60, 60), # bl
+                self.offset_location_ne(here, 40, 70), # tl
+                self.offset_location_ne(here, 40, 90), # tr
+                self.offset_location_ne(here, -60, 80), # br,
+            ]),
+        ])
         if self.mavproxy is not None:
             self.mavproxy.send("fence list\n")
         self.context_push()
@@ -5061,24 +5057,26 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def test_poly_fence_avoidance_dont_breach_exclusion(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we stop before breaching an exclusion fence")
         here = self.mav.location()
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, 50, 40), # tr
-                    self.offset_location_ne(here, -50, 40), # tl,
-                ], [ # west
-                    self.offset_location_ne(here, -50, -20), # tl
-                    self.offset_location_ne(here, 50, -20), # tr
-                    self.offset_location_ne(here, 50, -40), # br
-                    self.offset_location_ne(here, -50, -40), # bl,
-                ], {
-                    "radius": 30,
-                    "loc": self.offset_location_ne(here, -60, 0),
-                },
-            ])
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+                self.offset_location_ne(here, -50, 40), # tl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # west
+                self.offset_location_ne(here, -50, -20), # tl
+                self.offset_location_ne(here, 50, -20), # tr
+                self.offset_location_ne(here, 50, -40), # br
+                self.offset_location_ne(here, -50, -40), # bl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION, {
+                "radius": 30,
+                "loc": self.offset_location_ne(here, -60, 0),
+            }),
+        ])
         if self.mavproxy is not None:
             self.mavproxy.send("fence list\n")
         self.set_parameters({
@@ -6631,22 +6629,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''ensure MAV_CMD_DO_FENCE_ENABLE mavlink command works'''
         here = self.mav.location()
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                [ # east
-                    self.offset_location_ne(here, -50, 20), # bl
-                    self.offset_location_ne(here, 50, 20), # br
-                    self.offset_location_ne(here, 50, 40), # tr
-                    self.offset_location_ne(here, -50, 40), # tl,
-                ], [ # over the top of the vehicle
-                    self.offset_location_ne(here, -50, -50), # bl
-                    self.offset_location_ne(here, -50, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, -50), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # east
+                self.offset_location_ne(here, -50, 20), # bl
+                self.offset_location_ne(here, 50, 20), # br
+                self.offset_location_ne(here, 50, 40), # tr
+                self.offset_location_ne(here, -50, 40), # tl,
+            ]),
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, -50, -50), # bl
+                self.offset_location_ne(here, -50, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, -50), # tl,
+            ]),
+        ])
 
         # enable:
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=1)
@@ -6847,17 +6845,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Ensure we can arm when we have an inclusion fence we are inside of")
         here = self.mav.location()
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [ # over the top of the vehicle
-                    self.offset_location_ne(here, -50, -50), # bl
-                    self.offset_location_ne(here, -50, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, -50), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, -50, -50), # bl
+                self.offset_location_ne(here, -50, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, -50), # tl,
+            ]),
+        ])
         self.delay_sim_time(5)
         self.wait_ready_to_arm()
 
@@ -6869,17 +6865,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("Now create a fence we are in breach of")
         here = self.mav.location()
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [ # over the top of the vehicle
-                    self.offset_location_ne(here, 20, 20), # bl
-                    self.offset_location_ne(here, 20, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, 20), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, 20, 20), # bl
+                self.offset_location_ne(here, 20, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, 20), # tl,
+            ]),
+        ])
 
         self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False)
         self.reboot_sitl()
@@ -6890,34 +6884,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.clear_fence()
         self.wait_ready_to_arm()
 
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [ # over the top of the vehicle
-                    self.offset_location_ne(here, 20, 20), # bl
-                    self.offset_location_ne(here, 20, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, 20), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, 20, 20), # bl
+                self.offset_location_ne(here, 20, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, 20), # tl,
+            ]),
+        ])
         self.reboot_sitl()
         self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
         self.clear_fence()
         self.wait_ready_to_arm()
 
         self.progress("Ensure we can arm after clearing polygon fence type enabled")
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                [ # over the top of the vehicle
-                    self.offset_location_ne(here, 20, 20), # bl
-                    self.offset_location_ne(here, 20, 50), # br
-                    self.offset_location_ne(here, 50, 50), # tr
-                    self.offset_location_ne(here, 50, 20), # tl,
-                ]
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                # over the top of the vehicle
+                self.offset_location_ne(here, 20, 20), # bl
+                self.offset_location_ne(here, 20, 50), # br
+                self.offset_location_ne(here, 50, 50), # tr
+                self.offset_location_ne(here, 50, 20), # tl,
+            ]),
+        ])
         self.assert_prearm_failure('vehicle outside fence', other_prearm_failures_fatal=False, timeout=120)
         self.set_parameter('FENCE_TYPE', 2)
         self.wait_ready_to_arm()
