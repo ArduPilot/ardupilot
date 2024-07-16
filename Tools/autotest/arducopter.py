@@ -11517,7 +11517,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         here = self.mav.location()
         loc = self.offset_location_ne(here, 10, 0)
         self.takeoff(5, mode='GUIDED')
-        self.do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
         self.wait_location(loc, timeout=120)
         self.land_and_disarm()
 
