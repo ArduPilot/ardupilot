@@ -19,12 +19,17 @@
 #if AP_WINDVANE_NMEA_ENABLED
 
 #include "AP_WindVane_Backend.h"
+#include <AP_NMEA_Input/AP_NMEA_Input.h>
 
-class AP_WindVane_NMEA : public AP_WindVane_Backend
+class AP_WindVane_NMEA : public AP_WindVane_Backend, public AP_NMEA_Input
 {
 public:
+
     // constructor
-    using AP_WindVane_Backend::AP_WindVane_Backend;
+    AP_WindVane_NMEA(AP_WindVane &frontend) :
+        AP_WindVane_Backend(frontend),
+        AP_NMEA_Input()
+        { }
 
     // initialization
     void init(const AP_SerialManager& serial_manager) override;
@@ -33,30 +38,18 @@ public:
     void update_direction() override;
     void update_speed() override;
 
+protected:
+
+    // methods required to be a AP_NMEA_Input
+    void handle_decode_success() override;
+    bool start_sentence_type(const char *term_type) override;
+    bool handle_term(uint8_t term_number, const char *term) override;
+
 private:
-    // pointer to serial uart
-    AP_HAL::UARTDriver *uart = nullptr; 
-
-    // See if we can read in some data
-    void update();
-
-    // try and decode NMEA message
-    bool decode(char c);
-
-    // decode each term
-    bool decode_latest_term();
 
     // latest values read in
     float _speed_ms;
     float _wind_dir_deg;
-
-    char _term[15];            // buffer for the current term within the current sentence
-    uint8_t _term_offset;      // offset within the _term buffer where the next character should be placed
-    uint8_t _term_number;      // term index within the current sentence
-    uint8_t _checksum;         // checksum accumulator
-    bool _term_is_checksum;    // current term is the checksum
-    bool _sentence_valid;      // is current sentence valid so far
-    bool _sentence_done;       // true if this sentence has already been decoded
 };
 
 #endif  // AP_WINDVANE_NMEA_ENABLED
