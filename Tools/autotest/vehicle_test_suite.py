@@ -7884,9 +7884,9 @@ class TestSuite(ABC):
             raise NotAchievedException("Expected %s to be %u got %u" %
                                        (channel, value, m_value))
 
-    def do_reposition(self,
-                      loc,
-                      frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT):
+    def send_do_reposition(self,
+                           loc,
+                           frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT):
         '''send a DO_REPOSITION command for a location'''
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
