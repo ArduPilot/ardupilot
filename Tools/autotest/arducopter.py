@@ -5063,6 +5063,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.progress("All done")
 
+    def PayloadPlaceMissionOpenGripper(self):
+        '''test running the mission when the gripper is open'''
+        self.set_analog_rangefinder_parameters()
+        self.set_servo_gripper_parameters()
+        self.reboot_sitl()
+
+        self.load_mission("copter_payload_place.txt")
+
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+
+        self.progress("Opening the gripper before time")
+        self.run_auxfunc(19, 0)
+
+        self.wait_text("Abort: Gripper Open", timeout=90)
+
+        self.wait_disarmed()
+
     def Weathervane(self):
         '''Test copter weathervaning'''
         # We test nose into wind code paths and yaw direction here and test side into wind
@@ -11030,6 +11051,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_CONDITION_YAW,
              self.LoiterToAlt,
              self.PayloadPlaceMission,
+             self.PayloadPlaceMissionOpenGripper,
              self.PrecisionLoiterCompanion,
              self.Landing,
              self.PrecisionLanding,
