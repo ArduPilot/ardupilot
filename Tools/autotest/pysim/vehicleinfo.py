@@ -407,6 +407,12 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/rover.parm",
                                             "default_params/motorboat.parm"],
             },
+            "motorboat-skid": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/motorboat.parm",
+                                            "default_params/rover-skid.parm"],
+            },
             "sailboat": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
