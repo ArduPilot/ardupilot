@@ -13,7 +13,7 @@ public:
     AP_RangeFinder_Backend_Serial(RangeFinder::RangeFinder_State &_state,
                                   AP_RangeFinder_Params &_params);
 
-    void init_serial(uint8_t serial_instance) override;
+    virtual void init_serial(uint8_t serial_instance) override;
 
 protected:
 
