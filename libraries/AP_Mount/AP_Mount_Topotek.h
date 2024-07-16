@@ -147,6 +147,13 @@ private:
         WAITING_FOR_CRC_HIGH,
     };
 
+    // tracking status
+    enum class TrackingStatus : uint8_t {
+        STOPPED_TRACKING = 0x30,                // not tracking
+        WAITING_FOR_TRACKING = 0x31,            // wait to track command status
+        TRACKING_IN_PROGRESS = 0x32             // the status is being tracked.
+    };
+
     // identifier bytes
     typedef char Identifier[3];
 
@@ -230,7 +237,7 @@ private:
     // members
     bool _recording;                                            // recording status (received from gimbal)
     bool _is_tracking;                                          // whether to enable the tracking state
-    uint8_t _last_tracking_state;                               // last tracking state received from gimbal
+    TrackingStatus _last_tracking_state = TrackingStatus::STOPPED_TRACKING; // last tracking state received from gimbal
     uint8_t _last_mode;                                         // mode during latest update, used to detect mode changes and cancel tracking
     bool _sdcard_status;                                        // memory card status (received from gimbal)
     bool _last_lock;                                            // last lock mode sent to gimbal
