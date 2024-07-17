@@ -1352,20 +1352,20 @@ void AP_Torqeedo::press_on_off_button()
         // send zero speed command to motor
         // Torqeedo requires a zero speed command at wake/error clear
         send_motor_speed_cmd(true);
+        hal.scheduler->delay(500);
 
         if (_pin_onoff > -1) {
             hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
             hal.gpio->write(_pin_onoff, 1);
             hal.scheduler->delay(500);
             hal.gpio->write(_pin_onoff, 0);
-            hal.scheduler->delay(500);
         } else {
             // use serial port's RTS pin to turn on battery
             _uart->set_RTS_pin(true);
             hal.scheduler->delay(500);
             _uart->set_RTS_pin(false);
-            hal.scheduler->delay(500);
         }
+        hal.scheduler->delay(1000);
     }
 }
 
