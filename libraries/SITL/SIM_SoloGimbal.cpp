@@ -16,15 +16,13 @@
   gimbal simulator class for MAVLink gimbal
 */
 
-#include "SIM_Gimbal.h"
+#include "SIM_SoloGimbal.h"
 
-#if HAL_SIM_GIMBAL_ENABLED
+#if AP_SIM_SOLOGIMBAL_ENABLED
 
 #include <stdio.h>
 
 #include "SIM_Aircraft.h"
-
-#include <AP_InertialSensor/AP_InertialSensor.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -38,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
+SoloGimbal::SoloGimbal(const struct sitl_fdm &_fdm) :
     fdm(_fdm),
     target_address("127.0.0.1"),
     target_port(5762),
@@ -58,7 +56,7 @@ Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
 /*
   update the gimbal state
 */
-void Gimbal::update(void)
+void SoloGimbal::update(void)
 {
     // calculate delta time in seconds
     uint32_t now_us = AP_HAL::micros();
@@ -213,7 +211,7 @@ static struct gimbal_param {
 /*
   find a parameter structure
  */
-struct gimbal_param *Gimbal::param_find(const char *name)
+struct gimbal_param *SoloGimbal::param_find(const char *name)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(gimbal_params); i++) {
         if (strncmp(name, gimbal_params[i].name, 16) == 0) {
@@ -226,7 +224,7 @@ struct gimbal_param *Gimbal::param_find(const char *name)
 /*
   send a parameter to flight board
  */
-void Gimbal::param_send(const struct gimbal_param *p)
+void SoloGimbal::param_send(const struct gimbal_param *p)
 {
     mavlink_message_t msg;
     mavlink_param_value_t param_value{};
@@ -252,7 +250,7 @@ void Gimbal::param_send(const struct gimbal_param *p)
 /*
   send a report to the vehicle control code over MAVLink
 */
-void Gimbal::send_report(void)
+void SoloGimbal::send_report(void)
 {
     uint32_t now = AP_HAL::millis();
     if (now < 10000) {
@@ -262,7 +260,7 @@ void Gimbal::send_report(void)
         return;
     }
     if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("Gimbal connected to %s:%u\n", target_address, (unsigned)target_port);
+        ::printf("SoloGimbal connected to %s:%u\n", target_address, (unsigned)target_port);
         mavlink.connected = true;
     }
     if (!mavlink.connected) {
@@ -297,7 +295,7 @@ void Gimbal::send_report(void)
                         seen_heartbeat = true;
                         vehicle_component_id = msg.compid;
                         vehicle_system_id = msg.sysid;
-                        ::printf("Gimbal using srcSystem %u\n", (unsigned)vehicle_system_id);
+                        ::printf("SoloGimbal using srcSystem %u\n", (unsigned)vehicle_system_id);
                     }
                     break;
                 }
@@ -319,7 +317,7 @@ void Gimbal::send_report(void)
                 case MAVLINK_MSG_ID_PARAM_SET: {
                     mavlink_param_set_t pkt;
                     mavlink_msg_param_set_decode(&msg, &pkt);
-                    printf("Gimbal got PARAM_SET %.16s %f\n", pkt.param_id, pkt.param_value);
+                    printf("SoloGimbal got PARAM_SET %.16s %f\n", pkt.param_id, pkt.param_value);
 
                     struct gimbal_param *p = param_find(pkt.param_id);
                     if (p) {
@@ -337,7 +335,7 @@ void Gimbal::send_report(void)
                         param_send_idx = 0;
                         param_send_last_ms = AP_HAL::millis();
                     }
-                    printf("Gimbal sending %u parameters\n", (unsigned)ARRAY_SIZE(gimbal_params));
+                    printf("SoloGimbal sending %u parameters\n", (unsigned)ARRAY_SIZE(gimbal_params));
                     break;
                 }
                 default:
@@ -411,4 +409,4 @@ void Gimbal::send_report(void)
 
 } // namespace SITL
 
-#endif  // HAL_SIM_GIMBAL_ENABLED
+#endif  // AP_SIM_SOLOGIMBAL_ENABLED
