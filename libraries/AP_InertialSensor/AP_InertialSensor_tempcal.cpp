@@ -526,6 +526,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
             str.printf("INS%u_ACCOFFS_Z=%f\n", imu, aoff.z);
             str.printf("INS%u_ACCSCAL_X=%f\n", imu, ascl.x);
             str.printf("INS%u_ACCSCAL_Y=%f\n", imu, ascl.y);
+            str.printf("INS%u_ACCSCAL_Z=%f\n", imu, ascl.z);
             str.printf("INS%u_ACC_CALTEMP=%.2f\n", imu, params[i].caltemp_accel.get());
         }
 #endif
