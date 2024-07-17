@@ -36,149 +36,12 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-SoloGimbal::SoloGimbal(const struct sitl_fdm &_fdm) :
-    fdm(_fdm),
-    target_address("127.0.0.1"),
-    target_port(5762),
-    lower_joint_limits(radians(-40), radians(-135), radians(-7.5)),
-    upper_joint_limits(radians(40),  radians(45),   radians(7.5)),
-    travelLimitGain(20),
-    reporting_period_ms(10),
-    seen_heartbeat(false),
-    seen_gimbal_control(false),
-    mav_socket(false)
-{
-    memset(&mavlink, 0, sizeof(mavlink));
-    fdm.quaternion.rotation_matrix(dcm);
-}
-
-
 /*
   update the gimbal state
 */
-void SoloGimbal::update(void)
+void SoloGimbal::update(const Aircraft &aircraft)
 {
-    // calculate delta time in seconds
-    uint32_t now_us = AP_HAL::micros();
-
-    float delta_t = (now_us - last_update_us) * 1.0e-6f;
-    last_update_us = now_us;
-
-    Matrix3f vehicle_dcm;
-    fdm.quaternion.rotation_matrix(vehicle_dcm);
-
-    const Vector3f &vehicle_gyro = AP::ins().get_gyro();
-    const Vector3f &vehicle_accel_body = AP::ins().get_accel();
-
-    // take a copy of the demanded rates to bypass the limiter function for testing
-    Vector3f demRateRaw = demanded_angular_rate;
-
-    // 1)  Rotate the copters rotation rates into the gimbals frame of reference
-    // copterAngRate_G = transpose(DCMgimbal)*DCMcopter*copterAngRate
-    Vector3f copterAngRate_G = dcm.transposed()*vehicle_dcm*vehicle_gyro;
-
-    // 2) Subtract the copters body rates to obtain a copter relative rotational
-    // rate vector (X,Y,Z) in gimbal sensor frame
-    // relativeGimbalRate(X,Y,Z) = gimbalRateDemand - copterAngRate_G
-    Vector3f relativeGimbalRate = demanded_angular_rate - copterAngRate_G;
-
-    // calculate joint angles (euler312 order)
-    // calculate copter -> gimbal rotation matrix
-    Matrix3f rotmat_copter_gimbal = dcm.transposed() * vehicle_dcm;
-
-    joint_angles = rotmat_copter_gimbal.transposed().to_euler312();
-
-    /* 4)  For each of the three joints, calculate upper and lower rate limits
-       from the corresponding angle limits and current joint angles
-
-       upperRatelimit = (jointAngle - lowerAngleLimit) * travelLimitGain
-       lowerRatelimit = (jointAngle - upperAngleLimit) * travelLimitGain
-
-       travelLimitGain is equal to the inverse of the bump stop time constant and
-       should be set to something like 20 initially. If set too high it can cause
-       the rates to 'ring' when they the limiter is in force, particularly given
-       we are using a first order numerical integration.
-    */
-    Vector3f upperRatelimit = -(joint_angles - upper_joint_limits) * travelLimitGain;
-    Vector3f lowerRatelimit = -(joint_angles - lower_joint_limits) * travelLimitGain;
-
-    /*
-      5) Calculate the gimbal joint rates (roll, elevation, azimuth)
-
-      gimbalJointRates(roll, elev, azimuth) = Matrix*relativeGimbalRate(X,Y,Z)
-
-      where matrix =
-      +-                                                                  -+
-      |          cos(elevAngle),        0,         sin(elevAngle)          |
-      |                                                                    |
-      |  sin(elevAngle) tan(rollAngle), 1, -cos(elevAngle) tan(rollAngle)  |
-      |                                                                    |
-      |           sin(elevAngle)                   cos(elevAngle)          |
-      |         - --------------,       0,         --------------          |
-      |           cos(rollAngle)                   cos(rollAngle)          |
-      +-                                                                  -+
-    */
-    float rollAngle = joint_angles.x;
-    float elevAngle = joint_angles.y;
-    Matrix3f matrix = Matrix3f(Vector3f(cosf(elevAngle),                  0,  sinf(elevAngle)),
-                               Vector3f(sinf(elevAngle)*tanf(rollAngle),  1, -cosf(elevAngle)*tanf(rollAngle)),
-                               Vector3f(-sinf(elevAngle)/cosf(rollAngle), 0,  cosf(elevAngle)/cosf(rollAngle)));
-    Vector3f gimbalJointRates = matrix * relativeGimbalRate;
-
-    // 6) Apply the rate limits from 4)
-    gimbalJointRates.x = constrain_float(gimbalJointRates.x, lowerRatelimit.x, upperRatelimit.x);
-    gimbalJointRates.y = constrain_float(gimbalJointRates.y, lowerRatelimit.y, upperRatelimit.y);
-    gimbalJointRates.z = constrain_float(gimbalJointRates.z, lowerRatelimit.z, upperRatelimit.z);
-    /*
-      7) Convert the modified gimbal joint rates to body rates (still copter
-      relative)
-      relativeGimbalRate(X,Y,Z) = Matrix * gimbalJointRates(roll, elev, azimuth)
-
-      where Matrix =
-
-      +-                                                   -+
-      |  cos(elevAngle), 0, -cos(rollAngle) sin(elevAngle)  |
-      |                                                     |
-      |         0,       1,         sin(rollAngle)          |
-      |                                                     |
-      |  sin(elevAngle), 0,  cos(elevAngle) cos(rollAngle)  |
-      +-                                                   -+
-    */
-    matrix = Matrix3f(Vector3f(cosf(elevAngle), 0, -cosf(rollAngle)*sinf(elevAngle)),
-                      Vector3f(0,               1,  sinf(rollAngle)),
-                      Vector3f(sinf(elevAngle), 0,  cosf(elevAngle)*cosf(rollAngle)));
-    relativeGimbalRate = matrix * gimbalJointRates;
-
-    // 8) Add to the result from step 1) to obtain the demanded gimbal body rates
-    //    in an inertial frame of reference
-    // demandedGimbalRatesInertial(X,Y,Z)  = relativeGimbalRate(X,Y,Z) + copterAngRate_G
-    // Vector3f demandedGimbalRatesInertial = relativeGimbalRate + copterAngRate_G;
-
-    // for the moment we will set gyros equal to demanded_angular_rate
-    gimbal_angular_rate = demRateRaw; // demandedGimbalRatesInertial + true_gyro_bias - supplied_gyro_bias
-
-    // update rotation of the gimbal
-    dcm.rotate(gimbal_angular_rate*delta_t);
-    dcm.normalize();
-
-    // calculate copter -> gimbal rotation matrix
-    rotmat_copter_gimbal = dcm.transposed() * vehicle_dcm;
-
-    // calculate joint angles (euler312 order)
-    joint_angles = rotmat_copter_gimbal.transposed().to_euler312();
-
-    // update observed gyro
-    gyro = gimbal_angular_rate + true_gyro_bias;
-
-    // update delta_angle (integrate)
-    delta_angle += gyro * delta_t;
-
-    // calculate accel in gimbal body frame
-    Vector3f copter_accel_earth = vehicle_dcm * vehicle_accel_body;
-    Vector3f accel = dcm.transposed() * copter_accel_earth;
-
-    // integrate velocity
-    delta_velocity += accel * delta_t;
+    gimbal.update(aircraft);
 
     // see if we should do a report
     send_report();
@@ -306,11 +169,9 @@ void SoloGimbal::send_report(void)
                     }
                     mavlink_gimbal_control_t pkt;
                     mavlink_msg_gimbal_control_decode(&msg, &pkt);
-                    demanded_angular_rate = Vector3f(pkt.demanded_rate_x,
-                                                     pkt.demanded_rate_y,
-                                                     pkt.demanded_rate_z);
-                    // no longer supply a bias
-                    supplied_gyro_bias.zero();
+                    gimbal.set_demanded_rates(Vector3f(pkt.demanded_rate_x,
+                                                       pkt.demanded_rate_y,
+                                                       pkt.demanded_rate_z));
                     seen_gimbal_control = true;
                     break;
                 }
@@ -375,12 +236,20 @@ void SoloGimbal::send_report(void)
      */
     uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us > reporting_period_ms*1000UL) {
-        mavlink_gimbal_report_t gimbal_report;
-        float delta_time = (now_us - last_report_us) * 1.0e-6f;
         last_report_us = now_us;
+
+        uint32_t delta_time_us;
+        Vector3f delta_angle;
+        Vector3f delta_velocity;
+        gimbal.get_deltas(delta_angle, delta_velocity, delta_time_us);
+
+        Vector3f joint_angles;
+        gimbal.get_joint_angles(joint_angles);
+
+        mavlink_gimbal_report_t gimbal_report;
         gimbal_report.target_system = vehicle_system_id;
         gimbal_report.target_component = vehicle_component_id;
-        gimbal_report.delta_time = delta_time;
+        gimbal_report.delta_time = delta_time_us * 1e-6;
         gimbal_report.delta_angle_x = delta_angle.x;
         gimbal_report.delta_angle_y = delta_angle.y;
         gimbal_report.delta_angle_z = delta_angle.z;
