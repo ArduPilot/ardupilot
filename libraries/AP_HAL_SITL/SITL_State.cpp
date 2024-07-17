@@ -81,7 +81,7 @@ void SITL_State::_sitl_setup()
         _update_airspeed(0);
 #if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            gimbal = NEW_NOTHROW SITL::SoloGimbal(_sitl->state);
+            gimbal = NEW_NOTHROW SITL::SoloGimbal();
         }
 #endif
 
