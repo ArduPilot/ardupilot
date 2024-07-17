@@ -23,23 +23,19 @@ rc 6 1818  # for neutral pitch input
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "SIM_config.h"
 
-#ifndef HAL_SIM_GIMBAL_ENABLED
-#define HAL_SIM_GIMBAL_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && !defined(HAL_BUILD_AP_PERIPH)
-#endif
+#if AP_SIM_SOLOGIMBAL_ENABLED
 
-#if HAL_SIM_GIMBAL_ENABLED
-
+#include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/utility/Socket_native.h>
-
-#include "SIM_Aircraft.h"
 
 namespace SITL {
 
-class Gimbal {
+class SoloGimbal {
 public:
-    Gimbal(const struct sitl_fdm &_fdm);
+    SoloGimbal(const struct sitl_fdm &_fdm);
     void update(void);
 
 private:
@@ -128,4 +124,5 @@ private:
 
 }  // namespace SITL
 
-#endif  // HAL_SIM_GIMBAL_ENABLED
+#endif  // AP_SIM_SOLOGIMBAL_ENABLED
+
