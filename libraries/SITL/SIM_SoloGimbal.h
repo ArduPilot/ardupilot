@@ -27,6 +27,8 @@ rc 6 1818  # for neutral pitch input
 
 #if AP_SIM_SOLOGIMBAL_ENABLED
 
+#include "SIM_Gimbal.h"
+
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/utility/Socket_native.h>
@@ -35,65 +37,23 @@ namespace SITL {
 
 class SoloGimbal {
 public:
-    SoloGimbal(const struct sitl_fdm &_fdm);
-    void update(void);
+
+    SoloGimbal() {}
+    void update(const Aircraft &aicraft);
 
 private:
-    const struct sitl_fdm &fdm;
-    const char *target_address;
-    const uint16_t target_port;
 
-    // rotation matrix (gimbal body -> earth)
-    Matrix3f dcm;
+    const char *target_address = "127.0.0.1";
+    const uint16_t target_port = 5762;
 
-    // time of last update
-    uint32_t last_update_us;
-
-    // true angular rate of gimbal in body frame (rad/s)
-    Vector3f gimbal_angular_rate;
-
-    // observed angular rate (including biases)
-    Vector3f gyro;
-
-    /* joint angles, in radians. in yaw/roll/pitch order. Relative to fwd.
-       So 0,0,0 points forward.
-       Pi/2,0,0 means pointing right
-       0, Pi/2, 0 means pointing fwd, but rolled 90 degrees to right
-       0, 0, -Pi/2, means pointing down
-    */
-    Vector3f joint_angles;
-
-    // physical constraints on joint angles in (roll, pitch, azimuth) order
-    Vector3f lower_joint_limits;
-    Vector3f upper_joint_limits;
-
-    const float travelLimitGain;
-
-    // true gyro bias
-    Vector3f true_gyro_bias;
+    // physic simulation of gimbal:
+    Gimbal gimbal;
 
     // reporting variables. gimbal pushes these to vehicle code over
     // MAVLink at approx 100Hz
 
     // reporting period in ms
-    const float reporting_period_ms;
-
-    // integral of gyro vector over last time interval. In radians
-    Vector3f delta_angle;
-
-    // integral of accel vector over last time interval. In m/s
-    Vector3f delta_velocity;
-
-    /*
-      control variables from the vehicle
-    */
-    // angular rate in rad/s. In body frame of gimbal
-    Vector3f demanded_angular_rate;
-
-    // gyro bias provided by EKF on vehicle. In rad/s.
-    // Should be subtracted from the gyro readings to get true body
-    // rotatation rates
-    Vector3f supplied_gyro_bias;
+    const float reporting_period_ms = 10;
 
     uint32_t last_report_us;
     uint32_t last_heartbeat_ms;
@@ -102,7 +62,7 @@ private:
     uint8_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
-    SocketAPM_native mav_socket;
+    SocketAPM_native mav_socket{false};
     struct {
         // socket to telem2 on aircraft
         bool connected;
