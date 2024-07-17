@@ -9,7 +9,6 @@
 #pragma GCC optimize("O2")
 #endif
 #include "LowPassFilter.h"
-#include <AP_InternalError/AP_InternalError.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // DigitalLPF
@@ -24,33 +23,15 @@ DigitalLPF<T>::DigitalLPF() {
 // add a new raw value to the filter, retrieve the filtered result
 template <class T>
 T DigitalLPF<T>::apply(const T &sample, float cutoff_freq, float dt) {
-    if (is_negative(cutoff_freq) || is_negative(dt)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        _output = sample;
-        return _output;
-    }
-    if (is_zero(cutoff_freq)) {
-        _output = sample;
-        return _output;
-    }
-    if (is_zero(dt)) {
-        return _output;
-    }
-    float rc = 1.0f/(M_2PI*cutoff_freq);
-    alpha = constrain_float(dt/(dt+rc), 0.0f, 1.0f);
-    _output += (sample - _output) * alpha;
-    if (!initialised) {
-        initialised = true;
-        _output = sample;
-    }
-    return _output;
+    _alpha = calc_lowpass_alpha_dt(dt, cutoff_freq);
+    return apply(sample);
 }
 
 template <class T>
 T DigitalLPF<T>::apply(const T &sample) {
-    _output += (sample - _output) * alpha;
-    if (!initialised) {
-        initialised = true;
+    _output += (sample - _output) * _alpha;
+    if (!_initialised) {
+        _initialised = true;
         _output = sample;
     }
     return _output;
@@ -59,9 +40,9 @@ T DigitalLPF<T>::apply(const T &sample) {
 template <class T>
 void DigitalLPF<T>::compute_alpha(float sample_freq, float cutoff_freq) {
     if (sample_freq <= 0) {
-        alpha = 1;
+        _alpha = 1;
     } else {
-        alpha = calc_lowpass_alpha_dt(1.0/sample_freq, cutoff_freq);
+        _alpha = calc_lowpass_alpha_dt(1.0/sample_freq, cutoff_freq);
     }
 }
 
@@ -74,7 +55,7 @@ const T &DigitalLPF<T>::get() const {
 template <class T>
 void DigitalLPF<T>::reset(T value) { 
     _output = value;
-    initialised = true;
+    _initialised = true;
 }
     
 ////////////////////////////////////////////////////////////////////////////////////////////

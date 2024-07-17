@@ -59,18 +59,18 @@ public:
     CLASS_NO_COPY(DigitalLPF);
 
     void compute_alpha(float sample_freq, float cutoff_freq);
-    
+
     // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     const T &get() const;
     void reset(T value);
     void reset() {
-        initialised = false;
+        _initialised = false;
     }
 
 private:
     T _output;
-    float alpha = 1.0f;
-    bool initialised;
+    float _alpha = 1.0f;
+    bool _initialised;
 };
 
 // LPF base class
