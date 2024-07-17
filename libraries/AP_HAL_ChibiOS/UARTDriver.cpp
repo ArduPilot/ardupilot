@@ -455,6 +455,13 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 sercfg.cr3 |= USART_CR3_DMAT;
             }
             sercfg.irq_cb = rx_irq_cb;
+#if HAL_HAVE_LOW_NOISE_UART
+            if (sdef.low_noise_line) {
+                // we can mark UART to sample on one bit instead of default 3 bits
+                // this allows us to be slightly less sensitive to clock differences
+                sercfg.cr3 |= USART_CR3_ONEBIT;
+            }
+#endif
 #endif // HAL_UART_NODMA
             if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
                 sercfg.cr2 |= USART_CR2_STOP1_BITS;
