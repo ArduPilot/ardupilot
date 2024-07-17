@@ -334,7 +334,7 @@ void SITL_State_Common::sim_update(void)
 {
 #if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
-        gimbal->update();
+        gimbal->update(*sitl_model);
     }
 #endif
 #if HAL_SIM_ADSB_ENABLED
