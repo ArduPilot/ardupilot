@@ -70,6 +70,9 @@ static const eventmask_t EVT_PARITY = EVENT_MASK(11);
 // event for transmit end for half-duplex
 static const eventmask_t EVT_TRANSMIT_END = EVENT_MASK(12);
 
+// event for framing error
+static const eventmask_t EVT_ERROR = EVENT_MASK(13);
+
 // events for dma tx, thread per UART so can be from 0
 static const eventmask_t EVT_TRANSMIT_DMA_START = EVENT_MASK(0);
 static const eventmask_t EVT_TRANSMIT_DMA_COMPLETE = EVENT_MASK(1);
@@ -495,6 +498,16 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         vprintf_console_hook = hal_console_vprintf;
 #endif
     }
+
+#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
+    if (!err_listener_initialised) {
+        chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
+                                &err_listener,
+                                EVT_ERROR,
+                                SD_FRAMING_ERROR | SD_OVERRUN_ERROR | SD_NOISE_ERROR);
+        err_listener_initialised = true;
+    }
+#endif
 }
 
 #ifndef HAL_UART_NODMA
@@ -1090,6 +1103,22 @@ void UARTDriver::_rx_timer_tick(void)
     }
 
     _in_rx_timer = true;
+
+#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
+    if (!sdef.is_usb) {
+        const auto err_flags = chEvtGetAndClearFlags(&err_listener);
+        // count the number of errors
+        if (err_flags & SD_FRAMING_ERROR) {
+            _rx_stats_framing_errors++;
+        }
+        if (err_flags & SD_OVERRUN_ERROR) {
+            _rx_stats_overrun_errors++;
+        }
+        if (err_flags & SD_NOISE_ERROR) {
+            _rx_stats_noise_errors++;
+        }
+    }
+#endif
 
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled && rxdma) {
@@ -1748,13 +1777,22 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
     } else {
         str.printf("UART%u ", unsigned(sdef.instance));
     }
-    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u FlowCtrl=%u\n",
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u"
+#if CH_CFG_USE_EVENTS == TRUE
+                " FE=%lu OE=%lu NE=%lu"
+#endif
+                " FlowCtrl=%u\n",
                tx_dma_enabled ? '*' : ' ',
                unsigned(tx_bytes),
                rx_dma_enabled ? '*' : ' ',
                unsigned(rx_bytes),
                unsigned((tx_bytes * 10000) / dt_ms),
                unsigned((rx_bytes * 10000) / dt_ms),
+#if CH_CFG_USE_EVENTS == TRUE
+               _rx_stats_framing_errors,
+               _rx_stats_overrun_errors,
+               _rx_stats_noise_errors,
+#endif
                _flow_control);
 }
 #endif

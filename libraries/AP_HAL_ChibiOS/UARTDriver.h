@@ -79,6 +79,7 @@ public:
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+        bool low_noise_line;
     };
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
@@ -282,6 +283,13 @@ protected:
     // Getters for cumulative tx and rx counts
     uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
     uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#if CH_CFG_USE_EVENTS == TRUE
+    uint32_t _rx_stats_framing_errors;
+    uint32_t _rx_stats_overrun_errors;
+    uint32_t _rx_stats_noise_errors;
+    event_listener_t err_listener;
+    bool err_listener_initialised;
+#endif
 #endif
 };
 
