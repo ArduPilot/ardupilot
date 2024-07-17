@@ -131,7 +131,7 @@ void SIMState::fdm_input_local(void)
     // output JSON state to ride along flight controllers
     // ride_along.send(_sitl->state,sitl_model->get_position_relhome());
 
-#if HAL_SIM_GIMBAL_ENABLED
+#if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
         gimbal->update();
     }
