@@ -1094,6 +1094,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 #endif
 
+#if AP_SIM_GPIO_LED_1_ENABLED
+    sim_led1.update(*this);
+#endif
 #if AP_SIM_GPIO_LED_2_ENABLED
     sim_led2.update(*this);
 #endif

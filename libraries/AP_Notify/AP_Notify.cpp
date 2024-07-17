@@ -20,6 +20,7 @@
 #include "Buzzer.h"
 #include "Display.h"
 #include "ExternalLED.h"
+#include "GPIO_LED_1.h"
 #include "IS31FL3195.h"
 #include "PCA9685LED_I2C.h"
 #include "NavigatorLED.h"
@@ -311,6 +312,9 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW AP_BoardLED());
 #elif AP_NOTIFY_GPIO_LED_2_ENABLED
                 ADD_BACKEND(NEW_NOTHROW AP_BoardLED2());
+#endif
+#if AP_NOTIFY_GPIO_LED_1_ENABLED
+                ADD_BACKEND(NEW_NOTHROW GPIO_LED_1());
 #endif
                 break;
 #if AP_NOTIFY_TOSHIBALED_ENABLED

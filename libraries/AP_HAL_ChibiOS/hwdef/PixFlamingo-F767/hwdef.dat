@@ -157,10 +157,6 @@ SPIDEV dps310     SPI1 DEVID3   BARO_CS  MODE3 5*MHZ 5*MHZ
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
-
 # pixracer has 3 LEDs, Red, Green, Blue
 define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
