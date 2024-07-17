@@ -11620,6 +11620,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(0, 0.1, minimum_duration=30, timeout=450)
         self.do_RTL()
 
+    def MissionRTLYawBehaviour(self):
+        '''check end-of-mission yaw behaviour'''
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+
+        self.start_subtest("behaviour with WP_YAW_BEHAVE set to next-waypoint-except-RTL")
+        self.upload_simple_relhome_mission([
+            #                                      N   E  U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        original_heading = self.get_heading()
+        if abs(original_heading) < 5:
+            raise NotAchievedException(f"Bad original heading {original_heading}")
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)
+        self.wait_rtl_complete()
+        self.wait_disarmed()
+        if abs(self.get_heading()) > 5:
+            raise NotAchievedException("Should have yaw zero without option")
+
+        # must change out of auto and back in again to reset state machine:
+        self.change_mode('LOITER')
+        self.change_mode('AUTO')
+
+        self.start_subtest("behaviour with WP_YAW_BEHAVE set to next-waypoint")
+        self.upload_simple_relhome_mission([
+            #                                      N   E  U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  0, 20, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameters({
+            "WP_YAW_BEHAVIOR": 1,  # look at next waypoint (including in RTL)
+        })
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        original_heading = self.get_heading()
+        if abs(original_heading) > 1:
+            raise NotAchievedException("Bad original heading")
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)
+        self.wait_rtl_complete()
+        self.wait_disarmed()
+        new_heading = self.get_heading()
+        if abs(new_heading - original_heading) > 5:
+            raise NotAchievedException(f"Should return to original heading want={original_heading} got={new_heading}")
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11714,6 +11766,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GripperReleaseOnThrustLoss,
             self.REQUIRE_POSITION_FOR_ARMING,
             self.LoggingFormat,
+            self.MissionRTLYawBehaviour,
         ])
         return ret
 
