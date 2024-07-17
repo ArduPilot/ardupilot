@@ -3147,6 +3147,11 @@ function battery:current_amps(instance) end
 ---@return number -- resting voltage
 function battery:voltage_resting_estimate(instance) end
 
+-- Returns the estimated internal battery resistance in Ohms
+---@param instance integer -- battery instance
+---@return number -- estimated internal resistance in Ohms
+function battery:get_resistance(instance) end
+
 -- Returns the voltage of the selected battery instance.
 ---@param instance integer -- battery instance
 ---@return number -- voltage
