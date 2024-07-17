@@ -325,7 +325,8 @@ void AC_Fence::auto_disable_fence_on_disarming(void)
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
 {
-    if (auto_enabled() != AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF) {
+    if (auto_enabled() != AutoEnable::ENABLE_ON_AUTO_TAKEOFF &&
+        auto_enabled() != AutoEnable::ENABLE_DISABLE_FLOOR_ONLY) {
         return;
     }
 
