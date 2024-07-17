@@ -596,12 +596,13 @@ protected:
 
 private:
 
-    enum class Options : int32_t {
+    enum class Option : int32_t {
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
         AllowWeatherVaning                 = (1 << 7U),
     };
+    bool option_is_enabled(Option option) const;
 
     // Enter auto rtl pseudo mode
     bool enter_auto_rtl(ModeReason reason);
