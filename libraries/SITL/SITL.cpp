@@ -924,11 +924,21 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_RND",     10, SIM, gyro_noise[2],  0),
 #endif
+    // @Param: ACC1_RND
+    // @DisplayName: Accel 1 motor noise factor
+    // @Description: scaling factor for simulated vibration from motors
+    // @User: Advanced
     AP_GROUPINFO("ACC1_RND",     11, SIM, accel_noise[0], 0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACC2_RND
+    // @DisplayName: Accel 2 motor noise factor
+    // @CopyFieldsFrom: SIM_ACC1_RND
     AP_GROUPINFO("ACC2_RND",     12, SIM, accel_noise[1], 0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACC3_RND
+    // @DisplayName: Accel 3 motor noise factor
+    // @CopyFieldsFrom: SIM_ACC1_RND
     AP_GROUPINFO("ACC3_RND",     13, SIM, accel_noise[2], 0),
 #endif
     // @Param: GYR1_SCALE
@@ -1106,6 +1116,9 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("GYR4_SCALE",   36, SIM, gyro_scale[3], 0),
 
+    // @Param: ACC4_RND
+    // @DisplayName: Accel 4 motor noise factor
+    // @CopyFieldsFrom: SIM_ACC1_RND
     AP_GROUPINFO("ACC4_RND",     37, SIM, accel_noise[3], 0),
 
     AP_GROUPINFO("GYR4_RND",     38, SIM, gyro_noise[3],  0),
@@ -1156,6 +1169,9 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("GYR5_SCALE",   43, SIM, gyro_scale[4], 0),
 
+    // @Param: ACC5_RND
+    // @DisplayName: Accel 5 motor noise factor
+    // @CopyFieldsFrom: SIM_ACC1_RND
     AP_GROUPINFO("ACC5_RND",     44, SIM, accel_noise[4], 0),
 
     AP_GROUPINFO("GYR5_RND",     45, SIM, gyro_noise[4],  0),
