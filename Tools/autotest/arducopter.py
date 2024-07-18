@@ -11559,6 +11559,62 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def CameraInformationFromJSON(self):
+        '''Tests that we can send CAMERA_INFORMATION message defined in JSON'''
+
+        json_filename = "camera_information.json"
+
+        # We use an example JSON file for this test...
+        example_json = os.path.realpath(os.path.join(testdir, "../../libraries/AP_Camera/json/", json_filename))
+        # ... and copy it to the the location SITL will read it from.
+        sitl_json    = os.path.realpath(os.path.join(testdir, "../../mav_msg_def/AP_Camera/",    json_filename))
+
+        if not os.path.isfile(example_json):
+            raise PreconditionFailedException(f"Cannot find example JSON file: {example_json}")
+
+        if os.path.isfile(sitl_json):
+            raise PreconditionFailedException(f"SITL JSON file already exists: {sitl_json}. Please remove and re-run test.")
+
+        self.context_push()
+        self.set_parameters({
+            "CAM1_TYPE": 1,
+        })
+        self.reboot_sitl()
+
+        # Without the JSON file, we expect no response to the message request.
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            p1=mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION
+        )
+        m = self.mav.recv_match(type='CAMERA_INFORMATION', blocking=True, timeout=2)
+        if m is not None:
+            raise NotAchievedException(f"Got unexpected CAMERA_INFORMATION={m}")
+
+        # Give SITL access to the JSON file and we expect a response to the message request.
+        os.makedirs(os.path.dirname(sitl_json), exist_ok=True)
+        shutil.copy(example_json, sitl_json)
+        self.reboot_sitl()
+        try:
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                p1=mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION
+            )
+            m = self.mav.recv_match(type='CAMERA_INFORMATION', blocking=True, timeout=2)
+            if m is None:
+                raise NotAchievedException("Failed to get CAMERA_INFORMATION")
+
+            # Expected vendor is "Unknown" as a list of integers
+            expected_vendor_name = list(b"Unknown".ljust(32, b"\0"))
+            # Expected model is "Camera" as a list of integers
+            expected_model_name = list(b"Camera".ljust(32, b"\0"))
+            if (m.vendor_name != expected_vendor_name) or (m.model_name != expected_model_name):
+                raise NotAchievedException(f"Got unexpected values in JSON-defined CAMERA_INFORMATION={m}")
+        finally:
+            os.remove(sitl_json)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def assert_home_position_not_set(self):
         try:
             self.poll_home_position()
@@ -11769,6 +11825,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.REQUIRE_POSITION_FOR_ARMING,
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
+            self.CameraInformationFromJSON,
         ])
         return ret
 
