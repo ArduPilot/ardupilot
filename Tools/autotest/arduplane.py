@@ -3898,6 +3898,50 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_altitude(self.homeloc.alt + cruise_alt)
         self.fly_home_land_and_disarm(timeout=250)
 
+    def FenceCircleExclusionAutoEnable(self):
+        '''Tests autolanding when alt min fence is enabled'''
+        self.set_parameters({
+            "FENCE_TYPE": 2,     # Set fence type to circle
+            "FENCE_ACTION": 1,   # Set action to RTL
+            "FENCE_AUTOENABLE": 2,
+            "FENCE_ENABLE" : 0,
+            "RTL_AUTOLAND" : 2,
+        })
+
+        # Grab Home Position
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.homeloc = self.mav.location()
+
+        fence_loc = self.home_position_as_mav_location()
+        self.location_offset_ne(fence_loc, 300, 0)
+
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                "radius" : 100,
+                "loc" : fence_loc
+            }
+        )])
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.takeoff(alt=50, mode='TAKEOFF')
+        self.change_mode("FBWA")
+        self.set_rc(3, 1100)    # lower throttle
+
+        self.progress("Waiting for RTL")
+        tstart = self.get_sim_time()
+        mode = "RTL"
+        while not self.mode_is(mode, drain_mav=False):
+            self.mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
+                self.mav.flightmode, mode, self.get_altitude(relative=True)))
+            if (self.get_sim_time_cached() > tstart + 120):
+                raise WaitModeTimeout("Did not change mode")
+        self.progress("Got mode %s" % mode)
+        # Now check we can land
+        self.fly_home_land_and_disarm()
+
     def FenceEnableDisableSwitch(self):
         '''Tests enablement and disablement of fences on a switch'''
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
@@ -5822,6 +5866,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.FenceMinAltEnableAutoland,
             self.FenceMinAltAutoEnableAbort,
             self.FenceAutoEnableDisableSwitch,
+            Test(self.FenceCircleExclusionAutoEnable, speedup=20),
             self.FenceEnableDisableSwitch,
             self.FenceEnableDisableAux,
             self.FenceBreachedChangeMode,
