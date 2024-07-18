@@ -66,6 +66,8 @@ if args.defaults:
     defaults_write(open(args.defaults,"r").read() + "\n")
 
 if args.simclass:
+    if args.simclass == 'Glider':
+        hwdef_write("define AP_SIM_GLIDER_ENABLED 1\n")
     hwdef_write("define AP_SIM_FRAME_CLASS %s\n" % args.simclass)
 if args.frame:
     hwdef_write('define AP_SIM_FRAME_STRING "%s"\n' % args.frame)
