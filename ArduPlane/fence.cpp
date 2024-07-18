@@ -39,10 +39,23 @@ void Plane::fence_check()
         return;
     }
 
+    const bool armed = arming.is_armed();
+
+    /*
+      if we are either disarmed or we are currently not in breach and
+      we are not flying then clear the state associated with the
+      previous mode breach handling. This allows the fence state
+      machine to reset at the end of a fence breach action such as an
+      RTL and autoland
+     */
+    if (!armed || (new_breaches == 0 && !plane.is_flying())) {
+        plane.previous_mode_reason = ModeReason::UNKNOWN;
+    }
+
     // we still don't do anything when disarmed, but we do check for fence breaches.
     // fence pre-arm check actually checks if any fence has been breached
     // that's not ever going to be true if we don't call check on AP_Fence while disarmed
-    if (!arming.is_armed()) {
+    if (!armed) {
         return;
     }
 
