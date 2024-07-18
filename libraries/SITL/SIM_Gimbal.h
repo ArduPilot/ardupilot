@@ -14,6 +14,11 @@
  */
 /*
   gimbal simulator class
+
+./Tools/autotest/sim_vehicle.py -D -G -v ArduCopter --mavlink-gimbal
+param set MNT1_TYPE 2
+param set RC6_OPTION 213  # MOUNT1_PITCH
+rc 6 1818  # for neutral pitch input
 */
 
 #pragma once
