@@ -2384,11 +2384,6 @@ class TestSuite(ABC):
     def get_sim_parameter_documentation_get_whitelist(self):
         # common parameters
         ret = set([
-            "SIM_ACC1_RND",
-            "SIM_ACC2_RND",
-            "SIM_ACC3_RND",
-            "SIM_ACC4_RND",
-            "SIM_ACC5_RND",
             "SIM_ACC_FILE_RW",
             "SIM_ACC_TRIM_X",
             "SIM_ACC_TRIM_Y",
