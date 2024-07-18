@@ -113,6 +113,9 @@ private:
     uint32_t param_send_last_ms;
     uint8_t param_send_idx;
 
+    // component ID we send from:
+    const uint8_t gimbal_component_id = 154;  // MAV_COMP_ID_GIMBAL
+
     void send_report(void);
     void param_send(const struct gimbal_param *p);
     struct gimbal_param *param_find(const char *name);
