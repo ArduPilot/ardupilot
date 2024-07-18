@@ -90,3 +90,5 @@
 #ifndef AP_FILTER_ENABLED
 #define AP_FILTER_ENABLED 1
 #endif
+
+#define HAL_SOLO_GIMBAL_ENABLED 1
