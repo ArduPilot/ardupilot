@@ -11615,6 +11615,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def VideoStreamInformationFromJSON(self):
+        '''Tests that we can send VIDEO_STREAM_INFORMATION message defined in JSON'''
+
+        json_filename = "video_stream_information.json"
+
+        # We use an example JSON file for this test...
+        example_json = os.path.realpath(os.path.join(testdir, "../../libraries/AP_Camera/json/", json_filename))
+        # ... and copy it to the the location SITL will read it from.
+        sitl_json    = os.path.realpath(os.path.join(testdir, "../../mav_msg_def/AP_Camera/",    json_filename))
+
+        if not os.path.isfile(example_json):
+            raise PreconditionFailedException(f"Cannot find example JSON file: {example_json}")
+
+        if os.path.isfile(sitl_json):
+            raise PreconditionFailedException(f"SITL JSON file already exists: {sitl_json}. Please remove and re-run test.")
+
+        self.context_push()
+        self.set_parameters({
+            "CAM1_TYPE": 1,
+        })
+        self.reboot_sitl()
+
+        # Without the JSON file, we expect no response to the message request.
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            p1=mavutil.mavlink.MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION
+        )
+        m = self.mav.recv_match(type='VIDEO_STREAM_INFORMATION', blocking=True, timeout=2)
+        if m is not None:
+            raise NotAchievedException(f"Got unexpected VIDEO_STREAM_INFORMATION={m}")
+
+        # Give SITL access to the JSON file and we expect a response to the message request.
+        os.makedirs(os.path.dirname(sitl_json), exist_ok=True)
+        shutil.copy(example_json, sitl_json)
+        self.reboot_sitl()
+        try:
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                p1=mavutil.mavlink.MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION
+            )
+            m = self.mav.recv_match(type='VIDEO_STREAM_INFORMATION', blocking=True, timeout=2)
+
+            if m is None:
+                raise NotAchievedException("Failed to get VIDEO_STREAM_INFORMATION")
+
+            if (m.name != "Video") or (m.uri != "127.0.0.1:5600"):
+                raise NotAchievedException(f"Got unexpected values in JSON-defined VIDEO_STREAM_INFORMATION={m}")
+        finally:
+            os.remove(sitl_json)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def assert_home_position_not_set(self):
         try:
             self.poll_home_position()
@@ -11826,6 +11879,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
             self.CameraInformationFromJSON,
+            self.VideoStreamInformationFromJSON,
         ])
         return ret
 
