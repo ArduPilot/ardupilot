@@ -1,5 +1,13 @@
 APM:Sub Release Notes:
 
+Sub-4.5.0 beta2 18-July-2024
+- Created ORIGIN_LAT/LON/ALT parameters for setting a default efk origin when no positioning sensor is available
+- Allow estimating the World Magnetic Model using location or ekf origin instead of GPS
+- Allow calibrations to fix scale using the World Magnetic Model estimated from origin instead of GPS
+- Warn users when arming if there's no WMM estimate
+- Fix but from beta1 where motor detection was requiring a valid position
+- Add SURFTRAK mode for surface tracking with rangefinder
+
 Sub-4.5.0 beta1 22-February-2024
 - Branched from Copter 4.5
 
