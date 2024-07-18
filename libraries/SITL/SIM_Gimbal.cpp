@@ -237,7 +237,7 @@ void Gimbal::param_send(const struct gimbal_param *p)
     param_value.param_type = MAV_PARAM_TYPE_REAL32;
 
     uint16_t len = mavlink_msg_param_value_encode_status(vehicle_system_id,
-                                                         vehicle_component_id,
+                                                         gimbal_component_id,
                                                          &mavlink.status,
                                                          &msg, &param_value);
 
@@ -364,7 +364,7 @@ void Gimbal::send_report(void)
         heartbeat.custom_mode = 0;
 
         len = mavlink_msg_heartbeat_encode_status(vehicle_system_id,
-                                                  vehicle_component_id,
+                                                  gimbal_component_id,
                                                   &mavlink.status,
                                                   &msg, &heartbeat);
 
@@ -394,7 +394,7 @@ void Gimbal::send_report(void)
         gimbal_report.joint_az = joint_angles.z;
 
         len = mavlink_msg_gimbal_report_encode_status(vehicle_system_id,
-                                                      vehicle_component_id,
+                                                      gimbal_component_id,
                                                       &mavlink.status,
                                                       &msg, &gimbal_report);
 
