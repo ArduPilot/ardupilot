@@ -73,9 +73,9 @@ private:
     uint16_t pktoffset;
     uint16_t bufsize;
 
-    struct VN_imu_packet const *latest_imu_packet = nullptr;
-    struct VN_INS_ekf_packet const *latest_ins_ekf_packet = nullptr;
-    struct VN_INS_gnss_packet const *latest_ins_gnss_packet = nullptr;
+    struct VN_imu_packet *latest_imu_packet = nullptr;
+    struct VN_INS_ekf_packet *latest_ins_ekf_packet = nullptr;
+    struct VN_INS_gnss_packet *latest_ins_gnss_packet = nullptr;
 
     uint32_t last_pkt1_ms = UINT32_MAX;
     uint32_t last_pkt2_ms = UINT32_MAX;
