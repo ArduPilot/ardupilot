@@ -93,6 +93,7 @@ define BOARD_RSSI_ANA_PIN 8
 # LED
 # green LED1 marked as B/E
 # blue LED0 marked as ACT
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PE3 LED0 OUTPUT LOW GPIO(90) # blue
 PE4 LED1 OUTPUT LOW GPIO(91) # green
 define HAL_GPIO_A_LED_PIN 91

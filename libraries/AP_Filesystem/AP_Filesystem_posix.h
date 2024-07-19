@@ -29,6 +29,22 @@
 #include <errno.h>
 #include "AP_Filesystem_backend.h"
 
+#ifndef AP_FILESYSTEM_POSIX_HAVE_UTIME
+#define AP_FILESYSTEM_POSIX_HAVE_UTIME 1
+#endif
+
+#ifndef AP_FILESYSTEM_POSIX_HAVE_FSYNC
+#define AP_FILESYSTEM_POSIX_HAVE_FSYNC 1
+#endif
+
+#ifndef AP_FILESYSTEM_POSIX_HAVE_STATFS
+#define AP_FILESYSTEM_POSIX_HAVE_STATFS 1
+#endif
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 class AP_Filesystem_Posix : public AP_Filesystem_Backend
 {
 public:

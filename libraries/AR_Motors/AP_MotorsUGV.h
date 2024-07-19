@@ -27,6 +27,7 @@ public:
         FRAME_TYPE_OMNI3 = 1,
         FRAME_TYPE_OMNIX = 2,
         FRAME_TYPE_OMNIPLUS = 3,
+        FRAME_TYPE_OMNI3MECANUM = 4,
     };
 
     // initialise motors

@@ -90,7 +90,7 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 
 void *Util::allocate_heap_memory(size_t size)
 {
@@ -243,15 +243,13 @@ bool Util::get_system_id(char buf[50])
 
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
-    len = MIN(12, len);
-
-
     uint8_t base_mac_addr[6] = {0};
     esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
     if (ret != ESP_OK) {
         ret = esp_efuse_mac_get_default(base_mac_addr);
     }
 
+    len = MIN(len, ARRAY_SIZE(base_mac_addr));
     memcpy(buf, (const void *)base_mac_addr, len);
 
     return true;

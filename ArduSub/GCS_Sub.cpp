@@ -73,7 +73,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     }
 #endif
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (sub.rangefinder_state.enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;

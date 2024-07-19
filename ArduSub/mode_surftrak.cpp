@@ -39,8 +39,10 @@ bool ModeSurftrak::init(bool ignore_checks)
 
     if (!sub.rangefinder_alt_ok()) {
         sub.gcs().send_text(MAV_SEVERITY_INFO, "waiting for a rangefinder reading");
+#if AP_RANGEFINDER_ENABLED
     } else if (sub.inertial_nav.get_position_z_up_cm() >= sub.g.surftrak_depth) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "descend below %f meters to hold range", sub.g.surftrak_depth * 0.01f);
+#endif
     }
 
     return true;
@@ -60,6 +62,7 @@ bool ModeSurftrak::set_rangefinder_target_cm(float target_cm)
 {
     bool success = false;
 
+#if AP_RANGEFINDER_ENABLED
     if (sub.control_mode != Number::SURFTRAK) {
         sub.gcs().send_text(MAV_SEVERITY_WARNING, "wrong mode, rangefinder target not set");
     } else if (sub.inertial_nav.get_position_z_up_cm() >= sub.g.surftrak_depth) {
@@ -84,6 +87,7 @@ bool ModeSurftrak::set_rangefinder_target_cm(float target_cm)
     } else {
         reset();
     }
+#endif
 
     return success;
 }
@@ -141,6 +145,7 @@ void ModeSurftrak::control_range() {
  */
 void ModeSurftrak::update_surface_offset()
 {
+#if AP_RANGEFINDER_ENABLED
     if (sub.rangefinder_alt_ok()) {
         // Get the latest terrain offset
         float rangefinder_terrain_offset_cm = sub.rangefinder_state.rangefinder_terrain_offset_cm;
@@ -162,4 +167,5 @@ void ModeSurftrak::update_surface_offset()
             sub.pos_control.set_pos_offset_target_z_cm(rangefinder_terrain_offset_cm);
         }
     }
+#endif  // AP_RANGEFINDER_ENABLED
 }

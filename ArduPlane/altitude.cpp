@@ -115,11 +115,21 @@ int32_t Plane::get_RTL_altitude_cm() const
  */
 float Plane::relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available)
 {
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+   float height_AGL;
+   // use external HAGL if available
+   if (get_external_HAGL(height_AGL)) {
+       return height_AGL;
+   }
+#endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+
+#if AP_RANGEFINDER_ENABLED
    if (use_rangefinder_if_available && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
    }
+#endif
 
-#if HAL_QUADPLANE_ENABLED
+#if HAL_QUADPLANE_ENABLED && AP_RANGEFINDER_ENABLED
    if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
        rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
@@ -252,8 +262,10 @@ int32_t Plane::relative_target_altitude_cm(void)
         target_altitude.lookahead = lookahead_adjustment();
         relative_home_height += target_altitude.lookahead;
 
+#if AP_RANGEFINDER_ENABLED
         // correct for rangefinder data
         relative_home_height += rangefinder_correction();
+#endif
 
         // we are following terrain, and have terrain data for the
         // current location. Use it.
@@ -262,7 +274,9 @@ int32_t Plane::relative_target_altitude_cm(void)
 #endif
     int32_t relative_alt = target_altitude.amsl_cm - home.alt;
     relative_alt += mission_alt_offset()*100;
+#if AP_RANGEFINDER_ENABLED
     relative_alt += rangefinder_correction() * 100;
+#endif
     return relative_alt;
 }
 
@@ -608,6 +622,7 @@ float Plane::lookahead_adjustment(void)
 }
 
 
+#if AP_RANGEFINDER_ENABLED
 /*
   correct target altitude using rangefinder data. Returns offset in
   meters to correct target altitude. A positive number means we need
@@ -747,6 +762,7 @@ void Plane::rangefinder_height_update(void)
         
     }
 }
+#endif  // AP_RANGEFINDER_ENABLED
 
 /*
   determine if Non Auto Terrain Disable is active and allowed in present control mode
@@ -802,3 +818,67 @@ bool Plane::terrain_enabled_in_mode(Mode::Number num) const
     return false;
 }
 #endif
+
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+/*
+  handle a MAV_CMD_SET_HAGL request. The accuracy is ignored
+ */
+void Plane::handle_external_hagl(const mavlink_command_int_t &packet)
+{
+    auto &hagl = plane.external_hagl;
+    hagl.hagl = packet.param1;
+    hagl.last_update_ms = AP_HAL::millis();
+    hagl.timeout_ms = uint32_t(packet.param3 * 1000);
+}
+
+/*
+  get HAGL from external source if current
+ */
+bool Plane::get_external_HAGL(float &height_agl)
+{
+    auto &hagl = plane.external_hagl;
+    if (hagl.last_update_ms != 0) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - hagl.last_update_ms <= hagl.timeout_ms) {
+            height_agl = hagl.hagl;
+            return true;
+        }
+        hagl.last_update_ms = 0;
+    }
+    return false;
+}
+#endif // AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+
+/*
+  get height for landing. Set using_rangefinder to true if a rangefinder
+  or external HAGL source is active
+ */
+float Plane::get_landing_height(bool &rangefinder_active)
+{
+    float height;
+
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+    // if external HAGL is active use that
+    if (get_external_HAGL(height)) {
+        // ensure no terrain correction is applied - that is the job
+        // of the external system if it is wanted
+        auto_state.terrain_correction = 0;
+
+        // an external HAGL is considered to be a type of rangefinder
+        rangefinder_active = true;
+        return height;
+    }
+#endif
+
+    // get basic height above target
+    height = height_above_target();
+    rangefinder_active = false;
+
+#if AP_RANGEFINDER_ENABLED
+    // possibly correct with rangefinder
+    height -= rangefinder_correction();
+    rangefinder_active = g.rangefinder_landing && rangefinder_state.in_range;
+#endif
+
+    return height;
+}

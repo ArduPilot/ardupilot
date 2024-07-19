@@ -133,7 +133,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: CAN_TYPE1
     // @DisplayName: transport type for first CAN interface
     // @Description: transport type for first CAN interface
-    // @Values: 0:MulticastUDP,1:SocketCAN
+    // @Values: 0:None,1:MulticastUDP,2:SocketCAN
     // @User: Advanced
     AP_GROUPINFO("CAN_TYPE1", 30, SIM,  can_transport[0], uint8_t(CANTransport::MulticastUDP)),
 #endif
@@ -142,7 +142,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Param: CAN_TYPE2
     // @DisplayName: transport type for second CAN interface
     // @Description: transport type for second CAN interface
-    // @Values: 0:MulticastUDP,1:SocketCAN
+    // @Values: 0:None,1:MulticastUDP,2:SocketCAN
     // @User: Advanced
     AP_GROUPINFO("CAN_TYPE2", 31, SIM,  can_transport[1], uint8_t(CANTransport::MulticastUDP)),
 #endif
@@ -207,6 +207,11 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TEMP_TCONST",  3, SIM,  temp_tconst, 30),
     AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
+    // @Param: WIND_DIR_Z
+    // @DisplayName: Simulated wind vertical direction
+    // @Description: Allows you to set vertical wind direction (true deg) in sim. 0 means pure horizontal wind. 90 means pure updraft.
+    // @Units: deg
+    // @User: Advanced
     AP_GROUPINFO("WIND_DIR_Z",  10, SIM,  wind_dir_z,     0),
     // @Param: WIND_T
     // @DisplayName: Wind Profile Type

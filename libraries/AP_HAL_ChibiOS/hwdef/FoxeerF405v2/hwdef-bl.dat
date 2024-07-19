@@ -27,8 +27,7 @@ SERIAL_ORDER OTG1
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 
 
 # Chip select pins

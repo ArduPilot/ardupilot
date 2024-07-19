@@ -55,18 +55,18 @@ public:
 
     // trivial ctor
     // note that the Vector3 ctor will zero the vector elements
-    constexpr Matrix3<T>() {}
+    constexpr Matrix3() {}
 
     // setting ctor
-    constexpr Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
+    constexpr Matrix3(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
         : a(a0)
         , b(b0)
         , c(c0) {}
 
     // setting ctor
-    constexpr Matrix3<T>(const T ax, const T ay, const T az,
-                         const T bx, const T by, const T bz,
-                         const T cx, const T cy, const T cz)
+    constexpr Matrix3(const T ax, const T ay, const T az,
+                      const T bx, const T by, const T bz,
+                      const T cx, const T cy, const T cz)
         : a(ax,ay,az)
         , b(bx,by,bz)
         , c(cx,cy,cz) {}

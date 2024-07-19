@@ -98,6 +98,7 @@ define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 18.2
 
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
 define HAL_GPIO_A_LED_PIN 57
 
 # 64kB FLASH_RESERVE_START_KB means we're lacking a lot of space:

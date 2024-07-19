@@ -78,6 +78,12 @@ char *tmpnam(char s[L_tmpnam]);
 #endif
 
 #define FILE APFS_FILE
+
+#ifndef __cplusplus
+/*
+  only redefine posix functions for C code (eg. lua).
+  for C++ use the AP_Filsystem APIs
+*/
 #define fopen(p,m) apfs_fopen(p,m)
 #define fprintf(stream, format, args...) apfs_fprintf(stream, format, ##args)
 #define fflush(s) apfs_fflush(s)
@@ -101,6 +107,7 @@ char *tmpnam(char s[L_tmpnam]);
 #define remove(pathname) apfs_remove(pathname)
 int sprintf(char *str, const char *format, ...);
 #endif
+#endif // __cplusplus
 
 #ifdef __cplusplus
 }

@@ -91,6 +91,7 @@ known_units = {
              'deg'     : 'degrees'               ,     # Not SI, but is some situations more user-friendly than radians
              'deg/s'   : 'degrees per second'    ,     # Not SI, but is some situations more user-friendly than radians
              'deg/s/s' : 'degrees per square second',  # Not SI, but is some situations more user-friendly than radians
+             'deg/s/s/s' : 'degrees per cube second',  # Not SI, but is some situations more user-friendly than radians
              'cdeg'    : 'centidegrees'          ,     # Not SI, but is some situations more user-friendly than radians
              'cdeg/s'  : 'centidegrees per second',    # Not SI, but is some situations more user-friendly than radians
              'cdeg/s/s': 'centidegrees per square second' , # Not SI, but is some situations more user-friendly than radians

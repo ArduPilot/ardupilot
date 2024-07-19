@@ -43,18 +43,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-
-#define VOLZ_SCALE_VALUE 					(uint16_t)(VOLZ_EXTENDED_POSITION_MAX - VOLZ_EXTENDED_POSITION_MIN)	// Extended Position Data Format defines 100 as 0x0F80, which results in 1920 steps for +100 deg and 1920 steps for -100 degs meaning if you take movement a scaled between -1 ... 1 and multiply by 1920 you get the travel from center
-#define VOLZ_SET_EXTENDED_POSITION_CMD 		0xDC
-#define VOLZ_SET_EXTENDED_POSITION_RSP 		0x2C
-#define VOLZ_DATA_FRAME_SIZE		 		6
-
-#define VOLZ_EXTENDED_POSITION_MIN 			0x0080	// Extended Position Data Format defines -100 as 0x0080 decimal 128
-#define VOLZ_EXTENDED_POSITION_CENTER 		0x0800	// Extended Position Data Format defines 0 as 0x0800 - decimal 2048
-#define VOLZ_EXTENDED_POSITION_MAX 			0x0F80	// Extended Position Data Format defines +100 as 0x0F80 decimal 3968 -> full range decimal 3840
-
-#define VOLZ_PWM_POSITION_MIN				1000
-#define VOLZ_PWM_POSITION_MAX				2000
+#include <SRV_Channel/SRV_Channel_config.h>
 
 class AP_Volz_Protocol {
 public:
@@ -64,21 +53,38 @@ public:
     CLASS_NO_COPY(AP_Volz_Protocol);
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     void update();
 
 private:
-    AP_HAL::UARTDriver *port;
-    
-    void init(void);
-    void send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]);
-    void update_volz_bitmask(uint32_t new_bitmask);
 
-    uint32_t last_volz_update_time;
-    uint32_t volz_time_frame_micros;
-    uint32_t last_used_bitmask;
+    // Command frame
+    union CMD {
+        struct PACKED {
+            uint8_t ID; // CMD ID
+            uint8_t actuator_id; // actuator send to or receiving from
+            uint8_t arg1; // CMD dependant argument 1
+            uint8_t arg2; // CMD dependant argument 2
+            uint8_t crc1;
+            uint8_t crc2;
+        };
+        uint8_t data[6];
+    };
+
+    AP_HAL::UARTDriver *port;
+
+    // Loop in thread to output to uart
+    void loop();
+    uint8_t last_sent_index;
+
+    void init(void);
+    void send_command(CMD &cmd);
+
+    // Incoming PWM commands from the servo lib
+    uint16_t servo_pwm[NUM_SERVO_CHANNELS];
 
     AP_Int32 bitmask;
+    AP_Int16 range;
     bool initialised;
 };
 

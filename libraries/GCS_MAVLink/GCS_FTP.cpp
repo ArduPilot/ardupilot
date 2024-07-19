@@ -588,16 +588,23 @@ void GCS_MAVLINK::ftp_worker(void) {
 
 // calculates how much string length is needed to fit this in a list response
 int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry) {
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
     const bool is_file = entry->d_type == DT_REG || entry->d_type == DT_LNK;
+#else
+    // assume true initially, then handle below
+    const bool is_file = true;
+#endif
 
     if (space < 3) {
         return -1;
     }
     dest[0] = 0;
 
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
     if (!is_file && entry->d_type != DT_DIR) {
         return -1; // this just forces it so we can't send this back, it's easier then sending skips to a GCS
     }
+#endif
 
     if (is_file) {
 #ifdef MAX_NAME_LEN
@@ -612,6 +619,12 @@ int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const
         if (AP::FS().stat(full_path, &st)) {
             return -1;
         }
+
+#if !AP_FILESYSTEM_HAVE_DIRENT_DTYPE
+        if (S_ISDIR(st.st_mode)) {
+            return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+        }
+#endif
         return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
     } else {
         return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);

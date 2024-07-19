@@ -202,15 +202,23 @@ void ModeAuto::set_submode(SubMode new_submode)
     }
 }
 
+bool ModeAuto::option_is_enabled(Option option) const
+{
+    return ((copter.g2.auto_options & (uint32_t)option) != 0);
+}
+
 bool ModeAuto::allows_arming(AP_Arming::Method method) const
 {
-    return ((copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0) && !auto_RTL;
-};
+    if (auto_RTL) {
+        return false;
+    }
+    return option_is_enabled(Option::AllowArming);
+}
 
 #if WEATHERVANE_ENABLED == ENABLED
 bool ModeAuto::allows_weathervaning() const
 {
-    return (copter.g2.auto_options & (uint32_t)Options::AllowWeatherVaning) != 0;
+    return option_is_enabled(Option::AllowWeatherVaning);
 }
 #endif
 
@@ -638,7 +646,7 @@ void PayloadPlace::start_descent()
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeAuto::use_pilot_yaw(void) const
 {
-    const bool allow_yaw_option = (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool allow_yaw_option = !option_is_enabled(Option::IgnorePilotYaw);
     const bool rtl_allow_yaw = (_mode == SubMode::RTL) && copter.mode_rtl.use_pilot_yaw();
     const bool landing = _mode == SubMode::LAND;
     return allow_yaw_option || rtl_allow_yaw || landing;
@@ -1039,7 +1047,7 @@ void ModeAuto::takeoff_run()
 {
     // if the user doesn't want to raise the throttle we can set it automatically
     // note that this can defeat the disarm check on takeoff
-    if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
+    if (option_is_enabled(Option::AllowTakeOffWithoutRaisingThrottle)) {
         copter.set_auto_armed(true);
     }
     auto_takeoff.run();
@@ -1197,8 +1205,10 @@ void ModeAuto::loiter_to_alt_run()
     // get avoidance adjusted climb rate
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
+#if AP_RANGEFINDER_ENABLED
     // update the vertical offset based on the surface measurement
     copter.surface_tracking.update_surface_offset();
+#endif
 
     // Send the commanded climb rate to the position controller
     pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
@@ -1253,13 +1263,21 @@ void PayloadPlace::run()
     const uint32_t descent_thrust_cal_duration_ms = 2000; // milliseconds
     const uint32_t placed_check_duration_ms = 500; // how long we have to be below a throttle threshold before considering placed
 
-    // Vertical thrust is taken from the attitude controller before angle boost is added
+    auto &g2 = copter.g2;
+    const auto &g = copter.g;
+    auto &inertial_nav = copter.inertial_nav;
     auto *attitude_control = copter.attitude_control;
+    const auto &pos_control = copter.pos_control;
+    const auto &wp_nav = copter.wp_nav;
+
+    // Vertical thrust is taken from the attitude controller before angle boost is added
     const float thrust_level = attitude_control->get_throttle_in();
     const uint32_t now_ms = AP_HAL::millis();
 
+    // relax position target if we might be landed
     // if we discover we've landed then immediately release the load:
     if (copter.ap.land_complete || copter.ap.land_complete_maybe) {
+        pos_control->soften_for_landing_xy();
         switch (state) {
         case State::FlyToLocation:
             // this is handled in wp_run()
@@ -1287,7 +1305,9 @@ void PayloadPlace::run()
         switch (state) {
         case State::FlyToLocation:
         case State::Descent_Start:
-            gcs().send_text(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
+            gcs().send_text(MAV_SEVERITY_INFO, "%s Abort: Gripper Open", prefix_str);
+            // Descent_Start has not run so we must also initalise descent_start_altitude_cm
+            descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
             state = State::Done;
             break;
         case State::Descent:
@@ -1304,12 +1324,6 @@ void PayloadPlace::run()
         }
     }
 #endif
-
-    auto &inertial_nav = copter.inertial_nav;
-    auto &g2 = copter.g2;
-    const auto &g = copter.g;
-    const auto &wp_nav = copter.wp_nav;
-    const auto &pos_control = copter.pos_control;
 
     switch (state) {
     case State::FlyToLocation:

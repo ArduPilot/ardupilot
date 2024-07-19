@@ -541,29 +541,46 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
 
-    if (_transition_count > 0) {
-        _transition_count -= 1;
-    } else {
-        _transition_count = 0;
-    }
-    float throttle_out = 0.0f;
-    if (_transition_count > 0) {
-        if ((_ahrs.roll_sensor >= -3000 && _ahrs.roll_sensor <= 3000) || _ahrs.roll_sensor >= 15000 || _ahrs.roll_sensor <= -15000) {
-            throttle_out = (throttle_in - ((AP_MotorsHeli&)_motors).get_coll_mid()) / cosf(radians(_ahrs.roll_sensor * 0.01f)) + ((AP_MotorsHeli&)_motors).get_coll_mid();
-        } else if ((_ahrs.roll_sensor > 3000 && _ahrs.roll_sensor < 15000) || (_ahrs.roll_sensor > -15000 && _ahrs.roll_sensor < -3000)) {
-            float scale_factor = cosf(radians(_ahrs.roll_sensor * 0.01f)) / cosf(radians(30.0f));
-            throttle_out = scale_factor * (throttle_in - ((AP_MotorsHeli&)_motors).get_coll_mid())/ cosf(radians(30.0f)) + ((AP_MotorsHeli&)_motors).get_coll_mid();
-        }
-    } else if (_inverted_flight) {
-        throttle_out = 1.0f - throttle_in;
-    } else {
-        throttle_out = throttle_in;
-    }
-
     _motors.set_throttle_filter_cutoff(filter_cutoff);
-    _motors.set_throttle(throttle_out);
-    // Clear angle_boost for logging purposes
-    _angle_boost = 0.0f;
+    if (apply_angle_boost && !((AP_MotorsHeli&)_motors).get_in_autorotation()) {
+        // Apply angle boost
+        throttle_in = get_throttle_boosted(throttle_in);
+    } else {
+        // Clear angle_boost for logging purposes
+        _angle_boost = 0.0f;
+    }
+    _motors.set_throttle(throttle_in);
+}
+
+// returns a throttle including compensation for roll/pitch angle
+// throttle value should be 0 ~ 1
+float AC_AttitudeControl_Heli::get_throttle_boosted(float throttle_in)
+{
+    if (!_angle_boost_enabled) {
+        _angle_boost = 0;
+        return throttle_in;
+    }
+    // inverted_factor is 1 for tilt angles below 60 degrees
+    // inverted_factor changes from 1 to -1 for tilt angles between 60 and 120 degrees
+
+    float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
+    float inverted_factor = constrain_float(2.0f * cos_tilt, -1.0f, 1.0f);
+    float cos_tilt_target = fabsf(cosf(_thrust_angle));
+    float boost_factor = 1.0f / constrain_float(cos_tilt_target, 0.1f, 1.0f);
+
+    // angle boost and inverted factor applied about the zero thrust collective
+    const float coll_mid = ((AP_MotorsHeli&)_motors).get_coll_mid();
+    float throttle_out = ((throttle_in - coll_mid)  * inverted_factor * boost_factor) + coll_mid;
+    _angle_boost = constrain_float(throttle_out - throttle_in, -1.0f, 1.0f);
+    return throttle_out;
+}
+
+// get_roll_trim - angle in centi-degrees to be added to roll angle for learn hover collective. Used by helicopter to counter tail rotor thrust in hover
+float AC_AttitudeControl_Heli::get_roll_trim_cd()
+{
+    // hover roll trim is given the opposite sign in inverted flight since the tail rotor thrust is pointed in the opposite direction. 
+    float inverted_factor = constrain_float(2.0f * _ahrs.cos_roll(), -1.0f, 1.0f);
+    return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim * inverted_factor, -1000.0f,1000.0f);
 }
 
 // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
@@ -593,11 +610,35 @@ void AC_AttitudeControl_Heli::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
-// enable/disable inverted flight
-void AC_AttitudeControl_Heli::set_inverted_flight(bool inverted)
+// Command a thrust vector and heading rate
+void AC_AttitudeControl_Heli::input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
-    if (_inverted_flight != inverted) {
-        _transition_count = AC_ATTITUDE_HELI_INVERTED_TRANSITION_TIME * AP::scheduler().get_filtered_loop_rate_hz();
+
+    if (!_inverted_flight) {
+        AC_AttitudeControl::input_thrust_vector_rate_heading(thrust_vector, heading_rate_cds, slew_yaw);
+        return;
     }
-    _inverted_flight = inverted;
+    // convert thrust vector to a roll and pitch angles
+    // this negates the advantage of using thrust vector control, but works just fine
+    Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
+
+    float euler_roll_angle_cd = degrees(angle_target.x) * 100.0f;
+    euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
+    AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_rate_cds);
+}
+
+// Command a thrust vector, heading and heading rate
+void AC_AttitudeControl_Heli::input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
+{
+    if (!_inverted_flight) {
+        AC_AttitudeControl::input_thrust_vector_heading(thrust_vector, heading_angle_cd, heading_rate_cds);
+        return;
+    }
+    // convert thrust vector to a roll and pitch angles
+    Vector3f angle_target = attitude_from_thrust_vector(thrust_vector, _ahrs.yaw).to_vector312();
+
+    float euler_roll_angle_cd = degrees(angle_target.x) * 100.0f;
+    euler_roll_angle_cd = wrap_180_cd(euler_roll_angle_cd + 18000);
+    // note that we are throwing away heading rate here
+    AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, degrees(angle_target.y) * 100.0f, heading_angle_cd, true);
 }

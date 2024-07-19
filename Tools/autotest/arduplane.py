@@ -8,7 +8,6 @@ from __future__ import print_function
 import math
 import os
 import signal
-import time
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -1609,18 +1608,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # Test arming outside inclusion zone
             self.progress("Test arming while vehicle outside of inclusion zone")
             self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
-            locs = [
-                mavutil.location(1.000, 1.000, 0, 0),
-                mavutil.location(1.000, 1.001, 0, 0),
-                mavutil.location(1.001, 1.001, 0, 0),
-                mavutil.location(1.001, 1.000, 0, 0)
-            ]
-            self.upload_fences_from_locations(
-                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-                [
-                    locs
+            self.upload_fences_from_locations([(
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                    mavutil.location(1.000, 1.000, 0, 0),
+                    mavutil.location(1.000, 1.001, 0, 0),
+                    mavutil.location(1.001, 1.001, 0, 0),
+                    mavutil.location(1.001, 1.000, 0, 0)
                 ]
-            )
+            )])
             self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
             self.do_fence_enable()
             self.assert_fence_enabled()
@@ -1638,12 +1633,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.001, 0, 0),
                 mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
             ]
-            self.upload_fences_from_locations(
-                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-                [
-                    locs
-                ]
-            )
+            self.upload_fences_from_locations([
+                (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, locs),
+            ])
             self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
             self.do_fence_enable()
             self.assert_fence_enabled()
@@ -1896,7 +1888,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.install_message_hook_context(terrain_following_above_80m)
 
         self.change_mode("GUIDED")
-        self.do_reposition(guided_loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.send_do_reposition(guided_loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
         self.progress("Flying to guided location")
         self.wait_location(
             guided_loc,
@@ -1919,7 +1911,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Fly back to guided location
         self.change_mode("GUIDED")
-        self.do_reposition(guided_loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.send_do_reposition(guided_loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
         self.progress("Flying to back to guided location")
 
         # Disable terrain following and re-load rally point with relative to terrain altitude
@@ -2136,42 +2128,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.context_push()
         self.set_parameter("EK3_OPTIONS", 1)
         self.set_parameter("AHRS_OPTIONS", 3)
         self.set_parameter("LOG_REPLAY", 1)
         self.reboot_sitl()
         self.wait_ready_to_arm()
-        self.gpi = None
-        self.simstate = None
-        self.last_print = 0
-        self.max_divergence = 0
 
-        def validate_global_position_int_against_simstate(mav, m):
-            if m.get_type() == 'GLOBAL_POSITION_INT':
-                self.gpi = m
-            elif m.get_type() == 'SIMSTATE':
-                self.simstate = m
-            if self.gpi is None:
-                return
-            if self.simstate is None:
-                return
-            divergence = self.get_distance_int(self.gpi, self.simstate)
-            if disable_airspeed_sensor:
-                max_allowed_divergence = 300
-            else:
-                max_allowed_divergence = 150
-            if (time.time() - self.last_print > 1 or
-                    divergence > self.max_divergence):
-                self.progress("position-estimate-divergence=%fm" % (divergence,))
-                self.last_print = time.time()
-            if divergence > self.max_divergence:
-                self.max_divergence = divergence
-            if divergence > max_allowed_divergence:
-                raise NotAchievedException(
-                    "global-position-int diverged from simstate by %fm (max=%fm" %
-                    (divergence, max_allowed_divergence,))
-
-        self.install_message_hook(validate_global_position_int_against_simstate)
+        if disable_airspeed_sensor:
+            max_allowed_divergence = 300
+        else:
+            max_allowed_divergence = 150
+        self.install_message_hook_context(vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=max_allowed_divergence))  # noqa
 
         try:
             # wind is from the West:
@@ -2232,9 +2200,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("GPS use re-started %f sec after jamming stopped" % time_since_jamming_stopped)
             self.set_rc(3, 1000)
             self.fly_home_land_and_disarm()
-            self.progress("max-divergence: %fm" % (self.max_divergence,))
         finally:
-            self.remove_message_hook(validate_global_position_int_against_simstate)
+            pass
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def Deadreckoning(self):
         '''Test deadreckoning support'''
@@ -3743,12 +3713,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.001, 0, 0),
             mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
         ]
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                locs
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
+        ])
         self.delay_sim_time(1)
         self.wait_ready_to_arm()
         self.takeoff(alt=50)
@@ -3806,12 +3773,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.003, 0, 0),
             mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
         ]
-        self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                locs
-            ]
-        )
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
+        ])
         self.delay_sim_time(1)
         self.wait_ready_to_arm()
         self.takeoff(alt=50)
@@ -5400,6 +5364,62 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.fly_home_land_and_disarm()
 
+    def ScriptStats(self):
+        '''test script stats logging'''
+        self.context_push()
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+            'SCR_DEBUG_OPTS': 8,  # runtime memory usage and time
+        })
+        self.install_test_scripts_context([
+            "math.lua",
+            "strings.lua",
+        ])
+        self.install_example_script_context('simple_loop.lua')
+        self.context_collect('STATUSTEXT')
+
+        self.reboot_sitl()
+
+        self.wait_statustext('hello, world')
+        delay = 20
+        self.delay_sim_time(delay, reason='gather some stats')
+        self.wait_statustext("math.lua exceeded time limit", check_context=True, timeout=0)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen_hello_world = False
+#        runtime = None
+        while True:
+            m = dfreader.recv_match(type=['SCR'])
+            if m is None:
+                break
+            if m.Name == "simple_loop.lua":
+                seen_hello_world = True
+#            if m.Name == "math.lua":
+#                runtime = m.Runtime
+
+        if not seen_hello_world:
+            raise NotAchievedException("Did not see simple_loop.lua script")
+
+#        self.progress(f"math took {runtime} seconds to run over {delay} seconds")
+#        if runtime == 0:
+#            raise NotAchievedException("Expected non-zero runtime for math")
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def GPSPreArms(self):
+        '''ensure GPS prearm checks work'''
+        self.wait_ready_to_arm()
+        self.start_subtest('DroneCAN sanity checks')
+        self.set_parameter('GPS1_TYPE', 9)
+        self.set_parameter('GPS2_TYPE', 9)
+        self.set_parameter('GPS1_CAN_OVRIDE', 130)
+        self.set_parameter('GPS2_CAN_OVRIDE', 130)
+        self.assert_prearm_failure(
+            "set for multiple GPS",
+            other_prearm_failures_fatal=False,
+        )
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5511,6 +5531,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MinThrottle,
             self.ClimbThrottleSaturation,
             self.GuidedAttitudeNoGPS,
+            self.ScriptStats,
+            self.GPSPreArms,
         ])
         return ret
 

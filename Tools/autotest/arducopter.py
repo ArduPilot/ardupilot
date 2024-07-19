@@ -1115,6 +1115,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("All Battery failsafe tests complete")
 
+    def BatteryMissing(self):
+        ''' Test battery health pre-arm and missing failsafe'''
+        self.context_push()
+
+        # Should be good to arm with no changes
+        self.wait_ready_to_arm()
+
+        # Make monitor unhealthy, this should result in unhealthy prearm
+        self.set_parameters({
+            'BATT_VOLT_PIN': -1,
+        })
+
+        self.drain_mav()
+
+        # Battery should go unhealthy immediately
+        self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
+
+        # Return monitor to health
+        self.context_pop()
+        self.context_push()
+
+        self.wait_ready_to_arm()
+
+        # take off and then trigger in flight
+        self.takeoff(10, mode="LOITER")
+        self.set_parameters({
+            'BATT_VOLT_PIN': -1,
+        })
+
+        # Should trigger missing failsafe
+        self.wait_statustext("Battery 1 is missing")
+
+        # Done, reset params and reboot to clear failsafe
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def VibrationFailsafe(self):
         '''Test Vibration Failsafe'''
         self.context_push()
@@ -2421,8 +2458,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ex = e
 
         self.set_rc(2, 1500)
-        self.context_pop()
         self.reboot_sitl(force=True)
+        self.context_pop()
 
         if ex is not None:
             raise ex
@@ -2503,8 +2540,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
 
         if ex is not None:
@@ -4951,48 +4988,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Test payload placing in auto."""
         self.context_push()
 
-        ex = None
-        try:
-            self.set_analog_rangefinder_parameters()
-            self.set_servo_gripper_parameters()
-            self.reboot_sitl()
+        self.set_analog_rangefinder_parameters()
+        self.set_servo_gripper_parameters()
+        self.reboot_sitl()
 
-            self.load_mission("copter_payload_place.txt")
-            if self.mavproxy is not None:
-                self.mavproxy.send('wp list\n')
+        self.load_mission("copter_payload_place.txt")
+        if self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
 
-            self.set_parameter("AUTO_OPTIONS", 3)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
 
-            self.arm_vehicle()
+        self.arm_vehicle()
 
-            self.wait_text("Gripper load releas", timeout=90)
-            dist_limit = 1
-            # this is a copy of the point in the mission file:
-            target_loc = mavutil.location(-35.363106,
-                                          149.165436,
-                                          0,
-                                          0)
-            dist = self.get_distance(target_loc, self.mav.location())
-            self.progress("dist=%f" % (dist,))
-            if dist > dist_limit:
-                raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
-                                           (dist, dist_limit))
+        self.wait_text("Gripper load releas", timeout=90)
+        dist_limit = 1
+        # this is a copy of the point in the mission file:
+        target_loc = mavutil.location(-35.363106,
+                                      149.165436,
+                                      0,
+                                      0)
+        dist = self.get_distance(target_loc, self.mav.location())
+        self.progress("dist=%f" % (dist,))
+        if dist > dist_limit:
+            raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
+                                       (dist, dist_limit))
 
-            self.wait_disarmed()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle(force=True)
-            ex = e
+        self.wait_disarmed()
 
         self.context_pop()
         self.reboot_sitl()
         self.progress("All done")
-
-        if ex is not None:
-            raise ex
 
     def Weathervane(self):
         '''Test copter weathervaning'''
@@ -5650,10 +5677,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
-
         self.mav.mav.srcSystem = old_srcSystem
         self.disarm_vehicle(force=True)
+
+        self.context_pop()
+
         self.reboot_sitl() # to handle MNT1_TYPE changing
 
         if ex is not None:
@@ -7159,8 +7187,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
         self.progress("All done")
 
@@ -7425,9 +7453,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_current_onboard_log_contains_message("PRX")
         self.assert_current_onboard_log_contains_message("PRXR")
 
-        self.context_pop()
-
         self.disarm_vehicle(force=True)
+
+        self.context_pop()
         self.reboot_sitl()
 
     def ProximitySensors(self):
@@ -7577,8 +7605,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.context_pop()
         self.reboot_sitl()
         if ex is not None:
             raise ex
@@ -9235,17 +9263,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
 
-        util.run_cmd(
-            ['build/sitl/tool/Replay', current_log_filepath],
-            directory=util.topdir(),
-            checkfail=True,
-            show=True,
-            output=True,
-        )
+        self.run_replay(current_log_filepath)
+
+        replay_log_filepath = self.current_onboard_log_filepath()
 
         self.context_pop()
 
-        replay_log_filepath = self.current_onboard_log_filepath()
         self.progress("Replay log path: %s" % str(replay_log_filepath))
 
         check_replay = util.load_local_module("Tools/Replay/check_replay.py")
@@ -10414,9 +10437,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_servo_channel_value(pump_ch, pump_ch_min)
 
+        self.disarm_vehicle(force=True)
+
         self.context_pop()
 
-        self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
         self.progress("Sprayer OK")
@@ -10462,6 +10486,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = ([
              self.BatteryFailsafe,
+             self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
              self.StabilityPatch,
@@ -11360,7 +11385,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.delay_sim_time(1500)
 
+        self.disarm_vehicle(force=True)
+
         self.context_pop()
+
         self.reboot_sitl(force=True)
 
     def GuidedForceArm(self):
@@ -11426,6 +11454,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.delay_sim_time(1500)
 
+        self.disarm_vehicle(force=True)
+
         self.context_pop()
         self.reboot_sitl(force=True)
 
@@ -11487,7 +11517,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         here = self.mav.location()
         loc = self.offset_location_ne(here, 10, 0)
         self.takeoff(5, mode='GUIDED')
-        self.do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
         self.wait_location(loc, timeout=120)
         self.land_and_disarm()
 
@@ -11523,6 +11553,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.takeoff(30, mode='LOITER')
+        self.context_push()
+        self.context_collect('STATUSTEXT')
         self.set_parameters({
             "SIM_ENGINE_FAIL": 1,
             "SIM_ENGINE_MUL": 0.5,
@@ -11530,10 +11562,73 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.wait_statustext("Gripper Load Released", timeout=60)
-
         self.context_pop()
+
         self.do_RTL()
+        self.context_pop()
         self.reboot_sitl()
+
+    def assert_home_position_not_set(self):
+        try:
+            self.poll_home_position()
+        except NotAchievedException:
+            return
+
+        # if home.lng != 0: etc
+
+        raise NotAchievedException("Home is set when it shouldn't be")
+
+    def REQUIRE_POSITION_FOR_ARMING(self):
+        '''check FlightOption::REQUIRE_POSITION_FOR_ARMING works'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_GPS_NUMSATS": 3,  # EKF does not like < 6
+        })
+        self.reboot_sitl()
+        self.change_mode('STABILIZE')
+        self.wait_prearm_sys_status_healthy()
+        self.assert_home_position_not_set()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.change_mode('LOITER')
+        self.assert_prearm_failure("waiting for home", other_prearm_failures_fatal=False)
+
+        self.change_mode('STABILIZE')
+        self.set_parameters({
+            "FLIGHT_OPTIONS": 8,
+        })
+        self.assert_prearm_failure("Need Position Estimate", other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def AutoContinueOnRCFailsafe(self):
+        '''check LOITER when entered after RC failsafe is ignored in auto'''
+        self.set_parameters({
+            "FS_OPTIONS": 1,  # 1 is "RC continue if in auto"
+        })
+
+        self.upload_simple_relhome_mission([
+            #                                      N   E  U
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 60, 0, 10),
+        ])
+
+        self.takeoff(mode='LOITER')
+        self.set_rc(1, 1200)
+        self.delay_sim_time(1)  # build up some pilot desired stuff
+        self.change_mode('AUTO')
+        self.wait_waypoint(2, 2)
+        self.set_parameters({
+            'SIM_RC_FAIL': 1,
+        })
+#        self.set_rc(1, 1500)  # note we are still in RC fail!
+        self.wait_waypoint(3, 3)
+        self.assert_mode_is('AUTO')
+        self.change_mode('LOITER')
+        self.wait_groundspeed(0, 0.1, minimum_duration=30, timeout=450)
+        self.do_RTL()
 
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
@@ -11588,6 +11683,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.WatchAlts,
             self.GuidedEKFLaneChange,
             self.Sprayer,
+            self.AutoContinueOnRCFailsafe,
             self.EK3_RNG_USE_HGT,
             self.TerrainDBPreArm,
             self.ThrottleGainBoost,
@@ -11626,6 +11722,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GuidedWeatherVane,
             self.Clamp,
             self.GripperReleaseOnThrustLoss,
+            self.REQUIRE_POSITION_FOR_ARMING,
+            self.LoggingFormat,
         ])
         return ret
 

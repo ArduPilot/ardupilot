@@ -1,10 +1,11 @@
 #include "Copter.h"
 
+#if AP_RANGEFINDER_ENABLED
+
 // update_surface_offset - manages the vertical offset of the position controller to follow the measured ground or ceiling
 //   level measured using the range finder.
 void Copter::SurfaceTracking::update_surface_offset()
 {
-#if RANGEFINDER_ENABLED == ENABLED
     // check for timeout
     const uint32_t now_ms = millis();
     const bool timeout = (now_ms - last_update_ms) > SURFACE_TRACKING_TIMEOUT_MS;
@@ -41,10 +42,6 @@ void Copter::SurfaceTracking::update_surface_offset()
             reset_target = true;
         }
     }
-#else
-    copter.pos_control->set_pos_offset_z_cm(0);
-    copter.pos_control->set_pos_offset_target_z_cm(0);
-#endif
 }
 
 
@@ -111,3 +108,5 @@ void Copter::SurfaceTracking::set_surface(Surface new_surface)
     surface = new_surface;
     reset_target = true;
 }
+
+#endif  // AP_RANGEFINDER_ENABLED

@@ -243,7 +243,7 @@ public:
 
     AP_Float        throttle_filt;
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     AP_Int8         rangefinder_signal_min;     // minimum signal quality for good rangefinder readings
     AP_Float        surftrak_depth;             // surftrak will try to keep sub below this depth
 #endif
@@ -366,6 +366,9 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
+    AP_Float backup_origin_lat;
+    AP_Float backup_origin_lon;
+    AP_Float backup_origin_alt;
 };
 
 extern const AP_Param::Info        var_info[];

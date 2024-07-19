@@ -85,6 +85,13 @@ public:
     virtual void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) {}
 #endif
 
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
+    bool has_been_killed(uint8_t instance) const { return ((1U<<instance) & _imu.imu_kill_mask); }
+#else
+    bool has_been_killed(uint8_t instance) const { return false; }
+#endif
+
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -139,7 +146,11 @@ protected:
     HAL_Semaphore _sem;
 
     //Default Clip Limit
-    float _clip_limit = 15.5f * GRAVITY_MSS;
+    float _clip_limit = (16.0f - 0.5f) * GRAVITY_MSS;
+
+    // instance numbers of accel and gyro data
+    uint8_t gyro_instance;
+    uint8_t accel_instance;
 
     void _rotate_and_correct_accel(uint8_t instance, Vector3f &accel) __RAMFUNC__;
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) __RAMFUNC__;
@@ -279,6 +290,14 @@ protected:
 
     void set_accel_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._accel_orientation[instance] = rotation;
+    }
+
+    uint8_t get_gyro_instance() const {
+        return gyro_instance;
+    }
+
+    uint8_t get_accel_instance() const {
+        return accel_instance;
     }
 
     // increment clipping counted. Used by drivers that do decimation before supplying

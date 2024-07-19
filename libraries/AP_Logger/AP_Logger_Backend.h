@@ -9,6 +9,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Vehicle/ModeReason.h>
+#include "LogStructure.h"
 
 class LoggerMessageWriter_DFLogStart;
 
@@ -132,6 +133,9 @@ public:
     bool Write_Fence();
 #endif
     bool Write_Format(const struct LogStructure *structure);
+    bool have_emitted_format_for_type(LogMessages a_type) const {
+        return _formats_written.get(uint8_t(a_type));
+    }
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
@@ -154,6 +158,9 @@ public:
     // write a FMT message out (if it hasn't been done already).
     // Returns true if the FMT message has ever been written.
     bool Write_Emit_FMT(uint8_t msg_type);
+
+    // output a FMT message if not already done so
+    void Safe_Write_Emit_FMT(uint8_t msg_type);
 
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
@@ -195,7 +202,6 @@ protected:
     /*
       read a block
     */
-    virtual bool WriteBlockCheckStartupMessages();
     virtual void WriteMoreStartupMessages();
     virtual void push_log_blocks();
 
@@ -205,7 +211,6 @@ protected:
     uint16_t _cached_oldest_log;
 
     uint32_t _dropped;
-    uint32_t _log_file_size_bytes;
     // should we rotate when we next stop logging
     bool _rotate_pending;
 
@@ -262,6 +267,12 @@ private:
 
     void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
+
+    bool message_type_from_block(const void *pBuffer, uint16_t size, LogMessages &type) const;
+    bool ensure_format_emitted(const void *pBuffer, uint16_t size);
+    bool emit_format_for_type(LogMessages a_type);
+    Bitmask<256> _formats_written;
+
 };
 
 #endif  // HAL_LOGGING_ENABLED

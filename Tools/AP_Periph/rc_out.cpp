@@ -63,6 +63,13 @@ void AP_Periph_FW::rcout_init()
     // run this once and at 1Hz to configure aux and esc ranges
     rcout_init_1Hz();
 
+#if HAL_DSHOT_ENABLED
+    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
+#endif
+
+    // run PWM ESCs at configured rate
+    hal.rcout->set_freq(esc_mask, g.esc_rate.get());
+
     // setup ESCs with the desired PWM type, allowing for DShot
     SRV_Channels::init(esc_mask, (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get());
 

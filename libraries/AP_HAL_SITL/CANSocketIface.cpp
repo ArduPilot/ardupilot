@@ -224,6 +224,10 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
         transport = NEW_NOTHROW CAN_SocketCAN();
 #endif
         break;
+    case SITL::SIM::CANTransport::None:
+    default: // if user supplies an invalid value for the parameter
+        transport = nullptr;
+        break;
     }
     if (transport == nullptr) {
         return false;

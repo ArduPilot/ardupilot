@@ -6,6 +6,7 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
+#if AP_RANGEFINDER_ENABLED
 /********************************************************
 *              OPT FLOW AND RANGE FINDER                *
 ********************************************************/
@@ -105,6 +106,7 @@ void NavEKF3_core::readRangeFinder(void)
         }
     }
 }
+#endif  // AP_RANGEFINDER_ENABLED
 
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
@@ -372,7 +374,7 @@ void NavEKF3_core::readMagData()
  *  Downsampling is done using a method that does not introduce coning or sculling
  *  errors.
  */
-void NavEKF3_core::readIMUData()
+void NavEKF3_core::readIMUData(bool startPredictEnabled)
 {
     const auto &ins = dal.ins();
 
@@ -387,13 +389,13 @@ void NavEKF3_core::readIMUData()
     if (ins.use_accel(imu_index)) {
         accel_active = imu_index;
     } else {
-        accel_active = ins.get_primary_accel();
+        accel_active = ins.get_first_usable_accel();
     }
 
     if (ins.use_gyro(imu_index)) {
         gyro_active = imu_index;
     } else {
-        gyro_active = ins.get_primary_gyro();
+        gyro_active = ins.get_first_usable_gyro();
     }
 
     if (gyro_active != gyro_index_active) {
@@ -690,15 +692,7 @@ void NavEKF3_core::readGpsData()
     }
 
     if (gpsGoodToAlign && !have_table_earth_field) {
-        const auto &compass = dal.compass();
-        if (compass.have_scale_factor(magSelectIndex) &&
-            compass.auto_declination_enabled()) {
-            getEarthFieldTable(gpsloc);
-            if (frontend->_mag_ef_limit > 0) {
-                // initialise earth field from tables
-                stateStruct.earth_magfield = table_earth_field_ga;
-            }
-        }
+        setEarthFieldFromLocation(gpsloc);
     }
 
     // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin

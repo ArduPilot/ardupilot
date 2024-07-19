@@ -862,13 +862,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         guided_loc = self.home_relative_loc_ne(0, 0)
         guided_loc.alt = 60
         self.change_mode("GUIDED")
-        self.do_reposition(guided_loc)
+        self.send_do_reposition(guided_loc)
         self.wait_altitude(58, 62, relative=True)
         self.set_parameter("Q_ASSIST_ALT", 50)
 
         # Try and descent to 40m
         guided_loc.alt = 40
-        self.do_reposition(guided_loc)
+        self.send_do_reposition(guided_loc)
 
         # Expect alt assist to kick in, eg "Alt assist 48.9m"
         self.wait_statustext(r"Alt assist \d*.\d*m", regex=True, timeout=100)

@@ -23,26 +23,28 @@
 
 #include <AP_InternalError/AP_InternalError.h>
 
-template<uint16_t num_bits>
+template<uint16_t NUMBITS>
 class Bitmask {
+    static constexpr uint16_t NUMWORDS = ((NUMBITS+31)/32);
+
+    static_assert(NUMBITS > 0, "must store something");
+    // for first_set()'s return value
+    static_assert(NUMBITS <= INT16_MAX, "must fit in int16_t");
+    // so that 1U << bits is in range
+    static_assert(sizeof(unsigned int) >= sizeof(uint32_t), "int too small");
+
 public:
-    Bitmask() :
-        numbits(num_bits),
-        numwords((num_bits+31)/32) {
+    Bitmask() {
         clearall();
     }
 
     Bitmask &operator=(const Bitmask&other) {
-        memcpy(bits, other.bits, sizeof(bits[0])*other.numwords);
+        memcpy(bits, other.bits, sizeof(bits[0])*NUMWORDS);
         return *this;
     }
 
     bool operator==(const Bitmask&other) {
-        if (other.numbits != numbits) {
-            return false;
-        } else {
-            return memcmp(bits, other.bits, sizeof(bits[0])*numwords) == 0;
-        }
+        return memcmp(bits, other.bits, sizeof(bits[0])*NUMWORDS) == 0;
     }
 
     bool operator!=(const Bitmask&other) {
@@ -53,10 +55,8 @@ public:
 
     // set given bitnumber
     void set(uint16_t bit) {
-        // ignore an invalid bit number
-        if (bit >= numbits) {
-            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
-            return;
+        if (!validate(bit)) {
+            return; // ignore access of invalid bit
         }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
@@ -65,17 +65,22 @@ public:
 
     // set all bits
     void setall(void) {
-        // set all words to 111... except the last one.
-        for (uint16_t i=0; i<numwords-1; i++) {
+        // set all words to 111...
+        for (uint16_t i=0; i<NUMWORDS; i++) {
             bits[i] = 0xffffffff;
         }
-        // set most of the last word to 111.., leaving out-of-range bits to be 0
-        uint16_t num_valid_bits = numbits % 32;
-        bits[numwords-1] = (1 << num_valid_bits) - 1;
+        // ensure out-of-range bits in the last word, if any exist, are 0
+        uint16_t num_valid_bits = NUMBITS % 32;
+        if (num_valid_bits) { // word has out of range bits
+            bits[NUMWORDS-1] = (1U << num_valid_bits) - 1;
+        }
     }
 
     // clear given bitnumber
     void clear(uint16_t bit) {
+        if (!validate(bit)) {
+            return; // ignore access of invalid bit
+        }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
         bits[word] &= ~(1U << ofs);
@@ -92,25 +97,22 @@ public:
 
     // clear all bits
     void clearall(void) {
-        memset(bits, 0, numwords*sizeof(bits[0]));
+        memset(bits, 0, NUMWORDS*sizeof(bits[0]));
     }
 
     // return true if given bitnumber is set
     bool get(uint16_t bit) const {
+        if (!validate(bit)) {
+            return false; // pretend invalid bit is not set
+        }
         uint16_t word = bit/32;
         uint8_t ofs = bit & 0x1f;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        if (bit >= numbits) {
-            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
-            return false;
-        }
-#endif
         return (bits[word] & (1U << ofs)) != 0;
     }
 
     // return true if all bits are clear
     bool empty(void) const {
-        for (uint16_t i=0; i<numwords; i++) {
+        for (uint16_t i=0; i<NUMWORDS; i++) {
             if (bits[i] != 0) {
                 return false;
             }
@@ -121,44 +123,35 @@ public:
     // return number of bits set
     uint16_t count() const {
         uint16_t sum = 0;
-        for (uint16_t i=0; i<numwords; i++) {
-            if (sizeof(bits[i]) <= sizeof(int)) {
-                sum += __builtin_popcount(bits[i]);
-            } else if (sizeof(bits[i]) <= sizeof(long)) {
-                sum += __builtin_popcountl(bits[i]);
-            } else {
-                sum += __builtin_popcountll(bits[i]);
-            }
+        for (uint16_t i=0; i<NUMWORDS; i++) {
+            sum += __builtin_popcount(bits[i]);
         }
         return sum;
     }
 
     // return first bit set, or -1 if none set
     int16_t first_set() const {
-        for (uint16_t i=0; i<numwords; i++) {
-            if (bits[i] == 0) {
-                continue;
+        for (uint16_t i=0; i<NUMWORDS; i++) {
+            if (bits[i] != 0) {
+                return i*32 + __builtin_ffs(bits[i]) - 1;
             }
-            int fs;
-            if (sizeof(bits[i]) <= sizeof(int)) {
-                fs = __builtin_ffs(bits[i]);
-            } else if (sizeof(bits[i]) <= sizeof(long)) {
-                fs = __builtin_ffsl(bits[i]);
-            } else {
-                fs = __builtin_ffsll(bits[i]);
-            }
-            return i*32 + fs - 1;
         }
         return -1;
     }
 
     // return number of bits available
     uint16_t size() const {
-        return numbits;
+        return NUMBITS;
     }
 
 private:
-    uint16_t numbits;
-    uint16_t numwords;
-    uint32_t bits[(num_bits+31)/32];
+    bool validate(uint16_t bit) const {
+        if (bit >= NUMBITS) {
+            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
+            return false;
+        }
+        return true;
+    }
+
+    uint32_t bits[NUMWORDS];
 };

@@ -29,7 +29,7 @@ VectorNav::VectorNav() :
 {
 }
 
-struct PACKED VN_packet1 {
+struct PACKED VN_INS_packet1 {
     float uncompMag[3];
     float uncompAccel[3];
     float uncompAngRate[3];
@@ -46,7 +46,7 @@ struct PACKED VN_packet1 {
     float velU;
 };
 
-struct PACKED VN_packet2 {
+struct PACKED VN_INS_packet2 {
     uint64_t timeGPS;
     float temp;
     uint8_t numGPS1Sats;
@@ -84,7 +84,7 @@ void VectorNav::send_packet1(void)
 {
     const auto &fdm = _sitl->state;
 
-    struct VN_packet1 pkt {};
+    struct VN_INS_packet1 pkt {};
 
     pkt.uncompAccel[0] = fdm.xAccel;
     pkt.uncompAccel[1] = fdm.yAccel;
@@ -146,7 +146,7 @@ void VectorNav::send_packet2(void)
 {
     const auto &fdm = _sitl->state;
 
-    struct VN_packet2 pkt {};
+    struct VN_INS_packet2 pkt {};
 
     struct timeval tv;
     simulation_timeval(&tv);
@@ -213,11 +213,14 @@ void VectorNav::update(void)
         send_packet2();
     }
 
-    // Strictly we should send this in responce to the request
-    // but sending it occasionally acheaves the same thing
-    if (now - last_type_us >= 1000000) {
-        last_type_us = now;
-        nmea_printf("$VNRRG,01,VN-300-SITL");
+    char receive_buf[50];
+    const ssize_t n = read_from_autopilot(&receive_buf[0], ARRAY_SIZE(receive_buf));
+    if (n > 0) {
+        if (strncmp(receive_buf, "$VNRRG,01", 9) == 0) {
+            nmea_printf("$VNRRG,01,VN-300-SITL");
+        } else {
+            nmea_printf("$%s", receive_buf);
+        }
     }
 
 }
