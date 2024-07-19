@@ -156,7 +156,7 @@ IOMCU_UART USART6
 # function. The names are looked up in the python database for this
 # MCU. Please see STM32F427xx.py for the F427 database. That database
 # is used to automatically fill in the alternative function (and later
-# for the DMA channels).
+# for the DMA channels).  
 
 # The third column is the peripheral type. This must be one of the
 # following: UARTn, USARTn, OTGn, SPIn, I2Cn, ADCn, TIMn, SWD, SDIO,
