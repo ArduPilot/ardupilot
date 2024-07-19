@@ -16,7 +16,6 @@
   support for serial connected AHRS systems
  */
 
-#include <cstdint>
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_ExternalAHRS_config.h"
