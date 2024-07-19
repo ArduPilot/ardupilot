@@ -25,24 +25,32 @@ The ZeroOne X6 is a flight controller manufactured by ZeroOne, which is based on
 
 ## UART Mapping
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
-| Name    | Function |
-| ------- | -------- |
-| SERIAL0 | OTG1     |
-| SERIAL1 | UART7    |
-| SERIAL2 | UART5    |
-| SERIAL3 | USART1   |
-| SERIAL4 | UART8    |
-| SERIAL5 | USART2   |
-| SERIAL6 | UART4    |
-| SERIAL7 | USART3   |
-| SERIAL8 | OTG2     |
+| Name    | Function |DMA|
+| ------- | -------- |---|
+| SERIAL0 | OTG1     ||
+| SERIAL1 | UART7    |DMA Enabled |
+| SERIAL2 | UART5    |DMA Enabled |
+| SERIAL3 | USART1   |DMA Enabled |
+| SERIAL4 | UART8    |DMA Enabled |
+| SERIAL5 | USART2   |DMA Enabled |
+| SERIAL6 | UART4    |DMA Enabled |
+| SERIAL7 | USART3   |DMA Enabled |
+| SERIAL8 | OTG2     ||
 
 ## RC Input
-The remote control signal should be connected to the SBUS RC IN port or DSM/PPM RC Port.Support three types of remote control signal inputs, SBUS/DSM and PPM signals.
+The remote control signal should be connected to the SBUS RC IN port or DSM/PPM RC Port.It will support ALL unidirectional RC protocols.
 
 ## PWM Output
-The X6 flight controller supports up to 16 PWM outputs. All 16 outputs support normal PWM output formats. All FMU outputs, except 7 and 8, also support DShot.
+The X6 flight controller supports up to 16 PWM outputs. 
+First first 8 outputs (labelled 1 to 8) are controlled by a dedicated STM32F103 IO controller. These 8 outputs support all PWM output formats, but not DShot.
+The remaining 8 outputs (labelled 9 to 16) are the "auxiliary" outputs. These are directly attached to the STM32H753 FMU controller .
+All 16 outputs support normal PWM output formats. All FMU outputs, except 15 and 16, also support DShot.
 
+The 8 IO PWM outputs are in 4 groups:
+- Outputs 1 and 2 in group1
+- Outputs 3 and 4 in group2
+- Outputs 5, 6, 7 and 8 in group3
+  
 The 8 FMU PWM outputs are in 4 groups:
 - Outputs 1, 2, 3 and 4 in group1
 - Outputs 5 and 6 in group2
