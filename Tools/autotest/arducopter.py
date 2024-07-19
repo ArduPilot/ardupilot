@@ -2266,46 +2266,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ModeFlip(self):
         '''Fly Flip Mode'''
-        ex = None
-        try:
-            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
 
-            self.takeoff(20)
-            self.hover()
-            old_speedup = self.get_parameter("SIM_SPEEDUP")
-            self.set_parameter('SIM_SPEEDUP', 1)
-            self.progress("Flipping in roll")
-            self.set_rc(1, 1700)
-            self.send_cmd_do_set_mode('FLIP') # don't wait for success
-            self.wait_attitude(despitch=0, desroll=45, tolerance=30)
-            self.wait_attitude(despitch=0, desroll=90, tolerance=30)
-            self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
-            self.progress("Waiting for level")
-            self.set_rc(1, 1500) # can't change quickly enough!
-            self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+        self.takeoff(20)
 
-            self.progress("Regaining altitude")
-            self.change_mode('ALT_HOLD')
-            self.wait_altitude(19, 60, relative=True)
+        self.progress("Flipping in roll")
+        self.set_rc(1, 1700)
+        self.send_cmd_do_set_mode('FLIP') # don't wait for success
+        self.wait_attitude(despitch=0, desroll=45, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=90, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
+        self.progress("Waiting for level")
+        self.set_rc(1, 1500) # can't change quickly enough!
+        self.wait_attitude(despitch=0, desroll=0, tolerance=5)
 
-            self.progress("Flipping in pitch")
-            self.set_rc(2, 1700)
-            self.send_cmd_do_set_mode('FLIP') # don't wait for success
-            self.wait_attitude(despitch=45, desroll=0, tolerance=30)
-            # can't check roll here as it flips from 0 to -180..
-            self.wait_attitude(despitch=90, tolerance=30)
-            self.wait_attitude(despitch=-45, tolerance=30)
-            self.progress("Waiting for level")
-            self.set_rc(2, 1500) # can't change quickly enough!
-            self.wait_attitude(despitch=0, desroll=0, tolerance=5)
-            self.set_parameter('SIM_SPEEDUP', old_speedup)
-            self.do_RTL()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 0)
-        if ex is not None:
-            raise ex
+        self.progress("Regaining altitude")
+        self.change_mode('ALT_HOLD')
+        self.wait_altitude(19, 60, relative=True)
+
+        self.progress("Flipping in pitch")
+        self.set_rc(2, 1700)
+        self.send_cmd_do_set_mode('FLIP') # don't wait for success
+        self.wait_attitude(despitch=45, desroll=0, tolerance=30)
+        # can't check roll here as it flips from 0 to -180..
+        self.wait_attitude(despitch=90, tolerance=30)
+        self.wait_attitude(despitch=-45, tolerance=30)
+        self.progress("Waiting for level")
+        self.set_rc(2, 1500) # can't change quickly enough!
+        self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+
+        self.do_RTL()
 
     def configure_EKFs_to_use_optical_flow_instead_of_GPS(self):
         '''configure EKF to use optical flow instead of GPS'''
