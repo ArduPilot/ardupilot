@@ -551,7 +551,7 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
     // @Field: GY: Rotation rate Y-axis
     // @Field: GZ: Rotation rate Z-axis
 
-    AP::logger().WriteStreaming("EAHIM", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
+    AP::logger().WriteStreaming("EAHI", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
                        "sdPGGGoooEEE", "F00000000000",
                        "Qfffffffffff",
                        AP_HAL::micros64(),
@@ -587,7 +587,7 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_ekf_packet(const uint8_t *b) {
     // @Field: PU: Pitch uncertainty
     // @Field: RU: Roll uncertainty
 
-    AP::logger().WriteStreaming("EAHAT", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
+    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
                        "s----dddddd", "F0000000000",
                        "Qffffffffff",
                        AP_HAL::micros64(),
@@ -602,7 +602,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     const struct VN_INS_ekf_packet &pkt = *(struct VN_INS_ekf_packet *)b;
 
     last_pkt2_ms          = AP_HAL::millis();
-    latest_ins_ekf_packet = &pkt;
+    *latest_ins_ekf_packet = pkt;
 
     state.quat = Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
     state.have_quaternion = true;
@@ -631,7 +631,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     // @Field: PU: Pitch uncertainty
     // @Field: RU: Roll uncertainty
 
-    AP::logger().WriteStreaming("EAHAT", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
+    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
                        "s----dddddd", "F0000000000",
                        "Qffffffffff",
                        now,
@@ -652,8 +652,8 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     // @Field: PosU: Filter estimated position uncertainty
     // @Field: VelU: Filter estimated Velocity uncertainty
 
-    AP::logger().WriteStreaming("EAHKF", "TimeUS,InsStatus,Lat,Lon,Alt,VelN,VelE,VelD,PosU,VelU",
-                       "s-ddmnnndn", "F00000000",
+    AP::logger().WriteStreaming("EAHK", "TimeUS,InsStatus,Lat,Lon,Alt,VelN,VelE,VelD,PosU,VelU",
+                       "s-ddmnnndn", "F000000000",
                        "QHdddfffff",
                        now,
                        pkt.insStatus,
@@ -670,7 +670,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
 
 
     last_pkt3_ms          = AP_HAL::millis();
-    latest_ins_gnss_packet = &pkt;
+    *latest_ins_gnss_packet = pkt;
     
     // get ToW in milliseconds
     gps.gps_week           = pkt.timeGps / (AP_MSEC_PER_WEEK * 1000000ULL);
