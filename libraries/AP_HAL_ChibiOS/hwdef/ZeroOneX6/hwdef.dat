@@ -1,9 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the ZeroOne X6 hardware
 
-# order of UARTs (and USB)
-SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
-
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
@@ -32,6 +29,9 @@ FLASH_SIZE_KB 2048
 CANFD_SUPPORTED 8
 
 env OPTIMIZE -O2
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
 # USB
 PA11 OTG_FS_DM OTG1
@@ -162,8 +162,10 @@ PH10 TIM5_CH1 TIM5 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) BIDIR
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
 
-# Pin for PWM Voltage Selection
+# Pin for PWM Voltage Selection, 0 means 3.3v, 1 means 5v
 PG6 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
+define HAL_GPIO_PWM_VOLT_PIN 3
+define HAL_GPIO_PWM_VOLT_3v3 0
 
 # we need to disable DMA on the last 2 FMU channels
 # as timer 12 doesn't have a TIMn_UP DMA option
@@ -174,14 +176,12 @@ PH9  TIM12_CH2 TIM12 PWM(8) GPIO(57) NODMA
 PE11 FMU_CAP1 INPUT GPIO(58)
 PC0 NFC_GPIO INPUT GPIO(60)
 
-
 # CAN bus
 PD0  CAN1_RX CAN1
 PD1  CAN1_TX CAN1
 
 PB12 CAN2_RX CAN2
 PB13 CAN2_TX CAN2
-
 
 # I2C buses
 
