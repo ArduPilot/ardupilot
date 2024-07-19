@@ -252,12 +252,6 @@ protected:
     AP_Float    _wp_jerk;               // maximum jerk used to generate scurve trajectories in m/s/s/s
     AP_Float    _terrain_margin;        // terrain following altitude margin. vehicle will stop if distance from target altitude is larger than this margin
 
-    // WPNAV_SPEED param change checker
-    bool _check_wp_speed_change;        // if true WPNAV_SPEED param should be checked for changes in-flight
-    float _last_wp_speed_cms;  // last recorded WPNAV_SPEED, used for changing speed in-flight
-    float _last_wp_speed_up_cms;  // last recorded WPNAV_SPEED_UP, used for changing speed in-flight
-    float _last_wp_speed_down_cms;  // last recorded WPNAV_SPEED_DN, used for changing speed in-flight
-
     // scurve
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;            // current scurve trajectory

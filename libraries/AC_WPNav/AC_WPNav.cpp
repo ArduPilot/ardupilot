@@ -119,11 +119,6 @@ AC_WPNav::AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosC
     // init flags
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;
-
-    // initialise old WPNAV_SPEED values
-    _last_wp_speed_cms = _wp_speed_cms;
-    _last_wp_speed_up_cms = _wp_speed_up_cms;
-    _last_wp_speed_down_cms = get_default_speed_down();
 }
 
 // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
@@ -166,7 +161,6 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
     _pos_control.init_xy_controller_stopping_point();
 
     // initialize the desired wp speed
-    _check_wp_speed_change = !is_positive(speed_cms);
     _wp_desired_speed_xy_cms = is_positive(speed_cms) ? speed_cms : _wp_speed_cms;
     _wp_desired_speed_xy_cms = MAX(_wp_desired_speed_xy_cms, WPNAV_WP_SPEED_MIN);
 
@@ -591,22 +585,6 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
 {
-    // check for changes in speed parameter values
-    if (_check_wp_speed_change) {
-        if (!is_equal(_wp_speed_cms.get(), _last_wp_speed_cms)) {
-            set_speed_xy(_wp_speed_cms);
-            _last_wp_speed_cms = _wp_speed_cms;
-        }
-    }
-    if (!is_equal(_wp_speed_up_cms.get(), _last_wp_speed_up_cms)) {
-        set_speed_up(_wp_speed_up_cms);
-        _last_wp_speed_up_cms = _wp_speed_up_cms;
-    }
-    if (!is_equal(_wp_speed_down_cms.get(), _last_wp_speed_down_cms)) {
-        set_speed_down(_wp_speed_down_cms);
-        _last_wp_speed_down_cms = _wp_speed_down_cms;
-    }
-
     // advance the target if necessary
     bool ret = true;
     if (!advance_wp_target_along_track(_pos_control.get_dt())) {
