@@ -129,16 +129,16 @@ void VectorNav::send_imu_packet(void)
     pkt.pressure = pressure_Pa*0.001 + rand_float() * 0.01;
 
     const uint8_t sync_byte = 0xFA;
-    write_to_autopilot((char *)&sync_byte, 1);
-    write_to_autopilot((char *)&VN_IMU_packet_sim::header, sizeof(VN_IMU_packet_sim::header));
-    write_to_autopilot((char *)&pkt, sizeof(pkt));
+    write_to_autopilot((const char *)&sync_byte, 1);
+    write_to_autopilot((const char *)&VN_IMU_packet_sim::header, sizeof(VN_IMU_packet_sim::header));
+    write_to_autopilot((const char *)&pkt, sizeof(pkt));
 
     uint16_t crc = crc16_ccitt(&VN_IMU_packet_sim::header[0], sizeof(VN_IMU_packet_sim::header), 0);
     crc = crc16_ccitt((const uint8_t *)&pkt, sizeof(pkt), crc);
     uint16_t crc2;
     swab(&crc, &crc2, 2);
 
-    write_to_autopilot((char *)&crc2, sizeof(crc2));
+    write_to_autopilot((const char *)&crc2, sizeof(crc2));
 }
 
 void VectorNav::send_ins_ekf_packet(void)
@@ -174,9 +174,9 @@ void VectorNav::send_ins_ekf_packet(void)
     pkt.velU = 0.25;
 
     const uint8_t sync_byte = 0xFA;
-    write_to_autopilot((char *)&sync_byte, 1);
-    write_to_autopilot((char *)&VN_INS_ekf_packet_sim::header, sizeof(VN_INS_ekf_packet_sim::header));
-    write_to_autopilot((char *)&pkt, sizeof(pkt));
+    write_to_autopilot((const char *)&sync_byte, 1);
+    write_to_autopilot((const char *)&VN_INS_ekf_packet_sim::header, sizeof(VN_INS_ekf_packet_sim::header));
+    write_to_autopilot((const char *)&pkt, sizeof(pkt));
 
     uint16_t crc = crc16_ccitt(&VN_INS_ekf_packet_sim::header[0], sizeof(VN_INS_ekf_packet_sim::header), 0);
     crc = crc16_ccitt((const uint8_t *)&pkt, sizeof(pkt), crc);
@@ -184,7 +184,7 @@ void VectorNav::send_ins_ekf_packet(void)
     uint16_t crc2;
     swab(&crc, &crc2, 2);
 
-    write_to_autopilot((char *)&crc2, sizeof(crc2));
+    write_to_autopilot((const char *)&crc2, sizeof(crc2));
 }
 
 void VectorNav::send_ins_gnss_packet(void)
@@ -221,9 +221,9 @@ void VectorNav::send_ins_gnss_packet(void)
     pkt.fix2 = 3;
 
     const uint8_t sync_byte = 0xFA;
-    write_to_autopilot((char *)&sync_byte, 1);
-    write_to_autopilot((char *)&VN_INS_gnss_packet_sim::header, sizeof(VN_INS_gnss_packet_sim::header));
-    write_to_autopilot((char *)&pkt, sizeof(pkt));
+    write_to_autopilot((const char *)&sync_byte, 1);
+    write_to_autopilot((const char *)&VN_INS_gnss_packet_sim::header, sizeof(VN_INS_gnss_packet_sim::header));
+    write_to_autopilot((const char *)&pkt, sizeof(pkt));
 
     uint16_t crc = crc16_ccitt(&VN_INS_gnss_packet_sim::header[0], sizeof(VN_INS_gnss_packet_sim::header), 0);
     crc = crc16_ccitt((const uint8_t *)&pkt, sizeof(pkt), crc);
@@ -231,7 +231,7 @@ void VectorNav::send_ins_gnss_packet(void)
     uint16_t crc2;
     swab(&crc, &crc2, 2);
 
-    write_to_autopilot((char *)&crc2, sizeof(crc2));
+    write_to_autopilot((const char *)&crc2, sizeof(crc2));
 }
 
 void VectorNav::nmea_printf(const char *fmt, ...)
