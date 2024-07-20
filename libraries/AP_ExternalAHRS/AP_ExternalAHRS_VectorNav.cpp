@@ -483,6 +483,44 @@ const char* AP_ExternalAHRS_VectorNav::get_name() const
     return nullptr;
 }
 
+// Input data struct for EAHA logging message, used by both AHRS mode and INS mode
+struct AP_ExternalAHRS_VectorNav::EAHA {
+    uint64_t timeUs;
+    float quat[4];
+    float ypr[3];
+    float yprU[3];
+};
+
+
+void AP_ExternalAHRS_VectorNav::write_eaha(const EAHA& data_to_log) const {
+
+#if HAL_LOGGING_ENABLED
+    // @LoggerMessage: EAHA
+    // @Description: External AHRS Attitude data
+    // @Field: TimeUS: Time since system startup
+    // @Field: Q1: Attitude quaternion 1
+    // @Field: Q2: Attitude quaternion 2
+    // @Field: Q3: Attitude quaternion 3
+    // @Field: Q4: Attitude quaternion 4
+    // @Field: Yaw: Yaw
+    // @Field: Pitch: Pitch
+    // @Field: Roll: Roll
+    // @Field: YU: Yaw unceratainty
+    // @Field: PU: Pitch uncertainty
+    // @Field: RU: Roll uncertainty
+
+    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
+                       "s----dddddd", "F0000000000",
+                       "Qffffffffff",
+                       data_to_log.timeUs,
+                       data_to_log.quat[0], data_to_log.quat[1], data_to_log.quat[2], data_to_log.quat[3],
+                       data_to_log.ypr[0], data_to_log.ypr[1], data_to_log.ypr[2], 
+                       data_to_log.yprU[0], data_to_log.yprU[1], data_to_log.yprU[2]);
+#endif
+}
+
+
+
 // process INS mode INS packet
 void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
 {
@@ -572,27 +610,13 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_ekf_packet(const uint8_t *b) {
     state.have_quaternion = true;
 
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: EAHA
-    // @Description: External AHRS Attitude data
-    // @Field: TimeUS: Time since system startup
-    // @Field: Q1: Attitude quaternion 1
-    // @Field: Q2: Attitude quaternion 2
-    // @Field: Q3: Attitude quaternion 3
-    // @Field: Q4: Attitude quaternion 4
-    // @Field: Yaw: Yaw
-    // @Field: Pitch: Pitch
-    // @Field: Roll: Roll
-    // @Field: YU: Yaw unceratainty
-    // @Field: PU: Pitch uncertainty
-    // @Field: RU: Roll uncertainty
+    EAHA data_to_log;
+    data_to_log.timeUs = AP_HAL::micros64();
+    memcpy(data_to_log.quat, pkt.quaternion, sizeof(pkt.quaternion));
+    memcpy(data_to_log.ypr, pkt.ypr, sizeof(pkt.ypr));
+    memcpy(data_to_log.yprU, pkt.yprU, sizeof(pkt.yprU));
 
-    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
-                       "s----dddddd", "F0000000000",
-                       "Qffffffffff",
-                       AP_HAL::micros64(),
-                       state.quat[0], state.quat[1], state.quat[2], state.quat[3],
-                       pkt.ypr[0], pkt.ypr[1], pkt.ypr[2], 
-                       pkt.yprU[0], pkt.yprU[1], pkt.yprU[2]);
+    write_eaha(data_to_log);
 #endif  // HAL_LOGGING_ENABLED
 }
 
@@ -614,29 +638,13 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     state.have_location           = true;
 
 #if HAL_LOGGING_ENABLED
-    auto now = AP_HAL::micros64();
-
-    // @LoggerMessage: EAHA
-    // @Description: External AHRS Attitude data
-    // @Field: TimeUS: Time since system startup
-    // @Field: Q1: Attitude quaternion 1
-    // @Field: Q2: Attitude quaternion 2
-    // @Field: Q3: Attitude quaternion 3
-    // @Field: Q4: Attitude quaternion 4
-    // @Field: Yaw: Yaw
-    // @Field: Pitch: Pitch
-    // @Field: Roll: Roll
-    // @Field: YU: Yaw unceratainty
-    // @Field: PU: Pitch uncertainty
-    // @Field: RU: Roll uncertainty
-
-    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
-                       "s----dddddd", "F0000000000",
-                       "Qffffffffff",
-                       now,
-                       state.quat[0], state.quat[1], state.quat[2], state.quat[3],
-                       pkt.ypr[0], pkt.ypr[1], pkt.ypr[2], 
-                       pkt.yprU[0], pkt.yprU[1], pkt.yprU[2]);
+    EAHA data_to_log;
+    auto now =  AP_HAL::micros64();
+    data_to_log.timeUs = now;
+    memcpy(data_to_log.quat, pkt.quaternion, sizeof(pkt.quaternion));
+    memcpy(data_to_log.ypr, pkt.ypr, sizeof(pkt.ypr));
+    memcpy(data_to_log.yprU, pkt.yprU, sizeof(pkt.yprU));
+    write_eaha(data_to_log);
 
     // @LoggerMessage: EAHK
     // @Description: External AHRS INS Kalman Filter data
@@ -660,6 +668,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
                        pkt.velNed[0], pkt.velNed[1], pkt.velNed[2],
                        pkt.posU, pkt.velU);
 #endif  // HAL_LOGGING_ENABLED
+
 }
 
 // process INS mode GNSS packet
