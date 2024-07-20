@@ -22,6 +22,10 @@
 #include "SIM_Motor.h"
 #include <AP_JSON/AP_JSON.h>
 
+#ifndef SIM_FRAME_MAX_ACTUATORS
+#define SIM_FRAME_MAX_ACTUATORS 32
+#endif
+
 namespace SITL {
 
 /*
@@ -132,10 +136,9 @@ private:
         // if zero value will be estimated from mass
         Vector3f moment_of_inertia;
 
-        // if zero will no be used
-        Vector3f motor_pos[12];
-        Vector3f motor_thrust_vec[12];
-        float yaw_factor[12] = {0};
+        Vector3f motor_pos[SIM_FRAME_MAX_ACTUATORS];
+        Vector3f motor_thrust_vec[SIM_FRAME_MAX_ACTUATORS];
+        float yaw_factor[SIM_FRAME_MAX_ACTUATORS] {0,};
 
         // number of motors
         float num_motors = 4;
