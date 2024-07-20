@@ -20,6 +20,21 @@ void Plane::fence_check()
     // check for new breaches; new_breaches is bitmask of fence types breached
     const uint8_t new_breaches = fence.check(is_in_landing);
 
+    const bool armed = arming.is_armed();
+
+    /*
+      if we are either disarmed or we are currently not in breach and
+      we are not flying then clear the state associated with the
+      previous mode breach handling. This allows the fence state
+      machine to reset at the end of a fence breach action such as an
+      RTL and autoland
+     */
+    if (plane.previous_mode_reason == ModeReason::FENCE_BREACHED) {
+        if (!armed || ((new_breaches == 0 && orig_breaches == 0) && !plane.is_flying())) {
+            plane.previous_mode_reason = ModeReason::UNKNOWN;
+        }
+    }
+
     if (!fence.enabled()) {
         // Switch back to the chosen control mode if still in
         // GUIDED to the return point
@@ -37,19 +52,6 @@ void Plane::fence_check()
                 break;
         }
         return;
-    }
-
-    const bool armed = arming.is_armed();
-
-    /*
-      if we are either disarmed or we are currently not in breach and
-      we are not flying then clear the state associated with the
-      previous mode breach handling. This allows the fence state
-      machine to reset at the end of a fence breach action such as an
-      RTL and autoland
-     */
-    if (!armed || (new_breaches == 0 && !plane.is_flying())) {
-        plane.previous_mode_reason = ModeReason::UNKNOWN;
     }
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
