@@ -17,7 +17,6 @@
 
 #if AP_EFI_SERIAL_FH_ENABLED
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
