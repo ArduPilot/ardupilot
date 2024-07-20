@@ -409,7 +409,7 @@ void Frame::load_frame_params(const char *model_json)
     };
     char label_name[20];
     for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
-        for (uint8_t j=0; j<12; j++) {
+        for (uint8_t j=0; j<SIM_FRAME_MAX_ACTUATORS; j++) {
             snprintf(label_name, 20, "motor%i_%s", j+1, per_motor_vars[i].label);
             auto v = obj->get(label_name);
             if (v.is<AP_JSON::null>()) {
