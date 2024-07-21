@@ -213,29 +213,6 @@ void AP_IrisOrca::thread_main()
 
     while (true)
     {
-        // 1ms loop delay
-        hal.scheduler->delay_microseconds(1000);
-
-        // check if transmit pin should be unset
-        check_for_send_end();
-
-        // check for timeout waiting for reply
-        check_for_reply_timeout();
-
-        // parse incoming characters
-        uint32_t nbytes = MIN(_uart->available(), 1024U);
-        while (nbytes-- > 0) {
-            int16_t b = _uart->read();
-            if (b >= 0 ) {
-                if (parse_byte((uint8_t)b)) {
-                    // complete message received, parse it!
-                    parse_message();
-                    // clear wait-for-reply because if we are waiting for a reply, this message must be it
-                    set_reply_received();
-                }
-            }
-        }
-
         // send a single command depending on the control state
         // or send a sleep command if there is an active error
         uint32_t now_ms = AP_HAL::millis();
@@ -243,6 +220,8 @@ void AP_IrisOrca::thread_main()
         {
             if (_actuator_state.errors != 0) {
                 // send sleep command if in error state to attempt to clear the error
+                // Note: Errors are initialized to 2048 (comm error) so that sleep should be the
+                // first command sent on boot
                 send_actuator_sleep_cmd();
                 if (now_ms - _last_error_report_ms > IRISORCA_ERROR_REPORT_INTERVAL_MAX_MS) {
                     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IrisOrca: Error %i", _actuator_state.errors);
@@ -294,6 +273,29 @@ void AP_IrisOrca::thread_main()
 
                 default:
                     break;
+            }
+        }
+        
+        // 1ms loop delay
+        hal.scheduler->delay_microseconds(1000);
+
+        // check if transmit pin should be unset
+        check_for_send_end();
+
+        // check for timeout waiting for reply
+        check_for_reply_timeout();
+
+        // parse incoming characters
+        uint32_t nbytes = MIN(_uart->available(), 1024U);
+        while (nbytes-- > 0) {
+            int16_t b = _uart->read();
+            if (b >= 0 ) {
+                if (parse_byte((uint8_t)b)) {
+                    // complete message received, parse it!
+                    parse_message();
+                    // clear wait-for-reply because if we are waiting for a reply, this message must be it
+                    set_reply_received();
+                }
             }
         }
     }
