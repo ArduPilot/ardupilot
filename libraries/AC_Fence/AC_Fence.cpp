@@ -144,7 +144,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
     // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER),
+    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
     AP_GROUPEND
 };
@@ -237,7 +237,9 @@ void AC_Fence::update()
 #endif
 }
 
-/// enable the Fence code generally; a master switch for all fences
+// enable or disable configured fences present in fence_types
+// also updates the bitmask of auto enabled fences if update_auto_mask is true
+// returns a bitmask of fences that were changed
 uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
 {
     uint8_t fences = _configured_fences.get() & fence_types;
