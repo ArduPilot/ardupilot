@@ -8,9 +8,11 @@
 void Plane::fence_check()
 {
     const uint8_t orig_breaches = fence.get_breaches();
+    const bool armed = arming.is_armed();
 
     uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
-    bool is_in_landing = plane.flight_stage == AP_FixedWing::FlightStage::LAND
+    bool landing_or_landed = plane.flight_stage == AP_FixedWing::FlightStage::LAND
+                         || !armed
 #if HAL_QUADPLANE_ENABLED
                          || control_mode->mode_number() == Mode::Number::QLAND
                          || quadplane.in_vtol_land_descent()
@@ -18,9 +20,7 @@ void Plane::fence_check()
                          || (plane.is_land_command(mission_id) && plane.mission.state() == AP_Mission::MISSION_RUNNING);
 
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check(is_in_landing);
-
-    const bool armed = arming.is_armed();
+    const uint8_t new_breaches = fence.check(landing_or_landed);
 
     /*
       if we are either disarmed or we are currently not in breach and
