@@ -134,6 +134,9 @@ void AC_AutoTune::send_step_string()
     case UPDATE_GAINS:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
         return;
+    case ABORT:
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Aborting Test");
+        return;
     case TESTING:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Testing");
         return;
@@ -527,7 +530,9 @@ void AC_AutoTune::control_attitude()
                 }
             }
         }
+        FALLTHROUGH;
 
+    case ABORT:
         if (axis == YAW || axis == YAW_D) {
             // todo: check to make sure we need this
             attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
@@ -585,6 +590,7 @@ void AC_AutoTune::backup_gains_and_initialise()
  */
 void AC_AutoTune::load_gains(enum GainType gain_type)
 {
+    // todo: add previous setting so gains are not loaded on each loop.
     switch (gain_type) {
     case GAIN_ORIGINAL:
         load_orig_gains();

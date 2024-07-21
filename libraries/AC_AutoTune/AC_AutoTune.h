@@ -198,6 +198,7 @@ protected:
         WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
         TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
         UPDATE_GAINS      = 2,    // autotune has completed a test and is updating the gains based on the results
+        ABORT             = 3     // load normal gains and return to WAITING_FOR_LEVEL
     };
 
     // mini steps performed while in Tuning mode, Testing step
