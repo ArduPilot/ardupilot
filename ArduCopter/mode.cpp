@@ -354,6 +354,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
         fence.get_breaches() &&
         !flightmode->is_landing() &&
+        motors->armed() &&
         get_control_mode_reason() == ModeReason::FENCE_BREACHED &&
         !ap.land_complete) {
         mode_change_failed(new_flightmode, "in fence recovery");
