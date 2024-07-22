@@ -747,7 +747,7 @@ bool can_check_update(void)
     bool ret = false;
 #if HAL_RAM_RESERVE_START >= 256
     struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
-    if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC) {
+    if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC && comms->my_node_id != 0) {
         can_set_node_id(comms->my_node_id);
         fw_update.node_id = comms->server_node_id;
         for (uint8_t i=0; i<FW_UPDATE_PIPELINE_LEN; i++) {
