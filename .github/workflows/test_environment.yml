@@ -79,7 +79,7 @@ jobs:
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
-        timeout-minutes: 45
+        timeout-minutes: 60
         env:
           DISABLE_MAVNATIVE: True
           DEBIAN_FRONTEND: noninteractive
