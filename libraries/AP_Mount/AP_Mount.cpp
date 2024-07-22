@@ -46,7 +46,7 @@ AP_Mount::AP_Mount()
     }
     _singleton = this;
 
-	AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // init - detect and initialise all mounts
@@ -184,6 +184,8 @@ void AP_Mount::init()
             set_mode_to_default(instance);
         }
     }
+
+    (void)serial_instance;
 }
 
 // update - give mount opportunity to update servos.  should be called at 10hz or higher
