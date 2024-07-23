@@ -74,7 +74,7 @@ int main(void)
 
     flash_init();
 
-#ifdef STM32H7
+#if defined(STM32H7) && CH_CFG_USE_HEAP
     check_ecc_errors();
 #endif
     

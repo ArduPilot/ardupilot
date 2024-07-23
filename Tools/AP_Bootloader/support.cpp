@@ -533,7 +533,7 @@ void port_setbaud(uint32_t baudrate)
 }
 #endif // BOOTLOADER_DEV_LIST
 
-#ifdef STM32H7
+#if defined(STM32H7) && CH_CFG_USE_HEAP
 /*
   check if flash has any ECC errors and if it does then erase all of
   flash
@@ -580,5 +580,5 @@ void check_ecc_errors(void)
     }
     __enable_fault_irq();
 }
-#endif // STM32H7
+#endif // defined(STM32H7) && CH_CFG_USE_HEAP
 
