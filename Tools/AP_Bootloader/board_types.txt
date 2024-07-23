@@ -367,6 +367,8 @@ AP_HW_ZeroOne_GNSS                   5602
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
+# IDs 6900-6909 reserved for Easy Aerial
+
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
 
