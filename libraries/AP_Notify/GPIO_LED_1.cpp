@@ -22,8 +22,8 @@
 #include <AP_HAL/HAL.h>
 #include "AP_Notify.h"
 
-#ifndef AP_NOTIFY_GPIO_LED_A_PIN
-#error "define AP_NOTIFY_GPIO_LED_A_PIN"
+#ifndef AP_NOTIFY_GPIO_LED_1_PIN
+#error "define AP_NOTIFY_GPIO_LED_1_PIN"
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -33,9 +33,9 @@ bool GPIO_LED_1::init(void)
     // when HAL_GPIO_LED_ON is 0 then we must not use pinMode()
     // as it could remove the OPENDRAIN attribute on the pin
 #if HAL_GPIO_LED_ON != 0
-    hal.gpio->pinMode(AP_NOTIFY_GPIO_LED_A_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(AP_NOTIFY_GPIO_LED_1_PIN, HAL_GPIO_OUTPUT);
 #endif
-    hal.gpio->write(AP_NOTIFY_GPIO_LED_A_PIN, HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_1_PIN, HAL_GPIO_LED_OFF);
     return true;
 }
 
@@ -67,7 +67,7 @@ void GPIO_LED_1::update(void)
     last_timestep_ms = now_ms;
 
     const auto new_state = (current_pattern & (1U<<next_bit)) ? HAL_GPIO_LED_ON : HAL_GPIO_LED_OFF;
-    hal.gpio->write(AP_NOTIFY_GPIO_LED_A_PIN, new_state);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_1_PIN, new_state);
     next_bit++;
     if (next_bit > 31) {
         next_bit = 0;
