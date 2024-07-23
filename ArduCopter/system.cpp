@@ -27,9 +27,11 @@ void Copter::init_ardupilot()
     // initialise battery monitor
     battery.init();
 
+#if AP_RSSI_ENABLED
     // Init RSSI
     rssi.init();
-    
+#endif
+
     barometer.init();
 
     // setup telem slots with serial ports
