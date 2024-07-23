@@ -1076,6 +1076,9 @@ void AP_Mount_Topotek::gimbal_version_analyse()
                 version[ver_count++] = ver_num;
                 ver_num = 0;
             }
+            if (ver_count >= ARRAY_SIZE(version)) {
+                break;
+            }
         }
     } else {
         if (data_buf_len >= 1) {
