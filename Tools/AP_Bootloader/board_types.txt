@@ -312,6 +312,8 @@ AP_HW_LongbowF405                    1422
 
 AP_HW_MountainEagleH743              1444
 
+AP_HW_StellarF4                      1500
+
 AP_HW_SakuraRC-H743                  2714
 
 # IDs 4200-4220 reserved for HAKRC
