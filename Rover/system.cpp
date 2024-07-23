@@ -18,7 +18,9 @@ void Rover::init_ardupilot()
     rpm_sensor.init();
 #endif
 
+#if AP_RSSI_ENABLED
     rssi.init();
+#endif
 
     g2.windvane.init(serial_manager);
 
