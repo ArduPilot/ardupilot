@@ -961,21 +961,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     # Tests all actions and logic behind the battery failsafe
     def BatteryFailsafe(self, timeout=300):
         '''Fly Battery Failsafe'''
-        self.context_push()
-        ex = None
-        try:
-            self.test_battery_failsafe(timeout=timeout)
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle(force=True)
-            ex = e
-        self.context_pop()
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
-
-    def test_battery_failsafe(self, timeout=300):
         self.progress("Configure battery failsafe parameters")
         self.set_parameters({
             'SIM_SPEEDUP': 4,
@@ -3730,82 +3715,68 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
+        """Setup parameters including switching to EKF3"""
+        self.set_parameters({
+            "VISO_TYPE": 2,      # enable vicon
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_ENABLE": 1,
+            "EK3_SRC2_POSXY": 6, # External Nav
+            "EK3_SRC2_POSZ": 6,  # External Nav
+            "EK3_SRC2_VELXY": 6, # External Nav
+            "EK3_SRC2_VELZ": 6,  # External Nav
+            "EK3_SRC2_YAW": 6,   # External Nav
+            "RC7_OPTION": 80,    # RC aux switch 7 set to Viso Align
+            "RC8_OPTION": 90,    # RC aux switch 8 set to EKF source selector
+            "EK2_ENABLE": 0,
+            "AHRS_EKF_TYPE": 3,
+        })
         self.customise_SITL_commandline(["--serial5=sim:vicon:"])
 
-        """Setup parameters including switching to EKF3"""
-        self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "VISO_TYPE": 2,      # enable vicon
-                "SERIAL5_PROTOCOL": 2,
-                "EK3_ENABLE": 1,
-                "EK3_SRC2_POSXY": 6, # External Nav
-                "EK3_SRC2_POSZ": 6,  # External Nav
-                "EK3_SRC2_VELXY": 6, # External Nav
-                "EK3_SRC2_VELZ": 6,  # External Nav
-                "EK3_SRC2_YAW": 6,   # External Nav
-                "RC7_OPTION": 80,    # RC aux switch 7 set to Viso Align
-                "RC8_OPTION": 90,    # RC aux switch 8 set to EKF source selector
-                "EK2_ENABLE": 0,
-                "AHRS_EKF_TYPE": 3,
-            })
-            self.reboot_sitl()
+        # switch to use GPS
+        self.set_rc(8, 1000)
 
-            # switch to use GPS
-            self.set_rc(8, 1000)
+        # ensure we can get a global position:
+        self.poll_home_position(timeout=120)
 
-            # ensure we can get a global position:
-            self.poll_home_position(timeout=120)
+        # record starting position
+        old_pos = self.get_global_position_int()
+        print("old_pos=%s" % str(old_pos))
 
-            # record starting position
-            old_pos = self.get_global_position_int()
-            print("old_pos=%s" % str(old_pos))
+        # align vicon yaw with ahrs heading
+        self.set_rc(7, 2000)
 
-            # align vicon yaw with ahrs heading
-            self.set_rc(7, 2000)
+        # takeoff to 10m in Loiter
+        self.progress("Moving to ensure location is tracked")
+        self.takeoff(10, mode="LOITER", require_absolute=True, timeout=720)
 
-            # takeoff to 10m in Loiter
-            self.progress("Moving to ensure location is tracked")
-            self.takeoff(10, mode="LOITER", require_absolute=True, timeout=720)
+        # fly forward in Loiter
+        self.set_rc(2, 1300)
 
-            # fly forward in Loiter
-            self.set_rc(2, 1300)
+        # disable vicon
+        self.set_parameter("SIM_VICON_FAIL", 1)
 
-            # disable vicon
-            self.set_parameter("SIM_VICON_FAIL", 1)
+        # ensure vehicle remain in Loiter for 15 seconds
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 15:
+            if not self.mode_is('LOITER'):
+                raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
-            # ensure vehicle remain in Loiter for 15 seconds
-            tstart = self.get_sim_time()
-            while self.get_sim_time() - tstart < 15:
-                if not self.mode_is('LOITER'):
-                    raise NotAchievedException("Expected to stay in loiter for >15 seconds")
+        # re-enable vicon
+        self.set_parameter("SIM_VICON_FAIL", 0)
 
-            # re-enable vicon
-            self.set_parameter("SIM_VICON_FAIL", 0)
+        # switch to vicon, disable GPS and wait 10sec to ensure vehicle remains in Loiter
+        self.set_rc(8, 1500)
+        self.set_parameter("GPS1_TYPE", 0)
 
-            # switch to vicon, disable GPS and wait 10sec to ensure vehicle remains in Loiter
-            self.set_rc(8, 1500)
-            self.set_parameter("GPS1_TYPE", 0)
+        # ensure vehicle remain in Loiter for 15 seconds
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 15:
+            if not self.mode_is('LOITER'):
+                raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
-            # ensure vehicle remain in Loiter for 15 seconds
-            tstart = self.get_sim_time()
-            while self.get_sim_time() - tstart < 15:
-                if not self.mode_is('LOITER'):
-                    raise NotAchievedException("Expected to stay in loiter for >15 seconds")
-
-            # RTL and check vehicle arrives within 10m of home
-            self.set_rc(2, 1500)
-            self.do_RTL()
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
+        # RTL and check vehicle arrives within 10m of home
+        self.set_rc(2, 1500)
+        self.do_RTL()
 
     def RTLSpeed(self):
         """Test RTL Speed parameters"""
@@ -3885,9 +3856,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def RangeFinder(self):
         '''Test RangeFinder Basic Functionality'''
-        ex = None
-        self.context_push()
-
         self.progress("Making sure we don't ordinarily get RANGEFINDER")
         m = self.mav.recv_match(type='RANGEFINDER',
                                 blocking=True,
@@ -3903,68 +3871,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("Found unexpected RFND message")
 
-        try:
-            self.set_analog_rangefinder_parameters()
-            self.set_parameter("RC9_OPTION", 10) # rangefinder
-            self.set_rc(9, 2000)
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RC9_OPTION", 10) # rangefinder
+        self.set_rc(9, 2000)
 
-            self.reboot_sitl()
-
-            self.progress("Making sure we now get RANGEFINDER messages")
-            m = self.assert_receive_message('RANGEFINDER', timeout=10)
-
-            self.progress("Checking RangeFinder is marked as enabled in mavlink")
-            m = self.mav.recv_match(type='SYS_STATUS',
-                                    blocking=True,
-                                    timeout=10)
-            flags = m.onboard_control_sensors_enabled
-            if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
-                raise NotAchievedException("Laser not enabled in SYS_STATUS")
-            self.progress("Disabling laser using switch")
-            self.set_rc(9, 1000)
-            self.delay_sim_time(1)
-            self.progress("Checking RangeFinder is marked as disabled in mavlink")
-            m = self.mav.recv_match(type='SYS_STATUS',
-                                    blocking=True,
-                                    timeout=10)
-            flags = m.onboard_control_sensors_enabled
-            if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
-                raise NotAchievedException("Laser enabled in SYS_STATUS")
-
-            self.progress("Re-enabling rangefinder")
-            self.set_rc(9, 2000)
-            self.delay_sim_time(1)
-            m = self.mav.recv_match(type='SYS_STATUS',
-                                    blocking=True,
-                                    timeout=10)
-            flags = m.onboard_control_sensors_enabled
-            if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
-                raise NotAchievedException("Laser not enabled in SYS_STATUS")
-
-            self.takeoff(10, mode="LOITER")
-
-            m_r = self.mav.recv_match(type='RANGEFINDER',
-                                      blocking=True)
-            m_p = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                      blocking=True)
-
-            if abs(m_r.distance - m_p.relative_alt/1000) > 1:
-                raise NotAchievedException(
-                    "rangefinder/global position int mismatch %0.2f vs %0.2f" %
-                    (m_r.distance, m_p.relative_alt/1000))
-
-            self.land_and_disarm()
-
-            if not self.current_onboard_log_contains_message("RFND"):
-                raise NotAchievedException("Did not see expected RFND message")
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
+
+        self.progress("Making sure we now get RANGEFINDER messages")
+        m = self.assert_receive_message('RANGEFINDER', timeout=10)
+
+        self.progress("Checking RangeFinder is marked as enabled in mavlink")
+        m = self.mav.recv_match(type='SYS_STATUS',
+                                blocking=True,
+                                timeout=10)
+        flags = m.onboard_control_sensors_enabled
+        if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+            raise NotAchievedException("Laser not enabled in SYS_STATUS")
+        self.progress("Disabling laser using switch")
+        self.set_rc(9, 1000)
+        self.delay_sim_time(1)
+        self.progress("Checking RangeFinder is marked as disabled in mavlink")
+        m = self.mav.recv_match(type='SYS_STATUS',
+                                blocking=True,
+                                timeout=10)
+        flags = m.onboard_control_sensors_enabled
+        if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+            raise NotAchievedException("Laser enabled in SYS_STATUS")
+
+        self.progress("Re-enabling rangefinder")
+        self.set_rc(9, 2000)
+        self.delay_sim_time(1)
+        m = self.mav.recv_match(type='SYS_STATUS',
+                                blocking=True,
+                                timeout=10)
+        flags = m.onboard_control_sensors_enabled
+        if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
+            raise NotAchievedException("Laser not enabled in SYS_STATUS")
+
+        self.takeoff(10, mode="LOITER")
+
+        m_r = self.mav.recv_match(type='RANGEFINDER',
+                                  blocking=True)
+        m_p = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                  blocking=True)
+
+        if abs(m_r.distance - m_p.relative_alt/1000) > 1:
+            raise NotAchievedException(
+                "rangefinder/global position int mismatch %0.2f vs %0.2f" %
+                (m_r.distance, m_p.relative_alt/1000))
+
+        self.land_and_disarm()
+
+        if not self.current_onboard_log_contains_message("RFND"):
+            raise NotAchievedException("Did not see expected RFND message")
 
     def SplineTerrain(self):
         '''Test Splines and Terrain'''

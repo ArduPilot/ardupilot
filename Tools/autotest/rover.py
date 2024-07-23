@@ -86,86 +86,76 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def DriveSquare(self, side=50):
         """Learn/Drive Square with Ch7 option"""
 
-        self.context_push()
-        ex = None
-        try:
-            self.progress("TEST SQUARE")
-            self.set_parameters({
-                "RC7_OPTION": 7,
-                "RC9_OPTION": 58,
-            })
+        self.progress("TEST SQUARE")
+        self.set_parameters({
+            "RC7_OPTION": 7,
+            "RC9_OPTION": 58,
+        })
 
-            self.change_mode('MANUAL')
+        self.change_mode('MANUAL')
 
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
-            self.clear_wp(9)
+        self.clear_wp(9)
 
-            # first aim north
-            self.progress("\nTurn right towards north")
-            self.reach_heading_manual(10)
-            # save bottom left corner of box as home AND waypoint
-            self.progress("Save HOME")
-            self.save_wp()
+        # first aim north
+        self.progress("\nTurn right towards north")
+        self.reach_heading_manual(10)
+        # save bottom left corner of box as home AND waypoint
+        self.progress("Save HOME")
+        self.save_wp()
 
-            self.progress("Save WP")
-            self.save_wp()
+        self.progress("Save WP")
+        self.save_wp()
 
-            # pitch forward to fly north
-            self.progress("\nGoing north %u meters" % side)
-            self.reach_distance_manual(side)
-            # save top left corner of square as waypoint
-            self.progress("Save WP")
-            self.save_wp()
+        # pitch forward to fly north
+        self.progress("\nGoing north %u meters" % side)
+        self.reach_distance_manual(side)
+        # save top left corner of square as waypoint
+        self.progress("Save WP")
+        self.save_wp()
 
-            # roll right to fly east
-            self.progress("\nGoing east %u meters" % side)
-            self.reach_heading_manual(100)
-            self.reach_distance_manual(side)
-            # save top right corner of square as waypoint
-            self.progress("Save WP")
-            self.save_wp()
+        # roll right to fly east
+        self.progress("\nGoing east %u meters" % side)
+        self.reach_heading_manual(100)
+        self.reach_distance_manual(side)
+        # save top right corner of square as waypoint
+        self.progress("Save WP")
+        self.save_wp()
 
-            # pitch back to fly south
-            self.progress("\nGoing south %u meters" % side)
-            self.reach_heading_manual(190)
-            self.reach_distance_manual(side)
-            # save bottom right corner of square as waypoint
-            self.progress("Save WP")
-            self.save_wp()
+        # pitch back to fly south
+        self.progress("\nGoing south %u meters" % side)
+        self.reach_heading_manual(190)
+        self.reach_distance_manual(side)
+        # save bottom right corner of square as waypoint
+        self.progress("Save WP")
+        self.save_wp()
 
-            # roll left to fly west
-            self.progress("\nGoing west %u meters" % side)
-            self.reach_heading_manual(280)
-            self.reach_distance_manual(side)
-            # save bottom left corner of square (should be near home) as waypoint
-            self.progress("Save WP")
-            self.save_wp()
+        # roll left to fly west
+        self.progress("\nGoing west %u meters" % side)
+        self.reach_heading_manual(280)
+        self.reach_distance_manual(side)
+        # save bottom left corner of square (should be near home) as waypoint
+        self.progress("Save WP")
+        self.save_wp()
 
-            self.progress("Checking number of saved waypoints")
-            mavproxy = self.start_mavproxy()
-            num_wp = self.save_mission_to_file_using_mavproxy(
-                mavproxy,
-                os.path.join(testdir, "ch7_mission.txt"))
-            self.stop_mavproxy(mavproxy)
-            expected = 7 # home + 6 toggled in
-            if num_wp != expected:
-                raise NotAchievedException("Did not get %u waypoints; got %u" %
-                                           (expected, num_wp))
+        self.progress("Checking number of saved waypoints")
+        mavproxy = self.start_mavproxy()
+        num_wp = self.save_mission_to_file_using_mavproxy(
+            mavproxy,
+            os.path.join(testdir, "ch7_mission.txt"))
+        self.stop_mavproxy(mavproxy)
+        expected = 7 # home + 6 toggled in
+        if num_wp != expected:
+            raise NotAchievedException("Did not get %u waypoints; got %u" %
+                                       (expected, num_wp))
 
-            # TODO: actually drive the mission
+        # TODO: actually drive the mission
 
-            self.clear_wp(9)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.clear_wp(9)
 
         self.disarm_vehicle()
-        self.context_pop()
-
-        if ex:
-            raise ex
 
     def drive_left_circuit(self):
         """Drive a left circuit, 50m on a side."""
@@ -5592,65 +5582,55 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def AP_Proximity_MAV(self):
         '''Test MAV proximity backend'''
-        self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "PRX1_TYPE": 2,  # AP_Proximity_MAV
-                "OA_TYPE": 2,  # dijkstra
-                "OA_DB_OUTPUT": 3,  # send all items
-            })
-            self.reboot_sitl()
 
-            # 1 laser pointing straight forward:
-            self.send_obstacle_distances_expect_distance_sensor_messages(
-                {
-                    "distances": [234],
-                    "increment_f": 10,
-                    "angle_offset": 0.0,
-                    "min_distance": 0,
-                    "max_distance": 1000, # cm
-                }, [
-                    {"orientation": 0, "distance": 234},
-                ])
-
-            # 5 lasers at front of vehicle, spread over 40 degrees:
-            self.send_obstacle_distances_expect_distance_sensor_messages(
-                {
-                    "distances": [111, 222, 333, 444, 555],
-                    "increment_f": 10,
-                    "angle_offset": -20.0,
-                    "min_distance": 0,
-                    "max_distance": 1000, # cm
-                }, [
-                    {"orientation": 0, "distance": 111},
-                ])
-
-            # lots of dense readings (e.g. vision camera:
-            distances = [0] * 72
-            for i in range(0, 72):
-                distances[i] = 1000 + 10*abs(36-i)
-
-            self.send_obstacle_distances_expect_distance_sensor_messages(
-                {
-                    "distances": distances,
-                    "increment_f": 90/72.0,
-                    "angle_offset": -45.0,
-                    "min_distance": 0,
-                    "max_distance": 2000, # cm
-                }, [
-                    {"orientation": 0, "distance": 1000},
-                    {"orientation": 1, "distance": 1190},
-                    {"orientation": 7, "distance": 1190},
-                ])
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
+        self.set_parameters({
+            "PRX1_TYPE": 2,  # AP_Proximity_MAV
+            "OA_TYPE": 2,  # dijkstra
+            "OA_DB_OUTPUT": 3,  # send all items
+        })
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
+
+        # 1 laser pointing straight forward:
+        self.send_obstacle_distances_expect_distance_sensor_messages(
+            {
+                "distances": [234],
+                "increment_f": 10,
+                "angle_offset": 0.0,
+                "min_distance": 0,
+                "max_distance": 1000, # cm
+            }, [
+                {"orientation": 0, "distance": 234},
+            ])
+
+        # 5 lasers at front of vehicle, spread over 40 degrees:
+        self.send_obstacle_distances_expect_distance_sensor_messages(
+            {
+                "distances": [111, 222, 333, 444, 555],
+                "increment_f": 10,
+                "angle_offset": -20.0,
+                "min_distance": 0,
+                "max_distance": 1000, # cm
+            }, [
+                {"orientation": 0, "distance": 111},
+            ])
+
+        # lots of dense readings (e.g. vision camera:
+        distances = [0] * 72
+        for i in range(0, 72):
+            distances[i] = 1000 + 10*abs(36-i)
+
+        self.send_obstacle_distances_expect_distance_sensor_messages(
+            {
+                "distances": distances,
+                "increment_f": 90/72.0,
+                "angle_offset": -45.0,
+                "min_distance": 0,
+                "max_distance": 2000, # cm
+            }, [
+                {"orientation": 0, "distance": 1000},
+                {"orientation": 1, "distance": 1190},
+                {"orientation": 7, "distance": 1190},
+            ])
 
     def SendToComponents(self):
         '''Test ArduPilot send_to_components function'''
@@ -6295,8 +6275,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def AutoDock(self):
         '''Test automatic docking of rover for multiple FOVs of simulated beacon'''
-        self.context_push()
-
         self.set_parameters({
             "PLND_ENABLED": 1,
             "PLND_TYPE": 4,
@@ -6322,40 +6300,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
 
         for type in range(0, 3):  # CYLINDRICAL FOV, CONICAL FOV, SPHERICAL FOV
-            ex = None
-            try:
-                self.set_parameter("SIM_PLD_TYPE", type)
-                self.reboot_sitl()
-                self.change_mode('GUIDED')
-                self.wait_ready_to_arm()
-                self.arm_vehicle()
-                initial_position = self.offset_location_ne(target, -20, -2)
-                self.drive_to_location(initial_position)
-                self.change_mode(8) # DOCK mode
-                max_delta = 1
-                self.wait_distance_to_location(target, 0, max_delta, timeout=180)
-                self.disarm_vehicle()
-                self.assert_receive_message('GLOBAL_POSITION_INT')
-                new_pos = self.mav.location()
-                delta = abs(self.get_distance(target, new_pos) - stopping_dist)
-                self.progress("Docked %f metres from stopping point" % delta)
-                if delta > max_delta:
-                    raise NotAchievedException("Did not dock close enough to stopping point (%fm > %fm" % (delta, max_delta))
+            self.set_parameter("SIM_PLD_TYPE", type)
+            self.reboot_sitl()
+            self.change_mode('GUIDED')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            initial_position = self.offset_location_ne(target, -20, -2)
+            self.drive_to_location(initial_position)
+            self.change_mode(8) # DOCK mode
+            max_delta = 1
+            self.wait_distance_to_location(target, 0, max_delta, timeout=180)
+            self.disarm_vehicle()
+            self.assert_receive_message('GLOBAL_POSITION_INT')
+            new_pos = self.mav.location()
+            delta = abs(self.get_distance(target, new_pos) - stopping_dist)
+            self.progress("Docked %f metres from stopping point" % delta)
+            if delta > max_delta:
+                raise NotAchievedException("Did not dock close enough to stopping point (%fm > %fm" % (delta, max_delta))
 
-                if not self.current_onboard_log_contains_message("PL"):
-                    raise NotAchievedException("Did not see expected PL message")
+            if not self.current_onboard_log_contains_message("PL"):
+                raise NotAchievedException("Did not see expected PL message")
 
-            except Exception as e:
-                self.print_exception_caught(e)
-                ex = e
-                break
-
-        self.context_pop()
-
-        if ex is not None:
-            raise ex
-
-        self.reboot_sitl()
         self.progress("All done")
 
     def PrivateChannel(self):
