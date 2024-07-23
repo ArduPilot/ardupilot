@@ -1507,6 +1507,10 @@ private:
     // point while following our path home.  If we take too long we
     // may choose to land the vehicle.
     uint32_t path_follow_last_pop_fail_ms;
+
+    // backup last popped point so that it can be restored to the path
+    // if vehicle exits SmartRTL mode before reaching home. invalid if zero
+    Vector3f dest_NED_backup;
 };
 
 
