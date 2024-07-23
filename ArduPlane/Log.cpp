@@ -255,9 +255,11 @@ void Plane::Log_Write_RC(void)
 {
     logger.Write_RCIN();
     logger.Write_RCOUT();
+#if AP_RSSI_ENABLED
     if (rssi.enabled()) {
         logger.Write_RSSI();
     }
+#endif
     Log_Write_AETR();
 }
 
