@@ -18,6 +18,12 @@ import shutil
 import filecmp
 
 
+class ChibiOSHWDefIncludeNotFoundException(Exception):
+    def __init__(self, hwdef, includer):
+        self.hwdef = hwdef
+        self.includer = includer
+
+
 class ChibiOSHWDef(object):
 
     # output variables for each pin
@@ -3192,8 +3198,13 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.add_firmware_defaults_from_file(f, "defaults_iofirmware.h", "IOMCU Firmware")
 
-    def is_periph_fw_unprocessed_file(self, hwdef):
+    def is_periph_fw_unprocessed_file(self, hwdef, includer=None):
         '''helper/recursion function for is_periph_fw_unprocessed'''
+        if not os.path.exists(hwdef):
+            raise ChibiOSHWDefIncludeNotFoundException(
+                os.path.normpath(hwdef),
+                os.path.normpath(includer)
+            )
         with open(hwdef, "r") as f:
             content = f.read()
             if 'AP_PERIPH' in content:
@@ -3201,7 +3212,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             # process any include lines:
             for m in re.finditer(r"^include\s+([^\s]*)", content, re.MULTILINE):
                 include_path = os.path.join(os.path.dirname(hwdef), m.group(1))
-                if self.is_periph_fw_unprocessed_file(include_path):
+                if self.is_periph_fw_unprocessed_file(include_path, includer=hwdef):
                     return True
 
     def is_periph_fw_unprocessed(self):
