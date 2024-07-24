@@ -1779,7 +1779,7 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
 
   if (use_switch) {
     fprintf(source, "        default:\n");
-    fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
+    fprintf(source, "            return field_argerror(L); // too many arguments\n");
     fprintf(source, "    }\n");
   }
 
@@ -2644,6 +2644,10 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    return 0;\n");
   fprintf(source, "}\n\n");
 
+  fprintf(source, "int field_argerror(lua_State *L) {\n");
+  fprintf(source, "    return binding_argcheck(L, -1); // force too many args error\n");
+  fprintf(source, "}\n\n");
+
   // emit warning if augments are parsed
   fprintf(source, "bool userdata_zero_arg_check(lua_State *L) {\n");
   fprintf(source, "    if (lua_gettop(L) == 0) {\n");
@@ -3203,6 +3207,7 @@ int main(int argc, char **argv) {
   fprintf(header, "void load_generated_bindings(lua_State *L);\n");
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
   fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
+  fprintf(header, "int field_argerror(lua_State *L);\n");
   fprintf(header, "bool userdata_zero_arg_check(lua_State *L);\n");
   fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
   fprintf(header, "int8_t get_int8_t(lua_State *L, int arg_num);\n");
