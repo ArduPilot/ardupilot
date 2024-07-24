@@ -905,6 +905,7 @@ void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t ch
     backend->send_camera_capture_status(chan);
 }
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send a VIDEO_STREAM_INFORMATION message to GCS
 bool AP_Mount::send_video_stream_information(uint8_t instance, mavlink_channel_t chan)
 {
@@ -914,6 +915,7 @@ bool AP_Mount::send_video_stream_information(uint8_t instance, mavlink_channel_t
     }
     return backend->send_video_stream_information(chan);
 }
+#endif
 
 // get rangefinder distance.  Returns true on success
 bool AP_Mount::get_rangefinder_distance(uint8_t instance, float& distance_m) const
