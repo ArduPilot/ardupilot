@@ -1363,13 +1363,7 @@ void emit_ap_object_checkers(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "%s ** check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
-    fprintf(source, "    %s ** data = (%s**)luaL_checkudata(L, arg, \"%s\");\n", node->name, node->name, node->name);
-    fprintf(source, "    %s * ud = *data;\n", node->name);
-    fprintf(source, "    if (ud == NULL) {\n");
-    fprintf(source, "        // This error will never return, so there is no danger of returning a NULL\n");
-    fprintf(source, "        luaL_error(L, \"Internal error, null pointer\");\n");
-    fprintf(source, "    }\n");
-    fprintf(source, "    return data;\n");
+    fprintf(source, "    return (%s **)check_ap_object(L, arg, \"%s\");\n", node->name, node->name);
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -2712,6 +2706,14 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    return ud;\n");
   fprintf(source, "}\n\n");
 
+  fprintf(source, "void ** check_ap_object(lua_State *L, int arg_num, const char * name) {\n");
+  fprintf(source, "    void ** data = (void **)luaL_checkudata(L, arg_num, name);\n");
+  fprintf(source, "    if (*data == NULL) {\n");
+  fprintf(source, "        luaL_error(L, \"internal error: %%s is null\", name); // does not return\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    return data;\n");
+  fprintf(source, "}\n\n");
+
 }
 
 void emit_not_supported_helper(void) {
@@ -3205,6 +3207,7 @@ int main(int argc, char **argv) {
   fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
   fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
   fprintf(header, "void * new_ap_object(lua_State *L, size_t size, const char * name);\n");
+  fprintf(header, "void ** check_ap_object(lua_State *L, int arg_num, const char * name);\n");
 
   struct userdata * node = parsed_singletons;
   while (node) {
