@@ -11270,6 +11270,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def Ch6TuningWPSpeed(self):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
         self.set_parameters({
+            "RC6_OPTION": 219,  # RC6 used for tuning
             "TUNE": 10,  # 10 is waypoint speed
             "TUNE_MIN": 0.02,  # 20cm/s
             "TUNE_MAX": 1000,  # 10m/s
