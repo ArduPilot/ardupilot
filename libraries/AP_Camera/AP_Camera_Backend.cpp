@@ -28,7 +28,9 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
 void AP_Camera_Backend::init() {
 #if AP_CAMERA_JSON_INFO_ENABLED
     init_camera_information_from_json();
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     init_video_stream_information_from_json();
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 #endif // AP_CAMERA_JSON_INFO_ENABLED
 }
 
@@ -338,6 +340,7 @@ void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
         image_index);     // total number of images captured
 }
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
 void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const {
 #if AP_CAMERA_JSON_INFO_ENABLED
@@ -346,6 +349,7 @@ void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) co
     }
 #endif // AP_CAMERA_JSON_INFO_ENABLED
 }
+#endif
 
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.
@@ -519,6 +523,7 @@ bool AP_Camera_Backend::_copy_json_field_string(const AP_JSON::value* obj, const
     return true;
 }
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 void AP_Camera_Backend::init_video_stream_information_from_json()
 {
     video_stream_info.is_valid = false;
@@ -568,6 +573,7 @@ err:
         debug("    video_stream_info.msg.uri='%s'", video_stream_info.msg.uri);
     }
 }
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 void AP_Camera_Backend::init_camera_information_from_json()
 {

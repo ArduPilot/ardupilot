@@ -120,6 +120,7 @@ void AP_Camera_Mount::send_camera_capture_status(mavlink_channel_t chan) const
     }
 }
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
 void AP_Camera_Mount::send_video_stream_information(mavlink_channel_t chan) const
 {
@@ -139,5 +140,6 @@ void AP_Camera_Mount::send_video_stream_information(mavlink_channel_t chan) cons
     (void)sent_by_mount;
 #endif // AP_CAMERA_JSON_INFO_ENABLED
 }
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 #endif // AP_CAMERA_MOUNT_ENABLED

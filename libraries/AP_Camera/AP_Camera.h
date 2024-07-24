@@ -237,8 +237,10 @@ private:
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan);
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     // send video stream information message to GCS
     void send_video_stream_information(mavlink_channel_t chan);
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

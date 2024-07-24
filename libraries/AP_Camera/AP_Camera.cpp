@@ -462,10 +462,12 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
         CHECK_PAYLOAD_SIZE2(CAMERA_CAPTURE_STATUS);
         send_camera_capture_status(chan);
         break;
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     case MSG_VIDEO_STREAM_INFO:
         CHECK_PAYLOAD_SIZE2(VIDEO_STREAM_INFORMATION);
         send_video_stream_information(chan);
         break;
+#endif
 
     default:
         // should not reach this; should only be called for specific IDs
@@ -620,6 +622,7 @@ void AP_Camera::send_camera_capture_status(mavlink_channel_t chan)
     }
 }
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
 void AP_Camera::send_video_stream_information(mavlink_channel_t chan)
 {
@@ -632,6 +635,7 @@ void AP_Camera::send_video_stream_information(mavlink_channel_t chan)
         }
     }
 }
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 /*
   update; triggers by distance moved and camera trigger

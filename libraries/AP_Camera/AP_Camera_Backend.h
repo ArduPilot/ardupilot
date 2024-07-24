@@ -127,8 +127,10 @@ public:
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const;
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     // send video stream information message to GCS
     virtual void send_video_stream_information(mavlink_channel_t chan) const;
+#endif
 
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
@@ -210,10 +212,12 @@ protected:
     bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
 
 #if AP_CAMERA_JSON_INFO_ENABLED
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     struct {
         bool is_valid;
         mavlink_video_stream_information_t msg;
     } video_stream_info;
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     struct {
         bool is_valid;
         mavlink_camera_information_t msg;
