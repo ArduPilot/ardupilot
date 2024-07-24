@@ -429,6 +429,17 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         hal.util->snprintf(failure_msg, failure_msg_len, "Fences enabled, but none selected");
         return false;
     }
+    
+    // if AUTOENABLE = 1 or 2 warn now, but fail in a later release
+    // PARAMETER_CONVERSION - Added: Jul-2024 for ArduPilot-4.6
+    if (_auto_enabled == 1 || _auto_enabled == 2) {
+        static uint32_t last_autoenable_warn_ms;
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_autoenable_warn_ms > 60000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FENCE_AUTOENABLE is %u, will be removed in 4.7, use 3", unsigned(_auto_enabled));
+            last_autoenable_warn_ms = now_ms;
+        }
+    }
 
     // if not enabled or not fence set-up always return true
     if ((!enabled() && !_auto_enabled) || !_configured_fences) {
