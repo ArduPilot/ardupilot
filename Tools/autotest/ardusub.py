@@ -739,6 +739,35 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
 
+    def MAV_CMD_DO_REPOSITION(self):
+        """Move vehicle using MAV_CMD_DO_REPOSITION"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Dive so that rangefinder is in range, required for MAV_FRAME_GLOBAL_TERRAIN_ALT
+        start_altitude = -25
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.change_mode('GUIDED')
+
+        loc = self.mav.location()
+
+        # Reposition, alt relative to surface
+        loc = self.offset_location_ne(loc, 10, 10)
+        loc.alt = start_altitude
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        self.wait_location(loc, timeout=120)
+
+        # Reposition, alt relative to seafloor
+        loc = self.offset_location_ne(loc, 10, 10)
+        loc.alt = -start_altitude
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(loc, timeout=120)
+
+        self.disarm_vehicle()
+
     def TerrainMission(self):
         """Mission using surface tracking"""
 
@@ -877,6 +906,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
+            self.MAV_CMD_DO_REPOSITION,
             self.TerrainMission,
             self.SetGlobalOrigin,
             self.backup_home,
