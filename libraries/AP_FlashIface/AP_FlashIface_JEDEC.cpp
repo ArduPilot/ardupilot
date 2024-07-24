@@ -46,10 +46,18 @@ struct supported_device {
     uint8_t fast_read_ins;
 };
 
+#ifndef HAL_ENABLE_DTR
+#define HAL_ENABLE_DTR 0
+#endif
+
 static const struct supported_device supported_devices[] = {
     {"mt25q",       0x20, 0xBA, SupportedDeviceType::QuadSPI, 0},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
     {"w25q",        0xEF, 0x40, SupportedDeviceType::QuadSPI, 0},
+#if HAL_ENABLE_DTR
     {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPIDTR, 0xED},
+#else
+    {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPI, 0},
+#endif
 };
 
 #ifdef HAL_BOOTLOADER_BUILD
