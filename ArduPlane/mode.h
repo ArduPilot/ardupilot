@@ -816,6 +816,12 @@ protected:
     Location start_loc;
 
     bool _enter() override;
+
+private:
+
+    // flag that we have already called autoenable fences once in MODE TAKEOFF
+    bool have_autoenabled_fences;
+
 };
 
 #if HAL_SOARING_ENABLED
