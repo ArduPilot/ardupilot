@@ -388,6 +388,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    auto_state.next_wp_crosstrack = plane.mission.always_crosstrack();
     set_next_WP(cmd.content.location);
 }
 
@@ -940,6 +941,7 @@ bool Plane::do_change_speed(uint8_t speedtype, float speed_target_ms, float thro
             gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)speed_target_ms);
             return true;
         }
+        gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s FAILED", (unsigned)speed_target_ms);
         break;
     case 1:             // Ground speed
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)speed_target_ms);

@@ -3425,7 +3425,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     }
 
     // don't crosstrack on next WP
-    plane.auto_state.next_wp_crosstrack = false;
+    plane.auto_state.next_wp_crosstrack = plane.mission.always_crosstrack();
 
     return true;
 }

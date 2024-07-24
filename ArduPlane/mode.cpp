@@ -37,7 +37,7 @@ bool Mode::enter()
     plane.takeoff_state.waiting_for_rudder_neutral = false;
 
     // don't cross-track when starting a mission
-    plane.auto_state.next_wp_crosstrack = false;
+    plane.auto_state.next_wp_crosstrack = plane.mission.always_crosstrack();
 
     // reset landing check
     plane.auto_state.checked_for_autoland = false;
