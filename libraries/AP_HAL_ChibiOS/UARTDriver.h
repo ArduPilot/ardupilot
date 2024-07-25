@@ -28,6 +28,10 @@
 // enough for serial0 to serial9, plus IOMCU
 #define UART_MAX_DRIVERS 11
 
+#ifndef HAL_HAVE_LOW_NOISE_UART
+#define HAL_HAVE_LOW_NOISE_UART 0
+#endif
+
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
@@ -79,6 +83,10 @@ public:
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+
+#if HAL_HAVE_LOW_NOISE_UART
+        bool low_noise_line;
+#endif
     };
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
@@ -282,6 +290,13 @@ protected:
     // Getters for cumulative tx and rx counts
     uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
     uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#if CH_CFG_USE_EVENTS == TRUE
+    uint32_t _rx_stats_framing_errors;
+    uint32_t _rx_stats_overrun_errors;
+    uint32_t _rx_stats_noise_errors;
+    event_listener_t err_listener;
+    bool err_listener_initialised;
+#endif
 #endif
 };
 

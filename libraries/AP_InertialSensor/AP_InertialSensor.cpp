@@ -736,6 +736,14 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
         return false;
     }
 
+    // Loop over the existing instances and check if the instance already exists
+    for (uint8_t instance_to_check = 0; instance_to_check < _gyro_count; instance_to_check++) {
+        if ((uint32_t)_gyro_id(instance_to_check) == id) {
+            // if it does, then bail
+            return false;
+        }
+    }
+
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
     _gyro_over_sampling[_gyro_count] = 1;
     _gyro_raw_sampling_multiplier[_gyro_count] = INT16_MAX/radians(2000);
@@ -794,6 +802,14 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
     if (_accel_count == INS_MAX_INSTANCES) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to register accel id %u", unsigned(id));
         return false;
+    }
+
+    // Loop over the existing instances and check if the instance already exists
+    for (uint8_t instance_to_check = 0; instance_to_check < _accel_count; instance_to_check++) {
+        if ((uint32_t)_accel_id(instance_to_check) == id) {
+            // if it does, then bail
+            return false;
+        }
     }
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;

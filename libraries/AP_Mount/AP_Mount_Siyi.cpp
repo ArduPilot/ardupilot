@@ -916,39 +916,24 @@ bool AP_Mount_Siyi::set_lens(uint8_t lens)
     }
 
     // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
-    CameraImageType cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL;
-    switch (lens) {
-        case 0:
-            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL; // 3
-            break;
-        case 1:
-            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL; // 5
-            break;
-        case 2:
-            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_ZOOM; // 7
-            break;
-        case 3:
-            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE; // 0
-            break;
-        case 4:
-            cam_image_type = CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM; // 1
-            break;
-        case 5:
-            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL; // 2
-            break;
-        case 6:
-            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE; // 4
-            break;
-        case 7:
-            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM; // 6
-            break;
-        case 8:
-            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE; // 8
-            break;
+    static const CameraImageType cam_image_type_table[] {
+        CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
+        CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL,          // 5
+        CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
+        CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE, // 0
+        CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM, // 1
+        CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL, // 2
+        CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE,             // 4
+        CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM,             // 6
+        CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE,          // 8
+    };
+
+    if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+        return false;
     }
 
     // send desired image type to camera
-    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type_table[lens]);
 }
 
 // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type

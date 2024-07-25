@@ -439,6 +439,7 @@ void Copter::update_flight_mode()
 #if AP_RANGEFINDER_ENABLED
     surface_tracking.invalidate_for_logging();  // invalidate surface tracking alt, flight mode will set to true if used
 #endif
+    attitude_control->landed_gain_reduction(copter.ap.land_complete); // Adjust gains when landed to attenuate ground oscillation
 
     flightmode->run();
 }

@@ -1,33 +1,34 @@
 #include "Copter.h"
 
 /*
- * Function to update various parameters in flight using the ch6 tuning knob
+ * Function to update various parameters in flight using the TRANSMITTER_TUNING channel knob
  * This should not be confused with the AutoTune feature which can be found in control_autotune.cpp
  */
 
-// tuning - updates parameters based on the ch6 tuning knob's position
+// tuning - updates parameters based on the ch6 TRANSMITTER_TUNING channel knob's position
 //  should be called at 3.3hz
 void Copter::tuning()
 {
-    const RC_Channel *rc6 = rc().channel(CH_6);
+    const RC_Channel *rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
 
+    // exit immediately if tuning channel is not set
+    if (rc_tuning == nullptr) {
+        return;
+    }
+    
     // exit immediately if the tuning function is not set or min and max are both zero
     if ((g.radio_tuning <= 0) || (is_zero(g2.tuning_min.get()) && is_zero(g2.tuning_max.get()))) {
         return;
     }
 
     // exit immediately when radio failsafe is invoked or transmitter has not been turned on
-    if (failsafe.radio || failsafe.radio_counter != 0 || rc6->get_radio_in() == 0) {
+    if (failsafe.radio || failsafe.radio_counter != 0 || rc_tuning->get_radio_in() == 0) {
         return;
     }
 
-    // exit immediately if a function is assigned to channel 6
-    if ((RC_Channel::AUX_FUNC)rc6->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING) {
-        return;
-    }
-
-    const uint16_t radio_in = rc6->get_radio_in();
-    float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, radio_in, rc6->get_radio_min(), rc6->get_radio_max());
+    const uint16_t radio_in = rc_tuning->get_radio_in();
+    float tuning_value = linear_interpolate(g2.tuning_min, g2.tuning_max, radio_in, rc_tuning->get_radio_min(), rc_tuning->get_radio_max());
+    
 #if HAL_LOGGING_ENABLED
     Log_Write_Parameter_Tuning(g.radio_tuning, tuning_value, g2.tuning_min, g2.tuning_max);
 #endif

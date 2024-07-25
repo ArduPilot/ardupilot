@@ -1060,21 +1060,24 @@ void AP_Mount_Topotek::gimbal_version_analyse()
     const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
 
     // check for "."
-    bool constains_period = false;
+    bool contains_period = false;
     for (uint8_t i = 0; i < data_buf_len; i++) {
-        constains_period |= _msg_buff[10 + i] == '.';
+        contains_period |= _msg_buff[10 + i] == '.';
     }
 
     // if contains period, extract version number
     uint32_t ver_num = 0;
     uint8_t ver_count = 0;
-    if (constains_period) {
+    if (contains_period) {
         for (uint8_t i = 0; i < data_buf_len; i++) {
             if (_msg_buff[10 + i] != '.') {
                 ver_num = ver_num * 10 + char_to_hex(_msg_buff[10 + i]);
             } else {
                 version[ver_count++] = ver_num;
                 ver_num = 0;
+            }
+            if (ver_count >= ARRAY_SIZE(version)) {
+                break;
             }
         }
     } else {

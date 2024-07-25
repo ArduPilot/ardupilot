@@ -150,6 +150,27 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("INPUT_TC", 20, AC_AttitudeControl, _input_tc, AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT),
 
+    // @Param: LAND_R_MULT
+    // @DisplayName: Landed roll gain multiplier
+    // @Description: Roll gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the roll axis. 
+    // @Range: 0.25 1.0
+    // @User: Advanced
+    AP_GROUPINFO("LAND_R_MULT", 21, AC_AttitudeControl, _land_roll_mult, 1.0),
+
+    // @Param: LAND_P_MULT
+    // @DisplayName: Landed pitch gain multiplier
+    // @Description: Pitch gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the pitch axis. 
+    // @Range: 0.25 1.0
+    // @User: Advanced
+    AP_GROUPINFO("LAND_P_MULT", 22, AC_AttitudeControl, _land_pitch_mult, 1.0),
+
+    // @Param: LAND_Y_MULT
+    // @DisplayName: Landed yaw gain multiplier
+    // @Description: Yaw gain multiplier active when landed. A factor of 1.0 means no reduction in gain while landed. Reduce this factor to reduce ground oscitation in the yaw axis. 
+    // @Range: 0.25 1.0
+    // @User: Advanced
+    AP_GROUPINFO("LAND_Y_MULT", 23, AC_AttitudeControl, _land_yaw_mult, 1.0),
+
     AP_GROUPEND
 };
 
@@ -202,6 +223,25 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
     get_rate_roll_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
     get_rate_pitch_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
     get_rate_yaw_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
+}
+
+// Reduce attitude control gains while landed to stop ground resonance
+void AC_AttitudeControl::landed_gain_reduction(bool landed)
+{
+    if (is_positive(_input_tc)) {
+        // use 2.0 x tc to match the response time to 86% commanded
+        const float spool_step = _dt / (2.0 * _input_tc);
+        if (landed) {
+            _landed_gain_ratio = MIN(1.0, _landed_gain_ratio + spool_step);
+        } else {
+            _landed_gain_ratio = MAX(0.0, _landed_gain_ratio - spool_step);
+        }
+    } else {
+        _landed_gain_ratio = landed ? 1.0 : 0.0;
+    }
+    Vector3f scale_mult = VECTORF_111 * (1.0 - _landed_gain_ratio) + Vector3f(_land_roll_mult, _land_pitch_mult, _land_yaw_mult) * _landed_gain_ratio;
+    set_PD_scale_mult(scale_mult);
+    set_angle_P_scale_mult(scale_mult);
 }
 
 // The attitude controller works around the concept of the desired attitude, target attitude
