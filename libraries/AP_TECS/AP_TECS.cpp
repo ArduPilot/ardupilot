@@ -1458,7 +1458,8 @@ void AP_TECS::_update_throttle_limits() {
 
     // If less min throttle is allowed during takeoff, use it.
     bool use_takeoff_throttle = _flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING;
-    use_takeoff_throttle = use_takeoff_throttle && (aparm.takeoff_mode == 1) && (aparm.takeoff_throttle_min != 0);
+    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    use_takeoff_throttle = use_takeoff_throttle && (use_throttle_range == 1) && (aparm.takeoff_throttle_min != 0);
     if ( use_takeoff_throttle ) { 
         _THRminf = MIN(_THRminf, aparm.takeoff_throttle_min * 0.01f);
     }
