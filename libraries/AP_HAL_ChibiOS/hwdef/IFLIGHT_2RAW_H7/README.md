@@ -7,7 +7,7 @@ The iFlight 2RAW H743 is a flight controller produced by [iFlight](https://shop.
  - MCU - STM32H743 32-bit processor running at 480 MHz
  - IMU - ICM42688P
  - Barometer - SPL06-001
- - Onboard Flash: 1GBit (not useable by ArduPilot)
+ - Onboard Flash: 1GBit exposed as microSD card
  - 6x UARTs
  - 9x PWM Outputs (8 Motor Output, 1 LED)
  - Battery input voltage: 2S-6S
@@ -87,6 +87,11 @@ The iFlight 2RAW H743 does not have a builtin compass, but you can attach an ext
 ## VTX power control
 GPIO 81 controls the VTX BEC output to pins marked "10V". Setting this GPIO low removes voltage supply to pins.
 By default RELAY2 is configured to control this pin and sets the GPIO high.
+
+## Logging
+
+Logging is via a 1GBit flash chip exposed via a microSD interface. In order to be used you must format the card using mission planner
+after the first time you have loaded the firmware
 
 ## Loading Firmware
 
