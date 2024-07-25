@@ -42,7 +42,7 @@ void Copter::crash_check()
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
+    if (flightmode->disable_crash_check()) {
         crash_counter = 0;
         return;
     }
@@ -273,7 +273,7 @@ void Copter::parachute_check()
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
+    if (flightmode->disable_crash_check()) {
         control_loss_count = 0;
         return;
     }
