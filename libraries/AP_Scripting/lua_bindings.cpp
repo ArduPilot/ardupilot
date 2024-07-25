@@ -1025,10 +1025,10 @@ int SocketAPM_accept(lua_State *L) {
 #endif // AP_NETWORKING_ENABLED
 
 
-int lua_get_current_ref()
+int lua_get_current_env_ref()
 {
     auto *scripting = AP::scripting();
-    return scripting->get_current_ref();
+    return scripting->get_current_env_ref();
 }
 
 // This is used when loading modules with require, lua must only look in enabled directory's
