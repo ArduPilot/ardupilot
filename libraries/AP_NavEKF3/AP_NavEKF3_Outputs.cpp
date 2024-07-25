@@ -301,7 +301,11 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
-    if (getOriginLLH(origin)) {
+    if (!getOriginLLH(origin)) {
+        // The EKF is not navigating so use raw GPS if available
+        return getGPSLLH(loc);
+    }
+
         float posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
@@ -339,10 +343,6 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 return false;
             }
         }
-    } else {
-        // The EKF is not navigating so use raw GPS if available
-        return getGPSLLH(loc);
-    }
 }
 
 bool NavEKF3_core::getGPSLLH(Location &loc) const
