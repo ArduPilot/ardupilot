@@ -323,26 +323,21 @@ bool NavEKF3_core::getLLH(Location &loc) const
 
     // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
     loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
-    if (!filterStatus.flags.horiz_pos_abs && !filterStatus.flags.horiz_pos_rel) {
-        // We have been be doing inertial dead reckoning for too long so use raw GPS if available
-        if (getGPSLLH(loc)) {
-            return true;
-        } else {
-            // Return the EKF estimate but mark it as invalid
-            loc.lat = EKF_origin.lat;
-            loc.lng = EKF_origin.lng;
-            loc.offset(outputDataNew.position.x + posOffsetNED.x,
-                       outputDataNew.position.y + posOffsetNED.y);
-            return false;
-        }
-    }
-
-    // The EKF is able to provide a position estimate
     loc.lat = EKF_origin.lat;
     loc.lng = EKF_origin.lng;
     loc.offset(outputDataNew.position.x + posOffsetNED.x,
                outputDataNew.position.y + posOffsetNED.y);
-    return true;
+
+    const bool good_position_estimate = filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel;
+    if (!good_position_estimate) {
+        // We have been be doing inertial dead reckoning for too long so use raw GPS if available
+        if (getGPSLLH(loc)) {
+            return true;
+        }
+    }
+
+    // The EKF is able to provide a position estimate
+    return good_position_estimate;
 }
 
 bool NavEKF3_core::getGPSLLH(Location &loc) const
