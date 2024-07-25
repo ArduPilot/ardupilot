@@ -199,7 +199,9 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     update_stats(filename, loadEnd-loadStart, endMem, loadMem);
 
     new_script->name = filename;
-    new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);   // cache the reference
+    lua_pushvalue(L, -1);
+    new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to object for environment purposes
+    new_script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to function to run
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
 
     // Get checksum of file
@@ -325,7 +327,8 @@ void lua_scripts::run_next_script(lua_State *L) {
     int stack_top = lua_gettop(L);
 
     // pop the function to the top of the stack
-    lua_rawgeti(L, LUA_REGISTRYINDEX, script->lua_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, script->run_ref);
+    // set object for environment purposes
     AP::scripting()->set_current_ref(script->lua_ref);
 
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
@@ -364,8 +367,8 @@ void lua_scripts::run_next_script(lua_State *L) {
                     // types match the expectations, go ahead and reschedule
                     script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
                     lua_pop(L, 1);
-                    int old_ref = script->lua_ref;
-                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+                    int old_ref = script->run_ref;
+                    script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX);
                     luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
                     reschedule_script(script);
                     break;
@@ -410,6 +413,7 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     if (L != nullptr) {
         // state could be null if we are force killing all scripts
         luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, script->run_ref);
     }
     _heap.deallocate(script->name);
     _heap.deallocate(script);
