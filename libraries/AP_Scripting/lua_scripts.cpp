@@ -191,7 +191,8 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
 
 
     create_sandbox(L);
-    lua_setupvalue(L, -2, 1);
+    lua_pushvalue(L, -1); // duplicate environment for reference below
+    lua_setupvalue(L, -3, 1);
 
     const uint32_t loadEnd = AP_HAL::micros();
     const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
@@ -199,8 +200,7 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     update_stats(filename, loadEnd-loadStart, endMem, loadMem);
 
     new_script->name = filename;
-    lua_pushvalue(L, -1);
-    new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to object for environment purposes
+    new_script->env_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to script's environment
     new_script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to function to run
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
 
@@ -328,8 +328,8 @@ void lua_scripts::run_next_script(lua_State *L) {
 
     // pop the function to the top of the stack
     lua_rawgeti(L, LUA_REGISTRYINDEX, script->run_ref);
-    // set object for environment purposes
-    AP::scripting()->set_current_ref(script->lua_ref);
+    // set current environment for other users
+    AP::scripting()->set_current_env_ref(script->env_ref);
 
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
         if (overtime) {
@@ -412,7 +412,7 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     
     if (L != nullptr) {
         // state could be null if we are force killing all scripts
-        luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, script->env_ref);
         luaL_unref(L, LUA_REGISTRYINDEX, script->run_ref);
     }
     _heap.deallocate(script->name);
