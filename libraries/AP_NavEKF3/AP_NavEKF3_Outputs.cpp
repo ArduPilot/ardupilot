@@ -307,7 +307,20 @@ bool NavEKF3_core::getLLH(Location &loc) const
     }
 
     float posD;
-    if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
+    if (!getPosD_local(posD) || PV_AidingMode == AID_NONE) {
+        // Return a raw GPS reading if available and the last recorded positon if not
+        if (getGPSLLH(loc)) {
+            return true;
+        } else {
+            loc.lat = EKF_origin.lat;
+            loc.lng = EKF_origin.lng;
+            loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
+                       lastKnownPositionNE.y + posOffsetNED.y);
+            loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
+            return false;
+        }
+    }
+
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
         loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
@@ -330,19 +343,6 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 return false;
             }
         }
-    } else {
-        // Return a raw GPS reading if available and the last recorded positon if not
-        if (getGPSLLH(loc)) {
-            return true;
-        } else {
-            loc.lat = EKF_origin.lat;
-            loc.lng = EKF_origin.lng;
-            loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
-                       lastKnownPositionNE.y + posOffsetNED.y);
-            loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
-            return false;
-        }
-    }
 }
 
 bool NavEKF3_core::getGPSLLH(Location &loc) const
