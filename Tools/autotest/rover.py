@@ -6899,6 +6899,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def RCDuplicateOptionsExist(self):
+        '''ensure duplicate RC option detection works'''
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "RC6_OPTION": 118,
+            "RC7_OPTION": 118,
+        })
+        self.assert_arm_failure("Duplicate Aux Switch Options")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6990,6 +6999,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.FenceFullAndPartialTransfer,
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
+            self.RCDuplicateOptionsExist,
         ])
         return ret
 
