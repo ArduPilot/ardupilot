@@ -63,6 +63,7 @@ private:
 
     typedef struct script_info {
        int lua_ref;          // reference to the loaded script object
+       int run_ref;          // reference to the function to run
        uint64_t next_run_ms; // time (in milliseconds) the script should next be run at
        uint32_t crc;         // crc32 checksum
        char *name;           // filename for the script // FIXME: This information should be available from Lua
