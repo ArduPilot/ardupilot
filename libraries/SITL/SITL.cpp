@@ -68,6 +68,10 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
+    // @Param: ENGINE_MUL
+    // @DisplayName: Engine failure thrust scaler
+    // @Description: Thrust from Motors in SIM_ENGINE_FAIL will be multiplied by this factor
+    // @Units: ms
     AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
     // @Param: WIND_SPD
     // @DisplayName: Simulated Wind speed
@@ -189,6 +193,10 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: m
     // @Vector3Parameter: 1
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
+    // @Param: ENGINE_FAIL
+    // @DisplayName: Engine Fail Mask
+    // @Description: mask of motors which SIM_ENGINE_MUL will be applied to
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
     AP_SUBGROUPINFO(models, "",   59, SIM, SIM::ModelParm),
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
