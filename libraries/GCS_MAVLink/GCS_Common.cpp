@@ -1002,7 +1002,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_MISSION_CURRENT,       MSG_CURRENT_WAYPOINT},
         { MAVLINK_MSG_ID_SERVO_OUTPUT_RAW,      MSG_SERVO_OUTPUT_RAW},
         { MAVLINK_MSG_ID_RC_CHANNELS,           MSG_RC_CHANNELS},
+#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
         { MAVLINK_MSG_ID_RC_CHANNELS_RAW,       MSG_RC_CHANNELS_RAW},
+#endif
         { MAVLINK_MSG_ID_RAW_IMU,               MSG_RAW_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU,            MSG_SCALED_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
@@ -2068,6 +2070,7 @@ void GCS_MAVLINK::send_rc_channels() const
         );
 }
 
+#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
 void GCS_MAVLINK::send_rc_channels_raw() const
 {
     // for mavlink1 send RC_CHANNELS_RAW, for compatibility with OSD
@@ -2098,6 +2101,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
 #endif
 );
 }
+#endif  // AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
 #endif  // AP_RC_CHANNEL_ENABLED
 
 void GCS_MAVLINK::send_raw_imu()
@@ -6205,10 +6209,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_rc_channels();
         break;
 
+#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
     case MSG_RC_CHANNELS_RAW:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_rc_channels_raw();
         break;
+#endif  // AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
+
 #endif
 
     case MSG_RAW_IMU:
