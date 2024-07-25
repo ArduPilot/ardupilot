@@ -96,3 +96,6 @@ The X6 flight controller has 2 analog inputs.
 
 ## 5V PWM Voltage 
 The X6 flight controller supports switching between 5V and 3.3V PWM levels. Switch PWM output pulse level by configuring parameter BRD_PWM_VOL_SEL. 0 for 3.3V and 1 for 5V output. 
+
+## Where to Buy
+https://www.01aero.cn
