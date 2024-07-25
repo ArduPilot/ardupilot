@@ -5134,6 +5134,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.install_test_scripts_context([
             "scripting_test.lua",
+            "scripting_require_test_2.lua",
             "math.lua",
             "strings.lua",
             "mavlink_test.lua",
@@ -5146,6 +5147,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         for success_text in [
                 "Internal tests passed",
+                "Require test 2 passed",
                 "Math tests passed",
                 "String tests passed",
                 "Received heartbeat from"
