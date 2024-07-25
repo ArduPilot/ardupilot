@@ -2441,8 +2441,6 @@ class TestSuite(ABC):
             "SIM_DRIFT_SPEED",
             "SIM_DRIFT_TIME",
             "SIM_EFI_TYPE",
-            "SIM_ENGINE_FAIL",
-            "SIM_ENGINE_MUL",
             "SIM_ESC_ARM_RPM",
             "SIM_FTOWESC_ENA",
             "SIM_FTOWESC_POW",
