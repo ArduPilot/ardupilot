@@ -308,17 +308,17 @@ bool NavEKF3_core::getLLH(Location &loc) const
 
     float posD;
     if (!getPosD_local(posD) || PV_AidingMode == AID_NONE) {
-        // Return a raw GPS reading if available and the last recorded positon if not
+        // Return a raw GPS reading if available
         if (getGPSLLH(loc)) {
             return true;
-        } else {
-            loc.lat = EKF_origin.lat;
-            loc.lng = EKF_origin.lng;
-            loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
-                       lastKnownPositionNE.y + posOffsetNED.y);
-            loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
-            return false;
         }
+        // ... and the last recorded positon if not
+        loc.lat = EKF_origin.lat;
+        loc.lng = EKF_origin.lng;
+        loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
+                   lastKnownPositionNE.y + posOffsetNED.y);
+        loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
+        return false;
     }
 
     // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
