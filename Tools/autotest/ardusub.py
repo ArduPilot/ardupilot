@@ -36,6 +36,22 @@ class Joystick():
     Lateral = 6
 
 
+# Values for EK3_MAG_CAL
+class MagCal():
+    WHEN_FLYING = 0
+    WHEN_MANOEUVRING = 1
+    NEVER = 2
+    AFTER_FIRST_CLIMB = 3
+    ALWAYS = 4
+
+
+# Values for XKFS.MAG_FUSION
+class MagFuseSel():
+    NOT_FUSING = 0
+    FUSE_YAW = 1
+    FUSE_MAG = 2
+
+
 class AutoTestSub(vehicle_test_suite.TestSuite):
     @staticmethod
     def get_not_armable_mode_list():
@@ -739,6 +755,35 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self._MAV_CMD_CONDITION_YAW(self.run_cmd)
         self._MAV_CMD_CONDITION_YAW(self.run_cmd_int)
 
+    def MAV_CMD_DO_REPOSITION(self):
+        """Move vehicle using MAV_CMD_DO_REPOSITION"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Dive so that rangefinder is in range, required for MAV_FRAME_GLOBAL_TERRAIN_ALT
+        start_altitude = -25
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.change_mode('GUIDED')
+
+        loc = self.mav.location()
+
+        # Reposition, alt relative to surface
+        loc = self.offset_location_ne(loc, 10, 10)
+        loc.alt = start_altitude
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        self.wait_location(loc, timeout=120)
+
+        # Reposition, alt relative to seafloor
+        loc = self.offset_location_ne(loc, 10, 10)
+        loc.alt = -start_altitude
+        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(loc, timeout=120)
+
+        self.disarm_vehicle()
+
     def TerrainMission(self):
         """Mission using surface tracking"""
 
@@ -821,7 +866,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
-    def backup_home(self):
+    def backup_origin(self):
         """Test ORIGIN_LAT and ORIGIN_LON parameters"""
 
         self.context_push()
@@ -852,6 +897,55 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.context_pop()
 
+    def assert_mag_fusion_selection(self, expect_sel):
+        """Get the most recent XKFS message and check the MAG_FUSION value"""
+        self.progress("Expect mag fusion selection %d" % expect_sel)
+        mlog = self.dfreader_for_current_onboard_log()
+        found_sel = MagFuseSel.NOT_FUSING
+        while True:
+            m = mlog.recv_match(type='XKFS')
+            if m is None:
+                break
+            found_sel = m.MAG_FUSION
+        if found_sel != expect_sel:
+            raise NotAchievedException("Expected mag fusion selection %d, found %d" % (expect_sel, found_sel))
+
+    def fuse_mag(self):
+        """Test EK3_MAG_CAL values"""
+
+        # WHEN_FLYING: switch to FUSE_MAG after sub is armed for 5 seconds; switch to FUSE_YAW on disarm
+        self.set_parameters({'EK3_MAG_CAL': MagCal.WHEN_FLYING})
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
+        self.arm_vehicle()
+        self.delay_sim_time(10)
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
+        self.disarm_vehicle()
+        self.delay_sim_time(1)
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
+
+        # AFTER_FIRST_CLIMB: switch to FUSE_MAG after sub is armed and descends 0.5m; switch to FUSE_YAW on disarm
+        self.set_parameters({'EK3_MAG_CAL': MagCal.AFTER_FIRST_CLIMB})
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
+        altitude = self.get_altitude(relative=True)
+        self.arm_vehicle()
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=altitude-4, altitude_max=altitude-3, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
+        self.disarm_vehicle()
+        self.delay_sim_time(1)
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
+
+        # ALWAYS
+        self.set_parameters({'EK3_MAG_CAL': MagCal.ALWAYS})
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -877,9 +971,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
+            self.MAV_CMD_DO_REPOSITION,
             self.TerrainMission,
             self.SetGlobalOrigin,
-            self.backup_home,
+            self.backup_origin,
+            self.fuse_mag,
         ])
 
         return ret

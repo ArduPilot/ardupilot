@@ -483,6 +483,46 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
+{
+    const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
+    if (!sub.flightmode->in_guided_mode() && !change_modes) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // sanity check location
+    if (!check_latlng(packet.x, packet.y)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    Location request_location;
+    if (!location_from_command_t(packet, request_location)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    if (request_location.sanitize(sub.current_loc)) {
+        // if the location wasn't already sane don't load it
+        return MAV_RESULT_DENIED; // failed as the location is not valid
+    }
+
+    // we need to do this first, as we don't want to change the flight mode unless we can also set the target
+    if (!sub.mode_guided.guided_set_destination(request_location)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    if (!sub.flightmode->in_guided_mode()) {
+        if (!sub.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
+        // the position won't have been loaded if we had to change the flight mode, so load it again
+        if (!sub.mode_guided.guided_set_destination(request_location)) {
+            return MAV_RESULT_FAILED;
+        }
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch(packet.command) {
@@ -495,6 +535,9 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
 
     case MAV_CMD_DO_MOTOR_TEST:
         return handle_MAV_CMD_DO_MOTOR_TEST(packet);
+
+    case MAV_CMD_DO_REPOSITION:
+        return handle_command_int_do_reposition(packet);
 
     case MAV_CMD_MISSION_START:
         return handle_MAV_CMD_MISSION_START(packet);

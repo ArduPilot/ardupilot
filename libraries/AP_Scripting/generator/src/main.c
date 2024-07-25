@@ -2381,7 +2381,7 @@ void emit_methods(struct userdata *node) {
 }
 
 void emit_enum(struct userdata * data) {
-    fprintf(source, "struct userdata_enum %s_enums[] = {\n", data->sanatized_name);
+    fprintf(source, "const struct userdata_enum %s_enums[] = {\n", data->sanatized_name);
     struct userdata_enum *ud_enum = data->enums;
     while (ud_enum != NULL) {
       fprintf(source, "    {\"%s\", %s::%s},\n", ud_enum->name, data->name, ud_enum->name);
@@ -2499,68 +2499,75 @@ void emit_loaders(void) {
   emit_type_index(parsed_singletons, "singleton");
   emit_type_index(parsed_ap_objects, "ap_object");
 
+  fprintf(source, "static int binding_index(lua_State *L) {\n");
+  fprintf(source, "    const char * name = luaL_checkstring(L, 2);\n");
+  fprintf(source, "\n");
+  fprintf(source, "    bool found = false;\n");
+  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
+  fprintf(source, "        if (strcmp(name, singleton_fun[i].name) == 0) {\n");
+  fprintf(source, "            lua_newuserdata(L, 0);\n");
+  fprintf(source, "            if (luaL_newmetatable(L, name)) { // need to create metatable\n");
+  fprintf(source, "                lua_pushcfunction(L, singleton_fun[i].func);\n");
+  fprintf(source, "                lua_setfield(L, -2, \"__index\");\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "            lua_setmetatable(L, -2);\n");
+  fprintf(source, "            found = true;\n");
+  fprintf(source, "            break;\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    if (!found) {\n");
+  fprintf(source, "        for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
+  fprintf(source, "            if (strcmp(name, new_userdata[i].name) == 0) {\n");
+  fprintf(source, "                lua_pushcfunction(L, new_userdata[i].fun);\n");
+  fprintf(source, "                found = true;\n");
+  fprintf(source, "                break;\n");
+  fprintf(source, "            }\n");
+  fprintf(source, "        }\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "    if (!found) {\n");
+  fprintf(source, "        return 0;\n");
+  fprintf(source, "    }\n");
+  fprintf(source, "\n");
+  fprintf(source, "    // store found value to avoid a re-index\n");
+  fprintf(source, "    lua_pushvalue(L, -2);\n");
+  fprintf(source, "    lua_pushvalue(L, -2);\n");
+  fprintf(source, "    lua_settable(L, -5);\n");
+  fprintf(source, "\n");
+  fprintf(source, "    return 1;\n");
+  fprintf(source, "}\n\n");
+
   fprintf(source, "void load_generated_bindings(lua_State *L) {\n");
   fprintf(source, "    luaL_checkstack(L, 5, \"Out of stack\");\n"); // this is more stack space then we need, but should never fail
   fprintf(source, "    // userdata metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(userdata_fun); i++) {\n");
   fprintf(source, "        luaL_newmetatable(L, userdata_fun[i].name);\n");
-  fprintf(source, "        lua_pushcclosure(L, userdata_fun[i].func, 0);\n");
+  fprintf(source, "        lua_pushcfunction(L, userdata_fun[i].func);\n");
   fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
 
   fprintf(source, "        if (userdata_fun[i].operators != nullptr) {\n");
   fprintf(source, "            luaL_setfuncs(L, userdata_fun[i].operators, 0);\n");
   fprintf(source, "        }\n");
 
-  fprintf(source, "        lua_pushstring(L, \"__call\");\n");
-  fprintf(source, "        lua_pushvalue(L, -2);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
-
   fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_getmetatable(L, userdata_fun[i].name);\n");
-  fprintf(source, "        lua_setmetatable(L, -2);\n");
-  fprintf(source, "        lua_setglobal(L, userdata_fun[i].name);\n");
   fprintf(source, "    }\n");
   fprintf(source, "\n");
 
   fprintf(source, "    // ap object metatables\n");
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(ap_object_fun); i++) {\n");
   fprintf(source, "        luaL_newmetatable(L, ap_object_fun[i].name);\n");
-  fprintf(source, "        lua_pushcclosure(L, ap_object_fun[i].func, 0);\n");
+  fprintf(source, "        lua_pushcfunction(L, ap_object_fun[i].func);\n");
   fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-  fprintf(source, "        lua_pushstring(L, \"__call\");\n");
-  fprintf(source, "        lua_pushvalue(L, -2);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
 
   fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_getmetatable(L, ap_object_fun[i].name);\n");
-  fprintf(source, "        lua_setmetatable(L, -2);\n");
-  fprintf(source, "        lua_setglobal(L, ap_object_fun[i].name);\n");
   fprintf(source, "    }\n");
   fprintf(source, "\n");
 
-  fprintf(source, "    // singleton metatables\n");
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
-  fprintf(source, "        luaL_newmetatable(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_pushcclosure(L, singleton_fun[i].func, 0);\n");
-  fprintf(source, "        lua_setfield(L, -2, \"__index\");\n");
-  fprintf(source, "        lua_pushstring(L, \"__call\");\n");
-  fprintf(source, "        lua_pushvalue(L, -2);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
+  fprintf(source, "    // singletons and userdata creation funcs are loaded dynamically\n");
 
-  fprintf(source, "        lua_pop(L, 1);\n");
-  fprintf(source, "        lua_newuserdata(L, 0);\n");
-  fprintf(source, "        luaL_getmetatable(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_setmetatable(L, -2);\n");
-  fprintf(source, "        lua_setglobal(L, singleton_fun[i].name);\n");
-  fprintf(source, "    }\n");
-
-  fprintf(source, "\n");
   fprintf(source, "}\n\n");
 }
 
-void emit_sandbox(void) {
+void emit_userdata_new_funcs(void) {
   struct userdata *data = parsed_userdata;
   fprintf(source, "const struct userdata {\n");
   fprintf(source, "    const char *name;\n");
@@ -2609,23 +2616,14 @@ void emit_sandbox(void) {
     }
   }
   fprintf(source, "};\n\n");
+}
 
+void emit_sandbox(void) {
   fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
-  // load the singletons
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(singleton_fun); i++) {\n");
-  fprintf(source, "        lua_pushstring(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_getglobal(L, singleton_fun[i].name);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
-  fprintf(source, "    }\n");
-
-  // load the userdata allactors and globals
-  fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
-  fprintf(source, "        lua_pushstring(L, new_userdata[i].name);\n");
-  fprintf(source, "        lua_pushcfunction(L, new_userdata[i].fun);\n");
-  fprintf(source, "        lua_settable(L, -3);\n");
-  fprintf(source, "    }\n");
-
-  fprintf(source, "\n");
+  fprintf(source, "    lua_createtable(L, 0, 1);\n");
+  fprintf(source, "    lua_pushcfunction(L, binding_index);\n");
+  fprintf(source, "    lua_setfield(L, -2, \"__index\");\n");
+  fprintf(source, "    lua_setmetatable(L, -2);\n");
   fprintf(source, "}\n");
 }
 
@@ -3169,7 +3167,7 @@ int main(int argc, char **argv) {
   emit_methods(parsed_ap_objects);
   emit_index(parsed_ap_objects);
 
-
+  emit_userdata_new_funcs();
   emit_loaders();
 
   emit_sandbox();

@@ -7,7 +7,9 @@
 
 #if HAL_WITH_ESC_TELEM
 
-#define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+#ifndef ESC_TELEM_MAX_ESCS
+    #define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+#endif
 static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
 
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL

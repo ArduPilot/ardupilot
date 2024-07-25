@@ -35,6 +35,7 @@ extern const AP_HAL::HAL& hal;
 # define AP_MOUNT_TOPOTEK_ID3CHAR_SD_CARD       "SDC"           // get SD card state, data bytes: 00:get remaining capacity, 01:get total capacity
 # define AP_MOUNT_TOPOTEK_ID3CHAR_TIME          "UTC"           // set time and date, data bytes: HHMMSSDDMMYY
 # define AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION   "VSN"           // get firmware version, data bytes always 00
+# define AP_MOUNT_TOPOTEK_ID3CHAR_GET_MODEL_NAME "PA2"          // get model name, data bytes always 00
 # define AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_MODE   "PTZ"           // set gimbal mode, data bytes: 00:stop, 01:up, 02:down, 03:left, 04:right, 05:home position, 06:lock, 07:follow, 08:lock/follow toggle, 09:calibration, 0A:one button down
 # define AP_MOUNT_TOPOTEK_ID3CHAR_YPR_RATE      "YPR"           // set the rate yaw, pitch and roll targets of the gimbal yaw in range -99 ~ +99
 # define AP_MOUNT_TOPOTEK_ID3CHAR_YAW_ANGLE     "GIY"           // set the yaw angle target in the range -150 ~ 150, speed 0 ~ 99 (0.1deg/sec)
@@ -107,8 +108,12 @@ void AP_Mount_Topotek::update()
         break;
     case 6:
         // request tracking info
-        if (_is_tracking) {
-            request_track_status();
+        request_track_status();
+        break;
+    case 8:
+        // get gimbal model name
+        if (!_got_gimbal_model_name) {
+            request_gimbal_model_name();
         }
         break;
     }
@@ -120,11 +125,10 @@ void AP_Mount_Topotek::update()
     if (_is_tracking) {
         // cancel tracking if mode has changed
         if (_last_mode != _mode) {
+            _last_mode = _mode;
             cancel_tracking();
-        } else {
-            // image tracking is active so we do not send attitude targets
-            return;
         }
+        return;
     }
     _last_mode = _mode;
 
@@ -388,6 +392,11 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
     }
 
     if (send_tracking_cmd) {
+        // set the gimbal to the ready-to-track state when the gimbal tracking status is stopped
+        if (_last_tracking_state == TrackingStatus::STOPPED_TRACKING) {
+            send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_TRACKING, true, 2);
+        }
+
         // prepare data bytes
         uint8_t databuff[10];
         databuff[0] = HIGHBYTE(track_center_x);
@@ -399,7 +408,7 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
         databuff[6] = HIGHBYTE(track_height);
         databuff[7] = LOWBYTE(track_height);
         databuff[8] = 0;
-        databuff[9] = 0;
+        databuff[9] = (tracking_type == TrackingType::TRK_POINT) ? 9 : 1;   // when tracking point, enable fuzzy click function
 
         // send tracking command
         bool res = send_variablelen_packet(HeaderType::VARIABLE_LEN,
@@ -407,7 +416,12 @@ bool AP_Mount_Topotek::set_tracking(TrackingType tracking_type, const Vector2f& 
                                            AP_MOUNT_TOPOTEK_ID3CHAR_START_TRACKING,
                                            true,
                                            (uint8_t*)databuff, ARRAY_SIZE(databuff));
-        _is_tracking |= res;
+
+        // display error message on failure
+        if (!res) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s tracking failed", send_message_prefix);
+        }
+
         return res;
     }
 
@@ -424,11 +438,11 @@ bool AP_Mount_Topotek::cancel_tracking()
         return false;
     }
 
+    // if gimbal is tracking-in-progress change to waiting state, otherwise stop
+    const uint8_t track_set = _last_tracking_state == TrackingStatus::TRACKING_IN_PROGRESS ? 1 : 0;
+
     // send tracking command
-    if (send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_TRACKING, true, 1)) {
-        return true;
-    }
-    return false;
+    return send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_TRACKING, true, track_set);
 }
 
 // set camera picture-in-picture mode
@@ -509,6 +523,11 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
     static const uint8_t vendor_name[32] = "Topotek";
     static uint8_t model_name[32] {};
     const char cam_definition_uri[140] {};
+
+    // copy model name if available
+    if (_got_gimbal_model_name) {
+        strncpy((char*)model_name, (const char*)_model_name, ARRAY_SIZE(model_name));
+    }
 
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
@@ -675,8 +694,8 @@ void AP_Mount_Topotek::read_incoming_packets()
         case ParseState::WAITING_FOR_ID1:
         case ParseState::WAITING_FOR_ID2:
         case ParseState::WAITING_FOR_ID3:
-            // sanity check all capital letters.  eg 'GAC'
-            if (b >= 'A' && b <= 'Z') {
+            // check all uppercase letters and numbers.  eg 'GAC'
+            if ((b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')) {
                 // advance to next state
                 _parser.state = (ParseState)((uint8_t)_parser.state+1);
                 break;
@@ -770,8 +789,15 @@ void AP_Mount_Topotek::request_track_status()
 // request gimbal version
 void AP_Mount_Topotek::request_gimbal_version()
 {
-    // sample command: #TPPD2rVSN00
+    // sample command: #TPUD2rVSN00
     send_fixedlen_packet(AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION, false, 0);
+}
+
+// request gimbal model name
+void AP_Mount_Topotek::request_gimbal_model_name()
+{
+    // sample command: #TPUG2rPA200
+    send_fixedlen_packet(AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_GET_MODEL_NAME, false, 0);
 }
 
 // send angle target in radians to gimbal
@@ -982,7 +1008,7 @@ void AP_Mount_Topotek::gimbal_sdcard_analyse()
 void AP_Mount_Topotek::gimbal_track_analyse()
 {
     // ignore tracking state if unchanged
-    uint8_t tracking_state = _msg_buff[11];
+    TrackingStatus tracking_state = (TrackingStatus)_msg_buff[11];
     if (tracking_state == _last_tracking_state) {
         return;
     }
@@ -991,15 +1017,17 @@ void AP_Mount_Topotek::gimbal_track_analyse()
     // inform user
     const char* tracking_str = "tracking";
     switch (tracking_state) {
-    case '0':
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s %s error", send_message_prefix, tracking_str);
-        break;
-    case '1':
+    case TrackingStatus::STOPPED_TRACKING:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s stopped", send_message_prefix, tracking_str);
         _is_tracking = false;
         break;
-    case '2':
+    case TrackingStatus::WAITING_FOR_TRACKING:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s waiting", send_message_prefix, tracking_str);
+        _is_tracking = false;
+        break;
+    case TrackingStatus::TRACKING_IN_PROGRESS:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s started", send_message_prefix, tracking_str);
+        _is_tracking = true;
         break;
     }
 }
@@ -1024,31 +1052,66 @@ void AP_Mount_Topotek::gimbal_dist_info_analyse()
 // gimbal basic information analysis
 void AP_Mount_Topotek::gimbal_version_analyse()
 {
-    uint8_t major_ver = 0;
-    uint8_t minor_ver = 0;
-    uint8_t patch_ver = 0;
+    // version array with index 0=major, 1=minor, 2=patch
+    uint8_t version[3] {};
 
     // extract firmware version
+    // the version can be in the format "1.2.3" or "123"
     const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
-    if (data_buf_len >= 1) {
-        major_ver = char_to_hex(_msg_buff[10]);
+
+    // check for "."
+    bool contains_period = false;
+    for (uint8_t i = 0; i < data_buf_len; i++) {
+        contains_period |= _msg_buff[10 + i] == '.';
     }
-    if (data_buf_len >= 2) {
-        minor_ver = char_to_hex(_msg_buff[11]);
+
+    // if contains period, extract version number
+    uint32_t ver_num = 0;
+    uint8_t ver_count = 0;
+    if (contains_period) {
+        for (uint8_t i = 0; i < data_buf_len; i++) {
+            if (_msg_buff[10 + i] != '.') {
+                ver_num = ver_num * 10 + char_to_hex(_msg_buff[10 + i]);
+            } else {
+                version[ver_count++] = ver_num;
+                ver_num = 0;
+            }
+            if (ver_count >= ARRAY_SIZE(version)) {
+                break;
+            }
+        }
+    } else {
+        if (data_buf_len >= 1) {
+            version[0] = char_to_hex(_msg_buff[10]);
+        }
+        if (data_buf_len >= 2) {
+            version[1] = char_to_hex(_msg_buff[11]);
+        }
+        if (data_buf_len >= 3) {
+            version[2] = char_to_hex(_msg_buff[12]);
+        }
     }
-    if (data_buf_len >= 3) {
-        patch_ver = char_to_hex(_msg_buff[12]);
-    }
-    _firmware_ver = (patch_ver << 16) | (minor_ver << 8) | (major_ver);
+    _firmware_ver = (version[2] << 16) | (version[1] << 8) | (version[0]);
 
     // display gimbal model and firmware version to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s v%u.%u.%u",
         send_message_prefix,
-        major_ver,
-        minor_ver,
-        patch_ver);
+        version[0],     // major version
+        version[1],     // minor version
+        version[2]);    // patch version
 
     _got_gimbal_version = true;
+}
+
+// gimbal model name message analysis
+void AP_Mount_Topotek::gimbal_model_name_analyse()
+{
+    strncpy((char *)_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
+
+    // display gimbal model name to user
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);
+
+    _got_gimbal_model_name = true;
 }
 
 // calculate checksum

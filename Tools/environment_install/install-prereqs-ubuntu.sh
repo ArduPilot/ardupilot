@@ -399,8 +399,8 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
     fi
 fi
 
-# try update setuptools and wheel before installing pip package that may need compilation
-$PIP install $PIP_USER_ARGUMENT -U pip setuptools wheel
+# try update packaging, setuptools and wheel before installing pip package that may need compilation
+$PIP install $PIP_USER_ARGUMENT -U pip packaging setuptools wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"

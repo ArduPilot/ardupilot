@@ -593,18 +593,6 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_reverse(cmd);
         break;
 
-    case MAV_CMD_DO_FENCE_ENABLE:
-#if AP_FENCE_ENABLED
-        if (cmd.p1 == 0) {  //disable
-            rover.fence.enable(false);
-            gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
-        } else {  //enable fence
-            rover.fence.enable(true);
-            gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
-        }
-#endif
-        break;
-
     case MAV_CMD_DO_GUIDED_LIMITS:
         do_guided_limits(cmd);
         break;

@@ -332,9 +332,9 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
  */
 void SITL_State_Common::sim_update(void)
 {
-#if HAL_SIM_GIMBAL_ENABLED
+#if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
-        gimbal->update();
+        gimbal->update(*sitl_model);
     }
 #endif
 #if HAL_SIM_ADSB_ENABLED

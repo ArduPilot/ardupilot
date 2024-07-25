@@ -38,7 +38,7 @@ The packages depend on:
 #### 1. Create a workspace folder
 
 ```bash
-mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
 The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/humble/Tutorials/Workspace/Creating-A-Workspace.html).
@@ -54,7 +54,7 @@ vcs import --recursive < ros2.repos
 #### 3. Update dependencies
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 sudo apt update
 rosdep update
@@ -72,7 +72,7 @@ ROS_DISTRO=humble
 ```
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_ws
 colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 
@@ -92,7 +92,7 @@ must be built from source and additional compiler flags are needed.
 #### 1. Create a workspace folder
 
 ```bash
-mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
 #### 2. Get the `ros2_macos.repos` file
@@ -108,7 +108,7 @@ vcs import --recursive < ros2_macos.repos
 #### 3. Update dependencies
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_ws
 source /{path_to_your_ros_distro_workspace}/install/setup.zsh
 ```
 

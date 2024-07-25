@@ -214,14 +214,24 @@ void VectorNav::update(void)
     }
 
     char receive_buf[50];
-    const ssize_t n = read_from_autopilot(&receive_buf[0], ARRAY_SIZE(receive_buf));
-    if (n > 0) {
-        if (strncmp(receive_buf, "$VNRRG,01", 9) == 0) {
-            nmea_printf("$VNRRG,01,VN-300-SITL");
-        } else {
-            nmea_printf("$%s", receive_buf);
-        }
+    ssize_t n = read_from_autopilot(&receive_buf[0], ARRAY_SIZE(receive_buf));
+    if (n <= 0) {
+        return;
     }
 
+    // avoid parsing the NMEA stream here by making assumptions about
+    // how we receive configuration strings.  Generally we can just
+    // echo back the configuration string to make the driver happy.
+    if (n >= 9) {
+        // intercept device-version query, respond with simulated version:
+        const char *ver_query_string = "$VNRRG,01";
+        if (strncmp(receive_buf, ver_query_string, strlen(ver_query_string)) == 0) {
+            nmea_printf("$VNRRG,01,VN-300-SITL");
+            // consume the query so we don't "respond" twice:
+            memmove(&receive_buf[0], &receive_buf[strlen(ver_query_string)], n - strlen(ver_query_string));
+            n -= strlen(ver_query_string);
+        }
+    }
+    write_to_autopilot(receive_buf, n);
 }
 

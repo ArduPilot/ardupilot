@@ -68,7 +68,7 @@ void ModeCircle::run()
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
-        // skip if using CH6 tuning knob for circle rate
+        // skip if using transmitter based tuning knob for circle rate
         if (g.radio_tuning != TUNING_CIRCLE_RATE) {
             const float roll_stick = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
 

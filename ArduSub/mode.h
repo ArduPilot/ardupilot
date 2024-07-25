@@ -320,6 +320,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
+    bool in_guided_mode() const override { return true; }
     bool guided_limit_check();
     void guided_limit_init_time_and_pos();
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);

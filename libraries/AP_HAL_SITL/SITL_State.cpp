@@ -79,9 +79,11 @@ void SITL_State::_sitl_setup()
     if (_sitl != nullptr) {
         // setup some initial values
         _update_airspeed(0);
+#if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            gimbal = NEW_NOTHROW SITL::Gimbal(_sitl->state);
+            gimbal = NEW_NOTHROW SITL::SoloGimbal();
         }
+#endif
 
         sitl_model->set_buzzer(&_sitl->buzzer_sim);
         sitl_model->set_sprayer(&_sitl->sprayer_sim);

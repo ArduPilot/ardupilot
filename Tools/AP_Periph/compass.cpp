@@ -20,6 +20,8 @@
 #define AP_PERIPH_MAG_HIRES 0
 #endif
 
+extern const AP_HAL::HAL &hal;
+
 /*
   update CAN magnetometer
  */

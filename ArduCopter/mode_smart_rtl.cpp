@@ -35,6 +35,14 @@ bool ModeSmartRTL::init(bool ignore_checks)
 // perform cleanup required when leaving smart_rtl
 void ModeSmartRTL::exit()
 {
+    // restore last point if we hadn't reached it
+    if (smart_rtl_state == SubMode::PATH_FOLLOW && !dest_NED_backup.is_zero()) {
+        if (!g2.smart_rtl.add_point(dest_NED_backup)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "SmartRTL: lost one point");
+        }
+    }
+    dest_NED_backup.zero();
+
     g2.smart_rtl.cancel_request_for_thorough_cleanup();
 }
 
@@ -83,10 +91,16 @@ void ModeSmartRTL::path_follow_run()
 {
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
-        Vector3f dest_NED;
+
+        // clear destination backup so that it cannot be restored
+        dest_NED_backup.zero();
+
         // this pop_point can fail if the IO task currently has the
         // path semaphore.
+        Vector3f dest_NED;
         if (g2.smart_rtl.pop_point(dest_NED)) {
+            // backup destination in case we exit smart_rtl mode and need to restore it to the path
+            dest_NED_backup = dest_NED;
             path_follow_last_pop_fail_ms = 0;
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state

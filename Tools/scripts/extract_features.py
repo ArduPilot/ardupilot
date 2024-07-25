@@ -170,6 +170,7 @@ class ExtractFeatures(object):
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
+            ('AP_WINCH_{type}_ENABLED', r'AP_Winch_(?P<type>.*)::update\b',),
             ('AP_RELAY_ENABLED', 'AP_Relay::init',),
             ('AP_SERVORELAYEVENTS_ENABLED', 'AP_ServoRelayEvents::update_events',),
 
@@ -257,6 +258,7 @@ class ExtractFeatures(object):
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_MAVLINK_MSG_HIL_GPS_ENABLED', r'mavlink_msg_hil_gps_decode'),
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Compass::_probe_external_i2c_compasses'),
+            ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
         ]
 
     def progress(self, msg):

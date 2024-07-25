@@ -74,6 +74,14 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
 #endif
 
+    // @Param: _DOMAIN_ID
+    // @DisplayName: DDS DOMAIN ID
+    // @Description: Set the ROS_DOMAIN_ID
+    // @Range: 0 232
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_DOMAIN_ID", 4, AP_DDS_Client, domain_id, 0),
+
     AP_GROUPEND
 };
 
@@ -819,9 +827,8 @@ bool AP_DDS_Client::create()
         .type = UXR_PARTICIPANT_ID
     };
     const char* participant_name = "ardupilot_dds";
-    const uint16_t domain_id = 0;
     const auto participant_req_id = uxr_buffer_create_participant_bin(&session, reliable_out, participant_id,
-                                    domain_id, participant_name, UXR_REPLACE);
+                                    static_cast<uint16_t>(domain_id), participant_name, UXR_REPLACE);
 
     //Participant requests
     constexpr uint8_t nRequestsParticipant = 1;

@@ -181,7 +181,7 @@ void Aircraft::update_position(void)
         uint32_t now = AP_HAL::millis();
         if (now - last_one_hz_ms >= 1000) {
             // shift origin of position at 1Hz to current location
-            // this prevents sperical errors building up in the GPS data
+            // this prevents spherical errors building up in the GPS data
             last_one_hz_ms = now;
             Vector2d diffNE = origin.get_distance_NE_double(location);
             position.xy() -= diffNE;
@@ -796,6 +796,11 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
         }
     }
 
+    // update slung payload
+#if AP_SIM_SLUNGPAYLOAD_ENABLED
+    sitl->models.slung_payload_sim.update(get_position_relhome(), velocity_ef, accel_earth);
+#endif
+
     // allow for changes in physics step
     adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 }
@@ -1226,6 +1231,19 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
         sitl->twist.t.set(0);
     }
 }
+
+#if AP_SIM_SLUNGPAYLOAD_ENABLED
+// add body-frame force due to slung payload
+void Aircraft::add_slungpayload_forces(Vector3f &body_accel)
+{
+    Vector3f forces_ef;
+    sitl->models.slung_payload_sim.get_forces_on_vehicle(forces_ef);
+
+    // convert ef forces to body-frame accelerations (acceleration = force / mass)
+    const Vector3f accel_bf = dcm.transposed() * forces_ef / mass;
+    body_accel += accel_bf;
+}
+#endif
 
 /*
   get position relative to home

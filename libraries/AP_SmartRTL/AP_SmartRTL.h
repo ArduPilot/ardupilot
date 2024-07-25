@@ -41,6 +41,9 @@ public:
     // get a point on the path
     const Vector3f& get_point(uint16_t index) const { return _path[index]; }
 
+    // add point to end of path. returns true on success, false on failure (due to failure to take the semaphore)
+    bool add_point(const Vector3f& point);
+
     // get next point on the path to home, returns true on success
     bool pop_point(Vector3f& point);
 
@@ -108,9 +111,6 @@ private:
         // bits 1 and 2 are still available, pilot yaw was mapped to bit 2 for symmetry with auto
         IgnorePilotYaw    = (1U << 2),
     };
-
-    // add point to end of path
-    bool add_point(const Vector3f& point);
 
     // routine cleanup attempts to remove 10 points (see SMARTRTL_CLEANUP_POINT_MIN definition) by simplification or loop pruning
     void routine_cleanup(uint16_t path_points_count, uint16_t path_points_complete_limit);

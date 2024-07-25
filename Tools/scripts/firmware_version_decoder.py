@@ -18,6 +18,18 @@ class FirmwareVersionType(enum.Enum):
     Official = 255
     EnumEnd = 256
 
+    @staticmethod
+    def get_release(version: int) -> str:
+        """
+        Return the closest release type for a given version type, going down.
+        This is required because it is common in ardupilot to increase the version type
+        for successive betas, such as here:
+        https://github.com/ArduPilot/ardupilot/blame/8890c44370a7cf27d5efc872ef6da288ae3bc41f/ArduCopter/version.h#L12
+        """
+        for release in reversed(FirmwareVersionType):
+            if version >= release.value:
+                return release
+        return "Unknown"
 
 class VehicleType(enum.Enum):
     Rover = 1
@@ -193,7 +205,7 @@ class Decoder:
         self.fwversion.major = self.unpack("B")
         self.fwversion.minor = self.unpack("B")
         self.fwversion.patch = self.unpack("B")
-        self.fwversion.firmware_type = FirmwareVersionType(self.unpack("B"))
+        self.fwversion.firmware_type = FirmwareVersionType.get_release(self.unpack("B"))
         self.fwversion.os_software_version = self.unpack("I")
 
         self.fwversion.firmware_string = self.unpack_string_from_pointer()
