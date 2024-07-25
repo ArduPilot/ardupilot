@@ -4376,7 +4376,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=1
-        - TKOFF_TYPE=0
+        - TKOFF_OPTIONS[0]=0
         - TKOFF_THR_MAX < THR_MAX
         '''
 
@@ -4421,7 +4421,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=1
-        - TKOFF_MODE=0
+        - TKOFF_OPTIONS[0]=0
         - TKOFF_THR_MAX > THR_MAX
         '''
 
@@ -4466,7 +4466,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=1
-        - TKOFF_MODE=1
+        - TKOFF_OPTIONS[0]=1
         '''
 
         self.customise_SITL_commandline(
@@ -4478,7 +4478,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "ARSPD_USE": 1.0,
             "THR_MAX": 80.0,
             "THR_MIN": 0.0,
-            "TKOFF_MODE": 1.0,
+            "TKOFF_OPTIONS": 1.0,
             "TKOFF_THR_MAX": 100.0,
             "TKOFF_THR_MINACC": 3.0,
             "TECS_PITCH_MAX": 35.0,
@@ -4515,7 +4515,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=0
-        - TKOFF_MODE=1
+        - TKOFF_OPTIONS[0]=1
         '''
 
         self.customise_SITL_commandline(
@@ -4527,7 +4527,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "ARSPD_USE": 0.0,
             "THR_MAX": 80.0,
             "THR_MIN": 0.0,
-            "TKOFF_MODE": 1.0,
+            "TKOFF_OPTIONS": 1.0,
             "TKOFF_THR_MAX": 100.0,
             "TKOFF_THR_MINACC": 3.0,
             "TECS_PITCH_MAX": 35.0,
@@ -4566,7 +4566,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=1
-        - TKOFF_MODE=0
+        - TKOFF_OPTIONS[0]=0
         - TKOFF_THR_MAX < THR_MAX
         '''
 
@@ -4580,7 +4580,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "THR_MAX": 100.0,
             "TKOFF_LVL_ALT": 30.0,
             "TKOFF_ALT": 100.0,
-            "TKOFF_MODE": 0.0,
+            "TKOFF_OPTIONS": 0.0,
             "TKOFF_THR_MINACC": 3.0,
             "TKOFF_THR_MAX": 80.0,
             "TECS_PITCH_MAX": 35.0,
@@ -4616,7 +4616,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=1
-        - TKOFF_MODE=1
+        - TKOFF_OPTIONS[0]=1
         - TKOFF_THR_MAX < THR_MAX
         '''
 
@@ -4630,7 +4630,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "THR_MAX": 100.0,
             "TKOFF_LVL_ALT": 80.0,
             "TKOFF_ALT": 150.0,
-            "TKOFF_MODE": 1.0,
+            "TKOFF_OPTIONS": 1.0,
             "TKOFF_THR_MINACC": 3.0,
             "TKOFF_THR_MAX": 80.0,
             "TECS_PITCH_MAX": 35.0,
@@ -4669,7 +4669,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         Conditions:
         - ARSPD_USE=0
-        - TKOFF_MODE=0
+        - TKOFF_OPTIONS[0]=0
         - TKOFF_THR_MAX < THR_MAX
         '''
 
@@ -4683,7 +4683,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "THR_MAX": 100.0,
             "TKOFF_LVL_ALT": 30.0,
             "TKOFF_ALT": 100.0,
-            "TKOFF_MODE": 0.0,
+            "TKOFF_OPTIONS": 0.0,
             "TKOFF_THR_MINACC": 3.0,
             "TKOFF_THR_MAX": 80.0,
             "TECS_PITCH_MAX": 35.0,
