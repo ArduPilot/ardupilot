@@ -2112,6 +2112,14 @@ class TestSuite(ABC):
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
         ])
 
+    def load_fence_using_mavwp(self, filename):
+        filepath = os.path.join(testdir, self.current_test_name_directory, filename)
+        if not os.path.exists(filepath):
+            filepath = self.generic_mission_filepath_for_filename(filename)
+        self.progress("Loading fence from (%s)" % str(filepath))
+        items = self.mission_item_protocol_items_from_filepath(mavwp.MissionItemProtocol_Fence, filepath)
+        self.check_fence_upload_download(items)
+
     def send_reboot_command(self):
         self.mav.mav.command_long_send(self.sysid_thismav(),
                                        1,
@@ -5124,7 +5132,7 @@ class TestSuite(ABC):
             os.path.join(testdir, self.current_test_name_directory, filename),
             strict=strict)
 
-    def wp_to_mission_item_int(self, wp):
+    def wp_to_mission_item_int(self, wp, mission_type):
         '''convert a MISSION_ITEM to a MISSION_ITEM_INT. We always send as
            MISSION_ITEM_INT to give cm level accuracy
            Swiped from mavproxy_wp.py
@@ -5145,19 +5153,35 @@ class TestSuite(ABC):
             wp.param4,
             int(wp.x*1.0e7),
             int(wp.y*1.0e7),
-            wp.z)
+            wp.z,
+            mission_type,
+        )
         return wp_int
 
-    def mission_from_filepath(self, filepath, target_system=1, target_component=1):
+    def mission_item_protocol_items_from_filepath(self,
+                                                  loaderclass,
+                                                  filepath,
+                                                  target_system=1,
+                                                  target_component=1,
+                                                  ):
         '''returns a list of mission-item-ints from filepath'''
-        self.progress("filepath: %s" % filepath)
-        self.progress("Loading mission (%s)" % os.path.basename(filepath))
-        wploader = mavwp.MAVWPLoader(
+        # self.progress("filepath: %s" % filepath)
+        self.progress("Loading {loaderclass.itemstype()} (%s)" % os.path.basename(filepath))
+        wploader = loaderclass(
             target_system=target_system,
             target_component=target_component
         )
         wploader.load(filepath)
-        return [self.wp_to_mission_item_int(x) for x in wploader.wpoints]
+        return [self.wp_to_mission_item_int(x, wploader.mav_mission_type()) for x in wploader.wpoints]  # noqa:502
+
+    def mission_from_filepath(self, filepath, target_system=1, target_component=1):
+        '''returns a list of mission-item-ints from filepath'''
+        return self.mission_item_protocol_items_from_filepath(
+            mavwp.MAVWPLoader,
+            filepath,
+            target_system=target_system,
+            target_component=target_component,
+        )
 
     def sitl_home_string_from_mission(self, filename):
         '''return a string of the form "lat,lng,yaw,alt" from the home
@@ -5177,6 +5201,10 @@ class TestSuite(ABC):
         return self.get_home_tuple_from_mission_filepath(
             os.path.join(testdir, self.current_test_name_directory, filename)
         )
+
+    def get_home_location_from_mission(self, filename):
+        (home_lat, home_lon, home_alt, heading) = self.get_home_tuple_from_mission("rover-path-planning-mission.txt")
+        return mavutil.location(home_lat, home_lon)
 
     def get_home_tuple_from_mission_filepath(self, filepath):
         '''gets item 0 from the mission file, returns a tuple suitable for
@@ -9074,7 +9102,7 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("received request for item from wrong mission type")
 
             if items[m.seq].mission_type != mission_type:
-                raise NotAchievedException("supplied item not of correct mission type")
+                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={items[m.seq].mission_type}")  # noqa:501
             if items[m.seq].target_system != target_system:
                 raise NotAchievedException("supplied item not of correct target system")
             if items[m.seq].target_component != target_component:
