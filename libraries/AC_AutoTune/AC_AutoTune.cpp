@@ -134,6 +134,9 @@ void AC_AutoTune::send_step_string()
     case UPDATE_GAINS:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
         return;
+    case ABORT:
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Aborting Test");
+        return;
     case TESTING:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Testing");
         return;
@@ -340,13 +343,6 @@ void AC_AutoTune::control_attitude()
             step_start_time_ms = now;
             step_time_limit_ms = get_testing_step_timeout_ms();
             // set gains to their to-be-tested values
-            twitch_first_iter = true;
-            test_rate_max = 0.0f;
-            test_rate_min = 0.0f;
-            test_angle_max = 0.0f;
-            test_angle_min = 0.0f;
-            rotation_rate_filt.reset(0.0f);
-            rate_max = 0.0f;
             load_gains(GAIN_TEST);
         } else {
             // when waiting for level we use the intra-test gains
@@ -356,18 +352,15 @@ void AC_AutoTune::control_attitude()
         // Initialize test-specific variables
         switch (axis) {
         case ROLL:
-            angle_finish = target_angle_max_rp_cd();
             start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
             start_angle = ahrs_view->roll_sensor;
             break;
         case PITCH:
-            angle_finish = target_angle_max_rp_cd();
             start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
             start_angle = ahrs_view->pitch_sensor;
             break;
         case YAW:
         case YAW_D:
-            angle_finish = target_angle_max_y_cd();
             start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
             start_angle = ahrs_view->yaw_sensor;
             break;
@@ -537,8 +530,11 @@ void AC_AutoTune::control_attitude()
                 }
             }
         }
+        FALLTHROUGH;
 
+    case ABORT:
         if (axis == YAW || axis == YAW_D) {
+            // todo: check to make sure we need this
             attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
 
@@ -594,6 +590,7 @@ void AC_AutoTune::backup_gains_and_initialise()
  */
 void AC_AutoTune::load_gains(enum GainType gain_type)
 {
+    // todo: add previous setting so gains are not loaded on each loop.
     switch (gain_type) {
     case GAIN_ORIGINAL:
         load_orig_gains();

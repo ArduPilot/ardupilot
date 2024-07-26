@@ -14,9 +14,9 @@
 */
 #include "AP_Frsky_Parameters.h"
 
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 
 const AP_Param::GroupInfo AP_Frsky_Parameters::var_info[] = {
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     // @Param: UPLINK_ID
     // @DisplayName: Uplink sensor id
     // @Description: Change the uplink sensor id (SPort only)
@@ -37,6 +37,7 @@ const AP_Param::GroupInfo AP_Frsky_Parameters::var_info[] = {
     // @Values: -1:Disable,7:7,8:8,9:9,10:10,11:11,12:12,13:13,14:14,15:15,16:16,17:17,18:18,19:19,20:20,21:21,22:22,23:23,24:24,25:25,26:26
     // @User: Advanced
     AP_GROUPINFO("DNLINK2_ID",  3, AP_Frsky_Parameters, _dnlink2_id, 7),
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 
     // @Param: DNLINK_ID
     // @DisplayName: Default downlink sensor id
@@ -58,5 +59,3 @@ AP_Frsky_Parameters::AP_Frsky_Parameters()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
-
-#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL

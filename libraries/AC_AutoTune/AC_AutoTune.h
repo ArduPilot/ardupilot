@@ -198,6 +198,7 @@ protected:
         WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
         TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
         UPDATE_GAINS      = 2,    // autotune has completed a test and is updating the gains based on the results
+        ABORT             = 3     // load normal gains and return to WAITING_FOR_LEVEL
     };
 
     // mini steps performed while in Tuning mode, Testing step
@@ -259,24 +260,15 @@ protected:
     bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
     StepType step;                       // see StepType for what steps are performed
     TuneType tune_type;                  // see TuneType
-    bool     ignore_next;                // true = ignore the next test
     bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
     uint8_t  axes_completed;             // bitmask of completed axes
-    float    test_rate_min;                         // the minimum angular rate achieved during TESTING_RATE step-multi only
-    float    test_rate_max;                         // the maximum angular rate achieved during TESTING_RATE step-multi only
-    float    test_angle_min;                        // the minimum angle achieved during TESTING_ANGLE step-multi only
-    float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step-multi only
     uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
     uint32_t step_time_limit_ms;                    // time limit of current autotune process
     uint32_t level_start_time_ms;                   // start time of waiting for level
     int8_t   counter;                               // counter for tuning gains
-    float    target_rate;                           // target rate-multi only
-    float    target_angle;                          // target angle-multi only
     float    start_angle;                           // start angle
     float    start_rate;                            // start rate - parent and multi
-    float    rate_max;                              // maximum rate variable - parent and multi
     float    test_accel_max;                        // maximum acceleration variable
-    float    angle_finish;                           // Angle that test is aborted- parent and multi
     float    desired_yaw_cd;                        // yaw heading during tune - parent and Tradheli
     float    step_scaler;                           // scaler to reduce maximum target step - parent and multi
 
