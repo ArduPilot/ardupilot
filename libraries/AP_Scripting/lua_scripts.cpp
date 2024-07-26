@@ -499,6 +499,16 @@ void lua_scripts::run(void) {
     lua_atpanic(L, atpanic);
     load_generated_bindings(L);
 
+    // set up string metatable. we set up one for all scripts that no script has
+    // access to, as it's impossible to set up one per-script and we don't want
+    // any script to be able to mess with it.
+    lua_pushliteral(L, "");  /* dummy string */
+    lua_createtable(L, 0, 1);  /* table to be metatable for strings */
+    luaopen_string(L);  /* get string library */
+    lua_setfield(L, -2, "__index");  /* metatable.__index = string */
+    lua_setmetatable(L, -2);  /* set table as metatable for strings */
+    lua_pop(L, 1);  /* pop dummy string */
+
 #ifndef HAL_CONSOLE_DISABLED
     const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
     DEV_PRINTF("Lua: State memory usage: %i + %i\n", inital_mem, loaded_mem - inital_mem);
