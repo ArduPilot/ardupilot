@@ -4794,20 +4794,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_servo_channel_value(3, self.get_parameter("RC3_TRIM", 5), timeout=10)
         self.wait_disarmed()
 
-    def test_poly_fence_object_avoidance_guided(self, target_system=1, target_component=1):
+    def PolyFenceObjectAvoidanceGuided(self, target_system=1, target_component=1):
+        '''PolyFence object avoidance tests - guided mode'''
         if not self.mavproxy_can_do_mision_item_protocols():
             return
 
         self.test_poly_fence_object_avoidance_guided_pathfinding(
             target_system=target_system,
             target_component=target_component)
-        return
-        # twosquares is currently disabled because of the requirement to have an inclusion fence (which it doesn't have ATM)
-        # self.test_poly_fence_object_avoidance_guided_two_squares(
-        #     target_system=target_system,
-        #     target_component=target_component)
+        self.test_poly_fence_object_avoidance_guided_two_squares(
+            target_system=target_system,
+            target_component=target_component)
 
-    def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
+    def PolyFenceObjectAvoidanceAuto(self, target_system=1, target_component=1):
+        '''PolyFence object avoidance tests - auto mode'''
         mavproxy = self.start_mavproxy()
         self.load_fence_using_mavproxy(mavproxy, "rover-path-planning-fence.txt")
         self.stop_mavproxy(mavproxy)
@@ -4823,8 +4823,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_parameter("FENCE_ENABLE", 1)
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         # target_loc is copied from the mission file
         target_loc = mavutil.location(40.073799, -105.229156)
         self.wait_location(target_loc, height_accuracy=None, timeout=300)
@@ -4872,41 +4870,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def WheelEncoders(self):
         '''make sure wheel encoders are generally working'''
-        ex = None
-        try:
-            self.set_parameters({
-                "WENC_TYPE": 10,
-                "EK3_ENABLE": 1,
-                "AHRS_EKF_TYPE": 3,
-            })
-            self.reboot_sitl()
-            self.change_mode("LOITER")
-            self.wait_ready_to_arm()
-            self.change_mode("MANUAL")
-            self.arm_vehicle()
-            self.set_rc(3, 1600)
-
-            m = self.assert_receive_message('WHEEL_DISTANCE', timeout=5)
-
-            tstart = self.get_sim_time()
-            while True:
-                if self.get_sim_time_cached() - tstart > 10:
-                    break
-                dist_home = self.distance_to_home(use_cached_home=True)
-                m = self.mav.messages.get("WHEEL_DISTANCE")
-                delta = abs(m.distance[0] - dist_home)
-                self.progress("dist-home=%f wheel-distance=%f delta=%f" %
-                              (dist_home, m.distance[0], delta))
-                if delta > 5:
-                    raise NotAchievedException("wheel distance incorrect")
-            self.disarm_vehicle()
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle()
-            ex = e
+        self.set_parameters({
+            "WENC_TYPE": 10,
+            "EK3_ENABLE": 1,
+            "AHRS_EKF_TYPE": 3,
+        })
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.change_mode("MANUAL")
+        self.arm_vehicle()
+        self.set_rc(3, 1600)
+
+        m = self.assert_receive_message('WHEEL_DISTANCE', timeout=5)
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                break
+            dist_home = self.distance_to_home(use_cached_home=True)
+            m = self.mav.messages.get("WHEEL_DISTANCE")
+            delta = abs(m.distance[0] - dist_home)
+            self.progress("dist-home=%f wheel-distance=%f delta=%f" %
+                          (dist_home, m.distance[0], delta))
+            if delta > 5:
+                raise NotAchievedException("wheel distance incorrect")
+        self.disarm_vehicle()
 
     def test_poly_fence_object_avoidance_guided_two_squares(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we can steer around obstacles in guided mode")
@@ -5018,159 +5007,86 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.disarm_vehicle()
 
-    def test_poly_fence_object_avoidance_guided_bendy_ruler(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.load_fence("rover-path-bendyruler-fence.txt")
-        self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "AVOID_ENABLE": 3,
-                "OA_TYPE": 1,
-                "OA_LOOKAHEAD": 50,
-            })
-            self.reboot_sitl()
-            self.change_mode('GUIDED')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_parameters({
-                "FENCE_ENABLE": 1,
-                "WP_RADIUS": 5,
-            })
-            if self.mavproxy is not None:
-                self.mavproxy.send("fence list\n")
-            target_loc = mavutil.location(40.071060, -105.227734, 0, 0)
-            self.send_guided_mission_item(target_loc,
-                                          target_system=target_system,
-                                          target_component=target_component)
-            # FIXME: we don't get within WP_RADIUS of our target?!
-            self.wait_location(target_loc, timeout=300, accuracy=15)
-            self.do_RTL(timeout=300)
-            self.disarm_vehicle()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.disarm_vehicle()
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
-
-    def PolyFenceObjectAvoidanceBendyRulerEasier(self, target_system=1, target_component=1):
-        '''PolyFence object avoidance tests - easier bendy ruler test'''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.test_poly_fence_object_avoidance_auto_bendy_ruler_easier(
-            target_system=target_system, target_component=target_component)
-        self.test_poly_fence_object_avoidance_guided_bendy_ruler_easier(
-            target_system=target_system, target_component=target_component)
-
-    def test_poly_fence_object_avoidance_guided_bendy_ruler_easier(self, target_system=1, target_component=1):
-        '''finish-line issue means we can't complete the harder one.  This
-        test can go away once we've nailed that one.  The only
-        difference here is the target point.
-        '''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.load_fence("rover-path-bendyruler-fence.txt")
-        self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "AVOID_ENABLE": 3,
-                "OA_TYPE": 1,
-                "OA_LOOKAHEAD": 50,
-            })
-            self.reboot_sitl()
-            self.change_mode('GUIDED')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_parameters({
-                "FENCE_ENABLE": 1,
-                "WP_RADIUS": 5,
-            })
-            if self.mavproxy is not None:
-                self.mavproxy.send("fence list\n")
-            target_loc = mavutil.location(40.071260, -105.227000, 0, 0)
-            self.send_guided_mission_item(target_loc,
-                                          target_system=target_system,
-                                          target_component=target_component)
-            # FIXME: we don't get within WP_RADIUS of our target?!
-            self.wait_location(target_loc, timeout=300, accuracy=15)
-            self.do_RTL(timeout=300)
-            self.disarm_vehicle()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.disarm_vehicle()
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
-
-    def test_poly_fence_object_avoidance_auto_bendy_ruler_easier(self, target_system=1, target_component=1):
-        '''finish-line issue means we can't complete the harder one.  This
-        test can go away once we've nailed that one.  The only
-        difference here is the target point.
-        '''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
-        self.load_fence("rover-path-bendyruler-fence.txt")
-        self.load_mission("rover-path-bendyruler-mission-easier.txt")
-        self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "AVOID_ENABLE": 3,
-                "OA_TYPE": 1,
-                "OA_LOOKAHEAD": 50,
-            })
-            self.reboot_sitl()
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_parameters({
-                "FENCE_ENABLE": 1,
-                "WP_RADIUS": 5,
-            })
-            if self.mavproxy is not None:
-                self.mavproxy.send("fence list\n")
-            target_loc = mavutil.location(40.071260, -105.227000, 0, 0)
-            # target_loc is copied from the mission file
-            self.wait_location(target_loc, timeout=300)
-            # mission has RTL as last item
-            self.wait_distance_to_home(3, 7, timeout=300)
-            self.disarm_vehicle()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.disarm_vehicle()
-        self.reboot_sitl()
-        if ex is not None:
-            raise ex
-
-    def PolyFenceObjectAvoidance(self, target_system=1, target_component=1):
-        '''PolyFence object avoidance tests'''
-        self.test_poly_fence_object_avoidance_auto(
-            target_system=target_system,
-            target_component=target_component)
-        self.test_poly_fence_object_avoidance_guided(
-            target_system=target_system,
-            target_component=target_component)
-
     def PolyFenceObjectAvoidanceBendyRuler(self, target_system=1, target_component=1):
         '''PolyFence object avoidance tests - bendy ruler'''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        # bendy Ruler isn't as flexible as Dijkstra for planning, so
-        # it gets a simpler test:
-        self.test_poly_fence_object_avoidance_guided_bendy_ruler(
-            target_system=target_system,
-            target_component=target_component,
-        )
+        self.load_fence_using_mavwp("rover-path-bendyruler-fence.txt")
+        self.set_parameters({
+            "AVOID_ENABLE": 3,
+            "OA_TYPE": 1,
+            "FENCE_ENABLE": 1,
+            "WP_RADIUS": 5,
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            "OA_BR_LOOKAHEAD": 50,
+        })
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        target_loc = mavutil.location(40.071060, -105.227734, 1584, 0)
+        self.send_guided_mission_item(target_loc,
+                                      target_system=target_system,
+                                      target_component=target_component)
+        # FIXME: we don't get within WP_RADIUS of our target?!
+        self.wait_location(target_loc, timeout=300, accuracy=15)
+        self.do_RTL(timeout=300)
+        self.disarm_vehicle()
+
+    def PolyFenceObjectAvoidanceBendyRulerEasierGuided(self, target_system=1, target_component=1):
+        '''finish-line issue means we can't complete the harder one.  This
+        test can go away once we've nailed that one.  The only
+        difference here is the target point.
+        '''
+        self.load_fence_using_mavwp("rover-path-bendyruler-fence.txt")
+        self.set_parameters({
+            "AVOID_ENABLE": 3,
+            "OA_TYPE": 1,
+            "FENCE_ENABLE": 1,
+            "WP_RADIUS": 5,
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            "OA_BR_LOOKAHEAD": 60,
+        })
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        target_loc = mavutil.location(40.071260, -105.227000, 1584, 0)
+        self.send_guided_mission_item(target_loc,
+                                      target_system=target_system,
+                                      target_component=target_component)
+        # FIXME: we don't get within WP_RADIUS of our target?!
+        self.wait_location(target_loc, timeout=300, accuracy=15)
+        self.do_RTL(timeout=300)
+        self.disarm_vehicle()
+
+    def PolyFenceObjectAvoidanceBendyRulerEasierAuto(self, target_system=1, target_component=1):
+        '''finish-line issue means we can't complete the harder one.  This
+        test can go away once we've nailed that one.  The only
+        difference here is the target point.
+        '''
+        self.load_fence_using_mavwp("rover-path-bendyruler-fence.txt")
+        self.load_mission("rover-path-bendyruler-mission-easier.txt")
+
+        self.set_parameters({
+            "AVOID_ENABLE": 3,
+            "OA_TYPE": 1,  # BendyRuler
+            "FENCE_ENABLE": 1,
+            "WP_RADIUS": 5,
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            "OA_BR_LOOKAHEAD": 60,
+        })
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        target_loc = mavutil.location(40.071260, -105.227000, 1584, 0)
+        # target_loc is copied from the mission file
+        self.wait_location(target_loc, timeout=300)
+        # mission has RTL as last item
+        self.wait_distance_to_home(3, 7, timeout=300)
+        self.disarm_vehicle()
 
     def test_scripting_simple_loop(self):
         self.start_subtest("Scripting simple loop")
@@ -6861,10 +6777,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.SkidSteer,
             self.PolyFence,
             self.PolyFenceAvoidance,
-            self.PolyFenceObjectAvoidance,
+            self.PolyFenceObjectAvoidanceAuto,
+            self.PolyFenceObjectAvoidanceGuided,
             self.PolyFenceObjectAvoidanceBendyRuler,
             self.SendToComponents,
-            self.PolyFenceObjectAvoidanceBendyRulerEasier,
+            self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
+            self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
             self.SlewRate,
             self.Scripting,
             self.ScriptingSteeringAndThrottle,
