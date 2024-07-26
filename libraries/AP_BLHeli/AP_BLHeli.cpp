@@ -400,13 +400,17 @@ void AP_BLHeli::msp_process_command(void)
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
         break;
 
+        // a literal "4" is used for the PWMType here to allow Rover
+        // to use the same number for the same protocol.  At time of
+        // writing the AP_MotorsUGV::PWMType has not been unified with
+        // AP_Motors::PWMType.
     case MSP_ADVANCED_CONFIG: {
         debug("MSP_ADVANCED_CONFIG");
         uint8_t buf[10];
         buf[0] = 1; // gyro sync denom
         buf[1] = 4; // pid process denom
         buf[2] = 0; // use unsynced pwm
-        buf[3] = (uint8_t)PWM_TYPE_DSHOT150; // motor PWM protocol
+        buf[3] = 4; // (uint8_t)AP_Motors::PWMType::DSHOT150;
         putU16(&buf[4], 480); // motor PWM Rate
         putU16(&buf[6], 450); // idle offset value
         buf[8] = 0; // use 32kHz
