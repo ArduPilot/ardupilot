@@ -149,7 +149,6 @@ private:
     AP_Frsky_MAVlite_SPortToMAVlite sport_to_mavlite;
     AP_Frsky_MAVlite_MAVliteToSPort mavlite_to_sport;
 
-    void set_sensor_id(AP_Int8 idx, uint8_t &sensor);
     // tx/rx sport packet processing
     void queue_rx_packet(const AP_Frsky_SPort::sport_packet_t sp);
     void process_rx_queue(void);
@@ -160,7 +159,7 @@ private:
     bool send_message(const AP_Frsky_MAVlite_Message &txmsg);
     AP_Frsky_MAVliteMsgHandler mavlite{FUNCTOR_BIND_MEMBER(&AP_Frsky_SPort_Passthrough::send_message, bool, const AP_Frsky_MAVlite_Message &)};
 #endif
-
+    void set_sensor_id(AP_Int8 idx, uint8_t &sensor);
     void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
 
     // true if we need to respond to the last polling byte
