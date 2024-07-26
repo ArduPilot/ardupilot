@@ -95,7 +95,7 @@ void AP_Mission::init()
     init_jump_tracking();
 
     // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
-    if (AP_MISSION_MASK_MISSION_CLEAR & _options) {
+    if (option_is_set(Option::CLEAR_ON_BOOT)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Clearing Mission");
         clear();
     }
@@ -2502,7 +2502,7 @@ bool AP_Mission::is_best_land_sequence(const Location &current_loc)
     }
 
     // check if MIS_OPTIONS bit set to allow distance calculation to be done
-    if (!(_options & AP_MISSION_MASK_DIST_TO_LAND_CALC)) {
+    if (!option_is_set(Option::FAILSAFE_TO_BEST_LANDING)) {
         return false;
     }
 
