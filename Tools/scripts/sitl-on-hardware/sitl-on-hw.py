@@ -9,11 +9,36 @@ import sys
 import os
 import tempfile
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools', 'autotest'))
+from pysim import vehicleinfo
+
 from argparse import ArgumentParser
+
+vinfo = vehicleinfo.VehicleInfo()
+
+vehicle_map = {
+    "APMrover2": "Rover",
+    "Copter": "ArduCopter",
+    "Heli": "Helicopter",
+    "Plane": "ArduPlane",
+    "Sub": "ArduSub",
+    "Blimp": "Blimp",
+    "Rover": "Rover",
+    "AntennaTracker": "AntennaTracker",
+}
+# add lower-case equivalents too
+for k in list(vehicle_map.keys()):
+    vehicle_map[k.lower()] = vehicle_map[k]
+
+vehicle_choices = list(vinfo.options.keys())
+# add vehicle aliases to argument parser options:
+for c in vehicle_map.keys():
+    vehicle_choices.append(c)
+
 parser = ArgumentParser("SITL on hardware builder")
 parser.add_argument("--board", default=None, help="board type")
-parser.add_argument("--vehicle", default=None, help="vehicle type")
-parser.add_argument("--frame", default=None, help="frame type")
+parser.add_argument("-v", "--vehicle", choices=vehicle_choices, required=True, help="vehicle type")
+parser.add_argument("-f", "--frame", default=None, help="frame type")
 parser.add_argument("--simclass", default=None, help="simulation class")
 parser.add_argument("--defaults", default=None, help="extra defaults file")
 parser.add_argument("--upload", action='store_true', default=False, help="upload firmware")
@@ -33,6 +58,12 @@ def run_program(cmd_list):
            extra_hwdef.close()
            os.unlink(extra_hwdef.name)
        sys.exit(1)
+
+frame_options = sorted(vinfo.options[vehicle_map[args.vehicle]]["frames"].keys())
+frame_options_string = ' '.join(frame_options)
+if args.frame and args.frame not in frame_options:
+    print(f"ERROR: frame must be one of {frame_options_string}")
+    sys.exit(1)
 
 extra_hwdef = tempfile.NamedTemporaryFile(mode='w')
 extra_defaults = tempfile.NamedTemporaryFile(mode='w')
@@ -71,6 +102,38 @@ if args.simclass:
     hwdef_write("define AP_SIM_FRAME_CLASS %s\n" % args.simclass)
 if args.frame:
     hwdef_write('define AP_SIM_FRAME_STRING "%s"\n' % args.frame)
+    if vehicle_map[args.vehicle] == "ArduCopter" or args.simclass == "MultiCopter":
+        frame_found = False
+        frame_defines = {
+            "quad": "AP_MOTORS_FRAME_QUAD_ENABLED",
+            "+": "AP_MOTORS_FRAME_QUAD_ENABLED",
+            "X": "AP_MOTORS_FRAME_QUAD_ENABLED",
+            "cwx": "AP_MOTORS_FRAME_QUAD_ENABLED",
+            "djix": "AP_MOTORS_FRAME_QUAD_ENABLED",
+            "quad-can": "AP_MOTORS_FRAME_QUAD_ENABLED",
+            "hexa": "AP_MOTORS_FRAME_HEXA_ENABLED",
+            "hexa-cwx": "AP_MOTORS_FRAME_HEXA_ENABLED",
+            "hexa-dji": "AP_MOTORS_FRAME_HEXA_ENABLED",
+            "hexax": "AP_MOTORS_FRAME_HEXA_ENABLED",
+            "deca": "AP_MOTORS_FRAME_DECA_ENABLED",
+            "deca-cwx": "AP_MOTORS_FRAME_DECA_ENABLED",
+            "dodeca-hexa": "AP_MOTORS_FRAME_DODECAHEXA_ENABLED",
+            "octa": "AP_MOTORS_FRAME_OCTA_ENABLED",
+            "octa-dji": "AP_MOTORS_FRAME_OCTA_ENABLED",
+            "octa-cwx": "AP_MOTORS_FRAME_OCTA_ENABLED",
+            "octa-quad": "AP_MOTORS_FRAME_OCTAQUAD_ENABLED",
+            "octa-quad-cwx": "AP_MOTORS_FRAME_OCTAQUAD_ENABLED",
+            "y6": "AP_MOTORS_FRAME_Y6_ENABLED"
+        }
+        for frame, define in frame_defines.items():
+            if args.frame == frame:
+                print(f"Auto enabling {define} for frame {args.frame}")
+                hwdef_write(f'define {define} 1')
+                frame_found = True
+                break
+        if not frame_found:
+            print(f"Error: frame {args.frame} not found in frame_defines")
+            sys.exit(1)
 
 extra_hwdef.flush()
 extra_defaults.flush()
@@ -82,7 +145,18 @@ configure_args = ["./waf", "configure",
 configure_args.extend(unknown_args)
 run_program(configure_args)
 
-build_cmd = ["./waf", args.vehicle]
+
+def get_key_from_value(d, target_value):
+    for key, value in d.items():
+        if value == target_value:
+            return key
+    return None
+
+
+if args.vehicle in ["APMrover2", "apmrover2"]:  # Double map, but waf only accepts rover.
+    args.vehicle = "Rover"
+waf_vehicle = args.vehicle if args.vehicle in vehicle_map.keys() else get_key_from_value(vehicle_map, args.vehicle)
+build_cmd = ["./waf", waf_vehicle.lower()]
 if args.upload:
    build_cmd.append("--upload")
 
