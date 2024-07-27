@@ -144,19 +144,50 @@ void ModeCircle::update()
         return;
     }
 
-    // check if vehicle has reached edge of circle
+    // Update distance to destination and distance to edge
     const Vector2f center_to_veh = curr_pos - config.center_pos;
     _distance_to_destination = center_to_veh.length();
     dist_to_edge_m = fabsf(_distance_to_destination - config.radius);
+
+    // Update depending on stage
     if (!reached_edge) {
-        const float dist_thresh_m = MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST);
-        reached_edge = dist_to_edge_m <= dist_thresh_m;
+        update_drive_to_radius();
+
+    } else {
+        update_circling();
     }
 
+    g2.pos_control.update(rover.G_Dt);
+
+    // get desired speed and turn rate from pos_control
+    const float desired_speed = g2.pos_control.get_desired_speed();
+    const float desired_turn_rate = g2.pos_control.get_desired_turn_rate_rads();
+
+    // run steering and throttle controllers
+    calc_steering_from_turn_rate(desired_turn_rate);
+    calc_throttle(desired_speed, true);
+}
+
+void ModeCircle::update_drive_to_radius()
+{
+    // check if vehicle has reached edge of circle
+    const float dist_thresh_m = MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST);
+    reached_edge |= dist_to_edge_m <= dist_thresh_m;
+
+    // calculate target point's position, velocity and acceleration
+    target.pos = config.center_pos.topostype();
+    target.pos.offset_bearing(degrees(target.yaw_rad), config.radius);
+
+    g2.pos_control.input_pos_target(target.pos, rover.G_Dt);
+}
+
+// Update position controller targets while circling
+void ModeCircle::update_circling()
+{
+
     // accelerate speed up to desired speed
-    const float speed_max = reached_edge ? config.speed : 0.0;
     const float speed_change_max = (g2.pos_control.get_accel_max() * 0.5 * rover.G_Dt);
-    const float accel_fb = constrain_float(speed_max - target.speed, -speed_change_max, speed_change_max);
+    const float accel_fb = constrain_float(config.speed - target.speed, -speed_change_max, speed_change_max);
     target.speed += accel_fb;
 
     // calculate angular rate and update target angle
@@ -179,15 +210,7 @@ void ModeCircle::update()
     target.accel.rotate(target.yaw_rad);
 
     g2.pos_control.set_pos_vel_accel_target(target.pos, target.vel, target.accel);
-    g2.pos_control.update(rover.G_Dt);
 
-    // get desired speed and turn rate from pos_control
-    const float desired_speed = g2.pos_control.get_desired_speed();
-    const float desired_turn_rate = g2.pos_control.get_desired_turn_rate_rads();
-
-    // run steering and throttle controllers
-    calc_steering_from_turn_rate(desired_turn_rate);
-    calc_throttle(desired_speed, true);
 }
 
 // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)

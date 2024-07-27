@@ -457,6 +457,12 @@ protected:
     // initialise mode
     bool _enter() override;
 
+    // Update position controller targets driving to the circle edge
+    void update_drive_to_radius();
+
+    // Update position controller targets while circling
+    void update_circling();
+
     // initialise target_yaw_rad using the vehicle's position and yaw
     // if there is no current position estimate target_yaw_rad is set to vehicle yaw
     void init_target_yaw_rad();
