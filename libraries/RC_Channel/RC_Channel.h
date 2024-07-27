@@ -250,9 +250,9 @@ public:
         CAMERA_IMAGE_TRACKING = 174, // camera image tracking
         CAMERA_LENS =        175, // camera lens selection
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
-        MOUNT_LRF_ENABLE =   177,  // mount LRF enable/disable
-        FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
-
+        MOUNT_LRF_ENABLE =   177, // mount LRF enable/disable
+        FLIGHTMODE_PAUSE =   178, // e.g. pause movement towards waypoint
+        REVERSE =            179, // rover reverse
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
