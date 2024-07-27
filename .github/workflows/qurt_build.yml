@@ -141,8 +141,8 @@ concurrency:
 
 jobs:
   build:
+    if: github.repository == 'ArduPilot/ardupilot'
     runs-on: 'ardupilot-qurt'
-
     steps:
       - uses: actions/checkout@v4
         with:
