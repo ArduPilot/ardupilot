@@ -83,7 +83,7 @@ private:
 
 #if AP_RPM_ENABLED
     // filter for RPM value
-    LowPassFilterFloat _rpm_filter;
+    LowPassFilterConstDtFloat _rpm_filter;
     float filtered_rpm_value;
 #endif
 
