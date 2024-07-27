@@ -1411,6 +1411,83 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed(timeout=120)
 
+    def VTOLQuicktune_CPP(self):
+        '''VTOL Quicktune in C++'''
+        self.set_parameters({
+            "RC7_OPTION": 181,
+            "QWIK_ENABLE" : 1,
+            "QWIK_DOUBLE_TIME" : 5, # run faster for autotest
+        })
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # reduce roll/pitch gains by 2
+        gain_mul = 0.5
+        soften_params = ['Q_A_RAT_RLL_P', 'Q_A_RAT_RLL_I', 'Q_A_RAT_RLL_D',
+                         'Q_A_RAT_PIT_P', 'Q_A_RAT_PIT_I', 'Q_A_RAT_PIT_D',
+                         'Q_A_RAT_YAW_P', 'Q_A_RAT_YAW_I']
+
+        original_values = self.get_parameters(soften_params)
+
+        softened_values = {}
+        for p in original_values.keys():
+            softened_values[p] = original_values[p] * gain_mul
+        self.set_parameters(softened_values)
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.set_rc(7, 1000)
+        self.arm_vehicle()
+        self.takeoff(20, 'QLOITER')
+
+        # use rc switch to start tune
+        self.set_rc(7, 1500)
+
+        self.wait_text("Tuning: starting tune", check_context=True)
+        for axis in ['Roll', 'Pitch', 'Yaw']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Tuning: %s D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s done" % axis, check_context=True, timeout=120)
+        self.wait_text("Tuning: Yaw done", check_context=True, timeout=120)
+
+        new_values = self.get_parameters(soften_params)
+        for p in original_values.keys():
+            threshold = 0.8 * original_values[p]
+            self.progress("tuned param %s %.4f need %.4f" % (p, new_values[p], threshold))
+            if new_values[p] < threshold:
+                raise NotAchievedException(
+                    "parameter %s %.4f not increased over %.4f" %
+                    (p, new_values[p], threshold))
+
+        self.progress("ensure we are not overtuned")
+        self.set_parameter('SIM_ENGINE_MUL', 0.9)
+
+        for i in range(5):
+            self.wait_heartbeat()
+
+        # and restore it
+        self.set_parameter('SIM_ENGINE_MUL', 1)
+
+        for i in range(5):
+            self.wait_heartbeat()
+
+        if self.statustext_in_collections("ABORTING"):
+            raise NotAchievedException("tune has aborted, overtuned")
+
+        self.progress("using aux fn for save tune")
+
+        # to test aux function method, use aux fn for save
+        self.run_auxfunc(181, 2)
+        self.wait_text("Tuning: saved", check_context=True)
+        self.change_mode("QLAND")
+
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("QWIK_ENABLE", 0)
+        self.context_pop()
+        self.reboot_sitl()
+
     def PrecisionLanding(self):
         '''VTOL precision landing'''
 
@@ -2104,6 +2181,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            self.VTOLQuicktune_CPP,
             self.PrecisionLanding,
             self.ShipLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
@@ -2123,5 +2201,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.VTOLQuicktune_CPP,
         ])
         return ret
