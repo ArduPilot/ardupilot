@@ -252,6 +252,7 @@ public:
         VFWD_THR_OVERRIDE =  176, // force enabled VTOL forward throttle method
         MOUNT_LRF_ENABLE =   177,  // mount LRF enable/disable
         FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
+        QUICKTUNE =          179,  //quicktune 3 position switch
 
 
         // inputs from 200 will eventually used to replace RCMAP
