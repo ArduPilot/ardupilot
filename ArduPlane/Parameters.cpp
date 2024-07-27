@@ -1038,6 +1038,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
 
+#if AP_QUICKTUNE_ENABLED
+    // @Group: QWIK_
+    // @Path: ../libraries/AP_Quicktune/AP_Quicktune.cpp
+    GOBJECT(quicktune, "QWIK_",  AP_Quicktune),
+#endif
+    
     AP_VAREND
 };
 

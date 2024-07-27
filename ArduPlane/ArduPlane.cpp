@@ -139,6 +139,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AC_PRECLAND_ENABLED
     SCHED_TASK(precland_update, 400, 50, 160),
 #endif
+#if AP_QUICKTUNE_ENABLED
+    SCHED_TASK(update_quicktune, 40, 100, 163),
+#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -1022,6 +1025,18 @@ void Plane::precland_update(void)
 #else
     return g2.precland.update(0, false);
 #endif
+}
+#endif
+
+#if AP_QUICKTUNE_ENABLED
+/*
+  update AP_Quicktune object. We pass the supports_quicktune() method
+  in so that quicktune can detect if the user changes to a
+  non-quicktune capable mode while tuning and the gains can be reverted
+ */
+void Plane::update_quicktune(void)
+{
+    quicktune.update(control_mode->supports_quicktune());
 }
 #endif
 
