@@ -492,6 +492,18 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
         telemdata.usage_s = new_data.usage_s;
     }
 
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY) {
+        _telem_data[esc_index].input_duty = new_data.input_duty;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY) {
+        _telem_data[esc_index].output_duty = new_data.output_duty;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::FLAGS) {
+        _telem_data[esc_index].flags = new_data.flags;
+    }
+#endif //AP_EXTENDED_ESC_TELEM_ENABLED
+
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::EDT2_STATUS) {
         telemdata.edt2_status = merge_edt2_status(telemdata.edt2_status, new_data.edt2_status);
@@ -603,6 +615,10 @@ void AP_ESC_Telem::update()
             if (telemdata.last_update_ms != _last_telem_log_ms[i]
                 || rpmdata.last_update_us != _last_rpm_log_us[i]) {
 
+                // Update last log timestamps
+                _last_telem_log_ms[i] = telemdata.last_update_ms;
+                _last_rpm_log_us[i] = rpmdata.last_update_us;
+
                 float rpm = AP::logger().quiet_nanf();
                 get_rpm(i, rpm);
                 float raw_rpm = AP::logger().quiet_nanf();
@@ -631,8 +647,37 @@ void AP_ESC_Telem::update()
                     error_rate  : rpmdata.error_rate
                 };
                 AP::logger().WriteBlock(&pkt, sizeof(pkt));
-                _last_telem_log_ms[i] = telemdata.last_update_ms;
-                _last_rpm_log_us[i] = rpmdata.last_update_us;
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+                // Write ESC extended status messages
+                //   id: starts from 0
+                //   input duty: duty cycle input to the ESC in percent
+                //   output duty: duty cycle output to the motor in percent
+                //   status flags: manufacurer-specific status flags
+                const bool has_ext_data = telemdata.types & 
+                        (AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY |
+                         AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY |
+                         AP_ESC_Telem_Backend::TelemetryType::FLAGS);
+                if (has_ext_data) {
+                    // @LoggerMessage: ESCX
+                    // @Description: ESC extended telemetry data
+                    // @Field: TimeUS: Time since system startup
+                    // @Field: Instance: starts from 0
+                    // @Field: inpct: input duty cycle in percent
+                    // @Field: outpct: output duty cycle in percent
+                    // @Field: flags: manufacturer-specific status flags
+                    AP::logger().WriteStreaming("ESCX",
+                                                "TimeUS,Instance,inpct,outpct,flags",
+                                                "s"     "#"      "%"   "%"    "-",
+                                                "F"     "-"      "-"   "-"    "-",
+                                                "Q"     "B"      "B"   "B"    "I",
+                                                AP_HAL::micros64(),
+                                                i,
+                                                telemdata.input_duty,
+                                                telemdata.output_duty,
+                                                telemdata.flags);
+                }
+#endif //AP_EXTENDED_ESC_TELEM_ENABLED
             }
 
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
