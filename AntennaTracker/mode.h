@@ -38,6 +38,8 @@ protected:
     void calc_angle_error(float pitch, float yaw, bool direction_reversed);
     void convert_ef_to_bf(float pitch, float yaw, float& bf_pitch, float& bf_yaw);
     bool convert_bf_to_ef(float pitch, float yaw, float& ef_pitch, float& ef_yaw);
+
+    bool target_range_acceptable() const;
 };
 
 class ModeAuto : public Mode {
@@ -46,6 +48,25 @@ public:
     const char* name() const override { return "Auto"; }
     bool requires_armed_servos() const override { return true; }
     void update() override;
+
+    // Specific states of AUTO mode
+    enum class State {
+        IDLE=0,             // Not doing anything in particular
+        TRACKING=1,         // Actively tracking a valid target
+        SUPPRESSED=2,       // Target within minimum tracking range
+        SCANNING=3,         // Target lost, scanning for target
+    };
+
+    void switch_state(State st);
+
+private:
+    State _state;
+
+    enum class OPTION {
+        SCAN_FOR_ANY_TARGET=(1<<0),
+    };
+
+    bool option_is_set(OPTION option) const;
 };
 
 class ModeGuided : public Mode {

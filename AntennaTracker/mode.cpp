@@ -20,7 +20,7 @@ void Mode::update_auto(void)
     convert_ef_to_bf(pitch, yaw, bf_pitch, bf_yaw);
 
     // only move servos if target is at least distance_min away if we  have a target
-    if ((g.distance_min <= 0) || (nav_status.distance >= g.distance_min) || !tracker.vehicle.location_valid) {
+    if (target_range_acceptable() || !tracker.vehicle.location_valid) {
         tracker.update_pitch_servo(bf_pitch);
         tracker.update_yaw_servo(bf_yaw);
     }
@@ -173,4 +173,8 @@ bool Mode::get_ef_yaw_direction()
 
     // if we get this far we can use the regular, shortest path to the target
     return false;
+}
+
+bool Mode::target_range_acceptable() const {
+    return (tracker.g.distance_min <= 0) || (tracker.nav_status.distance >= tracker.g.distance_min);
 }

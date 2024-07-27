@@ -10,7 +10,8 @@ void Tracker::update_vehicle_pos_estimate()
     float dt = (AP_HAL::micros() - vehicle.last_update_us) * 1.0e-6f;
 
     // if less than 5 seconds since last position update estimate the position
-    if (dt < TRACKING_TIMEOUT_SEC) {
+    // and the vehicle updated at least once
+    if (dt < TRACKING_TIMEOUT_SEC && vehicle.last_update_us != 0) {
         // project the vehicle position to take account of lost radio packets
         vehicle.location_estimate = vehicle.location;
         float north_offset = vehicle.vel.x * dt;
