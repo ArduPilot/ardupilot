@@ -1357,6 +1357,44 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.remove_installed_script(applet_script)
         self.reboot_sitl()
 
+
+    def VTOLQuicktune_CPP(self):
+        '''VTOL Quicktune in C++'''
+        self.set_parameters({
+            "RC7_OPTION": 179,
+            "QUIK_ENABLE" : 1,
+            "QUIK_DOUBLE_TIME" : 5, # run faster for autotest
+        })
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.arm_vehicle()
+        self.takeoff(20, 'QLOITER')
+
+        # use rc switch to start tune
+        self.set_rc(7, 1500)
+
+        self.wait_text("Tuning: starting tune", check_context=True)
+        for axis in ['Roll', 'Pitch', 'Yaw']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Tuning: %s D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s done" % axis, check_context=True, timeout=120)
+        self.wait_text("Tuning: Yaw done", check_context=True, timeout=120)
+
+        # to test aux function method, use aux fn for save
+        self.run_auxfunc(179, 2)
+        self.wait_text("Tuning: saved", check_context=True)
+        self.change_mode("QLAND")
+
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("QUIK_ENABLE", 0)
+        self.context_pop()
+        self.reboot_sitl()
+        
     def PrecisionLanding(self):
         '''VTOL precision landing'''
         applet_script = "plane_precland.lua"
@@ -1823,6 +1861,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            self.VTOLQuicktune_CPP,
             self.PrecisionLanding,
             self.ShipLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
