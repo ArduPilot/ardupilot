@@ -502,6 +502,9 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::FLAGS) {
         _telem_data[esc_index].flags = new_data.flags;
     }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE) {
+        _telem_data[esc_index].power_percentage = new_data.power_percentage;
+    }
 #endif //AP_EXTENDED_ESC_TELEM_ENABLED
 
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
@@ -657,7 +660,8 @@ void AP_ESC_Telem::update()
                 const bool has_ext_data = telemdata.types & 
                         (AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY |
                          AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY |
-                         AP_ESC_Telem_Backend::TelemetryType::FLAGS);
+                         AP_ESC_Telem_Backend::TelemetryType::FLAGS |
+                         AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE);
                 if (has_ext_data) {
                     // @LoggerMessage: ESCX
                     // @Description: ESC extended telemetry data
@@ -666,16 +670,18 @@ void AP_ESC_Telem::update()
                     // @Field: inpct: input duty cycle in percent
                     // @Field: outpct: output duty cycle in percent
                     // @Field: flags: manufacturer-specific status flags
+                    // @Field: Pwr: Power percentage
                     AP::logger().WriteStreaming("ESCX",
-                                                "TimeUS,Instance,inpct,outpct,flags",
-                                                "s"     "#"      "%"   "%"    "-",
-                                                "F"     "-"      "-"   "-"    "-",
-                                                "Q"     "B"      "B"   "B"    "I",
+                                                "TimeUS,Instance,inpct,outpct,flags,Pwr",
+                                                "s"     "#"      "%"   "%"    "-"   "%",
+                                                "F"     "-"      "-"   "-"    "-"   "-",
+                                                "Q"     "B"      "B"   "B"    "I"   "B",
                                                 AP_HAL::micros64(),
                                                 i,
                                                 telemdata.input_duty,
                                                 telemdata.output_duty,
-                                                telemdata.flags);
+                                                telemdata.flags,
+                                                telemdata.power_percentage);
                 }
 #endif //AP_EXTENDED_ESC_TELEM_ENABLED
             }
