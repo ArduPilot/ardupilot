@@ -88,8 +88,14 @@ private:
 
     uint8_t     _num_instances;         // number of temperature sensors
 
-    // Parameters
-    AP_Int8 _log_flag;                  // log_flag: true if we should log all sensors data
+#if HAL_LOGGING_ENABLED
+    enum class LoggingType : uint8_t {
+        All = 1,
+        SourceNone = 2,
+    };
+    AP_Enum<LoggingType> _logging_type;
+#endif
+
 };
 
 namespace AP {
