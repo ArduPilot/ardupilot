@@ -224,101 +224,67 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
-        self.context_push()
+        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.change_mode('POSHOLD')
+        self.zero_throttle()
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+        # Arm
+        self.arm_vehicle()
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1659, timeout=10)
+        self.delay_sim_time(20)
+        # check we are still on the ground...
+        max_relalt = 1  # metres
+        relative_alt = self.get_altitude(relative=True)
+        if abs(relative_alt) > max_relalt:
+            raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
+                                       (relative_alt, max_relalt))
 
-        ex = None
-        try:
-            self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.change_mode('POSHOLD')
-            self.zero_throttle()
-            self.set_rc(8, 1000)
-            self.wait_ready_to_arm()
-            # Arm
-            self.arm_vehicle()
-            self.progress("Raising rotor speed")
-            self.set_rc(8, 2000)
-            self.progress("wait for rotor runup to complete")
-            self.wait_servo_channel_value(8, 1659, timeout=10)
-            self.delay_sim_time(20)
-            # check we are still on the ground...
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_relalt_mm = 1000
-            if abs(m.relative_alt) > max_relalt_mm:
-                raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
-                                           (m.relative_alt, max_relalt_mm))
+        self.progress("Pushing collective past half-way")
+        self.set_rc(3, 1600)
+        self.delay_sim_time(0.5)
+        self.hover()
 
-            self.progress("Pushing collective past half-way")
-            self.set_rc(3, 1600)
-            self.delay_sim_time(0.5)
-            self.hover()
+        # make sure we haven't already reached alt:
+        relative_alt = self.get_altitude(relative=True)
+        max_initial_alt = 1.5  # metres
+        if abs(relative_alt) > max_initial_alt:
+            raise NotAchievedException("Took off too fast (%f > %f" %
+                                       (abs(relative_alt), max_initial_alt))
 
-            # make sure we haven't already reached alt:
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_initial_alt = 1500
-            if abs(m.relative_alt) > max_initial_alt:
-                raise NotAchievedException("Took off too fast (%f > %f" %
-                                           (abs(m.relative_alt), max_initial_alt))
-
-            self.progress("Monitoring takeoff-to-alt")
-            self.wait_altitude(6.9, 8, relative=True)
-
-            self.progress("Making sure we stop at our takeoff altitude")
-            tstart = self.get_sim_time()
-            while self.get_sim_time() - tstart < 5:
-                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-                delta = abs(7000 - m.relative_alt)
-                self.progress("alt=%f delta=%f" % (m.relative_alt/1000,
-                                                   delta/1000))
-                if delta > 1000:
-                    raise NotAchievedException("Failed to maintain takeoff alt")
-            self.progress("takeoff OK")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.progress("Monitoring takeoff-to-alt")
+        self.wait_altitude(6, 8, relative=True, minimum_duration=5)
+        self.progress("takeoff OK")
 
         self.land_and_disarm()
-
-        self.context_pop()
-
-        if ex is not None:
-            raise ex
 
     def StabilizeTakeOff(self):
         """Fly stabilize takeoff"""
-        self.context_push()
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1659, timeout=10)
+        self.delay_sim_time(20)
+        # check we are still on the ground...
+        relative_alt = self.get_altitude(relative=True)
+        if abs(relative_alt) > 0.1:
+            raise NotAchievedException("Took off prematurely")
+        self.progress("Pushing throttle past half-way")
+        self.set_rc(3, 1650)
 
-        ex = None
-        try:
-            self.change_mode('STABILIZE')
-            self.set_rc(3, 1000)
-            self.set_rc(8, 1000)
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_rc(8, 2000)
-            self.progress("wait for rotor runup to complete")
-            self.wait_servo_channel_value(8, 1659, timeout=10)
-            self.delay_sim_time(20)
-            # check we are still on the ground...
-            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            if abs(m.relative_alt) > 100:
-                raise NotAchievedException("Took off prematurely")
-            self.progress("Pushing throttle past half-way")
-            self.set_rc(3, 1650)
+        self.progress("Monitoring takeoff")
+        self.wait_altitude(6.9, 8, relative=True)
 
-            self.progress("Monitoring takeoff")
-            self.wait_altitude(6.9, 8, relative=True)
-
-            self.progress("takeoff OK")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.progress("takeoff OK")
 
         self.land_and_disarm()
-
-        self.context_pop()
-
-        if ex is not None:
-            raise ex
 
     def SplineWaypoint(self, timeout=600):
         """ensure basic spline functionality works"""
@@ -331,13 +297,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.delay_sim_time(20)
         self.change_mode("AUTO")
         self.set_rc(3, 1500)
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time() - tstart > timeout:
-                raise AutoTestTimeoutException("Vehicle did not disarm after mission")
-            if not self.armed():
-                break
-            self.delay_sim_time(1)
+        self.wait_disarmed(timeout=600)
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
@@ -380,13 +340,15 @@ class AutoTestHelicopter(AutoTestCopter):
         """Check autorotation power recovery behaviour"""
         RAMP_TIME = 4
         AROT_RAMP_TIME = 2
-        self.set_parameter("H_RSC_AROT_MN_EN", 1)
-        self.set_parameter("H_RSC_AROT_ENG_T", AROT_RAMP_TIME)
-        self.set_parameter("H_RSC_AROT_IDLE", 20)
-        self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
-        self.set_parameter("H_RSC_IDLE", 0)
         start_alt = 100 # metres
-        self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
+        self.set_parameters({
+            "H_RSC_AROT_MN_EN": 1,
+            "H_RSC_AROT_ENG_T": AROT_RAMP_TIME,
+            "H_RSC_AROT_IDLE": 20,
+            "H_RSC_RAMP_TIME": RAMP_TIME,
+            "H_RSC_IDLE": 0,
+            "PILOT_TKOFF_ALT": start_alt * 100,
+        })
         self.change_mode('POSHOLD')
         self.set_rc(3, 1000)
         self.set_rc(8, 1000)
@@ -680,7 +642,14 @@ class AutoTestHelicopter(AutoTestCopter):
     def AirspeedDrivers(self, timeout=600):
         '''Test AirSpeed drivers'''
 
+        # Copter's airspeed sensors are off by default
+        self.set_parameters({
+            "ARSPD_ENABLE": 1,
+            "ARSPD_TYPE": 2,     # Analog airspeed driver
+            "ARSPD_PIN": 1,      # Analog airspeed driver pin for SITL
+        })
         # set the start location to CMAC to use same test script as other vehicles
+
         self.sitl_start_loc = mavutil.location(-35.362881, 149.165222, 582.000000, 90.0)   # CMAC
         self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
                                          % (-35.362881, 149.165222, 582.000000, 90.0)])
@@ -702,12 +671,6 @@ class AutoTestHelicopter(AutoTestCopter):
             delta = abs(airspeed[0] - airspeed[1])
             if delta > 3:
                 raise NotAchievedException("Airspeed mismatch (as1=%f as2=%f)" % (airspeed[0], airspeed[1]))
-
-        # Copter's airspeed sensors are off by default
-        self.set_parameter("ARSPD_ENABLE", 1)
-        self.set_parameter("ARSPD_TYPE", 2)     # Analog airspeed driver
-        self.set_parameter("ARSPD_PIN", 1)      # Analog airspeed driver pin for SITL
-        self.reboot_sitl()
 
         airspeed_sensors = [
             ("MS5525", 3, 1),
@@ -733,8 +696,6 @@ class AutoTestHelicopter(AutoTestCopter):
                 raise NotAchievedException("Expected ARSP log message")
             self.disarm_vehicle()
             self.context_pop()
-
-        self.reboot_sitl()
 
     def TurbineStart(self, timeout=200):
         """Check Turbine Start Feature"""
@@ -806,43 +767,28 @@ class AutoTestHelicopter(AutoTestCopter):
     def PIDNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with PID notches")
-        self.context_push()
+        self.set_parameters({
+            "FILT1_TYPE": 1,
+            "FILT2_TYPE": 1,
+            "AHRS_EKF_TYPE": 10,
+            "INS_LOG_BAT_MASK": 3,
+            "INS_LOG_BAT_OPT": 0,
+            "INS_GYRO_FILTER": 100, # set the gyro filter high so we can observe behaviour
+            "LOG_BITMASK": 65535,
+            "LOG_DISARMED": 0,
+            "SIM_VIB_FREQ_X": 120,  # roll
+            "SIM_VIB_FREQ_Y": 120,  # pitch
+            "SIM_VIB_FREQ_Z": 180,  # yaw
+            "FILT1_NOTCH_FREQ": 120,
+            "FILT2_NOTCH_FREQ": 180,
+            "ATC_RAT_RLL_NEF": 1,
+            "ATC_RAT_PIT_NEF": 1,
+            "ATC_RAT_YAW_NEF": 2,
+            "SIM_GYR1_RND": 5,
+        })
+        self.reboot_sitl()
 
-        ex = None
-        try:
-            self.set_parameters({
-                "FILT1_TYPE": 1,
-                "FILT2_TYPE": 1,
-                "AHRS_EKF_TYPE": 10,
-                "INS_LOG_BAT_MASK": 3,
-                "INS_LOG_BAT_OPT": 0,
-                "INS_GYRO_FILTER": 100, # set the gyro filter high so we can observe behaviour
-                "LOG_BITMASK": 65535,
-                "LOG_DISARMED": 0,
-                "SIM_VIB_FREQ_X": 120,  # roll
-                "SIM_VIB_FREQ_Y": 120,  # pitch
-                "SIM_VIB_FREQ_Z": 180,  # yaw
-                "FILT1_NOTCH_FREQ": 120,
-                "FILT2_NOTCH_FREQ": 180,
-                "ATC_RAT_RLL_NEF": 1,
-                "ATC_RAT_PIT_NEF": 1,
-                "ATC_RAT_YAW_NEF": 2,
-                "SIM_GYR1_RND": 5,
-            })
-            self.reboot_sitl()
-
-            self.takeoff(10, mode="ALT_HOLD")
-
-            freq, hover_throttle, peakdb1 = self.hover_and_check_matched_frequency_with_fft(5, 20, 350, reverse=True)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.context_pop()
-
-        if ex is not None:
-            raise ex
+        self.hover_and_check_matched_frequency_with_fft(5, 20, 350, reverse=True, takeoff=True)
 
     def AutoTune(self):
         """Test autotune mode"""
