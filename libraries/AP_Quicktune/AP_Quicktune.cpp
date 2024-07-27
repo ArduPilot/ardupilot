@@ -264,9 +264,9 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
     }
 
     Param pname = get_pname(axis, current_stage);
-    float P = get_param_value(pname);
+    float pval = get_param_value(pname);
     float limit = gain_limit(pname);
-    bool limited = (limit > 0.0 && P >= limit);
+    bool limited = (limit > 0.0 && pval >= limit);
     float srate = get_slew_rate(axis);
     bool oscillating = srate > osc_smax;
     
@@ -276,7 +276,7 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
         if (!oscillating) {
             reduction = 1.0;
         }
-        float new_gain = P * reduction;
+        float new_gain = pval * reduction;
         if (limit > 0.0 && new_gain > limit) {
             new_gain = limit;
         }
@@ -285,10 +285,10 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
             // We are lowering a D gain from the original gain. Also lower the P gain by the same amount so that we don't trigger P oscillation. We don't drop P by more than a factor of 2
             float ratio = fmaxf(new_gain / old_gain, 0.5);
             Param P_name = Param(uint8_t(pname)-2); //from D to P
-            float old_P = get_param_value(P_name);;
-            float new_P = old_P * ratio;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Adjusting %s %.3f -> %.3f", get_param_name(P_name), old_P, new_P);
-            adjust_gain_limited(P_name, new_P);
+            float old_pval = get_param_value(P_name);;
+            float new_pval = old_pval * ratio;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Adjusting %s %.3f -> %.3f", get_param_name(P_name), old_pval, new_pval);
+            adjust_gain_limited(P_name, new_pval);
         }
         // Set up slew gain
         slew_parm = pname;
@@ -296,17 +296,17 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
         slew_steps = UPDATE_RATE_HZ/2;
         slew_delta = (slew_target - get_param_value(pname)) / slew_steps;
 
-        Write_QUIK(srate, P, pname);
+        Write_QUIK(srate, pval, pname);
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tuning: %s done", get_param_name(pname));
         advance_stage(axis);
         last_stage_change = now;
     } else {
-        float new_gain = P*get_gain_mul();
+        float new_gain = pval*get_gain_mul();
         if (new_gain <= 0.0001) {
             new_gain = 0.001;
         }
         adjust_gain_limited(pname, new_gain);
-        Write_QUIK(srate, P, pname);
+        Write_QUIK(srate, pval, pname);
         if (now - last_gain_report > 3000) {
             last_gain_report = now;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %.4f sr:%.2f", get_param_name(pname), new_gain, srate);
