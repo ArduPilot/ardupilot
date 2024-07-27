@@ -3654,7 +3654,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def FenceAltCeilFloor(self):
         '''Tests the fence ceiling and floor'''
-        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
         self.set_parameters({
             "FENCE_TYPE": 9,     # Set fence type to max and min alt
             "FENCE_ACTION": 0,   # Set action to report
@@ -3663,8 +3662,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         # Grab Home Position
-        self.mav.recv_match(type='HOME_POSITION', blocking=True)
-        self.homeloc = self.mav.location()
+        self.wait_ready_to_arm()
+        startpos = self.mav.location()
 
         cruise_alt = 150
         self.takeoff(cruise_alt)
@@ -3672,27 +3671,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
 
         self.progress("Fly above ceiling and check for breach")
-        self.change_altitude(self.homeloc.alt + cruise_alt + 80)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        self.progress("Got (%s)" % str(m))
-        if ((m.onboard_control_sensors_health & fence_bit)):
-            raise NotAchievedException("Fence Ceiling did not breach")
+        self.change_altitude(startpos.alt + cruise_alt + 80)
+        self.assert_fence_sys_status(True, False, False)  # weird
 
-        self.progress("Return to cruise alt and check for breach clear")
-        self.change_altitude(self.homeloc.alt + cruise_alt)
+        self.progress("Return to cruise alt")
+        self.change_altitude(startpos.alt + cruise_alt)
 
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        self.progress("Got (%s)" % str(m))
-        if (not (m.onboard_control_sensors_health & fence_bit)):
-            raise NotAchievedException("Fence breach did not clear")
+        self.progress("Ensure breach has clearned")
+        self.assert_fence_sys_status(True, False, True)
 
         self.progress("Fly below floor and check for breach")
-        self.change_altitude(self.homeloc.alt + cruise_alt - 80)
+        self.change_altitude(startpos.alt + cruise_alt - 80)
 
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        self.progress("Got (%s)" % str(m))
-        if ((m.onboard_control_sensors_health & fence_bit)):
-            raise NotAchievedException("Fence Floor did not breach")
+        self.progress("Ensure breach has clearned")
+        self.assert_fence_sys_status(True, False, False)
 
         self.do_fence_disable()
 
