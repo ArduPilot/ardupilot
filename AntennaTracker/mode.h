@@ -59,12 +59,14 @@ public:
         _target_att = target_att;
         _use_yaw_rate = use_yaw_rate;
         _yaw_rate_rads = yaw_rate_rads;
+        _last_set_angle_ms = AP_HAL::millis();
     }
 
 private:
     Quaternion _target_att;
     bool _use_yaw_rate;
     float _yaw_rate_rads;
+    uint32_t _last_set_angle_ms;
 };
 
 class ModeInitialising : public Mode {
