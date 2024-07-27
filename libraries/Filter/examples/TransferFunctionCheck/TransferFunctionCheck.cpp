@@ -16,20 +16,20 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // Some helper classes to allow accessing protected variables, also useful for adding type specific prints
 
-class LowPassHelper : public LowPassFilterFloat {
+class LowPassHelper : public LowPassFilterConstDtFloat {
 public:
-    using LowPassFilterFloat::LowPassFilterFloat;
+    using LowPassFilterConstDtFloat::LowPassFilterConstDtFloat;
 
-    void set_cutoff_frequency_override(float sample_freq, float cutoff_freq) {
+    void set_cutoff_frequency_override(float sample_freq, float new_cutoff_freq) {
         // Stash the sample rate so we can use it later
         _sample_freq = sample_freq;
-        set_cutoff_frequency(sample_freq, cutoff_freq);
+        set_cutoff_frequency(sample_freq, new_cutoff_freq);
     }
 
     // Were really cheating here and using the same method as the filter to get the coefficient
     // rather than pulling the coefficient directly
     void print_transfer_function() {
-        hal.console->printf("LowPassFilterFloat\n");
+        hal.console->printf("LowPassFilterConstDtFloat\n");
         hal.console->printf("Sample rate: %.9f Hz, Cutoff: %.9f Hz\n", _sample_freq, get_cutoff_freq());
         hal.console->printf("Low pass filter in the form: H(z) = a/(1-(1-a)*z^-1)\n");
         hal.console->printf("a: %.9f\n", calc_lowpass_alpha_dt(1.0/_sample_freq, get_cutoff_freq()));
