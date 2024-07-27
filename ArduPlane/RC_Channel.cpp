@@ -169,6 +169,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
     case AUX_FUNC::PRECISION_LOITER:
+    case AUX_FUNC::QUICKTUNE:
         break;
 
     case AUX_FUNC::SOARING:
@@ -438,6 +439,12 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     case AUX_FUNC::PRECISION_LOITER:
         // handled by lua scripting, just ignore here
         break;
+
+#if AP_QUICKTUNE_ENABLED
+    case AUX_FUNC::QUICKTUNE:
+        plane.quicktune.update_switch_pos(ch_flag);
+        break;
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
