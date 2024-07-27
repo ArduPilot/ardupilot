@@ -493,6 +493,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECTPTR(circle_nav, "CIRCLE_",  AC_Circle),
 #endif
 
+#if AP_QUICKTUNE_ENABLED == ENABLED
+    // @Group: QUIK_
+    // @Path: ../libraries/AP_Quicktune/AP_Quicktune.cpp
+    GOBJECT(quicktune, "QUIK_",  AP_Quicktune),
+#endif
+
     // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
     GOBJECTVARPTR(attitude_control, "ATC_", &copter.attitude_control_var_info),
