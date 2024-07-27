@@ -240,7 +240,7 @@ void ModeFlowHold::run()
 
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
-        flow_filter.set_cutoff_frequency(flow_filter_hz.get());
+        flow_filter.set_cutoff_frequency(copter.scheduler.get_loop_rate_hz(), flow_filter_hz.get());
     }
 
     // get pilot desired climb rate

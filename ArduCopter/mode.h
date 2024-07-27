@@ -978,7 +978,7 @@ private:
     // calculate attitude from flow data
     void flow_to_angle(Vector2f &bf_angle);
 
-    LowPassFilterVector2f flow_filter;
+    LowPassFilterConstDtVector2f flow_filter;
 
     bool flowhold_init(bool ignore_checks);
     void flowhold_run();
