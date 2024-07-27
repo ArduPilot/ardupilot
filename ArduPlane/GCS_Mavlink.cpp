@@ -5,6 +5,7 @@
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_EFI/AP_EFI_config.h>
 
+
 MAV_TYPE GCS_Plane::frame_type() const
 {
 #if HAL_QUADPLANE_ENABLED
