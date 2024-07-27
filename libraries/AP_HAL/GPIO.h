@@ -10,6 +10,7 @@
 
 class AP_HAL::DigitalSource {
 public:
+    virtual ~DigitalSource() {};
     virtual void    mode(uint8_t output) = 0;
     virtual uint8_t read() = 0;
     virtual void    write(uint8_t value) = 0;
