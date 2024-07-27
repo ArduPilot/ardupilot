@@ -1,5 +1,14 @@
 Rover Release Notes:
---------------------
+------------------------------------------------------------------
+Release 4.5.5-beta2 27 July 2024
+
+Changes from 4.5.5-beta1
+
+1) Board specific enhancements and bug fixes
+
+- CubeRed's second core disabled at boot to avoid spurious writes to RAM
+- CubeRed bootloader's dual endpoint update method fixed
+------------------------------------------------------------------
 Release 4.5.5-beta1 1st July 2024
 
 Changes from 4.5.4
