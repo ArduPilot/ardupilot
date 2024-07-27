@@ -27,6 +27,7 @@ public:
         uint8_t input_duty;         // input duty cycle
         uint8_t output_duty;        // output duty cycle
         uint32_t flags;             // Status flags
+        uint8_t power_percentage;   // Percentage of output power
 #endif // AP_EXTENDED_ESC_TELEM_ENABLED
 
         // return true if the data is stale
@@ -58,7 +59,8 @@ public:
 #if AP_EXTENDED_ESC_TELEM_ENABLED
         INPUT_DUTY  = 1 << 10,
         OUTPUT_DUTY = 1 << 11,
-        FLAGS       = 1 << 12
+        FLAGS       = 1 << 12,
+        POWER_PERCENTAGE = 1 << 13,
 #endif // AP_EXTENDED_ESC_TELEM_ENABLED
     };
 
