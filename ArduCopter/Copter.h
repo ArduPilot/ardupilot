@@ -72,7 +72,6 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_SurfaceDistance/AP_SurfaceDistance.h>
-#include <AP_Quicktune/AP_Quicktune.h>
 
 // Configuration
 #include "defines.h"
@@ -82,12 +81,6 @@
  #define MOTOR_CLASS AP_MotorsHeli
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter
-#endif
-
-#if FRAME_CONFIG == HELI_FRAME
-// force quicktune off in heli until it has had testing
-#undef AP_QUICKTUNE_ENABLED
-#define AP_QUICKTUNE_ENABLED 0
 #endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
@@ -494,10 +487,6 @@ private:
     AC_Circle *circle_nav;
 #endif
 
-#if AP_QUICKTUNE_ENABLED
-    AP_Quicktune quicktune;
-#endif
-
     // System Timers
     // --------------
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
@@ -726,9 +715,6 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
     bool get_rate_ef_targets(Vector3f& rate_ef_targets) const override;
-#if AP_QUICKTUNE_ENABLED
-    void update_quicktune(void);
-#endif
 
     // Attitude.cpp
     void update_throttle_hover();

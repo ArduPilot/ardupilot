@@ -109,7 +109,6 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::TURBINE_START:
     case AUX_FUNC::FLIGHTMODE_PAUSE:
-    case AUX_FUNC::QUICKTUNE:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -653,12 +652,6 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
     case AUX_FUNC::TRANSMITTER_TUNING:
         // do nothing, used in tuning.cpp for transmitter based tuning
         break;
-
-#if AP_QUICKTUNE_ENABLED
-    case AUX_FUNC::QUICKTUNE:
-        copter.quicktune.update_switch_pos(ch_flag);
-        break;
-#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
