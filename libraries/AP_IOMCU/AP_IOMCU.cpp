@@ -1369,6 +1369,12 @@ void AP_IOMCU::set_GPIO_mask(uint8_t mask)
     trigger_event(IOEVENT_GPIO);
 }
 
+// Get GPIO mask of channels setup for output
+uint8_t AP_IOMCU::get_GPIO_mask() const
+{
+    return GPIO.channel_mask;
+}
+
 // write to a output pin
 void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
 {
@@ -1384,6 +1390,17 @@ void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
         GPIO.output_mask &= ~(1U << pin);
     }
     trigger_event(IOEVENT_GPIO);
+}
+
+// Read the last output value send to the GPIO pin
+// This is not a real read of the actual pin
+// This allows callers to check for state change
+uint8_t AP_IOMCU::read_virtual_GPIO(uint8_t pin) const
+{
+    if (!convert_pin_number(pin)) {
+        return 0;
+    }
+    return (GPIO.output_mask & (1U << pin)) != 0;
 }
 
 // toggle a output pin

@@ -157,8 +157,16 @@ public:
     // set GPIO mask of channels setup for output
     void set_GPIO_mask(uint8_t mask);
 
+    // Get GPIO mask of channels setup for output
+    uint8_t get_GPIO_mask() const;
+
     // write to a output pin
     void write_GPIO(uint8_t pin, bool value);
+
+    // Read the last output value send to the GPIO pin
+    // This is not a real read of the actual pin
+    // This allows callers to check for state change
+    uint8_t read_virtual_GPIO(uint8_t pin) const;
 
     // toggle a output pin
     void toggle_GPIO(uint8_t pin);
