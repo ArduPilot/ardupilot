@@ -1551,12 +1551,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2) # Allow breach to propagate
         self.assert_fence_enabled()
 
-        self.try_arm(False, "vehicle outside Min Alt fence")
+        self.try_arm(False, "Vehicle breaching Min Alt fence")
         self.do_fence_disable()
         self.set_parameter("FENCE_ALT_MIN", default_fence_alt_min)
 
         # Test arming outside inclusion zone
-        self.progress("Test arming while vehicle outside of inclusion zone")
+        self.progress("Test arming while Vehicle breaching of inclusion zone")
         self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
         self.upload_fences_from_locations([(
             mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
@@ -1570,7 +1570,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
         self.delay_sim_time(2) # Allow breach to propagate
-        self.try_arm(False, "vehicle outside Polygon fence")
+        self.try_arm(False, "Vehicle breaching Polygon fence")
         self.do_fence_disable()
         self.clear_fence()
 
@@ -1590,7 +1590,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
         self.delay_sim_time(2) # Allow breach to propagate
-        self.try_arm(False, "vehicle outside Polygon fence")
+        self.try_arm(False, "Vehicle breaching Polygon fence")
         self.do_fence_disable()
 
     def test_fence_breach_circle_at(self, loc, disable_on_breach=False):

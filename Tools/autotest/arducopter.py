@@ -1498,7 +1498,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.load_fence("fence-in-middle-of-nowhere.txt")
 
         self.delay_sim_time(5) # let fence check run so it loads-from-eeprom
-        self.assert_prearm_failure("vehicle outside Polygon fence")
+        self.assert_prearm_failure("Vehicle breaching Polygon fence")
         self.progress("Failed to arm outside fence (good!)")
         self.clear_fence()
         self.delay_sim_time(5) # let fence breach clear
