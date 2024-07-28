@@ -7,7 +7,7 @@ void ModeAuto::update()
     if (tracker.vehicle.location_valid) {
         update_auto();
         switch_state(target_range_acceptable() ? State::TRACKING : State::SUPPRESSED);
-    } else if (tracker.target_set || option_is_set(OPTION::SCAN_FOR_ANY_TARGET)) {
+    } else if (!option_is_set(OPTION::DO_NOT_SCAN) && (tracker.target_set || option_is_set(OPTION::SCAN_FOR_ANY_TARGET))) {
         update_scan();
         switch_state(State::SCANNING);
     } else {

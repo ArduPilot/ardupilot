@@ -81,6 +81,7 @@ private:
 
     enum class OPTION {
         SCAN_FOR_ANY_TARGET=(1<<0),
+        DO_NOT_SCAN=(1<<1),
     };
 
     bool option_is_set(OPTION option) const;
