@@ -29,7 +29,19 @@ public:
 
     virtual void update() = 0;
 
+    // enter this mode, returns true if mode change is possible
+    bool enter() { return _enter(); }
+
+    // perform any cleanups required:
+    void exit() { _exit(); }
+
 protected:
+    // subclasses override this to perform checks before entering the mode
+    virtual bool _enter() { return true; }
+
+    // subclasses override this to perform any required cleanup when exiting the mode
+    virtual void _exit() { return; }
+
     void update_scan();
     void update_auto();
 
@@ -59,6 +71,11 @@ public:
 
     void switch_state(State st);
 
+protected:
+    // Ensure Auto considers its starting state to be idle so it
+    // prints out a meaningful state after the first update()
+    bool _enter() override { _state = State::IDLE; return true; }
+
 private:
     State _state;
 
@@ -82,6 +99,11 @@ public:
         _yaw_rate_rads = yaw_rate_rads;
         _last_set_angle_ms = AP_HAL::millis();
     }
+
+protected:
+    // Reset the last command time so that entering the mode always
+    // prints the current target angle
+    bool _enter() override { _last_set_angle_ms = 0; return true; }
 
 private:
     Quaternion _target_att;
