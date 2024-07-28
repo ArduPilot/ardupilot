@@ -463,7 +463,7 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
         AC_Fence::get_fence_names(_breached_fences, e);
-        hal.util->snprintf(failure_msg, failure_msg_len, "vehicle outside %s", e.get_writeable_string());
+        hal.util->snprintf(failure_msg, failure_msg_len, "Vehicle breaching %s", e.get_writeable_string());
         return false;
     }
 
