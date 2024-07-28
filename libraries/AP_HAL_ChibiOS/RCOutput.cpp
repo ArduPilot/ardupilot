@@ -1266,9 +1266,13 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
     if (iomcu_enabled) {
         uint8_t iomcu_mask;
         const output_mode iomcu_mode = iomcu.get_output_mode(iomcu_mask);
+        const uint8_t gpio_mask = iomcu.get_GPIO_mask();
         for (uint8_t i = 0; i < chan_offset; i++ ) {
-            if (iomcu_mask & 1U<<i) {
+            const uint8_t chan_bit = 1U<<i;
+            if (iomcu_mask & chan_bit) {
                 ch_mode[i] = iomcu_mode;
+            } else if (gpio_mask & chan_bit) {
+                ch_mode[i] = MODE_PWM_NONE;
             } else {
                 ch_mode[i] = MODE_PWM_NORMAL;
             }
