@@ -241,6 +241,11 @@ uint8_t GPIO::read(uint8_t pin)
     if (g) {
         return palReadLine(g->pal_line);
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        return iomcu.read_virtual_GPIO(pin);
+    }
+#endif
     return 0;
 }
 
