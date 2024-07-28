@@ -462,8 +462,8 @@ void AP_TECS::_update_speed(float DT)
 
 void AP_TECS::_update_speed_demand(void)
 {
-    if (_options & OPTION_DESCENT_SPEEDUP) {
-        // Allow demanded speed to  go to maximum when descending at maximum descent rate
+    if ((_options & OPTION_DESCENT_SPEEDUP) && (_sink_fraction > 0.0f) && !_landing.is_flaring()) {
+        // Allow demanded speed to go to maximum when descending at maximum descent rate
         _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
     }
 
@@ -601,6 +601,8 @@ void AP_TECS::_update_height_demand(void)
         _hgt_dem_lpf      = _height;
         _hgt_dem_rate_ltd = _height;
         _hgt_dem_in_prev  = _height;
+
+        _sink_fraction = 0.0f; // do not add any additional sink/airspeed while flaring
 
         if (!_flare_initialised) {
             _flare_hgt_dem_adj = _hgt_dem;
@@ -1098,8 +1100,9 @@ void AP_TECS::_update_pitch(void)
         // @Field: KI: Pitch demand kinetic energy integral
         // @Field: pmin: Pitch min
         // @Field: pmax: Pitch max
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
-                                    "Qfffffffffffff",
+        // @Field: SF: Sink Fraction
+        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax,SF",
+                                    "Qffffffffffffff",
                                     AP_HAL::micros64(),
                                     (double)SPE_weighting,
                                     (double)_SKE_weighting,
@@ -1113,7 +1116,8 @@ void AP_TECS::_update_pitch(void)
                                     (double)_integSEBdot,
                                     (double)_integKE,
                                     (double)_PITCHminf,
-                                    (double)_PITCHmaxf);
+                                    (double)_PITCHmaxf,
+                                    (double)_sink_fraction);
     }
 #endif
 }
@@ -1156,6 +1160,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 
         _max_climb_scaler = 1.0f;
         _max_sink_scaler = 1.0f;
+        _sink_fraction = 0.0f;
 
         const float fc = 1.0f / (M_2PI * _timeConst);
         _pitch_demand_lpf.set_cutoff_frequency(fc);
@@ -1180,6 +1185,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
 
         _max_climb_scaler = 1.0f;
         _max_sink_scaler = 1.0f;
+        _sink_fraction = 0.0f;
 
         _pitch_demand_lpf.reset(_ahrs.get_pitch());
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
