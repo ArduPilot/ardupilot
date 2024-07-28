@@ -5146,9 +5146,6 @@ class TestSuite(ABC):
             if l1 == l2:
                 # e.g. the first "QGC WPL 110" line
                 continue
-            if re.match(r"0\s", l1):
-                # home changes...
-                continue
             l1 = l1.rstrip()
             l2 = l2.rstrip()
             print("al1: %s" % str(l1))
@@ -5158,54 +5155,29 @@ class TestSuite(ABC):
             # line = int(fields1[0])
             # t = int(fields1[3]) # mission item type
             for (count, (i1, i2)) in enumerate(zip(fields1, fields2)):
-                # if count == 2: # frame
-                #     if t in [mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
-                #              mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                #              mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
-                #              mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
-                #              mavutil.mavlink.MAV_CMD_DO_JUMP,
-                #              mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
-                #              ]:
-                #         # ardupilot doesn't remember frame on these commands
-                #         if int(i1) == 3:
-                #             i1 = 0
-                #         if int(i2) == 3:
-                #             i2 = 0
-                # if count == 6: # param 3
-                #     if t in [mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME]:
-                #         # ardupilot canonicalises this to -1 for ccw or 1 for cw.
-                #         if float(i1) == 0:
-                #             i1 = 1.0
-                #         if float(i2) == 0:
-                #             i2 = 1.0
-                # if count == 7: # param 4
-                #     if t == mavutil.mavlink.MAV_CMD_NAV_LAND:
-                #         # ardupilot canonicalises "0" to "1" param 4 (yaw)
-                #         if int(float(i1)) == 0:
-                #             i1 = 1
-                #         if int(float(i2)) == 0:
-                #             i2 = 1
+                self.progress(f"{count=} {i1=} {i2=}")
                 if 0 <= count <= 3 or 11 <= count <= 11:
                     if int(i1) != int(i2):
-                        raise ValueError("Rally points different: (%s vs %s) (%d vs %d) (count=%u)" %
-                                         (l1, l2, int(i1), int(i2), count))  # NOCI
+                        raise ValueError(
+                            "Rally points different: "
+                            f"({l1} vs {l2}) " +
+                            f"{int(i1)} vs {int(i2)}) " +
+                            f"({count=}))"
+                        )
                     continue
                 if 4 <= count <= 10:
                     f_i1 = float(i1)
                     f_i2 = float(i2)
                     delta = abs(f_i1 - f_i2)
                     max_allowed_delta = 0.000009
+                    self.progress(f"{count=} {f_i1=} {f_i2=}")
                     if delta > max_allowed_delta:
                         raise ValueError(
-                            ("Rally has different (float) content: " +
-                             "(%s vs %s) " +
-                             "(%f vs %f) " +
-                             "(%.10f) " +
-                             "(count=%u)") %
-                            (l1, l2,
-                             f_i1, f_i2,
-                             delta,
-                             count)) # NOCI
+                            "Rally has different (float) content: " +
+                            f"({l1} vs {l2}) " +
+                            f"({f_i1} vs {f_i2}) " +
+                            f"({delta:.10f}) " +
+                            f"({count=})")
                     continue
                 raise ValueError("count %u not handled" % count)
         self.progress("Rally content same")
@@ -9351,7 +9323,7 @@ Also, ignores heartbeats not from our target system'''
                 if m.target_system == 255 and m.target_component == 0:
                     # this was for MAVProxy
                     continue
-                self.progress("Mission ACK: %s" % str(m))
+                self.progress(self.dump_message_verbose(m))
                 raise NotAchievedException("Received MISSION_ACK while waiting for MISSION_COUNT")
             if m.get_type() != 'MISSION_COUNT':
                 continue
