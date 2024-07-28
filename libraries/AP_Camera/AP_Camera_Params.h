@@ -2,6 +2,7 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Camera/AP_Camera_config.h>
 
 class AP_Camera_Params {
 
@@ -25,7 +26,11 @@ public:
     AP_Int8 mount_instance;     // mount instance to which camera is associated with
     AP_Float hfov;              // horizontal field of view in degrees
     AP_Float vfov;              // vertical field of view in degrees
-
+#if AP_CAMERA_TRACKING_ENABLED
+    AP_Int8 track_enable;       // enable or disable camera tracking
+    AP_Int16 track_sysid;        // system id for the tracking device
+    AP_Int16 track_compid;       // component id for the tracking device
+#endif
     // pin number for accurate camera feedback messages
     AP_Int8 feedback_pin;
     AP_Int8 feedback_polarity;

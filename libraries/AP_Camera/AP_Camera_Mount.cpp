@@ -47,17 +47,19 @@ SetFocusResult AP_Camera_Mount::set_focus(FocusType focus_type, float focus_valu
     return SetFocusResult::FAILED;
 }
 
+#if AP_CAMERA_TRACKING_ENABLED
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
-// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Camera_Mount::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera_Mount::set_tracking_internal(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_tracking(get_mount_instance(), tracking_type, p1, p2);
+        return mount->set_tracking(get_mount_instance(), tracking_type, top_left, bottom_right);
     }
     return false;
 }
+#endif
 
 
 // set camera lens as a value from 0 to 5

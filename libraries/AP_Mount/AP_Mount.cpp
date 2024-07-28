@@ -843,15 +843,15 @@ SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
-// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_tracking(tracking_type, p1, p2);
+    return backend->set_tracking(tracking_type, top_left, bottom_right);
 }
 
 // set camera lens as a value from 0 to 5
