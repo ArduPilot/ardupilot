@@ -72,6 +72,9 @@ EXT_HW_RADIOLINK_MINI_PIX               3
 # Do not allocate IDs in the range 1000 to 19999 except via a PR
 # against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
 
+# if you want to reserve a block of IDs, please limit that allocation
+#  to 10 IDs at a time.
+
 # values starting with AP_ are implemented in the ArduPilot bootloader
 # https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
 # the values come from the APJ_BOARD_ID in the hwdef files here:
