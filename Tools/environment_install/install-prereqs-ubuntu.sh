@@ -400,7 +400,11 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
 fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
-$PIP install $PIP_USER_ARGUMENT -U pip packaging setuptools wheel
+SETUPTOOLS="setuptools"
+if [ ${RELEASE_CODENAME} == 'focal' ]; then
+    SETUPTOOLS=setuptools==70.3.0
+fi
+$PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
