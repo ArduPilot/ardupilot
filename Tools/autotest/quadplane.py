@@ -1308,9 +1308,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def VTOLQuicktune(self):
         '''VTOL Quicktune'''
-        applet_script = "VTOL-quicktune.lua"
-
-        self.install_applet_script(applet_script)
+        self.install_applet_script_context("VTOL-quicktune.lua")
 
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -1320,7 +1318,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
-        self.context_push()
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "QUIK_ENABLE" : 1,
@@ -1352,16 +1349,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode("QLAND")
 
         self.wait_disarmed(timeout=120)
-        self.set_parameter("QUIK_ENABLE", 0)
-        self.context_pop()
-        self.remove_installed_script(applet_script)
-        self.reboot_sitl()
 
     def PrecisionLanding(self):
         '''VTOL precision landing'''
-        applet_script = "plane_precland.lua"
 
-        self.install_applet_script(applet_script)
+        self.install_applet_script_context("plane_precland.lua")
 
         here = self.mav.location()
         target = self.offset_location_ne(here, 20, 0)
@@ -1385,12 +1377,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
-        self.context_push()
-        self.context_collect('STATUSTEXT')
         self.set_parameters({
             "PLND_ALT_CUTOFF" : 5,
             "SIM_SPEEDUP" : 10,
             })
+
+        self.context_collect('STATUSTEXT')
 
         self.scripting_restart()
         self.wait_text("PLND: Loaded", check_context=True)
@@ -1412,15 +1404,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if error > 2:
             raise NotAchievedException("too far from target %.1fm" % error)
 
-        self.context_pop()
-        self.remove_installed_script(applet_script)
-        self.reboot_sitl()
-
     def ShipLanding(self):
         '''ship landing test'''
-        applet_script = "plane_ship_landing.lua"
-
-        self.install_applet_script(applet_script)
+        self.install_applet_script_context("plane_ship_landing.lua")
 
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -1438,7 +1424,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl(check_position=False)
 
-        self.context_push()
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "SHIP_ENABLE" : 1,
@@ -1466,10 +1451,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # deck is just 10m in size, so we must be within 10m if we are moving
         # with the deck
         self.wait_groundspeed(4.8, 5.2)
-
-        self.context_pop()
-        self.remove_installed_script(applet_script)
-        self.reboot_sitl(check_position=False)
 
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
