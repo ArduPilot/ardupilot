@@ -2533,7 +2533,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
             if (last_pass) {
-#if ENABLE_DEBUG
+#if ENABLE_DEBUG && (AP_PARAM_MAX_EMBEDDED_PARAM > 0)
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
                          pname, unsigned(ptr - param_defaults_data.data));
                 hal.console->printf(
