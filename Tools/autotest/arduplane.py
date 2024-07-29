@@ -5077,8 +5077,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             wipe=True)
 
         self.context_push()
-        self.install_applet_script(applet_script)
-        self.install_applet_script(airshow, install_name=trick72)
+        self.install_applet_script_context(applet_script)
+        self.install_applet_script_context(airshow, install_name=trick72)
         self.context_collect('STATUSTEXT')
         self.reboot_sitl()
 
@@ -5124,8 +5124,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Finished trick, max error=%.1fm" % highest_error)
         self.disarm_vehicle(force=True)
 
-        self.remove_installed_script(applet_script)
-        self.remove_installed_script(trick72)
         messages = self.context_collection('STATUSTEXT')
         self.context_pop()
         self.reboot_sitl()

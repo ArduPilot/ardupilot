@@ -4831,10 +4831,10 @@ class TestSuite(ABC):
         self.install_mavlink_module()
         self.context_get().installed_modules.append("mavlink")
 
-    def install_applet_script_context(self, scriptname):
+    def install_applet_script_context(self, scriptname, **kwargs):
         '''installs an applet script which will be removed when the context goes
         away'''
-        self.install_applet_script(scriptname)
+        self.install_applet_script(scriptname, **kwargs)
         self.context_get().installed_scripts.append(scriptname)
 
     def rootdir(self):
