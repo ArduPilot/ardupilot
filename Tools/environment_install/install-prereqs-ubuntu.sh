@@ -414,7 +414,11 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
     $PIP install $PIP_USER_ARGUMENT -U attrdict3
 fi
 
-$PIP install $PIP_USER_ARGUMENT -U $PYTHON_PKGS
+# install Python packages one-at-a-time so it is clear which package
+# is causing problems:
+for PACKAGE in $PYTHON_PKGS; do
+    $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+done
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
