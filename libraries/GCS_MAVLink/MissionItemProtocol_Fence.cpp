@@ -179,6 +179,7 @@ void MissionItemProtocol_Fence::free_upload_resources()
 {
     free(_new_items);
     _new_items = nullptr;
+    _new_items_count = 0;
     delete[] _updated_mask;
     _updated_mask = nullptr;
 }
