@@ -2656,6 +2656,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AutoTune(self):
         """Test autotune mode"""
+        self.set_parameter("ATUN_TYPE", 1)
+        self.reboot_sitl()
 
         rlld = self.get_parameter("ATC_RAT_RLL_D")
         rlli = self.get_parameter("ATC_RAT_RLL_I")
@@ -2694,12 +2696,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AutoTuneYawD(self):
         """Test autotune mode"""
+        self.set_parameter("ATUN_TYPE", 1)
+        self.reboot_sitl()
 
         rlld = self.get_parameter("ATC_RAT_RLL_D")
         rlli = self.get_parameter("ATC_RAT_RLL_I")
         rllp = self.get_parameter("ATC_RAT_RLL_P")
         self.set_parameter("ATC_RAT_RLL_SMAX", 1)
-        self.set_parameter("AUTOTUNE_AXES", 15)
+        self.set_parameter("ATUN_AXES", 15)
         self.takeoff(10)
 
         # hold position in loiter
@@ -2740,6 +2744,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # completely reset the simulated vehicle after the run is
         # complete by "customising" the commandline here:
         self.customise_SITL_commandline([])
+
+        self.set_parameter("ATUN_TYPE", 1)
+        self.reboot_sitl()
 
         self.set_parameters({
             "RC8_OPTION": 17,
@@ -2852,6 +2859,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
                                    (self.get_sim_time() - tstart))
+
+    def VTOLQuicktune_CPP(self):
+        '''VTOL Quicktune in C++'''
+
+        self.set_parameter("ATUN_TYPE", 3)
+        self.reboot_sitl()
+
+        self.set_parameters({
+            "RC7_OPTION": 179,
+            "ATUN_DOUBLE_TIME" : 5, # run faster for autotest
+        })
+        self.set_rc(7, 1000)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.wait_ready_to_arm()
+        self.change_mode("LOITER")
+        self.arm_vehicle()
+        self.takeoff(20, mode='LOITER')
+
+        self.change_mode("AUTOTUNE")
+
+        # use rc switch to start tune
+        self.set_rc(7, 1500)
+
+        self.wait_text("Tuning: starting tune", check_context=True, timeout=120)
+        for axis in ['Roll', 'Pitch', 'Yaw']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Tuning: %s D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s done" % axis, check_context=True, timeout=120)
+        self.wait_text("Tuning: Yaw done", check_context=True, timeout=120)
+
+        # to test aux function method, use aux fn for save
+        self.run_auxfunc(179, 2)
+        self.wait_text("Tuning: saved", check_context=True)
+        self.change_mode("LAND")
+
+        self.wait_disarmed(timeout=120)
+        self.context_pop()
+        self.reboot_sitl()
 
     def EK3_RNG_USE_HGT(self):
         '''basic tests for using rangefinder when speed and height below thresholds'''
@@ -10536,6 +10585,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.FenceFloorAutoDisableLanding,
              self.FenceFloorAutoEnableOnArming,
              self.AutoTuneSwitch,
+             self.VTOLQuicktune_CPP,
              self.GPSGlitchLoiter,
              self.GPSGlitchLoiter2,
              self.GPSGlitchAuto,

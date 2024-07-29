@@ -1,40 +1,35 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_QUICKTUNE_ENABLED
- #define AP_QUICKTUNE_ENABLED 1
-#endif
+#include "AutoTune_config.h"
 
 #if AP_QUICKTUNE_ENABLED
 
-#include <AC_AttitudeControl/AC_AttitudeControl.h>
-#include <AP_Param/AP_Param.h>
-#include <RC_Channel/RC_Channel.h>
+#include "AutoTune.h"
 
-class AP_Quicktune {
+class AP_Quicktune : public AutoTune_Backend {
 public:
-    AP_Quicktune()
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
-    // Empty destructor to suppress compiler warning
-    virtual ~AP_Quicktune() {}
-
-    /* Do not allow copies */
-    CLASS_NO_COPY(AP_Quicktune);
+    // constructor
+    AP_Quicktune(
+        AutoTune& _frontend,
+        AC_AttitudeControl& _attitude_control,
+        AC_PosControl& _pos_control,
+        AP_AHRS_View& _ahrs_view,
+        AP_InertialNav& _inertial_nav,
+        AP_Motors& _motors
+    );
 
     // Parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
-    void update(bool mode_supports_quicktune);
-    void update_switch_pos(const RC_Channel::AuxSwitchPos ch_flag);
+    void run() override;
+    void stop() override;
+    bool run_previous_mode() override { return true; };
+
+    void update_switch_pos(const RC_Channel::AuxSwitchPos ch_flag) override;
 
 private:
 
     // Parameters
-    AP_Float enable;
     AP_Int8 axes_enabled;
     AP_Float double_time;
     AP_Float gain_margin;

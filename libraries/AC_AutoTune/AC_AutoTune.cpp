@@ -1,4 +1,4 @@
-#include "AC_AutoTune_config.h"
+#include "AutoTune_config.h"
 
 #if AC_AUTOTUNE_ENABLED
 
@@ -9,6 +9,8 @@
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AC_AttitudeControl/AC_AttitudeControl.h>
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500         // restart tuning if pilot has left sticks in middle for 2 seconds
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -23,27 +25,14 @@
 #define AUTOTUNE_LEVEL_TIMEOUT_MS           2000        // time out for level
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS  5000        // level failure warning messages sent at this interval to users
 
-AC_AutoTune::AC_AutoTune()
-{
-}
-
 // autotune_init - should be called when autotune mode is selected
-bool AC_AutoTune::init_internals(bool _use_poshold,
-                                 AC_AttitudeControl *_attitude_control,
-                                 AC_PosControl *_pos_control,
-                                 AP_AHRS_View *_ahrs_view,
-                                 AP_InertialNav *_inertial_nav)
+bool AC_AutoTune::init_internals(bool _use_poshold)
 {
     use_poshold = _use_poshold;
-    attitude_control = _attitude_control;
-    pos_control = _pos_control;
-    ahrs_view = _ahrs_view;
-    inertial_nav = _inertial_nav;
-    motors = AP_Motors::get_singleton();
     const uint32_t now = AP_HAL::millis();
 
     // exit immediately if motor are not armed
-    if ((motors == nullptr) || !motors->armed()) {
+    if (!motors.armed()) {
         return false;
     }
 
@@ -99,7 +88,7 @@ void AC_AutoTune::stop()
     load_gains(GAIN_ORIGINAL);
 
     // re-enable angle-to-rate request limits
-    attitude_control->use_sqrt_controller(true);
+    attitude_control.use_sqrt_controller(true);
 
     update_gcs(AUTOTUNE_MESSAGE_STOPPED);
 
@@ -113,10 +102,10 @@ void AC_AutoTune::stop()
 bool AC_AutoTune::init_position_controller(void)
 {
     // initialize vertical maximum speeds and acceleration
-    init_z_limits();
+    frontend.init_z_limits();
 
     // initialise the vertical position controller
-    pos_control->init_z_controller();
+    pos_control.init_z_controller();
 
     return true;
 }
@@ -192,22 +181,22 @@ const char *AC_AutoTune::axis_string() const
 void AC_AutoTune::run()
 {
     // initialize vertical speeds and acceleration
-    init_z_limits();
+    frontend.init_z_limits();
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     // this should not actually be possible because of the init() checks
-    if (!motors->armed() || !motors->get_interlock()) {
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0.0f, true, 0.0f);
-        pos_control->relax_z_controller(0.0f);
+    if (!motors.armed() || !motors.get_interlock()) {
+        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        attitude_control.set_throttle_out(0.0f, true, 0.0f);
+        pos_control.relax_z_controller(0.0f);
         return;
     }
 
     float target_roll_cd, target_pitch_cd, target_yaw_rate_cds;
-    get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+    frontend.get_pilot_desired_rp_yrate_cd(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
 
     // get pilot desired climb rate
-    const float target_climb_rate_cms = get_pilot_desired_climb_rate_cms();
+    const float target_climb_rate_cms = frontend.get_pilot_desired_climb_rate_cms();
 
     const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
 
@@ -219,7 +208,7 @@ void AC_AutoTune::run()
                 pilot_override = true;
                 // set gains to their original values
                 load_gains(GAIN_ORIGINAL);
-                attitude_control->use_sqrt_controller(true);
+                attitude_control.use_sqrt_controller(true);
             }
             // reset pilot override time
             override_time = now;
@@ -236,7 +225,7 @@ void AC_AutoTune::run()
                 step = WAITING_FOR_LEVEL; // set tuning step back from beginning
                 step_start_time_ms = now;
                 level_start_time_ms = now;
-                desired_yaw_cd = ahrs_view->yaw_sensor;
+                desired_yaw_cd = ahrs_view.yaw_sensor;
             }
         }
     }
@@ -252,11 +241,11 @@ void AC_AutoTune::run()
     }
 
     // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // if pilot override call attitude controller
     if (pilot_override || mode != TUNING) {
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
+        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, target_yaw_rate_cds);
     } else {
         // somehow get attitude requests from autotuning
         control_attitude();
@@ -265,8 +254,8 @@ void AC_AutoTune::run()
     }
 
     // call position controller
-    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
-    pos_control->update_z_controller();
+    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
+    pos_control.update_z_controller();
 
 }
 
@@ -285,23 +274,23 @@ bool AC_AutoTune::currently_level()
     // relax threshold if we pass AUTOTUNE_LEVEL_TIMEOUT_MS
     const float threshold_mul = constrain_float((float)(now_ms - level_start_time_ms) / (float)AUTOTUNE_LEVEL_TIMEOUT_MS, 0.0, 2.0);
 
-    if (fabsf(ahrs_view->roll_sensor - roll_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
+    if (fabsf(ahrs_view.roll_sensor - roll_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
 
-    if (fabsf(ahrs_view->pitch_sensor - pitch_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
+    if (fabsf(ahrs_view.pitch_sensor - pitch_cd) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if (fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
+    if (fabsf(wrap_180_cd(ahrs_view.yaw_sensor - desired_yaw_cd)) > threshold_mul * AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if ((ToDeg(ahrs_view->get_gyro().x) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
+    if ((ToDeg(ahrs_view.get_gyro().x) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if ((ToDeg(ahrs_view->get_gyro().y) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
+    if ((ToDeg(ahrs_view.get_gyro().y) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if ((ToDeg(ahrs_view->get_gyro().z) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_Y_CD) {
+    if ((ToDeg(ahrs_view.get_gyro().z) * 100.0f) > threshold_mul * AUTOTUNE_LEVEL_RATE_Y_CD) {
         return false;
     }
     return true;
@@ -323,12 +312,12 @@ void AC_AutoTune::control_attitude()
 
         // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
         // re-enable rate limits
-        attitude_control->use_sqrt_controller(true);
+        attitude_control.use_sqrt_controller(true);
 
         get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
 
         // hold level attitude
-        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+        attitude_control.input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
 
         // hold the copter level for 0.5 seconds before we begin a twitch
         // reset counter if we are no longer level
@@ -352,17 +341,17 @@ void AC_AutoTune::control_attitude()
         // Initialize test-specific variables
         switch (axis) {
         case ROLL:
-            start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
-            start_angle = ahrs_view->roll_sensor;
+            start_rate = ToDeg(ahrs_view.get_gyro().x) * 100.0f;
+            start_angle = ahrs_view.roll_sensor;
             break;
         case PITCH:
-            start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
-            start_angle = ahrs_view->pitch_sensor;
+            start_rate = ToDeg(ahrs_view.get_gyro().y) * 100.0f;
+            start_angle = ahrs_view.pitch_sensor;
             break;
         case YAW:
         case YAW_D:
-            start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
-            start_angle = ahrs_view->yaw_sensor;
+            start_rate = ToDeg(ahrs_view.get_gyro().z) * 100.0f;
+            start_angle = ahrs_view.yaw_sensor;
             break;
         }
 
@@ -388,7 +377,7 @@ void AC_AutoTune::control_attitude()
         }
 
         // protect from roll over
-        if (attitude_control->lean_angle_deg() * 100 > angle_lim_max_rp_cd()) {
+        if (attitude_control.lean_angle_deg() * 100 > angle_lim_max_rp_cd()) {
             step = WAITING_FOR_LEVEL;
             positive_direction = twitch_reverse_direction();
             step_start_time_ms = now;
@@ -398,12 +387,12 @@ void AC_AutoTune::control_attitude()
 #if HAL_LOGGING_ENABLED
         // log this iterations lean angle and rotation rate
         Log_AutoTuneDetails();
-        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
-        log_pids();
+        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        frontend.log_pids();
 #endif
 
         if (axis == YAW || axis == YAW_D) {
-            desired_yaw_cd = ahrs_view->yaw_sensor;
+            desired_yaw_cd = ahrs_view.yaw_sensor;
         }
         break;
     }
@@ -411,7 +400,7 @@ void AC_AutoTune::control_attitude()
     case UPDATE_GAINS:
 
         // re-enable rate limits
-        attitude_control->use_sqrt_controller(true);
+        attitude_control.use_sqrt_controller(true);
 
 #if HAL_LOGGING_ENABLED
         // log the latest gains
@@ -535,7 +524,7 @@ void AC_AutoTune::control_attitude()
     case ABORT:
         if (axis == YAW || axis == YAW_D) {
             // todo: check to make sure we need this
-            attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
+            attitude_control.input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view.yaw_sensor, false);
         }
 
         // set gains to their intra-test values (which are very close to the original gains)
@@ -582,7 +571,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     level_start_time_ms = now;
     step_scaler = 1.0f;
 
-    desired_yaw_cd = ahrs_view->yaw_sensor;
+    desired_yaw_cd = ahrs_view.yaw_sensor;
 }
 
 /*
@@ -661,23 +650,6 @@ bool AC_AutoTune::yaw_d_enabled() const
 #endif
 }
 
-/*
-  check if we have a good position estimate
- */
-bool AC_AutoTune::position_ok(void)
-{
-    if (!AP::ahrs().have_inertial_nav()) {
-        // do not allow navigation with dcm position
-        return false;
-    }
-
-    // with EKF use filter status and ekf check
-    nav_filter_status filt_status = inertial_nav->get_filter_status();
-
-    // require a good absolute position and EKF must not be in const_pos_mode
-    return (filt_status.flags.horiz_pos_abs && !filt_status.flags.const_pos_mode);
-}
-
 // get attitude for slow position hold in autotune mode
 void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, float &yaw_cd_out)
 {
@@ -689,13 +661,13 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     }
 
     // do we know where we are? If not then don't do poshold
-    if (!position_ok()) {
+    if (!frontend.position_ok()) {
         return;
     }
 
     if (!have_position) {
         have_position = true;
-        start_position = inertial_nav->get_position_neu_cm();
+        start_position = inertial_nav.get_position_neu_cm();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -708,7 +680,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_cm = 500;
 
-    Vector3f pdiff = inertial_nav->get_position_neu_cm() - start_position;
+    Vector3f pdiff = inertial_nav.get_position_neu_cm() - start_position;
     pdiff.z = 0;
     float dist_cm = pdiff.length();
     if (dist_cm < 10) {
@@ -724,8 +696,8 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     angle_ne *= scaling / dist_cm;
 
     // rotate into body frame
-    pitch_cd_out = angle_ne.x * ahrs_view->cos_yaw() + angle_ne.y * ahrs_view->sin_yaw();
-    roll_cd_out  = angle_ne.x * ahrs_view->sin_yaw() - angle_ne.y * ahrs_view->cos_yaw();
+    pitch_cd_out = angle_ne.x * ahrs_view.cos_yaw() + angle_ne.y * ahrs_view.sin_yaw();
+    roll_cd_out  = angle_ne.x * ahrs_view.sin_yaw() - angle_ne.y * ahrs_view.cos_yaw();
 
     if (dist_cm < yaw_dist_limit_cm) {
         // no yaw adjustment

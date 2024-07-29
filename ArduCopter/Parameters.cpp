@@ -719,6 +719,12 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(custom_control, "CC", AC_CustomControl),
 #endif
 
+#if AUTOTUNE_ENABLED == ENABLED
+    // @Group: ATUN
+    // @Path: ../libraries/AC_AutoTune/AutoTune.cpp
+    GOBJECTN(mode_autotune.autotune, autotune, "ATUN", AutoTune),
+#endif
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
@@ -896,12 +902,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(user_parameters, "USR", 28, ParametersG2, UserParameters),
 #endif
 
-#if AUTOTUNE_ENABLED == ENABLED
-    // @Group: AUTOTUNE_
-    // @Path: ../libraries/AC_AutoTune/AC_AutoTune_Multi.cpp,../libraries/AC_AutoTune/AC_AutoTune_Heli.cpp
-    AP_SUBGROUPPTR(autotune_ptr, "AUTOTUNE_",  29, ParametersG2, AutoTune),
-#endif
-
+    // 29 was autotune
     // 30 was AP_Scripting
 
     // @Param: TUNE_MIN
@@ -1265,9 +1266,6 @@ ParametersG2::ParametersG2(void)
 #endif
 #if USER_PARAMS_ENABLED == ENABLED
     ,user_parameters()
-#endif
-#if AUTOTUNE_ENABLED == ENABLED
-    ,autotune_ptr(&copter.mode_autotune.autotune)
 #endif
 #if MODE_SYSTEMID_ENABLED == ENABLED
     ,mode_systemid_ptr(&copter.mode_systemid)

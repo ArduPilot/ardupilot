@@ -18,14 +18,14 @@
  */
 #pragma once
 
-#include "AC_AutoTune_config.h"
+#include "AutoTune_config.h"
 
 #if AC_AUTOTUNE_ENABLED
 
-#include <AC_AttitudeControl/AC_AttitudeControl.h>
-#include <AC_AttitudeControl/AC_PosControl.h>
+#include "AutoTune.h"
 #include <AP_Math/AP_Math.h>
 #include "AC_AutoTune_FreqResp.h"
+#include <Filter/LowPassFilter.h>
 
 #define AUTOTUNE_AXIS_BITMASK_ROLL            1
 #define AUTOTUNE_AXIS_BITMASK_PITCH           2
@@ -44,23 +44,20 @@
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
-class AC_AutoTune
+class AC_AutoTune : public AutoTune_Backend
 {
 public:
     // constructor
-    AC_AutoTune();
+    using AutoTune_Backend::AutoTune_Backend;
 
     // main run loop
-    virtual void run();
-
-    // save gained, called on disarm
-    virtual void save_tuning_gains() = 0;
+    void run() override;
 
     // stop tune, reverting gains
-    void stop();
+    void stop() override;
 
     // reset Autotune so that gains are not saved again and autotune can be run again.
-    void reset() {
+    void reset() override {
         mode = UNINITIALISED;
         axes_completed = 0;
     }
@@ -73,25 +70,6 @@ protected:
         YAW = 2,                  // yaw axis is being tuned using FLTE (either angle or rate)
         YAW_D = 3,                // yaw axis is being tuned using D (either angle or rate)
     };
-
-    //
-    // methods that must be supplied by the vehicle specific subclass
-    //
-    virtual bool init(void) = 0;
-
-    // get pilot input for desired climb rate
-    virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
-
-    // get pilot input for designed roll and pitch, and yaw rate
-    virtual void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) = 0;
-
-    // init pos controller Z velocity and accel limits
-    virtual void init_z_limits() = 0;
-
-#if HAL_LOGGING_ENABLED
-    // log PIDs at full rate for during twitch
-    virtual void log_pids() = 0;
-#endif
 
     //
     // methods to load and save gains
@@ -157,11 +135,7 @@ protected:
 #endif
 
     // internal init function, should be called from init()
-    bool init_internals(bool use_poshold,
-                        AC_AttitudeControl *attitude_control,
-                        AC_PosControl *pos_control,
-                        AP_AHRS_View *ahrs_view,
-                        AP_InertialNav *inertial_nav);
+    bool init_internals(bool use_poshold) override;
 
     // send intermittent updates to user on status of tune
     virtual void do_gcs_announcements() = 0;
@@ -249,13 +223,6 @@ protected:
     };
     TuneMode mode;                       // see TuneMode for what modes are allowed
 
-    // copies of object pointers to make code a bit clearer
-    AC_AttitudeControl *attitude_control;
-    AC_PosControl *pos_control;
-    AP_AHRS_View *ahrs_view;
-    AP_InertialNav *inertial_nav;
-    AP_Motors *motors;
-
     AxisType axis;                       // current axis being tuned. see AxisType enum
     bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
     StepType step;                       // see StepType for what steps are performed
@@ -296,9 +263,6 @@ protected:
     float    stop_freq;                             //ending freq for dwell test
 
 private:
-    // return true if we have a good position estimate
-    virtual bool position_ok();
-
     // methods subclasses must implement to specify max/min test angles:
     virtual float target_angle_max_rp_cd() const = 0;
 

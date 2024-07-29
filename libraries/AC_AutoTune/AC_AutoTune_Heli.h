@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "AC_AutoTune_config.h"
+#include "AutoTune_config.h"
 
 #if AC_AUTOTUNE_ENABLED
 
@@ -32,7 +32,14 @@ class AC_AutoTune_Heli : public AC_AutoTune
 {
 public:
     // constructor
-    AC_AutoTune_Heli();
+    AC_AutoTune_Heli(
+        AutoTune& _frontend,
+        AC_AttitudeControl& _attitude_control,
+        AC_PosControl& _pos_control,
+        AP_AHRS_View& _ahrs_view,
+        AP_InertialNav& _inertial_nav,
+        AP_Motors& _motors
+    );
 
     // save gained, called on disarm
     void save_tuning_gains() override;

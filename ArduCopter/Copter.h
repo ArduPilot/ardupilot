@@ -194,7 +194,7 @@ public:
     friend class RC_Channel_Copter;
     friend class RC_Channels_Copter;
 
-    friend class AutoTune;
+    friend class Copter_AutoTune;
 
     friend class Mode;
     friend class ModeAcro;

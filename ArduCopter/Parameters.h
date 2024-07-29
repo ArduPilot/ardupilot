@@ -202,6 +202,7 @@ public:
         k_param_circle_nav,
         k_param_loiter_nav,     // 105
         k_param_custom_control,
+        k_param_autotune,
 
         // 110: Telemetry control
         //
@@ -585,11 +586,6 @@ public:
 #if USER_PARAMS_ENABLED == ENABLED
     // User custom parameters
     UserParameters user_parameters;
-#endif
-
-#if AUTOTUNE_ENABLED == ENABLED
-    // we need a pointer to autotune for the G2 table
-    void *autotune_ptr;
 #endif
 
     AP_Float tuning_min;

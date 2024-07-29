@@ -514,6 +514,11 @@ void Copter::allocate_motors(void)
     convert_prx_parameters();
 #endif
 
+#if AUTOTUNE_ENABLED == ENABLED
+    // Run autotune setup
+    mode_autotune.autotune.setup(*attitude_control, *pos_control, *ahrs_view, inertial_nav, *motors);
+#endif
+
     // param count could have changed
     AP_Param::invalidate_count();
 }

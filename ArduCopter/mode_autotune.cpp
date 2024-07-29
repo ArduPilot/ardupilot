@@ -6,8 +6,12 @@
 
 #if AUTOTUNE_ENABLED == ENABLED
 
-bool AutoTune::init()
+bool Copter_AutoTune::init()
 {
+    if (!enabled()) {
+        return false;
+    }
+
     // only allow AutoTune from some flight modes, for example Stabilize, AltHold,  PosHold or Loiter modes
     if (!copter.flightmode->allows_autotune()) {
         return false;
@@ -26,20 +30,22 @@ bool AutoTune::init()
     // use position hold while tuning if we were in QLOITER
     bool position_hold = (copter.flightmode->mode_number() == Mode::Number::LOITER || copter.flightmode->mode_number() == Mode::Number::POSHOLD);
 
-    return init_internals(position_hold,
-                          copter.attitude_control,
-                          copter.pos_control,
-                          copter.ahrs_view,
-                          &copter.inertial_nav);
+    return init_internals(position_hold);
 }
 
-void AutoTune::run()
+void Copter_AutoTune::run()
 {
+    if (run_previous_mode()) {
+        // Autotune wants us to behave like the previous mode, we don't need to do anything except call the base class run function
+        AutoTune::run();
+        return;
+    }
+
     // apply SIMPLE mode transform to pilot inputs
     copter.update_simple_mode();
 
     // disarm when the landing detector says we've landed and spool state is ground idle
-    if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+    if (copter.ap.land_complete && copter.motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.arming.disarm(AP_Arming::Method::LANDED);
     }
 
@@ -50,7 +56,7 @@ void AutoTune::run()
     }
 
     // run autotune mode
-    AC_AutoTune::run();
+    AutoTune::run();
 
 }
 
@@ -58,7 +64,7 @@ void AutoTune::run()
 /*
   get stick input climb rate
  */
-float AutoTune::get_pilot_desired_climb_rate_cms(void) const
+float Copter_AutoTune::get_pilot_desired_climb_rate_cms(void) const
 {
     float target_climb_rate = copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in());
 
@@ -71,7 +77,7 @@ float AutoTune::get_pilot_desired_climb_rate_cms(void) const
 /*
   get stick roll, pitch and yaw rate
  */
-void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
+void Copter_AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
 {
     copter.mode_autotune.get_pilot_desired_lean_angles(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
                                                        copter.attitude_control->get_althold_lean_angle_max_cd());
@@ -81,7 +87,7 @@ void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitc
 /*
   setup z controller velocity and accel limits
  */
-void AutoTune::init_z_limits()
+void Copter_AutoTune::init_z_limits()
 {
     // set vertical speed and acceleration limits
     copter.pos_control->set_max_speed_accel_z(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
@@ -89,7 +95,7 @@ void AutoTune::init_z_limits()
 }
 
 #if HAL_LOGGING_ENABLED
-void AutoTune::log_pids()
+void Copter_AutoTune::log_pids()
 {
     copter.logger.Write_PID(LOG_PIDR_MSG, copter.attitude_control->get_rate_roll_pid().get_pid_info());
     copter.logger.Write_PID(LOG_PIDP_MSG, copter.attitude_control->get_rate_pitch_pid().get_pid_info());
@@ -100,7 +106,7 @@ void AutoTune::log_pids()
 /*
   check if we have a good position estimate
  */
-bool AutoTune::position_ok()
+bool Copter_AutoTune::position_ok()
 {
     return copter.position_ok();
 }
@@ -110,11 +116,20 @@ bool AutoTune::position_ok()
 */
 bool ModeAutoTune::init(bool ignore_checks)
 {
+    // Keep pointer to the previous mode
+    last_mode = copter.flightmode;
+
     return autotune.init();
 }
 
 void ModeAutoTune::run()
 {
+    if (autotune.run_previous_mode()) {
+        // Autotune wants us to behave like the previous mode
+        // This is a bit of a hack, which I dont really like.
+        last_mode->run();
+    }
+
     autotune.run();
 }
 

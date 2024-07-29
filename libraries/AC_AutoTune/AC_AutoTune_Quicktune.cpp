@@ -1,4 +1,4 @@
-#include "AP_Quicktune.h"
+#include "AC_AutoTune_Quicktune.h"
 
 #if AP_QUICKTUNE_ENABLED
 
@@ -24,21 +24,17 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Arming/AP_Arming.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AC_AttitudeControl/AC_AttitudeControl.h>
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 const AP_Param::GroupInfo AP_Quicktune::var_info[] = {
-    // @Param: ENABLE
-    // @DisplayName: Quicktune enable
-    // @Description: Enable quicktune system
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_Quicktune, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: AXES
     // @DisplayName: Quicktune axes
     // @Description: Axes to tune
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     // @User: Standard
-    AP_GROUPINFO("AXES", 2, AP_Quicktune, axes_enabled, 7),
+    AP_GROUPINFO("AXES", 1, AP_Quicktune, axes_enabled, 7),
 
     // @Param: DOUBLE_TIME
     // @DisplayName: Quicktune doubling time
@@ -46,7 +42,7 @@ const AP_Param::GroupInfo AP_Quicktune::var_info[] = {
     // @Range: 5 20
     // @Units: s
     // @User: Standard
-    AP_GROUPINFO("DOUBLE_TIME", 3, AP_Quicktune, double_time, 10),
+    AP_GROUPINFO("DOUBLE_TIME", 2, AP_Quicktune, double_time, 10),
 
     // @Param: GAIN_MARGIN
     // @DisplayName: Quicktune gain margin
@@ -54,56 +50,56 @@ const AP_Param::GroupInfo AP_Quicktune::var_info[] = {
     // @Range: 20 80
     // @Units: %
     // @User: Standard
-    AP_GROUPINFO("GAIN_MARGIN", 4, AP_Quicktune, gain_margin, 60),
+    AP_GROUPINFO("GAIN_MARGIN", 3, AP_Quicktune, gain_margin, 60),
 
     // @Param: OSC_SMAX
     // @DisplayName: Quicktune oscillation rate threshold
     // @Description: Threshold for oscillation detection. A lower value will lead to a more conservative tune.
     // @Range: 1 10
     // @User: Standard
-    AP_GROUPINFO("OSC_SMAX", 5, AP_Quicktune, osc_smax, 5),
+    AP_GROUPINFO("OSC_SMAX", 4, AP_Quicktune, osc_smax, 5),
 
     // @Param: YAW_P_MAX
     // @DisplayName: Quicktune Yaw P max
     // @Description: Maximum value for yaw P gain
     // @Range: 0.1 3
     // @User: Standard
-    AP_GROUPINFO("YAW_P_MAX", 6, AP_Quicktune, yaw_p_max, 0.5),
+    AP_GROUPINFO("YAW_P_MAX", 5, AP_Quicktune, yaw_p_max, 0.5),
 
     // @Param: YAW_D_MAX
     // @DisplayName: Quicktune Yaw D max
     // @Description: Maximum value for yaw D gain
     // @Range: 0.001 1
     // @User: Standard
-    AP_GROUPINFO("YAW_D_MAX", 7, AP_Quicktune, yaw_d_max, 0.01),
+    AP_GROUPINFO("YAW_D_MAX", 6, AP_Quicktune, yaw_d_max, 0.01),
 
     // @Param: RP_PI_RATIO
     // @DisplayName: Quicktune roll/pitch PI ratio
     // @Description: Ratio between P and I gains for roll and pitch. Raise this to get a lower I gain
     // @Range: 0.5 1.0
     // @User: Standard
-    AP_GROUPINFO("RP_PI_RATIO", 8, AP_Quicktune, rp_pi_ratio, 1.0),
+    AP_GROUPINFO("RP_PI_RATIO", 7, AP_Quicktune, rp_pi_ratio, 1.0),
 
     // @Param: Y_PI_RATIO
     // @DisplayName: Quicktune Yaw PI ratio
     // @Description: Ratio between P and I gains for yaw. Raise this to get a lower I gain
     // @Range: 0.5 20
     // @User: Standard
-    AP_GROUPINFO("Y_PI_RATIO", 9, AP_Quicktune, y_pi_ratio, 10),
+    AP_GROUPINFO("Y_PI_RATIO", 8, AP_Quicktune, y_pi_ratio, 10),
 
     // @Param: AUTO_FILTER
     // @DisplayName: Quicktune auto filter enable
     // @Description: When enabled the PID filter settings are automatically set based on INS_GYRO_FILTER
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("AUTO_FILTER", 10, AP_Quicktune, auto_filter, 1),
+    AP_GROUPINFO("AUTO_FILTER", 9, AP_Quicktune, auto_filter, 1),
 
     // @Param: AUTO_SAVE
     // @DisplayName: Quicktune auto save
     // @Description: Number of seconds after completion of tune to auto-save. This is useful when using a 2 position switch for quicktune
     // @Units: s
     // @User: Standard
-    AP_GROUPINFO("AUTO_SAVE", 11, AP_Quicktune, auto_save, 0),
+    AP_GROUPINFO("AUTO_SAVE", 10, AP_Quicktune, auto_save, 0),
 
     // @Param: REDUCE_MAX
     // @DisplayName: Quicktune maximum gain reduction
@@ -111,44 +107,44 @@ const AP_Param::GroupInfo AP_Quicktune::var_info[] = {
     // @Units: %
     // @Range: 0 100
     // @User: Standard
-    AP_GROUPINFO("REDUCE_MAX", 12, AP_Quicktune, reduce_max, 20),
+    AP_GROUPINFO("REDUCE_MAX", 11, AP_Quicktune, reduce_max, 20),
 
     // @Param: OPTIONS
     // @DisplayName: Quicktune options
     // @Description: Additional options. When the Two Position Switch option is enabled then a high switch position will start the tune, low will disable the tune. you should also set a QUIK_AUTO_SAVE time so that you will be able to save the tune.
     // @Bitmask: 0:UseTwoPositionSwitch
     // @User: Standard
-    AP_GROUPINFO("OPTIONS", 13, AP_Quicktune, options, 0),
+    AP_GROUPINFO("OPTIONS", 12, AP_Quicktune, options, 0),
 
     AP_GROUPEND
 };
 
-// Call at loop rate
-void AP_Quicktune::update(bool mode_supports_quicktune)
+// constructor
+AP_Quicktune::AP_Quicktune(AutoTune & _frontend,
+                           AC_AttitudeControl &_attitude_control,
+                           AC_PosControl &_pos_control,
+                           AP_AHRS_View &_ahrs_view,
+                           AP_InertialNav &_inertial_nav,
+                           AP_Motors &_motors):
+    AutoTune_Backend(_frontend, _attitude_control, _pos_control, _ahrs_view, _inertial_nav, _motors)
 {
-    if (enable < 1) {
-        if (need_restore) {
-            GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "QuickTune disabled");
-            abort_tune();
-        }
-        return;
-    }
-    const uint32_t now = AP_HAL::millis();
+    frontend.backend_var_info = var_info;
+    AP_Param::setup_object_defaults(this, var_info);
+}
 
-    if (!mode_supports_quicktune) {
-        /*
-          user has switched to a non-quicktune mode. If we have
-          pending parameter changes then revert
-         */
-        if (need_restore) {
-            GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "QuickTune aborted");
-        }
-        abort_tune();
-        return;
-    }
-
+void AP_Quicktune::stop()
+{
     if (need_restore) {
-        const float att_error = AC_AttitudeControl::get_singleton()->get_att_error_angle_deg();
+        GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "QuickTune aborted");
+    }
+    abort_tune();
+}
+
+void AP_Quicktune::run()
+{
+    const uint32_t now = AP_HAL::millis();
+    if (need_restore) {
+        const float att_error = attitude_control.get_att_error_angle_deg();
         if (att_error > MAX_ATTITUDE_ERROR) {
             GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Tuning: attitude error %.1fdeg - ABORTING", att_error);
             abort_tune();
@@ -328,7 +324,7 @@ void AP_Quicktune::abort_tune()
     sw_pos = SwitchPos::LOW;
 }
 
-void AP_Quicktune::update_switch_pos(const  RC_Channel::AuxSwitchPos ch_flag) 
+void AP_Quicktune::update_switch_pos(const  RC_Channel::AuxSwitchPos ch_flag)
 {
     sw_pos = SwitchPos(ch_flag);
 }
@@ -366,10 +362,8 @@ void AP_Quicktune::setup_filters(AP_Quicktune::AxisName axis)
 // Check for pilot input to pause tune
 bool AP_Quicktune::have_pilot_input()
 {
-    const auto &rcmap = *AP::rcmap();
-    float roll = rc().rc_channel(rcmap.roll()-1)->norm_input_dz();
-    float pitch = rc().rc_channel(rcmap.pitch()-1)->norm_input_dz();
-    float yaw = rc().rc_channel(rcmap.yaw()-1)->norm_input_dz();
+    float roll, pitch, yaw;
+    frontend.get_pilot_desired_rp_yrate_cd(roll, pitch, yaw);
 
     if (fabsf(roll) > 0 || fabsf(pitch) > 0 || fabsf(yaw) > 0) {
         return true;
@@ -390,7 +384,6 @@ AP_Quicktune::AxisName AP_Quicktune::get_current_axis()
 
 float AP_Quicktune::get_slew_rate(AP_Quicktune::AxisName axis)
 {
-    auto &attitude_control = *AC_AttitudeControl::get_singleton();
     switch(axis) {
     case AxisName::RLL:
         return attitude_control.get_rate_roll_pid().get_pid_info().slew_rate;
@@ -587,7 +580,6 @@ AP_Quicktune::Stage AP_Quicktune::get_stage(AP_Quicktune::Param param)
 
 AP_Float *AP_Quicktune::get_param_pointer(AP_Quicktune::Param param)
 {
-    auto &attitude_control = *AC_AttitudeControl::get_singleton();
     switch (param)
     {
         case Param::RLL_P:

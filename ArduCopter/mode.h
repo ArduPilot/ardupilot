@@ -755,13 +755,12 @@ private:
   wrapper class for AC_AutoTune
  */
 
-#if FRAME_CONFIG == HELI_FRAME
-class AutoTune : public AC_AutoTune_Heli
-#else
-class AutoTune : public AC_AutoTune_Multi
-#endif
+class Copter_AutoTune : public AutoTune
 {
 public:
+
+    using AutoTune::AutoTune;
+
     bool init() override;
     void run() override;
 
@@ -797,15 +796,15 @@ public:
     void save_tuning_gains();
     void reset();
 
+    Copter_AutoTune autotune;
+
 protected:
 
     const char *name() const override { return "AUTOTUNE"; }
     const char *name4() const override { return "ATUN"; }
 
 private:
-
-    AutoTune autotune;
-
+    Mode *last_mode;
 };
 #endif
 
