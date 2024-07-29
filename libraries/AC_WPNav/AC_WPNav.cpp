@@ -257,6 +257,30 @@ void AC_WPNav::set_speed_down_ms(float speed_down_ms)
     update_track_with_speed_accel_limits();
 }
 
+void AC_WPNav::set_alt_stick_mix(float speed_ms, float dt) {
+    // when we override the altitude speed target, we don't want to pass the default speed limits
+    float max_speed_down_limited_ms = -get_default_speed_down_ms() - _altitude_mission_target_vel_ms; 
+    float max_speed_up_limited_ms = get_default_speed_up_ms() - _altitude_mission_target_vel_ms;
+    float speed_limited_ms = constrain_float(speed_ms, max_speed_down_limited_ms, max_speed_up_limited_ms);
+
+    // shape pilot input
+    shape_vel_accel(speed_limited_ms, 0.0f,
+        _altitude_stick_mix_vel_ms, _altitude_stick_mix_accel_mss,
+        -_pos_control.get_max_accel_U_mss(), _pos_control.get_max_accel_U_mss(),
+        _pos_control.get_shaping_jerk_U_msss(), dt, true);
+
+    // update velocity and position offset from limited acceleration
+    _altitude_stick_mix_vel_ms += _altitude_stick_mix_accel_mss * dt;
+    _altitude_stick_mix_m += _altitude_stick_mix_vel_ms * dt;
+}
+
+void AC_WPNav::reset_alt_stick_mix() {
+    _altitude_mission_target_vel_ms = 0.0f;
+    _altitude_stick_mix_m = 0.0f;
+    _altitude_stick_mix_vel_ms = 0.0f;
+    _altitude_stick_mix_accel_mss = 0.0f;
+}
+
 // Sets the current waypoint destination using a Location object.
 // Converts global coordinates to NEU position and sets destination.
 // Returns false if conversion fails (e.g. missing terrain data).
@@ -559,6 +583,12 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_accel_neu_mss *= sq(vel_dt_scalar);
     target_accel_neu_mss += accel_offset_neu_mss;
 
+    // altitude stick mixing
+    _altitude_mission_target_vel_ms = target_vel_neu_ms.z;
+    target_pos_neu_m.z += _altitude_stick_mix_m;
+    target_vel_neu_ms.z += _altitude_stick_mix_vel_ms;
+    target_accel_neu_mss.z += _altitude_stick_mix_accel_mss;
+
     // send updated position, velocity, and acceleration targets to position controller
     _pos_control.set_pos_vel_accel_NEU_m(target_pos_neu_m, target_vel_neu_ms, target_accel_neu_mss);
 
@@ -570,7 +600,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
                 _flags.reached_destination = true;
             } else {
                 // regular waypoints also require the copter to be within the waypoint radius
-                const Vector3f dist_to_dest_m = (curr_pos_neu_m - _destination_neu_m).tofloat();
+                Vector3p curr_pos_minus_stick_mix_neu_m = curr_pos_neu_m;
+                curr_pos_minus_stick_mix_neu_m.z -= _altitude_stick_mix_m;
+                const Vector3f dist_to_dest_m = (curr_pos_minus_stick_mix_neu_m - _destination_neu_m).tofloat();
                 if (dist_to_dest_m.length_squared() <= sq(_wp_radius_cm * 0.01)) {
                     _flags.reached_destination = true;
                 }

@@ -92,6 +92,13 @@ public:
     // Updates the vertical controller with the new descent rate limit.
     void set_speed_down_ms(float speed_down_ms);
 
+    /// Altitude stick mixing
+    void set_alt_stick_mix(float speed_cms, float dt);
+    void reset_alt_stick_mix();
+
+    /// get default target horizontal velocity during wp navigation
+    float get_default_speed_xy() const { return _wp_speed_cms; }
+
     // Returns the default horizontal speed in cm/s used during waypoint navigation.
     // See get_default_speed_NE_ms() for full details.
     float get_default_speed_NE_cms() const { return get_default_speed_NE_ms() * 100.0; }
@@ -401,4 +408,10 @@ protected:
     AP_Int8 _rangefinder_use;            // parameter specifying whether rangefinder should be used for terrain tracking
     bool _rangefinder_healthy;           // true if the rangefinder reading is valid and within operational range
     float _rangefinder_terrain_offset_m; // rangefinder-derived terrain offset (meters above EKF origin)
+
+    // altitude stick mixing
+    float       _altitude_stick_mix_m;
+    float       _altitude_stick_mix_vel_ms;
+    float       _altitude_stick_mix_accel_mss;
+    float       _altitude_mission_target_vel_ms;
 };
