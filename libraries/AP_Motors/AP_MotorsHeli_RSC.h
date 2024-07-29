@@ -5,31 +5,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger_config.h>
-
-// default main rotor speed (ch8 out) as a number from 0 ~ 100
-#define AP_MOTORS_HELI_RSC_SETPOINT             70
-
-// default main rotor critical speed
-#define AP_MOTORS_HELI_RSC_CRITICAL             50
-
-// RSC output defaults
-#define AP_MOTORS_HELI_RSC_IDLE_DEFAULT         0
-
-// default main rotor ramp up time in seconds
-#define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
-#define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
-#define AP_MOTORS_HELI_RSC_AROT_ENGAGE_TIME     1       // time in seconds to ramp motors when bailing out of autorotation
-#define AP_MOTORS_HELI_RSC_AROT_IDLE            0
-
-// Throttle Curve Defaults
-#define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
-#define AP_MOTORS_HELI_RSC_THRCRV_25_DEFAULT    32
-#define AP_MOTORS_HELI_RSC_THRCRV_50_DEFAULT    38
-#define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    50
-#define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   100
-
-// RSC governor defaults
-#define AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT     100
+#include <AC_Autorotation/RSC_Autorotation.h>
 
 // rotor control modes
 enum RotorControlMode {
@@ -103,20 +79,8 @@ public:
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
 
-    // use bailout ramp time
-    void        use_bailout_ramp_time(bool enable) { _use_bailout_ramp = enable; }
-
-    // use external governor autorotation window
-    void        set_autorotation_flag(bool flag) { _in_autorotation = flag; }
-
-    // set the throttle percentage to be used during autorotation for this instance of Heli_RSC
-    void        set_arot_idle_output(int16_t idle) { _arot_idle_output.set(idle); }
-
-    // set the manual autorotation option for this instance of Heli_RSC
-    void        set_rsc_arot_man_enable(int8_t enable) { _rsc_arot_man_enable.set(enable); }
-
-    // set the autorotation power recovery time for this instance of Heli_RSC
-    void        set_rsc_arot_engage_time(int8_t eng_time) { _rsc_arot_engage_time.set(eng_time); }
+    // true if we are considered to be autorotating or bailing out of an autorotation
+    bool        in_autorotation(void) const;
 
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
@@ -135,6 +99,8 @@ public:
     void write_log(void) const;
 #endif
 
+    RSC_Autorotation autorotation;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -145,9 +111,6 @@ public:
     AP_Int8         _runup_time;              // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _critical_speed;          // Rotor speed below which flight is not possible
     AP_Int16        _idle_output;             // Rotor control output while at idle
-    AP_Int16        _arot_idle_output;           // Percent value used when in autorotation
-    AP_Int8         _rsc_arot_engage_time;    // time in seconds for in-flight power re-engagement
-    AP_Int8         _rsc_arot_man_enable;     // enables manual autorotation
 
 private:
     uint64_t        _last_update_us;
@@ -173,16 +136,13 @@ private:
     bool            _governor_engage;             // RSC governor status flag
     bool            _autothrottle;                // autothrottle status flag
     bool            _governor_fault;              // governor fault status flag
-    bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
-    bool            _in_autorotation;             // true if vehicle is currently in an autorotation
     bool            _spooldown_complete;          // flag for determining if spooldown is complete
     float           _fast_idle_timer;             // cooldown timer variable
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
-    bool            _autorotating;                // flag that holds the status of autorotation
-    bool            _bailing_out;                 // flag that holds the status of bail out(power engagement)
     float           _idle_throttle;               // current idle throttle setting
-    bool            _gov_bailing_out;             // flag that holds the status of governor bail out
+
+    RotorControlState _rsc_state;
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -212,5 +172,5 @@ private:
     float       get_idle_output() const { return _idle_output * 0.01; }
     float       get_governor_torque() const { return _governor_torque * 0.01; }
     float       get_governor_compensator() const { return _governor_compensator * 0.000001; }
-    float       get_arot_idle_output() const { return _arot_idle_output * 0.01; }
+
 };
