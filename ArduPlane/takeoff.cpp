@@ -232,7 +232,8 @@ void Plane::takeoff_calc_throttle(const bool use_max_throttle) {
     // Set the minimum throttle limit.
     const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
     if (!use_throttle_range || !ahrs.using_airspeed_sensor() || use_max_throttle) { // Traditional takeoff throttle limit.
-        TECS_controller.set_throttle_min(0.01f*aparm.takeoff_throttle_max);
+        float min_throttle = (aparm.takeoff_throttle_max != 0) ? 0.01f*aparm.takeoff_throttle_max : 0.01f*aparm.throttle_max;
+        TECS_controller.set_throttle_min(min_throttle);
     } else { // TKOFF_MODE == 1, allow for a throttle range.
         if (aparm.takeoff_throttle_min != 0) { // Override THR_MIN.
             TECS_controller.set_throttle_min(0.01f*aparm.takeoff_throttle_min);
