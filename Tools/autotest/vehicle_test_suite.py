@@ -6025,8 +6025,24 @@ class TestSuite(abc.ABC):
         self.progress("check %s upload/download: upload %u items" %
                       (itype, len(items),))
         self.upload_using_mission_protocol(mission_type, items)
+        # an empty plan (a mission holding only home) is identified as 0:
+        if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+            empty_plan = len(items) <= 1
+        else:
+            empty_plan = len(items) == 0
+        upload_opaque_id = self.get_cached_message('MISSION_ACK').opaque_id
+        if (upload_opaque_id == 0) != empty_plan:
+            raise NotAchievedException("Unexpected upload opaque_id=%u for %u items" %
+                                       (upload_opaque_id, len(items)))
+        self.progress("Upload opaque_id=%s" % upload_opaque_id)
         self.progress("check %s upload/download: download items" % itype)
         downloaded_items = self.download_using_mission_protocol(mission_type)
+        download_opaque_id = self.get_cached_message('MISSION_COUNT').opaque_id
+        if upload_opaque_id != download_opaque_id:
+            raise NotAchievedException(
+                "Expected upload id and download id to be same; upload=%s download=%s" %
+                (upload_opaque_id, download_opaque_id))
+
         if len(items) != len(downloaded_items):
             raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
                                        (len(items), len(downloaded_items)))
@@ -10587,10 +10603,11 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Ready to start testing!")
 
-    def upload_using_mission_protocol(self, mission_type, items, verbose=True, start_index=None):
+    def upload_using_mission_protocol(self, mission_type, items, verbose=True, start_index=None, all_sent_hook=None):
         '''mavlink2 required.  If start_index is supplied then a partial
         update is done using MISSION_WRITE_PARTIAL_LIST; items must have
-        sequence numbers starting from start_index'''
+        sequence numbers starting from start_index.  all_sent_hook is
+        called after the last item is sent, before waiting for the ack'''
         target_system = 1
         target_component = 1
         self.do_timesync_roundtrip()
@@ -10665,6 +10682,9 @@ Also, ignores heartbeats not from our target system'''
             sent.add(m.seq)
 
             timeout += 10  # we received a good request for item; be generous with our timeouts
+
+        if all_sent_hook is not None:
+            all_sent_hook()
 
         m = self.assert_receive_message('MISSION_ACK')
         if m.mission_type != mission_type:

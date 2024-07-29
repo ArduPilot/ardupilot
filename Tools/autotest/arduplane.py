@@ -5804,6 +5804,152 @@ return update()
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
+    def get_mission_checksum(self):
+        self.drain_mav()
+        m = self.poll_message('MISSION_CURRENT')
+        print("Got %s" % str(m))
+        return m.mission_id
+
+    def MissionOpaqueID(self):
+        '''test support for vehicle identifying mission via opaque ID'''
+        jumpcount_checksum = 970034527
+        for missionstuff in [("text.txt", 4264322242),
+                             ("justhome.txt", 0),
+                             ("jumpcount.txt", jumpcount_checksum),
+                             ]:
+            (filename, expected_checksum) = missionstuff
+            self.start_subtest("Checking checksum for (%s)" % (filename,))
+            self.load_mission(filename)
+            self.assert_cached_message_field_values('MISSION_ACK', {
+                "opaque_id": expected_checksum,
+            })
+            # ensure it appears in the MISSION_CURRENT message:
+            self.assert_received_message_field_values('MISSION_CURRENT', {
+                "mission_id": expected_checksum,
+            }, poll=True)
+
+        # fly the jump count mission, make sure the checksum doesn't
+        # change over time
+        self.load_mission("jumpcount.txt", strict=False)
+        self.set_current_waypoint(0, check_afterwards=False)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        for i in range(2):
+            self.wait_current_waypoint(2, timeout=120)
+            self.wait_current_waypoint(3, timeout=120)
+            mission_checksum = self.get_mission_checksum()
+            if mission_checksum != jumpcount_checksum:
+                raise NotAchievedException(
+                    "Mission checksum changed during mission; got=%u want=%u i=%u" %
+                    (mission_checksum, jumpcount_checksum, i))
+        self.fly_home_land_and_disarm()
+
+        self.MissionOpaqueID_fence_and_rally()
+        self.MissionOpaqueID_scripted_change()
+
+    def MissionOpaqueID_fence_and_rally(self):
+        '''check fence and rally opaque IDs across a reboot and when cleared'''
+        home = self.home_position_as_location()
+        fence = [(mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+            self.offset_location_ne(home, -500, -500),
+            self.offset_location_ne(home, -500, 500),
+            self.offset_location_ne(home, 500, 500),
+            self.offset_location_ne(home, 500, -500),
+        ])]
+        rally_loc = self.offset_location_ne(home, 50, -50)
+        rally_loc.set_alt_m(15, AltFrame.ABOVE_HOME)
+
+        self.start_subtest("Fence and rally IDs survive a reboot")
+        self.upload_fences_from_locations(fence)
+        fence_id = self.get_cached_message('MISSION_ACK').opaque_id
+        self.upload_rally_points_from_locations([rally_loc])
+        rally_id = self.get_cached_message('MISSION_ACK').opaque_id
+        mission_id = self.get_mission_checksum()
+        self.reboot_sitl()
+        self.wait_message_field_values('MISSION_CURRENT', {
+            "mission_id": mission_id,
+            "fence_id": fence_id,
+            "rally_points_id": rally_id,
+        })
+
+        self.start_subtest("MISSION_CLEAR_ALL after an upload clears the ID")
+        # uploading first leaves the fence protocol's upload state behind
+        self.upload_fences_from_locations(fence)
+        for (mission_type, field) in [
+                (mavutil.mavlink.MAV_MISSION_TYPE_FENCE, "fence_id"),
+                (mavutil.mavlink.MAV_MISSION_TYPE_RALLY, "rally_points_id"),
+        ]:
+            self.mav.mav.mission_clear_all_send(1, 1, mission_type)
+            self.assert_received_message_field_values('MISSION_ACK', {
+                "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+                "mission_type": mission_type,
+                "opaque_id": 0,
+            })
+            self.wait_message_field_values('MISSION_CURRENT', {
+                field: 0,
+            })
+
+        self.start_subtest("Changing the items before the ack is sent clears its ID")
+        items = [self.rally_MISSION_ITEM_INT_from_loc(x) for x in [
+            rally_loc,
+            self.offset_location_ne(rally_loc, 50, 0),
+        ]]
+        self.correct_wp_seq_numbers(items)
+        self.upload_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+            items,
+            # the ack waits for the ID to be calculated:
+            all_sent_hook=lambda: self.send_set_parameter_direct("RALLY_TOTAL", 1),
+        )
+        self.assert_cached_message_field_values('MISSION_ACK', {
+            "mission_type": mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+            "opaque_id": 0,
+        })
+        self.wait_message_field_values('MISSION_CURRENT', {
+            "rally_points_id": rally_id,
+        })
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+
+    def MissionOpaqueID_scripted_change(self):
+        '''check an upload's ack has no ID if a script changes an item
+        before the ack is sent'''
+        self.start_subtest("Changing an item before the ack is sent clears its ID")
+        self.install_script_content_context("mission-change.lua", """
+function update()
+  if param:get('SCR_USER1') == 1 then
+    param:set('SCR_USER1', 0)
+    local item = mission:get_item(1)
+    item:x(item:x() + 1000)
+    mission:set_item(1, item)
+  end
+  return update, 50
+end
+
+return update()
+""")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_USER1": 0,
+        })
+        self.reboot_sitl()
+        items = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 200, 50),
+        ])
+        self.upload_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+            items,
+            # the ack waits for the ID to be calculated; the script
+            # changes an item without changing the item count meanwhile:
+            all_sent_hook=lambda: self.send_set_parameter_direct("SCR_USER1", 1),
+        )
+        self.assert_cached_message_field_values('MISSION_ACK', {
+            "mission_type": mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+            "opaque_id": 0,
+        })
+        self.wait_parameter_value("SCR_USER1", 0)
+
     def _MAV_CMD_DO_AUX_FUNCTION(self, run_cmd):
         '''Test triggering Auxiliary Functions via mavlink'''
         self.context_collect('STATUSTEXT')
@@ -10802,6 +10948,7 @@ return update()
             self.MAVFTPListDirectoryInterleavedGet,
             self.MAVFTPListDirectoryTabInNameMAVProxy,
             self.MegaSquirt,
+            self.MissionOpaqueID,
             self.SpeedToFly,
             self.RunMissionScript,
             self.WindEstimatesTrim,
