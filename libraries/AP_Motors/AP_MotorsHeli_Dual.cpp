@@ -248,14 +248,6 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else { 
-        _main_rotor.set_autorotation_flag(false);
-    }
 }
 
 // calculate_scalars
