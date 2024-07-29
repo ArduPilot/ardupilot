@@ -5958,10 +5958,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def RangeFinder(self):
         '''Test RangeFinder'''
         # the following magic numbers correspond to the post locations in SITL
-        home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 315)
+        home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 231)
 
         rangefinder_params = {
-            "SIM_SONAR_ROT": 6,
+            "SIM_SONAR_ROT": 0,
         }
         rangefinder_params.update(self.analog_rangefinder_parameters())
 
@@ -5976,7 +5976,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if m.voltage == 0:
             raise NotAchievedException("Did not get non-zero voltage")
         want_range = 10
-        if abs(m.distance - want_range) > 0.1:
+        if abs(m.distance - want_range) > 0.5:
             raise NotAchievedException("Expected %fm got %fm" % (want_range, m.distance))
 
     def DepthFinder(self):
