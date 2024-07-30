@@ -80,6 +80,8 @@
 #include <AP_Gripper/AP_Gripper.h>
 #endif
 
+#include <AP_IBus_Telem/AP_IBus_Telem.h>
+
 class AP_DDS_Client;
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
@@ -348,6 +350,10 @@ protected:
 
 #if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
+#endif
+
+#if AP_IBUS_TELEM_ENABLED
+    AP_IBus_Telem ibus_telem;
 #endif
 
 #if AP_RSSI_ENABLED

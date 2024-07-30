@@ -530,6 +530,10 @@ void AP_Vehicle::setup()
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Failed to Initialize", AP_DDS_Client::msg_prefix);
     }
 #endif
+
+#if AP_IBUS_TELEM_ENABLED
+    ibus_telem.init();
+#endif
 }
 
 void AP_Vehicle::loop()
