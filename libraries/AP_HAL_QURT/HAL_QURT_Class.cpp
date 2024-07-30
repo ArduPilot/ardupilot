@@ -45,7 +45,8 @@ static void crash_error_handler(void)
 using namespace QURT;
 
 static UARTDriver_Console consoleDriver;
-static UARTDriver_MAVLinkUDP serial0Driver;
+static UARTDriver_MAVLinkUDP serial0Driver(0);
+static UARTDriver_MAVLinkUDP serial1Driver(1);
 static UARTDriver_Local serial3Driver(QURT_UART_GPS);
 static UARTDriver_Local serial4Driver(QURT_UART_RCIN);
 
@@ -64,7 +65,7 @@ bool qurt_ran_overtime;
 HAL_QURT::HAL_QURT() :
     AP_HAL::HAL(
         &serial0Driver,
-        nullptr,
+        &serial1Driver,
         nullptr,
         &serial3Driver,
         &serial4Driver,

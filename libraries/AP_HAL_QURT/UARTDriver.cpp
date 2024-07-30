@@ -143,11 +143,11 @@ void UARTDriver_Console::printf(const char *fmt, ...)
   methods for UARTDriver_MAVLinkUDP
  */
 typedef void (*mavlink_data_callback_t)(const struct qurt_rpc_msg *msg, void* p);
-extern void register_mavlink_data_callback(mavlink_data_callback_t func, void *p);
+extern void register_mavlink_data_callback(uint8_t instance, mavlink_data_callback_t func, void *p);
 
-UARTDriver_MAVLinkUDP::UARTDriver_MAVLinkUDP(void)
+UARTDriver_MAVLinkUDP::UARTDriver_MAVLinkUDP(uint8_t instance) : inst(instance)
 {
-    register_mavlink_data_callback(_mavlink_data_cb, (void *) this);
+    register_mavlink_data_callback(instance, _mavlink_data_cb, (void *) this);
 }
 
 void UARTDriver_MAVLinkUDP::_mavlink_data_cb(const struct qurt_rpc_msg *msg, void *p)
@@ -182,6 +182,7 @@ bool UARTDriver_MAVLinkUDP::_write_pending_bytes(void)
         return false;
     }
     msg.msg_id = QURT_MSG_ID_MAVLINK_MSG;
+    msg.inst = inst;
     msg.seq = seq++;
     msg.data_length = _writebuf.read(msg.data, n);
 

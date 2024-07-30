@@ -149,14 +149,18 @@ int slpi_link_client_init(void)
 
 typedef void (*mavlink_data_callback_t)(const struct qurt_rpc_msg *msg, void* p);
 
-static mavlink_data_callback_t mav_cb;
-static void *mav_cb_ptr;
+static mavlink_data_callback_t mav_cb[MAX_MAVLINK_INSTANCES];
+static void *mav_cb_ptr[MAX_MAVLINK_INSTANCES];
 static uint32_t expected_seq;
 
-void register_mavlink_data_callback(mavlink_data_callback_t func, void *p)
+void register_mavlink_data_callback(uint8_t instance, mavlink_data_callback_t func, void *p)
 {
-    mav_cb = func;
-    mav_cb_ptr = p;
+	if (instance < MAX_MAVLINK_INSTANCES) {
+	    mav_cb[instance] = func;
+	    mav_cb_ptr[instance] = p;
+	} else {
+        HAP_PRINTF("Error: Invalid mavlink instance %u", instance);
+	}
 }
 
 int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
@@ -175,8 +179,8 @@ int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
 
     switch (msg->msg_id) {
     case QURT_MSG_ID_MAVLINK_MSG: {
-        if (mav_cb) {
-            mav_cb(msg, mav_cb_ptr);
+        if ((msg->inst < MAX_MAVLINK_INSTANCES) && (mav_cb[msg->inst])) {
+            mav_cb[msg->inst](msg, mav_cb_ptr[msg->inst]);
         }
         break;
     }
