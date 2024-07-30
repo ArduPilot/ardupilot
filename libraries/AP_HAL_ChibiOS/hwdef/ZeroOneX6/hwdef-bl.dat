@@ -1,0 +1,106 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the ZeroOneX6 hardware
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 5600
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# flash size
+FLASH_SIZE_KB 2048
+
+env OPTIMIZE -Os
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART3
+
+# Pin for PWM Voltage Selection
+PG6 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins
+PI9 IMU1_CS CS
+PH5 ICM42688_CS CS
+PI4 BMI088_A_CS CS
+PI8 BMI088_G_CS CS
+PH15 BMM150_CS CS
+PG7  FRAM_CS CS
+PI10 EXT1_CS CS
+
+# telem1
+PE8 UART7_TX UART7
+PF6 UART7_RX UART7
+
+# telem2
+PC12 UART5_TX UART5
+PD2 UART5_RX UART5
+
+# debug uart
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+# armed indication
+PE6 nARMED OUTPUT HIGH
+
+# start peripheral power off
+PF12 nVDD_5V_HIPOWER_EN OUTPUT HIGH
+PG4  nVDD_5V_PERIPH_EN OUTPUT HIGH
+
+# LEDs
+PE3 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # red
+PE5 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # blue
+define HAL_LED_ON 0
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+# enable DFU by default
+ENABLE_DFU_BOOT 1
+
+# support flashing from SD card:
+# power enable pins
+PC13 VDD_3V3_SD_CARD_EN OUTPUT HIGH
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# microSD support
+PD6  SDMMC2_CK SDMMC2
+PD7  SDMMC2_CMD SDMMC2
+PB14 SDMMC2_D0 SDMMC2
+PB15 SDMMC2_D1 SDMMC2
+PG11 SDMMC2_D2 SDMMC2
+PB4  SDMMC2_D3 SDMMC2
+define FATFS_HAL_DEVICE SDCD2
+
+DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+
