@@ -27,7 +27,7 @@ def build(bld):
     bld(
         # build ap_host
         source=[STUB_SO, MAIN_CPP],
-        rule="%s -I%s %s %s %s -o %s" % (AARCH64_CXX, STUB_INC.abspath(),
+        rule="%s -I%s %s %s %s -lpthread -o %s" % (AARCH64_CXX, STUB_INC.abspath(),
                                           MAIN_CPP.abspath(), IFADDR_CPP.abspath(), STUB_SO.abspath(), AP_HOST.abspath()),
         target=[AP_HOST],
         group='dynamic_sources'
