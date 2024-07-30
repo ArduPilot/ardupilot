@@ -130,25 +130,25 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
 }
 
 // filt_T_hz - set target filter hz
-void AC_PID::filt_T_hz(float hz)
+void AC_PID::set_filt_T_hz(float hz)
 {
     _filt_T_hz.set(fabsf(hz));
 }
 
 // filt_E_hz - set error filter hz
-void AC_PID::filt_E_hz(float hz)
+void AC_PID::set_filt_E_hz(float hz)
 {
     _filt_E_hz.set(fabsf(hz));
 }
 
 // filt_D_hz - set derivative filter hz
-void AC_PID::filt_D_hz(float hz)
+void AC_PID::set_filt_D_hz(float hz)
 {
     _filt_D_hz.set(fabsf(hz));
 }
 
 // slew_limit - set slew limit
-void AC_PID::slew_limit(float smax)
+void AC_PID::set_slew_limit(float smax)
 {
     _slew_rate_max.set(fabsf(smax));
 }

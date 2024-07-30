@@ -44,7 +44,7 @@ public:
     const Vector2f& get_error() const { return _error; }
 
     // set accessors
-    void kP(float v) { _kp.set(v); }
+    void set_kP(float v) { _kp.set(v); }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
