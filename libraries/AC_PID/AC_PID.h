@@ -92,9 +92,6 @@ public:
     // save gain to eeprom
     void save_gains();
 
-    /// operator function call for easy initialisation
-    void operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz, float dff_val=0);
-
     // get accessors
     const AP_Float &kP() const { return _kp; }
     AP_Float &kP() { return _kp; }

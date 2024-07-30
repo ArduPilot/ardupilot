@@ -47,9 +47,6 @@ public:
     // save gain to eeprom
     void save_gains();
 
-    /// operator function call for easy initialisation
-    void operator() (float p, float i, float imaxval, float input_filt_hz, float dt);
-
     // get accessors
     AP_Float &kP() { return _kp; }
     AP_Float &kI() { return _ki; }
