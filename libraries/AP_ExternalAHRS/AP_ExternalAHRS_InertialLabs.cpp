@@ -738,6 +738,284 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 #endif  // HAL_LOGGING_ENABLED
     }
 
+    const uint32_t dt_critical_usw = 10000;
+    uint32_t now_usw = AP_HAL::millis();
+
+    // InertialLabs critical messages to GCS (sending messages once every 10 seconds)
+    if ((last_unit_status != state2.unit_status) ||
+        (last_unit_status2 != state2.unit_status2) ||
+        (last_air_data_status != state2.air_data_status) ||
+        (now_usw - last_critical_msg_ms > dt_critical_usw)) {
+
+        // Critical USW message
+        if (state2.unit_status & ILABS_UNIT_STATUS_ALIGNMENT_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Unsuccessful initial alignment");
+        }
+        if (state2.unit_status & ILABS_UNIT_STATUS_OPERATION_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: IMU data are incorrect");
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_GYRO_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Gyros failure");
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_ACCEL_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Accelerometers failure");
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_MAG_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Magnetometers failure");
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_ELECTRONICS_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Electronics failure");
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: GNSS receiver failure");
+        }
+
+        // Critical USW2 message
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_BARO_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Baro altimeter failure");
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Diff. pressure sensor failure");
+        }
+
+        // Critical ADU message
+        if (state2.air_data_status & ILABS_AIRDATA_INIT_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Static pressure sensor unsuccessful initialization");
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_INIT_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Diff. pressure sensor unsuccessful initialization");
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_STATIC_PRESS_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ILAB: Static pressure sensor failure is detect");
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ILAB: Diff. pressure sensor failure is detect");
+        }
+
+        last_critical_msg_ms = AP_HAL::millis();
+    }
+
+    if (last_unit_status != state2.unit_status) {
+        if (state2.unit_status & ILABS_UNIT_STATUS_RUNTIME_CAL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: On-the-fly calibration is in progress");
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_VOLTAGE_LOW) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Low input voltage");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_VOLTAGE_LOW) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Input voltage is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_VOLTAGE_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: High input voltage");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_VOLTAGE_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Input voltage is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_X_RATE_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Y-axis angular rate is exceeded");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_X_RATE_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Y-axis angular rate is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_Y_RATE_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: X-axis angular rate is exceeded");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_Y_RATE_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: X-axis angular rate is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_Z_RATE_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Z-axis angular rate is exceeded");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_Z_RATE_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Z-axis angular rate is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_MAG_FIELD_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Large total magnetic field");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_MAG_FIELD_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Total magnetic field is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_TEMP_RANGE_ERR) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Temperature is out of range");
+        } else {
+            if (last_unit_status & ILABS_UNIT_STATUS_TEMP_RANGE_ERR) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Temperature is in range");
+            }
+        }
+
+        if (state2.unit_status & ILABS_UNIT_STATUS_RUNTIME_CAL2) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: On-the-fly calibration successful");
+        }
+
+        last_unit_status = state2.unit_status;
+    }
+
+    // InertialLabs INS Unit Status Word 2 (USW2) messages to GCS
+    if (last_unit_status2 != state2.unit_status2) {
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_ACCEL_X_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Y-acceleration is out of range");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_ACCEL_X_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Y-acceleration is in range");
+            }
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Y_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: X-acceleration is out of range");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Y_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: X-acceleration is in range");
+            }
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Z_HIGH) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Z-acceleration is out of range");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Z_HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Z-acceleration is in range");
+            }
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAGCAL_2D_ACT) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Automatic 2D calibration is in progress");
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAGCAL_3D_ACT) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Automatic 3D calibration is in progress");
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS input switched off");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS input switched on");
+            }
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure input switched off");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure input switched on");
+            }
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAG_FUSION_OFF) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Magnetometer input switched off");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_MAG_FUSION_OFF) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Magnetometer input switched on");
+            }
+        }
+
+        if (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Incorrect GNSS position");
+        } else {
+            if (last_unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS position is correct");
+            }
+        }
+
+        last_unit_status2 = state2.unit_status2;
+    }
+
+    // InertialLabs INS Air Data Unit (ADU) status messages to GCS
+    if (last_air_data_status != state2.air_data_status) {
+        if (state2.air_data_status & ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Static pressure is out of range");
+        } else {
+            if (last_air_data_status & ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Static pressure is in range");
+            }
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Diff. pressure is out of range");
+        } else {
+            if (last_air_data_status & ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure is in range");
+            }
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_PRESS_ALT_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Pressure altitude is incorrect");
+        } else {
+            if (last_air_data_status & ILABS_AIRDATA_PRESS_ALT_FAIL) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Pressure altitude is correct");
+            }
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Air speed is incorrect");
+        } else {
+            if (last_air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Air speed is correct");
+            }
+        }
+
+        if (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Air speed is below the threshold");
+        } else {
+            if (last_air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Air speed is above the threshold");
+            }
+        }
+
+        last_air_data_status = state2.air_data_status;
+    }
+
+    // InertialLabs INS spoofing detection messages to GCS
+    if (last_spoof_status != gnss_data.spoof_status) {
+        if ((last_spoof_status == 2 || last_spoof_status == 3) && (gnss_data.spoof_status == 1)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS no spoofing");
+        }
+
+        if (last_spoof_status == 2) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: GNSS spoofing indicated");
+        }
+
+        if (last_spoof_status == 3) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: GNSS multiple spoofing indicated");
+        }
+
+        last_spoof_status = gnss_data.spoof_status;
+    }
+
+    // InertialLabs INS jamming detection messages to GCS
+    if (last_jam_status != gnss_data.jam_status) {
+        if ((last_jam_status == 2 || last_jam_status == 3) && (gnss_data.jam_status == 1)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS no jamming");
+        }
+
+        if (gnss_data.jam_status == 3) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: GNSS jamming indicated and no fix");
+        }
+
+        last_jam_status = gnss_data.jam_status;
+    }
+
     return true;
 }
 
