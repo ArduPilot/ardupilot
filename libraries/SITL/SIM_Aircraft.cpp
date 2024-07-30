@@ -798,7 +798,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     // update slung payload
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
-    sitl->models.slung_payload_sim.update(get_position_relhome(), velocity_ef, accel_earth);
+    sitl->models.slung_payload_sim.update(get_position_relhome(), velocity_ef, accel_earth, wind_ef);
 #endif
 
     // allow for changes in physics step
