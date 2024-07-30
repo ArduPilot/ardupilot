@@ -11,6 +11,8 @@ struct AP_FixedWing {
     AP_Int8 throttle_slewrate;
     AP_Int8 throttle_cruise;
     AP_Int8 takeoff_throttle_max;
+    AP_Int8 takeoff_throttle_min;
+    AP_Int32 takeoff_options;
     AP_Int16 airspeed_min;
     AP_Int16 airspeed_max;
     AP_Float airspeed_cruise;
@@ -48,5 +50,10 @@ struct AP_FixedWing {
         NORMAL        = 3,
         LAND          = 4,
         ABORT_LANDING = 7
+    };
+
+    // Bitfields of TKOFF_OPTIONS
+    enum class TakeoffOption {
+        THROTTLE_RANGE          = (1U << 0), // Unset: Max throttle. Set: Throttle range.
     };
 };

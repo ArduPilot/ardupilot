@@ -250,9 +250,6 @@ private:
 
     // are we currently in long failsafe but have postponed it in MODE TAKEOFF until min level alt is reached
     bool long_failsafe_pending;
-    
-    //flag that we have already called autoenable fences once in MODE TAKEOFF
-    bool have_autoenabled_fences;
 
     // GCS selection
     GCS_Plane _gcs; // avoid using this; use gcs()
@@ -1117,6 +1114,7 @@ private:
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);
+    void takeoff_calc_throttle(const bool use_max_throttle=false);
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);

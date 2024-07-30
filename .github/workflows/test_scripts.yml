@@ -30,4 +30,5 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           Tools/scripts/build_ci.sh

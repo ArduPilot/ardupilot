@@ -25,9 +25,7 @@ class AP_DroneCAN_DNA_Server
 
     enum ServerState {
         NODE_STATUS_UNHEALTHY = -5,
-        STORAGE_FAILURE = -3,
         DUPLICATE_NODES = -2,
-        FAILED_TO_ADD_NODE = -1,
         HEALTHY = 0
     };
 
@@ -36,11 +34,12 @@ class AP_DroneCAN_DNA_Server
     uint8_t self_node_id;
     bool nodeInfo_resp_rcvd;
 
-    Bitmask<128> occupation_mask;
-    Bitmask<128> verified_mask;
-    Bitmask<128> node_seen_mask;
-    Bitmask<128> logged;
-    Bitmask<128> node_healthy_mask;
+    // bitmasks containing a status for each possible node ID (except 0 and > MAX_NODE_ID)
+    Bitmask<128> node_storage_occupied; // storage has a valid entry
+    Bitmask<128> node_verified; // node seen and unique ID matches stored
+    Bitmask<128> node_seen; // received NodeStatus
+    Bitmask<128> node_logged; // written to log fle
+    Bitmask<128> node_healthy; // reports healthy
 
     uint8_t last_logging_count;
 
@@ -55,32 +54,26 @@ class AP_DroneCAN_DNA_Server
     uint8_t rcvd_unique_id_offset;
     uint32_t last_alloc_msg_ms;
 
-    //Methods to handle and report Node IDs seen on the bus
-    void addToSeenNodeMask(uint8_t node_id);
-    bool isNodeSeen(uint8_t node_id);
-
     //Generates 6Byte long hash from the specified unique_id
     void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
 
+    //Reset the Server Record
+    void reset();
+
     //Reads the Server Record from storage for specified node id
-    bool readNodeData(NodeData &data, uint8_t node_id);
+    void readNodeData(NodeData &data, uint8_t node_id);
 
     //Writes the Server Record from storage for specified node id
-    bool writeNodeData(const NodeData &data, uint8_t node_id);
+    void writeNodeData(const NodeData &data, uint8_t node_id);
 
     //Methods to set, clear and report NodeIDs allocated/registered so far
-    bool setOccupationMask(uint8_t node_id);
-    bool isNodeIDOccupied(uint8_t node_id) const;
-    bool freeNodeID(uint8_t node_id);
-
-    //Set the mask to report that the unique id matches the record
-    void setVerificationMask(uint8_t node_id);
+    void freeNodeID(uint8_t node_id);
 
     //Go through List to find node id for specified unique id
     uint8_t getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size);
 
     //Add Node ID info to the record and setup necessary mask fields
-    bool addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
+    void addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
 
     //Finds next available free Node, starting from preferred NodeID
     uint8_t findFreeNodeID(uint8_t preferred);
@@ -112,15 +105,6 @@ public:
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id);
-
-    //Reset the Server Record
-    void reset();
-
-    /* Checks if the node id has been verified against the record
-    Specific CAN drivers are expected to check use this method to 
-    verify if the node is healthy and has static node_id against 
-    hwid in the records */
-    bool isNodeIDVerified(uint8_t node_id) const;
 
     /* Subscribe to the messages to be handled for maintaining and allocating
     Node ID list */

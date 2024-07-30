@@ -162,10 +162,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 # define HAL_GYROFFT_ENABLED 1
 # define AP_OAPATHPLANNER_ENABLED 0
 
-# EK2 options (disabled by default)
-# define HAL_NAVEKF2_AVAILABLE 1
-# define HAL_NAVEKF3_AVAILABLE 0
-
 # save some flash
 include ../include/minimize_fpv_osd.inc
 include ../include/no_bootloader_DFU.inc

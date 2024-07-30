@@ -79,7 +79,7 @@ jobs:
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
-        timeout-minutes: 45
+        timeout-minutes: 60
         env:
           DISABLE_MAVNATIVE: True
           DEBIAN_FRONTEND: noninteractive
@@ -103,7 +103,7 @@ jobs:
             *"archlinux"*)
             cp /etc/skel/.bashrc /root
             cp /etc/skel/.bashrc /github/home
-            git config --global --add safe.directory /__w/ardupilot/ardupilot
+            git config --global --add safe.directory ${GITHUB_WORKSPACE}
             Tools/environment_install/install-prereqs-arch.sh -qy
             ;;
           esac

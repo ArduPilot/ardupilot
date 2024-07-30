@@ -101,10 +101,6 @@ define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 0x200
 
-
-define HAL_NO_MONITOR_THREAD
-
-
 # only one I2C bus
 I2C_ORDER I2C1
 

@@ -219,7 +219,29 @@ void Plane::takeoff_calc_pitch(void)
 }
 
 /*
- * get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
+ * Set the throttle limits to run at during a takeoff.
+ */
+void Plane::takeoff_calc_throttle(const bool use_max_throttle) {
+    // This setting will take effect at the next run of TECS::update_pitch_throttle().
+
+    // Set the maximum throttle limit.
+    if (aparm.takeoff_throttle_max != 0) {
+        TECS_controller.set_throttle_max(0.01f*aparm.takeoff_throttle_max);
+    }
+
+    // Set the minimum throttle limit.
+    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    if (!use_throttle_range || !ahrs.using_airspeed_sensor() || use_max_throttle) { // Traditional takeoff throttle limit.
+        TECS_controller.set_throttle_min(0.01f*aparm.takeoff_throttle_max);
+    } else { // TKOFF_MODE == 1, allow for a throttle range.
+        if (aparm.takeoff_throttle_min != 0) { // Override THR_MIN.
+            TECS_controller.set_throttle_min(0.01f*aparm.takeoff_throttle_min);
+        }
+    }
+    calc_throttle();
+}
+
+/* get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
  */
 int16_t Plane::get_takeoff_pitch_min_cd(void)
 {

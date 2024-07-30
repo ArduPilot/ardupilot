@@ -222,7 +222,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: TKOFF_IGAIN
     // @DisplayName: Controller integrator during takeoff
-    // @Description: This is the integrator gain on the control loop during takeoff. When set to 0 then TECS_INTEG_GAIN is used. Increase to increase the rate at which speed and height offsets are trimmed out. Typically values higher than TECS_INTEG_GAIN work best
+    // @Description: This is the integrator gain on the control loop during takeoff. Increase to increase the rate at which speed and height offsets are trimmed out.
     // @Range: 0.0 0.5
     // @Increment: 0.02
     // @User: Advanced
@@ -779,7 +779,6 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                 // ensure we run at full throttle until we reach the target airspeed
                 _throttle_dem = MAX(_throttle_dem, _THRmaxf - _integTHR_state);
             }
-            _integTHR_state = integ_max;
         } else {
             _integTHR_state = constrain_float(_integTHR_state, integ_min, integ_max);
         }
@@ -827,7 +826,12 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 #endif
     }
 
-    // Constrain throttle demand and record clipping
+    constrain_throttle();
+
+}
+
+// Constrain throttle demand and record clipping
+void AP_TECS::constrain_throttle() {
     if (_throttle_dem > _THRmaxf) {
         _thr_clip_status = clipStatus::MAX;
         _throttle_dem = _THRmaxf;
@@ -843,9 +847,7 @@ float AP_TECS::_get_i_gain(void)
 {
     float i_gain = _integGain;
     if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        if (!is_zero(_integGain_takeoff)) {
-            i_gain = _integGain_takeoff;
-        }
+        i_gain = _integGain_takeoff;
     } else if (_flags.is_doing_auto_land) {
         if (!is_zero(_integGain_land)) {
             i_gain = _integGain_land;
@@ -893,18 +895,6 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
         _throttle_dem = nomThr;
     }
 
-    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
-        const uint32_t now = AP_HAL::millis();
-        if (_takeoff_start_ms == 0) {
-            _takeoff_start_ms = now;
-        }
-        const uint32_t dt = now - _takeoff_start_ms;
-        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
-            _throttle_dem = _THRmaxf;
-        }
-    } else {
-        _takeoff_start_ms = 0;
-    }
     if (_flags.is_gliding) {
         _throttle_dem = 0.0f;
         return;
@@ -918,6 +908,8 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge, float pi
     float cosPhi = sqrtf((rotMat.a.y*rotMat.a.y) + (rotMat.b.y*rotMat.b.y));
     float STEdot_dem = _rollComp * (1.0f/constrain_float(cosPhi * cosPhi, 0.1f, 1.0f) - 1.0f);
     _throttle_dem = _throttle_dem + STEdot_dem / (_STEdot_max - _STEdot_min) * (_THRmaxf - _THRminf);
+
+    constrain_throttle();
 }
 
 void AP_TECS::_detect_bad_descent(void)
@@ -1088,17 +1080,17 @@ void AP_TECS::_update_pitch(void)
         // @Field: PEW: Potential energy weighting
         // @Field: KEW: Kinetic energy weighting
         // @Field: EBD: Energy balance demand
-        // @Field: EBE: Energy balance error
+        // @Field: EBE: Energy balance estimate
         // @Field: EBDD: Energy balance rate demand
-        // @Field: EBDE: Energy balance rate error
+        // @Field: EBDE: Energy balance rate estimate
         // @Field: EBDDT: Energy balance rate demand + Energy balance rate error*pitch_damping
         // @Field: Imin: Minimum integrator value
         // @Field: Imax: Maximum integrator value
         // @Field: I: Energy balance error integral
         // @Field: KI: Pitch demand kinetic energy integral
-        // @Field: pmin: Pitch min
-        // @Field: pmax: Pitch max
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,pmin,pmax",
+        // @Field: tmin: Throttle min
+        // @Field: tmax: Throttle max
+        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,tmin,tmax",
                                     "Qfffffffffffff",
                                     AP_HAL::micros64(),
                                     (double)SPE_weighting,
@@ -1112,8 +1104,8 @@ void AP_TECS::_update_pitch(void)
                                     (double)integSEBdot_max,
                                     (double)_integSEBdot,
                                     (double)_integKE,
-                                    (double)_PITCHminf,
-                                    (double)_PITCHmaxf);
+                                    (double)_THRminf,
+                                    (double)_THRmaxf);
     }
 #endif
 }
@@ -1172,22 +1164,25 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _hgt_dem              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_in_raw       = hgt_afe;
-        _TAS_dem_adj          = _TAS_dem;
-        _flags.reset          = true;
-        _post_TO_hgt_offset   = _climb_rate * _hgt_dem_tconst;
         _flags.underspeed     = false;
         _flags.badDescent     = false;
-
+        _post_TO_hgt_offset   = _climb_rate_limit * _hgt_dem_tconst; // Replacement prevents oscillating hgt_rate_dem.
+        _TAS_dem_adj = _TAS_dem;
         _max_climb_scaler = 1.0f;
         _max_sink_scaler = 1.0f;
-
         _pitch_demand_lpf.reset(_ahrs.get_pitch());
         _pitch_measured_lpf.reset(_ahrs.get_pitch());
+
+        if (!_flag_have_reset_after_takeoff) {
+            _flags.reset          = true;
+            _flag_have_reset_after_takeoff  = true;
+        }
     }
 
     if (_flight_stage != AP_FixedWing::FlightStage::TAKEOFF && _flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
         // reset takeoff speed flag when not in takeoff
         _flags.reached_speed_takeoff = false;
+        _flag_have_reset_after_takeoff = false;
     }
 }
 
@@ -1252,16 +1247,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _hgt_dem_in = _hgt_dem_in_raw;
     }
 
-    if (aparm.takeoff_throttle_max != 0 &&
-        (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
-        _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
-    } else {
-        _THRmaxf  = aparm.throttle_max * 0.01f;
-    }
-    _THRminf  = aparm.throttle_min * 0.01f;
-
-    // min of 1% throttle range to prevent a numerical error
-    _THRmaxf = MAX(_THRmaxf, _THRminf+0.01);
+    // Update the throttle limits.
+    _update_throttle_limits();
 
     // work out the maximum and minimum pitch
     // if TECS_PITCH_{MAX,MIN} isn't set then use
@@ -1312,9 +1299,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
             // note that this allows a flare pitch outside the normal TECS auto limits
             _PITCHmaxf = _land_pitch_max;
         }
-
-        // and allow zero throttle
-        _THRminf = 0;
     } else if (_landing.is_on_approach()) {
         _PITCHminf = MAX(_PITCHminf, aparm.pitch_limit_min);
         _pitch_min_at_flare_entry = _PITCHminf;
@@ -1339,7 +1323,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     }
 
     if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        if (!_flags.reached_speed_takeoff && _TAS_state >= _TAS_dem_adj) {
+        if (!_flags.reached_speed_takeoff && _TAS_state >= _TASmin && _TASmin > 0) {
             // we have reached our target speed in takeoff, allow for
             // normal throttle control
             _flags.reached_speed_takeoff = true;
@@ -1439,4 +1423,81 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     _flags_byte);
     }
 #endif
+}
+
+// set minimum throttle override, [-1, -1] range
+// it is applicable for one control cycle only
+void AP_TECS::set_throttle_min(const float thr_min) {
+    // Don't change the limit if it is already covered.
+    if (thr_min > _THRminf_ext) {
+        _THRminf_ext = thr_min;
+    }
+}
+
+// set minimum throttle override, [0, -1] range
+// it is applicable for one control cycle only
+void AP_TECS::set_throttle_max(const float thr_max) {
+    // Don't change the limit if it is already covered.
+    if (thr_max < _THRmaxf_ext) {
+        _THRmaxf_ext = thr_max;
+    }
+}
+
+void AP_TECS::_update_throttle_limits() {
+
+    // Configure max throttle.
+
+    // Read the maximum throttle limit.
+    _THRmaxf  = aparm.throttle_max * 0.01f;
+    // If more max throttle is allowed during takeoff, use it.
+    if (aparm.takeoff_throttle_max*0.01f > _THRmaxf
+        && (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
+        ) {
+        _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
+    }
+    // In any case, constrain to the external safety limits.
+    _THRmaxf = MIN(_THRmaxf, _THRmaxf_ext);
+
+    // Configure min throttle.
+
+    // If less min throttle is allowed during takeoff, use it.
+    bool use_takeoff_throttle = _flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING;
+    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    use_takeoff_throttle = use_takeoff_throttle && (use_throttle_range == 1) && (aparm.takeoff_throttle_min != 0);
+    if ( use_takeoff_throttle ) { 
+        _THRminf = MIN(_THRminf, aparm.takeoff_throttle_min * 0.01f);
+    }
+    else { // Otherwise, during normal situations let regular limit.
+        _THRminf = aparm.throttle_min * 0.01f;
+    }
+    // Raise min to force max throttle for TKOFF_THR_MAX_T after a takeoff.
+    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
+        const uint32_t now = AP_HAL::millis();
+        if (_takeoff_start_ms == 0) {
+            _takeoff_start_ms = now;
+        }
+        const uint32_t dt = now - _takeoff_start_ms;
+        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
+            _THRminf = _THRmaxf;
+        }
+    } else {
+        _takeoff_start_ms = 0;
+    }
+    // If we are flaring, allow the throttle to go to 0.
+    if (_landing.is_flaring()) {
+        _THRminf = 0;
+    }
+    // In any case, constrain to the external safety limits.
+    _THRminf = MAX(_THRminf, _THRminf_ext);
+
+    // Allow a minimum of 1% throttle range, primarily to prevent TECS numerical errors.
+    if (_THRmaxf < 1) {
+        _THRmaxf = MAX(_THRmaxf, _THRminf + 0.01f);
+    } else {
+        _THRminf = MIN(_THRminf, _THRmaxf - 0.01f);
+    }
+    
+    // Reset the external throttle limits.
+    _THRminf_ext = -1.0f;
+    _THRmaxf_ext = 1.0f;
 }

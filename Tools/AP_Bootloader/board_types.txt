@@ -72,6 +72,9 @@ EXT_HW_RADIOLINK_MINI_PIX               3
 # Do not allocate IDs in the range 1000 to 19999 except via a PR
 # against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
 
+# if you want to reserve a block of IDs, please limit that allocation
+#  to 10 IDs at a time.
+
 # values starting with AP_ are implemented in the ArduPilot bootloader
 # https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
 # the values come from the APJ_BOARD_ID in the hwdef files here:
@@ -368,6 +371,8 @@ AP_HW_ZeroOne_GNSS                   5602
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
+
+# IDs 6900-6909 reserved for Easy Aerial
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000

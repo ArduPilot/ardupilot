@@ -22,11 +22,11 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     // @Increment: 1
     // @Units: m
     // @User: Standard
-    AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, 5),
+    AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, 10),
 
     // @Param: LVL_PITCH
     // @DisplayName: Takeoff mode altitude initial pitch
-    // @Description: This is the target pitch for the initial climb to TKOFF_LVL_ALT
+    // @Description: This is the target pitch during the takeoff.
     // @Range: 0 30
     // @Increment: 1
     // @Units: deg
@@ -63,7 +63,7 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_mode_setup = false;
-    plane.have_autoenabled_fences = false;
+    have_autoenabled_fences = false;
 
     return true;
 }
@@ -149,22 +149,22 @@ void ModeTakeoff::update()
 
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
         //below TAKOFF_LVL_ALT
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100.0);
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
+        plane.takeoff_calc_throttle(true);
     } else {
-        if ((altitude_cm >= alt * 100 - 200)) { //within 2m of TKOFF_ALT ,or above and loitering
+        if ((altitude_cm >= alt * 100 - 200)) { //within 2m of TKOFF_ALT, or above and loitering
 #if AP_FENCE_ENABLED
-            if (!plane.have_autoenabled_fences) {
+            if (!have_autoenabled_fences) {
                 plane.fence.auto_enable_fence_after_takeoff();
-                plane.have_autoenabled_fences = true;
+                have_autoenabled_fences = true;
             }
 #endif
             plane.calc_nav_roll();
             plane.calc_nav_pitch();
             plane.calc_throttle();
         } else { // still climbing to TAKEOFF_ALT; may be loitering
-            plane.calc_throttle();
+            plane.takeoff_calc_throttle();
             plane.takeoff_calc_roll();
             plane.takeoff_calc_pitch();
         }

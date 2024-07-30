@@ -431,7 +431,7 @@ void ToyMode::update()
                 if (set_and_remember_mode(Mode::Number::ALT_HOLD, ModeReason::TOY_MODE)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Tmode: ALT_HOLD update arm");
 #if AP_FENCE_ENABLED
-                    copter.fence.enable(false);
+                    copter.fence.enable(false, AC_FENCE_ALL_FENCES);
 #endif
                     if (!copter.arming.arm(AP_Arming::Method::MAVLINK)) {
                         // go back to LOITER
@@ -460,7 +460,7 @@ void ToyMode::update()
 #endif
         } else if (copter.position_ok() && set_and_remember_mode(Mode::Number::LOITER, ModeReason::TOY_MODE)) {
 #if AP_FENCE_ENABLED
-            copter.fence.enable(true);
+            copter.fence.enable(true, AC_FENCE_ALL_FENCES);
 #endif
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: LOITER update");            
         }
@@ -644,14 +644,14 @@ void ToyMode::update()
     if (new_mode != copter.flightmode->mode_number()) {
         load_test.running = false;
 #if AP_FENCE_ENABLED
-        copter.fence.enable(false);
+        copter.fence.enable(false, AC_FENCE_ALL_FENCES);
 #endif
         if (set_and_remember_mode(new_mode, ModeReason::TOY_MODE)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: mode %s", copter.flightmode->name4());
             // force fence on in all GPS flight modes
 #if AP_FENCE_ENABLED
             if (copter.flightmode->requires_GPS()) {
-                copter.fence.enable(true);
+                copter.fence.enable(true, AC_FENCE_ALL_FENCES);
             }
 #endif
         } else {
@@ -662,7 +662,7 @@ void ToyMode::update()
                 set_and_remember_mode(Mode::Number::LAND, ModeReason::TOY_MODE);
 #if AP_FENCE_ENABLED
                 if (copter.landing_with_GPS()) {
-                    copter.fence.enable(true);
+                    copter.fence.enable(true, AC_FENCE_ALL_FENCES);
                 }
 #endif
             }
@@ -801,7 +801,7 @@ void ToyMode::action_arm(void)
     if (needs_gps && copter.arming.gps_checks(false)) {
 #if AP_FENCE_ENABLED
         // we want GPS and checks are passing, arm and enable fence
-        copter.fence.enable(true);
+        copter.fence.enable(true, AC_FENCE_ALL_FENCES);
 #endif
         copter.arming.arm(AP_Arming::Method::RUDDER);
         if (!copter.motors->armed()) {
@@ -817,7 +817,7 @@ void ToyMode::action_arm(void)
     } else {
 #if AP_FENCE_ENABLED
         // non-GPS mode
-        copter.fence.enable(false);
+        copter.fence.enable(false, AC_FENCE_ALL_FENCES);
 #endif
         copter.arming.arm(AP_Arming::Method::RUDDER);
         if (!copter.motors->armed()) {

@@ -63,20 +63,27 @@ private:
 
     void initialize();
 
-    void process_ins_packet1(const uint8_t *b);
-    void process_ins_packet2(const uint8_t *b);
-    void process_ahrs_packet(const uint8_t *b);
     void run_command(const char *fmt, ...);
+
+    struct EAHA;
+    void write_eaha(const EAHA& data_to_log) const;
+    void process_imu_packet(const uint8_t *b);
+    void process_ahrs_ekf_packet(const uint8_t *b);
+    void process_ins_ekf_packet(const uint8_t *b);
+    void process_ins_gnss_packet(const uint8_t *b);
+
 
     uint8_t *pktbuf;
     uint16_t pktoffset;
     uint16_t bufsize;
 
-    struct VN_INS_packet1 *last_ins_pkt1;
-    struct VN_INS_packet2 *last_ins_pkt2;
+    struct VN_imu_packet *latest_imu_packet;
+    struct VN_INS_ekf_packet *latest_ins_ekf_packet;
+    struct VN_INS_gnss_packet *latest_ins_gnss_packet;
 
     uint32_t last_pkt1_ms;
     uint32_t last_pkt2_ms;
+    uint32_t last_pkt3_ms;
 
     enum class TYPE {
         VN_INS,  // Full INS mode, requiring GNSS. Used by VN-2X0 and VN-3X0

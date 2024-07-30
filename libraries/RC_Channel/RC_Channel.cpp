@@ -1859,7 +1859,7 @@ RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC opti
 // duplicate_options_exist - returns true if any options are duplicated
 bool RC_Channels::duplicate_options_exist()
 {
-    uint8_t auxsw_option_counts[512] = {};
+    Bitmask<(uint16_t)RC_Channel::AUX_FUNC::AUX_FUNCTION_MAX> used_auxsw_options;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         const RC_Channel *c = channel(i);
         if (c == nullptr) {
@@ -1867,19 +1867,16 @@ bool RC_Channels::duplicate_options_exist()
             continue;
         }
         const uint16_t option = c->option.get();
-        if (option >= sizeof(auxsw_option_counts)) {
+        if (option == (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING) {
             continue;
         }
-        auxsw_option_counts[option]++;
-    }
-
-    for (uint16_t i=0; i<sizeof(auxsw_option_counts); i++) {
-        if (i == 0) { // MAGIC VALUE! This is AUXSW_DO_NOTHING
+        if (option >= used_auxsw_options.size()) {
             continue;
         }
-        if (auxsw_option_counts[i] > 1) {
+        if (used_auxsw_options.get(option)) {
             return true;
         }
+        used_auxsw_options.set(option);
     }
     return false;
 }

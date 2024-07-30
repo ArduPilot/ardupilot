@@ -54,6 +54,9 @@ AP_BattMonitor_Sum::read()
     float current_sum = 0;
     uint8_t current_count = 0;
 
+    float temperature_sum = 0.0;
+    uint8_t temperature_count = 0;
+
     for (uint8_t i=0; i<_mon.num_instances(); i++) {
         if (i == _instance) {
             // never include self
@@ -77,6 +80,12 @@ AP_BattMonitor_Sum::read()
             current_sum += current;
             current_count++;
         }
+
+        float temperature;
+        if (_mon.get_temperature(temperature, i)) {
+            temperature_sum += temperature;
+            temperature_count++;
+        }
     }
     const uint32_t tnow_us = AP_HAL::micros();
     const uint32_t dt_us = tnow_us - _state.last_time_micros;
@@ -87,10 +96,15 @@ AP_BattMonitor_Sum::read()
     if (current_count > 0) {
         _state.current_amps = current_sum;
     }
+    if (temperature_count > 0) {
+        _state.temperature =  temperature_sum / temperature_count;
+        _state.temperature_time = AP_HAL::millis();
+    }
 
     update_consumed(_state, dt_us);
 
     _has_current = (current_count > 0);
+    _has_temperature = (temperature_count > 0);
     _state.healthy = (voltage_count > 0);
 
     if (_state.healthy) {

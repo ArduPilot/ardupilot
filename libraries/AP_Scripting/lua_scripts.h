@@ -62,7 +62,8 @@ private:
     void create_sandbox(lua_State *L);
 
     typedef struct script_info {
-       int lua_ref;          // reference to the loaded script object
+       int env_ref;          // reference to the script's environment table
+       int run_ref;          // reference to the function to run
        uint64_t next_run_ms; // time (in milliseconds) the script should next be run at
        uint32_t crc;         // crc32 checksum
        char *name;           // filename for the script // FIXME: This information should be available from Lua
@@ -110,7 +111,6 @@ private:
     static HAL_Semaphore error_msg_buf_sem;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
-    int current_ref;
 
     // XOR of crc32 of running scripts
     static uint32_t loaded_checksum;

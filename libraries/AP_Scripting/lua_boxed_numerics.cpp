@@ -79,8 +79,7 @@ int lua_new_uint32_t(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    new_uint32_t(L);
-    *check_uint32_t(L, -1) = (args == 1) ? coerce_to_uint32_t(L, 1) : 0;
+    *new_uint32_t(L) = (args == 1) ? coerce_to_uint32_t(L, 1) : 0;
     return 1;
 }
 
@@ -110,8 +109,7 @@ int lua_new_uint64_t(lua_State *L) {
             break;
     }
 
-    new_uint64_t(L);
-    *check_uint64_t(L, -1) = value;
+    *new_uint64_t(L) = value;
     return 1;
 }
 
@@ -193,12 +191,10 @@ int uint64_t_split(lua_State *L) {
     const uint64_t v = *check_uint64_t(L, 1);
 
     // high
-    new_uint32_t(L);
-    *check_uint32_t(L, -1) = v >> 32;
+    *new_uint32_t(L) = v >> 32;
 
     // low
-    new_uint32_t(L);
-    *check_uint32_t(L, -1) = v & 0xFFFFFFFF;
+    *new_uint32_t(L) = v & 0xFFFFFFFF;
 
     return 2;
 }

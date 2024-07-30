@@ -520,9 +520,9 @@ int32_t Plane::adjusted_altitude_cm(void)
 }
 
 /*
-  return home-relative altitude adjusted for ALT_OFFSET This is useful
+  return home-relative altitude adjusted for ALT_OFFSET. This is useful
   during long flights to account for barometer changes from the GCS,
-  or to adjust the flying height of a long mission
+  or to adjust the flying height of a long mission.
  */
 int32_t Plane::adjusted_relative_altitude_cm(void)
 {

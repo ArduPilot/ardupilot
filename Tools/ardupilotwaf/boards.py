@@ -618,8 +618,12 @@ def get_ap_periph_boards():
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
             ch = chibios_hwdef.ChibiOSHWDef(hwdef=[hwdef], quiet=True)
-            if ch.is_periph_fw_unprocessed():
-                list_ap.append(d)
+            try:
+                if ch.is_periph_fw_unprocessed():
+                    list_ap.append(d)
+            except chibios_hwdef.ChibiOSHWDefIncludeNotFoundException as e:
+                print(f"{e.includer} includes {e.hwdef} which does not exist")
+                sys.exit(1)
 
     list_ap = list(set(list_ap))
     return list_ap

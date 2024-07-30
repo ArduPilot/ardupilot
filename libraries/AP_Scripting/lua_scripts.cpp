@@ -191,7 +191,8 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
 
 
     create_sandbox(L);
-    lua_setupvalue(L, -2, 1);
+    lua_pushvalue(L, -1); // duplicate environment for reference below
+    lua_setupvalue(L, -3, 1);
 
     const uint32_t loadEnd = AP_HAL::micros();
     const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
@@ -199,7 +200,8 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     update_stats(filename, loadEnd-loadStart, endMem, loadMem);
 
     new_script->name = filename;
-    new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);   // cache the reference
+    new_script->env_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to script's environment
+    new_script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to function to run
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
 
     // Get checksum of file
@@ -325,8 +327,9 @@ void lua_scripts::run_next_script(lua_State *L) {
     int stack_top = lua_gettop(L);
 
     // pop the function to the top of the stack
-    lua_rawgeti(L, LUA_REGISTRYINDEX, script->lua_ref);
-    AP::scripting()->set_current_ref(script->lua_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, script->run_ref);
+    // set current environment for other users
+    AP::scripting()->set_current_env_ref(script->env_ref);
 
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
         if (overtime) {
@@ -364,8 +367,8 @@ void lua_scripts::run_next_script(lua_State *L) {
                     // types match the expectations, go ahead and reschedule
                     script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
                     lua_pop(L, 1);
-                    int old_ref = script->lua_ref;
-                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+                    int old_ref = script->run_ref;
+                    script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX);
                     luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
                     reschedule_script(script);
                     break;
@@ -409,7 +412,8 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
     
     if (L != nullptr) {
         // state could be null if we are force killing all scripts
-        luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, script->env_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, script->run_ref);
     }
     _heap.deallocate(script->name);
     _heap.deallocate(script);
@@ -494,6 +498,16 @@ void lua_scripts::run(void) {
 
     lua_atpanic(L, atpanic);
     load_generated_bindings(L);
+
+    // set up string metatable. we set up one for all scripts that no script has
+    // access to, as it's impossible to set up one per-script and we don't want
+    // any script to be able to mess with it.
+    lua_pushliteral(L, "");  /* dummy string */
+    lua_createtable(L, 0, 1);  /* table to be metatable for strings */
+    luaopen_string(L);  /* get string library */
+    lua_setfield(L, -2, "__index");  /* metatable.__index = string */
+    lua_setmetatable(L, -2);  /* set table as metatable for strings */
+    lua_pop(L, 1);  /* pop dummy string */
 
 #ifndef HAL_CONSOLE_DISABLED
     const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);

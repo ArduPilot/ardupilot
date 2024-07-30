@@ -40,12 +40,14 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // SKIP INDEX 0
 
+#if HAL_LOGGING_ENABLED
     // @Param: _LOG
     // @DisplayName: Logging
     // @Description: Enables temperature sensor logging
-    // @Values: 0:Disabled, 1:Enabled
+    // @Values: 0:Disabled, 1:Log all instances, 2: Log only instances with sensor source set to None
     // @User: Standard
-    AP_GROUPINFO("_LOG", 1, AP_TemperatureSensor, _log_flag, 0),
+    AP_GROUPINFO("_LOG", 1, AP_TemperatureSensor, _logging_type, 0),
+#endif
 
     // SKIP Index 2-9 to be for parameters that apply to every sensor
 
@@ -239,7 +241,9 @@ void AP_TemperatureSensor::update()
 
 #if HAL_LOGGING_ENABLED
             const AP_Logger *logger = AP_Logger::get_singleton();
-            if (logger != nullptr && _log_flag) {
+            const bool should_log = (_logging_type == LoggingType::All) ||
+                                    ((_logging_type == LoggingType::SourceNone) && (_params[i].source == AP_TemperatureSensor_Params::Source::None));
+            if (logger != nullptr && should_log) {
                 drivers[i]->Log_Write_TEMP();
             }
 #endif

@@ -400,7 +400,11 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
 fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
-$PIP install $PIP_USER_ARGUMENT -U pip packaging setuptools wheel
+SETUPTOOLS="setuptools"
+if [ ${RELEASE_CODENAME} == 'focal' ]; then
+    SETUPTOOLS=setuptools==70.3.0
+fi
+$PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
@@ -414,7 +418,11 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
     $PIP install $PIP_USER_ARGUMENT -U attrdict3
 fi
 
-$PIP install $PIP_USER_ARGUMENT -U $PYTHON_PKGS
+# install Python packages one-at-a-time so it is clear which package
+# is causing problems:
+for PACKAGE in $PYTHON_PKGS; do
+    $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+done
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1

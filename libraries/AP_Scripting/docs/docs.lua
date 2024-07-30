@@ -135,7 +135,7 @@ i2c = {}
 ---@param address integer -- device address 0 to 128
 ---@param clock? uint32_t_ud|integer|number -- optional bus clock, default 400000
 ---@param smbus? boolean -- optional sumbus flag, default false
----@return AP_HAL__I2CDevice_ud|nil
+---@return AP_HAL__I2CDevice_ud
 function i2c:get_device(bus, address, clock, smbus) end
 
 -- EFI state structure
@@ -1210,6 +1210,13 @@ local AP_HAL__I2CDevice_ud = {}
 -- desc
 ---@param address integer
 function AP_HAL__I2CDevice_ud:set_address(address) end
+
+-- Performs an I2C transfer, sending data_str bytes (see string.pack) and
+-- returning a string of any requested read bytes (see string.unpack)
+---@param data_str string
+---@param read_length integer
+---@return string|nil
+function AP_HAL__I2CDevice_ud:transfer(data_str, read_length) end
 
 -- If no read length is provided a single register will be read and returned.
 -- If read length is provided a table of register values are returned.
@@ -2608,7 +2615,7 @@ function gcs:last_seen() end
 -- call a MAVLink MAV_CMD_xxx command via command_int interface
 ---@param command integer -- MAV_CMD_xxx
 ---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
----@return boolean
+---@return integer -- MAV_RESULT
 function gcs:run_command_int(command, params) end
 
 -- The relay library provides access to controlling relay outputs.

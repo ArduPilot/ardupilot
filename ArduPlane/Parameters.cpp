@@ -142,12 +142,28 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_THR_MAX_T
     // @DisplayName: Takeoff throttle maximum time
-    // @Description: This sets the time that maximum throttle will be forced during a fixed wing takeoff without an airspeed sensor. If an airspeed sensor is being used then the throttle is set to maximum until the takeoff airspeed is reached.
+    // @Description: This sets the time that maximum throttle will be forced during a fixed wing takeoff.
     // @Units: s
     // @Range: 0 10
     // @Increment: 0.5
     // @User: Standard
     ASCALAR(takeoff_throttle_max_t,     "TKOFF_THR_MAX_T",  4),
+
+    // @Param: TKOFF_THR_MIN
+    // @DisplayName: Takeoff minimum throttle
+    // @Description: The minimum throttle to use in takeoffs in AUTO and TAKEOFF flight modes, when TKOFF_OPTIONS bit 0 is set. Also, the minimum throttle to use in a quadpane forward transition. This can be useful to ensure faster takeoffs or transitions on aircraft where the normal throttle control leads to a slow takeoff or transition. It is used when it is larger than THR_MIN, otherwise THR_MIN is used instead.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    60),
+
+    // @Param: TKOFF_OPTIONS
+    // @DisplayName: Takeoff options
+    // @Description: This selects the mode of the takeoff in AUTO and TAKEOFF flight modes. 
+    // @Bitmask: 0: When unset the maximum allowed throttle is always used (THR_MAX or TKOFF_THR_MAX) during takeoff. When set TECS is allowed to operate between a minimum (THR_MIN or TKOFF_THR_MIN) and a maximum (THR_MAX or TKOFF_THR_MAX) limit. Applicable only when using an airspeed sensor.
+    // @User: Advanced
+    ASCALAR(takeoff_options,               "TKOFF_OPTIONS",       0),
     
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator

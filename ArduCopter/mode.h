@@ -128,6 +128,7 @@ public:
     virtual bool allows_save_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
+    virtual bool crash_check_enabled() const { return true; }
 
 #if FRAME_CONFIG == HELI_FRAME
     virtual bool allows_inverted() const { return false; };
@@ -420,6 +421,7 @@ public:
     void air_mode_aux_changed();
     bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool crash_check_enabled() const override { return false; }
 
 protected:
 
@@ -911,6 +913,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
+    bool crash_check_enabled() const override { return false; }
 
 protected:
 
