@@ -11770,6 +11770,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.InvalidJumpTags,
             self.IMUConsistency,
             self.AHRSTrimLand,
+            self.IBus,
             self.GuidedYawRate,
             self.NoArmWithoutMissionItems,
             self.DO_CHANGE_SPEED_in_guided,
