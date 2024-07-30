@@ -599,37 +599,37 @@ void AC_AutoTune_Heli::load_gain_set(AxisType s_axis, float rate_p, float rate_i
 {
     switch (s_axis) {
     case AxisType::ROLL:
-        attitude_control->get_rate_roll_pid().kP(rate_p);
-        attitude_control->get_rate_roll_pid().kI(rate_i);
-        attitude_control->get_rate_roll_pid().kD(rate_d);
-        attitude_control->get_rate_roll_pid().ff(rate_ff);
-        attitude_control->get_rate_roll_pid().filt_T_hz(rate_fltt);
-        attitude_control->get_rate_roll_pid().slew_limit(smax);
-        attitude_control->get_angle_roll_p().kP(angle_p);
+        attitude_control->get_rate_roll_pid().set_kP(rate_p);
+        attitude_control->get_rate_roll_pid().set_kI(rate_i);
+        attitude_control->get_rate_roll_pid().set_kD(rate_d);
+        attitude_control->get_rate_roll_pid().set_ff(rate_ff);
+        attitude_control->get_rate_roll_pid().set_filt_T_hz(rate_fltt);
+        attitude_control->get_rate_roll_pid().set_slew_limit(smax);
+        attitude_control->get_angle_roll_p().set_kP(angle_p);
         attitude_control->set_accel_roll_max_cdss(max_accel);
         attitude_control->set_ang_vel_roll_max_degs(max_rate);
         break;
     case AxisType::PITCH:
-        attitude_control->get_rate_pitch_pid().kP(rate_p);
-        attitude_control->get_rate_pitch_pid().kI(rate_i);
-        attitude_control->get_rate_pitch_pid().kD(rate_d);
-        attitude_control->get_rate_pitch_pid().ff(rate_ff);
-        attitude_control->get_rate_pitch_pid().filt_T_hz(rate_fltt);
-        attitude_control->get_rate_pitch_pid().slew_limit(smax);
-        attitude_control->get_angle_pitch_p().kP(angle_p);
+        attitude_control->get_rate_pitch_pid().set_kP(rate_p);
+        attitude_control->get_rate_pitch_pid().set_kI(rate_i);
+        attitude_control->get_rate_pitch_pid().set_kD(rate_d);
+        attitude_control->get_rate_pitch_pid().set_ff(rate_ff);
+        attitude_control->get_rate_pitch_pid().set_filt_T_hz(rate_fltt);
+        attitude_control->get_rate_pitch_pid().set_slew_limit(smax);
+        attitude_control->get_angle_pitch_p().set_kP(angle_p);
         attitude_control->set_accel_pitch_max_cdss(max_accel);
         attitude_control->set_ang_vel_pitch_max_degs(max_rate);
         break;
     case AxisType::YAW:
     case AxisType::YAW_D:
-        attitude_control->get_rate_yaw_pid().kP(rate_p);
-        attitude_control->get_rate_yaw_pid().kI(rate_i);
-        attitude_control->get_rate_yaw_pid().kD(rate_d);
-        attitude_control->get_rate_yaw_pid().ff(rate_ff);
-        attitude_control->get_rate_yaw_pid().filt_T_hz(rate_fltt);
-        attitude_control->get_rate_yaw_pid().slew_limit(smax);
-        attitude_control->get_rate_yaw_pid().filt_E_hz(rate_flte);
-        attitude_control->get_angle_yaw_p().kP(angle_p);
+        attitude_control->get_rate_yaw_pid().set_kP(rate_p);
+        attitude_control->get_rate_yaw_pid().set_kI(rate_i);
+        attitude_control->get_rate_yaw_pid().set_kD(rate_d);
+        attitude_control->get_rate_yaw_pid().set_ff(rate_ff);
+        attitude_control->get_rate_yaw_pid().set_filt_T_hz(rate_fltt);
+        attitude_control->get_rate_yaw_pid().set_slew_limit(smax);
+        attitude_control->get_rate_yaw_pid().set_filt_E_hz(rate_flte);
+        attitude_control->get_angle_yaw_p().set_kP(angle_p);
         attitude_control->set_accel_yaw_max_cdss(max_accel);
         attitude_control->set_ang_vel_yaw_max_degs(max_rate);
         break;
