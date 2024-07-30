@@ -53,9 +53,6 @@ public:
     /// @name	parameter accessors
     //@{
 
-    /// Overload the function call operator to permit relatively easy initialisation
-    void operator() (const float p) { _kp.set(p); }
-
     // accessors
     AP_Float    &kP() { return _kp; }
     const AP_Float &kP() const { return _kp; }
