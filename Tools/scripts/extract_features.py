@@ -125,6 +125,8 @@ class ExtractFeatures(object):
             ('AP_FRSKY_SPORT_PASSTHROUGH_ENABLED', 'AP::frsky_passthrough_telem',),
             ('HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL', 'AP_Frsky_SPort_Passthrough::set_telem_data'),
 
+            ('AP_IBUS_TELEM_ENABLED', 'AP_IBus_Telem::init',),
+
             ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
 
