@@ -740,7 +740,7 @@ int lua_get_CAN_device2(lua_State *L) {
 }
 #endif // AP_SCRIPTING_CAN_SENSOR_ENABLED
 
-#if HAL_GCS_ENABLED
+#if AP_SERIALMANAGER_ENABLED
 int lua_serial_find_serial(lua_State *L) {
     // Allow : and . access
     const int arg_offset = (luaL_testudata(L, 1, "serial") != NULL) ? 1 : 0;
@@ -765,7 +765,7 @@ int lua_serial_find_serial(lua_State *L) {
 
     return 1;
 }
-#endif // HAL_GCS_ENABLED
+#endif // AP_SERIALMANAGER_ENABLED
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
 int lua_serial_find_simulated_device(lua_State *L) {
