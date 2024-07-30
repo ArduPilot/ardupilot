@@ -62,6 +62,8 @@ class ExtractFeatures(object):
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
             ('AP_EFI_{type}_ENABLED', 'AP_EFI_(?P<type>.*)::update',),
 
+            ('AP_EXTENDED_ESC_TELEM_ENABLED', 'AP_Extended_Telem::get_input_duty',),
+
             ('AP_TEMPERATURE_SENSOR_ENABLED', 'AP_TemperatureSensor::AP_TemperatureSensor',),
             ('AP_TEMPERATURE_SENSOR_{type}_ENABLED', 'AP_TemperatureSensor_(?P<type>.*)::update',),
 
