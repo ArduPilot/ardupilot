@@ -50,15 +50,6 @@ public:
     {
     }
 
-    // function call operator
-    void operator()(const T _q1, const T _q2, const T _q3, const T _q4)
-    {
-        q1 = _q1;
-        q2 = _q2;
-        q3 = _q3;
-        q4 = _q4;
-    }
-
     // check if any elements are NAN
     bool        is_nan(void) const WARN_IF_UNUSED
     {
