@@ -38,6 +38,7 @@
 #define TORQEEDO_REPLY_TIMEOUT_MS   25      // stop waiting for replies after 25ms
 #define TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS   10000   // errors reported to user at no less than once every 10 seconds
 #define TORQEEDO_MIN_RESET_INTERVAL_MS 5000    // minimum time between hard resets/wake
+#define TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS 5000 // throttle hold down time after reset/wake
 
 extern const AP_HAL::HAL& hal;
 
@@ -114,7 +115,7 @@ const AP_Param::GroupInfo AP_Torqeedo::var_info[] = {
     // @Description: Torqeedo external battery.  If enabled, battery status will be requested from the battery
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("EXT_BATT", 9, AP_Torqeedo, _ext_batt, 1),
+    AP_GROUPINFO("EXT_BATT", 9, AP_Torqeedo, _ext_batt, 0),
 
     AP_GROUPEND
 };
@@ -176,12 +177,6 @@ bool AP_Torqeedo::init_internals()
     } else {
         _uart->set_CTS_pin(false);
     }
-
-    // Press on/off button. This seems to be required in the case that 
-    // motor power cutoff switch is already on to prevent numerous crc errors...
-    // or to ensure that the motor is in a known state.
-    press_on_off_button();
-    _last_reset_ms = AP_HAL::millis();
 
     return true;
 }
@@ -257,7 +252,10 @@ void AP_Torqeedo::thread_main()
 
             // send motor speed
             if (_send_motor_speed) {
-                send_motor_speed_cmd();
+                if ((now_ms - _last_reset_ms > TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS))
+                    send_motor_speed_cmd(); 
+                else 
+                    send_motor_speed_cmd(true); //set throttle=0 after reset for the hold-down period
                 _send_motor_speed = false;
                 log_update = true;
             }
@@ -1349,11 +1347,6 @@ void AP_Torqeedo::update_esc_telem(float rpm, float voltage, float current_amps,
 void AP_Torqeedo::press_on_off_button()
 {
     if (_type == ConnectionType::TYPE_TILLER) {
-        // send zero speed command to motor
-        // Torqeedo requires a zero speed command at wake/error clear
-        send_motor_speed_cmd(true);
-        hal.scheduler->delay(500);
-
         if (_pin_onoff > -1) {
             hal.gpio->pinMode(_pin_onoff, HAL_GPIO_OUTPUT);
             hal.gpio->write(_pin_onoff, 1);
@@ -1365,7 +1358,7 @@ void AP_Torqeedo::press_on_off_button()
             hal.scheduler->delay(500);
             _uart->set_RTS_pin(false);
         }
-        hal.scheduler->delay(3000);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Torqeedo: On/Off button pressed");
     }
 }
 
