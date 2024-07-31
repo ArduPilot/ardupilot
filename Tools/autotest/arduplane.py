@@ -6015,6 +6015,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             other_prearm_failures_fatal=False,
         )
 
+    def SetHomeAltChange(self):
+        '''check modes retain altitude when home alt changed'''
+        for mode in 'FBWB', 'CRUISE', 'LOITER':
+            self.wait_ready_to_arm()
+            home = self.home_position_as_mav_location()
+            self.takeoff(20)
+            higher_home = home
+            higher_home.alt += 40
+            self.set_home(higher_home)
+            self.wait_altitude(15, 25, relative=True, minimum_duration=10)
+            self.disarm_vehicle(force=True)
+            self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -6144,6 +6157,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GuidedAttitudeNoGPS,
             self.ScriptStats,
             self.GPSPreArms,
+            self.SetHomeAltChange,
         ])
         return ret
 
@@ -6152,4 +6166,5 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
+            "SetHomeAltChange": "https://github.com/ArduPilot/ardupilot/issues/5672",
         }
