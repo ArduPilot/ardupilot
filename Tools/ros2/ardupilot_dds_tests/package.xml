@@ -27,12 +27,15 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ardupilot_msgs</test_depend>
   <test_depend>ardupilot_sitl</test_depend>
+  <test_depend>builtin_interfaces</test_depend>
   <test_depend>launch</test_depend>
   <test_depend>launch_pytest</test_depend>
   <test_depend>launch_ros</test_depend>
   <exec_depend>micro_ros_msgs</exec_depend>
   <test_depend>python3-pytest</test_depend>
   <test_depend>rclpy</test_depend>
+  <test_depend>sensor_msgs</test_depend>
+
 
   <export>
     <build_type>ament_python</build_type>
