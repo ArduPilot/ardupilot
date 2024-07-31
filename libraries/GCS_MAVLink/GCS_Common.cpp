@@ -3609,9 +3609,13 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
                                     max_prefix_len,
                                     "CC:");
         offset = MIN(offset, max_prefix_len);
+	memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
+    	send_text2sysid(MAV_SEVERITY_INFO, msg.sysid, "%s", text);
+	logger->Write_Message(text);
+	return
     }
 
-    if (msg.sysid != sysid_my_gcs() && msg.sysid != 10) {
+    if (msg.sysid != sysid_my_gcs() && msg.sysid != 254) {
         offset = hal.util->snprintf(text,
                                     max_prefix_len,
                                     "SRC=%u/%u:",
@@ -3621,8 +3625,6 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-    send_text2sysid(MAV_SEVERITY_INFO, msg.sysid, "%s", text);
-
     logger->Write_Message(text);
 #endif
 }
