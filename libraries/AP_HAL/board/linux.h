@@ -341,6 +341,10 @@
     #error "no Linux board subtype set"
 #endif
 
+#ifndef BOARD_FLASH_SIZE
+#define BOARD_FLASH_SIZE 4096
+#endif
+
 #ifndef HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS
     #define HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS 0x42
 #endif
