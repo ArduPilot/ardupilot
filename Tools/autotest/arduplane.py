@@ -6028,6 +6028,30 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
 
+    def ForceArm(self):
+        '''check force-arming functionality'''
+        self.set_parameter("SIM_GPS_DISABLE", 1)
+        # 21196 is the mavlink standard, 2989 is legacy
+        for magic_value in 21196, 2989:
+            self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK,
+                                   present=True,
+                                   enabled=True,
+                                   healthy=False,
+                                   )
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                p1=1,  # ARM
+                p2=0,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                p1=1,  # ARM
+                p2=magic_value,
+                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            )
+            self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -6158,6 +6182,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptStats,
             self.GPSPreArms,
             self.SetHomeAltChange,
+            self.ForceArm,
         ])
         return ret
 
