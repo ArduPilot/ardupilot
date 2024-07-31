@@ -1,9 +1,13 @@
-#include "AP_Camera_Backend.h"
+#include "AP_Camera_config.h"
 
 #if AP_CAMERA_ENABLED
+
+#include "AP_Camera_Backend.h"
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -57,8 +61,10 @@ void AP_Camera_Backend::update()
         return;
     }
 
-    // check GPS status
-    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    Location current_loc;
+    if (!ahrs.get_location(current_loc)) {
         return;
     }
 
@@ -68,14 +74,9 @@ void AP_Camera_Backend::update()
     }
 
     // check vehicle roll angle is less than configured maximum
-    const AP_AHRS &ahrs = AP::ahrs();
-    if ((_frontend.get_roll_max() > 0) && (fabsf(AP::ahrs().roll_sensor * 1e-2f) > _frontend.get_roll_max())) {
+    if ((_frontend.get_roll_max() > 0) && (fabsf(ahrs.roll_sensor * 1e-2f) > _frontend.get_roll_max())) {
         return;
     }
-
-    // get current location. ignore failure because AHRS will provide its best guess
-    Location current_loc;
-    IGNORE_RETURN(ahrs.get_location(current_loc));
 
     // initialise last location to current location
     if (last_location.lat == 0 && last_location.lng == 0) {
