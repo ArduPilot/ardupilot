@@ -1,12 +1,12 @@
 # ArduPilot ROS 2 packages
 
- This directory contains ROS 2 packages and configuration files for running
- ROS 2 processes and nodes that communicate with the ArduPilot DDS client
- library using the microROS agent. It contains the following packages:
+This directory contains ROS 2 packages and configuration files for running
+ROS 2 processes and nodes that communicate with the ArduPilot DDS client
+library using the microROS agent. It contains the following packages:
  
 #### `ardupilot_sitl`
 
-A `colcon` package for building and running ArduPilot SITL using the ROS 2 CLI.
+This is a `colcon` package for building and running ArduPilot SITL using the ROS 2 CLI.
 For example `ardurover` SITL may be launched with:
 
 ```bash
@@ -19,6 +19,14 @@ Some common arguments are exposed and forwarded to the underlying process.
 For example, MAVProxy can be launched, and you can enable the `console` and `map`.
 ```bash
 ros2 launch ardupilot_sitl sitl_mavproxy.launch.py map:=True console:=True 
+```
+
+ArduPilot SITL does not yet expose all arguments from the underlying binary.
+See [#27714](https://github.com/ArduPilot/ardupilot/issues/27714) for context.
+
+To see all current options, use the `-s` argument:
+```bash
+ros2 launch ardupilot_sitl sitl.launch.py -s
 ```
 
 #### `ardupilot_dds_test`
