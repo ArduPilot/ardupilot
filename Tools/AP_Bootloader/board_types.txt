@@ -377,6 +377,8 @@ AP_HW_ZeroOne_GNSS                   5602
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
 
+AP_HW_ADTI_ORIONV1                   8003
+
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
