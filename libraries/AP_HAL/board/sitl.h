@@ -29,6 +29,10 @@
 #define HAL_FLASH_ALLOW_UPDATE 0
 #endif
 
+#ifndef BOARD_FLASH_SIZE
+#define BOARD_FLASH_SIZE 4096
+#endif
+
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE            32768
 #endif
