@@ -1,0 +1,12 @@
+v0.1：变更IMU和气压计型号，未变更CS/DR管脚；
+v0.2：增加PWM管脚，TIM9代码不识别管脚功能，注释掉；
+v0.3：修改IMU的CS/DR管脚，注释掉PC13的SBUS配置；增加PA8检测VBUS输入；
+v0.4：修改气压计的CS管脚，修改USART6/RC/SBUS管脚，修改LED/KEY管脚，屏蔽三色LED管脚；
+v0.5：修改PB[5:0]，三色LED，两个PWM
+v0.6：修改PA3，PA10，PA15，PC5增加PULLUP描述，PD0/1配置为CAN接口，增加IMU加热头定义，TIM5已经给系统使用，配置给管脚会报错，PA3配置为TIM2_CH4；
+v0.7：PA13/PA14配置为SWD接口，PC[4:0]配置为ADC；
+v0.8：修改ADC的scale系数值
+v0.9：增加LP5562使能，修改PWM编号，跟原理图保持一致；
+
+遗留问题：STM32F405的库里不支持TIM9，缺少两路PWM，目前只支持定时器2/3/4/5/21
+最后一行 "include ../include/minimize_features.inc" 不能注释，否则会编译报错不过
