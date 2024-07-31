@@ -21,6 +21,7 @@ TEST(AP_GSOF, incomplete_packet)
 
 TEST(AP_GSOF, packet1)
 {
+    GTEST_SKIP() << "There is not yet a convention for loading in a data file in a cross-platform way in AP for unit tests";
     FILE* fp = std::fopen("libraries/AP_GSOF/tests/gsof_gps.dat", "rb");
     EXPECT_NE(fp, nullptr);
     AP_GSOF gsof;
