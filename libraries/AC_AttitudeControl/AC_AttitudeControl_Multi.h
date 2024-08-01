@@ -77,6 +77,7 @@ public:
 
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run_dt(float dt, const Vector3f& gyro) override;
+    void rate_controller_target_reset() override;
     void rate_controller_run() override;
 
     // sanity check parameters.  should be called once before take-off
