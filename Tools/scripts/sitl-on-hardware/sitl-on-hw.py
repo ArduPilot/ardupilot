@@ -2,17 +2,18 @@
 '''
 script to build a firmware for SITL-on-hardware
 see https://ardupilot.org/dev/docs/sim-on-hardware.html
+
+AP_FLAKE8_CLEAN
 '''
 
 import subprocess
 import sys
 import os
 import tempfile
+from argparse import ArgumentParser
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools', 'autotest'))
-from pysim import vehicleinfo
-
-from argparse import ArgumentParser
+from pysim import vehicleinfo  # noqa: E402
 
 vinfo = vehicleinfo.VehicleInfo()
 
@@ -47,17 +48,19 @@ args, unknown_args = parser.parse_known_args()
 
 extra_hwdef = None
 
+
 def run_program(cmd_list):
     '''run a program from a command list'''
     print("Running (%s)" % " ".join(cmd_list))
     retcode = subprocess.call(cmd_list)
     if retcode != 0:
-       print("FAILED: %s" % (' '.join(cmd_list)))
-       global extra_hwdef
-       if extra_hwdef is not None:
-           extra_hwdef.close()
-           os.unlink(extra_hwdef.name)
-       sys.exit(1)
+        print("FAILED: %s" % (' '.join(cmd_list)))
+        global extra_hwdef
+        if extra_hwdef is not None:
+            extra_hwdef.close()
+            os.unlink(extra_hwdef.name)
+        sys.exit(1)
+
 
 frame_options = sorted(vinfo.options[vehicle_map[args.vehicle]]["frames"].keys())
 frame_options_string = ' '.join(frame_options)
@@ -65,20 +68,25 @@ if args.frame and args.frame not in frame_options:
     print(f"ERROR: frame must be one of {frame_options_string}")
     sys.exit(1)
 
+
 extra_hwdef = tempfile.NamedTemporaryFile(mode='w')
 extra_defaults = tempfile.NamedTemporaryFile(mode='w')
+
 
 def hwdef_write(s):
     '''write to the hwdef temp file'''
     extra_hwdef.write(s)
 
+
 def defaults_write(s):
     '''write to the hwdef temp file'''
     extra_defaults.write(s)
 
+
 def sohw_path(fname):
     '''get path to a file in on-hardware directory'''
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), fname)
+
 
 if args.vehicle == "plane":
     extra_hwdef_base = "plane-extra-hwdef-sitl-on-hw.dat"
@@ -94,7 +102,7 @@ hwdef_write(open(sohw_path(extra_hwdef_base), "r").read() + "\n")
 defaults_write(open(sohw_path(defaults_base), "r").read() + "\n")
 
 if args.defaults:
-    defaults_write(open(args.defaults,"r").read() + "\n")
+    defaults_write(open(args.defaults, "r").read() + "\n")
 
 if args.simclass:
     if args.simclass == 'Glider':
@@ -135,6 +143,7 @@ if args.frame:
             print(f"Error: frame {args.frame} not found in frame_defines")
             sys.exit(1)
 
+
 extra_hwdef.flush()
 extra_defaults.flush()
 
@@ -158,10 +167,9 @@ if args.vehicle in ["APMrover2", "apmrover2"]:  # Double map, but waf only accep
 waf_vehicle = args.vehicle if args.vehicle in vehicle_map.keys() else get_key_from_value(vehicle_map, args.vehicle)
 build_cmd = ["./waf", waf_vehicle.lower()]
 if args.upload:
-   build_cmd.append("--upload")
+    build_cmd.append("--upload")
 
 run_program(build_cmd)
 
 # cleanup
 extra_hwdef.close()
-
