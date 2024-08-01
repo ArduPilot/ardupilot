@@ -78,7 +78,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     if (control_mode->does_auto_throttle() && parachute.release_initiated()) {
         // throttle always suppressed in auto-throttle modes after parachute release initiated
         throttle_suppressed = true;
