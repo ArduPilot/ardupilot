@@ -908,6 +908,55 @@ bool Plane::set_land_descent_rate(float descent_rate)
 #endif
     return false;
 }
+
+// allow scripte to find access prev_WP_loc
+bool Plane::get_previous_location(Location &previous_location)
+{
+    switch (control_mode->mode_number()) {
+    case Mode::Number::RTL:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::AUTO:
+    case Mode::Number::LOITER:
+    case Mode::Number::TAKEOFF:
+#if HAL_QUADPLANE_ENABLED
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
+#endif
+        previous_location = prev_WP_loc;
+        return true;
+        break;
+    default:
+        break;
+    }
+    return false;
+}
+
+bool Plane::set_crosstrack_start(const Location &new_start_location)
+{
+    switch (control_mode->mode_number()) {
+    case Mode::Number::RTL:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::AUTO:
+    case Mode::Number::LOITER:
+    case Mode::Number::TAKEOFF:
+#if HAL_QUADPLANE_ENABLED
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
+#endif
+        prev_WP_loc   = new_start_location;
+        auto_state.crosstrack = true;
+        return true;
+        break;
+    default:
+        break;
+    }
+    return false;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 // returns true if vehicle is landing.
