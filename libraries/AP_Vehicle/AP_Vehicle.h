@@ -223,7 +223,11 @@ public:
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
     virtual bool set_land_descent_rate(float descent_rate) { return false; }
-    
+
+    // Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
+    // It's up to the Lua script to ensure the provided location makes sense
+    virtual bool set_crosstrack_start(const Location &new_start_location) { return false; }
+
     // control outputs enumeration
     enum class ControlOutput {
         Roll = 1,
