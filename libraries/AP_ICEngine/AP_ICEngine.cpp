@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: STARTCHN_MIN
     // @DisplayName: Input channel for engine start minimum PWM
-    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM below 1300 triggers an engine stop.
+    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM above 800 and below 1300 triggers an engine stop. To stop the engine start channel must above the larger of this value and 800 and below 1300.
     // @User: Standard
     // @Range: 0 1300
     AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
@@ -275,6 +275,13 @@ void AP_ICEngine::update(void)
         should_run = false;
     }
 #endif
+
+    // Stop on emergency stop
+    if (SRV_Channels::get_emergency_stop()) {
+        // Throttle is already forced to 0 in this case, ignition should also be stopped.
+        // Starter should not run.
+        should_run = false;
+    }
 
     // switch on current state to work out new state
     switch (state) {
