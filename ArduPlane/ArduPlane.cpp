@@ -908,6 +908,16 @@ bool Plane::set_land_descent_rate(float descent_rate)
 #endif
     return false;
 }
+
+// Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
+// It's up to the Lua script to ensure the provided location makes sense
+bool Plane::set_crosstrack_start(const Location &new_start_location)
+{        
+    prev_WP_loc = new_start_location;
+    auto_state.crosstrack = true;
+    return true;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 // returns true if vehicle is landing.
