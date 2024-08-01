@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Release 4.5.5 1st Aug 2024
+
+No changes from 4.5.5-beta2
+------------------------------------------------------------------
 Release 4.5.5-beta2 27 July 2024
 
 Changes from 4.5.5-beta1
