@@ -2506,6 +2506,12 @@ function vehicle:is_taking_off() end
 ---@return boolean
 function vehicle:is_landing() end
 
+-- Set the previous target location for crosstrack and crosstrack if available in the current mode
+-- It's up to the Lua code to ensure the new_start_location makes sense
+---@param new_start_location Location_ud
+---@return boolean -- true on success
+function vehicle:set_crosstrack_start(new_start_location) end
+
 -- desc
 onvif = {}
 
