@@ -612,6 +612,11 @@ private:
     // AHRS alt for land abort and package place, meters
     float land_descend_start_alt;
 
+    // support for blocking takeoff until RPMs reach parameter-defined
+    // minimum levels:
+    AP_Float takeoff_rpm_min;
+    AP_Float takeoff_rpm_max;
+
     // min alt for navigation in takeoff
     AP_Float takeoff_navalt_min;
     uint32_t takeoff_last_run_ms;

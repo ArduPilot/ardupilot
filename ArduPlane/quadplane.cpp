@@ -538,6 +538,21 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("BCK_PIT_LIM", 38, QuadPlane, q_bck_pitch_lim, 10.0f),
 
+#if HAL_WITH_ESC_TELEM
+    // @Param: TKOFF_RPM_MIN
+    // @DisplayName: Takeoff Check RPM minimum
+    // @Description: Takeoff is not permitted until motors report at least this RPM.  Set to zero to disable check
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_RPM_MIN", 39, QuadPlane, takeoff_rpm_min, 0),
+    // @Param: TKOFF_RPM_MAX
+    // @DisplayName: Takeoff Check RPM maximum
+    // @Description: Takeoff is not permitted until motors report no more than this RPM.  Set to zero to disable check
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_RPM_MAX", 40, QuadPlane, takeoff_rpm_max, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1926,6 +1941,11 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
+#if HAL_WITH_ESC_TELEM
+    const bool allow_spoolup_block = in_vtol_takeoff() && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE || motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN);
+    plane.motors_takeoff_check(takeoff_rpm_min, takeoff_rpm_max, allow_spoolup_block);
+#endif
+
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
