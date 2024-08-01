@@ -220,8 +220,11 @@ public:
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
 
+    // reset target loop rate modifications
+    virtual void rate_controller_target_reset() {}
+
     // optional variant to allow running with different dt
-    virtual void rate_controller_run_dt(float dt, const Vector3f& gyro) { rate_controller_run(); }
+    virtual void rate_controller_run_dt(float dt, const Vector3f& gyro) {}
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
     void euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);

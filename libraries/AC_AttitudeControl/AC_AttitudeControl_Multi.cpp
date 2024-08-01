@@ -465,15 +465,20 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(float dt, const Vector3f& 
     _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro.z,  dt, _motors.limit.yaw, _pd_scale.z) + _actuator_sysid.z);
     _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
-    _sysid_ang_vel_body.zero();
-    _actuator_sysid.zero();
-
     _pd_scale_used = _pd_scale;
-    _pd_scale = VECTORF_111;
 
     control_monitor_update();
 }
 
+// reset the rate controller target loop updates
+void AC_AttitudeControl_Multi::rate_controller_target_reset()
+{
+    _sysid_ang_vel_body.zero();
+    _actuator_sysid.zero();
+    _pd_scale = VECTORF_111;
+}
+
+// run the rate controller using the configured _dt and latest gyro
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
