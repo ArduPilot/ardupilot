@@ -1286,6 +1286,11 @@ public:
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
     bool set_land_descent_rate(float descent_rate) override;
+
+    // allow scripts to override mission/guided crosstrack behaviour
+    // It's up to the Lua script to ensure the provided location makes sense
+    bool set_crosstrack_start(const Location &new_start_location) override;
+
 #endif // AP_SCRIPTING_ENABLED
 
 };
