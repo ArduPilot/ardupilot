@@ -287,7 +287,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.context_pop()
 
-    def prepare_synthetic_seafloor_test(self, sea_floor_depth):
+    def prepare_synthetic_seafloor_test(self, sea_floor_depth, rf_target):
         self.set_parameters({
             "SCR_ENABLE": 1,
             "RNGFND1_TYPE": 36,
@@ -297,6 +297,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             "SCR_USER1": 2,                 # Configuration bundle
             "SCR_USER2": sea_floor_depth,   # Depth in meters
             "SCR_USER3": 101,               # Output log records
+            "SCR_USER4": rf_target,         # Rangefinder target in meters
         })
 
         self.install_example_script_context("sub_test_synthetic_seafloor.lua")
@@ -359,7 +360,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         validation_delta = 1.5  # Largest allowed distance between sub height and desired height
 
         self.context_push()
-        self.prepare_synthetic_seafloor_test(sea_floor_depth)
+        self.prepare_synthetic_seafloor_test(sea_floor_depth, match_distance)
         self.change_mode('MANUAL')
         self.arm_vehicle()
 
@@ -390,7 +391,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Forward, 1650)
         self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=60)
 
-        # The mission ends at end_altitude. Do a check to insure that the sub is at this altitude
+        # The mission ends at end_altitude. Do a check to ensure that the sub is at this altitude
         self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
                            relative=False, timeout=1)
 
@@ -410,7 +411,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         validation_delta = 1.5  # Largest allowed distance between sub height and desired height
 
         self.context_push()
-        self.prepare_synthetic_seafloor_test(sea_floor_depth)
+        self.prepare_synthetic_seafloor_test(sea_floor_depth, match_distance)
 
         # The synthetic seafloor has an east-west ridge south of the sub.
         # The mission contained in terrain_mission.txt instructs the sub
@@ -432,7 +433,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=500.0, final_waypoint=4)
 
-        # The mission ends at end_altitude. Do a check to insure that the sub is at this altitude.
+        # The mission ends at end_altitude. Do a check to ensure that the sub is at this altitude.
         self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
                            relative=False, timeout=1)
 
@@ -680,7 +681,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.assert_mode('SURFACE')
 
     def MAV_CMD_MISSION_START(self):
-        '''test handling of MAV_CMD_NAV_LAND received via mavlink'''
+        '''test handling of MAV_CMD_MISSION_START received via mavlink'''
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),
             (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
@@ -866,7 +867,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
-    def backup_origin(self):
+    def BackupOrigin(self):
         """Test ORIGIN_LAT and ORIGIN_LON parameters"""
 
         self.context_push()
@@ -910,7 +911,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         if found_sel != expect_sel:
             raise NotAchievedException("Expected mag fusion selection %d, found %d" % (expect_sel, found_sel))
 
-    def fuse_mag(self):
+    def FuseMag(self):
         """Test EK3_MAG_CAL values"""
 
         # WHEN_FLYING: switch to FUSE_MAG after sub is armed for 5 seconds; switch to FUSE_YAW on disarm
@@ -975,8 +976,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_REPOSITION,
             self.TerrainMission,
             self.SetGlobalOrigin,
-            self.backup_origin,
-            self.fuse_mag,
+            self.BackupOrigin,
+            self.FuseMag,
         ])
 
         return ret
