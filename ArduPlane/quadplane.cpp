@@ -150,7 +150,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
     // frame class was moved from 30 when consolidating AP_Motors classes
-#define FRAME_CLASS_OLD_IDX 30
+
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
@@ -671,34 +671,6 @@ bool QuadPlane::setup(void)
         return false;
     }
 
-    /*
-      cope with upgrade from old AP_Motors values for frame_class
-     */
-    AP_Int8 old_class;
-    const AP_Param::ConversionInfo cinfo { Parameters::k_param_quadplane, FRAME_CLASS_OLD_IDX, AP_PARAM_INT8, nullptr };
-    if (AP_Param::find_old_parameter(&cinfo, &old_class) && !frame_class.load()) {
-        uint8_t new_value = 0;
-        // map from old values to new values
-        switch (old_class.get()) {
-        case 0:
-            new_value = AP_Motors::MOTOR_FRAME_QUAD;
-            break;
-        case 1:
-            new_value = AP_Motors::MOTOR_FRAME_HEXA;
-            break;
-        case 2:
-            new_value = AP_Motors::MOTOR_FRAME_OCTA;
-            break;
-        case 3:
-            new_value = AP_Motors::MOTOR_FRAME_OCTAQUAD;
-            break;
-        case 4:
-            new_value = AP_Motors::MOTOR_FRAME_Y6;
-            break;
-        }
-        frame_class.set_and_save(new_value);
-    }
-    
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav) + sizeof(*ahrs_view) + sizeof(*loiter_nav) + sizeof(*weathervane)) {
         AP_BoardConfig::config_error("Not enough memory for quadplane");
