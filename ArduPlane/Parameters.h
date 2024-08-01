@@ -555,7 +555,7 @@ public:
     } fwd_batt_cmp;
 
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided yaw heading PID
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
