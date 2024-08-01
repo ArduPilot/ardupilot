@@ -121,7 +121,7 @@ void Plane::Log_Write_Control_Tuning()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 struct PACKED log_OFG_Guided {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -265,7 +265,7 @@ void Plane::Log_Write_RC(void)
 
 void Plane::Log_Write_Guided(void)
 {
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     if (control_mode != &mode_guided) {
         return;
     }
@@ -277,7 +277,7 @@ void Plane::Log_Write_Guided(void)
     if ( is_positive(guided_state.target_alt) || is_positive(guided_state.target_airspeed_cm) ) {
         Log_Write_OFG_Guided();
     }
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 }
 
 // incoming-to-vehicle mavlink COMMAND_INT can be logged
@@ -483,7 +483,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_AETR_MSG, sizeof(log_AETR),
       "AETR", "Qfffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,Steer,SS", "s-------", "F-------" , true },
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
 // @Field: TimeUS: Time since system startup

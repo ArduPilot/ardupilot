@@ -42,7 +42,7 @@ void ModeGuided::update()
         plane.nav_roll_cd = constrain_int32(plane.guided_state.forced_rpy_cd.x, -plane.roll_limit_cd, plane.roll_limit_cd);
         plane.update_load_factor();
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
     // This function is used in Guided and AvoidADSB, check for guided
     } else if ((plane.control_mode == &plane.mode_guided) && (plane.guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
@@ -70,7 +70,7 @@ void ModeGuided::update()
         plane.nav_roll_cd = constrain_int32(desired, -bank_limit, bank_limit);
         plane.update_load_factor();
 
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     } else {
         plane.calc_nav_roll();
     }
@@ -128,7 +128,7 @@ void ModeGuided::set_radius_and_direction(const float radius, const bool directi
 
 void ModeGuided::update_target_altitude()
 {
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
@@ -148,7 +148,7 @@ void ModeGuided::update_target_altitude()
         plane.guided_state.last_target_alt = temp.alt;
         plane.set_target_altitude_location(temp);
     } else 
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         {
         Mode::update_target_altitude();
     }

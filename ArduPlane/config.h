@@ -213,8 +213,8 @@
  # define FENCE_TRIGGERED_PIN -1
 #endif
 
-#ifndef OFFBOARD_GUIDED
- #define OFFBOARD_GUIDED 1
+#ifndef AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+ #define AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
