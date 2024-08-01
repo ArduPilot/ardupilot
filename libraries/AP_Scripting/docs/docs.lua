@@ -2485,6 +2485,15 @@ function vehicle:is_taking_off() end
 ---@return boolean
 function vehicle:is_landing() end
 
+-- Get the previous target location if available in current mode
+---@return Location_ud|nil -- previous target ocation
+function vehicle:get_previous_location() end
+
+-- Set the previous target location for crosstrack and enable crosstrack if available in the current mode
+---@param new_start_location Location_ud -- target location
+---@return boolean -- true on success
+function vehicle:set_crosstrack_start(new_start_location) end
+
 -- desc
 onvif = {}
 

@@ -348,6 +348,8 @@ singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
+singleton AP_Vehicle method get_previous_location boolean Location'Null
+singleton AP_Vehicle method set_crosstrack_start boolean Location
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
