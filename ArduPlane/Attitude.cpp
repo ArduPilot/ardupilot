@@ -204,9 +204,9 @@ float Plane::stabilize_pitch_get_pitch_out()
 #endif
     // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_DEG if flight option FORCE_FLARE_ATTITUDE is set
 #if HAL_QUADPLANE_ENABLED
-    const bool quadplane_in_transition = quadplane.in_transition();
+    const bool quadplane_in_frwd_transition = quadplane.in_frwd_transition();
 #else
-    const bool quadplane_in_transition = false;
+    const bool quadplane_in_frwd_transition = false;
 #endif
 
     int32_t demanded_pitch = nav_pitch_cd + int32_t(g.pitch_trim * 100.0) + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
@@ -219,7 +219,7 @@ float Plane::stabilize_pitch_get_pitch_out()
        - throttle stick at zero thrust
        - in fixed wing non auto-throttle mode
     */
-    if (!quadplane_in_transition &&
+    if (!quadplane_in_frwd_transition &&
         !control_mode->is_vtol_mode() &&
         !control_mode->does_auto_throttle() &&
         flare_mode == FlareMode::ENABLED_PITCH_TARGET &&
