@@ -213,12 +213,6 @@
  # define FENCE_TRIGGERED_PIN -1
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Parachute release
-#ifndef PARACHUTE
-#define PARACHUTE HAL_PARACHUTE_ENABLED
-#endif
-
 #ifndef OFFBOARD_GUIDED
  #define OFFBOARD_GUIDED 1
 #endif

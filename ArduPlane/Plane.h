@@ -649,7 +649,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
 
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     AP_Parachute parachute;
 #endif
 
@@ -1155,7 +1155,7 @@ private:
 
     // parachute.cpp
     void parachute_check();
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
     void parachute_release();
     bool parachute_manual_release();
