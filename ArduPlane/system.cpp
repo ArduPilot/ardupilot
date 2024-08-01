@@ -57,7 +57,7 @@ void Plane::init_ardupilot()
     gcs().setup_uarts();
 
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED
     osd.init();
 #endif
 
