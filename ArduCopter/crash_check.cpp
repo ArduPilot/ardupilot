@@ -3,7 +3,7 @@
 // Code to detect a crash main ArduCopter code
 #if PARACHUTE == ENABLED
     // CRASH_CHECK_TRIGGER_SEC should be grater than CHUTE_TIMEOUT, to prevent disarming without deploying parachute
-    #define CRASH_CHECK_TRIGGER_SEC parachute.get_chute_timeout() + 1.0f
+    #define CRASH_CHECK_TRIGGER_SEC (parachute.get_chute_timeout() + 1.0)
 #else
     #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
 #endif
