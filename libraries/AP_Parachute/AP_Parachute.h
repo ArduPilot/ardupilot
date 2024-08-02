@@ -91,10 +91,8 @@ public:
     // Return the relay index that would be used for param conversion to relay functions
     bool get_legacy_relay_index(int8_t &index) const;
 
-#if APM_BUILD_COPTER_OR_HELI
     // Return the CHUTE_TIMEOUT parameter value
     float get_chute_timeout() const { return _timeout; }
-#endif
 
     static const struct AP_Param::GroupInfo        var_info[];
 

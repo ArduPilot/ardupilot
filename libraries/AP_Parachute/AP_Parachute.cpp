@@ -83,15 +83,13 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AP_Parachute, _options, AP_PARACHUTE_OPTIONS_DEFAULT),
 
-#if APM_BUILD_COPTER_OR_HELI
     // @Param: TIMEOUT
     // @DisplayName: Parachute timeout
     // @Description: Triggers the parachute if the loss of control lasts for the time specified by this parameter
     // @Units: s
     // @Range: 0.5 5.0
     // @User: Advanced
-    AP_GROUPINFO("TIMEOUT", 8, AP_Parachute, _timeout, AP_PARACHUTE_TIMEOUT_DEFAULT),
-#endif
+    AP_GROUPINFO_FRAME("TIMEOUT", 8, AP_Parachute, _timeout, AP_PARACHUTE_TIMEOUT_DEFAULT, AP_PARAM_FRAME_COPTER),
 
     AP_GROUPEND
 };
