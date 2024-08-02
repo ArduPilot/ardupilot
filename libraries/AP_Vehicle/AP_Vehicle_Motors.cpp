@@ -1,6 +1,7 @@
 #include "AP_Vehicle.h"
 
 #include <AP_Motors/AP_Motors.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_MOTORS_ENABLED && HAL_WITH_ESC_TELEM
 void AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max, bool land_complete)
