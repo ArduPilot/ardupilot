@@ -3032,7 +3032,7 @@ class TestSuite(ABC):
                         continue
                     if "#if AC_PRECLAND_ENABLED" in line:
                         continue
-                    if "#if OFFBOARD_GUIDED == ENABLED" in line:
+                    if "#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED" in line:
                         continue
                     if "#end" in line:
                         continue
