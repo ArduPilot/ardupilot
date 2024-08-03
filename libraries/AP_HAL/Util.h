@@ -133,11 +133,6 @@ public:
     virtual bool toneAlarm_init(uint8_t types) { return false;}
     virtual void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) {}
 
-    /*
-      return a stream for access to a system shell, if available
-     */
-    virtual AP_HAL::BetterStream *get_shell_stream() { return nullptr; }
-
     /* Support for an imu heating system */
     virtual void set_imu_temp(float current) {}
 
