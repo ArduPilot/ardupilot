@@ -196,7 +196,7 @@ void AP_Periph_FW::send_serial_monitor_data()
         pkt.serial_id = uart_monitor.uart_num;
         memcpy(pkt.buffer.data, buf, n);
 
-        uint8_t buffer[UAVCAN_TUNNEL_TARGETTED_MAX_SIZE] {};
+        uint8_t buffer[UAVCAN_TUNNEL_TARGETTED_MAX_SIZE];
         const uint16_t total_size = uavcan_tunnel_Targetted_encode(&pkt, buffer, !canfdout());
 
         debug("read %u", unsigned(n));
