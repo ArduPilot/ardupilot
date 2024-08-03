@@ -686,7 +686,7 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         break;
     }
     case MOTOR_FRAME_TYPE_H: {
-        // H frame set-up - same as X but motors spin in opposite directions
+        // H frame set-up - same as X but motors spin in opposite directiSons
         _frame_type_string = "H";
         static const AP_MotorsMatrix::MotorDef motors[] {
             {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
@@ -1240,6 +1240,40 @@ bool AP_MotorsMatrix::setup_deca_matrix(motor_frame_type frame_type)
     return true;
 }
 #endif // AP_MOTORS_FRAME_DECA_ENABLED
+#if AP_MOTORS_FRAME_QUAD_MODO_ENABLED
+bool AP_MotorsMatrix::setup_quad_modo_matrix(motor_frame_type frame_type)
+{
+    _frame_class_string = "QUAD_MODO";
+    _mav_type = MAV_TYPE_QUADROTOR;
+    switch (frame_type) {
+    case MOTOR_FRAME_TYPE_PLUS: {
+        _frame_type_string = "PLUS";
+        static const AP_MotorsMatrix::MotorDef motors[] {
+            {  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  2 },
+            { -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4 },
+            {   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
+            { 180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3 },
+        };
+        add_motors(motors, ARRAY_SIZE(motors));
+        break;
+    }
+    case MOTOR_FRAME_TYPE_QUAD_MODO: {
+        _frame_type_string = "X";
+        static const AP_MotorsMatrix::MotorDef motors[] {
+            {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
+            { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3 },
+            {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4 },
+            {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2 },
+        };
+        add_motors(motors, ARRAY_SIZE(motors));
+        break;
+    }
+    default:
+        // quad modo frame class does not support this frame type 
+        return false; 
+    }// quad modo    
+    return true; 
+}
 
 void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_type frame_type)
 {
@@ -1291,6 +1325,12 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
         success = false;
         _mav_type = MAV_TYPE_GENERIC;
         break;
+#if AP_MOTORS_FRAME_QUAD_MODO_ENABLED
+    case MOTOR_FRAME_QUAD_MODO:
+        success = setup_quad_modo_matrix(frame_type);
+        break;  // quad modo 
+#endif //AP_MOTORS_FRAME_QUAD_MODO_ENABLED
+
     } // switch frame_class
 
     // normalise factors to magnitude 0.5
