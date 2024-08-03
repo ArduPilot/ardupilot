@@ -139,7 +139,7 @@ static uint32_t get_random_range(uint16_t range)
 static void handle_get_node_info(CanardInstance* ins,
                                  CanardRxTransfer* transfer)
 {
-    uint8_t buffer[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_MAX_SIZE] {};
+    uint8_t buffer[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_MAX_SIZE];
     uavcan_protocol_GetNodeInfoResponse pkt {};
 
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
@@ -868,7 +868,7 @@ void can_printf(const char *fmt, ...)
     // only on H7 for now, where we have plenty of flash
 #if defined(STM32H7)
     uavcan_protocol_debug_LogMessage pkt {};
-    uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE] {};
+    uint8_t buffer[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE];
     va_list ap;
     va_start(ap, fmt);
     uint32_t n = vsnprintf((char*)pkt.text.data, sizeof(pkt.text.data), fmt, ap);
