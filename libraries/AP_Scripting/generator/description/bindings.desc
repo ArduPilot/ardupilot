@@ -759,6 +759,12 @@ include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
 
+include AC_AttitudeControl/AC_PosControl.h depends APM_BUILD_COPTER_OR_HELI
+singleton AC_PosControl depends APM_BUILD_COPTER_OR_HELI
+singleton AC_PosControl rename poscontrol
+singleton AC_PosControl method set_posvelaccel_offset boolean Vector3f Vector3f Vector3f
+singleton AC_PosControl method get_posvelaccel_offset boolean Vector3f'Null Vector3f'Null Vector3f'Null
+
 include APM_Control/AR_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
