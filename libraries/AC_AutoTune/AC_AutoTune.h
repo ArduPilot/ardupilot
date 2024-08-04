@@ -25,6 +25,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_Math/AP_Math.h>
+#include <RC_Channel/RC_Channel.h>
 #include "AC_AutoTune_FreqResp.h"
 
 #define AUTOTUNE_AXIS_BITMASK_ROLL            1
@@ -41,6 +42,7 @@
 #define AUTOTUNE_MESSAGE_FAILED 3
 #define AUTOTUNE_MESSAGE_SAVED_GAINS 4
 #define AUTOTUNE_MESSAGE_TESTING 5
+#define AUTOTUNE_MESSAGE_TESTING_END 6
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
@@ -53,19 +55,27 @@ public:
     // main run loop
     virtual void run();
 
-    // save gained, called on disarm
-    virtual void save_tuning_gains() = 0;
+    // Possibly save gains, called on disarm
+    void disarmed(const bool in_autotune_mode);
 
     // stop tune, reverting gains
     void stop();
+
+    // Autotune aux function trigger
+    void do_aux_function(const RC_Channel::AuxSwitchPos ch_flag);
+
+protected:
+
+    virtual void save_tuning_gains() = 0;
+
 
     // reset Autotune so that gains are not saved again and autotune can be run again.
     void reset() {
         mode = UNINITIALISED;
         axes_completed = 0;
+        have_pilot_testing_command = false;
     }
 
-protected:
     // axis that can be tuned
     enum class AxisType {
         ROLL = 0,                 // roll axis is being tuned (either angle or rate)
@@ -237,7 +247,7 @@ protected:
         GAIN_TEST       = 1,
         GAIN_INTRA_TEST = 2,
         GAIN_TUNED      = 3,
-    };
+    } loaded_gains;
     void load_gains(enum GainType gain_type);
 
     // autotune modes (high level states)
@@ -337,6 +347,10 @@ private:
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
+
+    // True if we ever got a pilot testing command of tuned gains.
+    // If true then disarming will save if the tuned gains are currently active.
+    bool have_pilot_testing_command;
 
 };
 

@@ -109,6 +109,51 @@ void AC_AutoTune::stop()
     // we expect the caller will change the flight mode back to the flight mode indicated by the flight mode switch
 }
 
+// Autotune aux function trigger
+void AC_AutoTune::do_aux_function(const RC_Channel::AuxSwitchPos ch_flag)
+{
+    if (mode != TuneMode::SUCCESS) {
+        if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
+            gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: must be complete to test gains");
+        }
+        return;
+    }
+
+    switch(ch_flag) {
+        case RC_Channel::AuxSwitchPos::LOW:
+            // load original gains
+            load_gains(GainType::GAIN_ORIGINAL);
+            update_gcs(AUTOTUNE_MESSAGE_TESTING_END);
+            break;
+        case RC_Channel::AuxSwitchPos::MIDDLE:
+            // Middle position is unused for now
+            break;
+        case RC_Channel::AuxSwitchPos::HIGH:
+            // Load tuned gains
+            load_gains(GainType::GAIN_TUNED);
+            update_gcs(AUTOTUNE_MESSAGE_TESTING);
+            break;
+    }
+
+    have_pilot_testing_command = true;
+}
+
+// Possibly save gains, called on disarm
+void AC_AutoTune::disarmed(const bool in_autotune_mode)
+{
+    // True if pilot is testing tuned gains
+    const bool testing_tuned = have_pilot_testing_command && (loaded_gains == GainType::GAIN_TUNED);
+
+    // True if in autotune mode and no pilot testing commands have been received
+    const bool tune_complete_no_testing = !have_pilot_testing_command && in_autotune_mode;
+
+    if (tune_complete_no_testing || testing_tuned) {
+        save_tuning_gains();
+    } else {
+        reset();
+    }
+}
+
 // initialise position controller
 bool AC_AutoTune::init_position_controller(void)
 {
@@ -524,6 +569,9 @@ void AC_AutoTune::control_attitude()
                     update_gcs(AUTOTUNE_MESSAGE_SUCCESS);
                     LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_SUCCESS);
                     AP_Notify::events.autotune_complete = true;
+
+                    // Return to original gains for landing
+                    load_gains(GainType::GAIN_ORIGINAL);
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
                     reset_update_gain_variables();
@@ -590,7 +638,12 @@ void AC_AutoTune::backup_gains_and_initialise()
  */
 void AC_AutoTune::load_gains(enum GainType gain_type)
 {
-    // todo: add previous setting so gains are not loaded on each loop.
+    if (loaded_gains == gain_type) {
+        // Loaded gains are already of correct type
+        return;
+    }
+    loaded_gains = gain_type;
+
     switch (gain_type) {
     case GAIN_ORIGINAL:
         load_orig_gains();
@@ -624,14 +677,16 @@ void AC_AutoTune::update_gcs(uint8_t message_id) const
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: Failed");
         break;
     case AUTOTUNE_MESSAGE_TESTING:
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: Pilot Testing");
-        break;
     case AUTOTUNE_MESSAGE_SAVED_GAINS:
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: Saved gains for %s%s%s%s",
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s gains for %s%s%s%s",
+                        (message_id == AUTOTUNE_MESSAGE_SAVED_GAINS) ? "Saved" : "Pilot Testing",
                         (axes_completed&AUTOTUNE_AXIS_BITMASK_ROLL)?"Roll ":"",
                         (axes_completed&AUTOTUNE_AXIS_BITMASK_PITCH)?"Pitch ":"",
                         (axes_completed&AUTOTUNE_AXIS_BITMASK_YAW)?"Yaw(E)":"",
                         (axes_completed&AUTOTUNE_AXIS_BITMASK_YAW_D)?"Yaw(D)":"");
+        break;
+    case AUTOTUNE_MESSAGE_TESTING_END:
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: original gains restored");
         break;
     }
 }
