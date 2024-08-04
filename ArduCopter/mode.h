@@ -796,18 +796,12 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return false; }
 
-    void save_tuning_gains();
-    void reset();
+    AutoTune autotune;
 
 protected:
 
     const char *name() const override { return "AUTOTUNE"; }
     const char *name4() const override { return "ATUN"; }
-
-private:
-
-    AutoTune autotune;
-
 };
 #endif
 
