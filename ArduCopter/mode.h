@@ -2015,18 +2015,14 @@ private:
     int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
     uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
     float _hs_decay;                // The head accerleration during the entry phase
-    float _bail_time;               // Timer for exiting the bail out phase (s)
-    uint32_t _bail_time_start_ms;   // Time at start of bail out
-    float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
-    float _target_pitch_adjust;     // Target pitch rate used during bail out phase
 
     enum class Autorotation_Phase {
         ENTRY,
         SS_GLIDE,
         FLARE,
         TOUCH_DOWN,
-        BAIL_OUT } phase_switch;
-        
+        LANDED } phase_switch;
+
     enum class Navigation_Decision {
         USER_CONTROL_STABILISED,
         STRAIGHT_AHEAD,
@@ -2039,10 +2035,10 @@ private:
             bool ss_glide_initial          : 1;
             bool flare_initial             : 1;
             bool touch_down_initial        : 1;
+            bool landed_initial            : 1;
             bool straight_ahead_initial    : 1;
             bool level_initial             : 1;
             bool break_initial             : 1;
-            bool bail_out_initial          : 1;
             bool bad_rpm                   : 1;
     } _flags;
 
