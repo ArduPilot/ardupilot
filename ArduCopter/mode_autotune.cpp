@@ -118,19 +118,9 @@ void ModeAutoTune::run()
     autotune.run();
 }
 
-void ModeAutoTune::save_tuning_gains()
-{
-    autotune.save_tuning_gains();
-}
-
 void ModeAutoTune::exit()
 {
     autotune.stop();
-}
-
-void ModeAutoTune::reset()
-{
-    autotune.reset();
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED
