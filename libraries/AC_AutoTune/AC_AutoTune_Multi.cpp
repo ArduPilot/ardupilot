@@ -260,43 +260,38 @@ void AC_AutoTune_Multi::load_tuned_gains()
         attitude_control->set_accel_roll_max_cdss(0.0);
         attitude_control->set_accel_pitch_max_cdss(0.0);
     }
-    if (roll_enabled()) {
-        if (!is_zero(tune_roll_rp)) {
-            attitude_control->get_rate_roll_pid().set_kP(tune_roll_rp);
-            attitude_control->get_rate_roll_pid().set_kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
-            attitude_control->get_rate_roll_pid().set_kD(tune_roll_rd);
-            attitude_control->get_rate_roll_pid().set_ff(orig_roll_rff);
-            attitude_control->get_rate_roll_pid().set_kDff(orig_roll_dff);
-            attitude_control->get_angle_roll_p().set_kP(tune_roll_sp);
-            attitude_control->set_accel_roll_max_cdss(tune_roll_accel);
-        }
+    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled() && !is_zero(tune_roll_rp)) {
+        attitude_control->get_rate_roll_pid().set_kP(tune_roll_rp);
+        attitude_control->get_rate_roll_pid().set_kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
+        attitude_control->get_rate_roll_pid().set_kD(tune_roll_rd);
+        attitude_control->get_rate_roll_pid().set_ff(orig_roll_rff);
+        attitude_control->get_rate_roll_pid().set_kDff(orig_roll_dff);
+        attitude_control->get_angle_roll_p().set_kP(tune_roll_sp);
+        attitude_control->set_accel_roll_max_cdss(tune_roll_accel);
     }
-    if (pitch_enabled()) {
-        if (!is_zero(tune_pitch_rp)) {
-            attitude_control->get_rate_pitch_pid().set_kP(tune_pitch_rp);
-            attitude_control->get_rate_pitch_pid().set_kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
-            attitude_control->get_rate_pitch_pid().set_kD(tune_pitch_rd);
-            attitude_control->get_rate_pitch_pid().set_ff(orig_pitch_rff);
-            attitude_control->get_rate_pitch_pid().set_kDff(orig_pitch_dff);
-            attitude_control->get_angle_pitch_p().set_kP(tune_pitch_sp);
-            attitude_control->set_accel_pitch_max_cdss(tune_pitch_accel);
-        }
+    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled() && !is_zero(tune_pitch_rp)) {
+        attitude_control->get_rate_pitch_pid().set_kP(tune_pitch_rp);
+        attitude_control->get_rate_pitch_pid().set_kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
+        attitude_control->get_rate_pitch_pid().set_kD(tune_pitch_rd);
+        attitude_control->get_rate_pitch_pid().set_ff(orig_pitch_rff);
+        attitude_control->get_rate_pitch_pid().set_kDff(orig_pitch_dff);
+        attitude_control->get_angle_pitch_p().set_kP(tune_pitch_sp);
+        attitude_control->set_accel_pitch_max_cdss(tune_pitch_accel);
     }
-    if (yaw_enabled() || yaw_d_enabled()) {
-        if (!is_zero(tune_yaw_rp)) {
-            attitude_control->get_rate_yaw_pid().set_kP(tune_yaw_rp);
-            attitude_control->get_rate_yaw_pid().set_kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
-            if (yaw_d_enabled()) {
-                attitude_control->get_rate_yaw_pid().set_kD(tune_yaw_rd);
-            }
-            if (yaw_enabled()) {
-                attitude_control->get_rate_yaw_pid().set_filt_E_hz(tune_yaw_rLPF);
-            }
-            attitude_control->get_rate_yaw_pid().set_ff(orig_yaw_rff);
-            attitude_control->get_rate_yaw_pid().set_kDff(orig_yaw_dff);
-            attitude_control->get_angle_yaw_p().set_kP(tune_yaw_sp);
-            attitude_control->set_accel_yaw_max_cdss(tune_yaw_accel);
+    if ((((axes_completed & AUTOTUNE_AXIS_BITMASK_YAW) && yaw_enabled())
+            || ((axes_completed & AUTOTUNE_AXIS_BITMASK_YAW_D) && yaw_d_enabled())) && !is_zero(tune_yaw_rp)) {
+        attitude_control->get_rate_yaw_pid().set_kP(tune_yaw_rp);
+        attitude_control->get_rate_yaw_pid().set_kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
+        if (yaw_d_enabled()) {
+            attitude_control->get_rate_yaw_pid().set_kD(tune_yaw_rd);
         }
+        if (yaw_enabled()) {
+            attitude_control->get_rate_yaw_pid().set_filt_E_hz(tune_yaw_rLPF);
+        }
+        attitude_control->get_rate_yaw_pid().set_ff(orig_yaw_rff);
+        attitude_control->get_rate_yaw_pid().set_kDff(orig_yaw_dff);
+        attitude_control->get_angle_yaw_p().set_kP(tune_yaw_sp);
+        attitude_control->set_accel_yaw_max_cdss(tune_yaw_accel);
     }
 }
 
