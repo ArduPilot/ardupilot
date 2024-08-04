@@ -869,6 +869,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
             plane.mode_guided.set_radius_and_direction(packet.param3, requested_position.loiter_ccw);
         }
 
+        // Need to re-initialize these, otherwise DO_REPOSITION will be overruled by GUIDED_CHANGE_HEADING and GUIDED_CHANGE_ALTITUDE if previously sent
+        plane.mode_guided.reset_guided_hdg();
+        plane.mode_guided.reset_guided_alt();
+
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
@@ -1117,6 +1121,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_DO_CHANGE_SPEED(const mavlink_comma
         }
 
         if (plane.do_change_speed(packet.param1, packet.param2, packet.param3)) {
+
+            // Need to re-initialize this, otherwise DO_CHANGE_SPEED will be overrided by any prior GUIDED_CHANGE_SPEED command while in GUIDED
+            plane.mode_guided.reset_guided_spd();
+
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
