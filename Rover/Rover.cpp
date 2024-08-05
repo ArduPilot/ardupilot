@@ -134,7 +134,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #endif
     SCHED_TASK(crash_check,            10,    200, 123),
     SCHED_TASK(cruise_learn_update,    50,    200, 126),
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
 };

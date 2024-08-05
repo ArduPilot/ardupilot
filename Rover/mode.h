@@ -19,7 +19,7 @@ public:
         LOITER       = 5,
         FOLLOW       = 6,
         SIMPLE       = 7,
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
         DOCK         = 8,
 #endif
         CIRCLE       = 9,
@@ -808,7 +808,7 @@ protected:
     bool _enter() override { return false; };
 };
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
 class ModeFollow : public Mode
 {
 public:
@@ -868,7 +868,7 @@ private:
     float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
 };
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
 class ModeDock : public Mode
 {
 public:

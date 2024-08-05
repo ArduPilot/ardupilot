@@ -531,7 +531,7 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     case Mode::Number::FOLLOW:
         ret = &mode_follow;
         break;
@@ -557,7 +557,7 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     case Mode::Number::DOCK:
         ret = (Mode *)g2.mode_dock_ptr;
         break;
