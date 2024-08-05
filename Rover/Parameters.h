@@ -301,7 +301,7 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Rover afs;
 #endif
@@ -340,7 +340,7 @@ public:
     AP_Proximity proximity;
 #endif
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     // we need a pointer to the mode for the G2 table
     class ModeDock *mode_dock_ptr;
 #endif
