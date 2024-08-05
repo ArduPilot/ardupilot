@@ -47,6 +47,7 @@ class AP_DroneCAN_DNA_Server
         // handle the allocation message. returns the new node ID.
         uint8_t handleAllocation(uint8_t node_id, const uint8_t unique_id[]);
 
+    private:
         //Generates 6Byte long hash from the specified unique_id
         void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
 
@@ -62,7 +63,6 @@ class AP_DroneCAN_DNA_Server
         //Finds next available free Node, starting from preferred NodeID
         uint8_t findFreeNodeID(uint8_t preferred);
 
-    private:
         //Look in the storage and check if there's a valid Server Record there
         bool isValidNodeDataAvailable(uint8_t node_id);
 

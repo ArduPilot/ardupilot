@@ -74,7 +74,6 @@ void AP_DroneCAN_DNA_Server::Database::readNodeData(NodeData &data, uint8_t node
         return;
     }
 
-    WITH_SEMAPHORE(sem);
     storage->read_block(&data, NODEDATA_LOC(node_id), sizeof(struct NodeData));
 }
 
@@ -85,7 +84,6 @@ void AP_DroneCAN_DNA_Server::Database::writeNodeData(const NodeData &data, uint8
         return;
     }
 
-    WITH_SEMAPHORE(sem);
     storage->write_block(NODEDATA_LOC(node_id), &data, sizeof(struct NodeData));
 }
 
