@@ -89,7 +89,7 @@ void ModeAuto::update()
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
-        plane.calc_throttle();
+        plane.takeoff_calc_throttle();
     } else if (nav_cmd_id == MAV_CMD_NAV_LAND) {
         plane.calc_nav_roll();
         plane.calc_nav_pitch();

@@ -121,6 +121,7 @@ bool Plane::auto_takeoff_check(void)
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.start_time_ms = now;
+        takeoff_state.throttle_max_timer_ms = now;
         steer_state.locked_course_err = 0; // use current heading without any error offset
         return true;
     }
@@ -179,66 +180,111 @@ void Plane::takeoff_calc_roll(void)
  */
 void Plane::takeoff_calc_pitch(void)
 {
-    if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
-        // we have not reached rotate speed, use the specified takeoff target pitch angle
-        nav_pitch_cd = int32_t(100.0f * mode_takeoff.ground_pitch);
-        return;
+    // First see if TKOFF_ROTATE_SPD applies.
+    // This will set the pitch for the first portion of the takeoff, up until cruise speed is reached.
+    if (g.takeoff_rotate_speed > 0) {
+        // A non-zero rotate speed is recommended for ground takeoffs.
+        if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
+            // We have not reached rotate speed, use the specified takeoff target pitch angle.
+            nav_pitch_cd = int32_t(100.0f * mode_takeoff.ground_pitch);
+            TECS_controller.set_pitch_min(0.01f*nav_pitch_cd);
+            TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);
+            return;
+        } else if (gps.ground_speed() <= (float)aparm.airspeed_cruise) {
+            // If rotate speed applied, gradually transition from TKOFF_GND_PITCH to the climb angle.
+            // This is recommended for ground takeoffs, so delay rotation until ground speed indicates adequate airspeed.
+            const uint16_t min_pitch_cd = 500; // Set a minimum of 5 deg climb angle.
+            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, min_pitch_cd, auto_state.takeoff_pitch_cd); 
+            TECS_controller.set_pitch_min(0.01f*nav_pitch_cd);
+            TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);
+            return;
+        }
     }
 
+    // We are now past the rotation.
+    // Initialize pitch limits for TECS.
+    int16_t pitch_min_cd = get_takeoff_pitch_min_cd();
+    bool pitch_clipped_max = false;
+
+    // If we're using an airspeed sensor, we consult TECS.
     if (ahrs.using_airspeed_sensor()) {
-        int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
-        if (nav_pitch_cd < takeoff_pitch_min_cd) {
-            nav_pitch_cd = takeoff_pitch_min_cd;
+        // At any rate, we don't want to go lower than the minimum pitch bound.
+        if (nav_pitch_cd < pitch_min_cd) {
+            nav_pitch_cd = pitch_min_cd;
         }
     } else {
-        if (g.takeoff_rotate_speed > 0) {
-            // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
-            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
-        } else {
-            // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss
-            nav_pitch_cd = MAX(auto_state.takeoff_pitch_cd, 500);
-        }
+        // If not, we will use the minimum allowed angle.
+        nav_pitch_cd = pitch_min_cd;
+
+        pitch_clipped_max = true;
     }
 
+    // Check if we have trouble with roll control.
     if (aparm.stall_prevention != 0) {
-        if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF ||
-            control_mode == &mode_takeoff) {
-            // during takeoff we want to prioritise roll control over
-            // pitch. Apply a reduction in pitch demand if our roll is
-            // significantly off. The aim of this change is to
-            // increase the robustness of hand launches, particularly
-            // in cross-winds. If we start to roll over then we reduce
-            // pitch demand until the roll recovers
-            float roll_error_rad = radians(constrain_float(labs(nav_roll_cd - ahrs.roll_sensor) * 0.01, 0, 90));
-            float reduction = sq(cosf(roll_error_rad));
-            nav_pitch_cd *= reduction;
+        // during takeoff we want to prioritise roll control over
+        // pitch. Apply a reduction in pitch demand if our roll is
+        // significantly off. The aim of this change is to
+        // increase the robustness of hand launches, particularly
+        // in cross-winds. If we start to roll over then we reduce
+        // pitch demand until the roll recovers
+        float roll_error_rad = radians(constrain_float(labs(nav_roll_cd - ahrs.roll_sensor) * 0.01, 0, 90));
+        float reduction = sq(cosf(roll_error_rad));
+        nav_pitch_cd *= reduction;
+
+        if (nav_pitch_cd < pitch_min_cd) {
+            pitch_min_cd = nav_pitch_cd;
         }
     }
+    // Notify TECS about the external pitch setting, for the next iteration.
+    TECS_controller.set_pitch_min(0.01f*pitch_min_cd);
+    if (pitch_clipped_max) {TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);}
 }
 
 /*
- * Set the throttle limits to run at during a takeoff.
+ * Calculate the throttle limits to run at during a takeoff.
+ * These limits are meant to be used exclusively by Plane::apply_throttle_limits().
  */
-void Plane::takeoff_calc_throttle(const bool use_max_throttle) {
-    // This setting will take effect at the next run of TECS::update_pitch_throttle().
-
-    // Set the maximum throttle limit.
+void Plane::takeoff_calc_throttle() {
+    // Initialize the maximum throttle limit.
     if (aparm.takeoff_throttle_max != 0) {
-        TECS_controller.set_throttle_max(0.01f*aparm.takeoff_throttle_max);
+        takeoff_state.throttle_lim_max = aparm.takeoff_throttle_max;
+    } else {
+        takeoff_state.throttle_lim_max = aparm.throttle_max;
     }
 
-    // Set the minimum throttle limit.
-    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
-    if (!use_throttle_range || !ahrs.using_airspeed_sensor() || use_max_throttle) { // Traditional takeoff throttle limit.
-        float min_throttle = (aparm.takeoff_throttle_max != 0) ? 0.01f*aparm.takeoff_throttle_max : 0.01f*aparm.throttle_max;
-        TECS_controller.set_throttle_min(min_throttle);
-    } else { // TKOFF_MODE == 1, allow for a throttle range.
-        if (aparm.takeoff_throttle_min != 0) { // Override THR_MIN.
-            TECS_controller.set_throttle_min(0.01f*aparm.takeoff_throttle_min);
+    // Initialize the minimum throttle limit.
+    if (aparm.takeoff_throttle_min != 0) {
+        takeoff_state.throttle_lim_min = aparm.takeoff_throttle_min;
+    } else {
+        takeoff_state.throttle_lim_min = aparm.throttle_cruise;
+    }
+
+    // Raise min to force max throttle for TKOFF_THR_MAX_T after a takeoff.
+    // It only applies if the timer has been started externally.
+    if (takeoff_state.throttle_max_timer_ms != 0) {
+        const uint32_t dt = AP_HAL::millis() - takeoff_state.throttle_max_timer_ms;
+        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
+            takeoff_state.throttle_lim_min = takeoff_state.throttle_lim_max;
+        } else {
+            // Reset the timer for future use.
+            takeoff_state.throttle_max_timer_ms = 0;
         }
     }
+
+    // Enact the TKOFF_OPTIONS logic.
+    const float current_baro_alt = barometer.get_altitude();
+    const bool below_lvl_alt = current_baro_alt < auto_state.baro_takeoff_alt + mode_takeoff.level_alt;
+    // Set the minimum throttle limit.
+    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    if (!use_throttle_range // We don't want to employ a throttle range.
+        || !ahrs.using_airspeed_sensor() // We don't have an airspeed sensor.
+        || below_lvl_alt // We are below TKOFF_LVL_ALT.
+        ) { // Traditional takeoff throttle limit.
+        takeoff_state.throttle_lim_min = takeoff_state.throttle_lim_max;
+    }
+
     calc_throttle();
 }
 

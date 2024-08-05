@@ -393,7 +393,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd.content.location);
 
     // configure abort altitude and pitch
-    // if NAV_LAND has an abort altitude then use it, else use last takeoff, else use 50m
+    // if NAV_LAND has an abort altitude then use it, else use last takeoff, else use 30m
     if (cmd.p1 > 0) {
         auto_state.takeoff_altitude_rel_cm = (int16_t)cmd.p1 * 100;
     } else if (auto_state.takeoff_altitude_rel_cm <= 0) {

@@ -493,10 +493,14 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::update_control_mode(void)
 {
-    if (control_mode != &mode_auto) {
+    if ((control_mode != &mode_auto) && (control_mode != &mode_takeoff)) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
     }
+    // refresh the throttle limits, to avoid using stale values
+    // they will be updated once takeoff_calc_throttle is called
+    takeoff_state.throttle_lim_max = 100.0f;
+    takeoff_state.throttle_lim_min = -100.0f;
 
     update_fly_forward();
 
