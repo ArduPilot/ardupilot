@@ -400,14 +400,9 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     }
 #endif
 
-    if (db.isOccupied(transfer.source_node_id)) {
-        //if node_id already registered, just verify if Unique ID matches as well
-        if (transfer.source_node_id == db.getNodeIDForUniqueID(rsp.hardware_version.unique_id, 16)) {
-            if (transfer.source_node_id == curr_verifying_node) {
-                nodeInfo_resp_rcvd = true;
-            }
-            node_verified.set(transfer.source_node_id);
-        } else if (!_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
+    bool duplicate = db.handleNodeInfo(transfer.source_node_id, rsp.hardware_version.unique_id);
+    if (duplicate) {
+        if (!_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
             /* This is a device with node_id already registered
             for another device */
             server_state = DUPLICATE_NODES;
@@ -415,20 +410,39 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
             memcpy(fault_node_name, rsp.name.data, sizeof(fault_node_name));
         }
     } else {
-        /* Node Id was not allocated by us, or during this boot, let's register this in our records
-        Check if we allocated this Node before */
-        uint8_t prev_node_id = db.getNodeIDForUniqueID(rsp.hardware_version.unique_id, 16);
-        if (prev_node_id != 0) {
-            //yes we did, remove this registration
-            db.freeNodeID(prev_node_id);
-        }
-        //add a new server record
-        db.addNodeIDForUniqueID(transfer.source_node_id, rsp.hardware_version.unique_id, 16);
         //Verify as well
         node_verified.set(transfer.source_node_id);
         if (transfer.source_node_id == curr_verifying_node) {
             nodeInfo_resp_rcvd = true;
         }
+    }
+}
+
+// handle processing the node info message. returns true if duplicate.
+bool AP_DroneCAN_DNA_Server::Database::handleNodeInfo(uint8_t source_node_id, const uint8_t unique_id[])
+{
+    WITH_SEMAPHORE(sem);
+
+    if (isOccupied(source_node_id)) {
+        //if node_id already registered, just verify if Unique ID matches as well
+        if (source_node_id == getNodeIDForUniqueID(unique_id, 16)) {
+            return false;
+        } else {
+            /* This is a device with node_id already registered
+            for another device */
+            return true;
+        }
+    } else {
+        /* Node Id was not allocated by us, or during this boot, let's register this in our records
+        Check if we allocated this Node before */
+        uint8_t prev_node_id = getNodeIDForUniqueID(unique_id, 16);
+        if (prev_node_id != 0) {
+            //yes we did, remove this registration
+            freeNodeID(prev_node_id);
+        }
+        //add a new server record
+        addNodeIDForUniqueID(source_node_id, unique_id, 16);
+        return false;
     }
 }
 
