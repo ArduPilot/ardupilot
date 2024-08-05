@@ -261,6 +261,8 @@ class ExtractFeatures(object):
             ('AP_MAVLINK_MSG_HIL_GPS_ENABLED', r'mavlink_msg_hil_gps_decode'),
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Compass::_probe_external_i2c_compasses'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
+
+            ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
         ]
 
     def progress(self, msg):
