@@ -504,24 +504,33 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
 
     if (rcvd_unique_id_offset == 16) {
         //We have received the full Unique ID, time to do allocation
-        uint8_t resp_node_id = db.getNodeIDForUniqueID((const uint8_t*)rcvd_unique_id, 16);
-        if (resp_node_id == 0) {
-            resp_node_id = db.findFreeNodeID(msg.node_id > MAX_NODE_ID ? 0 : msg.node_id);
-            if (resp_node_id != 0) {
-                db.addNodeIDForUniqueID(resp_node_id, (const uint8_t*)rcvd_unique_id, 16);
-                rsp.node_id = resp_node_id;
-            } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
-            }
-        } else {
-            rsp.node_id = resp_node_id;
-        }
+        rsp.node_id = db.handleAllocation(msg.node_id, (const uint8_t*)rcvd_unique_id);
         //reset states as well        
         rcvd_unique_id_offset = 0;
         memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
     }
 
     allocation_pub.broadcast(rsp, false); // never publish allocation message with CAN FD
+}
+
+// handle the allocation message. returns the new node ID.
+uint8_t AP_DroneCAN_DNA_Server::Database::handleAllocation(uint8_t node_id, const uint8_t unique_id[])
+{
+    WITH_SEMAPHORE(sem);
+
+    uint8_t resp_node_id = getNodeIDForUniqueID(unique_id, 16);
+    if (resp_node_id == 0) {
+        resp_node_id = findFreeNodeID(node_id > MAX_NODE_ID ? 0 : node_id);
+        if (resp_node_id != 0) {
+            addNodeIDForUniqueID(resp_node_id, unique_id, 16);
+            return resp_node_id;
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
+            return 0;
+        }
+    } else {
+        return resp_node_id;
+    }
 }
 
 //report the server state, along with failure message if any

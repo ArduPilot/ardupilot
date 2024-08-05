@@ -44,6 +44,9 @@ class AP_DroneCAN_DNA_Server
         // handle processing the node info message. returns true if duplicate.
         bool handleNodeInfo(uint8_t source_node_id, const uint8_t unique_id[]);
 
+        // handle the allocation message. returns the new node ID.
+        uint8_t handleAllocation(uint8_t node_id, const uint8_t unique_id[]);
+
         //Generates 6Byte long hash from the specified unique_id
         void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
 
