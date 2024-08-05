@@ -32,6 +32,6 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Rover::afs_mode(void)
 //to force entering auto mode when datalink loss 
  void AP_AdvancedFailsafe_Rover::set_mode_auto(void)
  {
-    over.set_mode(rover.mode_auto,ModeReason::GCS_FAILSAFE);
+    rover.set_mode(rover.mode_auto,ModeReason::GCS_FAILSAFE);
  }
-#endif  // ADVANCED_FAILSAFE
+#endif  // AP_ROVER_ADVANCED_FAILSAFE_ENABLED
