@@ -15,7 +15,7 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @Description: Allows you to enable (1) or disable (0) ZigZag auto feature
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("AUTO_ENABLE", 1, ModeZigZag, _auto_enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("AUTO_ENABLE", 1, ModeZigZag, _auto_enabled, DISABLED, AP_PARAM_FLAG_ENABLE),
 
 #if HAL_SPRAYER_ENABLED
     // @Param: SPRAYER
@@ -23,7 +23,7 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @Description: Enable the auto sprayer in ZigZag mode. SPRAY_ENABLE = 1 and SERVOx_FUNCTION = 22(SprayerPump) / 23(SprayerSpinner) also must be set. This makes the sprayer on while moving to destination A or B. The sprayer will stop if the vehicle reaches destination or the flight mode is changed from ZigZag to other.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("SPRAYER", 2, ModeZigZag, _spray_enabled, 0),
+    AP_GROUPINFO("SPRAYER", 2, ModeZigZag, _spray_enabled, DISABLED),
 #endif // HAL_SPRAYER_ENABLED
 
     // @Param: WP_DELAY

@@ -24,7 +24,7 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
     // @Description: tmode (or "toy" mode) gives a simplified user interface designed for mass market drones. Version1 is for the SkyViper V2450GPS. Version2 is for the F412 based boards
     // @Values: 0:Disabled,1:EnableVersion1,2:EnableVersion2
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("_ENABLE", 1, ToyMode, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_ENABLE", 1, ToyMode, enable, DISABLED, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _MODE1
     // @DisplayName: Tmode first mode

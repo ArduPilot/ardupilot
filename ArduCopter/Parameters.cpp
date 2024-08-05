@@ -399,7 +399,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: This enables automatic crash checking. When enabled the motors will disarm if a crash is detected.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
-    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
+    GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    ENABLED),
 
     // @Param: RC_SPEED
     // @DisplayName: ESC Update Speed
@@ -769,7 +769,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Ground Effect Compensation Enable/Disable
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
+    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, ENABLED),
 
 #if ADVANCED_FAILSAFE == ENABLED
     // @Group: AFS_
@@ -933,7 +933,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: This enables the vibration failsafe which will use modified altitude estimation and control during high vibrations
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
-    AP_GROUPINFO("FS_VIBE_ENABLE", 35, ParametersG2, fs_vibe_enabled, 1),
+    AP_GROUPINFO("FS_VIBE_ENABLE", 35, ParametersG2, fs_vibe_enabled, ENABLED),
 
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe options bitmask
