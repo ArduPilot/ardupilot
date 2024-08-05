@@ -128,19 +128,21 @@ public:
         _flags.propulsion_failed = propulsion_failed;
     }
 
-
-    // set pitch max limit in degrees
-    void set_pitch_max_limit(int8_t pitch_limit) {
-        _pitch_max_limit = pitch_limit;
-    }
-
     // set minimum throttle override, [-1, -1] range
     // it is applicable for one control cycle only
     void set_throttle_min(const float thr_min);
 
-    // set minimum throttle override, [0, -1] range
+    // set maximum throttle override, [0, -1] range
     // it is applicable for one control cycle only
     void set_throttle_max(const float thr_max);
+
+    // set minimum pitch override, in degrees.
+    // it is applicable for one control cycle only
+    void set_pitch_min(const float pitch_min);
+
+    // set maximum pitch override, in degrees.
+    // it is applicable for one control cycle only
+    void set_pitch_max(const float pitch_max);
 
     // force use of synthetic airspeed for one loop
     void use_synthetic_airspeed(void) {
@@ -371,6 +373,9 @@ private:
     // Maximum and minimum throttle safety limits, set externally, typically by servos.cpp:apply_throttle_limits()
     float _THRmaxf_ext = 1.0f;
     float _THRminf_ext = -1.0f;
+    // Maximum and minimum pitch limits, set externally, typically by the takeoff logic.
+    float _PITCHmaxf_ext = 90.0f;
+    float _PITCHminf_ext = -90.0f;
 
     // Maximum and minimum floating point pitch limits
     float _PITCHmaxf;
@@ -429,6 +434,10 @@ private:
 
     // need to reset on next loop
     bool _need_reset;
+    // Flag if someone else drives pitch externally.
+    bool _flag_pitch_forced;
+    // Flag if someone else drives throttle externally.
+    bool _flag_throttle_forced;
 
     // Checks if we reset at the beginning of takeoff.
     bool _flag_have_reset_after_takeoff;
@@ -485,7 +494,7 @@ private:
     void _update_pitch(void);
 
     // Initialise states and variables
-    void _initialise_states(int32_t ptchMinCO_cd, float hgt_afe);
+    void _initialise_states(float hgt_afe);
 
     // Calculate specific total energy rate limits
     void _update_STE_rate_lim(void);
@@ -498,4 +507,7 @@ private:
 
     // Update the allowable throttle range.
     void _update_throttle_limits();
+
+    // Update the allowable pitch range.
+    void _update_pitch_limits(const int32_t ptchMinCO_cd);
 };
