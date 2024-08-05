@@ -197,20 +197,8 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
         db.reset();
     }
 
-    // Making sure that the server is started with the same node ID
-    const uint8_t stored_own_node_id = db.getNodeIDForUniqueID(own_unique_id, own_unique_id_len);
-    static bool reset_done;
-    if (stored_own_node_id != node_id) { // cannot match if not found
-        // We have no matching record of our own Unique ID do a reset
-        if (!reset_done) {
-            /* ensure we only reset once per power cycle
-            else we will wipe own record on next init(s) */
-            db.reset();
-            reset_done = true;
-        }
-        //Add ourselves to the Server Record
-        db.addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len);
-    }
+    db.initServer(node_id, own_unique_id, own_unique_id_len);
+
     /* Also add to seen node id this is to verify
     if any duplicates are on the bus carrying our Node ID */
     node_seen.set(node_id);
@@ -218,6 +206,27 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
     node_healthy.set(node_id);
     self_node_id = node_id;
     return true;
+}
+
+// handle initializing the server with the given expected node ID and unique ID
+void AP_DroneCAN_DNA_Server::Database::initServer(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len)
+{
+    WITH_SEMAPHORE(sem);
+
+    // Making sure that the server is started with the same node ID
+    const uint8_t stored_own_node_id = getNodeIDForUniqueID(own_unique_id, own_unique_id_len);
+    static bool reset_done;
+    if (stored_own_node_id != node_id) { // cannot match if not found
+        // We have no matching record of our own Unique ID do a reset
+        if (!reset_done) {
+            /* ensure we only reset once per power cycle
+            else we will wipe own record on next init(s) */
+            reset();
+            reset_done = true;
+        }
+        //Add ourselves to the Server Record
+        addNodeIDForUniqueID(node_id, own_unique_id, own_unique_id_len);
+    }
 }
 
 
