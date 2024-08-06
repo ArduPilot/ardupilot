@@ -1225,6 +1225,7 @@ void AC_AutoTune_Multi::twitch_test_init()
     test_rate_min = 0.0;
     test_angle_max = 0.0;
     test_angle_min = 0.0;
+    accel_measure_rate_max = 0.0;
 }
 
 //run twitch test
@@ -1315,18 +1316,18 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     case RD_UP:
     case RD_DOWN:
         twitching_test_rate(lean_angle, rotation_rate, target_rate, test_rate_min, test_rate_max, test_angle_min);
-        twitching_measure_acceleration(test_accel_max, rotation_rate, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate, accel_measure_rate_max);
         twitching_abort_rate(lean_angle, rotation_rate, angle_abort, test_rate_min, test_angle_min);
         break;
     case RP_UP:
         twitching_test_rate(lean_angle, rotation_rate, target_rate * (1 + 0.5 * aggressiveness), test_rate_min, test_rate_max, test_angle_min);
-        twitching_measure_acceleration(test_accel_max, rotation_rate, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate, accel_measure_rate_max);
         twitching_abort_rate(lean_angle, rotation_rate, angle_abort, test_rate_min, test_angle_min);
         break;
     case SP_DOWN:
     case SP_UP:
         twitching_test_angle(lean_angle, rotation_rate, target_angle * (1 + 0.5 * aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
-        twitching_measure_acceleration(test_accel_max, rotation_rate - dir_sign * start_rate, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate - dir_sign * start_rate, accel_measure_rate_max);
         break;
     case RFF_UP:
     case MAX_GAINS:
