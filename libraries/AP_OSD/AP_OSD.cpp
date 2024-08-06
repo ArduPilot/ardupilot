@@ -506,7 +506,7 @@ void AP_OSD::update_stats()
     // max esc temp
     AP_ESC_Telem& telem = AP::esc_telem();
     int16_t highest_temperature = 0;
-    telem.get_highest_motor_temperature(highest_temperature);
+    telem.get_highest_temperature(highest_temperature);
     _stats.max_esc_temp = MAX(_stats.max_esc_temp, highest_temperature);
 #endif
 }
