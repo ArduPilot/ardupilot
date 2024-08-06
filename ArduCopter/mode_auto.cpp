@@ -2123,6 +2123,10 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        const float distance_m = copter.wp_nav->get_wp_distance_to_destination() / 100.0f;
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2131,8 +2135,13 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
         loiter_time = millis();
     }
 
+    const uint32_t loiter_time_elapsed_s = (millis() - loiter_time) / 1000;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(cmd.index, loiter_time_elapsed_s, loiter_time_max);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (loiter_time_elapsed_s >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
