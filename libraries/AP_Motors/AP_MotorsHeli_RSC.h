@@ -154,8 +154,8 @@ private:
     const uint8_t   _instance;
 
     // channel setup for aux function
-    SRV_Channel::Aux_servo_function_t _aux_fn;
-    uint8_t         _default_channel;
+    const SRV_Channel::Aux_servo_function_t _aux_fn;
+    const uint8_t _default_channel;
 
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
