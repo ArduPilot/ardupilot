@@ -1623,21 +1623,37 @@ bool UARTDriver::set_options(uint16_t options)
         cr2 &= ~USART_CR2_SWAP;
         _cr2_options &= ~USART_CR2_SWAP;
     }
-#else // STM32F4
+#elif defined(STM32F4) // STM32F4
     // F4 can do inversion by GPIO if enabled in hwdef.dat, using
     // TXINV and RXINV options
     if (options & OPTION_RXINV) {
         if (sdef.rxinv_gpio >= 0) {
             hal.gpio->write(sdef.rxinv_gpio, sdef.rxinv_polarity);
+            if (arx_line != 0) {
+                palLineSetPushPull(arx_line, PAL_PUSHPULL_PULLDOWN);
+            }
         } else {
             ret = false;
+        }
+    } else if (sdef.rxinv_gpio >= 0) {
+        hal.gpio->write(sdef.rxinv_gpio, !sdef.rxinv_polarity);
+        if (arx_line != 0) {
+            palLineSetPushPull(arx_line, PAL_PUSHPULL_PULLUP);
         }
     }
     if (options & OPTION_TXINV) {
         if (sdef.txinv_gpio >= 0) {
             hal.gpio->write(sdef.txinv_gpio, sdef.txinv_polarity);
+            if (atx_line != 0) {
+                palLineSetPushPull(atx_line, PAL_PUSHPULL_PULLDOWN);
+            }
         } else {
             ret = false;
+        }
+    } else if (sdef.txinv_gpio >= 0) {
+        hal.gpio->write(sdef.txinv_gpio, !sdef.txinv_polarity);
+        if (atx_line != 0) {
+            palLineSetPushPull(atx_line, PAL_PUSHPULL_PULLUP);
         }
     }
     if (options & OPTION_SWAP) {
