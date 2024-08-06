@@ -402,6 +402,10 @@ public:
     void send_uavionix_adsb_out_status() const;
     void send_autopilot_state_for_gimbal_device() const;
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    void send_nav_controller_progress() const;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
