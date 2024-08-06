@@ -193,6 +193,7 @@ private:
     float    test_rate_max;     // the maximum angular rate achieved during TESTING_RATE
     float    test_angle_min;    // the minimum angle achieved during TESTING_ANGLE
     float    test_angle_max;    // the maximum angle achieved during TESTING_ANGLE
+    float    accel_measure_rate_max; // the maximum rate used to measure average acceleration during twitch
 };
 
 #endif  // AC_AUTOTUNE_ENABLED
