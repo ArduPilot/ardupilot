@@ -7977,6 +7977,20 @@ class TestSuite(ABC):
             return m_value
         raise NotAchievedException("Wrong value")
 
+    def assert_servo_channel_range(self, channel, value_min, value_max):
+        """assert channel value is within the range [value_min, value_max]"""
+        channel_field = "servo%u_raw" % channel
+        m = self.assert_receive_message('SERVO_OUTPUT_RAW', timeout=1)
+        m_value = getattr(m, channel_field, None)
+        if m_value is None:
+            raise ValueError("message (%s) has no field %s" %
+                             (str(m), channel_field))
+        self.progress("assert SERVO_OUTPUT_RAW.%s=%u in [%u, %u]" %
+                      (channel_field, m_value, value_min, value_max))
+        if m_value >= value_min and m_value <= value_max:
+            return m_value
+        raise NotAchievedException("Wrong value")
+
     def get_rc_channel_value(self, channel, timeout=2):
         """wait for channel to hit value"""
         channel_field = "chan%u_raw" % channel

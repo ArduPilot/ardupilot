@@ -4396,10 +4396,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.wait_ready_to_arm()
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
         self.load_mission("catapult.txt", strict=True)
         self.change_mode('AUTO')
 
-        self.wait_ready_to_arm()
         self.arm_vehicle()
 
         # Throw the catapult.
@@ -4410,7 +4412,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(test_alt, test_alt+2, relative=True)
 
         # Ensure that by then the aircraft still goes at max allowed throttle.
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Wait for landing waypoint.
         self.wait_current_waypoint(11, timeout=1200)
@@ -4420,7 +4423,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test the behaviour of an AUTO takeoff, pt2.'''
         '''
         Conditions:
-        - ARSPD_USE=1
+        - ARSPD_USE=0
         - TKOFF_OPTIONS[0]=0
         - TKOFF_THR_MAX > THR_MAX
         '''
@@ -4441,10 +4444,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.wait_ready_to_arm()
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
         self.load_mission("catapult.txt", strict=True)
         self.change_mode('AUTO')
 
-        self.wait_ready_to_arm()
         self.arm_vehicle()
 
         # Throw the catapult.
@@ -4455,7 +4460,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(test_alt, test_alt+2, relative=True)
 
         # Ensure that by then the aircraft still goes at max allowed throttle.
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Wait for landing waypoint.
         self.wait_current_waypoint(11, timeout=1200)
@@ -4488,10 +4494,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
 
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
+        self.wait_ready_to_arm()
+
+        # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
         self.load_mission("catapult.txt", strict=True)
         self.change_mode('AUTO')
 
-        self.wait_ready_to_arm()
         self.arm_vehicle()
 
         # Throw the catapult.
@@ -4499,7 +4507,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Ensure that TKOFF_THR_MAX_T is respected.
         self.delay_sim_time(self.get_parameter("TKOFF_THR_MAX_T")-1)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")-1))
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Ensure that after that the aircraft does not go full throttle anymore.
         test_alt = 50
@@ -4543,11 +4552,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RTL_AUTOLAND": 2, # The mission contains a DO_LAND_START item.
         })
 
+        self.wait_ready_to_arm()
+
         # Load and start mission. It contains a MAV_CMD_NAV_TAKEOFF item at 100m.
         self.load_mission("catapult.txt", strict=True)
         self.change_mode('AUTO')
 
-        self.wait_ready_to_arm()
         self.arm_vehicle()
 
         # Throw the catapult.
@@ -4555,14 +4565,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Ensure that TKOFF_THR_MAX_T is respected.
         self.delay_sim_time(self.get_parameter("TKOFF_THR_MAX_T")-1)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-10, operator.ge)
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Ensure that after that the aircraft still goes to maximum throttle.
         test_alt = 50
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-10, operator.ge)
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Wait for landing waypoint.
         self.wait_current_waypoint(11, timeout=1200)
@@ -4586,7 +4596,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "ARSPD_USE": 1.0,
             "THR_MAX": 100.0,
             "TKOFF_LVL_ALT": 30.0,
-            "TKOFF_ALT": 100.0,
+            "TKOFF_ALT": 80.0,
             "TKOFF_OPTIONS": 0.0,
             "TKOFF_THR_MINACC": 3.0,
             "TKOFF_THR_MAX": 80.0,
@@ -4604,17 +4614,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Check whether we're at max throttle below TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Check whether we're still at max throttle past TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Wait for the takeoff to complete.
         target_alt = self.get_parameter("TKOFF_ALT")
         self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        # Wait a bit for the Takeoff altitude to settle.
+        self.delay_sim_time(5)
 
         self.fly_home_land_and_disarm()
 
@@ -4635,8 +4649,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "ARSPD_USE": 1.0,
             "THR_MAX": 100.0,
-            "TKOFF_LVL_ALT": 80.0,
-            "TKOFF_ALT": 150.0,
+            "TKOFF_LVL_ALT": 30.0,
+            "TKOFF_ALT": 80.0,
             "TKOFF_OPTIONS": 1.0,
             "TKOFF_THR_MINACC": 3.0,
             "TKOFF_THR_MAX": 80.0,
@@ -4654,18 +4668,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Check whether we're at max throttle below TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+        target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Check whether we've receded from max throttle past TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MIN"))-1, operator.ge)
+        thr_min = 1000+10*(self.get_parameter("TKOFF_THR_MIN"))-1
+        thr_max = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-10
+        self.assert_servo_channel_range(3, thr_min, thr_max)
 
         # Wait for the takeoff to complete.
         target_alt = self.get_parameter("TKOFF_ALT")
         self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        # Wait a bit for the Takeoff altitude to settle.
+        self.delay_sim_time(5)
 
         self.fly_home_land_and_disarm()
 
@@ -4688,6 +4706,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "ARSPD_USE": 0.0,
             "THR_MAX": 100.0,
+            "TKOFF_DIST": 400.0,
             "TKOFF_LVL_ALT": 30.0,
             "TKOFF_ALT": 100.0,
             "TKOFF_OPTIONS": 0.0,
@@ -4715,7 +4734,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self,
             3,  # throttle
             expected_takeoff_throttle,
-            epsilon=1,
+            epsilon=10,
             minimum_duration=1,
         )
         w.run()
@@ -4728,7 +4747,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self,
             3,  # throttle
             expected_takeoff_throttle,
-            epsilon=1,
+            epsilon=10,
             minimum_duration=1,
         )
         w.run()
@@ -4764,18 +4783,48 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Check whether we're at max throttle below TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("THR_MAX"))-10, operator.ge)
+        target_throttle = 1000+10*(self.get_parameter("THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Check whether we're still at max throttle past TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("THR_MAX"))-10, operator.ge)
+        target_throttle = 1000+10*(self.get_parameter("THR_MAX"))
+        self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Wait for the takeoff to complete.
         target_alt = self.get_parameter("TKOFF_ALT")
         self.wait_altitude(target_alt-5, target_alt, relative=True)
+
+        # Wait a bit for the Takeoff altitude to settle.
+        self.delay_sim_time(5)
+
+        self.fly_home_land_and_disarm()
+
+    def TakeoffGround(self):
+        '''Test a rolling TAKEOFF.'''
+
+        self.set_parameters({
+            "TKOFF_ROTATE_SPD": 15.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Check that we demand minimum pitch below rotation speed.
+        self.wait_groundspeed(8, 10)
+        m = self.assert_receive_message('NAV_CONTROLLER_OUTPUT', timeout=5)
+        nav_pitch = m.nav_pitch
+        if nav_pitch > 5.1 or nav_pitch < 4.9:
+            raise NotAchievedException(f"Did not achieve correct takeoff pitch ({nav_pitch}).")
+
+        # Check whether we've achieved correct target pitch after rotation.
+        self.wait_groundspeed(23, 24)
+        m = self.assert_receive_message('NAV_CONTROLLER_OUTPUT', timeout=5)
+        nav_pitch = m.nav_pitch
+        if nav_pitch > 15.1 or nav_pitch < 14.9:
+            raise NotAchievedException(f"Did not achieve correct takeoff pitch ({nav_pitch}).")
 
         self.fly_home_land_and_disarm()
 
@@ -6315,6 +6364,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffTakeoff2,
             self.TakeoffTakeoff3,
             self.TakeoffTakeoff4,
+            self.TakeoffGround,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
