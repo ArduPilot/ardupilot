@@ -2253,13 +2253,21 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
             // start circling
             circle_start();
         }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        float distance_m = copter.wp_nav->get_wp_distance_to_destination() / 100.0f;
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
     const float turns = cmd.get_loiter_turns();
+    const float turns_completed = fabsf(copter.circle_nav->get_angle_total()/float(M_2PI));
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_count_completed(cmd.index, turns_completed, turns);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= turns;
+    return turns_completed >= turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
