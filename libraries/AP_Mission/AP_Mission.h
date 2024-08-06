@@ -437,6 +437,39 @@ public:
         }
     };
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    struct ItemProgress {
+        float distance_remaining_m;
+        float time_remaining_s;
+        float count_remaining;
+        uint16_t index;
+        uint8_t percentage_complete;
+    };
+
+    void set_item_progress(uint16_t index, float distance_remaining_m, float time_remaining_s, float count_remaining, uint8_t percentage_complete);
+    ItemProgress get_item_progress(uint16_t index) const;
+    void clear_item_progress(void);
+
+    // Populate the 'remaining' fields of the NAV_CONTROLLER_PROGRESS message with distance remaining.
+    // Note: If total is set to 0, the reported percentage complete is set to 255 (invalid).
+    void set_item_progress_distance_remaining(uint16_t index, float remaining_m, float total_m=0);
+    // Populate the 'remaining' fields of the NAV_CONTROLLER_PROGRESS message with time remaining.
+    // Note: If total is set to 0, the reported percentage complete is set to 255 (invalid).
+    void set_item_progress_time_remaining(uint16_t index, float remaining_s, float total_s=0);
+    // Populate the 'remaining' fields of the NAV_CONTROLLER_PROGRESS message with count remaining.
+    // Note: If total is set to 0, the reported percentage complete is set to 255 (invalid).
+    void set_item_progress_count_remaining(uint16_t index, float remaining, float total=0);
+
+    // Populate the 'remaining' fields of the NAV_CONTROLLER_PROGRESS message with distance traveled.
+    // Note: This gets converted to a distance remaining, so requires a total greater than 0.
+    void set_item_progress_distance_traveled(uint16_t index, float traveled_m, float total_m);
+    // Populate the 'remaining' fields of the NAV_CONTROLLER_PROGRESS message with time elapsed.
+    // Note: This gets converted to a time remaining, so requires a total greater than 0.
+    void set_item_progress_time_elapsed(uint16_t index, float elapsed_s, float total_s);
+    // Populate the 'remaining' fields of the NAV_CONTROLLER_PROGRESS message with count completed.
+    // Note: This gets converted to a count remaining, so requires a total greater than 0.
+    void set_item_progress_count_completed(uint16_t index, float completed, float total);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // main program function pointers
     FUNCTOR_TYPEDEF(mission_cmd_fn_t, bool, const Mission_Command&);
@@ -949,6 +982,11 @@ private:
       format to take advantage of new packing
      */
     void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    ItemProgress _current_item_progress;
+    const ItemProgress kInvalidProgress { NAN, NAN, NAN, UINT16_MAX, UINT8_MAX, };
+    uint8_t calc_item_percentage_complete(float completed, float total) const;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 };
 
 namespace AP
