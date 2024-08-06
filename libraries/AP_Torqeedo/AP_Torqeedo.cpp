@@ -252,10 +252,15 @@ void AP_Torqeedo::thread_main()
 
             // send motor speed
             if (_send_motor_speed) {
-                if ((now_ms - _last_reset_ms > TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS))
+                if ((now_ms - _last_reset_ms > TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS) &&
+                    !(_display_system_state.flags.set_throttle_stop || _display_system_state.flags.temp_warning)) {
                     send_motor_speed_cmd(); 
+                }
                 else 
-                    send_motor_speed_cmd(true); //set throttle=0 after reset for the hold-down period
+                    // set throttle=0 after a reset for the hold-down period 
+                    // or if the motor is in a fault state that requires the throttle to be set to 0
+                    send_motor_speed_cmd(true); 
+
                 _send_motor_speed = false;
                 log_update = true;
             }
