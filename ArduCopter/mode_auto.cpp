@@ -949,7 +949,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return verify_loiter_to_alt();
+        return verify_loiter_to_alt(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         cmd_complete = verify_RTL();
@@ -2151,12 +2151,21 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
 // verify_loiter_to_alt - check if we have reached both destination
 // (roughly) and altitude (precisely)
-bool ModeAuto::verify_loiter_to_alt() const
+bool ModeAuto::verify_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     if (loiter_to_alt.reached_destination_xy &&
         loiter_to_alt.reached_alt) {
         return true;
     }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // Copter nav flies a straight line in 3D space to get to the Loiter Alt
+    // waypoint (it doesn't fly to the xy pos then ascend/descend).
+    const Vector2f vector_cm = Vector2f(copter.wp_nav->get_wp_distance_to_destination(), (copter.current_loc.alt - loiter_to_alt.alt));
+    const float distance_m = vector_cm.length() / 100.0f;
+    mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     return false;
 }
 
