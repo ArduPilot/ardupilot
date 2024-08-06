@@ -28,15 +28,15 @@ https://holybro.com/products/dronecan-pm08-power-module-14s-200a
 
 ## Status LED
 
-- Flashing quickly continuously: MCU is in the bootloader stage, waiting for firmware to be flash
+- Flashing quickly continuously: MCU is in the bootloader stage, waiting for firmware to be flashed
 - Flashing quickly for 3 seconds, and then on for 1 second: Waiting for CAN connection
 - Flashing slowly (one-second intervals): CAN is successfully connected
 
 ## Mechanical Spec
 
-- Size: 45mm¡Á41mm¡Á26mm (Not Include Cable)
-- Weight: 185g (Include Cable)
+- Size: 45mm¡Á41mm¡Á26mm (not include cable)
+- Weight: 185g (include cable)
 
 ## Loading Firmware
 
-You can upgraded the *.bin firmware files using the dronecan GUI tool. *.apj files can also be upgraded using mossionplanner ground station.
+You can upgrade the *.bin firmware files using the DroneCan GUI tool. *.apj files can also be upgraded using mossionplanner ground station.
