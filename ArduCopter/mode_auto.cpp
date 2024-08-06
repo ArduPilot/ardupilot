@@ -2346,6 +2346,10 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
             // start circling
             circle_start();
         }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        const float distance_m = copter.wp_nav->get_wp_distance_to_destination_m();
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2356,12 +2360,19 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         // weathervaning, changes where the aircraft points without changing how long the
         // command runs.  AC_Circle's angle counter behaved the same way
         const float angle_swept_rad = circle.panorama_rate_rads * (millis() - circle.panorama_start_ms) * 0.001;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        mission.set_item_progress_count_completed(cmd.index, angle_swept_rad / M_2PI, fabsf(circle.turns_signed));
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return angle_swept_rad >= fabsf(circle.turns_signed) * M_2PI;
     }
 
     // report each whole turn as it is completed.  The angle comes from the orbit leg itself, so
     // it tracks the path actually flown rather than an independently integrated rate
-    const uint16_t turns_done = copter.wp_nav->get_circle_angle_covered_rad() / M_2PI;
+    const float turns_completed = copter.wp_nav->get_circle_angle_covered_rad() / M_2PI;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_count_completed(cmd.index, turns_completed, fabsf(circle.turns_signed));
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    const uint16_t turns_done = turns_completed;
     if (turns_done > circle.turns_reported) {
         circle.turns_reported = turns_done;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circled %u/%.1f turns",
