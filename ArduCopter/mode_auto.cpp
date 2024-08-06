@@ -2312,7 +2312,16 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+    const uint32_t delay_time_elapsed_ms = millis() - nav_delay_time_start_ms;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(
+        cmd.index,
+        delay_time_elapsed_ms / 1000.0f,
+        nav_delay_time_max_ms / 1000.0f
+    );
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
+    if (delay_time_elapsed_ms > nav_delay_time_max_ms) {
         nav_delay_time_max_ms = 0;
         return true;
     }
