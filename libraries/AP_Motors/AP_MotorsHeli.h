@@ -42,7 +42,7 @@ public:
     /// Constructor
     AP_MotorsHeli( uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_Motors(speed_hz),
-        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_RSC)
+        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_RSC, 0U)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -90,17 +90,8 @@ public:
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
     float get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
 
-    // get_main_rotor_speed - estimated rotor speed when no governor or speed sensor used
-    float get_main_rotor_speed() const { return _main_rotor.get_rotor_speed(); }
-
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
-
-    //get rotor governor output
-    float get_governor_output() const { return _main_rotor.get_governor_output(); }
-
-    //get engine throttle output
-    float get_control_output() const { return _main_rotor.get_control_output(); }
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
