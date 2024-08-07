@@ -617,7 +617,7 @@ bool AC_Fence::auto_enable_fence_floor()
     // check if we are over the altitude fence
     if (!floor_enabled() && _curr_alt >= _alt_min + _margin) {
         enable(true, AC_FENCE_TYPE_ALT_MIN, false);
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Min Alt fence enabled (auto enable)");
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Min Alt fence enabled (auto enable)");
         return true;
     } 
 
@@ -864,7 +864,7 @@ void AC_Fence::manual_recovery_start()
     // record time pilot began manual recovery
     _manual_recovery_start_ms = AP_HAL::millis();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Manual recovery started");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Manual recovery started");
 }
 
 // methods for mavlink SYS_STATUS message (send_sys_status)
