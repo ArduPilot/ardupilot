@@ -111,8 +111,15 @@ AP_BattMonitor_Analog::read()
         // this copes with changing the pin at runtime
         _state.healthy &= _curr_pin_analog_source->set_pin(_curr_pin);
 
+        const float curr_voltage = _curr_pin_analog_source->voltage_average();
+        if (!done_amp_cal && option_is_set(AP_BattMonitor_Params::Options::AMP_AutoOffset)) {
+            // automatically calibrate amp offset on first read
+            _curr_amp_offset.set(curr_voltage);
+            done_amp_cal = true;
+        }
+
         // read current
-        _state.current_amps = (_curr_pin_analog_source->voltage_average() - _curr_amp_offset) * _curr_amp_per_volt;
+        _state.current_amps = (curr_voltage - _curr_amp_offset) * _curr_amp_per_volt;
 
         update_consumed(_state, dt_us);
 
