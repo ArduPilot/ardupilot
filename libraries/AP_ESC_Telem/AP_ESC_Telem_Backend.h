@@ -31,7 +31,10 @@ public:
 #endif // AP_EXTENDED_ESC_TELEM_ENABLED
 
         // return true if the data is stale
-        bool stale(uint32_t now_ms=0) const volatile;
+        bool stale(uint32_t now_ms) const volatile;
+
+        //  return true if the requested type of data is available and not stale
+        bool valid(const uint16_t type_mask) const volatile;
     };
 
     struct RpmData {
