@@ -482,6 +482,7 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'RANGEFINDER_SENDING', 'AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', 'Enable sending of RANGEFINDER mavlink message', 0, "RANGEFINDER"),  # noqa
     Feature('MAVLink', 'MAVLINK_SIGNING', 'AP_MAVLINK_SIGNING_ENABLED', 'Enable MAVLink2 packet signing and validation', 0, None),  # noqa
     Feature('MAVLink', 'MAVLINK_GET_HOME_POSITION', 'AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'Enable superseded MAV_CMD_GET_HOME_POSITION', 0, None),  # noqa
+    Feature('MAVLink', 'MAV_MSG_NAV_CONTROLLER_PROGRESS', 'AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED', 'Enable sending MAVLink NAV_CONTROLLER_PROGRESS message', 0, None),  # noqa
 
     Feature('Developer', 'KILL_IMU', 'AP_INERTIALSENSOR_KILL_IMU_ENABLED', 'Allow IMUs to be disabled at runtime', 0, None),
     Feature('Developer', 'CRASHDUMP_FLASH', 'AP_CRASHDUMP_FLASH_ENABLED', 'Enable crash dumps to flash', 0, None),
@@ -559,7 +560,7 @@ BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
 # makes sense:
 sanity_check_failed = False
 for x in BUILD_OPTIONS:
-    if len(x.label) > 30:
+    if len(x.label) > 31:
         sanity_check_failed = True
         print(f"{x.label} is too long")
         sanity_check_failed = True
