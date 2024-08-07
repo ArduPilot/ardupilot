@@ -52,16 +52,16 @@ private:
 
     struct PACKED ILabsPacket {
         uint16_t magic = 0x55AA;
-        uint8_t msg_type = 1;
+        uint8_t msg_type = 0x01;
         uint8_t msg_id = 0x95;
         uint16_t msg_len; // total packet length-2
 
-        // send Table4, 27 messages
-        uint8_t num_messages = 27;
-        uint8_t messages[27] = {
+        // send Table4, 32 messages
+        uint8_t num_messages = 32;
+        uint8_t messages[32] = {
             0x01, 0x3C, 0x23, 0x21, 0x25, 0x24, 0x07, 0x12, 0x10, 0x58, 0x57, 0x53, 0x4a,
-            0x3b, 0x30, 0x32, 0x3e, 0x36, 0x41, 0xc0, 0x28, 0x86, 0x8a, 0x8d, 0x50,
-            0x52, 0x5a
+            0x3b, 0x30, 0x32, 0x3e, 0x36, 0x41, 0xc0, 0x28, 0x86, 0x8a, 0x8d, 0x50, 0x52,
+            0x5a, 0x33, 0x3a, 0x40, 0x42, 0x54
         };
         uint32_t gps_ins_time_ms; // ms since start of GPS week for IMU data
         uint16_t gps_week;
@@ -73,7 +73,7 @@ private:
         } baro_data;
         vec3_16_t mag_data; // nT/10
         struct PACKED {
-            int16_t yaw; // deg*100
+            uint16_t yaw; // deg*100
             int16_t pitch; // deg*100
             int16_t roll; // deg*100
         } orientation_angles; // 321 euler order
@@ -84,7 +84,7 @@ private:
             int32_t alt; // m*100, AMSL
         } position;
         vec3_u8_t kf_vel_covariance; // mm/s
-        vec3_u16_t kf_pos_covariance;
+        vec3_u16_t kf_pos_covariance; // mm
         uint16_t unit_status;
         gnss_extended_info_t gnss_extended_info;
         uint8_t num_sats;
@@ -109,6 +109,20 @@ private:
         uint16_t supply_voltage; // V*100
         int16_t temperature; // degC*10
         uint16_t unit_status2;
+        struct PACKED {
+            uint16_t heading; // deg*100
+            int16_t pitch; // deg*100
+        } gnss_angles;
+        uint8_t gnss_angle_pos_type;
+        uint32_t gnss_heading_timestamp; // ms
+        struct PACKED {
+            uint16_t gdop;
+            uint16_t pdop;
+            uint16_t hdop;
+            uint16_t vdop;
+            uint16_t tdop;
+        } gnss_dop; // 10e3
+        uint8_t ins_sol_status;
         uint16_t crc;
     } pkt;
 
