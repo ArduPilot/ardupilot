@@ -289,6 +289,7 @@ AP_HW_PhenixH7_Pro                   1172
 AP_HW_2RAWH743                       1173
 
 AP_HW_FlywooF405HD_AIOv2             1180
+AP_HW_FlywooH743Pro                  1181
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
