@@ -47,7 +47,7 @@ bool MissionItemProtocol::mavlink2_requirement_met(const GCS_MAVLINK &_link, con
     if (!_link.sending_mavlink1()) {
         return true;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "Need mavlink2 for item transfer");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Need mavlink2 for item transfer");
     send_mission_ack(_link, msg, MAV_MISSION_UNSUPPORTED);
     return false;
 }
@@ -199,7 +199,7 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
 
     if (!mission_request_warning_sent) {
         mission_request_warning_sent = true;
-        gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
     }
 
     // buffer space is checked by send_message
@@ -213,7 +213,7 @@ void MissionItemProtocol::send_mission_item_warning()
         return;
     }
     mission_item_warning_sent = true;
-    gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_ITEM; GCS should send MISSION_ITEM_INT");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got MISSION_ITEM; GCS should send MISSION_ITEM_INT");
 }
 
 void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
@@ -238,7 +238,7 @@ void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
     if ((unsigned)packet.start_index > item_count() ||
         (unsigned)packet.end_index > item_count() ||
         packet.end_index < packet.start_index) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight plan update rejected"); // FIXME: Remove this anytime after 2020-01-22
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Flight plan update rejected"); // FIXME: Remove this anytime after 2020-01-22
         send_mission_ack(_link, msg, MAV_MISSION_ERROR);
         return;
     }
