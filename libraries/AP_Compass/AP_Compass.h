@@ -196,8 +196,10 @@ public:
     */
     MAV_RESULT handle_mag_cal_command(const mavlink_command_int_t &packet);
 
+#if COMPASS_CAL_ENABLED
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);
+#endif
 #endif
 
     // check if the compasses are pointing in the same direction
@@ -403,8 +405,10 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() const { return _compass_cal_autoreboot; }
+#if HAL_MAVLINK_BINDINGS_ENABLED && COMPASS_CAL_ENABLED
     Priority next_cal_progress_idx[MAVLINK_COMM_NUM_BUFFERS];
     Priority next_cal_report_idx[MAVLINK_COMM_NUM_BUFFERS];
+#endif
 
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
