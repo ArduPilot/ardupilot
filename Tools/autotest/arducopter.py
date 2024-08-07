@@ -11704,6 +11704,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(new_heading - original_heading) > 5:
             raise NotAchievedException(f"Should return to original heading want={original_heading} got={new_heading}")
 
+    def BatteryInternalUseOnly(self):
+        '''batteries marked as internal use only should not appear over mavlink'''
+        self.set_parameters({
+            "BATT_MONITOR": 4,  # 4 is analog volt+curr
+            "BATT2_MONITOR": 4,
+        })
+        self.reboot_sitl()
+        self.wait_message_field_values('BATTERY_STATUS', {
+            "id": 0,
+        })
+        self.wait_message_field_values('BATTERY_STATUS', {
+            "id": 1,
+        })
+        self.progress("Making battery private")
+        self.set_parameters({
+            "BATT_OPTIONS": 256,
+        })
+        self.wait_message_field_values('BATTERY_STATUS', {
+            "id": 1,
+        })
+        for i in range(10):
+            self.assert_received_message_field_values('BATTERY_STATUS', {
+                "id": 1
+            })
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11802,6 +11827,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.REQUIRE_POSITION_FOR_ARMING,
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
+            self.BatteryInternalUseOnly,
         ])
         return ret
 
