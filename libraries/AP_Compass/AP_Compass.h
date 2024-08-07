@@ -162,9 +162,6 @@ public:
     /// Return true if we have set a scale factor for a compass
     bool have_scale_factor(uint8_t i) const;
 
-    // compass calibrator interface
-    void cal_update();
-
 #if COMPASS_MOT_ENABLED
     // per-motor calibration access
     void per_motor_calibration_start(void) {
@@ -178,6 +175,10 @@ public:
     }
 #endif
 
+#if COMPASS_CAL_ENABLED
+    // compass calibrator interface
+    void cal_update();
+
     // start_calibration_all will only return false if there are no
     // compasses to calibrate.
     bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
@@ -187,9 +188,7 @@ public:
     bool compass_cal_requires_reboot() const { return _cal_requires_reboot; }
     bool is_calibrating() const;
 
-    // indicate which bit in LOG_BITMASK indicates we should log compass readings
-    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
-
+#if HAL_MAVLINK_BINDINGS_ENABLED
     /*
       handle an incoming MAG_CAL command
     */
@@ -197,6 +196,11 @@ public:
 
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);
+#endif  // HAL_MAVLINK_BINDINGS_ENABLED
+#endif  // COMPASS_CAL_ENABLED
+
+    // indicate which bit in LOG_BITMASK indicates we should log compass readings
+    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
     // check if the compasses are pointing in the same direction
     bool consistent() const;
@@ -391,6 +395,7 @@ private:
     void probe_dronecan_compasses(void);
 #endif
 
+#if COMPASS_CAL_ENABLED
     // compass cal
     void _update_calibration_trampoline();
     bool _accept_calibration(uint8_t i);
@@ -401,8 +406,11 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() const { return _compass_cal_autoreboot; }
+#if HAL_MAVLINK_BINDINGS_ENABLED
     Priority next_cal_progress_idx[MAVLINK_COMM_NUM_BUFFERS];
     Priority next_cal_report_idx[MAVLINK_COMM_NUM_BUFFERS];
+#endif
+#endif  // COMPASS_CAL_ENABLED
 
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
@@ -419,12 +427,12 @@ private:
     //keep track of which calibrators have been saved
     RestrictIDTypeArray<bool, COMPASS_MAX_INSTANCES, Priority> _cal_saved;
     bool _cal_autosave;
-#endif
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;
     bool _cal_requires_reboot;
     bool _cal_has_run;
+#endif  // COMPASS_CAL_ENABLED
 
     // enum of drivers for COMPASS_DISBLMSK
     enum DriverType {
