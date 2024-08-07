@@ -240,8 +240,7 @@ bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & (AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL))) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL)) {
         return false;
     }
     temp = telemdata.temperature_cdeg;
@@ -253,8 +252,7 @@ bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & (AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL))) {
+         || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL)) {
         return false;
     }
     temp = telemdata.motor_temp_cdeg;
@@ -282,8 +280,7 @@ bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::CURRENT)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::CURRENT)) {
         return false;
     }
     amps = telemdata.current;
@@ -295,8 +292,7 @@ bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)) {
         return false;
     }
     volts = telemdata.voltage;
@@ -308,8 +304,7 @@ bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, float& consumption_mah
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION)) {
         return false;
     }
     consumption_mah = telemdata.consumption_mah;
@@ -321,8 +316,7 @@ bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::USAGE)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::USAGE)) {
         return false;
     }
     usage_s = telemdata.usage_s;
@@ -335,8 +329,7 @@ bool AP_ESC_Telem::get_input_duty(uint8_t esc_index, uint8_t& input_duty) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY)) {
         return false;
     }
     input_duty = telemdata.input_duty;
@@ -348,8 +341,7 @@ bool AP_ESC_Telem::get_output_duty(uint8_t esc_index, uint8_t& output_duty) cons
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY)) {
         return false;
     }
     output_duty = telemdata.output_duty;
@@ -361,8 +353,7 @@ bool AP_ESC_Telem::get_flags(uint8_t esc_index, uint32_t& flags) const
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::FLAGS)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::FLAGS)) {
         return false;
     }
     flags = telemdata.flags;
@@ -374,8 +365,7 @@ bool AP_ESC_Telem::get_power_percentage(uint8_t esc_index, uint8_t& power_percen
 {
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
     if (esc_index >= ESC_TELEM_MAX_ESCS
-        || telemdata.stale()
-        || !(telemdata.types & AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE)) {
+        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE)) {
         return false;
     }
     power_percentage = telemdata.power_percentage;
