@@ -68,7 +68,7 @@ private:
     RunState pilot_desired_runstate = RunState::STOP;
     RunState commanded_runstate = RunState::STOP;  // output is based on this
     void set_pilot_desired_runstate(RunState newstate) {
-        // gcs().send_text(MAV_SEVERITY_INFO, "RichenPower: Moving to state (%u) from (%u)\n", (unsigned)newstate, (unsigned)runstate);
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RichenPower: Moving to state (%u) from (%u)\n", (unsigned)newstate, (unsigned)runstate);
         pilot_desired_runstate = newstate;
     }
     void update_runstate();
