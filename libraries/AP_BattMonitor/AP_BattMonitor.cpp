@@ -777,6 +777,14 @@ float AP_BattMonitor::gcs_voltage(uint8_t instance) const
     return state[instance].voltage;
 }
 
+bool AP_BattMonitor::option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->option_is_set(option);
+}
+
 /// current_amps - returns the instantaneous current draw in amperes
 bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
     if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
