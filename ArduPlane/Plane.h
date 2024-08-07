@@ -366,19 +366,20 @@ private:
         uint32_t AFS_last_valid_rc_ms;
     } failsafe;
 
-    enum Landing_ApproachStage {
-        RTL,
-        LOITER_TO_ALT,
-        ENSURE_RADIUS,
-        WAIT_FOR_BREAKOUT,
-        APPROACH_LINE,
-        VTOL_LANDING,
-    };
-
 #if HAL_QUADPLANE_ENABLED
     // Landing
-    struct {
-        enum Landing_ApproachStage approach_stage;
+    class VTOLApproach {
+    public:
+        enum class Stage {
+            RTL,
+            LOITER_TO_ALT,
+            ENSURE_RADIUS,
+            WAIT_FOR_BREAKOUT,
+            APPROACH_LINE,
+            VTOL_LANDING,
+        };
+
+        Stage approach_stage;
         float approach_direction_deg;
     } vtol_approach_s;
 #endif

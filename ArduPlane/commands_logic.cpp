@@ -429,7 +429,7 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
     loc.sanitize(current_loc);
     set_next_WP(loc);
 
-    vtol_approach_s.approach_stage = LOITER_TO_ALT;
+    vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
 }
 #endif
 
@@ -1016,7 +1016,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
     loiter.direction = direction;
 
     switch (vtol_approach_s.approach_stage) {
-        case RTL:
+        case VTOLApproach::Stage::RTL:
             {
                 // fly home and loiter at RTL alt
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
@@ -1024,11 +1024,11 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                     // decend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
                     plane.loiter_angle_reset();
-                    vtol_approach_s.approach_stage = LOITER_TO_ALT;
+                    vtol_approach_s.approach_stage = VTOLApproach::Stage::LOITER_TO_ALT;
                 }
                 break;
             }
-        case LOITER_TO_ALT:
+        case VTOLApproach::Stage::LOITER_TO_ALT:
             {
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
 
@@ -1036,11 +1036,11 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                     Vector3f wind = ahrs.wind_estimate();
                     vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
                     gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
-                    vtol_approach_s.approach_stage = ENSURE_RADIUS;
+                    vtol_approach_s.approach_stage = VTOLApproach::Stage::ENSURE_RADIUS;
                 }
                 break;
             }
-        case ENSURE_RADIUS:
+        case VTOLApproach::Stage::ENSURE_RADIUS:
             {
                 // validate that the vehicle is at least the expected distance away from the loiter point
                 // require an angle total of at least 2 centidegrees, due to special casing of 1 centidegree
@@ -1050,10 +1050,10 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                     nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                     break;
                 }
-                vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
+                vtol_approach_s.approach_stage = VTOLApproach::Stage::WAIT_FOR_BREAKOUT;
                 FALLTHROUGH;
             }
-        case WAIT_FOR_BREAKOUT:
+        case VTOLApproach::Stage::WAIT_FOR_BREAKOUT:
             {
                 nav_controller->update_loiter(cmd.content.location, radius, direction);
 
@@ -1062,7 +1062,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // breakout when within 5 degrees of the opposite direction
                 if (fabsF(wrap_PI(ahrs.get_yaw() - breakout_direction_rad)) < radians(5.0f)) {
                     gcs().send_text(MAV_SEVERITY_INFO, "Starting VTOL land approach path");
-                    vtol_approach_s.approach_stage = APPROACH_LINE;
+                    vtol_approach_s.approach_stage = VTOLApproach::Stage::APPROACH_LINE;
                     set_next_WP(cmd.content.location);
                     // fallthrough
                 } else {
@@ -1070,7 +1070,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 }
                 FALLTHROUGH;
             }
-        case APPROACH_LINE:
+        case VTOLApproach::Stage::APPROACH_LINE:
             {
                 // project an apporach path
                 Location start = cmd.content.location;
@@ -1099,7 +1099,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 }
 
                 if (past_finish_line && (lined_up || half_radius)) {
-                    vtol_approach_s.approach_stage = VTOL_LANDING;
+                    vtol_approach_s.approach_stage = VTOLApproach::Stage::VTOL_LANDING;
                     quadplane.do_vtol_land(cmd);
                     // fallthrough
                 } else {
@@ -1107,7 +1107,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 }
                 FALLTHROUGH;
             }
-        case VTOL_LANDING:
+        case VTOLApproach::Stage::VTOL_LANDING:
             // nothing to do here, we should be into the quadplane landing code
             return true;
     }

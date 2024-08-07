@@ -116,8 +116,8 @@ float Plane::mode_auto_target_airspeed_cm()
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.landing_with_fixed_wing_spiral_approach() &&
-        ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
-         (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+        ((vtol_approach_s.approach_stage == VTOLApproach::Stage::APPROACH_LINE) ||
+         (vtol_approach_s.approach_stage == VTOLApproach::Stage::VTOL_LANDING))) {
         const float land_airspeed = TECS_controller.get_land_airspeed();
         if (is_positive(land_airspeed)) {
             return land_airspeed * 100;
