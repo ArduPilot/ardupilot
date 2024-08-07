@@ -764,7 +764,7 @@ void AP_Logger_File::start_new_log(void)
 
     // set _open_error here to avoid infinite recursion.  Simply
     // writing a prioritised block may try to open a log - which means
-    // if anything in the start_new_log path does a gcs().send_text()
+    // if anything in the start_new_log path does a GCS_SEND_TEXT()
     // (for example), you will end up recursing if we don't take
     // precautions.  We will reset _open_error if we actually manage
     // to open the log...
