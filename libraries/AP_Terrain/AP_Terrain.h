@@ -108,6 +108,7 @@ public:
 
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const;
 
+#if HAL_GCS_ENABLED
     // send any pending terrain request message
     bool send_cache_request(mavlink_channel_t chan);
     void send_request(mavlink_channel_t chan);
@@ -117,6 +118,7 @@ public:
     void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_terrain_data(const mavlink_message_t &msg);
+#endif
 
     /*
       find the terrain height in meters above sea level for a location
@@ -318,11 +320,13 @@ private:
     */
     bool check_bitmap(const struct grid_block &grid, uint8_t idx_x, uint8_t idx_y);
 
+#if HAL_GCS_ENABLED
     /*
       request any missing 4x4 grids from a block
     */
     bool request_missing(mavlink_channel_t chan, struct grid_cache &gcache);
     bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
+#endif
 
     /*
       look for blocks that need to be read/written to disk
@@ -394,8 +398,10 @@ private:
     volatile enum DiskIoState disk_io_state;
     union grid_io_block disk_block;
 
+#if HAL_GCS_ENABLED
     // last time we asked for more grids
     uint32_t last_request_time_ms[MAVLINK_COMM_NUM_BUFFERS];
+#endif
 
     static const uint64_t bitmap_mask = (((uint64_t)1U)<<(TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y)) - 1;
 
