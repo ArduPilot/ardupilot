@@ -119,6 +119,7 @@ ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
 
 bool AP_Param::done_all_default_params;
+char AP_Param::unknown_defaultfile_parameter_name[17];
 
 AP_Param::defaults_list *AP_Param::default_list;
 
@@ -2341,6 +2342,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
                          "Ignored unknown param %s in defaults file %s\n",
                          pname, filename);
 #endif
+                strncpy(unknown_defaultfile_parameter_name, pname, sizeof(unknown_defaultfile_parameter_name)-1);
             }
             done_all = false;
             continue;
