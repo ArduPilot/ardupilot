@@ -29,7 +29,6 @@ AP_RangeFinder_MSP::AP_RangeFinder_MSP(RangeFinder::RangeFinder_State &_state, A
     AP_RangeFinder_Backend(_state, _params)
 {
     state.last_reading_ms = AP_HAL::millis();
-    distance_cm = 0;
 }
 
 /*
@@ -48,24 +47,10 @@ bool AP_RangeFinder_MSP::detect()
 */
 void AP_RangeFinder_MSP::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 {
+    WITH_SEMAPHORE(_sem);
+    state.distance_m = pkt.distance_mm * 0.001f;
     state.last_reading_ms = AP_HAL::millis();
-    distance_cm = pkt.distance_mm / 10;
-}
-
-/*
-   update the state of the sensor
-*/
-void AP_RangeFinder_MSP::update(void)
-{
-    //Time out on incoming data; if we don't get new
-    //data in 500ms, dump it
-    if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_MSP_TIMEOUT_MS) {
-        set_status(RangeFinder::Status::NoData);
-        state.distance_m = 0.0f;
-    } else {
-        state.distance_m = distance_cm * 0.01f;
-        update_status();
-    }
+    update_status();
 }
 
 #endif //HAL_MSP_RANGEFINDER_ENABLED

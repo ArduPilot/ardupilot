@@ -31,7 +31,7 @@ private:
     // get a reading
     bool get_reading(float &reading_m) override;
 
-    uint16_t read_timeout_ms() const override { return 500; }
+    uint32_t read_timeout_ms() const override { return 500; }
 
     char linebuf[10];
     uint8_t linebuf_len = 0;

@@ -575,9 +575,6 @@ void AP_RangeFinder_VL53L1X::update(void)
         update_status();
         sum_mm = 0;
         counter = 0;
-    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        // if no updates for 0.2s set no-data
-        set_status(RangeFinder::Status::NoData);
     }
 }
 

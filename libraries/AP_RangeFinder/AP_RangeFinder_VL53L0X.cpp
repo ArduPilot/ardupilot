@@ -763,21 +763,21 @@ uint16_t AP_RangeFinder_VL53L0X::read_register16(uint8_t reg)
 */
 void AP_RangeFinder_VL53L0X::update(void)
 {
+    WITH_SEMAPHORE(_sem);
     if (counter > 0) {
         state.distance_m = (sum_mm * 0.001f) / counter;
         state.last_reading_ms = AP_HAL::millis();
         sum_mm = 0;
         counter = 0;
         update_status();
-    } else {
-        set_status(RangeFinder::Status::NoData);
     }
 }
 
 void AP_RangeFinder_VL53L0X::timer(void)
 {
-    uint16_t range_mm;
+     uint16_t range_mm;
     if (get_reading(range_mm) && range_mm < 8000) {
+        WITH_SEMAPHORE(_sem);
         sum_mm += range_mm;
         counter++;
     }

@@ -180,7 +180,7 @@ private:
      *
      * @return uint16_t
      */
-    uint16_t read_timeout_ms() const override { return 1000; }
+    uint32_t read_timeout_ms() const override { return 1000; }
 
     /**
      * @brief system time that sensor was last initialised

@@ -22,6 +22,9 @@ public:
 
     static void handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg);
 
+    // maximum time between readings before we change state to NoData:
+    uint32_t read_timeout_ms() const override { return 500; }
+
 protected:
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return _sensor_type;

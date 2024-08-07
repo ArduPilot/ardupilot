@@ -131,9 +131,7 @@ bool AP_RangeFinder_Wasp::get_reading(float &reading_m) {
 #define COMMAND_BUFFER_LEN 15
 
 void AP_RangeFinder_Wasp::update(void) {
-    if (!get_reading(state.distance_m)) {
-        set_status(RangeFinder::Status::NoData);
-    }
+    get_reading(state.distance_m);
 
     if (AP_HAL::millis() - state.last_reading_ms > 500) {
         // attempt to reconfigure on the assumption this was a bad baud setting

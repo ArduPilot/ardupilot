@@ -14,15 +14,6 @@ void AP_RangeFinder_NRA24_CAN::update(void)
         // update range_valid state based on distance measured
         state.last_reading_ms = AP_HAL::millis();
         update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > read_timeout_ms()) {
-        if (AP_HAL::millis() - last_heartbeat_ms > read_timeout_ms()) {
-            // no heartbeat, must be disconnected
-            set_status(RangeFinder::Status::NotConnected);
-        } else {
-            // Have heartbeat, just no data. Probably because this sensor doesn't output data when there is no relative motion infront of the radar.
-            // This case has special pre-arm check handling
-            set_status(RangeFinder::Status::NoData);
-        }
     }
 }
 

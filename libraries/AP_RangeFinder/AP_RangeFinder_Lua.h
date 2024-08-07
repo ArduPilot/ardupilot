@@ -27,6 +27,9 @@ public:
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
 
+    // maximum time between readings before we change state to NoData:
+    uint32_t read_timeout_ms() const override { return AP_RANGEFINDER_LUA_TIMEOUT_MS; }
+    
 private:
 
     RangeFinder::RangeFinder_State _state_pending = {};

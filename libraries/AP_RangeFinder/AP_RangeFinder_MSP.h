@@ -20,11 +20,13 @@ public:
     // static detection function
     static bool detect();
 
-    // update state
-    void update(void) override;
+    // empty update
+    void update(void) override {}
 
     // Get update from msp
     void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt) override;
+
+    uint32_t read_timeout_ms() const override { return AP_RANGEFINDER_MSP_TIMEOUT_MS; }
 
 protected:
 
@@ -33,8 +35,6 @@ protected:
     }
 
 private:
-    uint16_t distance_cm;
-
     // start a reading
     static bool start_reading(void);
     static bool get_reading(uint16_t &reading_cm);

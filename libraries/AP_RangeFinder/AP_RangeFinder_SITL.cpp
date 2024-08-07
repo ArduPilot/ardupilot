@@ -36,7 +36,6 @@ void AP_RangeFinder_SITL::update(void)
 
     // nan distance means nothing is connected
     if (isnan(dist) || isinf(dist)) {
-        state.status = RangeFinder::Status::NoData;
         return;
     }
 

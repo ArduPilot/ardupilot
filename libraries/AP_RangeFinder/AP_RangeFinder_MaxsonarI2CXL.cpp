@@ -148,9 +148,6 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
         state.distance_m = distance * 0.01f;
         new_distance = false;
         update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 300) {
-        // if no updates for 0.3 seconds set no-data
-        set_status(RangeFinder::Status::NoData);
     }
 }
 
