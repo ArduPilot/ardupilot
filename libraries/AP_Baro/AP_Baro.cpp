@@ -261,7 +261,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 AP_Baro *AP_Baro::_singleton;
 
 #if HAL_GCS_ENABLED
-#define BARO_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+#define BARO_SEND_TEXT(severity, format, args...) GCS_SEND_TEXT(severity, format, ##args)
 #else
 #define BARO_SEND_TEXT(severity, format, args...)
 #endif
