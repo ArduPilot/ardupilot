@@ -795,7 +795,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         return handle_MAV_CMD_NAV_TAKEOFF(packet);
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
         return handle_MAV_CMD_DO_PARACHUTE(packet);
 #endif
@@ -973,7 +973,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_MISSION_START(const mavlink_comman
 
 
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet)
 {
         // configure or release parachute

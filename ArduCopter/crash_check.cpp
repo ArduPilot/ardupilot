@@ -229,7 +229,7 @@ void Copter::yaw_imbalance_check()
     }
 }
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
 
 // Code to detect a crash main ArduCopter code
 #define PARACHUTE_CHECK_TRIGGER_SEC         1       // 1 second of loss of control triggers the parachute
@@ -369,4 +369,4 @@ void Copter::parachute_manual_release()
     parachute_release();
 }
 
-#endif // PARACHUTE == ENABLED
+#endif  // HAL_PARACHUTE_ENABLED

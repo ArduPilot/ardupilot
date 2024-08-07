@@ -653,7 +653,7 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_roi(const AP_Mission::Mission_Command& cmd);
     void do_mount_control(const AP_Mission::Mission_Command& cmd);
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
 #if AP_WINCH_ENABLED
