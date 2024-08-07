@@ -96,6 +96,7 @@ public:
         k_param_options,
         k_param_rpm_msg_rate,
         k_param_esc_rate,
+        k_param_esc_extended_telem_rate,
     };
 
     AP_Int16 format_version;
@@ -183,6 +184,9 @@ public:
 #endif
 #if HAL_WITH_ESC_TELEM
     AP_Int32 esc_telem_rate;
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    AP_Int16 esc_extended_telem_rate;
+#endif
 #endif
 #endif
 

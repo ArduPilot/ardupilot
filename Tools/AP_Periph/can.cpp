@@ -1670,6 +1670,20 @@ void AP_Periph_FW::can_start()
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
+// try to map the ESC number to a motor number. This is needed
+// for when we have multiple CAN nodes, one for each ESC
+uint8_t AP_Periph_FW::get_motor_number(const uint8_t esc_number) const
+{
+    const auto *channel = SRV_Channels::srv_channel(esc_number);
+    // try to map the ESC number to a motor number. This is needed
+    // for when we have multiple CAN nodes, one for each ESC
+    if (channel == nullptr) {
+        return esc_number;
+    }
+    const int8_t motor_num = channel->get_motor_num();
+    return (motor_num == -1) ? esc_number : motor_num;
+}
+
 /*
   send ESC status packets based on AP_ESC_Telem
  */
@@ -1681,15 +1695,8 @@ void AP_Periph_FW::esc_telem_update()
         mask &= ~(1U<<i);
         const float nan = nanf("");
         uavcan_equipment_esc_Status pkt {};
-        const auto *channel = SRV_Channels::srv_channel(i);
-        // try to map the ESC number to a motor number. This is needed
-        // for when we have multiple CAN nodes, one for each ESC
-        if (channel == nullptr) {
-            pkt.esc_index = i;
-        } else {
-            const int8_t motor_num = channel->get_motor_num();
-            pkt.esc_index = motor_num==-1? i:motor_num;
-        }
+        pkt.esc_index = get_motor_number(i);
+
         if (!esc_telem.get_voltage(i, pkt.voltage)) {
             pkt.voltage = nan;
         }
@@ -1708,7 +1715,14 @@ void AP_Periph_FW::esc_telem_update()
         if (esc_telem.get_raw_rpm(i, rpm)) {
             pkt.rpm = rpm;
         }
-        pkt.power_rating_pct = 0;
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+        uint8_t power_rating_pct;
+        if (esc_telem.get_power_percentage(i, power_rating_pct)) {
+            pkt.power_rating_pct = power_rating_pct;
+        }
+#endif
+
         pkt.error_count = 0;
 
         uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE];
@@ -1721,6 +1735,73 @@ void AP_Periph_FW::esc_telem_update()
     }
 }
 #endif // HAL_WITH_ESC_TELEM
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+void AP_Periph_FW::esc_telem_extended_update(const uint32_t &now_ms)
+{
+    if (g.esc_extended_telem_rate <= 0) {
+        // Not configured to send
+        return;
+    }
+
+    uint32_t mask = esc_telem.get_active_esc_mask();
+    if (mask == 0) {
+        // No ESCs to report
+        return;
+    }
+
+    // ESCs are sent in turn to minimise used bandwidth, to make the rate param match the status message we multiply
+    // the period such that the param gives the per-esc rate
+    const uint32_t update_period_ms = 1000 / constrain_int32(g.esc_extended_telem_rate.get() * __builtin_popcount(mask), 1, 1000);
+    if (now_ms - last_esc_telem_extended_update < update_period_ms) {
+        // Too soon!
+        return;
+    }
+    last_esc_telem_extended_update = now_ms;
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        // Send each ESC in turn
+        const uint8_t index = (last_esc_telem_extended_sent_id + 1 + i) % ESC_TELEM_MAX_ESCS;
+
+        if ((mask & (1U << index)) == 0) {
+            // Not enabled
+            continue;
+        }
+
+        uavcan_equipment_esc_StatusExtended pkt {};
+
+        // Only send if we have data
+        bool have_data = false;
+
+        int16_t motor_temp_cdeg;
+        if (esc_telem.get_motor_temperature(index, motor_temp_cdeg)) {
+            // Convert from centi-degrees to degrees
+            pkt.motor_temperature_degC = motor_temp_cdeg * 0.01;
+            have_data = true;
+        }
+
+        have_data |= esc_telem.get_input_duty(index, pkt.input_pct);
+        have_data |= esc_telem.get_output_duty(index, pkt.output_pct);
+        have_data |= esc_telem.get_flags(index, pkt.status_flags);
+
+        if (have_data) {
+            pkt.esc_index = get_motor_number(index);
+
+            uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUSEXTENDED_MAX_SIZE];
+            const uint16_t total_size = uavcan_equipment_esc_StatusExtended_encode(&pkt, buffer, !canfdout());
+
+            canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUSEXTENDED_SIGNATURE,
+                                UAVCAN_EQUIPMENT_ESC_STATUSEXTENDED_ID,
+                                CANARD_TRANSFER_PRIORITY_LOW,
+                                &buffer[0],
+                                total_size);
+        }
+
+        last_esc_telem_extended_sent_id = index;
+        break;
+    }
+}
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
 void AP_Periph_FW::apd_esc_telem_update()
