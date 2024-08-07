@@ -7,7 +7,7 @@ bool ModeRTL::_enter()
     plane.do_RTL(plane.get_RTL_altitude_cm());
     plane.rtl.done_climb = false;
 #if HAL_QUADPLANE_ENABLED
-    plane.vtol_approach_s.approach_stage = Plane::Landing_ApproachStage::RTL;
+    plane.vtol_approach_s.approach_stage = Plane::VTOLApproach::Stage::RTL;
 
     // Quadplane specific checks
     if (plane.quadplane.available()) {
@@ -83,7 +83,7 @@ void ModeRTL::navigate()
             AP_Mission::Mission_Command cmd;
             cmd.content.location = plane.next_WP_loc;
             plane.verify_landing_vtol_approach(cmd);
-            if (plane.vtol_approach_s.approach_stage == Plane::Landing_ApproachStage::VTOL_LANDING) {
+            if (plane.vtol_approach_s.approach_stage == Plane::VTOLApproach::Stage::VTOL_LANDING) {
                 plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
             }
             return;
