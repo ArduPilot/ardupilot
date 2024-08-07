@@ -432,15 +432,15 @@ void SoaringController::update_active_state(bool override_disable)
         switch (status) {
             case ActiveStatus::SOARING_DISABLED:
                 // It's not enabled, but was enabled on the last loop.
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Disabled.");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Soaring: Disabled.");
                 set_throttle_suppressed(false);
                 break;
             case ActiveStatus::MANUAL_MODE_CHANGE:
                 // It's enabled, but wasn't on the last loop.
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, manual mode changes.");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Soaring: Enabled, manual mode changes.");
                 break;
             case ActiveStatus::AUTO_MODE_CHANGE:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, automatic mode changes.");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Soaring: Enabled, automatic mode changes.");
                 break;
         }
 
