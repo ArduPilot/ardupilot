@@ -127,7 +127,7 @@ void AC_AutoTune_Multi::do_gcs_announcements()
     if (now - announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
         return;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: %s %s %u%%", axis_string(), type_string(), (counter * (100/AUTOTUNE_SUCCESS_COUNT)));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: %s %s %u%%", axis_string(), type_string(), (counter * (100/AUTOTUNE_SUCCESS_COUNT)));
     announce_time = now;
 }
 
@@ -520,9 +520,9 @@ void AC_AutoTune_Multi::report_final_gains(AxisType test_axis) const
 // report gain formatting helper
 void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const
 {
-    gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
-    gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s Rate: P:%0.3f, I:%0.3f, D:%0.4f",axis_string,rate_P,rate_I,rate_D);
-    gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.3f, Max Accel:%0.0f",axis_string,angle_P,max_accel);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Rate: P:%0.3f, I:%0.3f, D:%0.4f",axis_string,rate_P,rate_I,rate_D);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.3f, Max Accel:%0.0f",axis_string,angle_P,max_accel);
 }
 
 // twitching_test_rate - twitching tests
@@ -581,7 +581,7 @@ void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angl
                 step_scaler *= 0.9f;
             } else {
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Twitch Size Determination Failed");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Twitch Size Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
             }
@@ -836,7 +836,7 @@ void AC_AutoTune_Multi::updating_rate_d_up(float &tune_d, float tune_d_min, floa
                 counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 // This may be mean AGGR should be increased or MIN_D decreased
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
             }
         }
     } else if ((meas_rate_max < rate_target * (1.0 - AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
@@ -893,7 +893,7 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
                 counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 // This may be mean AGGR should be increased or MIN_D decreased
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
             }
         }
     } else if ((meas_rate_max < rate_target*(1.0 - AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
@@ -928,7 +928,7 @@ void AC_AutoTune_Multi::updating_rate_d_down(float &tune_d, float tune_d_min, fl
                 counter = AUTOTUNE_SUCCESS_COUNT;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
                 // This may be mean AGGR should be increased or MIN_D decreased
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AutoTune: Min Rate D limit reached");
             }
         }
     }
@@ -955,7 +955,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
             tune_d = tune_d_min;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
             if (fail_min_d) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate D Gain Determination Failed");
                 mode = FAILED;
                 LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
             }
@@ -965,7 +965,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_d_down(float &tune_d, float tune_d_mi
         // do not decrease the P term past the minimum
         if (tune_p <= tune_p_min) {
             tune_p = tune_p_min;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Rate P Gain Determination Failed");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Rate P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
         }
@@ -1014,7 +1014,7 @@ void AC_AutoTune_Multi::updating_angle_p_down(float &tune_p, float tune_p_min, f
             tune_p = tune_p_min;
             counter = AUTOTUNE_SUCCESS_COUNT;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: Angle P Gain Determination Failed");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Angle P Gain Determination Failed");
             mode = FAILED;
             LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_FAILED);
        }
