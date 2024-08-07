@@ -22,7 +22,7 @@ void Copter::update_land_and_crash_detectors()
 
     update_land_detector();
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     // check parachute
     parachute_check();
 #endif

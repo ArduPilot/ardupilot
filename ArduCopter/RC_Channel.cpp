@@ -312,7 +312,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
             do_aux_function_change_mode(Mode::Number::FOLLOW, ch_flag);
             break;
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
         case AUX_FUNC::PARACHUTE_ENABLE:
             // Parachute enable/disable
             copter.parachute.enabled(ch_flag == AuxSwitchPos::HIGH);

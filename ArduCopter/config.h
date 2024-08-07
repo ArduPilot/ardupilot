@@ -121,12 +121,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Parachute release
-#ifndef PARACHUTE
- # define PARACHUTE HAL_PARACHUTE_ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef AC_NAV_GUIDED
  # define AC_NAV_GUIDED    ENABLED
