@@ -546,7 +546,7 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         for (uint8_t i=0; i<ARRAY_SIZE(relay_table); i++) {
             if (relay_table[i].output_assigned && !relay->enabled(relay_table[i].fun)) {
                 if (report) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: relay function %u unassigned", uint8_t(relay_table[i].fun));
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: relay function %u unassigned", uint8_t(relay_table[i].fun));
                 }
                 return false;
             }
