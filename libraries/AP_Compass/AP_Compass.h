@@ -190,6 +190,7 @@ public:
     // indicate which bit in LOG_BITMASK indicates we should log compass readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
+#if HAL_MAVLINK_BINDINGS_ENABLED
     /*
       handle an incoming MAG_CAL command
     */
@@ -197,6 +198,7 @@ public:
 
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);
+#endif
 
     // check if the compasses are pointing in the same direction
     bool consistent() const;
