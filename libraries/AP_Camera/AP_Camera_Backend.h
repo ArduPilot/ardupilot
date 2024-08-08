@@ -115,8 +115,14 @@ public:
     // send camera information message to GCS
     virtual void send_camera_information(mavlink_channel_t chan) const;
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    // send video stream information message to GCS
+    virtual void send_video_stream_information(mavlink_channel_t chan) const;
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
     void set_camera_information(mavlink_camera_information_t camera_info);
+    void set_stream_information(mavlink_video_stream_information_t stream_info);
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
     // send camera settings message to GCS
@@ -187,6 +193,7 @@ protected:
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
     mavlink_camera_information_t _camera_info;
+    mavlink_video_stream_information_t _stream_info;
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
     // internal members
