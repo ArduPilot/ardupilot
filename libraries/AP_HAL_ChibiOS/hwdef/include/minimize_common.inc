@@ -133,3 +133,6 @@ define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
 define AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED 0
 # don't need the payload place flight behaviour either:
 define AC_PAYLOAD_PLACE_ENABLED 0
+
+# disable extra camera messages
+define AP_CAMERA_INFO_FROM_SCRIPT_ENABLED 0
