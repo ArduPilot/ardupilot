@@ -166,8 +166,8 @@ struct PACKED FIFODataHighRes {
 #define INV3_SAMPLE_SIZE sizeof(FIFOData)
 #define INV3_HIGHRES_SAMPLE_SIZE sizeof(FIFODataHighRes)
 
-static_assert(sizeof(FIFOData) == 16);
-static_assert(sizeof(FIFODataHighRes) == 20);
+static_assert(sizeof(FIFOData) == 16, "FIFOData must be 16 bytes");
+static_assert(sizeof(FIFODataHighRes) == 20, "FIFODataHighRes must be 20 bytes");
 
 #define INV3_FIFO_BUFFER_LEN 8
 
