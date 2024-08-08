@@ -1439,8 +1439,7 @@ void PayloadPlace::run()
         copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
         pos_control->land_at_climb_rate_cm(-descent_speed_cms, true);
-        pos_control->update_z_controller();
-        return;
+        break;
     case State::Release:
     case State::Releasing:
     case State::Delay:
@@ -1448,8 +1447,7 @@ void PayloadPlace::run()
         copter.flightmode->land_run_horizontal_control();
         // update altitude target and call position controller
         pos_control->land_at_climb_rate_cm(0.0, false);
-        pos_control->update_z_controller();
-        return;
+        break;
     case State::Ascent:
     case State::Done:
         float vel = 0.0;
@@ -1457,6 +1455,7 @@ void PayloadPlace::run()
         pos_control->input_pos_vel_accel_z(descent_start_altitude_cm, vel, 0.0);
         break;
     }
+    pos_control->update_z_controller();
 }
 #endif
 
