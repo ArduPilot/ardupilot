@@ -778,6 +778,22 @@ singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
 singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
 
+userdata mavlink_camera_information_t depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+userdata mavlink_camera_information_t field time_boot_ms uint32_t'skip_check read write
+userdata mavlink_camera_information_t field firmware_version uint32_t'skip_check read write
+userdata mavlink_camera_information_t field focal_length float'skip_check read write
+userdata mavlink_camera_information_t field sensor_size_h float'skip_check read write
+userdata mavlink_camera_information_t field sensor_size_v float'skip_check read write
+userdata mavlink_camera_information_t field flags uint32_t'skip_check read write
+userdata mavlink_camera_information_t field resolution_h uint16_t'skip_check read write
+userdata mavlink_camera_information_t field resolution_v uint16_t'skip_check read write
+userdata mavlink_camera_information_t field cam_definition_version uint16_t'skip_check read write
+userdata mavlink_camera_information_t field vendor_name'array 32 uint8_t'skip_check read write
+userdata mavlink_camera_information_t field model_name'array 32 uint8_t'skip_check read write
+userdata mavlink_camera_information_t field lens_id uint8_t'skip_check read write
+userdata mavlink_camera_information_t field cam_definition_uri'array 140 uint8_t'skip_check read write
+userdata mavlink_camera_information_t field gimbal_device_id uint8_t'skip_check read write
+
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED && (AP_CAMERA_SCRIPTING_ENABLED == 1)
 singleton AP_Camera rename camera
@@ -797,6 +813,8 @@ userdata AP_Camera::camera_state_t field tracking_p1 Vector2f read
 userdata AP_Camera::camera_state_t field tracking_p2 Vector2f read
 singleton AP_Camera method get_state boolean uint8_t'skip_check AP_Camera::camera_state_t'Null
 singleton AP_Camera method change_setting boolean uint8_t'skip_check CameraSetting'enum CameraSetting::THERMAL_PALETTE CameraSetting::THERMAL_RAW_DATA float'skip_check
+singleton AP_Camera method set_camera_information void uint8_t'skip_check mavlink_camera_information_t
+singleton AP_Camera method set_camera_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI

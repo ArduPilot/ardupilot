@@ -1419,6 +1419,136 @@ function camera:get_state(instance) end
 ---@return boolean
 function camera:change_setting(instance, setting, value) end
 
+-- The MAVLink CAMERA_INFORMATION message struct
+---@class (exact) mavlink_camera_information_t_ud
+local mavlink_camera_information_t_ud = {}
+
+---@return mavlink_camera_information_t_ud
+function mavlink_camera_information_t() end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_camera_information_t_ud:time_boot_ms() end
+
+-- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_camera_information_t_ud:time_boot_ms(value) end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_camera_information_t_ud:firmware_version() end
+
+ -- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_camera_information_t_ud:firmware_version(value) end
+
+-- get field
+---@return number
+function mavlink_camera_information_t_ud:focal_length() end
+
+ -- set field
+---@param value number
+function mavlink_camera_information_t_ud:focal_length(value) end
+
+-- get field
+---@return number
+function mavlink_camera_information_t_ud:sensor_size_h() end
+
+ -- set field
+---@param value number
+function mavlink_camera_information_t_ud:sensor_size_h(value) end
+
+-- get field
+---@return number
+function mavlink_camera_information_t_ud:sensor_size_v() end
+
+ -- set field
+---@param value number
+function mavlink_camera_information_t_ud:sensor_size_v(value) end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_camera_information_t_ud:flags() end
+
+ -- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_camera_information_t_ud:flags(value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:resolution_h() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:resolution_h(value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:resolution_v() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:resolution_v(value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:cam_definition_version() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:cam_definition_version(value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_camera_information_t_ud:vendor_name(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_camera_information_t_ud:vendor_name(index, value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_camera_information_t_ud:model_name(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_camera_information_t_ud:model_name(index, value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:lens_id() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:lens_id(value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_camera_information_t_ud:cam_definition_uri(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_camera_information_t_ud:cam_definition_uri(index, value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:gimbal_device_id() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:gimbal_device_id(value) end
+
+-- Populate the fields of the CAMERA_INFORMATION message
+---@param instance integer
+---@param cam_info mavlink_camera_information_t_ud
+function camera:set_camera_information(instance, cam_info) end
+
 -- desc
 mount = {}
 
