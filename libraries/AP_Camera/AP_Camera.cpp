@@ -816,6 +816,32 @@ bool AP_Camera::change_setting(uint8_t instance, CameraSetting setting, float va
 
 #endif // #if AP_CAMERA_SCRIPTING_ENABLED
 
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+void AP_Camera::set_camera_information(mavlink_camera_information_t camera_info)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    return primary->set_camera_information(camera_info);
+}
+
+void AP_Camera::set_camera_information(uint8_t instance, mavlink_camera_information_t camera_info)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call instance
+    backend->set_camera_information(camera_info);
+}
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
 // return backend for instance number
 AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
 {

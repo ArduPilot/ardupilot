@@ -186,6 +186,11 @@ public:
     bool change_setting(uint8_t instance, CameraSetting setting, float value);
 #endif
 
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    void set_camera_information(mavlink_camera_information_t camera_info);
+    void set_camera_information(uint8_t instance, mavlink_camera_information_t camera_info);
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
     // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
     bool get_legacy_relay_index(int8_t &index) const;
 
