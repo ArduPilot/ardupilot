@@ -794,6 +794,20 @@ userdata mavlink_camera_information_t field lens_id uint8_t'skip_check read writ
 userdata mavlink_camera_information_t field cam_definition_uri'array 140 uint8_t'skip_check read write
 userdata mavlink_camera_information_t field gimbal_device_id uint8_t'skip_check read write
 
+userdata mavlink_video_stream_information_t depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+userdata mavlink_video_stream_information_t field framerate float'skip_check read write
+userdata mavlink_video_stream_information_t field bitrate uint32_t'skip_check read write
+userdata mavlink_video_stream_information_t field flags uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field resolution_h uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field resolution_v uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field rotation uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field hfov uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field stream_id uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field count uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field type uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field name'array 32 uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field uri'array 160 uint8_t'skip_check read write
+
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED && (AP_CAMERA_SCRIPTING_ENABLED == 1)
 singleton AP_Camera rename camera
@@ -815,6 +829,8 @@ singleton AP_Camera method get_state boolean uint8_t'skip_check AP_Camera::camer
 singleton AP_Camera method change_setting boolean uint8_t'skip_check CameraSetting'enum CameraSetting::THERMAL_PALETTE CameraSetting::THERMAL_RAW_DATA float'skip_check
 singleton AP_Camera method set_camera_information void uint8_t'skip_check mavlink_camera_information_t
 singleton AP_Camera method set_camera_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+singleton AP_Camera method set_stream_information void uint8_t'skip_check mavlink_video_stream_information_t
+singleton AP_Camera method set_stream_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI

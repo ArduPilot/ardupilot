@@ -1549,6 +1549,118 @@ function mavlink_camera_information_t_ud:gimbal_device_id(value) end
 ---@param cam_info mavlink_camera_information_t_ud
 function camera:set_camera_information(instance, cam_info) end
 
+-- The MAVLink VIDEO_STREAM_INFORMATION message struct
+---@class (exact) mavlink_video_stream_information_t_ud
+local mavlink_video_stream_information_t_ud = {}
+
+---@return mavlink_video_stream_information_t_ud
+function mavlink_video_stream_information_t() end
+
+-- get field
+---@return number
+function mavlink_video_stream_information_t_ud:framerate() end
+
+-- set field
+---@param value number
+function mavlink_video_stream_information_t_ud:framerate(value) end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_video_stream_information_t_ud:bitrate() end
+
+-- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_video_stream_information_t_ud:bitrate(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:flags() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:flags(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:resolution_h() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:resolution_h(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:resolution_v() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:resolution_v(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:rotation() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:rotation(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:hfov() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:hfov(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:stream_id() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:stream_id(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:count() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:count(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:type() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:type(value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_video_stream_information_t_ud:name(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_video_stream_information_t_ud:name(index, value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_video_stream_information_t_ud:uri(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_video_stream_information_t_ud:uri(index, value) end
+
+-- Populate the fields of the VIDEO_STREAM_INFORMATION message
+---@param instance integer
+---@param stream_info mavlink_video_stream_information_t_ud
+function camera:set_stream_information(instance, stream_info) end
+
 -- desc
 mount = {}
 
