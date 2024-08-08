@@ -261,7 +261,6 @@ private:
 
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
-    float    trim_meas_rate;                        // trim measured gyro rate
 
     // variables from dwell test
     LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;
