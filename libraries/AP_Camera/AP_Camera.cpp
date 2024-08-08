@@ -467,6 +467,12 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
         send_camera_thermal_range(chan);
         break;
 #endif
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    case MSG_VIDEO_STREAM_INFORMATION:
+        CHECK_PAYLOAD_SIZE2(VIDEO_STREAM_INFORMATION);
+        send_video_stream_information(chan);
+        break;
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     default:
         // should not reach this; should only be called for specific IDs
@@ -579,6 +585,21 @@ void AP_Camera::send_camera_information(mavlink_channel_t chan)
         }
     }
 }
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+// send video stream information message to GCS
+void AP_Camera::send_video_stream_information(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_video_stream_information(chan);
+        }
+    }
+}
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 // send camera settings message to GCS
 void AP_Camera::send_camera_settings(mavlink_channel_t chan)
@@ -839,6 +860,29 @@ void AP_Camera::set_camera_information(uint8_t instance, mavlink_camera_informat
 
     // call instance
     backend->set_camera_information(camera_info);
+}
+
+void AP_Camera::set_stream_information(mavlink_video_stream_information_t stream_info)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    return primary->set_stream_information(stream_info);
+}
+
+void AP_Camera::set_stream_information(uint8_t instance, mavlink_video_stream_information_t stream_info)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call instance
+    backend->set_stream_information(stream_info);
 }
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 

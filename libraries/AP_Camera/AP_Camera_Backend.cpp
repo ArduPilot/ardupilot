@@ -258,6 +258,27 @@ void AP_Camera_Backend::set_camera_information(mavlink_camera_information_t came
 };
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+// send video stream information message to GCS
+void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const
+{
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+    // Send VIDEO_STREAM_INFORMATION message
+    mavlink_msg_video_stream_information_send_struct(chan, &_stream_info);
+
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+}
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+void AP_Camera_Backend::set_stream_information(mavlink_video_stream_information_t stream_info)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera %u VIDEO_STREAM_INFORMATION (%s) set from script", _instance, stream_info.name);
+    _stream_info = stream_info;
+};
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
 // send camera settings message to GCS
 void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
 {
