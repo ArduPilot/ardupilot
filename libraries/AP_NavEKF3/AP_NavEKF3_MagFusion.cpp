@@ -200,9 +200,15 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
                 }
             }
         } else if (yawAlignGpsValidCount >= GPS_VEL_YAW_ALIGN_COUNT_THRESHOLD) {
+<<<<<<< HEAD
                 // There is no need to do a yaw reset
                 yawAlignGpsValidCount = 0;
                 recordYawResetsCompleted();
+=======
+            // There is no need to do a yaw reset
+            yawAlignGpsValidCount = 0;
+            recordYawResetsCompleted();
+>>>>>>> a4f78a0bbf1a5678d4321c53c2eccd31d48387df
         }
     } else {
         yawAlignGpsValidCount = 0;

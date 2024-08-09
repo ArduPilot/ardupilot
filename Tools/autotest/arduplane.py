@@ -2005,18 +2005,50 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+<<<<<<< HEAD
         self.context_push()
+=======
+>>>>>>> a4f78a0bbf1a5678d4321c53c2eccd31d48387df
         self.set_parameter("EK3_OPTIONS", 1)
         self.set_parameter("AHRS_OPTIONS", 3)
         self.set_parameter("LOG_REPLAY", 1)
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
+<<<<<<< HEAD
         if disable_airspeed_sensor:
             max_allowed_divergence = 300
         else:
             max_allowed_divergence = 150
         self.install_message_hook_context(vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=max_allowed_divergence))  # noqa
+=======
+        def validate_global_position_int_against_simstate(mav, m):
+            if m.get_type() == 'GLOBAL_POSITION_INT':
+                self.gpi = m
+            elif m.get_type() == 'SIMSTATE':
+                self.simstate = m
+            if self.gpi is None:
+                return
+            if self.simstate is None:
+                return
+            divergence = self.get_distance_int(self.gpi, self.simstate)
+            if disable_airspeed_sensor:
+                max_allowed_divergence = 300
+            else:
+                max_allowed_divergence = 150
+            if (time.time() - self.last_print > 1 or
+                    divergence > self.max_divergence):
+                self.progress("position-estimate-divergence=%fm" % (divergence,))
+                self.last_print = time.time()
+            if divergence > self.max_divergence:
+                self.max_divergence = divergence
+            if divergence > max_allowed_divergence:
+                raise NotAchievedException(
+                    "global-position-int diverged from simstate by %fm (max=%fm" %
+                    (divergence, max_allowed_divergence,))
+
+        self.install_message_hook(validate_global_position_int_against_simstate)
+>>>>>>> a4f78a0bbf1a5678d4321c53c2eccd31d48387df
 
         try:
             # wind is from the West:
@@ -2069,12 +2101,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
+<<<<<<< HEAD
             # The EKF_STATUS_REPORT does not tell us when the good to align check passes, so the minimum time
             # value of 3.0 seconds is an arbitrary value set on inspection of dataflash logs from this test
             self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
             time_since_jamming_stopped = self.get_sim_time() - t_enabled
             if time_since_jamming_stopped < 3:
                 raise NotAchievedException("GPS use re-started %f sec after jamming stopped" % time_since_jamming_stopped)
+=======
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            if self.get_sim_time() < (t_enabled+9):
+                raise NotAchievedException("GPS use re-started too quickly after jamming")
+>>>>>>> a4f78a0bbf1a5678d4321c53c2eccd31d48387df
             self.set_rc(3, 1000)
             self.fly_home_land_and_disarm()
         finally:

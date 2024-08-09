@@ -102,8 +102,12 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         airspeed_index : getActiveAirspeed(),
         source_set     : frontend->sources.getPosVelYawSourceSet(),
         gps_good_to_align : gpsGoodToAlign,
+<<<<<<< HEAD
         wait_for_gps_checks : waitingForGpsChecks,
         mag_fusion: (uint8_t) magFusionSel
+=======
+        wait_for_gps_checks : waitingForGpsChecks
+>>>>>>> a4f78a0bbf1a5678d4321c53c2eccd31d48387df
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
