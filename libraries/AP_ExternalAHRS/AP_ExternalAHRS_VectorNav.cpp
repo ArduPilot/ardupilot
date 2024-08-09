@@ -408,7 +408,7 @@ bool AP_ExternalAHRS_VectorNav::decode_latest_term()
             if (nmea.error_response) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "VectorNav received VNERR code: %s", nmea.term);
             } else if (strlen(message_to_send) > 6 && 
-                       strncmp(nmea.term, &message_to_send[6], nmea.term_offset != 0)) {  // Start after "VNXXX,"
+                       strncmp(nmea.term, &message_to_send[6], nmea.term_offset) != 0) {  // Start after "VNXXX,"
                 return false;
             }
             return true;
