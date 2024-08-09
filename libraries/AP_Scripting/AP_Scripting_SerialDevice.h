@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #ifndef AP_SCRIPTING_SERIALDEVICE_NUM_PORTS
@@ -61,3 +65,5 @@ public:
 
     Port ports[AP_SCRIPTING_SERIALDEVICE_NUM_PORTS];
 };
+
+#endif  // AP_SCRIPTING_SERIALDEVICE_ENABLED

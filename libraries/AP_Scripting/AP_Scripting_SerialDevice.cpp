@@ -3,9 +3,10 @@
  */
 
 #include "AP_Scripting_config.h"
-#include "AP_Scripting.h"
 
 #if AP_SCRIPTING_ENABLED && AP_SCRIPTING_SERIALDEVICE_ENABLED
+
+#include "AP_Scripting.h"
 
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
