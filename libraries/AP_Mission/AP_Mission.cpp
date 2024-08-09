@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions.
-    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand
+    // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand,3:Always Crosstrack
     // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
     // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced

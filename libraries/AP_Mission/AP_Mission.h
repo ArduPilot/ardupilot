@@ -45,6 +45,10 @@
 #define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
 
 #define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
+#define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
+#define AP_MISSION_MASK_DIST_TO_LAND_CALC   (1<<1)  // Allow distance to best landing calculation to be run on failsafe
+#define AP_MISSION_MASK_CONTINUE_AFTER_LAND (1<<2)  // Allow mission to continue after land
+#define AP_MISSION_MASK_ALWAYS_CROSSTRACK   (1<<3)  // ALways use crosstrack on every waypoint
 
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
@@ -746,6 +750,11 @@ public:
     bool continue_after_land_check_for_takeoff(void);
     bool continue_after_land(void) const {
         return option_is_set(Option::CONTINUE_AFTER_LAND);
+    }
+
+    // Return true of the MIS_OPTIONS always crosstrack bit is set
+    bool always_crosstrack(void) const {
+        return (_options.get() & AP_MISSION_MASK_ALWAYS_CROSSTRACK) != 0;
     }
 
     // user settable parameters

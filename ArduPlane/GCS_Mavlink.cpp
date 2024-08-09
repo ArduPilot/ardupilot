@@ -1430,7 +1430,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlin
     }
 
     // if you change this you must change handle_mission_set_current
-    plane.auto_state.next_wp_crosstrack = false;
+    plane.auto_state.next_wp_crosstrack = plane.mission.always_crosstrack();
     if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
     }
@@ -1442,7 +1442,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlin
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
     // if you change this you must change handle_command_do_set_mission_current
-    plane.auto_state.next_wp_crosstrack = false;
+    plane.auto_state.next_wp_crosstrack = plane.mission.always_crosstrack();
     GCS_MAVLINK::handle_mission_set_current(mission, msg);
     if (plane.control_mode == &plane.mode_auto && plane.mission.state() == AP_Mission::MISSION_STOPPED) {
         plane.mission.resume();
