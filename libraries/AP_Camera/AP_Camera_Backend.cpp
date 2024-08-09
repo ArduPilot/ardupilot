@@ -18,6 +18,17 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
     _instance(instance)
 {}
 
+void AP_Camera_Backend::init()
+{
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    _camera_info.focal_length = NAN;
+    _camera_info.sensor_size_h = NAN;
+    _camera_info.sensor_size_v = NAN;
+
+    _camera_info.flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+}
+
 // update - should be called at 50hz
 void AP_Camera_Backend::update()
 {
@@ -212,31 +223,61 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
 // send camera information message to GCS
 void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
 {
-    // prepare vendor, model and cam definition strings
-    const uint8_t vendor_name[32] {};
-    const uint8_t model_name[32] {};
-    const char cam_definition_uri[140] {};
-    const uint32_t cap_flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
-    const float NaN = nanf("0x4152");
+    mavlink_camera_information_t camera_info;
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),       // time_boot_ms
-        vendor_name,            // vendor_name uint8_t[32]
-        model_name,             // model_name uint8_t[32]
-        0,                      // firmware version uint32_t
-        NaN,                    // focal_length float (mm)
-        NaN,                    // sensor_size_h float (mm)
-        NaN,                    // sensor_size_v float (mm)
-        0,                      // resolution_h uint16_t (pix)
-        0,                      // resolution_v uint16_t (pix)
-        0,                      // lens_id, uint8_t
-        cap_flags,              // flags uint32_t (CAMERA_CAP_FLAGS)
-        0,                      // cam_definition_version uint16_t
-        cam_definition_uri,     // cam_definition_uri char[140]
-        get_gimbal_device_id());// gimbal_device_id uint8_t
+    camera_info = _camera_info;
+
+#else
+
+    memset(&camera_info, 0, sizeof(camera_info));
+
+    camera_info.focal_length = NAN;
+    camera_info.sensor_size_h = NAN;
+    camera_info.sensor_size_v = NAN;
+
+    camera_info.flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
+
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+    // Set fixed fields
+    // lens_id is populated with the instance number, to disambiguate multiple cameras
+    camera_info.lens_id = _instance;
+    camera_info.gimbal_device_id = get_gimbal_device_id();
+    camera_info.time_boot_ms = AP_HAL::millis();
+
+    // Send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send_struct(chan, &camera_info);
 }
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+void AP_Camera_Backend::set_camera_information(mavlink_camera_information_t camera_info)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera %u CAMERA_INFORMATION (%s %s) set from script", _instance, camera_info.vendor_name, camera_info.model_name);
+    _camera_info = camera_info;
+};
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+// send video stream information message to GCS
+void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const
+{
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
+    // Send VIDEO_STREAM_INFORMATION message
+    mavlink_msg_video_stream_information_send_struct(chan, &_stream_info);
+
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+}
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+void AP_Camera_Backend::set_stream_information(mavlink_video_stream_information_t stream_info)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera %u VIDEO_STREAM_INFORMATION (%s) set from script", _instance, stream_info.name);
+    _stream_info = stream_info;
+};
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
 // send camera settings message to GCS
 void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
