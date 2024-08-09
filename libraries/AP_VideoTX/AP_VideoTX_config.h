@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_OSD/AP_OSD.h>
+#include <AP_OSD/AP_OSD_config.h>
 
 #ifndef AP_VIDEOTX_ENABLED
 #define AP_VIDEOTX_ENABLED 1

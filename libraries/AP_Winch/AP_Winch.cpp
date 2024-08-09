@@ -78,12 +78,16 @@ void AP_Winch::init()
     switch ((WinchType)config.type.get()) {
     case WinchType::NONE:
         break;
+#if AP_WINCH_PWM_ENABLED
     case WinchType::PWM:
         backend = NEW_NOTHROW AP_Winch_PWM(config);
         break;
+#endif
+#if AP_WINCH_DAIWA_ENABLED
     case WinchType::DAIWA:
         backend = NEW_NOTHROW AP_Winch_Daiwa(config);
         break;
+#endif
     default:
         break;
     }

@@ -157,7 +157,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::FWD_THR:
     case AUX_FUNC::LANDING_FLARE:
+#if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_RELEASE:
+#endif
     case AUX_FUNC::MODE_SWITCH_RESET:
     case AUX_FUNC::CRUISE:
 #if HAL_QUADPLANE_ENABLED

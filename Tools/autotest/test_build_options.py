@@ -187,6 +187,15 @@ class TestBuildOptions(object):
 
         self.test_compile_with_defines(defines)
 
+        self.assert_feature_not_in_code(defines, feature)
+
+    def assert_feature_in_code(self, defines, feature):
+        self.assert_feature_X_in_code(True, defines, feature)
+
+    def assert_feature_not_in_code(self, defines, feature):
+        self.assert_feature_X_in_code(False, defines, feature)
+
+    def assert_feature_X_in_code(self, X, defines, feature):
         # if the feature is truly disabled then extract_features.py
         # should say so:
         for target in self.build_targets:
@@ -198,11 +207,15 @@ class TestBuildOptions(object):
                 # or all vehicles:
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
-                    'BEACON_ENABLED',  # Rover doesn't obey this (should also be AP_BEACON_ENABLED)
-                    'WINCH_ENABLED',  # Copter doesn't use this; should use AP_WINCH_ENABLED
                 ])
-                if define in compiled_in_feature_defines:
-                    error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
+                if X:
+                    passed = define in compiled_in_feature_defines
+                    NOT = "NOT "
+                else:
+                    passed = define not in compiled_in_feature_defines
+                    NOT = ""
+                if not passed:
+                    error = f"feature gated by {define} {NOT}compiled into ({target} {path}); extract_features.py bug?"
                     if define in feature_define_whitelist:
                         print("warn: " + error)
                     else:
@@ -219,6 +232,8 @@ class TestBuildOptions(object):
                 ",".join(enabled)))
 
         self.test_compile_with_defines(defines)
+
+        self.assert_feature_in_code(defines, feature)
 
     def board(self):
         '''returns board to build for'''
@@ -482,7 +497,7 @@ if __name__ == '__main__':
                       help="file containing extra hwdef information")
     parser.add_option("--board",
                       type='string',
-                      default="DevEBoxH7v2",
+                      default="CubeOrange",  # DevEBoxH7v2 also works
                       help='board to build for')
     parser.add_option("--emit-disable-all-defines",
                       action='store_true',
