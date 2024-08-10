@@ -6,7 +6,9 @@
 #include <type_traits>
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/BufferHandler.h>
 #include <AP_Param/AP_Param.h>
+
 
 #include "definitions.h"
 #include "crc.h"
@@ -30,6 +32,10 @@ typedef Vector2<float> Vector2F;
 typedef Vector3<float> Vector3F;
 typedef Matrix3<float> Matrix3F;
 typedef Quaternion QuaternionF;
+#endif
+
+#ifndef MAX_MAT_INV_STATIC_BUFFER
+    #define MAX_MAT_INV_STATIC_BUFFER 1176 // up to 7x7 float matrix
 #endif
 
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
@@ -111,9 +117,43 @@ float safe_sqrt(const T v);
 template <typename T>
 void mat_mul(const T *A, const T *B, T *C, uint16_t n);
 
+
+// Number of buffer matrices for mat_inverse
+static constexpr size_t kMatInvBuffers {6UL};
+
+template <class T>
+class MatInvBuffer : public BufferHandler<T, kMatInvBuffers>
+{
+    using Base = BufferHandler<T, kMatInvBuffers>;
+public:
+    using Base::Base;
+
+    T* L()      { return Base::template block<0UL>(); }
+    T* U()      { return Base::template block<1UL>(); }
+    T* P()      { return Base::template block<2UL>(); }
+    T* L_inv()  { return Base::template block<3UL>(); }
+    T* U_inv()  { return Base::template block<4UL>(); }
+    T* APrime() { return Base::template block<5UL>(); }
+};
+
 // matrix inverse
 template <typename T>
-bool mat_inverse(const T *x, T *y, uint16_t dim) WARN_IF_UNUSED;
+bool mat_inverse(const T *x, T *y, const uint16_t dim, MatInvBuffer<T> &buf) WARN_IF_UNUSED;
+
+// matrix inverse with default buffer on heap
+template <typename T>
+bool mat_inverse(const T *x, T *y, const uint16_t dim) WARN_IF_UNUSED;
+
+
+// matrix inverse for static arrays with default buffer on stack
+template <typename T, size_t C, size_t bufsize = C*kMatInvBuffers*sizeof(T)>
+auto mat_inverse(const T(&x)[C], T(&y)[C], const uint16_t dim)
+-> typename std::enable_if<(bufsize <= MAX_MAT_INV_STATIC_BUFFER), bool>::type
+{
+    T stack_buf [C*kMatInvBuffers] {};
+    MatInvBuffer<T> buffer {stack_buf, static_cast<size_t>(dim)*dim};
+    return mat_inverse(x,y,dim,buffer);
+}
 
 // matrix identity
 template <typename T>

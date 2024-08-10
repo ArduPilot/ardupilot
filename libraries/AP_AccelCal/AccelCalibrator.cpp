@@ -333,6 +333,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
     union param_u fit_param = _param;
     uint8_t num_iterations = 0;
 
+    MatInvBuffer<float> buffer {ACCEL_CAL_MAX_NUM_PARAMS*ACCEL_CAL_MAX_NUM_PARAMS};
     while(num_iterations < max_iterations) {
         float JTJ[ACCEL_CAL_MAX_NUM_PARAMS*ACCEL_CAL_MAX_NUM_PARAMS] {};
         VectorP JTFI;
@@ -355,7 +356,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
             }
         }
 
-        if (!mat_inverse(JTJ, JTJ, get_num_params())) {
+        if (!mat_inverse(JTJ, JTJ, get_num_params(), buffer)) {
             return;
         }
 
