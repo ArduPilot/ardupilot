@@ -34,18 +34,18 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     // check if motor interlock aux switch is in use
     // if it is, switch needs to be in disabled position to arm
     // otherwise exit immediately.
-    if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
+    if (passed && copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
         check_failed(display_failure, "Motor Interlock Enabled");
         passed = false;
     }
 
-    if (!disarm_switch_checks(display_failure)) {
+    if (passed && !disarm_switch_checks(display_failure)) {
         passed = false;
     }
 
     // always check motors
     char failure_msg[50] {};
-    if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
+    if (passed && !copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
         check_failed(display_failure, "Motors: %s", failure_msg);
         passed = false;
     }
