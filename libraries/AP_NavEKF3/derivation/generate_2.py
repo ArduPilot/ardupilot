@@ -665,8 +665,8 @@ def generate_code():
 
 
     # derive autocode for other methods
-    # print('Computing tilt error covariance matrix ...')
-    # quaternion_error_propagation()
+    print('Computing tilt error covariance matrix ...')
+    quaternion_error_propagation()
     print('Generating heading observation code ...')
     yaw_observation(P,state,R_to_earth)
     # print('Generating gps heading observation code ...')
