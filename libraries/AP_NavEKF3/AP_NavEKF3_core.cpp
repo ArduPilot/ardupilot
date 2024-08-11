@@ -1002,8 +1002,8 @@ void NavEKF3_core::calcOutputStates()
 
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
- * See AP_NavEKF3/derivation/main.py for derivation
- * Output for change reference: AP_NavEKF3/derivation/generated/covariance_generated.cpp
+ * See derivation/generate_1.py for derivation
+ * Output for change reference: derivation/generated/covariance_generated.cpp
  * Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
  * used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
 */
