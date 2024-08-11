@@ -44,6 +44,18 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     AP_SUBGROUPINFO(_params[1], "2_", 15, AP_RPM, AP_RPM_Params),
 #endif
 
+#if RPM_MAX_INSTANCES > 2
+    // @Group: 3_
+    // @Path: AP_RPM_Params.cpp
+    AP_SUBGROUPINFO(_params[2], "3_", 16, AP_RPM, AP_RPM_Params),
+#endif
+
+#if RPM_MAX_INSTANCES > 3
+    // @Group: 4_
+    // @Path: AP_RPM_Params.cpp
+    AP_SUBGROUPINFO(_params[3], "4_", 17, AP_RPM, AP_RPM_Params),
+#endif
+
     AP_GROUPEND
 };
 
