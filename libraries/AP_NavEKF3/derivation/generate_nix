@@ -11,3 +11,4 @@ mkdir -p generated
 
 # explicitly invoke python3 to use interpreter from nix-shell
 python3 ./generate_1.py
+python3 ./generate_2.py

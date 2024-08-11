@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
+# this file was originally from ArduPilot commit f81abd73d6bf73dd1cd1d009f355f6f8c025325b
 from sympy import __version__ as __sympy__version__
 from sympy import *
 from code_gen import *
@@ -20,23 +21,9 @@ def quat2Rot(q):
     q2 = q[2]
     q3 = q[3]
 
-    # This form is the one normally used in flight dynamics and inertial navigation texts, eg
-    # Aircraft Control and Simulation, Stevens,B.L, Lewis,F.L, Johnson,E.N, Third Edition, eqn 1.8-18
-    # It does produce second order terms in the covariance prediction that can be problematic
-    # with single precision processing.
-    # It requires the quternion to be unit length.
-    # Rot = Matrix([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
-    #               [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
-    #                [2*(q1*q3-q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
-
-    # This form removes q1 from the 0,0, q2 from the 1,1 and q3 from the 2,2 entry and results
-    # in a covariance prediction that is better conditioned.
-    # It requires the quaternion to be unit length and is mathematically identical
-    # to the alternate form when q0**2 + q1**2 + q2**2 + q3**2 = 1
-    # See https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
-    Rot = Matrix([[1 - 2*(q2**2 + q3**2), 2*(q1*q2 - q0*q3)    , 2*(q1*q3 + q0*q2)    ],
-                 [2*(q1*q2 + q0*q3)     , 1 - 2*(q1**2 + q3**2), 2*(q2*q3 - q0*q1)    ],
-                 [2*(q1*q3-q0*q2)       , 2*(q2*q3 + q0*q1)    , 1 - 2*(q1**2 + q2**2)]])
+    Rot = Matrix([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
+                  [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
+                   [2*(q1*q3-q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
 
     return Rot
 
@@ -274,7 +261,7 @@ def body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy):
     # accYpred = -0.5*rho*vrel[1]*vrel[1]*BCYinv # predicted acceleration measured along Y body axis
 
     # Use a simple viscous drag model for the linear estimator equations
-    # Use the derivative from speed to acceleration averaged across the
+    # Use the the derivative from speed to acceleration averaged across the
     # speed range. This avoids the generation of a dirac function in the derivation
     # The nonlinear equation will be used to calculate the predicted measurement in implementation
     observation = Matrix([-Kaccx*vrel[0],-Kaccy*vrel[1]])
@@ -668,39 +655,39 @@ def generate_code():
     print('Simplifying covariance propagation ...')
     P_new_simple = cse(P_new, symbols("PS0:400"), optimizations='basic')
 
-    print('Writing covariance propagation to file ...')
-    cov_code_generator = CodeGenerator("./generated/covariance_generated.cpp")
-    cov_code_generator.print_string("Equations for covariance matrix prediction, without process noise!")
-    cov_code_generator.write_subexpressions(P_new_simple[0])
-    cov_code_generator.write_matrix(Matrix(P_new_simple[1]), "nextP", True, "[", "]")
+    # print('Writing covariance propagation to file ...')
+    # cov_code_generator = CodeGenerator("./generated/covariance_generated.cpp")
+    # cov_code_generator.print_string("Equations for covariance matrix prediction, without process noise!")
+    # cov_code_generator.write_subexpressions(P_new_simple[0])
+    # cov_code_generator.write_matrix(Matrix(P_new_simple[1]), "nextP", True, "[", "]")
 
-    cov_code_generator.close()
+    # cov_code_generator.close()
 
 
     # derive autocode for other methods
-    print('Computing tilt error covariance matrix ...')
-    quaternion_error_propagation()
-    # print('Generating heading observation code ...')
-    # yaw_observation(P,state,R_to_earth)
-    print('Generating gps heading observation code ...')
-    gps_yaw_observation(P,state,R_to_body)
-    print('Generating mag observation code ...')
-    mag_observation_variance(P,state,R_to_body,i,ib)
-    mag_observation(P,state,R_to_body,i,ib)
-    print('Generating declination observation code ...')
-    declination_observation(P,state,ix,iy)
-    print('Generating airspeed observation code ...')
-    tas_observation(P,state,vx,vy,vz,wx,wy)
-    print('Generating sideslip observation code ...')
-    beta_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
-    print('Generating optical flow observation code ...')
-    optical_flow_observation(P,state,R_to_body,vx,vy,vz)
-    print('Generating body frame velocity observation code ...')
-    body_frame_velocity_observation(P,state,R_to_body,vx,vy,vz)
-    print('Generating body frame acceleration observation code ...')
-    body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
-    print('Generating yaw estimator code ...')
-    yaw_estimator()
+    # print('Computing tilt error covariance matrix ...')
+    # quaternion_error_propagation()
+    print('Generating heading observation code ...')
+    yaw_observation(P,state,R_to_earth)
+    # print('Generating gps heading observation code ...')
+    # gps_yaw_observation(P,state,R_to_body)
+    # print('Generating mag observation code ...')
+    # mag_observation_variance(P,state,R_to_body,i,ib)
+    # mag_observation(P,state,R_to_body,i,ib)
+    # print('Generating declination observation code ...')
+    # declination_observation(P,state,ix,iy)
+    # print('Generating airspeed observation code ...')
+    # tas_observation(P,state,vx,vy,vz,wx,wy)
+    # print('Generating sideslip observation code ...')
+    # beta_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
+    # print('Generating optical flow observation code ...')
+    # optical_flow_observation(P,state,R_to_body,vx,vy,vz)
+    # print('Generating body frame velocity observation code ...')
+    # body_frame_velocity_observation(P,state,R_to_body,vx,vy,vz)
+    # print('Generating body frame acceleration observation code ...')
+    # body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
+    # print('Generating yaw estimator code ...')
+    # yaw_estimator()
     print('Code generation finished!')
 
 
