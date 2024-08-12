@@ -198,8 +198,10 @@ void AP_Networking::init()
     start_tests();
 #endif
 
+#if AP_NETWORKING_REGISTER_PORT_ENABLED
     // init network mapped serialmanager ports
     ports_init();
+#endif
 }
 
 /*
