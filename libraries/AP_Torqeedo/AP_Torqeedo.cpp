@@ -252,8 +252,10 @@ void AP_Torqeedo::thread_main()
 
             // send motor speed
             if (_send_motor_speed) {
+                // If no soft faults and not in hold-down period, set throttle
                 if ((now_ms - _last_reset_ms > TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS) &&
-                    !(_display_system_state.flags.set_throttle_stop || _display_system_state.flags.temp_warning)) {
+                    !(_display_system_state.flags.set_throttle_stop || _display_system_state.flags.temp_warning) &&
+                    !(_display_system_state.master_error_code > 0 && _display_system_state.master_error_code != 132)) {
                     send_motor_speed_cmd(); 
                 }
                 else 
