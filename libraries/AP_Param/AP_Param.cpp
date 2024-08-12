@@ -1266,6 +1266,7 @@ void AP_Param::save(bool force_save)
         if (hal.util->get_soft_armed() && hal.scheduler->in_main_thread()) {
             // if we are armed in main thread then don't sleep, instead we lose the
             // parameter save
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return;
         }
         // when we are disarmed then loop waiting for a slot to become
