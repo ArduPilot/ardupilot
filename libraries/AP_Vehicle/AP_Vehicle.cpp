@@ -223,6 +223,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
       are too deep in the parameter tree
      */
 
+#if AP_NETWORKING_REGISTER_PORT_ENABLED
 #if AP_NETWORKING_NUM_PORTS > 0
     // @Group: NET_P1_
     // @Path: ../AP_Networking/AP_Networking_port.cpp
@@ -246,6 +247,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_Networking/AP_Networking_port.cpp
     AP_SUBGROUPINFO(networking.ports[3], "NET_P4_", 25, AP_Vehicle, AP_Networking::Port),
 #endif
+#endif  // AP_NETWORKING_REGISTER_PORT_ENABLED
 #endif // AP_NETWORKING_ENABLED
 
 #if AP_FILTER_ENABLED
