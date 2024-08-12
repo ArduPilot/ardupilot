@@ -7,6 +7,7 @@
 #include <SITL/SITL.h>
 
 #include <time.h>
+#include <sys/time.h>
 
 using namespace SITL;
 
