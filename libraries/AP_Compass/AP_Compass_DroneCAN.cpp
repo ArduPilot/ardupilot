@@ -222,6 +222,7 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
 // @Field: My: y axis field
 // @Field: Mz: z axis field
 
+#if HAL_LOGGING_ENABLED
     // just log it for now
     AP::logger().WriteStreaming("MAGH", "TimeUS,Node,Sensor,Bus,Mx,My,Mz", "s#-----", "F------", "QBBBfff",
                                 transfer.timestamp_usec,
@@ -231,8 +232,9 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
                                 msg.magnetic_field_ga[0]*1000,
                                 msg.magnetic_field_ga[1]*1000,
                                 msg.magnetic_field_ga[2]*1000);
+#endif  // HAL_LOGGING_ENABLED
 }
-#endif
+#endif  // AP_COMPASS_DRONECAN_HIRES_ENABLED
 
 void AP_Compass_DroneCAN::read(void)
 {
