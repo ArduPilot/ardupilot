@@ -84,6 +84,7 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
 #endif
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -3395,9 +3396,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     }
 
     // refuse reboot when armed:
+    const uint32_t magic_force_reboot_value = 20190226;
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
-        const uint32_t magic_force_reboot_value = 20190226;
         if (packet.y != magic_force_reboot_value) {
             return MAV_RESULT_FAILED;
         }
@@ -3418,6 +3419,23 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             }
             hal.scheduler->delay(10);
         }
+    }
+
+    // extract home position from the reboot command
+    // expcting 1, 0, 0, heading, lat, lon, alt
+    if (is_equal(packet.param1, 1.0f) &&                // p1 = 1
+        is_zero(packet.param2) &&                       // p2 = 0
+        is_zero(packet.param3) &&                       // p3 = 0
+        (packet.param4 >= 0 && packet.param4 <= 360) && // p4 = valid heading: 0 - 360
+        (packet.x >= -90E7 && packet.x <= 90E7) &&      // p5/x = valid latitude: +/- 90
+        (packet.y >= -180E7 && packet.y <= 180E7) &&    // p6/y = valid longitude: +/- 180
+        (packet.z >= -83886 &&  packet.z <= 83886) &&   // p7/z = valid altitude in meters: +/- (2^23cm / 100)
+        (packet.x != 0 || packet.y !=0) &&              // non-zero position
+        packet.y != magic_force_reboot_value) {         // longitude isn't the magic fore reboot value
+        // set new home position for next reboot using format from locations.txt #NAME=latitude,longitude,absolute-altitude,heading
+        char new_home_string[50];
+        snprintf(new_home_string, ARRAY_SIZE(new_home_string), "%.7f,%.7f,%.1f,%.1f", (double)packet.x*1e-7, (double)packet.y*1e-7, packet.z, packet.param4);
+        HAL_SITL::update_new_args("--home", new_home_string);
     }
 #endif
 
