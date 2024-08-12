@@ -40,6 +40,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
+#include <sys/time.h>
 #endif
 
 #include <errno.h>
