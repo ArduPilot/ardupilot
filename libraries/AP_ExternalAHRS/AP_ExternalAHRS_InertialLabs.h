@@ -20,7 +20,7 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 
 #include "AP_ExternalAHRS_backend.h"
 
@@ -228,5 +228,5 @@ private:
     uint32_t last_gps_ms;
 };
 
-#endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 

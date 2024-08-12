@@ -124,7 +124,7 @@ void AP_ExternalAHRS::init(void)
         return;
 #endif
 
-#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
     case DevType::InertialLabs:
         backend = NEW_NOTHROW AP_ExternalAHRS_InertialLabs(this, state);
         return;
