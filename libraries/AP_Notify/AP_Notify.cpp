@@ -94,9 +94,6 @@ AP_Notify *AP_Notify::_singleton;
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_PCA9685LED_I2C_External)
 
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     DRONECAN_LEDS)
