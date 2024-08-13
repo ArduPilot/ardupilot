@@ -89,11 +89,7 @@ AP_Notify *AP_Notify::_singleton;
 #endif
 
 #ifndef DEFAULT_NTF_LED_TYPES
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-  #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
-// Linux boards
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_PCA9685LED_I2C_External)
