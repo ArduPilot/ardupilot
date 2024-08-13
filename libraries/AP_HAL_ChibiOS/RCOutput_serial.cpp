@@ -140,6 +140,12 @@ void RCOutput::set_reversed_mask(uint32_t chanmask) {
 // The mask uses servo channel numbering
 void RCOutput::set_reversible_mask(uint32_t chanmask) {
     _reversible_mask |= chanmask;
+#if HAL_WITH_IO_MCU
+    const uint32_t iomcu_mask = ((1U<<chan_offset)-1);
+    if (iomcu_dshot && (chanmask & iomcu_mask)) {
+        iomcu.set_reversible_mask(chanmask & iomcu_mask);
+    }
+#endif
 }
 
 // Update the dshot outputs that should be reversible/3D at 1Hz
