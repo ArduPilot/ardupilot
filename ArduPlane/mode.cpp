@@ -255,6 +255,9 @@ void Mode::reset_controllers()
     // reset steering controls
     plane.steer_state.locked_course = false;
     plane.steer_state.locked_course_err = 0;
+
+    // reset TECS
+    plane.TECS_controller.reset();
 }
 
 bool Mode::is_taking_off() const
