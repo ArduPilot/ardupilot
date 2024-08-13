@@ -110,6 +110,9 @@ public:
     // set bi-directional mask
     void set_bidir_dshot_mask(uint16_t mask);
 
+    // set reversible mask
+    void set_reversible_mask(uint16_t mask);
+
     // get output mode
     AP_HAL::RCOutput::output_mode get_output_mode(uint8_t& mask) const;
 
