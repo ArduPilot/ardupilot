@@ -200,6 +200,7 @@ struct page_mode_out {
     uint16_t mode;
     uint16_t bdmask;
     uint16_t esc_type;
+    uint16_t reversible_mask;
 };
 
 struct page_dshot {
