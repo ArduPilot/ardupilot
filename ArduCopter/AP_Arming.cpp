@@ -808,11 +808,6 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
         }
     }
 
-#if AUTOTUNE_ENABLED == ENABLED
-    // Possibly save auto tuned parameters
-    copter.mode_autotune.autotune.disarmed(copter.flightmode == &copter.mode_autotune);
-#endif
-
     // we are not in the air
     copter.set_land_complete(true);
     copter.set_land_complete_maybe(true);
@@ -832,6 +827,11 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     hal.util->set_soft_armed(false);
 
     copter.ap.in_arming_delay = false;
+
+#if AUTOTUNE_ENABLED == ENABLED
+    // Possibly save auto tuned parameters
+    copter.mode_autotune.autotune.disarmed(copter.flightmode == &copter.mode_autotune);
+#endif
 
     return true;
 }
