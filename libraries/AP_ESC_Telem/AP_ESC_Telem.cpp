@@ -238,9 +238,12 @@ bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
 // get an individual ESC's temperature in centi-degrees if available, returns true on success
 bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL)) {
         return false;
     }
     temp = telemdata.temperature_cdeg;
@@ -250,9 +253,12 @@ bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 // get an individual motor's temperature in centi-degrees if available, returns true on success
 bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-         || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL)) {
         return false;
     }
     temp = telemdata.motor_temp_cdeg;
@@ -278,9 +284,12 @@ bool AP_ESC_Telem::get_highest_temperature(int16_t& temp) const
 // get an individual ESC's current in Ampere if available, returns true on success
 bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::CURRENT)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::CURRENT)) {
         return false;
     }
     amps = telemdata.current;
@@ -290,9 +299,12 @@ bool AP_ESC_Telem::get_current(uint8_t esc_index, float& amps) const
 // get an individual ESC's voltage in Volt if available, returns true on success
 bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)) {
         return false;
     }
     volts = telemdata.voltage;
@@ -302,9 +314,12 @@ bool AP_ESC_Telem::get_voltage(uint8_t esc_index, float& volts) const
 // get an individual ESC's energy consumption in milli-Ampere.hour if available, returns true on success
 bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, float& consumption_mah) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION)) {
         return false;
     }
     consumption_mah = telemdata.consumption_mah;
@@ -314,9 +329,12 @@ bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, float& consumption_mah
 // get an individual ESC's usage time in seconds if available, returns true on success
 bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::USAGE)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::USAGE)) {
         return false;
     }
     usage_s = telemdata.usage_s;
@@ -327,9 +345,12 @@ bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 // get an individual ESC's input duty cycle if available, returns true on success
 bool AP_ESC_Telem::get_input_duty(uint8_t esc_index, uint8_t& input_duty) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY)) {
         return false;
     }
     input_duty = telemdata.input_duty;
@@ -339,9 +360,12 @@ bool AP_ESC_Telem::get_input_duty(uint8_t esc_index, uint8_t& input_duty) const
 // get an individual ESC's output duty cycle if available, returns true on success
 bool AP_ESC_Telem::get_output_duty(uint8_t esc_index, uint8_t& output_duty) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY)) {
         return false;
     }
     output_duty = telemdata.output_duty;
@@ -351,9 +375,12 @@ bool AP_ESC_Telem::get_output_duty(uint8_t esc_index, uint8_t& output_duty) cons
 // get an individual ESC's status flags if available, returns true on success
 bool AP_ESC_Telem::get_flags(uint8_t esc_index, uint32_t& flags) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::FLAGS)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::FLAGS)) {
         return false;
     }
     flags = telemdata.flags;
@@ -363,9 +390,12 @@ bool AP_ESC_Telem::get_flags(uint8_t esc_index, uint32_t& flags) const
 // get an individual ESC's percentage of output power if available, returns true on success
 bool AP_ESC_Telem::get_power_percentage(uint8_t esc_index, uint8_t& power_percentage) const
 {
+    if (esc_index >= ESC_TELEM_MAX_ESCS) {
+        return false;
+    }
+
     const volatile AP_ESC_Telem_Backend::TelemetryData& telemdata = _telem_data[esc_index];
-    if (esc_index >= ESC_TELEM_MAX_ESCS
-        || !telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE)) {
+    if (!telemdata.valid(AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE)) {
         return false;
     }
     power_percentage = telemdata.power_percentage;
