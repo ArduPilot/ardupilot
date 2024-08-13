@@ -2,14 +2,6 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-// Just so that it's completely clear...
-#define ENABLED                 1
-#define DISABLED                0
-
-// this avoids a very common config error
-#define ENABLE ENABLED
-#define DISABLE DISABLED
-
 #define BOTTOM_DETECTOR_TRIGGER_SEC 1.0
 #define SURFACE_DETECTOR_TRIGGER_SEC 1.0
 
@@ -77,7 +69,7 @@ enum LoggingParameters {
 
 // GCS failsafe
 #ifndef FS_GCS
-# define FS_GCS                        DISABLED
+# define FS_GCS                        0
 #endif
 #ifndef FS_GCS_TIMEOUT_S
 # define FS_GCS_TIMEOUT_S             5.0    // gcs failsafe triggers after this number of seconds with no GCS heartbeat
