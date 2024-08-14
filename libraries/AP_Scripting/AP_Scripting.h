@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#include "AP_Scripting/AP_Scripting_config.h"
+
 #if AP_SCRIPTING_ENABLED
 
 #include <GCS_MAVLink/GCS_config.h>
@@ -37,10 +39,6 @@
 #define SCRIPTING_MAX_NUM_NET_SOCKET 50
 #endif
 class SocketAPM;
-#endif
-
-#ifndef AP_SCRIPTING_SERIALDEVICE_ENABLED
-#define AP_SCRIPTING_SERIALDEVICE_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
 #endif
 
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED

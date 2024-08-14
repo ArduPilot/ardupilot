@@ -70,10 +70,12 @@ bool AP_CRSF_Telem::init(void)
         return false;
     }
 
+#if AP_VIDEOTX_ENABLED
     // Someone explicitly configure CRSF control for VTX
     if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::CRSF);
     }
+#endif
 
     return AP_RCTelemetry::init();
 }

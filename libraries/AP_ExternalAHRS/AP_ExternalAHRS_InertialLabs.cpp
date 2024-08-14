@@ -18,7 +18,7 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 
 #include "AP_ExternalAHRS_InertialLabs.h"
 #include <AP_Math/AP_Math.h>
@@ -692,5 +692,5 @@ void AP_ExternalAHRS_InertialLabs::send_status_report(GCS_MAVLINK &link) const
                                        mag_var, 0, 0);
 }
 
-#endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
 

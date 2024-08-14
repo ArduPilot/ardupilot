@@ -32,14 +32,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_GCS_ENABLED
 /*
   request any missing 4x4 grids from a block, given a grid_cache
  */
 bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcache)
 {
-#if !HAL_GCS_ENABLED
-    return false;
-#else
     struct grid_block &grid = gcache.grid;
 
     if (options.get() & uint16_t(Options::DisableDownload)) {
@@ -75,7 +73,6 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
     last_request_time_ms[chan] = AP_HAL::millis();
 
     return true;
-#endif
 }
 
 /*
@@ -157,6 +154,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
         return;
     }
 }
+#endif  // HAL_GCS_ENABLED
 
 /*
   count bits in a uint64_t
@@ -196,7 +194,8 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
     }
 }
 
-/* 
+#if HAL_GCS_ENABLED
+/*
    handle terrain messages from GCS
  */
 void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &msg)
@@ -312,6 +311,7 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
     // see if we need to schedule some disk IO
     update();
 }
+#endif  // HAL_GCS_ENABLED
 
 
 #endif // AP_TERRAIN_AVAILABLE

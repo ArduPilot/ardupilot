@@ -503,93 +503,105 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     MSP_UNUSED(src);
 
     switch (cmd_msp) {
+#if HAL_MSP_RANGEFINDER_ENABLED
     case MSP2_SENSOR_RANGEFINDER: {
         const MSP::msp_rangefinder_data_message_t *pkt = (const MSP::msp_rangefinder_data_message_t *)src->ptr;
         msp_handle_rangefinder(*pkt);
     }
     break;
+#endif
+#if HAL_MSP_OPTICALFLOW_ENABLED
     case MSP2_SENSOR_OPTIC_FLOW: {
         const MSP::msp_opflow_data_message_t *pkt = (const MSP::msp_opflow_data_message_t *)src->ptr;
         msp_handle_opflow(*pkt);
     }
     break;
+#endif
+#if HAL_MSP_GPS_ENABLED
     case MSP2_SENSOR_GPS: {
         const MSP::msp_gps_data_message_t *pkt = (const MSP::msp_gps_data_message_t *)src->ptr;
         msp_handle_gps(*pkt);
     }
     break;
+#endif
+#if AP_COMPASS_MSP_ENABLED
     case MSP2_SENSOR_COMPASS: {
         const MSP::msp_compass_data_message_t *pkt = (const MSP::msp_compass_data_message_t *)src->ptr;
         msp_handle_compass(*pkt);
     }
     break;
+#endif
+#if AP_BARO_MSP_ENABLED
     case MSP2_SENSOR_BAROMETER: {
         const MSP::msp_baro_data_message_t *pkt = (const MSP::msp_baro_data_message_t *)src->ptr;
         msp_handle_baro(*pkt);
     }
     break;
+#endif
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     case MSP2_SENSOR_AIRSPEED: {
         const MSP::msp_airspeed_data_message_t *pkt = (const MSP::msp_airspeed_data_message_t *)src->ptr;
         msp_handle_airspeed(*pkt);
     }
     break;
+#endif
     }
 
     return MSP_RESULT_NO_REPLY;
 }
 
+#if HAL_MSP_OPTICALFLOW_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
-#if HAL_MSP_OPTICALFLOW_ENABLED
     AP_OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
         return;
     }
     optflow->handle_msp(pkt);
-#endif
 }
+#endif
 
+#if HAL_MSP_RANGEFINDER_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_data_message_t &pkt)
 {
-#if HAL_MSP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = AP::rangefinder();
     if (rangefinder == nullptr) {
         return;
     }
     rangefinder->handle_msp(pkt);
-#endif
 }
+#endif
 
+#if HAL_MSP_GPS_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_gps(const MSP::msp_gps_data_message_t &pkt)
 {
-#if HAL_MSP_GPS_ENABLED
     AP::gps().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_COMPASS_MSP_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_compass(const MSP::msp_compass_data_message_t &pkt)
 {
-#if AP_COMPASS_MSP_ENABLED
     AP::compass().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_BARO_MSP_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &pkt)
 {
-#if AP_BARO_MSP_ENABLED
     AP::baro().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
 {
-#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     auto *airspeed = AP::airspeed();
     if (airspeed) {
         airspeed->handle_msp(pkt);
     }
-#endif
 }
+#endif
 
 uint32_t AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask(void)
 {

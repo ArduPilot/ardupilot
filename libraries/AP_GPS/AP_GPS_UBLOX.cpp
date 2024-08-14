@@ -2303,7 +2303,14 @@ bool AP_GPS_UBLOX::is_healthy(void) const
 uint8_t AP_GPS_UBLOX::populate_F9_gnss(void)
 {
     uint8_t cfg_count = 0;
-    if (params.gnss_mode != 0 && (_unconfigured_messages & CONFIG_F9)) {
+
+    if (params.gnss_mode == 0) {
+        _unconfigured_messages &= ~CONFIG_F9;
+        last_configured_gnss = params.gnss_mode;
+        return 0;
+    }
+
+    if ((_unconfigured_messages & CONFIG_F9) != 0) {
         // ZED-F9P defaults are
         // GPS L1C/A+L2C(ZED)
         // SBAS L1C/A
