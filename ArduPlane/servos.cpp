@@ -521,6 +521,9 @@ float Plane::apply_throttle_limits(float throttle_in)
 
     // Query the conditions where TKOFF_THR_MAX applies.
     const bool use_takeoff_throttle =
+#if HAL_QUADPLANE_ENABLED
+        quadplane.in_slt_fwd_transition() ||
+#endif
         (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
         (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
 
