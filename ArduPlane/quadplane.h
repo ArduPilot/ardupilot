@@ -110,9 +110,7 @@ public:
     // abort landing, only valid when in a VTOL landing descent
     bool abort_landing(void);
 
-    bool in_transition(void) const;
     bool in_frwd_transition(void) const;
-    bool in_back_transition(void) const;
 
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 

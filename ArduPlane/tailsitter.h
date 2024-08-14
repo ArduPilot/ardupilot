@@ -177,8 +177,6 @@ public:
 
     bool active_frwd() const override { return transition_state == TRANSITION_ANGLE_WAIT_FW; }
 
-    bool active_back() const override { return transition_state == TRANSITION_ANGLE_WAIT_VTOL; }
-
     bool show_vtol_view() const override;
 
     void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd) override;
