@@ -598,6 +598,13 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("GSF_RST_MAX", 57, NavEKF2, _gsfResetMaxCount, 2),
+
+    // @Param: OPTIONS
+    // @DisplayName: Optional EKF behaviour
+    // @Description: optional EKF2 behaviour. Disabling external navigation prevents use of external vision data in the EKF2 solution
+    // @Bitmask: 0:DisableExternalNavigation
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  58, NavEKF2, _options, 0),
     
     AP_GROUPEND
 };
@@ -1514,8 +1521,7 @@ void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 void NavEKF2::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
     AP::dal().writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
-
-    if (core) {
+    if (!option_is_set(Option::DisableExternalNav) && core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
         }
@@ -1568,8 +1574,7 @@ void NavEKF2::writeDefaultAirSpeed(float airspeed)
 void NavEKF2::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
     AP::dal().writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
-
-    if (core) {
+    if (!option_is_set(Option::DisableExternalNav) && core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
         }
