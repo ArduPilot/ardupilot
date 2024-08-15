@@ -3587,7 +3587,6 @@ function networking:get_netmask_active() end
 function networking:get_ip_active() end
 
 -- visual odometry object
---@class visual_odom
 visual_odom = {}
 
 -- visual odometry health
@@ -3597,3 +3596,24 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+-- Plane Pitch Controller
+PitchController = {}
+
+-- Inject rate demand offset into pitch controller
+---@param rate number -- rate in deg / s
+function PitchController:set_rate_sysid(rate) end
+
+-- Inject actuator offset into pitch controller
+---@param actuator number -- range of -1.0 to +1.0
+function PitchController:set_actuator_sysid(actuator) end
+
+-- Plane Roll Controller
+RollController = {}
+-- Inject rate demand offset into roll controller
+---@param rate number -- rate in deg / s
+function RollController:set_rate_sysid(rate) end
+
+-- Inject actuator offset into roll controller
+---@param actuator number -- range of -1.0 to +1.0
+function RollController:set_actuator_sysid(actuator) end

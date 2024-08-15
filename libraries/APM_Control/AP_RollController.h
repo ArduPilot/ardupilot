@@ -55,6 +55,16 @@ public:
 
     void convert_pid();
 
+    // Set system identification angular velocity in degrees/s
+    void set_rate_sysid(float rate) { sysid.rate = rate; }
+
+    // Set system identification actuator in range +-1.0
+    // Scale by 4500 so input range is +-1.0
+    void set_actuator_sysid(float command) { sysid.actuator = command * 4500.0; }
+
+    // Get singleton
+    static AP_RollController *get_singleton() { return singleton; }
+
 private:
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;
@@ -68,4 +78,11 @@ private:
     AP_PIDInfo _pid_info;
 
     float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
+    
+    struct {
+        float rate;
+        float actuator;
+    } sysid;
+
+    static AP_RollController *singleton;
 };

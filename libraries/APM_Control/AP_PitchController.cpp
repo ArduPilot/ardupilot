@@ -24,6 +24,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_PitchController *AP_PitchController::singleton;
+
 const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: 2SRV_TCONST
@@ -164,6 +166,10 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
     : aparm(parms)
 {
+    if (singleton != nullptr) {
+        AP_HAL::panic("AP_PitchController must be singleton");
+    }
+    singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
 }
@@ -173,6 +179,10 @@ AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
 */
 float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed, bool ground_mode)
 {
+    // Apply sys ID rate offset and clear
+    desired_rate += sysid.rate;
+    sysid.rate = 0;
+
     const float dt = AP::scheduler().get_loop_period_s();
 
     const AP_AHRS &_ahrs = AP::ahrs();
@@ -230,7 +240,11 @@ float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool d
         // when on ground suppress D and half P term to prevent oscillations
         out -= pinfo.D + 0.5*pinfo.P;
     }
-
+    
+    // Apply sys ID actuator offset and clear
+    out += sysid.actuator;
+    sysid.actuator = 0;
+    
     // remember the last output to trigger the I limit
     _last_out = out;
 
