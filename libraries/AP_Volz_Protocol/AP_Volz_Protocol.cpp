@@ -376,11 +376,13 @@ void AP_Volz_Protocol::update()
         servo_pwm[i] = (pwm == 0) ? c->get_trim() : pwm;
     }
 
-    // take semaphore and log all channels
 #if HAL_LOGGING_ENABLED
-    {
+    // take semaphore and log all channels at 5 Hz
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - telem.last_log_ms) > 200) {
+        telem.last_log_ms = now_ms;
+
         WITH_SEMAPHORE(telem.sem);
-        const uint32_t now_ms = AP_HAL::millis();
         for (uint8_t i=0; i<ARRAY_SIZE(telem.data); i++) {
             if ((telem.data[i].last_response_ms == 0) || ((now_ms - telem.data[i].last_response_ms) > 5000)) {
                 // Never seen telem, or not had a response for more than 5 seconds
@@ -417,7 +419,7 @@ void AP_Volz_Protocol::update()
             );
         }
     }
-#endif
+#endif // HAL_LOGGING_ENABLED
 }
 
 // Return the crc for a given command packet
