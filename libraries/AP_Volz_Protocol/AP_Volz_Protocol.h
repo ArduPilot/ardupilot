@@ -143,6 +143,7 @@ private:
             uint16_t motor_temp_deg;
             uint16_t pcb_temp_deg;
         } data[NUM_SERVO_CHANNELS];
+        uint32_t last_log_ms;
     } telem;
 #endif
 
