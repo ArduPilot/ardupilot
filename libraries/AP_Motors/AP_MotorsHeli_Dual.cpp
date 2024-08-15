@@ -597,10 +597,14 @@ bool AP_MotorsHeli_Dual::arming_checks(size_t buflen, char *buffer) const
 }
 
 #if HAL_LOGGING_ENABLED
-// Blade angle logging - called at 10 Hz
+// heli motors logging - called at 10 Hz
 void AP_MotorsHeli_Dual::Log_Write(void)
 {
+    // write swashplate log
     _swashplate1.write_log(get_cyclic_angle_scaler(), _collective_min_deg.get(), _collective_max_deg.get(), _collective_min.get(), _collective_max.get());
     _swashplate2.write_log(get_cyclic_angle_scaler(), _collective_min_deg.get(), _collective_max_deg.get(), _collective2_min.get(), _collective2_max.get());
+
+    // write RSC log
+    _main_rotor.write_log();
 }
 #endif

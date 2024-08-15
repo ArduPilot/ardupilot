@@ -123,6 +123,7 @@ jobs:
           ./waf rover
 
       - name: test build Chibios ${{matrix.os}}.${{matrix.name}}
+        if: matrix.os != 'alpine'
         env:
           DISABLE_MAVNATIVE: True
           DEBIAN_FRONTEND: noninteractive
@@ -141,3 +142,38 @@ jobs:
           git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure --board CubeOrange
           ./waf plane
+
+  build-alpine:  # special case for alpine as it doesn't have bash by default
+    runs-on: ubuntu-22.04
+    container:
+      image: alpine:latest
+      options: --privileged
+    steps:
+      - name: Install Git
+        timeout-minutes: 30
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          TZ: Europe/Paris
+        run: |
+          apk update && apk add --no-cache git
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: test install environment alpine
+        timeout-minutes: 60
+        env:
+          DISABLE_MAVNATIVE: True
+          TZ: Europe/Paris
+          SKIP_AP_GIT_CHECK: 1
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/environment_install/install-prereqs-alpine.sh
+      - name: test build STIL alpine
+        env:
+          DISABLE_MAVNATIVE: True
+          TZ: Europe/Paris
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          git config --global --add safe.directory /__w/ardupilot/ardupilot
+          ./waf configure
+          ./waf rover

@@ -9,6 +9,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <time.h>
+#include <sys/time.h>
 
 extern const AP_HAL::HAL& hal;
 

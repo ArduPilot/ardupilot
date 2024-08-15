@@ -27,6 +27,7 @@ param set SERIAL5_PROTOCOL 5
 
 #if HAL_SIM_GPS_ENABLED
 
+#include <sys/time.h>
 #include "SIM_SerialDevice.h"
 
 namespace SITL {
