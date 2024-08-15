@@ -364,7 +364,18 @@ private:
     AP_Int8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
+    AP_Int32 _options;              // optional behaviour bitmask
 
+    // enum for processing options
+    enum class Option {
+        DisableExternalNav     = (1U<<0),
+    };
+
+    // return true if an option is set
+    bool option_is_set(Option option) const {
+        return (uint32_t(option) & uint32_t(_options)) != 0;
+    }
+    
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
 #define FLOW_USE_NAV     1
