@@ -1024,6 +1024,9 @@ private:
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
     }
+
+    // true when we have completed the common origin setup
+    bool done_common_origin;
 };
 
 namespace AP {
