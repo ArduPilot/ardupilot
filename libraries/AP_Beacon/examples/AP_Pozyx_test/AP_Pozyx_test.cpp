@@ -37,7 +37,7 @@ void setup(void)
 #if AP_BEACON_ENABLED
     set_object_value_and_report(&beacon, beacon.var_info, "_TYPE", 1.0f);
     set_object_value_and_report(&serial_manager, serial_manager.var_info, "6_PROTOCOL", 13.0f);
-    set_object_value_and_report(&serial_manager, serial_manager.var_info, "6_BAUD", 9.0f);
+    set_object_value_and_report(&serial_manager, serial_manager.var_info, "6_BAUD", 115.0f);
 #endif
     serial_manager.init();
 #if AP_BEACON_ENABLED
