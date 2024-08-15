@@ -1113,11 +1113,9 @@ bool NavEKF2::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (_fusionModeGPS != 3 || common_origin_valid) {
-        // we don't allow setting of the EKF origin if using GPS
-        // or if the EKF origin has already been set.
-        // This is to prevent accidental setting of EKF origin with an
-        // invalid position or height or causing upsets from a shifting origin.
+    if (common_origin_valid) {
+        // we don't allow setting of the EKF origin if the EKF origin
+        // has already been set.
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 refusing set origin");
         return false;
     }
