@@ -617,6 +617,22 @@ void AP_AHRS::update_EKF2(void)
             EKF2.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
         }
+
+        /*
+          if we now have an origin then set in all backends
+        */
+        if (!done_common_origin) {
+            Location new_origin;
+            if (EKF2.getOriginLLH(new_origin)) {
+                done_common_origin = true;
+#if HAL_NAVEKF3_AVAILABLE
+                EKF3.setOriginLLH(new_origin);
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+                external.set_origin(new_origin);
+#endif
+            }
+        }
     }
 }
 #endif
@@ -686,6 +702,21 @@ void AP_AHRS::update_EKF3(void)
             EKF3.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
         }
+        /*
+          if we now have an origin then set in all backends
+        */
+        if (!done_common_origin) {
+            Location new_origin;
+            if (EKF3.getOriginLLH(new_origin)) {
+                done_common_origin = true;
+#if HAL_NAVEKF2_AVAILABLE
+                EKF2.setOriginLLH(new_origin);
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+                external.set_origin(new_origin);
+#endif
+            }
+        }
     }
 }
 #endif
@@ -698,6 +729,22 @@ void AP_AHRS::update_external(void)
 
     if (_active_EKF_type() == EKFType::EXTERNAL) {
         copy_estimates_from_backend_estimates(external_estimates);
+    }
+
+    /*
+      if we now have an origin then set in all backends
+    */
+    if (!done_common_origin) {
+        Location new_origin;
+        if (external.get_origin(new_origin)) {
+            done_common_origin = true;
+#if HAL_NAVEKF2_AVAILABLE
+            EKF2.setOriginLLH(new_origin);
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+            EKF3.setOriginLLH(new_origin);
+#endif
+        }
     }
 }
 #endif // AP_AHRS_EXTERNAL_ENABLED
@@ -1412,6 +1459,9 @@ bool AP_AHRS::set_origin(const Location &loc)
 #if HAL_NAVEKF3_AVAILABLE
     const bool ret3 = EKF3.setOriginLLH(loc);
 #endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    const bool ret_ext = external.set_origin(loc);
+#endif
 
     // return success if active EKF's origin was set
     bool success = false;
@@ -1441,7 +1491,7 @@ bool AP_AHRS::set_origin(const Location &loc)
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        // don't allow origin set with external AHRS
+        success = ret_ext;
         break;
 #endif
     }
