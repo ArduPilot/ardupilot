@@ -392,6 +392,10 @@ efi = {}
 ---@return EFI_State_ud
 function efi:get_state() end
 
+-- get last update time in milliseconds
+---@return uint32_t_ud
+function efi:get_last_update_ms() end
+
 -- desc
 ---@param instance integer
 ---@return AP_EFI_Backend_ud|nil
@@ -2072,6 +2076,11 @@ function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 ---@param esc_index integer -- esc instance 0 indexed
 ---@param scale_factor number -- factor
 function esc_telem:set_rpm_scale(esc_index, scale_factor) end
+
+-- get the timestamp of last telemetry data for an ESC
+---@param esc_index integer
+---@return uint32_t_ud
+function esc_telem:get_last_telem_data_ms(esc_index) end
 
 -- desc
 optical_flow = {}
