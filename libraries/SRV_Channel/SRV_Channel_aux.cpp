@@ -565,16 +565,25 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
 // find first channel that a function is assigned to
 bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan)
 {
-    if (!function_assigned(function)) {
+    // Must have populated channel masks
+    if (!initialised) {
+        update_aux_servo_function();
+    }
+
+    // Make sure function is valid
+    if (!SRV_Channel::valid_function(function)) {
         return false;
     }
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            chan = channels[i].ch_num;
-            return true;
-        }
+
+    // Get the index of the first set bit, returns 0 if no bits are set
+    const int first_chan = __builtin_ffs(functions[function].channel_mask);
+    if (first_chan == 0) {
+        return false;
     }
-    return false;
+
+    // Convert to 0 indexed
+    chan = first_chan - 1;
+    return true;
 }
 
 /*
