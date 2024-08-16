@@ -960,6 +960,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_comm
 #if MODE_AUTO_ENABLED == ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
 {
+        if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
+            // first-item/last item not supported
+            return MAV_RESULT_DENIED;
+        }
         if (copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             copter.set_auto_armed(true);
             if (copter.mode_auto.mission.state() != AP_Mission::MISSION_RUNNING) {
