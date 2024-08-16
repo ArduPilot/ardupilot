@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 '''
-A script suitable for use as a git pre-commit hook to ensure your
-files are flake8-compliant before committing them.
+A script suitable for use as a git pre-commit hook to ensure
+ - your files are flake8-compliant
+ - you are not committing to the master branch
 
 Use this by copying it to a file called $ARDUPILOT_ROOT/.git/hooks/pre-commit
 
@@ -50,6 +51,20 @@ class AP_PreCommit(object):
         return ret
 
     def run(self):
+        if not self.python_is_good():
+            return 1
+        if self.is_master_branch():
+            self.progress("FAILED: Attempting to commit to master branch")
+            return 1
+        return 0
+
+    def is_master_branch(self):
+        output = subprocess.check_output([
+            "git", "symbolic-ref", "--short", "HEAD"
+        ]).decode().rstrip()
+        return output == "master"
+
+    def python_is_good(self):
         # generate a list of files which have changes not marked for commit
         output = subprocess.check_output([
             "git", "diff", "--name-status"])
@@ -80,9 +95,8 @@ class AP_PreCommit(object):
             (base, extension) = os.path.splitext(filepath)
             if extension == ".py" and self.has_flake8_tag(filepath):
                 files_to_check_flake8.append(filepath)
-        if not self.files_are_flake8_clean(files_to_check_flake8):
-            return 1
-        return 0
+
+        return self.files_are_flake8_clean(files_to_check_flake8)
 
 
 if __name__ == '__main__':
