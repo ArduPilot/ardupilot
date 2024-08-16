@@ -26,6 +26,7 @@
 #include "SIM_GPS_SBP2.h"
 #include "SIM_GPS_SBP.h"
 #include "SIM_GPS_UBLOX.h"
+#include "SIM_GPS_SBF.h"
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -266,6 +267,12 @@ void GPS::check_backend_allocation()
 #if AP_SIM_GPS_MSP_ENABLED
     case Type::MSP:
         backend = NEW_NOTHROW GPS_MSP(*this, instance);
+        break;
+#endif
+
+#if AP_SIM_GPS_SBF_ENABLED
+    case Type::SBF:
+        backend = NEW_NOTHROW GPS_SBF(*this, instance);
         break;
 #endif
 
