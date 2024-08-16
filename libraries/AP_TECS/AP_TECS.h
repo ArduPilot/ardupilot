@@ -316,9 +316,6 @@ private:
     // Total energy rate filter state
     float _STEdotErrLast;
 
-    // time we started a takeoff
-    uint32_t _takeoff_start_ms;
-
     struct flags {
         // Underspeed condition
         bool underspeed:1;
@@ -434,8 +431,6 @@ private:
 
     // need to reset on next loop
     bool _need_reset;
-    // Flag if someone else drives pitch externally.
-    bool _flag_pitch_forced;
     // Flag if someone else drives throttle externally.
     bool _flag_throttle_forced;
 
