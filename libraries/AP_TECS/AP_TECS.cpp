@@ -328,7 +328,6 @@ void AP_TECS::update_50hz(void)
         _height_filter.dd_height = 0.0f;
         DT = 0.02f; // when first starting TECS, use most likely time constant
         _vdot_filter.reset();
-        _takeoff_start_ms = 0;
     }
     _update_50hz_last_usec = now;
 
@@ -1115,8 +1114,6 @@ void AP_TECS::_initialise_states(float hgt_afe)
     // Initialise states and variables if DT > 0.2 second or TECS is getting overriden or in climbout.
     _flags.reset = false;
 
-    _need_reset = _need_reset || (_flag_pitch_forced && _flag_throttle_forced);
-
     if (_DT > 0.2f || _need_reset) {
         _SKE_weighting        = 1.0f;
         _integTHR_state       = 0.0f;
@@ -1134,7 +1131,6 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _DT                   = 0.02f; // when first starting TECS, use the most likely time constant
         _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
-        _takeoff_start_ms = 0;
         _use_synthetic_airspeed_once = false;
 
         _flags.underspeed            = false;
@@ -1379,49 +1375,10 @@ void AP_TECS::set_throttle_max(const float thr_max) {
 
 void AP_TECS::_update_throttle_limits() {
 
-    // Configure max throttle.
-
-    // Read the maximum throttle limit.
-    _THRmaxf  = aparm.throttle_max * 0.01f;
-    // If more max throttle is allowed during takeoff, use it.
-    if (aparm.takeoff_throttle_max*0.01f > _THRmaxf
-        && (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)
-        ) {
-        _THRmaxf  = aparm.takeoff_throttle_max * 0.01f;
-    }
-    // In any case, constrain to the external safety limits.
-    _THRmaxf = MIN(_THRmaxf, _THRmaxf_ext);
-
-    // Configure min throttle.
-
-    // Use takeoff min throttle, if applicable.
-    bool use_takeoff_throttle = _flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING;
-    use_takeoff_throttle = use_takeoff_throttle && (aparm.takeoff_throttle_min != 0);
-    if ( use_takeoff_throttle ) { 
-        _THRminf = MIN(_THRminf, aparm.takeoff_throttle_min * 0.01f);
-    }
-    else { // Otherwise, during normal situations let regular limit.
-        _THRminf = aparm.throttle_min * 0.01f;
-    }
-    // Raise min to force max throttle for TKOFF_THR_MAX_T after a takeoff.
-    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
-        const uint32_t now = AP_HAL::millis();
-        if (_takeoff_start_ms == 0) {
-            _takeoff_start_ms = now;
-        }
-        const uint32_t dt = now - _takeoff_start_ms;
-        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
-            _THRminf = _THRmaxf;
-        }
-    } else {
-        _takeoff_start_ms = 0;
-    }
-    // If we are flaring, allow the throttle to go to 0.
-    if (_landing.is_flaring()) {
-        _THRminf = 0;
-    }
-    // In any case, constrain to the external safety limits.
-    _THRminf = MAX(_THRminf, _THRminf_ext);
+    // Configure max throttle; constrain to the external safety limits.
+    _THRmaxf = MIN(1.0f, _THRmaxf_ext);
+    // Configure min throttle; constrain to the external safety limits.
+    _THRminf = MAX(-1.0f, _THRminf_ext);
 
     // Allow a minimum of 1% throttle range, primarily to prevent TECS numerical errors.
     const float thr_eps = 0.01;
@@ -1437,6 +1394,7 @@ void AP_TECS::_update_throttle_limits() {
     }
     
     // Reset the external throttle limits.
+    // Caller will have to reset them in the next iteration.
     _THRminf_ext = -1.0f;
     _THRmaxf_ext = 1.0f;
 }
@@ -1540,12 +1498,4 @@ void AP_TECS::_update_pitch_limits(const int32_t ptchMinCO_cd) {
 
     // don't allow max pitch to go below min pitch
     _PITCHmaxf = MAX(_PITCHmaxf, _PITCHminf);
-
-    // Test if someone is forcing pitch to a specific value.
-    const float pitch_eps = DEG_TO_RAD*1;
-    if (fabsf(_PITCHmaxf-_PITCHminf)<pitch_eps) {
-        _flag_pitch_forced = true;
-    } else {
-        _flag_pitch_forced = false;
-    }
 }
