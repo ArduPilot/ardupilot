@@ -1789,7 +1789,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.user_takeoff(alt_min=25)
 
         # Check fence is enabled
-        self.do_fence_enable()
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
@@ -1810,11 +1809,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # lower throttle and try and land
         self.set_rc(3, 1300)
         self.wait_altitude(0, 2, relative=True)
-        self.wait_disarmed()
+        self.zero_throttle()
+        self.wait_landed_and_disarmed()
         self.assert_fence_enabled()
+        # must not be in RTL
+        self.assert_mode("LOITER")
 
-        # Assert fence is not healthy since it was enabled manually
-        self.assert_sensor_state(fence_bit, healthy=False)
+        # Assert fence is healthy since it was enabled automatically
+        self.assert_sensor_state(fence_bit, healthy=True)
 
         # Disable the fence using mavlink command to ensure cleaned up SITL state
         self.do_fence_disable()
