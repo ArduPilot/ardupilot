@@ -542,6 +542,10 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
         return handle_command_int_do_reposition(packet);
 
     case MAV_CMD_MISSION_START:
+        if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
+            // first-item/last item not supported
+            return MAV_RESULT_DENIED;
+        }
         return handle_MAV_CMD_MISSION_START(packet);
 
     case MAV_CMD_NAV_LOITER_UNLIM:
