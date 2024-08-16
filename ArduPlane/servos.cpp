@@ -546,6 +546,7 @@ float Plane::apply_throttle_limits(float throttle_in)
         const auto tmin_thr = aparm.takeoff_throttle_min;
         if (tmin_thr > throttle_in) {
             throttle_in = MAX(throttle_in, tmin_thr);
+            plane.TECS_controller.reset_throttle_I_cruise();
         }
     }
 
