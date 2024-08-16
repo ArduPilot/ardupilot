@@ -160,6 +160,7 @@ private:
         DISABLE_REDLINE_GOVERNOR     = (1U << 1),
         THROTTLE_WHILE_DISARMED      = (1U << 2),
         NO_RUNNING_WHILE_DISARMED    = (1U << 3),
+        CRANK_DIR_REVERSE            = (1U << 4),
     };
     AP_Int16 options;
 
