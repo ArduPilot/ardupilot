@@ -45,46 +45,48 @@ class AP_DroneCAN_DNA_Server
         // initialize database (storage accessor is always replaced with the one supplied)
         void init(StorageAccess *storage_);
 
-        //Reset the Server Record
+        // remove all registrations from the database
         void reset();
 
-        // returns true if the given node ID is occupied (has valid stored data)
+        // return true if the given node ID is registered
         bool is_registered(uint8_t node_id) {
             return node_registered.get(node_id);
         }
 
-        // handle initializing the server with the given expected node ID and unique ID
+        // handle initializing the server with its own node ID and unique ID
         void init_server(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
 
-        // handle processing the node info message. returns true if duplicate.
+        // handle processing the node info message. returns true if from a duplicate node
         bool handle_node_info(uint8_t source_node_id, const uint8_t unique_id[]);
 
-        // handle the allocation message. returns the new node ID.
+        // handle the allocation message. returns the allocated node ID, or 0 if allocation failed
         uint8_t handle_allocation(uint8_t node_id, const uint8_t unique_id[]);
 
     private:
-        //Generates 6Byte long hash from the specified unique_id
+        // fill the given record with the hash of the given unique ID
         void compute_uid_hash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
 
-        //Methods to set, clear and report NodeIDs allocated/registered so far
+        // delete the given node ID's registration
         void delete_registration(uint8_t node_id);
 
-        //Go through List to find node id for specified unique id
+        // retrieve node ID that matches the given unique ID. returns 0 if not found
         uint8_t find_node_id(const uint8_t unique_id[], uint8_t size);
 
-        //Add Node ID info to the record and setup necessary mask fields
+        // create the registration for the given node ID and set its record's unique ID
         void create_registration(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
 
-        //Finds next available free Node, starting from preferred NodeID
+        // search for a free node ID, starting at the preferred ID (which can be 0 if
+        // none are preferred). returns 0 if none found. based on pseudocode in
+        // uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
         uint8_t find_free_node_id(uint8_t preferred);
 
-        //Look in the storage and check if there's a valid Server Record there
+        // return true if the given node ID has a registration
         bool check_registration(uint8_t node_id);
 
-        //Reads the Server Record from storage for specified node id
+        // read the given node ID's registration's record
         void read_record(NodeRecord &record, uint8_t node_id);
 
-        //Writes the Server Record from storage for specified node id
+        // write the given node ID's registration's record
         void write_record(const NodeRecord &record, uint8_t node_id);
 
         // bitmasks containing a status for each possible node ID (except 0 and > MAX_NODE_ID)
