@@ -63,22 +63,22 @@ class AP_DroneCAN_DNA_Server
         uint8_t handle_allocation(uint8_t node_id, const uint8_t unique_id[]);
 
     private:
-        // fill the given record with the hash of the given unique ID
-        void compute_uid_hash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
-
-        // delete the given node ID's registration
-        void delete_registration(uint8_t node_id);
-
-        // retrieve node ID that matches the given unique ID. returns 0 if not found
-        uint8_t find_node_id(const uint8_t unique_id[], uint8_t size);
-
-        // create the registration for the given node ID and set its record's unique ID
-        void create_registration(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
-
         // search for a free node ID, starting at the preferred ID (which can be 0 if
         // none are preferred). returns 0 if none found. based on pseudocode in
         // uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
         uint8_t find_free_node_id(uint8_t preferred);
+
+        // retrieve node ID that matches the given unique ID. returns 0 if not found
+        uint8_t find_node_id(const uint8_t unique_id[], uint8_t size);
+
+        // fill the given record with the hash of the given unique ID
+        void compute_uid_hash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
+
+        // create the registration for the given node ID and set its record's unique ID
+        void create_registration(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
+
+        // delete the given node ID's registration
+        void delete_registration(uint8_t node_id);
 
         // return true if the given node ID has a registration
         bool check_registration(uint8_t node_id);
