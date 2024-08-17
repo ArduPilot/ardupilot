@@ -18,20 +18,20 @@ class AP_DroneCAN_DNA_Server
 {
     StorageAccess storage;
 
-    struct NodeData {
-        uint8_t hwid_hash[6];
+    struct NodeRecord {
+        uint8_t uid_hash[6];
         uint8_t crc;
     };
 
     /*
      * For each node ID (1 through MAX_NODE_ID), the database can have one
-     * registration for it. Each registration consists of a NodeData which
+     * registration for it. Each registration consists of a NodeRecord which
      * contains the (hash of the) unique ID reported by that node ID. Other
      * info could be added to the registration in the future.
      *
      * Physically, the database is stored as a header and format version,
-     * followed by an array of NodeDatas indexed by node ID. If a particular
-     * NodeData has an all-zero unique ID hash or an invalid CRC, then that
+     * followed by an array of NodeRecords indexed by node ID. If a particular
+     * NodeRecord has an all-zero unique ID hash or an invalid CRC, then that
      * node ID isn't considerd to have a registration.
      *
      * The database has public methods which handle the server behavior for the
@@ -64,7 +64,7 @@ class AP_DroneCAN_DNA_Server
 
     private:
         //Generates 6Byte long hash from the specified unique_id
-        void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
+        void getHash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
 
         //Methods to set, clear and report NodeIDs allocated/registered so far
         void freeNodeID(uint8_t node_id);
@@ -79,13 +79,13 @@ class AP_DroneCAN_DNA_Server
         uint8_t findFreeNodeID(uint8_t preferred);
 
         //Look in the storage and check if there's a valid Server Record there
-        bool isValidNodeDataAvailable(uint8_t node_id);
+        bool isValidNodeRecordAvailable(uint8_t node_id);
 
         //Reads the Server Record from storage for specified node id
-        void readNodeData(NodeData &data, uint8_t node_id);
+        void readNodeRecord(NodeRecord &record, uint8_t node_id);
 
         //Writes the Server Record from storage for specified node id
-        void writeNodeData(const NodeData &data, uint8_t node_id);
+        void writeNodeRecord(const NodeRecord &record, uint8_t node_id);
 
         // bitmasks containing a status for each possible node ID (except 0 and > MAX_NODE_ID)
         Bitmask<128> node_storage_occupied; // storage has a valid entry
