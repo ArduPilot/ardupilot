@@ -652,8 +652,11 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
-        dstate->auto_detected_baud = false; // specified, not detected
-        return NEW_NOTHROW AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
+        if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::GPS) >= 0) {
+            dstate->auto_detected_baud = false; // specified, not detected
+            return NEW_NOTHROW AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
+        }
+        break;
 #endif
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
