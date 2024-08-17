@@ -29,14 +29,14 @@
 #include <stdio.h>
 extern const AP_HAL::HAL& hal;
 
-// FORMAT REVISION DREAMS (things to address if the nodedata needs to be changed substantially)
+// FORMAT REVISION DREAMS (things to address if the NodeRecord needs to be changed substantially)
 // * have DNA server accept only a 16 byte local UID to avoid overhead from variable sized hash
 // * have a real empty flag for entries and/or use a CRC which is not zero for an input of all zeros
 
-#define NODEDATA_MAGIC 0xAC01
-#define NODEDATA_MAGIC_LEN 2 // uint16_t
+#define NODERECORD_MAGIC 0xAC01
+#define NODERECORD_MAGIC_LEN 2 // uint16_t
 #define MAX_NODE_ID    125
-#define NODEDATA_LOC(node_id) ((node_id * sizeof(struct NodeData)) + NODEDATA_MAGIC_LEN)
+#define NODERECORD_LOC(node_id) ((node_id * sizeof(NodeRecord)) + NODERECORD_MAGIC_LEN)
 
 #define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
@@ -52,8 +52,8 @@ AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardI
     node_info_client(_canard_iface, node_info_cb) {}
 
 /* Method to generate 6byte hash from the Unique ID.
-We return it packed inside the referenced NodeData structure */
-void AP_DroneCAN_DNA_Server::Database::getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const
+We return it packed inside the referenced NodeRecord structure */
+void AP_DroneCAN_DNA_Server::Database::getHash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const
 {
     uint64_t hash = FNV_1_OFFSET_BASIS_64;
     hash_fnv_1a(size, unique_id, &hash);
@@ -63,28 +63,28 @@ void AP_DroneCAN_DNA_Server::Database::getHash(NodeData &node_data, const uint8_
 
     // write it to ret
     for (uint8_t i=0; i<6; i++) {
-        node_data.hwid_hash[i] = (hash >> (8*i)) & 0xff;
+        record.uid_hash[i] = (hash >> (8*i)) & 0xff;
     }
 }
 
 //Read Node Data from Storage Region
-void AP_DroneCAN_DNA_Server::Database::readNodeData(NodeData &data, uint8_t node_id)
+void AP_DroneCAN_DNA_Server::Database::readNodeRecord(NodeRecord &record, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return;
     }
 
-    storage->read_block(&data, NODEDATA_LOC(node_id), sizeof(struct NodeData));
+    storage->read_block(&record, NODERECORD_LOC(node_id), sizeof(NodeRecord));
 }
 
 //Write Node Data to Storage Region
-void AP_DroneCAN_DNA_Server::Database::writeNodeData(const NodeData &data, uint8_t node_id)
+void AP_DroneCAN_DNA_Server::Database::writeNodeRecord(const NodeRecord &record, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return;
     }
 
-    storage->write_block(NODEDATA_LOC(node_id), &data, sizeof(struct NodeData));
+    storage->write_block(NODERECORD_LOC(node_id), &record, sizeof(NodeRecord));
 }
 
 /* Remove Node Data from Server Record in Storage,
@@ -95,11 +95,11 @@ void AP_DroneCAN_DNA_Server::Database::freeNodeID(uint8_t node_id)
         return;
     }
 
-    struct NodeData node_data;
+    NodeRecord record;
 
     //Eliminate from Server Record
-    memset(&node_data, 0, sizeof(node_data));
-    writeNodeData(node_data, node_id);
+    memset(&record, 0, sizeof(record));
+    writeNodeRecord(record, node_id);
 
     //Clear Occupation Mask
     node_storage_occupied.clear(node_id);
@@ -110,13 +110,13 @@ Unique IDs hash.
 Returns 0 if no Node ID was detected */
 uint8_t AP_DroneCAN_DNA_Server::Database::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
 {
-    NodeData node_data, cmp_node_data;
-    getHash(cmp_node_data, unique_id, size);
+    NodeRecord record, cmp_record;
+    getHash(cmp_record, unique_id, size);
 
     for (int i = MAX_NODE_ID; i > 0; i--) {
         if (node_storage_occupied.get(i)) {
-            readNodeData(node_data, i);
-            if (memcmp(node_data.hwid_hash, cmp_node_data.hwid_hash, sizeof(NodeData::hwid_hash)) == 0) {
+            readNodeRecord(record, i);
+            if (memcmp(record.uid_hash, cmp_record.uid_hash, sizeof(NodeRecord::uid_hash)) == 0) {
                 return i; // node ID found
             }
         }
@@ -128,26 +128,26 @@ uint8_t AP_DroneCAN_DNA_Server::Database::getNodeIDForUniqueID(const uint8_t uni
 for specified Node ID. */
 void AP_DroneCAN_DNA_Server::Database::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
 {
-    NodeData node_data;
-    getHash(node_data, unique_id, size);
-    //Generate CRC for validating the data when read back
-    node_data.crc = crc_crc8(node_data.hwid_hash, sizeof(node_data.hwid_hash));
+    NodeRecord record;
+    getHash(record, unique_id, size);
+    //Generate CRC for validating the record when read back
+    record.crc = crc_crc8(record.uid_hash, sizeof(record.uid_hash));
 
     //Write Data to the records
-    writeNodeData(node_data, node_id);
+    writeNodeRecord(record, node_id);
 
     node_storage_occupied.set(node_id);
 }
 
 //Checks if a valid Server Record is present for specified Node ID
-bool AP_DroneCAN_DNA_Server::Database::isValidNodeDataAvailable(uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::Database::isValidNodeRecordAvailable(uint8_t node_id)
 {
-    NodeData node_data;
-    readNodeData(node_data, node_id);
+    NodeRecord record;
+    readNodeRecord(record, node_id);
 
-    uint8_t empty_hwid[sizeof(NodeData::hwid_hash)] = {0};
-    uint8_t crc = crc_crc8(node_data.hwid_hash, sizeof(node_data.hwid_hash));
-    if (crc == node_data.crc && memcmp(&node_data.hwid_hash[0], &empty_hwid[0], sizeof(empty_hwid)) != 0) {
+    uint8_t empty_uid[sizeof(NodeRecord::uid_hash)] = {0};
+    uint8_t crc = crc_crc8(record.uid_hash, sizeof(record.uid_hash));
+    if (crc == record.crc && memcmp(&record.uid_hash[0], &empty_uid[0], sizeof(empty_uid)) != 0) {
         return true;
     }
     return false;
@@ -157,7 +157,7 @@ bool AP_DroneCAN_DNA_Server::Database::isValidNodeDataAvailable(uint8_t node_id)
 void AP_DroneCAN_DNA_Server::Database::init(StorageAccess *storage_)
 {
     // storage size must be synced with StorageCANDNA entry in StorageManager.cpp
-    static_assert(NODEDATA_LOC(MAX_NODE_ID+1) <= 1024, "DNA storage too small");
+    static_assert(NODERECORD_LOC(MAX_NODE_ID+1) <= 1024, "DNA storage too small");
 
     // might be called from multiple threads if multiple servers use the same database
     WITH_SEMAPHORE(sem);
@@ -166,14 +166,14 @@ void AP_DroneCAN_DNA_Server::Database::init(StorageAccess *storage_)
 
     // validate magic number
     uint16_t magic = storage->read_uint16(0);
-    if (magic != NODEDATA_MAGIC) {
+    if (magic != NODERECORD_MAGIC) {
         reset(); // re-initializing the database will put the magic back
     }
 
-    /* Go through our records and look for valid NodeData, to initialise
+    /* Go through our records and look for valid NodeRecord, to initialise
     occupied status */
     for (uint8_t i = 1; i <= MAX_NODE_ID; i++) {
-        if (isValidNodeDataAvailable(i)) {
+        if (isValidNodeRecordAvailable(i)) {
             node_storage_occupied.set(i);
         }
     }
@@ -233,18 +233,18 @@ void AP_DroneCAN_DNA_Server::Database::reset()
 {
     WITH_SEMAPHORE(sem);
 
-    NodeData node_data;
-    memset(&node_data, 0, sizeof(node_data));
+    NodeRecord record;
+    memset(&record, 0, sizeof(record));
     node_storage_occupied.clearall();
 
     //Just write empty Node Data to the Records
     // ensure node ID 0 is cleared even if we can't use it so we know the state
     for (uint8_t i = 0; i <= MAX_NODE_ID; i++) {
-        writeNodeData(node_data, i);
+        writeNodeRecord(record, i);
     }
 
     //Ensure we mark magic at the end
-    storage->write_uint16(0, NODEDATA_MAGIC);
+    storage->write_uint16(0, NODERECORD_MAGIC);
 }
 
 /* Go through the Occupation mask for available Node ID
