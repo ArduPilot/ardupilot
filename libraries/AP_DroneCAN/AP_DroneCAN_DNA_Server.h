@@ -23,6 +23,21 @@ class AP_DroneCAN_DNA_Server
         uint8_t crc;
     };
 
+    /*
+     * For each node ID (1 through MAX_NODE_ID), the database can have one
+     * registration for it. Each registration consists of a NodeData which
+     * contains the (hash of the) unique ID reported by that node ID. Other
+     * info could be added to the registration in the future.
+     *
+     * Physically, the database is stored as a header and format version,
+     * followed by an array of NodeDatas indexed by node ID. If a particular
+     * NodeData has an all-zero unique ID hash or an invalid CRC, then that
+     * node ID isn't considerd to have a registration.
+     *
+     * The database has public methods which handle the server behavior for the
+     * relevant message. The methods can be used by multiple servers in
+     * different threads, so each holds a lock for its duration.
+     */
     class Database {
     public:
         Database() {};
