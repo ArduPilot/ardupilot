@@ -21,6 +21,8 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#include "../GCS_MAVLink/GCS.h"
+
 extern const AP_HAL::HAL& hal;
 
 // return true if sensor is basically healthy (we are receiving data)
@@ -91,6 +93,36 @@ void AP_Beacon_Pozyx::update(void)
     }
 }
 
+union beacon_config_msg {
+    struct {
+        uint8_t beacon_id;
+        uint8_t beacon_count;
+        int32_t x;
+        int32_t y;
+        int32_t z;
+    } info;
+    uint8_t buf[14];
+};
+
+union beacon_distance_msg {
+    struct {
+        uint8_t beacon_id;
+        int32_t x;
+        int32_t y;
+    } info;
+    uint8_t buf[9];
+};
+
+union vehicle_position_msg {
+    struct {
+        int32_t x;
+        int32_t y;
+        int32_t z;
+        int16_t position_error;
+    } info;
+    uint8_t buf[14];
+};
+
 // parse buffer
 void AP_Beacon_Pozyx::parse_buffer()
 {
@@ -111,14 +143,16 @@ void AP_Beacon_Pozyx::parse_buffer()
 
         case AP_BEACON_POZYX_MSGID_BEACON_CONFIG:
             {
-                uint8_t beacon_id = linebuf[0];
-                //uint8_t beacon_count = linebuf[1];
-                int32_t beacon_x = (uint32_t)linebuf[5] << 24 | (uint32_t)linebuf[4] << 16 | (uint32_t)linebuf[3] << 8 | (uint32_t)linebuf[2];
-                int32_t beacon_y = (uint32_t)linebuf[9] << 24 | (uint32_t)linebuf[8] << 16 | (uint32_t)linebuf[7] << 8 | (uint32_t)linebuf[6];
-                int32_t beacon_z = (uint32_t)linebuf[13] << 24 | (uint32_t)linebuf[12] << 16 | (uint32_t)linebuf[11] << 8 | (uint32_t)linebuf[10];
-                Vector3f beacon_pos(beacon_x * 0.001f, beacon_y * 0.001f, -beacon_z * 0.001f);
+                beacon_config_msg msg;
+                memcpy(msg.buf, linebuf, sizeof(msg.buf));
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BC %d %ld %ld %ld", msg.info.beacon_id, msg.info.x, msg.info.y, msg.info.z);
+
+                Vector3f beacon_pos(msg.info.x * 0.001f, msg.info.y * 0.001f, -msg.info.z * 0.001f);
+
+                //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "P1 id=%d;len=%f;x=%ld;y=%ld;z=%ld", beacon_id, beacon_pos.length(), beacon_x, beacon_y, beacon_z);
+
                 if (beacon_pos.length() <= AP_BEACON_DISTANCE_MAX) {
-                    set_beacon_position(beacon_id, beacon_pos);
+                    set_beacon_position(msg.info.beacon_id, beacon_pos);
                     parsed = true;
                 }
             }
@@ -126,11 +160,15 @@ void AP_Beacon_Pozyx::parse_buffer()
 
         case AP_BEACON_POZYX_MSGID_BEACON_DIST:
             {
-                uint8_t beacon_id = linebuf[0];
-                uint32_t beacon_distance = (uint32_t)linebuf[4] << 24 | (uint32_t)linebuf[3] << 16 | (uint32_t)linebuf[2] << 8 | (uint32_t)linebuf[1];
-                float beacon_dist = beacon_distance/1000.0f;
+                beacon_distance_msg msg;
+                memcpy(msg.buf, linebuf, sizeof(msg.buf));
+                
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BD %d %ld", msg.info.beacon_id, msg.info.x);
+                
+                float beacon_dist = msg.info.x * 0.001f;
+
                 if (beacon_dist <= AP_BEACON_DISTANCE_MAX) {
-                    set_beacon_distance(beacon_id, beacon_dist);
+                    set_beacon_distance(msg.info.beacon_id, beacon_dist);
                     parsed = true;
                 }
             }
@@ -138,13 +176,14 @@ void AP_Beacon_Pozyx::parse_buffer()
 
         case AP_BEACON_POZYX_MSGID_POSITION:
             {
-                int32_t vehicle_x = (uint32_t)linebuf[3] << 24 | (uint32_t)linebuf[2] << 16 | (uint32_t)linebuf[1] << 8 | (uint32_t)linebuf[0];
-                int32_t vehicle_y = (uint32_t)linebuf[7] << 24 | (uint32_t)linebuf[6] << 16 | (uint32_t)linebuf[5] << 8 | (uint32_t)linebuf[4];
-                int32_t vehicle_z = (uint32_t)linebuf[11] << 24 | (uint32_t)linebuf[10] << 16 | (uint32_t)linebuf[9] << 8 | (uint32_t)linebuf[8];
-                int16_t position_error = (uint32_t)linebuf[13] << 8 | (uint32_t)linebuf[12];
-                Vector3f veh_pos(Vector3f(vehicle_x * 0.001f, vehicle_y * 0.001f, -vehicle_z * 0.001f));
+                vehicle_position_msg msg;
+                memcpy(msg.buf, linebuf, sizeof(msg.buf));
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BP %ld %ld %ld %d", msg.info.x, msg.info.y, msg.info.z, msg.info.position_error);
+                
+                Vector3f veh_pos(Vector3f(msg.info.x * 0.001f, msg.info.y * 0.001f, -msg.info.z * 0.001f));
+                
                 if (veh_pos.length() <= AP_BEACON_DISTANCE_MAX) {
-                    set_vehicle_position(veh_pos, position_error);
+                    set_vehicle_position(veh_pos, msg.info.position_error * 0.001f);
                     parsed = true;
                 }
             }
