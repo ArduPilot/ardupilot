@@ -3617,6 +3617,51 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.assert_current_waypoint(0)
 
+        self.drain_mav()
+
+        self.start_subtest("No clear mission while it is being uploaded by a different node")
+        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+                                          robust_parsing=True,
+                                          source_system=7,
+                                          source_component=7)
+        self.context_push()
+        self.context_collect("MISSION_REQUEST")
+        mav2.mav.mission_count_send(target_system,
+                                    target_component,
+                                    17,
+                                    mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        ack = self.assert_receive_message('MISSION_REQUEST', check_context=True, mav=mav2)
+        self.context_pop()
+
+        self.context_push()
+        self.context_collect("MISSION_ACK")
+        self.mav.mav.mission_clear_all_send(
+            target_system,
+            target_component,
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION
+        )
+        ack = self.assert_receive_message('MISSION_ACK', check_context=True)
+        self.assert_message_field_values(ack, {
+            "type": mavutil.mavlink.MAV_MISSION_DENIED,
+        })
+        self.context_pop()
+
+        self.progress("Test cancel upload from second connection")
+        self.context_push()
+        self.context_collect("MISSION_ACK")
+        mav2.mav.mission_clear_all_send(
+            target_system,
+            target_component,
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION
+        )
+        ack = self.assert_receive_message('MISSION_ACK', mav=mav2, check_context=True)
+        self.assert_message_field_values(ack, {
+            "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+        })
+        self.context_pop()
+        mav2.close()
+        del mav2
+
     def GCSMission(self):
         '''check MAVProxy's waypoint handling of missions'''
 
