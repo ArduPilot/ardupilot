@@ -33,7 +33,7 @@ void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
                                                    const mavlink_message_t &msg)
 {
     bool success = true;
-    success = success && !receiving;
+    success = success && cancel_upload(_link, msg);
     success = success && clear_all_items();
     send_mission_ack(_link, msg, success ? MAV_MISSION_ACCEPTED : MAV_MISSION_ERROR);
 }
