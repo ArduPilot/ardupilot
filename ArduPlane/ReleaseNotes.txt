@@ -1,5 +1,33 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.5.6-beta1 20 Aug 2024
+
+Changes from 4.5.5
+
+1) Board specific enhancements and bug fixes
+
+- 3DR Control Zero H7 Rev G support
+- CUAV-7-Nano support
+- FoxeerF405v2 servo outputs increased from 9 to 11
+- Holybro Pixhawk6C hi-power peripheral overcurrent reporting fixed
+- iFlight 2RAW H7 support
+- MFT-SEMA100 support
+- TMotorH743 support BMI270 baro
+- ZeroOneX6 support
+
+2) Minor enhancements and bug fixes
+
+- Cameras using MAVLink report vendor and model name correctly
+- DroneCAN fix to remove occasional NodeID registration error
+- GPS NMEA and GSoF driver ground course corrected (now always 0 ~ 360 deg)
+- ICP101XX barometer slowed to avoid I2C communication errors
+- IMU temp cal param (INSn_ACCSCAL_Z) stored correctly when bootloader is flashed
+- IMU gyro/accel duplicate id registration fixed to avoid possible pre-arm failure
+- Logging to flash timestamp fix
+- OSD displays ESC temp instead of motor temp
+- PID controller error calculation bug fix (was using target from prev iteration)
+- Relay on MAIN pins fixed
+------------------------------------------------------------------
 Release 4.5.5 1st Aug 2024
 
 No changes from 4.5.5-beta2
