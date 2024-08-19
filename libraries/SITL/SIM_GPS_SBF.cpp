@@ -38,7 +38,11 @@ static const uint16_t CRC16_LOOK_UP[256] = {
     0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-void GPS_SBF::send_sbf(uint16_t msgid, uint8_t *buf, uint16_t size, uint8_t *tmstp) {
+void GPS_SBF::send_sbf(uint16_t msgid, uint8_t *buf, uint16_t size)
+{
+    if ((size % 4) != 0) {
+        AP_HAL::panic("Invalid SBF packet length");
+    }
 
     //HEADER
     const uint8_t PREAMBLE1 = 0x24;
@@ -49,9 +53,8 @@ void GPS_SBF::send_sbf(uint16_t msgid, uint8_t *buf, uint16_t size, uint8_t *tms
     hdr[1] = PREAMBLE2;
     hdr[4] = msgid & 0xFF;
     hdr[5] = (msgid >> 8) & 0xFF;
-    hdr[6] = size & 0xFF;
-    hdr[7] = (size >> 8) & 0xFF;
-    crc16_ccitt(hdr+4, 4, crc);
+    hdr[6] = (size+8) & 0xFF;
+    hdr[7] = ((size+8) >> 8) & 0xFF;
     for (uint8_t i = 4; i<8; i++) {
         crc = (crc << 8) ^ CRC16_LOOK_UP[uint8_t((crc >> 8) ^ hdr[i])]; //include id and length
     }
@@ -62,24 +65,30 @@ void GPS_SBF::send_sbf(uint16_t msgid, uint8_t *buf, uint16_t size, uint8_t *tms
     hdr[3] = (crc >> 8) & 0xFF;
 
     write_to_autopilot((char*)hdr, sizeof(hdr));
-    write_to_autopilot((char*)tmstp, sizeof(tmstp));
-    write_to_autopilot((char*)buf, sizeof(buf));
+    write_to_autopilot((char*)buf, size);
 }
 
 void GPS_SBF::publish(const GPS_Data *d) {
+    publish_PVTGeodetic(d);
+    publish_DOP(d);
+}
 
+// public PVTGeodetic message, ID 4007
+void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
+{
     const double DNU_DOUBLE = -2e10;
     const float DNU_FLOAT = -2e10;
     const uint8_t DNU_UINT8 = 255;
     const uint16_t DNU_UINT16 = 65535;
 
     struct PACKED timestamp_t {
-        uint64_t tow;
+        uint32_t tow;
         uint16_t wnc;
-    } time_stamp {};
+    };
 
     struct PACKED sbf_pvtGeod_t
     {
+        timestamp_t time_stamp;
         uint8_t mode;
         uint8_t error;
         double latitude;
@@ -100,13 +109,16 @@ void GPS_SBF::publish(const GPS_Data *d) {
         uint16_t meancorrage;
         uint64_t signalinfo;
         uint8_t alertflag;
+        uint8_t __PADDING__[3];  // packets must be zero-mod-4
     } pvtGeod_buf {} ;
+    assert_storage_size<sbf_pvtGeod_t, 84> assert_storage_size_pvt_Geod_buf;
+    (void)assert_storage_size_pvt_Geod_buf;
 
     const uint16_t PVTGEO_0_MSG_ID = 0x0FA7;    
 
     const auto gps_tow = gps_time();
-    time_stamp.tow = gps_tow.ms;
-    time_stamp.wnc = gps_tow.week;
+    pvtGeod_buf.time_stamp.tow = gps_tow.ms;
+    pvtGeod_buf.time_stamp.wnc = gps_tow.week;
     
     pvtGeod_buf.mode = 4; //Mode: default to rtk fixed
     pvtGeod_buf.error= 0; //Error: no error
@@ -122,14 +134,51 @@ void GPS_SBF::publish(const GPS_Data *d) {
     pvtGeod_buf.rxclkdrift = DNU_FLOAT;
     pvtGeod_buf.timesystem = DNU_UINT8; 
     pvtGeod_buf.datum = DNU_UINT8; 
-    pvtGeod_buf.nrsv = d->num_sats;
+    pvtGeod_buf.nrsv = _sitl->gps_numsats[instance];
     pvtGeod_buf.wacorrinfo = 0; //default value
     pvtGeod_buf.referenceid = DNU_UINT16; 
     pvtGeod_buf.meancorrage = DNU_UINT16; 
     pvtGeod_buf.signalinfo = 0;
     pvtGeod_buf.alertflag = 0;
 
-    send_sbf(PVTGEO_0_MSG_ID, (uint8_t*)&pvtGeod_buf, sizeof(pvtGeod_buf), (uint8_t*)&time_stamp);
+    send_sbf(PVTGEO_0_MSG_ID, (uint8_t*)&pvtGeod_buf, sizeof(pvtGeod_buf));
+}
+
+// public DOP message, ID 4001
+void GPS_SBF::publish_DOP(const GPS_Data *d)
+{
+    struct PACKED timestamp_t {
+        uint32_t tow;
+        uint16_t wnc;
+    };
+
+    const auto gps_tow = gps_time();
+
+    // swiped from the driver:
+    const struct PACKED {
+        timestamp_t time_stamp;
+        uint8_t NrSV;
+        uint8_t Reserved;
+        uint16_t PDOP;
+        uint16_t TDOP;
+        uint16_t HDOP;
+        uint16_t VDOP;
+        float HPL;
+        float VPL;
+        // uint8_t __PADDING__[2];
+    } packet {
+        { gps_tow.ms, gps_tow.week },  // timestamp
+        17,  // NrSV
+        0,  // reserved
+        1,  // PDOP
+        1,  // TDOP
+        1,  // HDOP
+        1,  // VDOP
+        1.0,  // HPL
+        1.0  // VPL
+    };
+
+    send_sbf(4001, (uint8_t*)&packet, sizeof(packet));
 }
 
 #endif //AP_SIM_GPS_SBF_ENABLED
