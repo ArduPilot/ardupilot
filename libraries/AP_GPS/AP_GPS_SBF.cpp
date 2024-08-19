@@ -683,7 +683,7 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 
 bool AP_GPS_SBF::is_configured (void) const {
     return ((gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) ||
-            (config_step == Config_State::Complete));
+            (config_step == Config_State::Complete) ||AP_SIM_GPS_SBF_ENABLED);
 }
 
 bool AP_GPS_SBF::is_healthy (void) const {

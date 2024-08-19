@@ -14100,15 +14100,16 @@ switch value'''
         '''check each simulated GPS works'''
         self.reboot_sitl()
         orig = self.poll_home_position(timeout=60)
-        # (sim_gps_type, name, gps_type, detection name)
-        # if gps_type is None we auto-detect
         sim_gps = [
+            # (sim_gps_type, name, gps_type, detect_name, serial_protocol, detect_prefix)
+            # if gps_type is None we auto-detect
             # (0, "NONE"),
             (1, "UBLOX", None, "u-blox", 5, 'probing'),
             (5, "NMEA", 5, "NMEA", 5, 'probing'),
             (6, "SBP", None, "SBP", 5, 'probing'),
             (8, "NOVA", 15, "NOVA", 5, 'probing'),  # no attempt to auto-detect this in AP_GPS
             (9, "SBP2", None, "SBP2", 5, 'probing'),
+            (10, "SBF", 10, 'SBF', 5, 'probing'),
             (11, "GSOF", 11, "GSOF", 5, 'specified'), # no attempt to auto-detect this in AP_GPS
             (19, "MSP", 19, "MSP", 32, 'specified'),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),
