@@ -93,8 +93,9 @@ void AP_Beacon_Pozyx::update(void)
     }
 }
 
+// structure for messages uploaded to ardupilot
 union beacon_config_msg {
-    struct {
+    struct __attribute__((__packed__)) {
         uint8_t beacon_id;
         uint8_t beacon_count;
         int32_t x;
@@ -105,16 +106,15 @@ union beacon_config_msg {
 };
 
 union beacon_distance_msg {
-    struct {
+    struct __attribute__((__packed__)) {
         uint8_t beacon_id;
-        int32_t x;
-        int32_t y;
+        uint32_t distance;
     } info;
-    uint8_t buf[9];
+    uint8_t buf[5];
 };
 
 union vehicle_position_msg {
-    struct {
+    struct __attribute__((__packed__)) {
         int32_t x;
         int32_t y;
         int32_t z;
@@ -145,11 +145,11 @@ void AP_Beacon_Pozyx::parse_buffer()
             {
                 beacon_config_msg msg;
                 memcpy(msg.buf, linebuf, sizeof(msg.buf));
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BC %d %ld %ld %ld", msg.info.beacon_id, msg.info.x, msg.info.y, msg.info.z);
+                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BC %d %ld %ld %ld", msg.info.beacon_id, msg.info.x, msg.info.y, msg.info.z);
 
                 Vector3f beacon_pos(msg.info.x * 0.001f, msg.info.y * 0.001f, -msg.info.z * 0.001f);
 
-                //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "P1 id=%d;len=%f;x=%ld;y=%ld;z=%ld", beacon_id, beacon_pos.length(), beacon_x, beacon_y, beacon_z);
+                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "P1 id=%d;len=%f;x=%ld;y=%ld;z=%ld", beacon_id, beacon_pos.length(), beacon_x, beacon_y, beacon_z);
 
                 if (beacon_pos.length() <= AP_BEACON_DISTANCE_MAX) {
                     set_beacon_position(msg.info.beacon_id, beacon_pos);
@@ -163,9 +163,9 @@ void AP_Beacon_Pozyx::parse_buffer()
                 beacon_distance_msg msg;
                 memcpy(msg.buf, linebuf, sizeof(msg.buf));
                 
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BD %d %ld", msg.info.beacon_id, msg.info.x);
+                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BD %d %ld", msg.info.beacon_id, msg.info.distance);
                 
-                float beacon_dist = msg.info.x * 0.001f;
+                float beacon_dist = msg.info.distance * 0.001f;
 
                 if (beacon_dist <= AP_BEACON_DISTANCE_MAX) {
                     set_beacon_distance(msg.info.beacon_id, beacon_dist);
@@ -178,7 +178,8 @@ void AP_Beacon_Pozyx::parse_buffer()
             {
                 vehicle_position_msg msg;
                 memcpy(msg.buf, linebuf, sizeof(msg.buf));
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BP %ld %ld %ld %d", msg.info.x, msg.info.y, msg.info.z, msg.info.position_error);
+
+                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "BP %ld %ld %ld %d", msg.info.x, msg.info.y, msg.info.z, msg.info.position_error);
                 
                 Vector3f veh_pos(Vector3f(msg.info.x * 0.001f, msg.info.y * 0.001f, -msg.info.z * 0.001f));
                 
