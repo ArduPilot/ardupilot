@@ -79,6 +79,10 @@ protected:
 
 private:
 
+    // returns true if we are either not receiving, or we successfully
+    // cancelled an existing upload:
+    bool cancel_upload(const GCS_MAVLINK &_link, const mavlink_message_t &msg);
+
     virtual void truncate(const mavlink_mission_count_t &packet) = 0;
 
     uint16_t        request_i; // request index
