@@ -474,6 +474,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
     attitude_controller_run_quat();
 }
 
+// Fully stabilized acro
 // Command an angular velocity with angular velocity feedforward and smoothing
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
@@ -514,6 +515,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     attitude_controller_run_quat();
 }
 
+// Rate-only acro with no attitude feedback - used only by Copter rate-only acro
 // Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
@@ -539,6 +541,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     _ang_vel_body = _ang_vel_target;
 }
 
+// Acro with attitude feedback that does not rely on attitude - used only by Plane acro
 // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
