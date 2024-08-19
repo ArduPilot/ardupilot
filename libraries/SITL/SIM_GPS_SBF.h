@@ -18,7 +18,9 @@ public:
 
 private:
 
-    void send_sbf(uint16_t msgid, uint8_t *buf, uint16_t size, uint8_t *tmstp);
+    void send_sbf(uint16_t msgid, uint8_t *buf, uint16_t buf_size);
+    void publish_PVTGeodetic(const GPS_Data *d);
+    void publish_DOP(const GPS_Data *d);
 
 };
 
