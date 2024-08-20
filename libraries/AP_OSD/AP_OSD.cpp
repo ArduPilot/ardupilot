@@ -541,17 +541,23 @@ void AP_OSD::update_current_screen()
         was_failsafe = false;
     }
 
-    if (rc_channel == 0) {
+    if (rc_channel == 0 && sw_method != STICKS_INPUT) {
         return;
     }
 
 #if AP_RC_CHANNEL_ENABLED
-    RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
-    if (channel == nullptr) {
-        return;
+    int16_t channel_value = 0;
+    RC_Channel *channel = nullptr;
+
+    if (sw_method != STICKS_INPUT) {
+        channel = RC_Channels::rc_channel(rc_channel-1);
+        if (channel == nullptr) {
+            return;
+        }
+
+        channel_value = channel->get_radio_in();
     }
 
-    int16_t channel_value = channel->get_radio_in();
     switch (sw_method) {
     //switch to next screen if channel value was changed
     default:
@@ -597,6 +603,32 @@ void AP_OSD::update_current_screen()
             }
         } else {
             last_switch_ms = 0;
+        }
+        break;
+    case STICKS_INPUT:
+        if (!AP_Notify::flags.armed) {
+            auto &rc_channels = rc();
+            auto &roll = rc_channels.get_roll_channel();
+            auto &pitch = rc_channels.get_pitch_channel();
+            auto &yaw = rc_channels.get_yaw_channel();
+            auto &throttle = rc_channels.get_throttle_channel();
+            if (roll.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::MIDDLE &&
+                pitch.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH &&
+                yaw.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW &&
+                throttle.get_aux_switch_pos() == RC_Channel::AuxSwitchPos::MIDDLE) {
+                if (switch_debouncer) {
+                    uint32_t now = AP_HAL::millis();
+                    if (now - last_switch_ms > 1000) {
+                        next_screen();
+                        last_switch_ms = now;
+                    }
+                } else {
+                    switch_debouncer = true;
+                    return;
+                }
+            } else {
+                last_switch_ms = 0;
+            }
         }
         break;
     }
