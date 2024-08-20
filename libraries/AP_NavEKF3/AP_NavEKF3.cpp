@@ -2043,12 +2043,15 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
 void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return;
+    }
+
     AP::dal().log_writeDefaultAirSpeed3(airspeed, uncertainty);
 
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeDefaultAirSpeed(airspeed, uncertainty);
-        }
+    for (uint8_t i=0; i<num_cores; i++) {
+        core[i].writeDefaultAirSpeed(airspeed, uncertainty);
     }
 }
 
