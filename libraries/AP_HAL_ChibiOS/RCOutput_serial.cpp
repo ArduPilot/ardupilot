@@ -33,6 +33,8 @@ using namespace ChibiOS;
 
 extern const AP_HAL::HAL& hal;
 
+// send a dshot command to group
+// chan is the FMU channel to send the command to
 bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t chan)
 {
     if (!group.can_send_dshot_pulse()) {
@@ -112,10 +114,11 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
     DshotCommandPacket pkt;
     pkt.command = command;
     if (chan != ALL_CHANNELS) {
-        pkt.chan = chan - chan_offset;
+        pkt.chan = chan - chan_offset;  // normalize to FMU channel
     } else {
         pkt.chan = ALL_CHANNELS;
     }
+
     if (command_timeout_ms == 0) {
         pkt.cycle = MAX(10, repeat_count);
     } else {
@@ -156,8 +159,9 @@ void RCOutput::update_channel_masks() {
         return;
     }
 
-#if HAL_PWM_COUNT > 0
-    for (uint8_t i=chan_offset; i<HAL_PWM_COUNT+chan_offset; i++) {
+    // The masks use servo channel numbering
+#if NUM_SERVO_CHANNELS > 0
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         switch (_dshot_esc_type) {
             case DSHOT_ESC_BLHELI:
             case DSHOT_ESC_BLHELI_S:
