@@ -144,7 +144,7 @@ void Plane::Log_Write_OFG_Guided()
         target_airspeed_accel  : guided_state.target_airspeed_accel,
         target_alt             : guided_state.target_alt,
         target_alt_accel       : guided_state.target_alt_accel,
-        target_alt_frame       : guided_state.target_alt_frame,
+        target_alt_frame       : static_cast<uint8_t>(guided_state.target_alt_frame),
         target_heading         : guided_state.target_heading,
         target_heading_limit   : guided_state.target_heading_accel_limit
     };
