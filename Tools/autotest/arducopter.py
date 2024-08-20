@@ -9140,15 +9140,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.TimeUS != current_ts:
                 current_ts = None
                 continue
-            measurements[m.I] = (m.Lat, m.Lng)
+            measurements[m.I] = (m.Lat, m.Lng, m.Alt)
             if len(measurements) == 3:
                 # check lat:
-                for n in 0, 1:
+                for n in 0, 1, 2:
                     expected_blended = 0.8*measurements[0][n] + 0.2*measurements[1][n]
-                    epsilon = 0.0000002
+                    axis_epsilons = [0.0000002, 0.0000002, 0.2]
+                    epsilon = axis_epsilons[n]
                     error = abs(measurements[2][n] - expected_blended)
                     if error > epsilon:
-                        raise NotAchievedException(f"Blended diverged {measurements[0][n]=} {measurements[1][n]=}")
+                        raise NotAchievedException(f"Blended diverged {n=} {measurements[0][n]=} {measurements[1][n]=}")
                 current_ts = None
 
         self.context_pop()
