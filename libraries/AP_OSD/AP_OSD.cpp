@@ -30,6 +30,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <utility>
@@ -597,6 +598,32 @@ void AP_OSD::update_current_screen()
             }
         } else {
             last_switch_ms = 0;
+        }
+        break;
+    case STICKS_INPUT:
+        if (!AP_Notify::flags.armed) {
+            RC_Channels *rc_channels = RC_Channels::get_singleton();
+            RC_Channel *roll = rc_channels->channel(AP::rcmap()->roll() - 1);
+            RC_Channel *pitch = rc_channels->channel(AP::rcmap()->pitch() - 1);
+            RC_Channel *yaw = rc_channels->channel(AP::rcmap()->yaw() - 1);
+            RC_Channel *throttle = rc_channels->channel(AP::rcmap()->throttle() - 1);
+            if (roll->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::MIDDLE &&
+                pitch->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH &&
+                yaw->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW &&
+                throttle->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::MIDDLE) {
+                if (switch_debouncer) {
+                    uint32_t now = AP_HAL::millis();
+                    if (now - last_switch_ms > 1000) {
+                        next_screen();
+                        last_switch_ms = now;
+                    }
+                } else {
+                    switch_debouncer = true;
+                    return;
+                }
+            } else {
+                last_switch_ms = 0;
+            }
         }
         break;
     }
