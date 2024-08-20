@@ -4163,10 +4163,12 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
 
-            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+            m = self.mav.recv_match(blocking=True, timeout=0.1)
             if m is None:
                 continue
             if m.get_srcSystem() != self.sysid_thismav():
+                continue
+            if not hasattr(m, 'time_boot_ms'):
                 continue
 
             return m.time_boot_ms * 1.0e-3
