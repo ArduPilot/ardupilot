@@ -28,7 +28,7 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'7','3'}, "A8"},
         {{'6','B'}, "ZR10"},
         {{'7','8'}, "ZR30"},
-        {{'8','2'}, "ZT6"},
+        {{'8','3'}, "ZT6"},
         {{'7','A'}, "ZT30"},
 };
 
