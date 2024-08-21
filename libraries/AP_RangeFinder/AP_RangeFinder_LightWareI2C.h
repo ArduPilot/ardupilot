@@ -32,7 +32,7 @@ protected:
 
 private:
 
-    uint16_t sf20_stream_val[NUM_SF20_DATA_STREAMS];
+    float sf20_stream_val[NUM_SF20_DATA_STREAMS];
     int currentStreamSequenceIndex = 0;
 
     // constructor
@@ -59,8 +59,7 @@ private:
     bool sf20_parse_stream(uint8_t *stream_buf,
                            size_t *p_num_processed_chars,
                            const char *string_identifier,
-                           uint16_t &val);
-    void data_log(uint16_t *val);
+                           float &val);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
 

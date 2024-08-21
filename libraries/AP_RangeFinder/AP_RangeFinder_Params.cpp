@@ -48,21 +48,21 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FUNCTION", 5, AP_RangeFinder_Params, function, 0),
 
-    // @Param: MIN_CM
+    // @Param: MIN
     // @DisplayName: Rangefinder minimum distance
-    // @Description: Minimum distance in centimeters that rangefinder can reliably read
-    // @Units: cm
-    // @Increment: 1
+    // @Description: Minimum distance in metres that rangefinder can reliably read
+    // @Units: m
+    // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("MIN_CM",  6, AP_RangeFinder_Params, min_distance_cm, 20),
+    AP_GROUPINFO("MIN",  6, AP_RangeFinder_Params, min_distance, 0.20),
 
-    // @Param: MAX_CM
+    // @Param: MAX
     // @DisplayName: Rangefinder maximum distance
-    // @Description: Maximum distance in centimeters that rangefinder can reliably read
-    // @Units: cm
-    // @Increment: 1
+    // @Description: Maximum distance in metres that rangefinder can reliably read
+    // @Units: m
+    // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("MAX_CM",  7, AP_RangeFinder_Params, max_distance_cm, 700),
+    AP_GROUPINFO("MAX",  7, AP_RangeFinder_Params, max_distance, 7.00),
 
     // @Param: STOP_PIN
     // @DisplayName: Rangefinder stop pin
@@ -88,14 +88,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PWRRNG", 11, AP_RangeFinder_Params, powersave_range, 0),
 
-    // @Param: GNDCLEAR
-    // @DisplayName: Distance (in cm) from the range finder to the ground
-    // @Description: This parameter sets the expected range measurement(in cm) that the range finder should return when the vehicle is on the ground.
-    // @Units: cm
-    // @Range: 5 127
-    // @Increment: 1
+    // @Param: GNDCLR
+    // @DisplayName: Distance from the range finder to the ground
+    // @Description: This parameter sets the expected range measurement that the range finder should return when the vehicle is on the ground.
+    // @Units: m
+    // @Range: 0.05 1.5
+    // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("GNDCLEAR", 12, AP_RangeFinder_Params, ground_clearance_cm, RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT),
+    AP_GROUPINFO("GNDCLR", 12, AP_RangeFinder_Params, ground_clearance, RANGEFINDER_GROUND_CLEARANCE_DEFAULT),
 
     // @Param: ADDR
     // @DisplayName: Bus address of sensor
@@ -139,6 +139,16 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     AP_GROUPEND
 };
+
+
+// PARAMETER_CONVERSION - Added: Aug-2024 for 4.6
+void AP_RangeFinder_Params::convert_min_max_params(void)
+{
+    // ./Tools/autotest/test_param_upgrade.py --vehicle=arducopter --param "RNGFND1_MAX_CM=300->RNGFND1_MAX=3.00" --param "RNGFND2_MIN_CM=678->RNGFND2_MIN=6.78" --param "RNGFNDA_MIN_CM=1->RNGFNDA_MIN=0.01" --param "RNGFND5_GNDCLEAR=103->RNGFND5_GNDCLR=1.03"
+    max_distance.convert_parameter_width(AP_PARAM_INT16, 0.01);
+    min_distance.convert_parameter_width(AP_PARAM_INT16, 0.01);
+    ground_clearance.convert_parameter_width(AP_PARAM_INT8, 0.01);
+}
 
 AP_RangeFinder_Params::AP_RangeFinder_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);

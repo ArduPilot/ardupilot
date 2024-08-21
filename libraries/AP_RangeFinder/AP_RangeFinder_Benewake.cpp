@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 #define BENEWAKE_FRAME_HEADER 0x59
 #define BENEWAKE_FRAME_LENGTH 9
 #define BENEWAKE_DIST_MAX_CM 32768
-#define BENEWAKE_OUT_OF_RANGE_ADD_CM 100
+#define BENEWAKE_OUT_OF_RANGE_ADD 1.00  // metres
 
 // format of serial packets received from benewake lidar
 //
@@ -129,7 +129,7 @@ bool AP_RangeFinder_Benewake::get_reading(float &reading_m)
     if (count_out_of_range > 0) {
         // if only out of range readings return larger of
         // driver defined maximum range for the model and user defined max range + 1m
-        reading_m = MAX(model_dist_max_cm(), max_distance_cm() + BENEWAKE_OUT_OF_RANGE_ADD_CM) * 0.01f;
+        reading_m = MAX(model_dist_max_cm() * 0.01, max_distance() + BENEWAKE_OUT_OF_RANGE_ADD);
         return true;
     }
 
