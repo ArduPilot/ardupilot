@@ -443,8 +443,7 @@ class uploader(object):
 
         percent = (float(progress) / float(maxVal)) * 100.0
 
-        sys.stdout.write("\r%s: [%-20s] %.1f%%" % (label, '='*int(percent/5.0), percent))
-        sys.stdout.flush()
+        print("%s: [%-20s] %.1f%%" % (label, '='*int(percent/5.0), percent))
 
     # send the CHIP_ERASE command and wait for the bootloader to become ready
     def __erase(self, label):
@@ -468,8 +467,7 @@ class uploader(object):
                 self.__drawProgressBar(label, timeout-estimatedTimeRemaining, 9.0)
             else:
                 self.__drawProgressBar(label, 10.0, 10.0)
-                sys.stdout.write(" (timeout: %d seconds) " % int(deadline-time.time()))
-                sys.stdout.flush()
+                print(" (timeout: %d seconds) " % int(deadline-time.time()))
 
             if self.__trySync():
                 self.__drawProgressBar(label, 10.0, 10.0)
@@ -693,8 +691,8 @@ class uploader(object):
                 self.__drawProgressBar(label, 10.0-estimatedTimeRemaining, 4.0)
             else:
                 self.__drawProgressBar(label, 5.0, 5.0)
-                sys.stdout.write(" (timeout: %d seconds) " % int(deadline-time.time()))
-                sys.stdout.flush()
+                print(" (timeout: %d seconds) " % int(deadline-time.time()))
+                
 
             try:
                 report_crc = self.__recv_int()
