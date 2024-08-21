@@ -16,7 +16,6 @@ from pymavlink import mavutil
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import AutoTestTimeoutException
-from vehicle_test_suite import PreconditionFailedException
 
 if sys.version_info[0] < 3:
     ConnectionResetError = AutoTestTimeoutException
@@ -196,8 +195,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 "SCR_ENABLE": 1,
                 "RNGFND1_TYPE": 36,
                 "RNGFND1_ORIENT": 25,
-                "RNGFND1_MIN_CM": 10,
-                "RNGFND1_MAX_CM": 5000,
+                "RNGFND1_MIN": 0.10,
+                "RNGFND1_MAX": 50.00,
             })
 
             self.install_example_script_context("rangefinder_quality_test.lua")
@@ -244,8 +243,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def Surftrak(self):
         """Test SURFTRAK mode"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         # Something closer to Bar30 noise
         self.context_push()
@@ -292,8 +290,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "RNGFND1_TYPE": 36,
             "RNGFND1_ORIENT": 25,
-            "RNGFND1_MIN_CM": 10,
-            "RNGFND1_MAX_CM": 3000,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 30.00,
             "SCR_USER1": 2,                 # Configuration bundle
             "SCR_USER2": sea_floor_depth,   # Depth in meters
             "SCR_USER3": 101,               # Output log records
@@ -788,8 +786,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def TerrainMission(self):
         """Mission using surface tracking"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         filename = "terrain_mission.txt"
         self.progress("Executing mission %s" % filename)
