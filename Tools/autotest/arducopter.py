@@ -11889,6 +11889,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(10, 2000)
         self.wait_statustext('Using EKF Source Set 3', check_context=True)
 
+    def CommonOrigin(self):
+        """Test common origin between EKF2 and EKF3"""
+        self.context_push()
+
+        # start on EKF2
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 2,
+            'EK2_ENABLE': 1,
+            'EK3_CHECK_SCALE': 1, # make EK3 slow to get origin
+        })
+        self.reboot_sitl()
+
+        self.context_collect('STATUSTEXT')
+
+        self.wait_statustext("EKF2 IMU0 origin set", timeout=60, check_context=True)
+        self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
+        self.wait_statustext("EKF2 active", timeout=60, check_context=True)
+
+        self.context_collect('GPS_GLOBAL_ORIGIN')
+
+        # get EKF2 origin
+        self.run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
+        ek2_origin = self.assert_receive_message('GPS_GLOBAL_ORIGIN', check_context=True)
+
+        # switch to EKF3
+        self.set_parameters({
+            'SIM_GPS_GLITCH_X' : 0.001, # about 100m
+            'EK3_CHECK_SCALE' : 100,
+            'AHRS_EKF_TYPE'   : 3})
+
+        self.wait_statustext("EKF3 IMU0 is using GPS", timeout=60, check_context=True)
+        self.wait_statustext("EKF3 active", timeout=60, check_context=True)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
+        ek3_origin = self.assert_receive_message('GPS_GLOBAL_ORIGIN', check_context=True)
+
+        self.progress("Checking origins")
+        if ek2_origin.time_usec == ek3_origin.time_usec:
+            raise NotAchievedException("Did not get a new GPS_GLOBAL_ORIGIN message")
+
+        print(ek2_origin, ek3_origin)
+
+        if (ek2_origin.latitude != ek3_origin.latitude or
+                ek2_origin.longitude != ek3_origin.longitude or
+                ek2_origin.altitude != ek3_origin.altitude):
+            raise NotAchievedException("Did not get matching EK2 and EK3 origins")
+
+        self.context_pop()
+
+        # restart GPS driver
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11992,6 +12044,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
+            self.CommonOrigin,
         ])
         return ret
 
