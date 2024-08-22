@@ -105,40 +105,6 @@ struct PACKED log_POS {
     float rel_origin_alt;
 };
 
-// @LoggerMessage: RATE
-// @Description: Desired and achieved vehicle attitude rates. Not logged in Fixed Wing Plane modes.
-// @Field: TimeUS: Time since system startup
-// @Field: RDes: vehicle desired roll rate
-// @Field: R: achieved vehicle roll rate
-// @Field: ROut: normalized output for Roll
-// @Field: PDes: vehicle desired pitch rate
-// @Field: P: vehicle pitch rate
-// @Field: POut: normalized output for Pitch
-// @Field: Y: achieved vehicle yaw rate
-// @Field: YOut: normalized output for Yaw
-// @Field: YDes: vehicle desired yaw rate
-// @Field: ADes: desired vehicle vertical acceleration
-// @Field: A: achieved vehicle vertical acceleration
-// @Field: AOut: percentage of vertical thrust output current being used
-// @Field: AOutSlew: vertical thrust output slew rate
-struct PACKED log_Rate {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   control_roll;
-    float   roll;
-    float   roll_out;
-    float   control_pitch;
-    float   pitch;
-    float   pitch_out;
-    float   control_yaw;
-    float   yaw;
-    float   yaw_out;
-    float   control_accel;
-    float   accel;
-    float   accel_out;
-    float   throttle_slew;
-};
-
 // @LoggerMessage: VSTB
 // @Description: Log message for video stabilisation software such as Gyroflow
 // @Field: TimeUS: Time since system startup
@@ -200,8 +166,6 @@ struct PACKED log_ATSC {
         "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s#DUm", "F-GGB" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
         "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
-    { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
     { LOG_ATSC_MSG, sizeof(log_ATSC), \
         "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
