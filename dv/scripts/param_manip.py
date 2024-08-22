@@ -228,27 +228,45 @@ def write_params_to_file(params_df, to_file):
     params_df = params_df.set_index("param_id", drop=True)
     params_df["param_value"].to_csv(to_file, header=False)
 
+
+def sort_paramets_from_mission_planner(file_name):
+    params_df = pd.read_csv(file_name, header=None)
+    params_df = params_df.set_index(params_df.keys()[0], drop=True)
+    params_df.sort_index(inplace=True)
+    params_df.to_csv(file_name.replace(".param", "") + "_sorted.param", header=False)
+
+
+def save_calibs(some_master, calib_file_path="calib_params.param"):
+    some_calib_params = get_selected_params_from_device(some_master, calib_param_ids)
+    write_params_to_file(some_calib_params, calib_file_path)
+
+
+def restore_calibs(some_master, calib_file_path="calib_params.param"):
+    calib_params2 = read_params_from_file(calib_file_path)
+    write_to_device(some_master, calib_params2)
+
 # %%
 
 if __name__ == "main":
+    pass
 
 # %%
-    connect_string = '/dev/ttyACM3'
-
-    gmaster = mavutil.mavlink_connection(connect_string)
-    gmaster.wait_heartbeat()
-
-    all_params = get_all_params_from_device(gmaster)
-
-    calib_params = get_selected_params_from_device(gmaster, calib_param_ids)
-
-    calib_file_path = "/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/dv/scripts/calit_params.param"
-
-    write_params_to_file(calib_params, calib_file_path)
-
-    calib_params2 = read_params_from_file(calib_file_path)
-
-    write_to_device(gmaster, calib_params2)
-
-
-# %%
+#     connect_string = '/dev/ttyACM3'
+#
+#     gmaster = mavutil.mavlink_connection(connect_string)
+#     gmaster.wait_heartbeat()
+#
+#     all_params = get_all_params_from_device(gmaster)
+#
+#     calib_params = get_selected_params_from_device(gmaster, calib_param_ids)
+#
+#     calib_file_path = "/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/dv/scripts/calit_params.param"
+#
+#     write_params_to_file(calib_params, calib_file_path)
+#
+#     calib_params2 = read_params_from_file(calib_file_path)
+#
+#     write_to_device(gmaster, calib_params2)
+#
+#
+# # %%
