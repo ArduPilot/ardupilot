@@ -2072,6 +2072,66 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def ASSUME_FLYING_FORWARD_IN_TRANSITION(self):
+        '''test the QuadPlane option for assumption of fly-forward in transition'''
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            "RTL_AUTOLAND": 2,
+        })
+
+        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
+        # then to the landing sequence.  This mission puts the landing
+        # sequence well to the West of home so if we go directly there
+        # we won't come within 200m of home
+        wps = self.create_simple_relhome_mission([
+            # (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            # fly North
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
+            # add a waypoint 1km North (which we will look for and trigger RTL
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
+
+            # *exciting* landing sequence is ~1km West and points away from Home.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.set_parameters({
+            'GPS1_TYPE': 0,
+            'Q_OPTIONS': 1 << 23,  # ASSUME_FLYING_FORWARD_IN_TRANSITION
+        })
+        self.delay_sim_time(4)
+        self.change_mode('QHOVER')
+        self.arm_vehicle(force=True)
+        # self.set_parameter("SIM_SPEEDUP", 5)
+        self.set_rc(3, 1700)
+        start_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        want_alt = start_alt + 100
+        self.wait_altitude(want_alt-10, want_alt+10, timeout=120)
+        self.set_rc(3, 1500)
+        self.change_mode('CRUISE')
+        self.delay_sim_time(10)
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(self.get_mission_count()-1, timeout=500)
+
+        # does not auto-disarm; so will force it:
+        #        self.wait_disarmed(timeout=300)
+
+        self.wait_altitude(345, 350)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2123,5 +2183,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.ASSUME_FLYING_FORWARD_IN_TRANSITION,
         ])
         return ret
