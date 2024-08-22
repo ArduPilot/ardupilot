@@ -1180,7 +1180,7 @@ void AP_Mount_Siyi::send_attitude_position(void)
         uint32_t time_boot_ms;
         int32_t lat, lon;
         int32_t alt_msl, alt_ellipsoid;
-        Vector3l velocity_ned_int32;
+        Vector3f velocity_ned_int32;
     } position;
     Location loc;
     Vector3f velocity_ned;
