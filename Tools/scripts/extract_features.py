@@ -241,7 +241,7 @@ class ExtractFeatures(object):
             ('AP_NETWORKING_BACKEND_PPP', 'AP_Networking_PPP::init'),
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
-            ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),
+            ('HAL_LOGGING_ENABLED', 'AP_Logger::Init'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
         ]
