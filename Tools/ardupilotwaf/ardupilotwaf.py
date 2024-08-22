@@ -6,6 +6,7 @@ from waflib.Configure import conf
 from waflib.Scripting import run_command
 from waflib.TaskGen import before_method, after_method, feature
 import os.path, os
+from pathlib import Path
 from collections import OrderedDict
 import subprocess
 
@@ -261,6 +262,30 @@ def ap_common_vehicle_libraries(bld):
 
 _grouped_programs = {}
 
+
+class upload_fw_blueos(Task.Task):
+    def run(self):
+        # this is rarely used, so we import requests here to avoid the overhead
+        import requests
+        binary_path = self.inputs[0].abspath()
+        # check if .apj file exists for chibios builds
+        if Path(binary_path + ".apj").exists():
+            binary_path = binary_path + ".apj"
+        bld = self.generator.bld
+        board = bld.bldnode.name.capitalize()
+        print(f"Uploading {binary_path} to BlueOS at {bld.options.upload_blueos} for board {board}")
+        url = f'{bld.options.upload_blueos}/ardupilot-manager/v1.0/install_firmware_from_file?board_name={board}'
+        files = {
+          'binary': open(binary_path, 'rb')
+        }
+        response = requests.post(url, files=files, verify=False)
+        if response.status_code != 200:
+            raise Errors.WafError(f"Failed to upload firmware to BlueOS: {response.status_code}: {response.text}")
+        print("Upload complete")
+
+    def keyword(self):
+          return "Uploading to BlueOS"
+
 class check_elf_symbols(Task.Task):
     color='CYAN'
     always_run = True
@@ -309,7 +334,10 @@ def post_link(self):
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
     check_elf_task.set_run_after(self.link_task)
-    
+    if self.bld.options.upload_blueos and self.env["BOARD_CLASS"] == "LINUX":
+        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
+        _upload_task.set_run_after(self.link_task)
+
 @conf
 def ap_program(bld,
                program_groups='bin',
@@ -639,6 +667,13 @@ arducopter and upload it to my board".
         dest='upload_port',
         default=None,
         help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
+''')
+
+    g.add_option('--upload-blueos',
+        action='store',
+        dest='upload_blueos',
+        default=None,
+        help='''Automatically upload to a BlueOS device. The argument is the url for the device. http://blueos.local for example.
 ''')
 
     g.add_option('--upload-force',
