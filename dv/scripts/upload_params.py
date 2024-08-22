@@ -10,8 +10,8 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 np.set_printoptions(precision=6, suppress=True)
 
-connect_string = 'udpin:0.0.0.0:14700'
-# connect_string = '/dev/ttyACM0'
+# connect_string = 'udpin:0.0.0.0:14700'
+connect_string = '/dev/ttyACM0'
 # Create the connection
 master = mavutil.mavlink_connection(connect_string)
 # Wait a heartbeat before sending commands
@@ -70,35 +70,32 @@ def write_param(l_master, l_param_id, new_param_value):
 
     updated_param = {"param_value": None}
 
-    for iter in range(10):
-        if old_param_message is not None:
-            l_master.mav.param_set_send(
-                l_master.target_system, l_master.target_component,
-                l_param_id.encode(),
-                new_param_value,
-                old_param_message["param_type"]
-            )
+    for liter in range(10):
+        l_master.mav.param_set_send(
+            l_master.target_system, l_master.target_component,
+            l_param_id.encode(),
+            new_param_value,
+            old_param_message["param_type"]
+        )
 
-            try:
-                m = l_master.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
-                if not m:
-                    continue
-                else:
-                    m = m.to_dict()
-            except:
-                print("Timeout expired?")
+        # m = l_master.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+        # if m is None:
+        #     continue
+        # else:
+        #     m.to_dict()["param_id"] == l_param_id:
+        #
 
-            n = 0
-            while new_param_value != updated_param["param_value"]:
-                updated_param = read_param(master, l_param_id)
-                if updated_param is None:
-                    return None
+        n = 0
+        while new_param_value != updated_param["param_value"]:
+            updated_param = read_param(master, l_param_id)
+            if updated_param is None:
+                return None
 
-                # print(updated_param)
-                time.sleep(0.5)
-                n = n + 1
-                if n > 10:
-                    return None
+            # print(updated_param)
+            time.sleep(0.5)
+            n = n + 1
+            if n > 10:
+                return None
 
     return updated_param
 
@@ -107,7 +104,7 @@ readout_param_messages()
 
 # %%
 
-res = write_param(master, "ACRO_BAL_PITCH", 1.0)
+res = write_param(master, "ACRO_BAL_PITCH", 3.0)
 assert res is not None
 
 print(res)
@@ -118,7 +115,7 @@ assert res["param_value"] == res2["param_value"]
 # %%
 
 
-file_path = "/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/dv/parameters/KDV01_CubeOrangePlusDefault.param"
+file_path = "/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/dv/parameters/CubeOrangePlus-dv.param"
 
 params_df = pd.read_csv(file_path, header=None, names=["param_id", "param_value"])
 
