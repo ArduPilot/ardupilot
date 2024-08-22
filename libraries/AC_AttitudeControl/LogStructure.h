@@ -58,6 +58,40 @@ struct PACKED log_PSCx {
     float accel;
 };
 
+// @LoggerMessage: RATE
+// @Description: Desired and achieved vehicle attitude rates. Not logged in Fixed Wing Plane modes.
+// @Field: TimeUS: Time since system startup
+// @Field: RDes: vehicle desired roll rate
+// @Field: R: achieved vehicle roll rate
+// @Field: ROut: normalized output for Roll
+// @Field: PDes: vehicle desired pitch rate
+// @Field: P: vehicle pitch rate
+// @Field: POut: normalized output for Pitch
+// @Field: Y: achieved vehicle yaw rate
+// @Field: YOut: normalized output for Yaw
+// @Field: YDes: vehicle desired yaw rate
+// @Field: ADes: desired vehicle vertical acceleration
+// @Field: A: achieved vehicle vertical acceleration
+// @Field: AOut: percentage of vertical thrust output current being used
+// @Field: AOutSlew: vertical thrust output slew rate
+struct PACKED log_Rate {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   control_roll;
+    float   roll;
+    float   roll_out;
+    float   control_pitch;
+    float   pitch;
+    float   pitch_out;
+    float   control_yaw;
+    float   yaw;
+    float   yaw_out;
+    float   control_accel;
+    float   accel;
+    float   accel_out;
+    float   throttle_slew;
+};
+
 #define PSCx_FMT "Qffffffff"
 #define PSCx_UNITS "smmnnnooo"
 #define PSCx_MULTS "F00000000"
@@ -68,4 +102,6 @@ struct PACKED log_PSCx {
     { LOG_PSCE_MSG, sizeof(log_PSCx), \
       "PSCE", PSCx_FMT, "TimeUS,TPE,PE,DVE,TVE,VE,DAE,TAE,AE", PSCx_UNITS, PSCx_MULTS }, \
     { LOG_PSCD_MSG, sizeof(log_PSCx), \
-      "PSCD", PSCx_FMT, "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", PSCx_UNITS, PSCx_MULTS }
+      "PSCD", PSCx_FMT, "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", PSCx_UNITS, PSCx_MULTS }, \
+    { LOG_RATE_MSG, sizeof(log_Rate), \
+        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }

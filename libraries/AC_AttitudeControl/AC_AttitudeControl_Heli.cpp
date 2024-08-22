@@ -422,7 +422,8 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 {	
     _ang_vel_body += _sysid_ang_vel_body;
 
-    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+    _rate_gyro = _ahrs.get_gyro_latest();
+    _rate_gyro_time_us = AP_HAL::micros64();
 
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
@@ -430,12 +431,12 @@ void AC_AttitudeControl_Heli::rate_controller_run()
         _motors.set_roll(_passthrough_roll / 4500.0f);
         _motors.set_pitch(_passthrough_pitch / 4500.0f);
     } else {
-        rate_bf_to_motor_roll_pitch(gyro_latest, _ang_vel_body.x, _ang_vel_body.y);
+        rate_bf_to_motor_roll_pitch(_rate_gyro, _ang_vel_body.x, _ang_vel_body.y);
     }
     if (_flags_heli.tail_passthrough) {
         _motors.set_yaw(_passthrough_yaw / 4500.0f);
     } else {
-        _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _ang_vel_body.z));
+        _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro.z, _ang_vel_body.z));
     }
 
     _sysid_ang_vel_body.zero();
