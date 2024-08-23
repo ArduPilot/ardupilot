@@ -1098,6 +1098,25 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
+// change camera settings not normally used by autopilot
+// THERMAL_PALETTE: 0:WhiteHot, 2:Sepia, 3:IronBow, 4:Rainbow, 5:Night, 6:Aurora, 7:RedHot, 8:Jungle, 9:Medical, 10:BlackHot, 11:GloryHot
+// THERMAL_GAIN: 0:Low gain (50C ~ 550C), 1:High gain (-20C ~ 150C)
+// THERMAL_RAW_DATA: 0:Disable Raw Data (30fps), 1:Enable Raw Data (25fps)
+bool AP_Mount_Siyi::change_setting(CameraSetting setting, float value)
+{
+    switch (setting) {
+    case CameraSetting::THERMAL_PALETTE:
+        return send_1byte_packet(SiyiCommandId::SET_THERMAL_PALETTE, (uint8_t)value);
+    case CameraSetting::THERMAL_GAIN:
+        return send_1byte_packet(SiyiCommandId::SET_THERMAL_GAIN, (uint8_t)value);
+    case CameraSetting::THERMAL_RAW_DATA:
+        return send_1byte_packet(SiyiCommandId::SET_THERMAL_RAW_DATA, (uint8_t)value);
+    }
+
+    // invalid setting so return false
+    return false;
+}
+
 // get model name string. returns "Unknown" if hardware model is not yet known
 const char* AP_Mount_Siyi::get_model_name() const
 {
