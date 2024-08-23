@@ -91,13 +91,15 @@ def get_git_revision(some_master):
 def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False, preserve_params_list="",
                          port="/dev/ttyACM0",
                          baud_bootloader=115200):
+
+    target_baud_rate = 921600 # After flashing is done.
     bauds_flightstack = [921600, 500000, 115200, 57600]
 
     calib_file_path = os.path.join(os.getcwd(), "calibration_parameters.csv")
 
+    current_ardupilot_git_revision = "unknown"
     res = None
-
-    baud_flightstack = None
+    some_master = None
 
     for baud_flightstack in bauds_flightstack:
         logger.info(f"Probing autopilot at {port}:{baud_flightstack}")
@@ -106,17 +108,11 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
         if res is not None:
             break
 
-    autopilot_online = False
-
     if res is None:
         logger.warning("autopilot is inaccessible, check if it is already in bootloader")
         preserve_calibrations = False
     else:
-        autopilot_online = True
         logger.info("OK")
-
-    current_ardupilot_git_revision = "unknown"
-    if autopilot_online:
         current_ardupilot_git_revision = get_git_revision(some_master)
         logger.info(f"current_ardupilot_git_revision: {current_ardupilot_git_revision}")
 
@@ -160,7 +156,7 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
     time.sleep(30)
 
     logger.info("Probing autopilot ...")
-    some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
+    some_master = mavutil.mavlink_connection(port, baud=target_baud_rate)
     res = some_master.wait_heartbeat(timeout=30)
     if res is None:
         logger.fatal("autopilot is inaccessible, something went wrong during the update.")
@@ -204,12 +200,12 @@ if __name__ == '__main__':
         else:
             force_flash = False
 
-    preserve_calibrations = True
+    preserve_calibs = True
     if "PRESERVE_CALIBRATIONS" in os.environ:
         if os.environ["PRESERVE_CALIBRATIONS"] == "1":
-            preserve_calibrations = True
+            preserve_calibs = True
         else:
-            preserve_calibrations = False
+            preserve_calibs = False
 
     preserve_params_list = pm.calib_param_ids_default
     if "PRESERVE_PARAMETERS" in os.environ:
@@ -218,7 +214,7 @@ if __name__ == '__main__':
     try_upgrade_firmware(
         gapj_path,
         force_flash=force_flash,
-        preserve_calibrations=preserve_calibrations,
+        preserve_calibrations=preserve_calibs,
         preserve_params_list=preserve_params_list,
         port=port,
         baud_bootloader=115200
