@@ -159,8 +159,13 @@ def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=Fal
         sys.exit(1)
 
     if preserve_calibrations:
-        pm.restore_calibs(some_master, calib_file_path=calib_file_path)
+        if pm.restore_calibs(some_master, calib_file_path=calib_file_path):
+            logger.info("Restore calibrations success")
+        else:
+            logger.fatal("Restore calibrations failed")
+            sys.exit(1)
 
+    logger.info("Upgrade autopilot success")
     sys.exit(0)
 
 

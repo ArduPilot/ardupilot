@@ -236,6 +236,9 @@ def write_to_device(some_master, params_df):
     if failed_params.shape[0] > 0:
         logger.error("Some parameters were not written")
         logger.error(failed_params)
+        return False
+
+    return True
 
 
 def read_params_from_file(file_path):
@@ -272,7 +275,7 @@ def save_calibs(some_master, calib_file_path="calib_params.param"):
 
 def restore_calibs(some_master, calib_file_path="calib_params.param"):
     calib_params2 = read_params_from_file(calib_file_path)
-    write_to_device(some_master, calib_params2)
+    return write_to_device(some_master, calib_params2)
 
 # %%
 
