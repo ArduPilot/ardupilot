@@ -1409,6 +1409,16 @@ function AP_Camera__camera_state_t_ud:take_pic_incr() end
 ---@return AP_Camera__camera_state_t_ud|nil
 function camera:get_state(instance) end
 
+-- Change a camera setting to a given value
+---@param instance integer
+---@param setting integer
+---| '0' # THERMAL_PALETTE
+---| '1' # THERMAL_GAIN
+---| '2' # THERMAL_RAW_DATA
+---@param value number
+---@return boolean
+function camera:change_setting(instance, setting, value) end
+
 -- desc
 mount = {}
 
