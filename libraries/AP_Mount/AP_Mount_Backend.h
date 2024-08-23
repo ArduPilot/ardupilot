@@ -198,6 +198,9 @@ public:
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const {}
 
+    // change camera settings not normally used by autopilot
+    virtual bool change_setting(CameraSetting setting, float value) { return false; }
+
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // get poi information.  Returns true on success and fills in gimbal attitude, location and poi location
     bool get_poi(uint8_t instance, Quaternion &quat, Location &loc, Location &poi_loc);

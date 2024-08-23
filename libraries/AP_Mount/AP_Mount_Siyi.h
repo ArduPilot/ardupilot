@@ -82,6 +82,12 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
 
+    // change camera settings not normally used by autopilot
+    // THERMAL_PALETTE: 0:WhiteHot, 2:Sepia, 3:IronBow, 4:Rainbow, 5:Night, 6:Aurora, 7:RedHot, 8:Jungle, 9:Medical, 10:BlackHot, 11:GloryHot
+    // THERMAL_GAIN: 0:Low gain (50C ~ 550C), 1:High gain (-20C ~ 150C)
+    // THERMAL_RAW_DATA: 0:Disable Raw Data (30fps), 1:Enable Raw Data (25fps)
+    bool change_setting(CameraSetting setting, float value) override;
+
     //
     // rangefinder
     //
@@ -118,8 +124,11 @@ private:
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
         READ_RANGEFINDER = 0x15,
+        SET_THERMAL_PALETTE = 0x1B,
         EXTERNAL_ATTITUDE = 0x22,
         SET_TIME = 0x30,
+        SET_THERMAL_RAW_DATA = 0x34,
+        SET_THERMAL_GAIN = 0x38,
         POSITION_DATA = 0x3e,
     };
 
