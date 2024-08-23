@@ -171,7 +171,6 @@ bool Mode::is_vtol_man_throttle() const
 void Mode::update_target_altitude()
 {
     Location target_location;
-//printf("Mode: update_target_altitude:\n" );
     if (plane.landing.is_flaring()) {
         // during a landing flare, use TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
