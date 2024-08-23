@@ -181,6 +181,9 @@ public:
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     bool get_state(uint8_t instance, camera_state_t& cam_state);
+
+    // change camera settings not normally used by autopilot
+    bool change_setting(uint8_t instance, CameraSetting setting, float value);
 #endif
 
     // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions

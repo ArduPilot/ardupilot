@@ -36,3 +36,9 @@ enum class TrackingType : uint8_t {
     TRK_RECTANGLE = 2   // tracking a rectangle
 };
 
+// camera settings not normally used by the autopilot
+enum class CameraSetting {
+    THERMAL_PALETTE = 0,    // set thermal palette
+    THERMAL_GAIN = 1,       // set thermal gain, value of 0:low gain, 1:high gain
+    THERMAL_RAW_DATA = 2,   // enable/disable thermal raw data
+};
