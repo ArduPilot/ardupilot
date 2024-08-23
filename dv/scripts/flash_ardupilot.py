@@ -112,6 +112,7 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
         logger.warning("autopilot is inaccessible, check if it is already in bootloader")
         preserve_calibrations = False
     else:
+        autopilot_online = True
         logger.info("OK")
 
     current_ardupilot_git_revision = "unknown"
