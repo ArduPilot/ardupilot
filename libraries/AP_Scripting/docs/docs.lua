@@ -958,6 +958,10 @@ function Vector3f_ud:rotate_xy(param1) end
 ---@return Vector2f_ud
 function Vector3f_ud:xy() end
 
+-- Project a vector onto this vector
+---@param vector Vector3f_ud
+function Vector3f_ud:project(vector) end
+
 -- desc
 ---@class (exact) Quaternion_ud
 ---@operator mul(Quaternion_ud): Quaternion_ud
@@ -1172,6 +1176,13 @@ function Location_ud:offset(ofs_north, ofs_east) end
 ---@param loc Location_ud -- location to compare with
 ---@return number -- horizontal distance in meters
 function Location_ud:get_distance(loc) end
+
+-- Given a Location this calculates the north and east distance between the two locations in meters.
+---@param loc1 Location_ud -- 1st location 
+---@param loc2 Location_ud -- 1st location 
+---@return float -- proportion the current location is between loc1 and loc2
+function Location_ud:line_path_proportion(loc1, loc2) end
+
 
 -- desc
 ---@class (exact) AP_EFI_Backend_ud
