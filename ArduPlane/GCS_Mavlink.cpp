@@ -975,19 +975,26 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         float new_target_heading = radians(wrap_180(packet.param2));
 
         // Default value = no heading track
+        /* requires ardupilot_mega.xml change
         if ( int(packet.param1) == HEADING_TYPE_DEFAULT) {
             plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
             return MAV_RESULT_ACCEPTED;
         // course over ground
-        } else if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
+        } else 
+        */
+       if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
             plane.guided_state.target_heading_type = GUIDED_HEADING_COG;
             plane.prev_WP_loc = plane.current_loc;
         // normal vehicle heading
         } else if (int(packet.param1) == HEADING_TYPE_HEADING) { // compare as nearest int
             plane.guided_state.target_heading_type = GUIDED_HEADING_HEADING;
         } else {
+            // fudge for now if we get an invalid result we assume it's "DEFAULT"
+            plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+            return MAV_RESULT_ACCEPTED;
+
             //  MAV_RESULT_DENIED  means Command is invalid (is supported but has invalid parameters).
-            return MAV_RESULT_DENIED;
+            // return MAV_RESULT_DENIED;
         }
 
         plane.g2.guidedHeading.reset_I();
@@ -997,8 +1004,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         plane.guided_state.target_heading_time_ms = AP_HAL::millis();
         return MAV_RESULT_ACCEPTED;
     }
-#endif // OFFBOARD_GUIDED == ENABLED
-
   }
   // anything else ...
   return MAV_RESULT_UNSUPPORTED;
