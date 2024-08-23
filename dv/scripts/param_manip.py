@@ -35,7 +35,7 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 np.set_printoptions(precision=6, suppress=True)
 
-calib_param_ids = [
+calib_param_ids_default = [
     'AHRS_TRIM_X',
     'AHRS_TRIM_Y',
     'COMPASS_DIA_X',
@@ -268,7 +268,7 @@ def sort_paramets_from_mission_planner(file_name):
     params_df.to_csv(file_name.replace(".param", "") + "_sorted.param", header=False)
 
 
-def save_calibs(some_master, calib_file_path="calib_params.param"):
+def save_calibs(some_master, calib_file_path="calib_params.param", calib_param_ids=calib_param_ids_default):
     some_calib_params = get_selected_params_from_device(some_master, calib_param_ids)
     write_params_to_file(some_calib_params, calib_file_path)
 

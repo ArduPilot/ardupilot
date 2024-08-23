@@ -86,7 +86,7 @@ def get_git_revision(some_master):
         return None
 
 
-def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=False, port="/dev/ttyACM0", baud_flightstack=921600,
+def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=False, preserve_params_list="", port="/dev/ttyACM0", baud_flightstack=921600,
                          baud_bootloader=115200):
     logger.info("Probing autopilot ...")
 
@@ -125,7 +125,7 @@ def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=Fal
     logger.info(f"Autopilot will be updated from {current_ardupilot_git_revision} to {candidate_ardupilot_git_revision}")
 
     if preserve_calibrations:
-        pm.save_calibs(some_master, calib_file_path=calib_file_path)
+        pm.save_calibs(some_master, calib_file_path=calib_file_path, calib_param_ids=preserve_params_list)
 
     some_master.close()
 
@@ -174,8 +174,6 @@ def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=Fal
 
 if __name__ == '__main__':
 
-    # logging.basicConfig(level=logging.DEBUG)
-
     if "BALENA_SERVICE_NAME" in os.environ:
         gapj_path = "./build/CubeOrangePlus-dv/bin/arducopter.apj"
         port = "/dev/ttyTHS1"
@@ -183,10 +181,29 @@ if __name__ == '__main__':
         gapj_path = "/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/build/CubeOrangePlus-dv/bin/arducopter.apj"
         port = "/dev/ttyACM0"
 
+    force_flash = False
+    if "FORCE_FLASH" in os.environ:
+        if os.environ["FORCE_FLASH"] == "1":
+            force_flash = True
+        else:
+            force_flash = False
+
+    preserve_calibrations = True
+    if "PRESERVE_CALIBRATIONS" in os.environ:
+        if os.environ["PRESERVE_CALIBRATIONS"] == "1":
+            preserve_calibrations = True
+        else:
+            preserve_calibrations = False
+
+    preserve_params_list = pm.calib_param_ids_default
+    if "PRESERVE_PARAMETERS" in os.environ:
+        preserve_params_list = os.environ["PRESERVE_PARAMETERS"].split(",")
+
     try_upgrade_firmware(
         gapj_path,
-        force_flash = True,
-        preserve_calibrations=True,
+        force_flash=force_flash,
+        preserve_calibrations=preserve_calibrations,
+        preserve_params_list=preserve_params_list,
         port=port,
         baud_flightstack=921600,
         baud_bootloader=115200
