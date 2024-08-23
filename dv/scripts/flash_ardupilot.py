@@ -17,6 +17,7 @@ import uploader
 import param_manip as pm
 
 import logging, coloredlogs
+
 coloredlogs.install(
     level='DEBUG',
     # fmt="%(asctime)s %(hostname)s %(name)s[%(process)d] %(levelname)s %(message)s"
@@ -39,6 +40,7 @@ coloredlogs.install(
     },
 )
 logger = logging.getLogger(__name__)
+
 
 # Not used for now
 def force_reboot_if_in_bootloader(port="/dev/ttyTHS1", baud_rate_bootloader=115200, baud_rate_flightstack=(921600)):
@@ -86,19 +88,29 @@ def get_git_revision(some_master):
         return None
 
 
-def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=False, preserve_params_list="", port="/dev/ttyACM0", baud_flightstack=921600,
+def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False, preserve_params_list="",
+                         port="/dev/ttyACM0",
                          baud_bootloader=115200):
-    logger.info("Probing autopilot ...")
+    bauds_flightstack = [921600, 500000, 115200, 57600]
 
     calib_file_path = os.path.join(os.getcwd(), "calibration_parameters.csv")
 
-    some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
-    res = some_master.wait_heartbeat(timeout=10)
-    autopilot_online = True
+    res = None
+
+    baud_flightstack = None
+
+    for baud_flightstack in bauds_flightstack:
+        logger.info(f"Probing autopilot at {port}:{baud_flightstack}")
+        some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
+        res = some_master.wait_heartbeat(timeout=4)
+        if res is not None:
+            break
+
+    autopilot_online = False
+
     if res is None:
         logger.warning("autopilot is inaccessible, check if it is already in bootloader")
         preserve_calibrations = False
-        autopilot_online = False
     else:
         logger.info("OK")
 
@@ -113,16 +125,19 @@ def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=Fal
     logger.info(f"candidate_ardupilot_git_revision: {candidate_ardupilot_git_revision}")
 
     if candidate_ardupilot_git_revision == current_ardupilot_git_revision:
-        logger.info(f"candidate_ardupilot_git_revision == current_ardupilot_git_revision ({candidate_ardupilot_git_revision} == {current_ardupilot_git_revision})")
+        logger.info(
+            f"candidate_ardupilot_git_revision == current_ardupilot_git_revision ({candidate_ardupilot_git_revision} == {current_ardupilot_git_revision})")
         if not force_flash:
             logger.info(f"Current and candidate git revisions are the same, exiting ...")
             sys.exit(0)
         else:
             logger.warning(f"Current and candidate git revisions are the same, but forced flash is enabled")
     else:
-        logger.info(f"candidate_ardupilot_git_revision != current_ardupilot_git_revision ({candidate_ardupilot_git_revision} == {current_ardupilot_git_revision})")
+        logger.info(
+            f"candidate_ardupilot_git_revision != current_ardupilot_git_revision ({candidate_ardupilot_git_revision} == {current_ardupilot_git_revision})")
 
-    logger.info(f"Autopilot will be updated from {current_ardupilot_git_revision} to {candidate_ardupilot_git_revision}")
+    logger.info(
+        f"Autopilot will be updated from {current_ardupilot_git_revision} to {candidate_ardupilot_git_revision}")
 
     if preserve_calibrations:
         pm.save_calibs(some_master, calib_file_path=calib_file_path, calib_param_ids=preserve_params_list)
@@ -131,7 +146,7 @@ def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=Fal
 
     sys.argv = [sys.argv[0]] + [
         "--port", port,
-        "--baud-flightstack", str(baud_flightstack),
+        "--baud-flightstack", "921600,500000,115200,57600",
         "--baud-bootloader", str(baud_bootloader),
         apj_path
     ]
@@ -205,6 +220,5 @@ if __name__ == '__main__':
         preserve_calibrations=preserve_calibrations,
         preserve_params_list=preserve_params_list,
         port=port,
-        baud_flightstack=921600,
         baud_bootloader=115200
     )
