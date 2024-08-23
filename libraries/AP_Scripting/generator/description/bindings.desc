@@ -22,6 +22,7 @@ userdata Location method get_distance_NE Vector2f Location
 userdata Location method get_alt_frame uint8_t
 userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 userdata Location method copy Location
+userdata Location method line_path_proportion float Location Location
 
 include AP_AHRS/AP_AHRS.h
 
@@ -48,6 +49,7 @@ singleton AP_AHRS method get_relative_position_D_home void float'Ref
 singleton AP_AHRS method home_is_set boolean
 singleton AP_AHRS method healthy boolean
 singleton AP_AHRS method airspeed_estimate boolean float'Null
+singleton AP_AHRS method airspeed_vector_true boolean Vector3f'Null
 singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
@@ -159,6 +161,7 @@ userdata Vector3f method copy Vector3f
 userdata Vector3f method xy Vector2f
 userdata Vector3f method rotate_xy void float'skip_check
 userdata Vector3f method angle float Vector3f
+userdata Vector3f method project void Vector3f
 
 userdata Vector2f field x float'skip_check read write
 userdata Vector2f field y float'skip_check read write
