@@ -870,7 +870,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
             requested_position.alt += plane.home.alt;
             requested_position.relative_alt = 0;
         }
-//printf("do repositon requested alt %d\n", requested_position.alt);
+
         plane.set_guided_WP(requested_position);
     
         // Loiter radius for planes. Positive radius in meters, direction is controlled by Yaw (param4) value, parsed above
@@ -995,7 +995,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         plane.guided_state.target_heading = new_target_heading;
         plane.guided_state.target_heading_accel_limit = MAX(is_zero(packet.param3)? 10.0f : packet.param3 , 10.0f); // the, previous limit of 0.05 was 0.29 degrees, not very useful
         plane.guided_state.target_heading_time_ms = AP_HAL::millis();
-//printf("set heading %f degrees %f rad accel limit: %f\n", packet.param2, new_target_heading, plane.guided_state.target_heading_accel_limit);
         return MAV_RESULT_ACCEPTED;
     }
 #endif // OFFBOARD_GUIDED == ENABLED
