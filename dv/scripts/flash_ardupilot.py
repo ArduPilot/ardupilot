@@ -8,6 +8,7 @@ from pymavlink import mavutil
 if "BALENA_SERVICE_NAME" in os.environ:
     sys.path.append("/app/ardupilot/Tools/scripts")
     sys.path.append("/app/ardupilot/dv/scripts")
+    # sys.path.append("/slovak-shared")
 else:
     sys.path.append("/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/Tools/scripts")
     sys.path.append("/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/dv/scripts")
@@ -15,33 +16,56 @@ else:
 import uploader
 import param_manip as pm
 
+import logging, coloredlogs
+coloredlogs.install(
+    level='DEBUG',
+    # fmt="%(asctime)s %(hostname)s %(name)s[%(process)d] %(levelname)s %(message)s"
+    fmt="%(name)s[%(process)d] %(levelname)s %(message)s",
+    level_styles={
+        'info': {
+            'color': 'green',
+            'bold': True,
+        },
+        'debug': {
+            'color': 'white'
+        },
+        'warn': {
+            'color': 'yellow',
+        },
+        'error': {
+            'color': 'red',
+            'bold': True,
+        },
+    },
+)
+logger = logging.getLogger(__name__)
 
 # Not used for now
 def force_reboot_if_in_bootloader(port="/dev/ttyTHS1", baud_rate_bootloader=115200, baud_rate_flightstack=(921600)):
     up = uploader.uploader(port, baud_rate_bootloader, baud_rate_flightstack)
-    print("opening")
+    logger.info("opening")
 
     up.open()
 
-    print("ident")
+    logger.info("ident")
     up.identify()
 
-    print("dump")
+    logger.info("dump")
     up.dump_board_info()
 
     time.sleep(1)
 
-    print("reboot")
-    print(up._uploader__reboot())
+    logger.info("reboot")
+    logger.info(up._uploader__reboot())
 
-    print("close")
+    logger.info("close")
     up.close()
 
 
 def check_autopilot_accessible(some_master):
     out = some_master.wait_heartbeat(timeout=10)
     if out is not None:
-        print("HEARTBEAT_DONE")
+        logger.info("HEARTBEAT_DONE")
         return True
     else:
         return False
@@ -62,31 +86,46 @@ def get_git_revision(some_master):
         return None
 
 
-def try_upgrade_firmware(apj_path, preserve_calibrations=True, port="/dev/ttyACM0", baud_flightstack=921600,
+def try_upgrade_firmware(apj_path, force_flash = True, preserve_calibrations=False, port="/dev/ttyACM0", baud_flightstack=921600,
                          baud_bootloader=115200):
-    print("Probing autopilot ...")
+    logger.info("Probing autopilot ...")
+
+    calib_file_path = os.path.join(os.getcwd(), "calibration_parameters.csv")
+
     some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
     res = some_master.wait_heartbeat(timeout=10)
     autopilot_online = True
     if res is None:
-        print("autopilot is inaccessible, check if it is already in bootloader")
+        logger.warning("autopilot is inaccessible, check if it is already in bootloader")
         preserve_calibrations = False
         autopilot_online = False
     else:
-        print("OK")
+        logger.info("OK")
 
     current_ardupilot_git_revision = "unknown"
     if autopilot_online:
         current_ardupilot_git_revision = get_git_revision(some_master)
-        print("current_ardupilot_git_revision: ", current_ardupilot_git_revision)
+        logger.info(f"current_ardupilot_git_revision: {current_ardupilot_git_revision}")
 
-    fw = uploader.firmware("/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/build/CubeOrangePlus-dv/bin/arducopter.apj")
+    fw = uploader.firmware(apj_path)
     candidate_ardupilot_git_revision = fw.desc["git_identity"]
 
-    print("candidate_ardupilot_git_revision: ", candidate_ardupilot_git_revision)
+    logger.info(f"candidate_ardupilot_git_revision: {candidate_ardupilot_git_revision}")
+
+    if candidate_ardupilot_git_revision == current_ardupilot_git_revision:
+        logger.info(f"candidate_ardupilot_git_revision == current_ardupilot_git_revision ({candidate_ardupilot_git_revision} == {current_ardupilot_git_revision})")
+        if not force_flash:
+            logger.info(f"Current and candidate git revisions are the same, exiting ...")
+            sys.exit(0)
+        else:
+            logger.warning(f"Current and candidate git revisions are the same, but forced flash is enabled")
+    else:
+        logger.info(f"candidate_ardupilot_git_revision != current_ardupilot_git_revision ({candidate_ardupilot_git_revision} == {current_ardupilot_git_revision})")
+
+    logger.info(f"Autopilot will be updated from {current_ardupilot_git_revision} to {candidate_ardupilot_git_revision}")
 
     if preserve_calibrations:
-        pm.save_calibs(some_master)
+        pm.save_calibs(some_master, calib_file_path=calib_file_path)
 
     some_master.close()
 
@@ -100,27 +139,27 @@ def try_upgrade_firmware(apj_path, preserve_calibrations=True, port="/dev/ttyACM
     try:
         uploader.main()
     except SystemExit:
-        print("ignoring SystemExit")
+        logger.info("ignoring SystemExit")
 
-    time.sleep(3)
+    time.sleep(30)
 
-    print("Probing autopilot ...")
+    logger.info("Probing autopilot ...")
     some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
-    res = some_master.wait_heartbeat(timeout=10)
+    res = some_master.wait_heartbeat(timeout=30)
     if res is None:
-        print("autopilot is inaccessible, something went wrong during the update.")
+        logger.fatal("autopilot is inaccessible, something went wrong during the update.")
         sys.exit(1)
 
     just_uploaded_version = get_git_revision(some_master)
 
     if just_uploaded_version == candidate_ardupilot_git_revision:
-        print(f"Succesfully updated ardupilot from {current_ardupilot_git_revision} to {just_uploaded_version}")
+        logger.info(f"Succesfully updated ardupilot from {current_ardupilot_git_revision} to {just_uploaded_version}")
     else:
-        print(f"Failed to update ardupilot from {current_ardupilot_git_revision} to {just_uploaded_version}")
+        logger.fatal(f"Failed to update ardupilot from {current_ardupilot_git_revision} to {just_uploaded_version}")
         sys.exit(1)
 
     if preserve_calibrations:
-        pm.restore_calibs(some_master)
+        pm.restore_calibs(some_master, calib_file_path=calib_file_path)
 
     sys.exit(0)
 
@@ -129,6 +168,8 @@ def try_upgrade_firmware(apj_path, preserve_calibrations=True, port="/dev/ttyACM
 
 
 if __name__ == '__main__':
+
+    # logging.basicConfig(level=logging.DEBUG)
 
     if "BALENA_SERVICE_NAME" in os.environ:
         gapj_path = "./build/CubeOrangePlus-dv/bin/arducopter.apj"
@@ -139,6 +180,7 @@ if __name__ == '__main__':
 
     try_upgrade_firmware(
         gapj_path,
+        force_flash = True,
         preserve_calibrations=True,
         port=port,
         baud_flightstack=921600,

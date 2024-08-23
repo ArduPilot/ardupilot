@@ -6,6 +6,31 @@ import sys
 # Import mavutil
 from pymavlink import mavutil
 
+import logging, coloredlogs
+coloredlogs.install(
+    level='DEBUG',
+    # fmt="%(asctime)s %(hostname)s %(name)s[%(process)d] %(levelname)s %(message)s"
+    fmt="%(name)s[%(process)d] %(levelname)s %(message)s",
+    level_styles={
+        'info': {
+            'color': 'green',
+            'bold': True,
+        },
+        'debug': {
+            'color': 'white'
+        },
+        'warn': {
+            'color': 'yellow',
+        },
+        'error': {
+            'color': 'red',
+            'bold': True,
+        },
+    },
+)
+
+logger = logging.getLogger(__name__)
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 np.set_printoptions(precision=6, suppress=True)
@@ -34,12 +59,6 @@ calib_param_ids = [
     'INS_ACCSCAL_X',
     'INS_ACCSCAL_Y',
     'INS_ACCSCAL_Z',
-    'INS_GYR2OFFS_X',
-    'INS_GYR2OFFS_Y',
-    'INS_GYR2OFFS_Z',
-    'INS_GYROFFS_X',
-    'INS_GYROFFS_Y',
-    'INS_GYROFFS_Z',
 ]
 
 
@@ -50,13 +69,15 @@ def readout_param_messages(some_master):
             break
         # else:
         #     m = m.to_dict()
-        # print(m)
+        # logger.info(m)
 
 
 def read_param(l_master, l_param_id):
-    print(f"Reading {l_param_id} ...")
+    logger.info(f"Reading {l_param_id}: ")
+    sys.stdout.flush()
     m = {"param_id": ''}
     for _ in range(10):
+        readout_param_messages(l_master)
         l_master.mav.param_request_read_send(
             l_master.target_system, l_master.target_component,
             l_param_id.encode(),
@@ -70,16 +91,17 @@ def read_param(l_master, l_param_id):
             else:
                 m = m.to_dict()
         except:
-            print("Timeout expired?")
+            logger.error("Timeout expired?")
 
         if m['param_id'] == l_param_id:
             m["param_value"] = np.float32(m["param_value"])
+            logger.info(m["param_value"])
             return m
         else:
-            # print(m['param_id'], " !=", l_param_id)
+            logger.debug(f"{m['param_id']} != {l_param_id}")
             continue
 
-    print(f"Cannot read {l_param_id}")
+    logger.error(f"Cannot read {l_param_id}")
     return None
 
 
@@ -92,16 +114,16 @@ def write_param(l_master, l_param_id, new_param_value):
     current_param_value = current_param_message['param_value']
 
     if np.isclose(current_param_value, new_param_value):
-        print(f"{l_param_id} already set to desired new_param_value == current_param_value [{new_param_value} == {current_param_value}]")
+        logger.info(f"{l_param_id} already set to desired new_param_value == current_param_value [{new_param_value} == {current_param_value}]")
         return True
 
-    print(f"Writing {l_param_id}: {current_param_value} ==> {new_param_value}")
+    logger.info(f"Writing {l_param_id}: {current_param_value} ==> {new_param_value}")
 
     updated_param_value = np.nan
     n = 0
 
     while updated_param_value is None and not np.isclose(new_param_value, updated_param_value):
-        print(f"{new_param_value} != {updated_param_value}")
+        logger.info(f"{new_param_value} != {updated_param_value}")
         l_master.mav.param_set_send(
             l_master.target_system, l_master.target_component,
             l_param_id.encode(),
@@ -110,7 +132,7 @@ def write_param(l_master, l_param_id, new_param_value):
         )
 
         updated_param_value = read_param(l_master, l_param_id)["param_value"]
-        print(f"updated_param_value: {updated_param_value}, {type(updated_param_value)}")
+        logger.info(f"updated_param_value: {updated_param_value}, {type(updated_param_value)}")
 
         time.sleep(0.5)
 
@@ -145,15 +167,15 @@ def get_all_params_from_device(some_master):
 
             params.append(message)
 
-            print(message["param_count"] - len(params))
-            print(message)
+            logger.info(message["param_count"] - len(params))
+            logger.info(message)
 
             param_indexes[message["param_index"]] = True
 
             stop_read = np.all(param_indexes)
 
         except Exception as error:
-            print(error)
+            logger.error(error)
             break
 
         time.sleep(0.01)
@@ -205,18 +227,22 @@ def write_to_device(some_master, params_df):
         param_value = params_df.iloc[row_idx]['param_value']
         res = write_param(some_master, param_id, param_value)
         if not res:
-            print(f"{param_id} set failed")
+            logger.error(f"{param_id} set failed")
         else:
             params_df.loc[row_idx, "write_status"] = True
         time.sleep(0.1)
-        readout_param_messages(some_master)
 
-    print(params_df[params_df["write_status"] == False])
+    failed_params = params_df[params_df["write_status"] == False]
+    if failed_params.shape[0] > 0:
+        logger.error("Some parameters were not written")
+        logger.error(failed_params)
 
 
 def read_params_from_file(file_path):
+    logger.info(f"{file_path} ==> params")
     params_df = pd.read_csv(file_path, header=None, names=["param_id", "param_value"]).astype({'param_value': 'float32'})
     params_df.sort_values("param_id", inplace=True)
+    logger.info(params_df)
 
     # Round paramever values as mission planner does. It simplifies diffing.
     # params_df["param_value"] = np.round(params_df["param_value"], decimals=6)
@@ -225,8 +251,11 @@ def read_params_from_file(file_path):
 
 
 def write_params_to_file(params_df, to_file):
+    logger.info(f"params ==> {to_file}")
     params_df = params_df.set_index("param_id", drop=True)
-    params_df["param_value"].to_csv(to_file, header=False)
+    to_write_df = params_df["param_value"]
+    logger.info(to_write_df)
+    to_write_df.to_csv(to_file, header=False)
 
 
 def sort_paramets_from_mission_planner(file_name):
