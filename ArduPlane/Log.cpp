@@ -128,10 +128,11 @@ struct PACKED log_OFG_Guided {
     float target_airspeed_cm;
     float target_airspeed_accel;
     float target_alt;
-    float target_alt_accel;
-    uint8_t target_alt_frame;
+    float target_alt_rate;
+    uint8_t target_mav_frame;   // received MavLink frame
     float target_heading;
     float target_heading_limit;
+    uint8_t target_alt_frame;   // internal AltFrame
 };
 
 // Write a OFG Guided packet.
@@ -142,11 +143,12 @@ void Plane::Log_Write_OFG_Guided()
         time_us                : AP_HAL::micros64(),
         target_airspeed_cm     : (float)guided_state.target_airspeed_cm*(float)0.01,
         target_airspeed_accel  : guided_state.target_airspeed_accel,
-        target_alt             : guided_state.target_alt,
-        target_alt_accel       : guided_state.target_alt_accel,
-        target_alt_frame       : guided_state.target_alt_frame,
+        target_alt             : guided_state.target_location.alt * 0.01,
+        target_alt_rate        : guided_state.target_alt_rate,
+        target_mav_frame       : guided_state.target_mav_frame,
         target_heading         : guided_state.target_heading,
-        target_heading_limit   : guided_state.target_heading_accel_limit
+        target_heading_limit   : guided_state.target_heading_accel_limit,
+        target_alt_frame       : static_cast<uint8_t>(guided_state.target_location.get_alt_frame()),
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -274,7 +276,7 @@ void Plane::Log_Write_Guided(void)
         logger.Write_PID(LOG_PIDG_MSG, g2.guidedHeading.get_pid_info());
     }
 
-    if ( is_positive(guided_state.target_alt) || is_positive(guided_state.target_airspeed_cm) ) {
+    if ( guided_state.target_location.alt != -1 || is_positive(guided_state.target_airspeed_cm) ) {
         Log_Write_OFG_Guided();
     }
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
@@ -490,12 +492,13 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Arsp:  target airspeed cm
 // @Field: ArspA:  target airspeed accel
 // @Field: Alt:  target alt
-// @Field: AltA: target alt accel
-// @Field: AltF: target alt frame
+// @Field: AltA: target alt velocity (rate of change)
+// @Field: AltF: target alt frame (MAVLink)
 // @Field: Hdg:  target heading
 // @Field: HdgA: target heading lim
+// @Field: AltL: target alt frame (Location)
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
-      "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
+      "OFG", "QffffBffB",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA,AltL", "snnmo-d--", "F--------" , true }, 
 #endif
 };
 
