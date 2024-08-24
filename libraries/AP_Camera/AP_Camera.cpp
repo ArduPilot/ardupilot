@@ -461,6 +461,12 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
         CHECK_PAYLOAD_SIZE2(CAMERA_CAPTURE_STATUS);
         send_camera_capture_status(chan);
         break;
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    case MSG_CAMERA_THERMAL_RANGE:
+        CHECK_PAYLOAD_SIZE2(CAMERA_THERMAL_RANGE);
+        send_camera_thermal_range(chan);
+        break;
+#endif
 
     default:
         // should not reach this; should only be called for specific IDs
@@ -614,6 +620,21 @@ void AP_Camera::send_camera_capture_status(mavlink_channel_t chan)
         }
     }
 }
+
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+// send camera thermal range message to GCS
+void AP_Camera::send_camera_thermal_range(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_camera_thermal_range(chan);
+        }
+    }
+}
+#endif
 
 /*
   update; triggers by distance moved and camera trigger
