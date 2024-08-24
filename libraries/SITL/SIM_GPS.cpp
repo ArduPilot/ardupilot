@@ -356,6 +356,7 @@ void GPS::update()
 
     last_write_update_ms = now_ms;
 
+    d.num_sats = _sitl->gps_numsats[idx];
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = _sitl->state.yawDeg;
@@ -370,7 +371,13 @@ void GPS::update()
     d.speedN = speedN + (velErrorNED.x * rand_float());
     d.speedE = speedE + (velErrorNED.y * rand_float());
     d.speedD = speedD + (velErrorNED.z * rand_float());
+
     d.have_lock = have_lock;
+
+    // fill in accuracies
+    d.horizontal_acc = _sitl->gps_accuracy[idx];
+    d.vertical_acc = _sitl->gps_accuracy[idx];
+    d.speed_acc = _sitl->gps_vel_err[instance].get().xy().length();
 
     if (_sitl->gps_drift_alt[idx] > 0) {
         // add slow altitude drift controlled by a slow sine wave

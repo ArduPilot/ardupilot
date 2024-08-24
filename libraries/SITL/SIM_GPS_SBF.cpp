@@ -134,7 +134,7 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     pvtGeod_buf.rxclkdrift = DNU_FLOAT;
     pvtGeod_buf.timesystem = DNU_UINT8; 
     pvtGeod_buf.datum = DNU_UINT8; 
-    pvtGeod_buf.nrsv = _sitl->gps_numsats[instance];
+    pvtGeod_buf.nrsv = d->num_sats;
     pvtGeod_buf.wacorrinfo = 0; //default value
     pvtGeod_buf.referenceid = DNU_UINT16; 
     pvtGeod_buf.meancorrage = DNU_UINT16; 
