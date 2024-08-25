@@ -740,13 +740,20 @@ private:
     void run_rate_controller_main();
 
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
-    uint8_t calc_gyro_decimation(uint16_t gyro_decimation, uint16_t rate_hz);
+    struct RateControllerRates {
+        uint8_t fast_logging_rate;
+        uint8_t medium_logging_rate;
+        uint8_t filter_rate;
+        uint8_t main_loop_rate;
+    };
+
+    uint8_t calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz);
     void rate_controller_thread();
     void rate_controller_filter_update();
     void rate_controller_log_update();
-    uint8_t rate_controller_set_rates(uint8_t rate_decimation, bool warn_cpu_high);
-    void enable_fast_rate_loop(uint8_t rate_decimation);
-    void disable_fast_rate_loop();
+    uint8_t rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
+    void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
+    void disable_fast_rate_loop(RateControllerRates& rates);
     void update_dynamic_notch_at_specified_rate_main();
     // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
