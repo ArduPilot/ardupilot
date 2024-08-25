@@ -28,6 +28,10 @@
 
 extern const AP_HAL::HAL &hal;
 
+#ifndef AP_BEACON_MINIMUM_FENCE_BEACONS
+#define AP_BEACON_MINIMUM_FENCE_BEACONS 3
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Beacon::var_info[] = {
 
