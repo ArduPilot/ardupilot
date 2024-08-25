@@ -376,6 +376,10 @@ AP_HW_ZeroOne_X6                     5600
 AP_HW_ZeroOne_PMU                    5601
 AP_HW_ZeroOne_GNSS                   5602
 
+#IDs 5700-5710 reserved for DroneBuild  
+AP_HW_DroneBuild_G1                  5700
+AP_HW_DroneBuild_G2                  5701
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
