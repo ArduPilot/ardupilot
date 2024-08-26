@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import time
+import serial
 import sys, os
 from pprint import pprint
 from pymavlink import mavutil
@@ -91,8 +92,7 @@ def get_git_revision(some_master):
 def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False, preserve_params_list="",
                          port="/dev/ttyACM0",
                          baud_bootloader=115200):
-
-    target_baud_rate = 921600 # After flashing is done.
+    target_baud_rate = 921600  # After flashing is done.
     bauds_flightstack = [921600, 500000, 115200, 57600]
 
     calib_file_path = os.path.join(os.getcwd(), "calibration_parameters.csv")
@@ -104,7 +104,16 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
     for baud_flightstack in bauds_flightstack:
         logger.info(f"Probing autopilot at {port}:{baud_flightstack}")
         some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
-        res = some_master.wait_heartbeat(timeout=4)
+
+        for serial_tries in range(10):
+            try:
+                res = some_master.wait_heartbeat(timeout=4)
+                break
+            except serial.serialutil.SerialException:
+                logger.warning(
+                    f"The serial might be occupied by the mavlink-router, waiting untill it is free: {serial_tries}")
+                time.sleep(3)
+
         if res is not None:
             break
 
