@@ -117,20 +117,7 @@ float LowPassFilter<T>::get_cutoff_freq() const {
 // add a new raw value to the filter, retrieve the filtered result
 template <class T>
 T LowPassFilter<T>::apply(const T &sample, const float &dt) {
-    if (is_negative(cutoff_freq) || is_negative(dt)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        this->reset(sample);
-        return this->get();
-    }
-    if (is_zero(cutoff_freq)) {
-        this->reset(sample);
-        return this->get();
-    }
-    if (is_zero(dt)) {
-        return this->get();
-    }
-    const float rc = 1.0f/(M_2PI*cutoff_freq);
-    const float alpha = constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+    const float alpha = calc_lowpass_alpha_dt(dt, cutoff_freq);
     return this->_apply(sample, alpha);
 }
 
