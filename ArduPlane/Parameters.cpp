@@ -156,7 +156,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Standard
-    ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    60),
+    ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    0),
 
     // @Param: TKOFF_OPTIONS
     // @DisplayName: Takeoff options
