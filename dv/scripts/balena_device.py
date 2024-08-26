@@ -94,29 +94,29 @@ class Device():
             logger.warning(f"{service_name} is not present in a service list")
             logger.debug(status)
 
-        service_status = self.get_service("mavlink-router")["status"]
+        service_status = self.get_service(service_name)["status"]
         while service_status != "exited":
             logger.debug(f"{service_name} {service_status}")
-            service_status = self.get_service("mavlink-router")["status"]
+            service_status = self.get_service(service_name)["status"]
             time.sleep(1)
 
         logger.info(f"{service_name} {service_status}")
 
     def try_start_service(self, service_name):
         status = self.get_supervisor_state_status()
-        for image in status["images"]:
-            if image["serviceName"] == service_name:
-                if image["status"] == "Downloaded":
-                    self.balena.models.device.start_service(None, image["imageId"])
+        for container in status["containers"]:
+            if container["serviceName"] == service_name:
+                if container["status"] != "Running":
+                    self.balena.models.device.start_service(None, container["imageId"])
                     break
         else:
             logger.info(f"Image for {service_name} is not found")
             logger.debug(status)
 
-        service_status = self.get_service("mavlink-router")["status"]
+        service_status = self.get_service(service_name)["status"]
         while service_status != "Running":
             logger.debug(f"{service_name} {service_status}")
-            service_status = self.get_service("mavlink-router")["status"]
+            service_status = self.get_service(service_name)["status"]
             time.sleep(1)
 
         logger.info(f"{service_name} {service_status}")
@@ -137,20 +137,20 @@ class Device():
 
 
 if __name__ == '__main__':
-
-    device = Device()
-    print(device.authenticate())
-    pprint(device.get_supervisor_state_status())
-
-    # device.try_stop_service("mavlink-router")
-    device.try_start_service("mavlink-router")
-
-    time.sleep(1)
-
-    stopped_service_names = device.leave_me_alone()
-    print("hehee, I'm the only here")
-
-    time.sleep(5)
-
-    for service_name in stopped_service_names:
-        device.try_start_service(service_name)
+    pass
+    # device = Device()
+    # print(device.authenticate())
+    # pprint(device.get_supervisor_state_status())
+    #
+    # # device.try_stop_service("mavlink-router")
+    # device.try_start_service("mavlink-router")
+    #
+    # time.sleep(1)
+    #
+    # stopped_service_names = device.leave_me_alone()
+    # print("hehee, I'm the only here")
+    #
+    # time.sleep(5)
+    #
+    # for service_name in stopped_service_names:
+    #     device.try_start_service(service_name)
