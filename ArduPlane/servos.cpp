@@ -567,6 +567,8 @@ float Plane::apply_throttle_limits(float throttle_in)
         ) {
             if (aparm.takeoff_throttle_min.get() != 0) {
                 min_throttle = MAX(min_throttle, aparm.takeoff_throttle_min.get());
+            } else {
+                min_throttle = MAX(min_throttle, aparm.throttle_cruise.get());
             }
         }
     }
