@@ -387,10 +387,10 @@ def run_specific_test(step, *args, **kwargs):
     for a in tester.tests():
         if not isinstance(a, Test):
             a = Test(a)
-        print("Got %s" % (a.name))
+        # print("Got %s" % (a.name))
         if a.name == test:
             return tester.autotest(tests=[a], allow_skips=False, step_name=step), tester
-    print("Failed to find test %s on %s" % (test, testname))
+    print("Failed to find test %s on %s (try --list-subtests)" % (test, testname))
     sys.exit(1)
 
 
@@ -516,6 +516,7 @@ def run_step(step):
         "reset_after_every_test": opts.reset_after_every_test,
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
+        "verbose": opts.verbose,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -890,6 +891,10 @@ if __name__ == "__main__":
                       default=False,
                       action='store_true',
                       help='Generate Junit XML tests report')
+    parser.add_option("--verbose",
+                      default=False,
+                      action='store_true',
+                      help='Be verbose in test output')
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",
@@ -1201,6 +1206,10 @@ if __name__ == "__main__":
     if len(args) == 0 and not opts.autotest_server:
         print("Steps must be supplied; try --list and/or --list-subtests or --help")
         sys.exit(1)
+
+    if opts.autotest_server:
+        # force this until we update scripts
+        opts.verbose = True
 
     if len(args) > 0:
         # allow a wildcard list of steps
