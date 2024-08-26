@@ -5,11 +5,12 @@ import serial
 import sys, os
 from pprint import pprint
 from pymavlink import mavutil
+from balena_device import Device
 
 if "BALENA_SERVICE_NAME" in os.environ:
     sys.path.append("/app/ardupilot/Tools/scripts")
     sys.path.append("/app/ardupilot/dv/scripts")
-    # sys.path.append("/slovak-shared")
+    # sys.path.append("/data")
 else:
     sys.path.append("/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/Tools/scripts")
     sys.path.append("/home/slovak/remote-id/dv-kd-sw-rid/ardupilot/dv/scripts")
@@ -101,6 +102,12 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
     res = None
     some_master = None
 
+    device = Device()
+    logger.info(device.authenticate())
+
+    stopped_service_names = device.leave_me_alone()
+    logger.warning(f"Services stopped: {stopped_service_names}")
+
     for baud_flightstack in bauds_flightstack:
         logger.info(f"Probing autopilot at {port}:{baud_flightstack}")
         some_master = mavutil.mavlink_connection(port, baud=baud_flightstack)
@@ -186,11 +193,14 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
             logger.fatal("Restore calibrations failed")
             sys.exit(1)
 
+    logger.warning(f"Restarting services: {stopped_service_names}")
+
+    for service_name in stopped_service_names:
+        device.try_start_service(service_name)
+
     logger.info("Upgrade autopilot success")
+
     sys.exit(0)
-
-
-# %%
 
 
 if __name__ == '__main__':
