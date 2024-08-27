@@ -303,6 +303,8 @@ AP_HW_LongbowF405                    1422
 
 AP_HW_MountainEagleH743              1444
 
+AP_HW_HGLRCF405V4                    1524
+
 AP_HW_SakuraRC-H743                  2714
 
 # IDs 5000-5099 reserved for Carbonix
