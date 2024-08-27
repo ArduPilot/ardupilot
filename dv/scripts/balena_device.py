@@ -85,6 +85,7 @@ class Device():
         super_state = self.get_supervisor_state_status()
         current_super_status = super_state["status"]
         current_app_state = super_state["appState"]
+        logger.debug(f"Waiting for {current_super_status} ==> {targets_super_state} and {current_app_state} ==> {target_app_state}")
 
         while current_super_status != targets_super_state and current_app_state != target_app_state:
             time.sleep(1)
@@ -100,24 +101,20 @@ class Device():
         current_service_status = service["appId"]
 
         while current_service_app_id != my_app_id and current_service_status != target_service_status:
+            time.sleep(1)
             service = self.get_service(service_name)
             current_service_app_id = service["status"]
             current_service_status = service["appId"]
-            time.sleep(1)
             logger.debug(f"Waiting for {service_name}[{target_service_status}]")
 
     def try_stop_service(self, service_name):
-        status = self.get_supervisor_state_status()
-        for container in status["containers"]:
-            if container["serviceName"] == service_name:
-                if container["status"] == "Running":
-                    self.balena.models.device.stop_service(None, container["imageId"])
-                    break
-                else:
-                    logger.warning(f"{service_name} found but it is not running")
+
+        service = self.get_service(service_name)
+
+        if service["status"] == "Running":
+            self.balena.models.device.stop_service(None, service["imageId"])
         else:
-            logger.warning(f"{service_name} is not present in a service list")
-            logger.debug(status)
+            logger.warning(f"{service_name} found but it is not running")
 
         service_status = self.get_service(service_name)["status"]
         while service_status != "exited":
@@ -125,6 +122,7 @@ class Device():
             service_status = self.get_service(service_name)["status"]
             time.sleep(1)
 
+        service_status = self.get_service(service_name)["status"]
         logger.info(f"{service_name} {service_status}")
 
     def try_start_service(self, service_name):
@@ -144,6 +142,7 @@ class Device():
             service_status = self.get_service(service_name)["status"]
             time.sleep(1)
 
+        service_status = self.get_service(service_name)["status"]
         logger.info(f"{service_name} {service_status}")
 
     def get_self_app_id(self):
@@ -152,7 +151,23 @@ class Device():
 
     def get_service(self, service_name):
         status = self.get_supervisor_state_status()
-        return [container for container in status["containers"] if container["serviceName"] == service_name][0]
+        res = [container for container in status["containers"] if container["serviceName"] == service_name]
+
+        if len(res) == 1:
+            return res[0]
+
+        timeout = 30
+
+        for n in range(timeout):
+            logger.debug(f"Waiting for a service {service_name} to appeare in super status {n}")
+            time.sleep(1)
+            status = self.get_supervisor_state_status()
+            res = [container for container in status["containers"] if container["serviceName"] == service_name]
+            if len(res) == 1:
+                return res[0]
+
+        logger.error(f"Service {service_name} was not found in super state for {timeout} seconds")
+        return None
 
     def leave_me_alone(self):
         status = self.get_supervisor_state_status()
