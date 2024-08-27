@@ -246,7 +246,7 @@ define AP_GPS_BACKEND_DEFAULT_ENABLED 0
 define AP_GPS_UBLOX_ENABLED 1
 define AP_GPS_MAV_ENABLED 1
 define GPS_MOVING_BASELINE 0
-define GPS_MAX_RECEIVERS 1  # removes blended support
+define GPS_MAX_INSTANCES 1
 
 # enable only the QUAD frame
 define AP_MOTORS_BACKEND_DEFAULT_ENABLED 0
