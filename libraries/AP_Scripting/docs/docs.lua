@@ -3516,7 +3516,7 @@ function mavlink:receive_chan() end
 ---@return boolean -- success
 function mavlink:send_chan(chan, msgid, message) end
 
--- Block a given MAV_CMD from being procceced by ArduPilot
+-- Block a given MAV_CMD from being processed by ArduPilot
 ---@param comand_id integer
 ---@return boolean
 function mavlink:block_command(comand_id) end
