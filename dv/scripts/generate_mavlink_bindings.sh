@@ -13,4 +13,3 @@ mkdir -p ${OUTPUT}/wlua
 python3 ./modules/mavlink/pymavlink/tools/mavgen.py --lang=C --wire-protocol=2.0 --output="${OUTPUT}/c" ${DIALECT_PATH}
 python3 ./modules/mavlink/pymavlink/tools/mavgen.py --lang=C++11 --wire-protocol=2.0 --output="${OUTPUT}/cpp" "${DIALECT_PATH}"
 python3 ./modules/mavlink/pymavlink/tools/mavgen.py --lang=WLua --wire-protocol=2.0 --output="${OUTPUT}/wlua/${DIALECT}" ${DIALECT_PATH}
-
