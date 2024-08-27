@@ -44,7 +44,7 @@ public:
     const char *name() const override { return "Blended"; }
 
     bool get_lag(float &lag_sec) const override;
-    const Vector3f &get_antenna_offset() const {
+    const Vector3f &get_antenna_offset() const override {
         return _blended_antenna_offset;
     }
 
@@ -58,16 +58,24 @@ public:
         _blend_health_counter = 0;
     }
 
+    AP_GPS::GPS_Status highest_supported_status(void) override {
+        return _highest_supported_status;
+    }
+
 private:
 
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
-    float _blend_weights[GPS_MAX_RECEIVERS]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
+    float _blend_weights[GPS_MAX_INSTANCES]; // blend weight for each GPS. The blend weights must sum to 1.0 across all instances.
     uint8_t _blend_health_counter;  // 0 = perfectly health, 100 = very unhealthy
 
     AP_GPS::GPS_timing &timing;
     bool _calc_weights(void);
+
+    AP_GPS::GPS_Status _highest_supported_status;
+
+    float new_timing_last_message_time_ms;
 };
 
 #endif  // AP_GPS_BLENDED_ENABLED
