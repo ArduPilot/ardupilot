@@ -129,7 +129,7 @@ void GPS_NOVA::publish(const GPS_Data *d)
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
     bestpos.hgt = d->altitude;
-    bestpos.svsused = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    bestpos.svsused = d->have_lock ? d->num_sats : 3;
     bestpos.latsdev=0.2;
     bestpos.lngsdev=0.2;
     bestpos.hgtsdev=0.2;

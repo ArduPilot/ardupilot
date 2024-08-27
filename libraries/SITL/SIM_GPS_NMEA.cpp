@@ -74,7 +74,7 @@ void GPS_NMEA::publish(const GPS_Data *d)
                      lat_string,
                      lng_string,
                      d->have_lock?1:0,
-                     d->have_lock?_sitl->gps_numsats[instance]:3,
+                     d->have_lock?d->num_sats:3,
                      1.2,
                      d->altitude);
 
@@ -118,8 +118,8 @@ void GPS_NMEA::publish(const GPS_Data *d)
                     d->roll_deg,
                     d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
                     3, // fixed rtk yaw solution,
-                    d->have_lock?_sitl->gps_numsats[instance]:3,
-                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->have_lock?d->num_sats:3,
+                    d->have_lock?d->num_sats:3,
                     d->speedE * 3.6,
                     d->speedN * 3.6,
                     -d->speedD * 3.6);

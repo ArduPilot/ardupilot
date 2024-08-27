@@ -63,9 +63,9 @@ void GPS_MSP::publish(const GPS_Data *d)
     msp_gps.gps_week = t.week;
     msp_gps.ms_tow = t.ms;
     msp_gps.fix_type = d->have_lock?3:0;
-    msp_gps.satellites_in_view = d->have_lock ? _sitl->gps_numsats[instance] : 3;
-    msp_gps.horizontal_pos_accuracy = _sitl->gps_accuracy[instance]*100;
-    msp_gps.vertical_pos_accuracy = _sitl->gps_accuracy[instance]*100;
+    msp_gps.satellites_in_view = d->have_lock ? d->num_sats : 3;
+    msp_gps.horizontal_pos_accuracy = d->horizontal_acc*100;
+    msp_gps.vertical_pos_accuracy = d->vertical_acc*100;
     msp_gps.horizontal_vel_accuracy = 30;
     msp_gps.hdop = 100;
     msp_gps.longitude = d->longitude * 1.0e7;

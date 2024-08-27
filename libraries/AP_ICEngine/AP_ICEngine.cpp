@@ -46,7 +46,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: This is an RC input channel for requesting engine start. Engine will try to start when channel is at or above 1700. Engine will stop when channel is at or below 1300. Between 1301 and 1699 the engine will not change state unless a MAVLink command or mission item commands a state change, or the vehicle is disarmed. See ICE_STARTCHN_MIN parameter to change engine stop PWM value and/or to enable debouncing of the START_CH to avoid accidental engine kills due to noise on channel.
     // @User: Standard
     // @Values: 0:None,1:Chan1,2:Chan2,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
-    AP_GROUPINFO("START_CHAN", 1, AP_ICEngine, start_chan, 0),
+
+    // 1 was START_CHAN
 
     // @Param: STARTER_TIME
     // @DisplayName: Time to run starter
@@ -78,28 +79,32 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: This is the value sent to the ignition channel when on
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_IGN_ON", 5, AP_ICEngine, pwm_ignition_on, 2000),
+
+    // 5 was PWM_IGN_ON
 
     // @Param: PWM_IGN_OFF
     // @DisplayName: PWM value for ignition off
     // @Description: This is the value sent to the ignition channel when off
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_IGN_OFF", 6, AP_ICEngine, pwm_ignition_off, 1000),
+
+    // 6 was PWM_IGN_OFF
 
     // @Param: PWM_STRT_ON
     // @DisplayName: PWM value for starter on
     // @Description: This is the value sent to the starter channel when on
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_STRT_ON", 7, AP_ICEngine, pwm_starter_on, 2000),
+
+    // 7 was PWM_STRT_ON
 
     // @Param: PWM_STRT_OFF
     // @DisplayName: PWM value for starter off
     // @Description: This is the value sent to the starter channel when off
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_STRT_OFF", 8, AP_ICEngine, pwm_starter_off, 1000),
+
+    // 8 was PWM_STRT_OFF
 
 #if AP_RPM_ENABLED
     // @Param: RPM_CHAN
@@ -167,6 +172,9 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // 18 was IGNITION_RLY
 
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("FMT_VER", 19, AP_ICEngine, param_format_version, 0, AP_PARAM_FLAG_HIDDEN),
 
     AP_GROUPEND
 };
@@ -187,6 +195,81 @@ AP_ICEngine::AP_ICEngine()
 #endif
 }
 
+// One time init call
+void AP_ICEngine::init()
+{
+    // Configure starter and ignition outputs as range type
+    SRV_Channels::set_range(SRV_Channel::k_starter, 1);
+    SRV_Channels::set_range(SRV_Channel::k_ignition, 1);
+
+    // Set default PWM endpoints to 1000 to 2000
+    SRV_Channels::set_output_min_max_defaults(SRV_Channel::k_starter, 1000, 2000);
+    SRV_Channels::set_output_min_max_defaults(SRV_Channel::k_ignition, 1000, 2000);
+
+    // Convert params
+    param_conversion();
+}
+
+// PARAMETER_CONVERSION - Added: Aug 2024
+void AP_ICEngine::param_conversion()
+{
+    if (!enable || (param_format_version == 1)) {
+        // not enabled or conversion has already been done
+        return;
+    }
+
+    // Set format version so the conversion is not done again
+    param_format_version.set_and_save(1);
+
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_key_by_pointer(this, info.old_key)) {
+        return;
+    }
+
+    // Conversion table giving the old on and off pwm parameter indexes and the function for both starter and ignition
+    const struct convert_table {
+        uint32_t element[2];
+        SRV_Channel::Aux_servo_function_t fuction;
+    } conversion_table[] = {
+        { {450, 514}, SRV_Channel::k_starter },  // PWM_STRT_ON, PWM_STRT_OFF
+        { {322, 386}, SRV_Channel::k_ignition }, // PWM_IGN_ON, PWM_IGN_OFF
+    };
+
+    // All PWM values were int16
+    info.type = AP_PARAM_INT16;
+
+    for (const auto & elem : conversion_table) {
+        // Use the original default values if params are not saved
+        uint16_t pwm_on = 2000;
+        uint16_t pwm_off = 1000;
+
+        // Get param values if configured
+        AP_Int16 param_value;
+        info.old_group_element = elem.element[0];
+        if (AP_Param::find_old_parameter(&info, &param_value)) {
+            pwm_on = param_value;
+        }
+        info.old_group_element = elem.element[1];
+        if (AP_Param::find_old_parameter(&info, &param_value)) {
+            pwm_off = param_value;
+        }
+
+        // Save as servo endpoints, note that save_output_min_max will set reversed if needed
+        SRV_Channels::save_output_min_max(elem.fuction, pwm_off, pwm_on);
+    }
+
+    // Convert to new RC option
+    AP_Int8 start_chan;
+    info.type = AP_PARAM_INT8;
+    info.old_group_element = 66;
+    if (AP_Param::find_old_parameter(&info, &start_chan) && (start_chan > 0)) {
+        RC_Channel *chan = rc().channel(start_chan-1);
+        if (chan != nullptr) {
+            chan->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::ICE_START_STOP);
+        }
+    }
+}
+
 /*
   update engine state
  */
@@ -197,7 +280,7 @@ void AP_ICEngine::update(void)
     }
 
     uint16_t cvalue = 1500;
-    RC_Channel *c = rc().channel(start_chan-1);
+    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
     if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         cvalue = c->get_radio_in();
@@ -508,7 +591,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: already running");
         return false;
     }
-    RC_Channel *c = rc().channel(start_chan-1);
+    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
     if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         uint16_t cvalue = c->get_radio_in();
@@ -608,7 +691,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
  */
 void AP_ICEngine::set_ignition(bool on)
 {
-    SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, on? pwm_ignition_on : pwm_ignition_off);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_ignition, on ? 1.0 : 0.0);
 
 #if AP_RELAY_ENABLED
     AP_Relay *relay = AP::relay();
@@ -624,7 +707,7 @@ void AP_ICEngine::set_ignition(bool on)
  */
 void AP_ICEngine::set_starter(bool on)
 {
-    SRV_Channels::set_output_pwm(SRV_Channel::k_starter, on? pwm_starter_on : pwm_starter_off);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_starter, on ? 1.0 : 0.0);
 
 #if AP_ICENGINE_TCA9554_STARTER_ENABLED
     tca9554_starter.set_starter(on, option_set(Options::CRANK_DIR_REVERSE));

@@ -239,6 +239,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 176:Quadplane Fwd Throttle Override enable
     // @Values{Copter, Rover, Plane, Blimp}: 177:Mount LRF enable
     // @Values{Copter}: 178:FlightMode Pause/Resume
+    // @Values{Plane}: 179:ICEngine start / stop
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
