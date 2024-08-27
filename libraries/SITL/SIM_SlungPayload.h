@@ -82,7 +82,7 @@ private:
     uint32_t last_update_us;    // system time of last update
 
     // mavlink reporting variables
-    const float reporting_period_ms = 200;  // reporting period in ms
+    const float reporting_period_ms = 100;  // reporting period in ms
     uint32_t last_report_ms;                // system time of last MAVLink report sent to GCS
     uint32_t last_heartbeat_ms;             // system time of last MAVLink heartbeat sent to GCS
     bool mavlink_connected;                 // true if a mavlink connection has been established
