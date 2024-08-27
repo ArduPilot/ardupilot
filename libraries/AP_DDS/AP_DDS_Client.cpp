@@ -123,11 +123,6 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     // https://www.fluentcpp.com/2021/12/13/the-evolutions-of-lambdas-in-c14-c17-and-c20/
     // constexpr auto times2 = [] (sensor_msgs_msg_NavSatFix* msg) { return n * 2; };
 
-    // assert(instance >= GPS_MAX_RECEIVERS);
-    if (instance >= GPS_MAX_RECEIVERS) {
-        return false;
-    }
-
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
 
