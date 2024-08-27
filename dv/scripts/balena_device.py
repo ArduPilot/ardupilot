@@ -96,17 +96,16 @@ class Device():
 
     def wait_for_service_status(self, service_name, target_service_status="Running"):
         logger.debug(f"Waiting for {service_name}[{target_service_status}]")
-        my_app_id = self.get_self_app_id()
+        # my_app_id = self.get_self_app_id()
         service = self.get_service(service_name)
-        current_service_app_id = service["status"]
+        # current_service_app_id = service["status"]
         current_service_status = service["appId"]
 
-        while current_service_app_id != my_app_id and current_service_status != target_service_status:
+        while current_service_status != target_service_status:
             time.sleep(1)
             service = self.get_service(service_name)
-            current_service_app_id = service["status"]
             current_service_status = service["appId"]
-            logger.debug(f"Waiting for {service_name}[{target_service_status}]")
+            logger.debug(f"Waiting for {service_name}: {current_service_status} ==> {target_service_status}")
 
     def try_stop_service(self, service_name):
 
