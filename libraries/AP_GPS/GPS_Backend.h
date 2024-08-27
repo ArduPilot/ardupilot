@@ -123,6 +123,10 @@ public:
     // Convert BCD date (DDMMYY) and time (MTK19 millisecond form) to GPS week and time
     static void BCD_to_gps_time(uint32_t bcd_date, uint32_t bcd_time_ms, uint16_t& gps_week, uint32_t& gps_time_ms);
 
+    virtual const Vector3f &get_antenna_offset() const {
+        return params.antenna_offset.get();
+    }
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
