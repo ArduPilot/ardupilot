@@ -105,8 +105,16 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
     device = Device()
     logger.info(device.authenticate())
 
-    stopped_service_names = device.leave_me_alone()
-    logger.warning(f"Services stopped: {stopped_service_names}")
+    # TODO, OLSLO, stop mavlink-router here only.
+    # Or even try to get the version over mavlink-router if it is running and if cube is healthy.
+
+    # Wait for supervisor state to applied and success
+    device.wait_for_supervisor_state(targets_super_state="success", target_app_state="applied")
+    # device.wait_for_service_status("mavlink-router", "Running")
+
+    # Now stop mavlink router
+    device.try_stop_service("mavlink-router")
+    logger.warning(f"Services stopped: mavlink-router")
 
     for baud_flightstack in bauds_flightstack:
         logger.info(f"Probing autopilot at {port}:{baud_flightstack}")
@@ -193,10 +201,8 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
             logger.fatal("Restore calibrations failed")
             sys.exit(1)
 
-    logger.warning(f"Restarting services: {stopped_service_names}")
-
-    for service_name in stopped_service_names:
-        device.try_start_service(service_name)
+    logger.warning(f"Restarting services: mavlink-router")
+    device.try_start_service("mavlink-router")
 
     logger.info("Upgrade autopilot success")
 

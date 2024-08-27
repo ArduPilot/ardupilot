@@ -81,6 +81,31 @@ class Device():
         r = requests.get(url, headers=headers)
         return r.json()
 
+    def wait_for_supervisor_state(self, targets_super_state="success", target_app_state="applied"):
+        super_state = self.get_supervisor_state_status()
+        current_super_status = super_state["status"]
+        current_app_state = super_state["appState"]
+
+        while current_super_status != targets_super_state and current_app_state != target_app_state:
+            time.sleep(1)
+            logger.debug(f"Waiting for {current_super_status} ==> {targets_super_state} and {current_app_state} ==> {target_app_state}")
+            super_state = self.get_supervisor_state_status()
+            current_super_status = super_state["status"]
+            current_app_state = super_state["appState"]
+
+    def wait_for_service_status(self, service_name, target_service_status="Running"):
+        my_app_id = self.get_self_app_id()
+        service = self.get_service(service_name)
+        current_service_app_id = service["status"]
+        current_service_status = service["appId"]
+
+        while current_service_app_id != my_app_id and current_service_status != target_service_status:
+            service = self.get_service(service_name)
+            current_service_app_id = service["status"]
+            current_service_status = service["appId"]
+            time.sleep(1)
+            logger.debug(f"Waiting for {service_name}[{target_service_status}]")
+
     def try_stop_service(self, service_name):
         status = self.get_supervisor_state_status()
         for container in status["containers"]:
@@ -120,6 +145,10 @@ class Device():
             time.sleep(1)
 
         logger.info(f"{service_name} {service_status}")
+
+    def get_self_app_id(self):
+        service = self.get_service(self.service_name)
+        return service["appId"]
 
     def get_service(self, service_name):
         status = self.get_supervisor_state_status()
