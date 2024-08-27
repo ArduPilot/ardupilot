@@ -110,7 +110,7 @@ def try_upgrade_firmware(apj_path, force_flash=True, preserve_calibrations=False
 
     # Wait for supervisor state to applied and success
     device.wait_for_supervisor_state(targets_super_state="success", target_app_state="applied")
-    # device.wait_for_service_status("mavlink-router", "Running")
+    device.wait_for_service_status("mavlink-router", "Running")
 
     # Now stop mavlink router
     device.try_stop_service("mavlink-router")

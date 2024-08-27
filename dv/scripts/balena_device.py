@@ -95,6 +95,7 @@ class Device():
             current_app_state = super_state["appState"]
 
     def wait_for_service_status(self, service_name, target_service_status="Running"):
+        logger.debug(f"Waiting for {service_name}[{target_service_status}]")
         my_app_id = self.get_self_app_id()
         service = self.get_service(service_name)
         current_service_app_id = service["status"]
