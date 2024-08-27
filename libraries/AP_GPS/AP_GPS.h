@@ -38,7 +38,7 @@
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
 #ifndef GPS_MOVING_BASELINE
-#define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS>1
+#define GPS_MOVING_BASELINE GPS_MAX_INSTANCES>1
 #endif
 
 #if GPS_MOVING_BASELINE
@@ -112,6 +112,9 @@ public:
         GPS_TYPE_UNICORE_NMEA = 24,
         GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
         GPS_TYPE_SBF_DUAL_ANTENNA = 26,
+#if AP_GPS_BLENDED_ENABLED
+        GPS_TYPE_BLENDED = 27,
+#endif
 #if AP_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
@@ -120,6 +123,12 @@ public:
     // convenience methods for working out what general type an instance is:
     bool is_rtk_base(uint8_t instance) const;
     bool is_rtk_rover(uint8_t instance) const;
+    /*
+     * if base_instance is an RTK base *and* there exists a rover instance
+     * corresponding to that base then set rover_instance and return true.
+     * DOES NOT MODIFY rover_instance unless true is returned
+     */
+    bool get_rtk_rover_for_rtk_base(uint8_t &rover_instance, const uint8_t base_instance) const;
 
     // params for an instance:
     class Params {
@@ -140,7 +149,9 @@ public:
 #if GPS_MOVING_BASELINE
         MovingBase mb_params;
 #endif // GPS_MOVING_BASELINE
-
+#if AP_GPS_BLENDED_ENABLED
+        AP_Int8 blend_mask;
+#endif
         static const struct AP_Param::GroupInfo var_info[];
     };
 
@@ -669,7 +680,7 @@ private:
     GPS_timing timing[GPS_MAX_INSTANCES];
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
-    AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
+    AP_HAL::UARTDriver *_port[GPS_MAX_INSTANCES];
 
     /// primary GPS instance
     uint8_t primary_instance;
@@ -704,12 +715,12 @@ private:
 #if AP_GPS_ERB_ENABLED
         struct ERB_detect_state erb_detect_state;
 #endif
-    } detect_state[GPS_MAX_RECEIVERS];
+    } detect_state[GPS_MAX_INSTANCES];
 
     struct {
         const char *blob;
         uint16_t remaining;
-    } initblob_state[GPS_MAX_RECEIVERS];
+    } initblob_state[GPS_MAX_INSTANCES];
 
     static const uint32_t  _baudrates[];
     static const char _initialisation_blob[];
@@ -762,7 +773,7 @@ private:
 
     bool needs_uart(GPS_Type type) const;
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
     /// Update primary instance
     void update_primary(void);
 #endif

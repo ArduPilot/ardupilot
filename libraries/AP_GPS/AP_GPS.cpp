@@ -60,12 +60,6 @@
 #include "RTCM3_Parser.h"
 #endif
 
-#if !AP_GPS_BLENDED_ENABLED
-#if defined(GPS_BLENDED_INSTANCE)
-#error GPS_BLENDED_INSTANCE should not be defined when AP_GPS_BLENDED_ENABLED is false
-#endif
-#endif
-
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
@@ -139,7 +133,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_NAVFILTER", 2, AP_GPS, _navfilter, GPS_ENGINE_AIRBORNE_4G),
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
     // @Param: _AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
     // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used 4:Use primary if 3D fix or better, will revert to 'UseBest' behaviour if 3D fix is lost on primary
@@ -251,12 +245,12 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // 26 was GPS_MB2_*
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
     // @Param: _PRIMARY
     // @DisplayName: Primary GPS
     // @Description: This GPS will be used when GPS_AUTO_SWITCH is 0 and used preferentially with GPS_AUTO_SWITCH = 4.
     // @Increment: 1
-    // @Values: 0:FirstGPS, 1:SecondGPS
+    // @Values: 0:FirstGPS, 1:SecondGPS, 2:ThirdGPS, 3:FourthGPS
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 27, AP_GPS, _primary, 0),
 #endif
@@ -273,10 +267,46 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Path: AP_GPS_Params.cpp
     AP_SUBGROUPINFO(params[0], "1_", 32, AP_GPS, AP_GPS::Params),
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
     // @Group: 2_
     // @Path: AP_GPS_Params.cpp
     AP_SUBGROUPINFO(params[1], "2_", 33, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 2
+    // @Group: 3_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[2], "3_", 34, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 3
+    // @Group: 4_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[3], "4_", 35, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 4
+    // @Group: 5_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[4], "5_", 36, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 5
+    // @Group: 6_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[5], "6_", 37, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 6
+    // @Group: 7_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[6], "7_", 38, AP_GPS, AP_GPS::Params),
+#endif
+
+#if GPS_MAX_INSTANCES > 7
+    // @Group: 8_
+    // @Path: AP_GPS_Params.cpp
+    AP_SUBGROUPINFO(params[7], "8_", 39, AP_GPS, AP_GPS::Params),
 #endif
 
     AP_GROUPEND
@@ -352,11 +382,6 @@ void AP_GPS::init()
             rate_ms.set(GPS_MAX_RATE_MS);
         }
     }
-
-    // create the blended instance if appropriate:
-#if AP_GPS_BLENDED_ENABLED
-    drivers[GPS_BLENDED_INSTANCE] = NEW_NOTHROW AP_GPS_Blended(*this, params[GPS_BLENDED_INSTANCE], state[GPS_BLENDED_INSTANCE], timing[GPS_BLENDED_INSTANCE]);
-#endif
 }
 
 void AP_GPS::convert_parameters()
@@ -397,12 +422,20 @@ void AP_GPS::convert_parameters()
 #if GPS_MOVING_BASELINE
     // convert old MovingBaseline parameters
     // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
-    for (uint8_t i=0; i<MIN(2, GPS_MAX_RECEIVERS); i++) {
-        // the old _MB parameters were 25 and 26:
-        const uint8_t old_index = 25 + i;
-        AP_Param::convert_class(k_param_gps_key, &params[i].mb_params, params[i].mb_params.var_info, old_index, false);
-    }
+    // the old _MB parameters were 25 and 26:
+    AP_Param::convert_class(k_param_gps_key, &params[0].mb_params, params[0].mb_params.var_info, 25, false);
+    AP_Param::convert_class(k_param_gps_key, &params[1].mb_params, params[1].mb_params.var_info, 26, false);
 #endif  // GPS_MOVING_BASELINE
+
+    // convert old Blended configuration into a defined backend type
+    // PARAMETER_CONVERSION - Added: Dec-2024 for 4.6
+#if AP_GPS_BLENDED_ENABLED
+    if (_auto_switch == 2) {
+        if (!params[2].type.configured()) {
+            params[2].type.set_and_save(GPS_TYPE_BLENDED);
+        }
+    }
+#endif  // AP_GPS_BLENDED_ENABLED
 }
 
 // return number of active GPS sensors. Note that if the first GPS
@@ -410,11 +443,6 @@ void AP_GPS::convert_parameters()
 // GPS solution is treated as an additional sensor.
 uint8_t AP_GPS::num_sensors(void) const
 {
-#if AP_GPS_BLENDED_ENABLED
-    if (_output_is_blended) {
-        return num_instances+1;
-    }
-#endif
     return num_instances;
 }
 
@@ -675,6 +703,11 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         dstate->auto_detected_baud = false; // specified, not detected
         return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], port);
 #endif //AP_GPS_GSOF_ENABLED
+#if AP_GPS_BLENDED_ENABLED
+    case GPS_TYPE_BLENDED:
+        dstate->auto_detected_baud = false; // specified, not detected
+        return NEW_NOTHROW AP_GPS_Blended(*this, params[instance], state[instance], timing[instance]);
+#endif
     default:
         break;
     }
@@ -821,7 +854,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 
 AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
 {
-    if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
+    if (instance < ARRAY_SIZE(drivers) && drivers[instance] != nullptr) {
         return drivers[instance]->highest_supported_status();
     }
     return AP_GPS::GPS_OK_FIX_3D;
@@ -937,14 +970,14 @@ void AP_GPS::update_instance(uint8_t instance)
         data_should_be_logged = true;
     }
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
     if (drivers[instance] && type == GPS_TYPE_UBLOX_RTK_BASE) {
         // see if a moving baseline base has some RTCMv3 data
         // which we need to pass along to the rover
         const uint8_t *rtcm_data;
         uint16_t rtcm_len;
         if (drivers[instance]->get_RTCMV3(rtcm_data, rtcm_len)) {
-            for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+            for (uint8_t i=0; i< GPS_MAX_INSTANCES; i++) {
                 if (i != instance && params[i].type == GPS_TYPE_UBLOX_RTK_ROVER) {
                     // pass the data to the rover
                     inject_data(i, rtcm_data, rtcm_len);
@@ -976,12 +1009,18 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 
 #if HAL_LOGGING_ENABLED
+#if AP_GPS_BLENDED_ENABLED
+    if (type == GPS_TYPE_BLENDED) {
+        // Blended backend does its own logging:
+        data_should_be_logged = false;
+    }
+#endif  // AP_GPS_BLENDED_ENABLED
     if (data_should_be_logged && should_log()) {
         Write_GPS(instance);
     }
-#else
-    (void)data_should_be_logged;
 #endif
+    // sometimes we don't do anything with data_should_be_logged
+    (void)data_should_be_logged;
 
 #if AP_RTC_ENABLED
     if (state[instance].status >= GPS_OK_FIX_3D) {
@@ -997,7 +1036,7 @@ void AP_GPS::update_instance(uint8_t instance)
 #if GPS_MOVING_BASELINE
 bool AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading)
 {
-    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i< GPS_MAX_INSTANCES; i++) {
         if (drivers[i] &&
             state[i].relposheading_ts != 0 &&
             AP_HAL::millis() - state[i].relposheading_ts < 500) {
@@ -1014,7 +1053,7 @@ bool AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float 
 
 bool AP_GPS::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
 {
-    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i< GPS_MAX_INSTANCES; i++) {
         if (drivers[i] && params[i].type == GPS_TYPE_UBLOX_RTK_BASE) {
             return drivers[i]->get_RTCMV3(bytes, len);
         }
@@ -1024,7 +1063,7 @@ bool AP_GPS::get_RTCMV3(const uint8_t *&bytes, uint16_t &len)
 
 void AP_GPS::clear_RTCMV3()
 {
-    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i< GPS_MAX_INSTANCES; i++) {
         if (drivers[i] && params[i].type == GPS_TYPE_UBLOX_RTK_BASE) {
             drivers[i]->clear_RTCMV3();
         }
@@ -1036,7 +1075,7 @@ void AP_GPS::clear_RTCMV3()
 */
 void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
 {
-    for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i< GPS_MAX_INSTANCES; i++) {
         if (params[i].type == GPS_TYPE_UBLOX_RTK_ROVER) {
             // pass the data to the rover
             inject_data(i, data, length);
@@ -1053,18 +1092,21 @@ void AP_GPS::update(void)
 {
     WITH_SEMAPHORE(rsem);
 
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        // note that blended instances have an empty update method;
+        // blending is updated in separate code in the
+        // "update_primary" call
         update_instance(i);
     }
 
     // calculate number of instances
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
         if (drivers[i] != nullptr) {
             num_instances = i+1;
         }
     }
 
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
 #if HAL_LOGGING_ENABLED
     const uint8_t old_primary = primary_instance;
 #endif
@@ -1074,7 +1116,7 @@ void AP_GPS::update(void)
         AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
     }
 #endif  // HAL_LOGING_ENABLED
-#endif  // GPS_MAX_RECEIVERS > 1
+#endif  // GPS_MAX_INSTANCES > 1
 
 #ifndef HAL_BUILD_AP_PERIPH
     // update notify with gps status. We always base this on the primary_instance
@@ -1086,7 +1128,7 @@ void AP_GPS::update(void)
 /*
   update primary GPS instance
  */
-#if GPS_MAX_RECEIVERS > 1
+#if GPS_MAX_INSTANCES > 1
 void AP_GPS::update_primary(void)
 {
 #if AP_GPS_BLENDED_ENABLED
@@ -1097,26 +1139,44 @@ void AP_GPS::update_primary(void)
       significant lagged and gives no more information on position or
       velocity
     */
-    const bool using_moving_base = is_rtk_base(0) || is_rtk_base(1);
-    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
-        _output_is_blended = ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_weights();
-    } else {
-        _output_is_blended = false;
-        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->zero_health_counter();
+
+    bool using_moving_base = false;
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (is_rtk_base(i)) {
+            using_moving_base = true;
+            break;
+        }
+    }
+    const bool output_was_blended = _output_is_blended;
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] == nullptr) {
+            continue;
+        }
+        if (params[i].type != GPS_TYPE_BLENDED) {
+            continue;
+        }
+        if (using_moving_base) {
+            _output_is_blended = false;
+            ((AP_GPS_Blended*)drivers[i])->zero_health_counter();
+            continue;
+        }
+
+        _output_is_blended = ((AP_GPS_Blended*)drivers[i])->calc_weights();
+
+        if (_output_is_blended) {
+            // Use the weighting to calculate blended GPS states
+            ((AP_GPS_Blended*)drivers[i])->calc_state();
+            // set primary to the virtual instance
+            primary_instance = i;
+            return;
+        }
     }
 
-    if (_output_is_blended) {
-        // Use the weighting to calculate blended GPS states
-        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_state();
-        // set primary to the virtual instance
-        primary_instance = GPS_BLENDED_INSTANCE;
-        return;
-    }
 #endif //   AP_GPS_BLENDED_ENABLED
 
     // check the primary param is set to possible GPS
     int8_t primary_param = _primary.get();
-    if ((primary_param < 0) || (primary_param>=GPS_MAX_RECEIVERS)) {
+    if ((primary_param < 0) || (primary_param>=GPS_MAX_INSTANCES)) {
         primary_param = 0;
     }
     // if primary is not enabled try first instance
@@ -1138,10 +1198,15 @@ void AP_GPS::update_primary(void)
     // base. This overrides the normal logic which would select the
     // rover as it typically is in fix type 6 (RTK) whereas base is
     // usually fix type 3
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (is_rtk_base(i) &&
-            is_rtk_rover(i^1) &&
-            ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
+    for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+        if (!is_rtk_base(i)) {
+            continue;
+        }
+        uint8_t rover_instance;
+        if (!get_rtk_rover_for_rtk_base(rover_instance, i)) {
+            continue;
+        }
+        if ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[rover_instance].status)) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
                 primary_instance = i;
@@ -1154,9 +1219,12 @@ void AP_GPS::update_primary(void)
 
 #if AP_GPS_BLENDED_ENABLED
     // handling switching away from blended GPS
-    if (primary_instance == GPS_BLENDED_INSTANCE) {
+    if (output_was_blended) {
         primary_instance = 0;
-        for (uint8_t i=1; i<GPS_MAX_RECEIVERS; i++) {
+        for (uint8_t i=1; i<ARRAY_SIZE(params); i++) {
+            if (params[i].type != GPS_TYPE_BLENDED) {
+                continue;
+            }
             // choose GPS with highest state or higher number of
             // satellites. Reject a GPS with an old update time, as it
             // may be the old timestamp that triggered the loss of
@@ -1200,7 +1268,12 @@ void AP_GPS::update_primary(void)
     }
 
     // handle switch between real GPSs
-    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(params); i++) {
+#if AP_GPS_BLENDED_ENABLED
+        if (params[i].type == GPS_TYPE_BLENDED) {
+            continue;
+        }
+#endif
         if (i == primary_instance) {
             continue;
         }
@@ -1230,7 +1303,7 @@ void AP_GPS::update_primary(void)
         }
     }
 }
-#endif  // GPS_MAX_RECEIVERS > 1
+#endif  // GPS_MAX_INSTANCES > 1
 
 #if HAL_GCS_ENABLED
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
@@ -1312,7 +1385,7 @@ void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, con
 void AP_GPS::lock_port(uint8_t instance, bool lock)
 {
 
-    if (instance >= GPS_MAX_RECEIVERS) {
+    if (instance >= GPS_MAX_INSTANCES) {
         return;
     }
     if (lock) {
@@ -1327,7 +1400,7 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
 {
     //Support broadcasting to all GPSes.
     if (_inject_to == GPS_RTK_INJECT_TO_ALL) {
-        for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
             if (is_rtk_rover(i)) {
                 // we don't externally inject to moving baseline rover
                 continue;
@@ -1341,7 +1414,7 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
 
 void AP_GPS::inject_data(uint8_t instance, const uint8_t *data, uint16_t len)
 {
-    if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
+    if (instance < ARRAY_SIZE(drivers) && drivers[instance] != nullptr) {
         drivers[instance]->inject_data(data, len);
     }
 }
@@ -1456,7 +1529,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 #if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
-    if (inst >= GPS_MAX_RECEIVERS) {
+    if (inst >= ARRAY_SIZE(drivers)) {
         return;
     }
     if (drivers[inst] != nullptr && drivers[inst]->supports_mavlink_gps_rtk_message()) {
@@ -1489,7 +1562,7 @@ void AP_GPS::send_mavlink_gnss(GCS_MAVLINK &link)
 
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
-    for (int i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(drivers); i++) {
         if (params[i].type != GPS_TYPE_NONE && (drivers[i] == nullptr || !drivers[i]->is_configured())) {
             instance = i;
             return true;
@@ -1733,19 +1806,14 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         return false;
     }
 
-#if AP_GPS_BLENDED_ENABLED
-    // return lag of blended GPS
-    if (instance == GPS_BLENDED_INSTANCE) {
-        return drivers[instance]->get_lag(lag_sec);
-    }
-#endif
-
     if (params[instance].delay_ms > 0) {
         // if the user has specified a non zero time delay, always return that value
         lag_sec = 0.001f * (float)params[instance].delay_ms;
         // the user is always right !!
         return true;
-    } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+    }
+
+    if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
         // no GPS was detected in this instance so return the worst possible lag term
         const auto type = params[instance].type;
         if (type == GPS_TYPE_NONE) {
@@ -1753,10 +1821,10 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
             return true;
         }
         return type == GPS_TYPE_AUTO;
-    } else {
-        // the user has not specified a delay so we determine it from the GPS type
-        return drivers[instance]->get_lag(lag_sec);
     }
+
+    // the user has not specified a delay so we determine it from the GPS type
+    return drivers[instance]->get_lag(lag_sec);
 }
 
 // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
@@ -1766,15 +1834,14 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
         // we have to return a reference so use instance 0
         return params[0].antenna_offset;
     }
-
-#if AP_GPS_BLENDED_ENABLED
-    if (instance == GPS_BLENDED_INSTANCE) {
-        // return an offset for the blended GPS solution
-        return ((AP_GPS_Blended*)drivers[instance])->get_antenna_offset();
+    if (drivers[instance] == nullptr) {
+        // no driver allocated, must return a reference so return from
+        // parameters.  Note that when we allocate the backend the
+        // answer might change (eg. blended)
+        return params[instance].antenna_offset;
     }
-#endif
 
-    return params[instance].antenna_offset;
+    return drivers[instance]->get_antenna_offset();
 }
 
 /*
@@ -1832,7 +1899,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
 
 bool AP_GPS::prepare_for_arming(void) {
     bool all_passed = true;
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(drivers); i++) {
         if (drivers[i] != nullptr) {
             all_passed &= drivers[i]->prepare_for_arming();
         }
@@ -1850,7 +1917,7 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
     }
 #endif
 
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
         if (is_rtk_rover(i)) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
@@ -1859,12 +1926,23 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
         }
     }
 
+    if (_auto_switch == 2) {
+        // ensure there is a blended backend
+        bool found = false;
 #if AP_GPS_BLENDED_ENABLED
-    if (!drivers[GPS_BLENDED_INSTANCE]->is_healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "GPS blending unhealthy");
-        return false;
+        for (uint8_t i=0; i<GPS_MAX_INSTANCES; i++) {
+            // only care about configured type, not allocated type:
+            if (get_type(i) == GPS_TYPE_BLENDED) {
+                found = true;
+                break;
+            }
+        }
+#endif  // AP_GPS_BLENDED_ENABLED
+        if (!found) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "GPS_AUTO_SWITCH is blended but no blended backend configured");
+            return false;
+        }
     }
-#endif
 
     return true;
 }
@@ -1874,7 +1952,7 @@ bool AP_GPS::logging_failed(void) const {
         return false;
     }
 
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(drivers); i++) {
         if ((drivers[i] != nullptr) && !(drivers[i]->logging_healthy())) {
             return true;
         }
@@ -1886,7 +1964,7 @@ bool AP_GPS::logging_failed(void) const {
 // get iTOW, if supported, zero otherwie
 uint32_t AP_GPS::get_itow(uint8_t instance) const
 {
-    if (instance >= GPS_MAX_RECEIVERS || drivers[instance] == nullptr) {
+    if (instance >= ARRAY_SIZE(drivers) || drivers[instance] == nullptr) {
         return 0;
     }
     return drivers[instance]->get_last_itow_ms();
@@ -1894,7 +1972,7 @@ uint32_t AP_GPS::get_itow(uint8_t instance) const
 
 bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const
 {
-    if (instance >= GPS_MAX_RECEIVERS || drivers[instance] == nullptr) {
+    if (instance >= ARRAY_SIZE(drivers) || drivers[instance] == nullptr) {
         return false;
     }
 
@@ -1974,6 +2052,25 @@ void AP_GPS::Write_GPS(uint8_t i)
 }
 #endif
 
+/*
+ * if base_instance is an RTK base *and* there exists a rover instance
+ * corresponding to that base then set rover_instance and return true.
+ * DOES NOT MODIFY rover_instance unless true is returned
+ */
+bool AP_GPS::get_rtk_rover_for_rtk_base(uint8_t &rover_instance, const uint8_t base_instance) const
+{
+    if (!is_rtk_base(base_instance)) {
+        return false;
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
+        if (is_rtk_rover(i)) {
+            rover_instance = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool AP_GPS::is_rtk_base(uint8_t instance) const
 {
     switch (get_type(instance)) {
@@ -2003,11 +2100,9 @@ bool AP_GPS::is_rtk_rover(uint8_t instance) const
  */
 bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const
 {
-#if GPS_MAX_RECEIVERS > 1
-    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
-        // return the yaw from the rover
-        instance ^= 1;
-    }
+#if GPS_MAX_INSTANCES > 1
+    // return the yaw from the rover if it exists:
+    get_rtk_rover_for_rtk_base(instance, instance);
 #endif
     if (!have_gps_yaw(instance)) {
         return false;

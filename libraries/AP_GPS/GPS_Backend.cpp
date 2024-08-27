@@ -236,6 +236,7 @@ void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
         state.location.lng,
         alt_amsl,
         alt_ellipsoid,
+        MAV_GNSS_DATUM_WGS84,
         state.ground_speed,
         state.ground_course * 100,  // degrees*100
         state.num_sats,

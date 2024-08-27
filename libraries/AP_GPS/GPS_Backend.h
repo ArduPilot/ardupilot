@@ -120,6 +120,10 @@ public:
         return gps.option_set(option);
     }
 
+    virtual const Vector3f &get_antenna_offset() const {
+        return params.antenna_offset.get();
+    }
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
