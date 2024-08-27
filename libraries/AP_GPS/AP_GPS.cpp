@@ -2021,7 +2021,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @User: Advanced
 
     // @Param: _RATE_MS
-    // @DisplayName: GPS update rate in milliseconds. Renamed in 4.6 to GPS1_RAATE_MS
+    // @DisplayName: GPS update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS1_RATE_MS
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
