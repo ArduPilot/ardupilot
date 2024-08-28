@@ -33,11 +33,12 @@ The UARTs are marked Rx and Tx in the above pinouts.
 | SERIAL 0 | DM/DP    | USB     |  Mavlink            |
 | SERIAL 1 | RX1/TX1  | USART 1 | (DMA)   (Reciever)  |
 | SERIAL 2 | RX3/TX3  | USART 3 | (NODMA) (ESC)       |
-| SERIAL 3 | RX4/TX4  | USART 4 | (NODMA) (GPS2)     |
+| SERIAL 3 | RX4/TX4  | USART 4 | (NODMA) (GPS2)      |
 | SERIAL 4 | RX6/TX6  | USART 6 | (DMA)   (GPS)       |
 
 USART1 and USART6 supports RX and TX DMA.  
 UART2 and UART4 do not support DMA.  
+ESC Telemetry need to be manually configured based upon esc.
 
 
 ## RC Input
