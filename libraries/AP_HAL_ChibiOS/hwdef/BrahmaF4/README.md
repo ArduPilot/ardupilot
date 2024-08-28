@@ -78,7 +78,7 @@ The default battery configuration is:
 - BATT_VOLT_PIN 14
 - BATT_VOLT_MULT 11
 - BATT_CURR_PIN 13
-- BATT_CURR_MULT 37 
+- BATT_CURR_MULT 37
 
 
 ## Compass & Baro
