@@ -60,7 +60,7 @@ ESC port is a jst-sh V-G-C-R3-1-2-3-4
 Channels within the same group need to use the same output rate.
 All channels in specific Timer groups are configured either as DSHOT or PWM,
 mixing of protocols within groups is not possible
-Note that channel 9 is configured as NeoPixel can be set for extra pwm.
+Note that channel 9 is configured as NeoPixel can be configured for extra pwm.
 ## Battery Monitoring
 
 The board has a builting voltage sensor. The voltage sensor can handle up to 6S LiPo batteries.
