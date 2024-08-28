@@ -47,12 +47,17 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_REG_CALIB_COEFFS_END             0x21
 #define SPA06_REG_CALIB_COEFFS_END             0x24
 
+// PRESSURE_CFG_REG
+#define SPL06_PRES_RATE_32HZ				   (0x05 << 4)
+
 // TEMPERATURE_CFG_REG
 #define SPL06_TEMP_USE_EXT_SENSOR              (1<<7)
+#define SPL06_TEMP_RATE_32HZ				   (0x05 << 4)
 
 // MODE_AND_STATUS_REG
 #define SPL06_MEAS_PRESSURE                    (1<<0)  // measure pressure
 #define SPL06_MEAS_TEMPERATURE                 (1<<1)  // measure temperature
+#define SPL06_MEAS_CON_PRE_TEM				   0x07
 
 #define SPL06_MEAS_CFG_CONTINUOUS              (1<<2)
 #define SPL06_MEAS_CFG_PRESSURE_RDY            (1<<4)
@@ -69,6 +74,13 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_TEMPERATURE_OVERSAMPLING         8
 
 #define SPL06_OVERSAMPLING_TO_REG_VALUE(n)     (ffs(n)-1)
+
+#define SPL06_BACKGROUND_SAMPLE_RATE	32
+
+// enable Background Mode for continuous measurement
+#ifndef AP_BARO_SPL06_BACKGROUND_ENABLE
+#define AP_BARO_SPL06_BACKGROUND_ENABLE 0
+#endif
 
 AP_Baro_SPL06::AP_Baro_SPL06(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : AP_Baro_Backend(baro)
@@ -165,8 +177,17 @@ bool AP_Baro_SPL06::_init()
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(3, 20);
 
+#if AP_BARO_SPL06_BACKGROUND_ENABLE
+    //set rate and oversampling
+	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
+	_dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_PRES_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+
+	//enable background mode
+	_dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM, true);
+#else
     _dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_TEMP_USE_EXT_SENSOR | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
     _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+#endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
     uint8_t int_and_fifo_reg_value = 0;
     if (SPL06_TEMPERATURE_OVERSAMPLING > 8) {
@@ -184,7 +205,11 @@ bool AP_Baro_SPL06::_init()
     
     // request 50Hz update
     _timer_counter = -1;
+#if AP_BARO_SPL06_BACKGROUND_ENABLE
+    _dev->register_periodic_callback(1000000/SPL06_BACKGROUND_SAMPLE_RATE, FUNCTOR_BIND_MEMBER(&AP_Baro_SPL06::_timer, void));
+#else
     _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_SPL06::_timer, void));
+#endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
     return true;
 }
@@ -211,7 +236,15 @@ void AP_Baro_SPL06::_timer(void)
 {
     uint8_t buf[3];
 
-    if ((_timer_counter == -1) || (_timer_counter == 49)) {
+#if AP_BARO_SPL06_BACKGROUND_ENABLE
+    _dev->read_registers(SPL06_REG_TEMPERATURE_START, buf, sizeof(buf));
+	_update_temperature((int32_t)((buf[0] & 0x80 ? 0xFF000000 : 0) | ((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | buf[2]));
+
+	_dev->read_registers(SPL06_REG_PRESSURE_START, buf, sizeof(buf));
+	_update_pressure((int32_t)((buf[0] & 0x80 ? 0xFF000000 : 0) | ((uint32_t)buf[0] << 16) | ((uint32_t)buf[1] << 8) | buf[2]));
+#else
+    //command mode
+	if ((_timer_counter == -1) || (_timer_counter == 49)) {
         // First call and every second start a temperature measurement (50Hz call)
         _dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_TEMPERATURE, false);
         _timer_counter = 0; // Next cycle we are reading the temperature
@@ -228,6 +261,7 @@ void AP_Baro_SPL06::_timer(void)
         _dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_PRESSURE, false);
         _timer_counter += 1;
     }
+#endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
     _dev->check_next_register();
 }
