@@ -60,7 +60,8 @@ The PWM is in 3 groups:
 
 - PWM 1,2 in group1
 - PWM 3,4 in group2 
-- PWM 4-8 in group2
+- PWM 5 in group3
+- PWM 6-8 in group4
 - PWM 9   in group3
 
  Pads for PWM 1-8 are available on bottom side of pcb  
