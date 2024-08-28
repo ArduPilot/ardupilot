@@ -49,7 +49,8 @@ UART2 and UART4 do not support DMA.
 
 ## OSD
 - ANALOG OSD (MAX7456) (SPI1) (Preconfigured)  
-- DIGITAL OSD (MSP)    (UART4)  
+- DIGITAL OSD (MSP)    (UART4 can be used for MSP Displayport by chnaging SERIAL2_
+PROTOCOL to "42")  
 
 
 ## PWM Output
