@@ -7,7 +7,7 @@ Brahma F4 is a flight controller manufactured by [Darkmatter®](https://thedarkm
 
 - MCU: STM32F405RGT6, 168MHz
 - Gyro: BMI270
-- 32Mb Onboard Flash
+- 32MB Onboard Flash (32 Megabyte)
 - BEC output: 5V, 2A@4V
 - Barometer: BMP280
 - OSD: AT7456E
