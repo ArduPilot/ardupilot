@@ -1394,6 +1394,7 @@ bool NavEKF3::getOriginLLH(Location &loc) const
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF3::setOriginLLH(const Location &loc)
 {
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3::setOriginLLH");
     AP::dal().log_SetOriginLLH3(loc);
 
     if (!core) {

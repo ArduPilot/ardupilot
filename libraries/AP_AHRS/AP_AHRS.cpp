@@ -1410,6 +1410,7 @@ bool AP_AHRS::set_origin(const Location &loc)
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     const bool ret3 = EKF3.setOriginLLH(loc);
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_AHRS::set_origin");
 #endif
 
     // return success if active EKF's origin was set

@@ -49,6 +49,8 @@ uint32_t timer;
 // to be called only once on boot for initializing objects
 static void setup()
 {
+    hal.scheduler->delay(5000);
+
     hal.console->printf("Compass library test\n");
 
     board_config.init();

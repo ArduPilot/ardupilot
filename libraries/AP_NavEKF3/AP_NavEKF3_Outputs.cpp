@@ -302,6 +302,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
     if (getOriginLLH(origin)) {
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::getLLH");
         float posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
@@ -312,6 +313,15 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 loc.lng = EKF_origin.lng;
                 loc.offset(outputDataNew.position.x + posOffsetNED.x,
                            outputDataNew.position.y + posOffsetNED.y);
+/*
+                GCS_SEND_TEXT(
+                    MAV_SEVERITY_INFO,
+                    "NavEKF3_core::getLLH lat=%ld lng=%ld x=%lf, y=%lf",
+                    loc.lat, loc.lng, 
+                    outputDataNew.position.x + posOffsetNED.x,
+                    outputDataNew.position.y + posOffsetNED.y
+                );
+*/                
                 return true;
             } else {
                 // We have been be doing inertial dead reckoning for too long so use raw GPS if available
@@ -381,6 +391,7 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 bool NavEKF3_core::getOriginLLH(Location &loc) const
 {
     if (validOrigin) {
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::getOriginLLH");
         loc = public_origin;
         // report internally corrected reference height if enabled
         if ((frontend->_originHgtMode & (1<<2)) == 0) {

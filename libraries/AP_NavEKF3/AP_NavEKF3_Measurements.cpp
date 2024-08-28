@@ -5,6 +5,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include "../GCS_MAVLink/GCS.h"
 
 #if AP_RANGEFINDER_ENABLED
 /********************************************************
@@ -914,7 +915,8 @@ void NavEKF3_core::readRngBcnData()
 
     // get the number of beacons in use
     rngBcn.N = MIN(beacon->count(), ARRAY_SIZE(rngBcn.lastTime_ms));
-
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon->count()=%d", beacon->count());
+    
     // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
     bool newDataPushed = false;
     uint8_t numRngBcnsChecked = 0;
@@ -930,8 +932,15 @@ void NavEKF3_core::readRngBcnData()
             index = 0;
         }
 
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "index=%d", index);
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon->beacon_healthy(index)=%d", beacon->beacon_healthy(index));
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "beacon->beacon_last_update_ms(index)=%ld", beacon->beacon_last_update_ms(index));
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.lastTime_ms[index]=%ld",  rngBcn.lastTime_ms[index]);
+
         // check that the beacon is healthy and has new data
-        if (beacon->beacon_healthy(index) && beacon->beacon_last_update_ms(index) != rngBcn.lastTime_ms[index]) {
+        if (beacon->beacon_healthy(index) && (beacon->beacon_last_update_ms(index) != rngBcn.lastTime_ms[index])) {
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "------Has NEW data");
+
             rng_bcn_elements rngBcnDataNew = {};
 
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
@@ -956,7 +965,8 @@ void NavEKF3_core::readRngBcnData()
 
             // update the last checked index
             rngBcn.lastChecked = index;
-
+            
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "-----Saving To Buffer");
             // Save data into the buffer to be fused when the fusion time horizon catches up with it
             rngBcn.storedRange.push(rngBcnDataNew);
         }
@@ -970,19 +980,31 @@ void NavEKF3_core::readRngBcnData()
     }
     rngBcn.vehiclePosNED = bp.toftype();
     rngBcn.vehiclePosErr = bperr;
-
+/*
+    GCS_SEND_TEXT(
+        MAV_SEVERITY_INFO, 
+        "readRngBcnData %ld %ld, %lf %d",
+        imuSampleTime_ms, rngBcn.last3DmeasTime_ms,
+        rngBcn.vehiclePosErr, rngBcn.alignmentCompleted
+    );
+*/
     // Check if the range beacon data can be used to align the vehicle position
-    if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (rngBcn.vehiclePosErr < 1.0f) && rngBcn.alignmentCompleted) {
+    if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (rngBcn.vehiclePosErr < 2.0f) && rngBcn.alignmentCompleted) {
         // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
         const ftype posDiffSq = sq(rngBcn.receiverPos.x - rngBcn.vehiclePosNED.x) + sq(rngBcn.receiverPos.y - rngBcn.vehiclePosNED.y);
         const ftype posDiffVar = sq(rngBcn.vehiclePosErr) + rngBcn.receiverPosCov[0][0] + rngBcn.receiverPosCov[1][1];
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::readRngBcnData()1");
+
         if (posDiffSq < 9.0f * posDiffVar) {
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::readRngBcnData:rngBcn.goodToAlign");
             rngBcn.goodToAlign = true;
             // Set the EKF origin and magnetic field declination if not previously set
             if (!validOrigin && (PV_AidingMode != AID_ABSOLUTE)) {
                 // get origin from beacon system
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Get origin from beacon system");
                 Location origin_loc;
                 if (beacon->get_origin(origin_loc)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::readRngBcnData:setOriginLLH");
                     setOriginLLH(origin_loc);
 
                     // set the NE earth magnetic field states using the published declination
@@ -1002,6 +1024,7 @@ void NavEKF3_core::readRngBcnData()
 
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     rngBcn.dataToFuse = rngBcn.storedRange.recall(rngBcn.dataDelayed, imuDataDelayed.time_ms);
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.dataToFuse=%d,imuDataDelayed.time_ms=%ld", rngBcn.dataToFuse, imuDataDelayed.time_ms);
 
     // Correct the range beacon earth frame origin for estimated offset relative to the EKF earth frame origin
     if (rngBcn.dataToFuse) {

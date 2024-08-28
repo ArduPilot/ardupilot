@@ -446,6 +446,8 @@ void NavEKF3_core::setAidingMode()
             break;
 
         case AID_ABSOLUTE:
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AID_ABSOLUTE: readyToUseRangeBeacon()=%d", readyToUseRangeBeacon());
+            
             if (readyToUseGPS()) {
                 // We are commencing aiding using GPS - this is the preferred method
                 posResetSource = resetDataSource::GPS;
@@ -589,7 +591,15 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
     if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
         return false;
     }
-
+/*    
+    if (rngBcn.dataToFuse) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "tiltAlignComplete=%d, delAngBiasLearned=%d", tiltAlignComplete, delAngBiasLearned);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "yawAlignComplete=%d", yawAlignComplete);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.alignmentCompleted=%d, rngBcn.dataToFuse=%d", rngBcn.alignmentCompleted, rngBcn.dataToFuse);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.alignmentStarted=%d, rngBcn.numMeas=%d", rngBcn.alignmentStarted, rngBcn.numMeas);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.N=%d", rngBcn.N);
+    }    
+*/
     return tiltAlignComplete && yawAlignComplete && delAngBiasLearned && rngBcn.alignmentCompleted && rngBcn.dataToFuse;
 #else
     return false;
@@ -665,6 +675,7 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // returns false if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::setOriginLLH");
     return setOrigin(loc);
 }
 
@@ -690,6 +701,8 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     if (validOrigin) {
         return false;
     }
+
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NavEKF3_core::setOrigin");
 
     EKF_origin = loc;
     ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;

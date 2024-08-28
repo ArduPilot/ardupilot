@@ -112,6 +112,8 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // set the variances from the beacon alignment filter
             P[7][7] = rngBcn.receiverPosCov[0][0];
             P[8][8] = rngBcn.receiverPosCov[1][1];
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.receiverPos.x=%lf", rngBcn.receiverPos.x);
+            // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "rngBcn.receiverPos.y=%lf", rngBcn.receiverPos.y);
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {

@@ -176,6 +176,7 @@ bool AP_Compass_HMC5843::init()
     }
 
     if (!_setup_sampling_mode()) {
+        DEV_PRINTF("HMC5843: Could not setup sampling mode\n");
         goto errout;
     }
 

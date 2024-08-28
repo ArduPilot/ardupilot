@@ -149,7 +149,7 @@ void AP_Beacon_Pozyx::parse_buffer()
 
                 Vector3f beacon_pos(msg.info.x * 0.001f, msg.info.y * 0.001f, -msg.info.z * 0.001f);
 
-                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "P1 id=%d;len=%f;x=%ld;y=%ld;z=%ld", beacon_id, beacon_pos.length(), beacon_x, beacon_y, beacon_z);
+                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "P1 id=%d;len=%f;x=%ld;y=%ld;z=%ld", msg.info.beacon_id, beacon_pos.length(), msg.info.x, msg.info.y, msg.info.z);
 
                 if (beacon_pos.length() <= AP_BEACON_DISTANCE_MAX) {
                     set_beacon_position(msg.info.beacon_id, beacon_pos);
