@@ -443,7 +443,7 @@ void AC_AutoTune::control_attitude()
 #if HAL_LOGGING_ENABLED
         // log this iterations lean angle and rotation rate
         Log_AutoTuneDetails();
-        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
+        attitude_control->Write_Rate(*pos_control);
         log_pids();
 #endif
 
