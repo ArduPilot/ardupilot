@@ -23,6 +23,7 @@
 extern const AP_HAL::HAL &hal;
 
 #define SPL06_CHIP_ID                          0x10
+#define SPA06_CHIP_ID                          0x11
 
 #define SPL06_REG_PRESSURE_B2                  0x00    // Pressure MSB Register
 #define SPL06_REG_PRESSURE_B1                  0x01    // Pressure middle byte Register
@@ -44,8 +45,7 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_REG_CHIP_ID                      0x0D    // Chip ID Register
 #define SPL06_REG_CALIB_COEFFS_START           0x10
 #define SPL06_REG_CALIB_COEFFS_END             0x21
-
-#define SPL06_CALIB_COEFFS_LEN                 (SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1)
+#define SPA06_REG_CALIB_COEFFS_END             0x24
 
 // TEMPERATURE_CFG_REG
 #define SPL06_TEMP_USE_EXT_SENSOR              (1<<7)
@@ -108,21 +108,43 @@ bool AP_Baro_SPL06::_init()
 
 // Sometimes SPL06 has init problems, that's due to failure of reading using SPI for the first time. The SPL06 is a dual
 // protocol sensor(I2C and SPI), sometimes it takes one SPI operation to convert it to SPI mode after it starts up.
-    bool is_SPL06 = false;
 
     for (uint8_t i=0; i<5; i++) {
-        if (_dev->read_registers(SPL06_REG_CHIP_ID, &whoami, 1)  &&
-            whoami == SPL06_CHIP_ID) {
-            is_SPL06=true;
-            break;
+        if (_dev->read_registers(SPL06_REG_CHIP_ID, &whoami, 1)) {
+        	switch(whoami) {
+			case SPL06_CHIP_ID:
+				type = Type::SPL06;
+				break;
+			case SPA06_CHIP_ID:
+				type = Type::SPA06;
+				break;
+			default:
+				type = Type::UNKNOWN;
+				break;
+			}
         }
+
+        if (type != Type::UNKNOWN)
+			break;
     }
     
-    if(!is_SPL06) {
+    if (type == Type::UNKNOWN) {
         return false;
     }
 
     // read the calibration data
+    uint8_t SPL06_CALIB_COEFFS_LEN = 18;
+	switch(type) {
+	case Type::SPL06:
+		SPL06_CALIB_COEFFS_LEN = SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		break;
+	case Type::SPA06:
+		SPL06_CALIB_COEFFS_LEN = SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		break;
+	default:
+		break;
+	}
+
     uint8_t buf[SPL06_CALIB_COEFFS_LEN];
     _dev->read_registers(SPL06_REG_CALIB_COEFFS_START, buf, sizeof(buf));
 
@@ -135,6 +157,10 @@ bool AP_Baro_SPL06::_init()
     _c20 = ((uint16_t)buf[12] << 8) | (uint16_t)buf[13];
     _c21 = ((uint16_t)buf[14] << 8) | (uint16_t)buf[15];
     _c30 = ((uint16_t)buf[16] << 8) | (uint16_t)buf[17];
+    if(type == Type::SPA06) {
+		_c31 = (buf[18] & 0x80 ? 0xF000 : 0) | ((uint16_t)buf[18] << 4) | (((uint16_t)buf[19] & 0xF0) >> 4);
+		_c40 = ((buf[19] & 0x8 ? 0xF000 : 0) | ((uint16_t)buf[19] & 0x0F) << 8) | (uint16_t)buf[20];
+	}
 
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(3, 20);
@@ -236,8 +262,21 @@ void AP_Baro_SPL06::_update_temperature(int32_t temp_raw)
 void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
 {
     const float press_raw_sc = (float)press_raw / raw_value_scale_factor(SPL06_PRESSURE_OVERSAMPLING);
-    const float pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
-    const float press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * _c21));
+    float pressure_cal = 0;
+    float press_temp_comp = 0;
+
+    switch(type) {
+	case Type::SPL06:
+		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
+		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * _c21));
+		break;
+	case Type::SPA06:
+		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * ((float)_c30 + press_raw_sc * _c40)));
+		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
+		break;
+	default:
+		break;
+	}
 
     const float press_comp = pressure_cal + press_temp_comp;
 
