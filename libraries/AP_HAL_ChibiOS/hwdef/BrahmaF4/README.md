@@ -28,13 +28,13 @@ Brahma F4 is a flight controller manufactured by [Darkmatter®](https://thedarkm
 
 The UARTs are marked Rx and Tx in the above pinouts.
 
-| Name     | Pin      | Function                |
-| :------- | :------- | :------------------------- |
-| SERIAL 0 | COMPUTER | USB     |
-| SERIAL 1 | RX1/TX1  | USART1  | (DMA)   (Reciever)
-| SERIAL 2 | RX3/TX3  | USART 3 | (NODMA) (ESC)
-| SERIAL 3 | RX4/TX4  | USART 4 | (NODMA) (Spare)
-| SERIAL 4 | RX6/TX6  | USART 6 | (DMA)   (GPS)
+| Name     | Pad      | Port    |     Function        |
+| :------- | :------- | :------ | :------------------ |
+| SERIAL 0 | DM/DP    | USB     |  Mavlink            |
+| SERIAL 1 | RX1/TX1  | USART 1 | (DMA)   (Reciever)  |
+| SERIAL 2 | RX3/TX3  | USART 3 | (NODMA) (ESC)       |
+| SERIAL 3 | RX4/TX4  | USART 4 | (NODMA) (Spare)     |
+| SERIAL 4 | RX6/TX6  | USART 6 | (DMA)   (GPS)       |
 
 USART1 and USART6 supports RX and TX DMA. UART2 and UART4 do not support DMA.
 
@@ -83,9 +83,9 @@ The default battery configuration is:
 
 ## Compass & Baro
 
-Internal DPS310 Baro
+Internal DPS310 Baro.
 No Internal Compass.
-External on I2C BUS1
+External on I2C BUS1.
 
 
 ## Loading Firmware
