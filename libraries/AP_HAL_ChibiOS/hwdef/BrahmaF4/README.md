@@ -1,7 +1,7 @@
 
 # Brahma F4 Flight Controller
 
-Brahma F4 is a flight controller manufactured by [Darkmatter®](https://thedarkmatter.in) 
+Brahma F4 is a flight controller manufactured by [Darkmatter®](https://thedarkmatter.in)
 
 ## Features
 
@@ -17,9 +17,12 @@ Brahma F4 is a flight controller manufactured by [Darkmatter®](https://thedarkm
 - 9V Power Out: 2.0A max
 
 
-## Pinout
+
+## Pinout for BRAHMA F405
 
 ![BrahmaF405](BRAHMA_F405-diagram.jpg "DM_BrahmaF4")
+
+
 
 ## UART Mapping
 
@@ -38,16 +41,18 @@ USART1 and USART6 supports RX and TX DMA. UART2 and UART4 do not support DMA.
 
 ## RC Input
 
-RC input is configured by default on the R1 (UART1_RX) pad.(CRSF or ELRS)
+RC input is configured by default on the R1 T1 (UART1) pads (CRSF or ELRS).
 SBUS inverted pad is available  
 (PPM is disabled currently)
 
-## OSD
 
-The Darkmatter® Brahma F4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+## OSD
+ANALOG OSD (MAX7456) (SPI1) (Preconfigured)
+DIGITAL OSD (MSP)    (UART4)
 
 
 ## PWM Output
+
 The PWM is in 3 groups:
 
 - PWM 1-4 in group1 (DSHOT150 recommended)
@@ -57,15 +62,17 @@ The PWM is in 3 groups:
 Pads for PWM 1-8 are available on bottom side of pcb
 ESC port is a jst-sh V-G-C-R3-1-2-3-4
 
+*NOTE*
 Channels within the same group need to use the same output rate.
 All channels in specific Timer groups are configured either as DSHOT or PWM,
-mixing of protocols within groups is not possible
-Note that channel 9 is configured as NeoPixel can be configured for extra pwm.
+mixing of protocols within groups is not possible.
+Channel 9 is configured as NeoPixel can be configured for extra pwm.
+
+
 ## Battery Monitoring
 
-The board has a builting voltage sensor. The voltage sensor can handle up to 6S LiPo batteries.
-
-The correct battery setting parameters are:
+The board has a builtin voltage sensor. The voltage sensor can handle up to 6S LiPo.
+The default battery configuration is:
 
 - BATT_MONITOR 4
 - BATT_VOLT_PIN 14
@@ -74,11 +81,17 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT 37 
 
 
-## Compass
+## Compass & Baro
 
-The Darkmatter® Brahma F4 do not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+Internal DPS310 Baro
+No Internal Compass.
+External on I2C BUS1
+
+
 ## Loading Firmware
 
-Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favourite DFU loading tool.
+Initial firmware load can be done via DFU by plugging in USB while the bootloader button is pressed and held. 
+Then you should load the "*_with_bl.hex" or "AP_Bootloader.hex" firmware, using your preferred DFU programming tool.
 
-Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the *.apj firmware files.
+Once the initial firmware or bootloader is flashed you can update the firmware using "Mission Planner" or "QGroundControl". 
+Future updates should be done via the *.apj firmware files.
