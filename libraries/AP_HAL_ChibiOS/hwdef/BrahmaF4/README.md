@@ -58,7 +58,8 @@ PROTOCOL to "42")
 
 The PWM is in 3 groups:
 
-- PWM 1-4 in group1 (DSHOT150 recommended)
+- PWM 1,2 in group1
+- PWM 3,4 in group2 
 - PWM 4-8 in group2
 - PWM 9   in group3
 
