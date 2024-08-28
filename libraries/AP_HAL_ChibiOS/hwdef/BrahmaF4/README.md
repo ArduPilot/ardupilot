@@ -36,7 +36,8 @@ The UARTs are marked Rx and Tx in the above pinouts.
 | SERIAL 3 | RX4/TX4  | USART 4 | (NODMA) (Spare)     |
 | SERIAL 4 | RX6/TX6  | USART 6 | (DMA)   (GPS)       |
 
-USART1 and USART6 supports RX and TX DMA. UART2 and UART4 do not support DMA.
+USART1 and USART6 supports RX and TX DMA.  
+UART2 and UART4 do not support DMA.  
 
 
 ## RC Input
@@ -83,9 +84,9 @@ The default battery configuration is:
 
 ## Compass & Baro
 
- Internal DPS310 Baro.
- No Internal Compass.
- External on I2C BUS1.
+ Internal DPS310 Baro.  
+ No Internal Compass.  
+ External on I2C BUS1.  
 
 
 ## Loading Firmware
