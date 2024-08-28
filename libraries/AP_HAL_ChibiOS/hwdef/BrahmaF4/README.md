@@ -91,8 +91,8 @@ The default battery configuration is:
 
 ## Loading Firmware
 
- Initial firmware load can be done via DFU by plugging in USB while the bootloader button is pressed and held.  
- Then you should load the "*_with_bl.hex" or "AP_Bootloader.hex" firmware, using your preferred DFU programming tool.  
+ Initial firmware and bootloader load can be done via DFU by plugging in USB while the bootloader button is held.  
+ Then flash the "*_with_bl.hex" or "AP_Bootloader.hex", using your preferred DFU programming tool.  
 
  Once the initial firmware or bootloader is flashed you can update the firmware using "Mission Planner" or "QGroundControl".  
  Future updates should be done via the *.apj firmware files.
