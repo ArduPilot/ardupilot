@@ -145,9 +145,9 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # built-in barometer
-BARO SPL06  I2C:0:0x76
+BARO SPx06  I2C:0:0x76
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
-define AP_BARO_SPL06_ENABLED 1
+define AP_BARO_SPx06_ENABLED 1
 
 
 # --------------------- ADC ---------------------------

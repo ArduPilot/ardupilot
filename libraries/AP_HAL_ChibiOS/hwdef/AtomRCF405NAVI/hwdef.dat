@@ -132,7 +132,7 @@ FLASH_RESERVE_START_KB 64
 IMU BMI270 SPI:bmi270 ROTATION_PITCH_180
 
 # I2C BMP280 or SPL06
-BARO SPL06  I2C:0:0x76
+BARO SPx06  I2C:0:0x76
 BARO BMP280 I2C:0:0x76
 
 # no built-in compass, but probe the i2c bus for all possible

@@ -40,7 +40,7 @@ COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 define HAL_PERIPH_ENABLE_BARO
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
-BARO SPL06 I2C:0:0x76
+BARO SPx06 I2C:0:0x76
 
 # ------------------ I2C airspeed -------------------------
 define HAL_PERIPH_ENABLE_AIRSPEED
