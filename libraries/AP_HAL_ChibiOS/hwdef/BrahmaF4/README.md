@@ -56,13 +56,13 @@ PROTOCOL to "42")
 
 ## PWM Output
 
-The PWM is in 3 groups:
+The PWM is in 5 groups:
 
 - PWM 1,2 in group1
 - PWM 3,4 in group2 
-- PWM 5 in group3
+- PWM 5   in group3
 - PWM 6-8 in group4
-- PWM 9   in group3
+- PWM 9   in group5
 
  Pads for PWM 1-8 are available on bottom side of pcb  
  ESC port is a jst-sh V-G-C-R3-1-2-3-4  
