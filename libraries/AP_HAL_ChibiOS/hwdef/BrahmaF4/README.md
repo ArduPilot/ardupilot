@@ -41,14 +41,14 @@ USART1 and USART6 supports RX and TX DMA. UART2 and UART4 do not support DMA.
 
 ## RC Input
 
- RC input is configured by default on the R1 T1 (UART1) pads (CRSF or ELRS).
+ RC input is configured by default on the R1 T1 (UART1) pads (CRSF or ELRS).  
  SBUS inverted pad is available  
- (PPM is disabled currently)
+ (PPM is disabled currently)  
 
 
 ## OSD
-- ANALOG OSD (MAX7456) (SPI1) (Preconfigured)
-- DIGITAL OSD (MSP)    (UART4)
+- ANALOG OSD (MAX7456) (SPI1) (Preconfigured)  
+- DIGITAL OSD (MSP)    (UART4)  
 
 
 ## PWM Output
@@ -59,20 +59,20 @@ The PWM is in 3 groups:
 - PWM 4-8 in group2
 - PWM 9   in group3
 
- Pads for PWM 1-8 are available on bottom side of pcb
- ESC port is a jst-sh V-G-C-R3-1-2-3-4
+ Pads for PWM 1-8 are available on bottom side of pcb  
+ ESC port is a jst-sh V-G-C-R3-1-2-3-4  
 
 *NOTE*
- Channels within the same group need to use the same output rate.
- All channels in specific Timer groups are configured either as DSHOT or PWM,
- mixing of protocols within groups is not possible.
- Channel 9 is configured as NeoPixel can be configured for extra pwm.
+ Channels within the same group need to use the same output rate.  
+ All channels in specific Timer groups are configured either as DSHOT or PWM,  
+ mixing of protocols within groups is not possible.  
+ Channel 9 is configured as NeoPixel can be configured for extra pwm.  
 
 
 ## Battery Monitoring
 
-The board has a builtin voltage sensor. The voltage sensor can handle up to 6S LiPo.
-The default battery configuration is:
+The board has a builtin voltage sensor, voltage sensor supports up to 6S LiPo.  
+The default battery configuration is:  
 
 - BATT_MONITOR 4
 - BATT_VOLT_PIN 14
@@ -90,8 +90,8 @@ The default battery configuration is:
 
 ## Loading Firmware
 
- Initial firmware load can be done via DFU by plugging in USB while the bootloader button is pressed and held. 
- Then you should load the "*_with_bl.hex" or "AP_Bootloader.hex" firmware, using your preferred DFU programming tool.
+ Initial firmware load can be done via DFU by plugging in USB while the bootloader button is pressed and held.  
+ Then you should load the "*_with_bl.hex" or "AP_Bootloader.hex" firmware, using your preferred DFU programming tool.  
 
- Once the initial firmware or bootloader is flashed you can update the firmware using "Mission Planner" or "QGroundControl". 
+ Once the initial firmware or bootloader is flashed you can update the firmware using "Mission Planner" or "QGroundControl".  
  Future updates should be done via the *.apj firmware files.
