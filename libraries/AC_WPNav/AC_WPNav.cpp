@@ -190,6 +190,7 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
 
     _flags.reached_destination = true;
     _flags.fast_waypoint = false;
+    _flags.wp_yaw_set = false;
 
     // initialise origin and destination to stopping point
     if (stopping_point.is_zero()) {
@@ -456,6 +457,16 @@ void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
     stopping_point = stop.tofloat();
 }
 
+// get target yaw in centi-degrees along the path to the next waypoint
+// this may not point directly at the waypoint especially during cornering.  call is_active() before using
+float AC_WPNav::get_yaw_cd() const
+{
+    if (_flags.wp_yaw_set) {
+        return _wp_yaw_cd;
+    }
+    return _pos_control.get_yaw_cd();
+}
+
 /// advance_wp_target_along_track - move target location along track from origin to destination
 bool AC_WPNav::advance_wp_target_along_track(float dt)
 {
@@ -533,6 +544,14 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         target_vel = curr_target_vel;
         _spline_this_leg.advance_target_along_track(_track_scalar_dt * vel_scaler_dt * dt, target_pos, target_vel);
         s_finished = _spline_this_leg.reached_destination();
+    }
+
+    // update the target yaw if velocity is greater than 5% _vel_max_xy_cms
+    if (is_positive(target_vel.xy().length_squared())) {
+         if (target_vel.xy().length() > _wp_desired_speed_xy_cms * 0.05f) {
+            _wp_yaw_cd = degrees(target_vel.xy().angle()) * 100.0;
+            _flags.wp_yaw_set = true;
+        }
     }
 
 #if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
