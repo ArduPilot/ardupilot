@@ -2,23 +2,23 @@
 
 #include "AP_Baro_Backend.h"
 
-#if AP_BARO_SPL06_ENABLED
+#if AP_BARO_SPx06_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
-#ifndef HAL_BARO_SPL06_I2C_ADDR
- #define HAL_BARO_SPL06_I2C_ADDR  (0x76)
+#ifndef HAL_BARO_SPx06_I2C_ADDR
+ #define HAL_BARO_SPx06_I2C_ADDR  (0x76)
 #endif
-#ifndef HAL_BARO_SPL06_I2C_ADDR2
- #define HAL_BARO_SPL06_I2C_ADDR2 (0x77)
+#ifndef HAL_BARO_SPx06_I2C_ADDR2
+ #define HAL_BARO_SPx06_I2C_ADDR2 (0x77)
 #endif
 
-class AP_Baro_SPL06 : public AP_Baro_Backend
+class AP_Baro_SPx06 : public AP_Baro_Backend
 {
 public:
-    AP_Baro_SPL06(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_SPx06(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
     void update() override;
@@ -48,4 +48,4 @@ private:
     int16_t _c0, _c1, _c01, _c11, _c20, _c21, _c30;
 };
 
-#endif  // AP_BARO_SPL06_ENABLED
+#endif  // AP_BARO_SPx06_ENABLED

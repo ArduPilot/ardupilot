@@ -44,7 +44,7 @@ public:
         DEVTYPE_BARO_KELLERLD = 0x09,
         DEVTYPE_BARO_LPS2XH   = 0x0A,
         DEVTYPE_BARO_MS5611   = 0x0B,
-        DEVTYPE_BARO_SPL06    = 0x0C,
+        DEVTYPE_BARO_SPx06    = 0x0C,
         DEVTYPE_BARO_UAVCAN   = 0x0D,
         DEVTYPE_BARO_MSP      = 0x0E,
         DEVTYPE_BARO_ICP101XX = 0x0F,
