@@ -220,6 +220,7 @@ void AP_MotorsHeli_Single::init_outputs()
             case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
             case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
                 _tail_rotor.init_servo();
+                SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
                 break;
 
             case TAIL_TYPE::SERVO_EXTGYRO:
