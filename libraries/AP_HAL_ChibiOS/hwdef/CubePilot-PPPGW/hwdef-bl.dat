@@ -15,6 +15,3 @@ define BOARD_PHY_ID  MII_LAN8720_ID
 define BOARD_PHY_RMII
 
 include ../include/network_bootloader.inc
-
-# allow USB bootloader too
-SERIAL_ORDER OTG1

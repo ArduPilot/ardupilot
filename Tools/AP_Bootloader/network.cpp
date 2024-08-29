@@ -484,10 +484,14 @@ void BL_Network::handle_request(SocketAPM *sock)
     sock->send(header, strlen(header));
 
     if (strncmp(headers, "POST / ", 7) == 0) {
-        const char *clen = "\r\nContent-Length:";
-        const char *p = strstr(headers, clen);
+        const char *clen1 = "\r\nContent-Length:";
+        const char *clen2 = "\r\ncontent-length:";
+        const char *p = strstr(headers, clen1);
+        if (p == nullptr) {
+            p = strstr(headers, clen2);
+        }
         if (p != nullptr) {
-            p += strlen(clen);
+            p += strlen(clen1);
             const uint32_t content_length = atoi(p);
             handle_post(sock, content_length);
             delete headers;
