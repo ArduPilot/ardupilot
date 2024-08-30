@@ -1003,6 +1003,16 @@ AP_HAL::RCOutput::output_mode AP_IOMCU::get_output_mode(uint8_t& mask) const
     return AP_HAL::RCOutput::output_mode(reg_status.rcout_mode);
 }
 
+uint32_t AP_IOMCU::get_disabled_channels(uint32_t digital_mask) const
+{
+    uint32_t dig_out = reg_status.rcout_mask & (digital_mask & 0xFF);
+    if (dig_out > 0
+        && AP_HAL::RCOutput::is_dshot_protocol(AP_HAL::RCOutput::output_mode(reg_status.rcout_mode))) {
+        return ~dig_out & 0xFF;
+    }
+    return 0;
+}
+
 // setup channels
 void  AP_IOMCU::enable_ch(uint8_t ch)
 {
