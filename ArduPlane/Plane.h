@@ -121,6 +121,7 @@
 #include "avoidance_adsb.h"
 #endif
 #include "AP_Arming.h"
+#include "pullup.h"
 
 /*
   main APM:Plane class
@@ -174,6 +175,9 @@ public:
 
 #if AP_EXTERNAL_CONTROL_ENABLED
     friend class AP_ExternalControl_Plane;
+#endif
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    friend class GliderPullup;
 #endif
 
     Plane(void);
@@ -515,6 +519,11 @@ private:
         // have we checked for an auto-land?
         bool checked_for_autoland;
 
+        // Altitude threshold to complete a takeoff command in autonomous modes.  Centimeters
+        // are we in idle mode? used for balloon launch to stop servo
+        // movement until altitude is reached
+        bool idle_mode;
+        
         // are we in VTOL mode in AUTO?
         bool vtol_mode;
 
@@ -959,6 +968,7 @@ private:
     void do_loiter_turns(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd);
+    void do_altitude_wait(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);

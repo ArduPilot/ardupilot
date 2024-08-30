@@ -101,6 +101,9 @@ bool Mode::enter()
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+    // disable auto mode servo idle during altitude wait command
+    plane.auto_state.idle_mode = false;
+
     bool enter_result = _enter();
 
     if (enter_result) {
