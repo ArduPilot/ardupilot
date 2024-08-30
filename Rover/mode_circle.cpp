@@ -70,7 +70,7 @@ bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir
     return true;
 }
 
-// initialize dock mode
+// initialize circle mode from current position
 bool ModeCircle::_enter()
 {
     // capture starting point and yaw
@@ -84,6 +84,9 @@ bool ModeCircle::_enter()
     config.speed = is_positive(speed) ? speed : g2.wp_nav.get_default_speed();
     target.yaw_rad = AP::ahrs().get_yaw();
     target.speed = 0;
+
+    // record center as location (only used for reporting)
+    config.center_loc = rover.current_loc;
 
     // check speed around circle does not lead to excessive lateral acceleration
     check_config_speed();
@@ -146,8 +149,8 @@ void ModeCircle::update()
 
     // Update distance to destination and distance to edge
     const Vector2f center_to_veh = curr_pos - config.center_pos;
-    _distance_to_destination = center_to_veh.length();
-    dist_to_edge_m = fabsf(_distance_to_destination - config.radius);
+    _distance_to_destination = (target.pos.tofloat() - curr_pos).length();
+    dist_to_edge_m = fabsf(center_to_veh.length() - config.radius);
 
     // Update depending on stage
     if (!reached_edge) {
@@ -221,7 +224,7 @@ float ModeCircle::wp_bearing() const
         return 0;
     }
     // calc vector from circle center to vehicle
-    Vector2f veh_to_center = (config.center_pos - curr_pos_NE);
+    Vector2f veh_to_center = (target.pos.tofloat() - curr_pos_NE);
     if (veh_to_center.is_zero()) {
         return 0;
     }
@@ -266,6 +269,7 @@ bool ModeCircle::set_desired_speed(float speed_ms)
 bool ModeCircle::get_desired_location(Location& destination) const
 {
     destination = config.center_loc;
+    destination.offset_bearing(degrees(target.yaw_rad), config.radius);
     return true;
 }
 
