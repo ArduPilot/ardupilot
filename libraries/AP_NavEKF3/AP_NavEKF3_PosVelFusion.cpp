@@ -500,8 +500,8 @@ void NavEKF3_core::SelectVelPosFusion()
         CorrectGPSForAntennaOffset(gpsDataDelayed);
         // calculate innovations and variances for reporting purposes only
         CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise, frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
-        // record time innovations were calculated (for timeout checks)
-        gpsVelInnovTime_ms = dal.millis();
+        // record time GPS data was retrieved from the buffer (for timeout checks)
+        gpsRetrieveTime_ms = dal.millis();
     }
 
     // detect position source changes.  Trigger position reset if position source is valid
