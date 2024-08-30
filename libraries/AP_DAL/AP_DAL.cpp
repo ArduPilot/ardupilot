@@ -272,9 +272,13 @@ int AP_DAL::snprintf(char* str, size_t size, const char *format, ...) const
     return res;
 }
 
-void *AP_DAL::malloc_type(size_t size, Memory_Type mem_type) const
+void *AP_DAL::malloc_type(size_t size, MemoryType mem_type) const
 {
     return hal.util->malloc_type(size, AP_HAL::Util::Memory_Type(mem_type));
+}
+void AP_DAL::free_type(void *ptr, size_t size, MemoryType mem_type) const
+{
+    return hal.util->free_type(ptr, size, AP_HAL::Util::Memory_Type(mem_type));
 }
 
 // map core number for replay
