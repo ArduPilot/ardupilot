@@ -7176,6 +7176,10 @@ class TestSuite(ABC):
                 altitude_source = "GLOBAL_POSITION_INT.relative_alt"
             else:
                 altitude_source = "GLOBAL_POSITION_INT.alt"
+        if altitude_source == "TERRAIN_REPORT.current_height":
+            terrain = self.assert_receive_message('TERRAIN_REPORT')
+            return terrain.current_height
+
         (msg, field) = altitude_source.split('.')
         msg = self.poll_message(msg, quiet=True)
         divisor = 1000.0  # mm is pretty common in mavlink
