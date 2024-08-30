@@ -7,6 +7,7 @@
 #if EK3_FEATURE_OPTFLOW_FUSION
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_DAL/AP_DAL.h>
 
 /********************************************************
 *                   RESET FUNCTIONS                     *

@@ -32,7 +32,7 @@
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/EKF_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_DAL/AP_DAL.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -128,7 +128,7 @@ class NavEKF3_core : public NavEKF_core_common
 {
 public:
     // Constructor
-    NavEKF3_core(class NavEKF3 *_frontend);
+    NavEKF3_core(class NavEKF3 *_frontend, AP_DAL &dal);
 
     // setup this core backend
     bool setup_core(uint8_t _imu_index, uint8_t _core_index);
@@ -1356,6 +1356,10 @@ private:
 #if EK3_FEATURE_BEACON_FUSION
     class BeaconFusion {
     public:
+        BeaconFusion(AP_DAL &_dal) :
+            dal{_dal}
+            {}
+
         void InitialiseVariables();
 
         EKF_obs_buffer_t<rng_bcn_elements> storedRange; // Beacon range buffer
@@ -1406,7 +1410,9 @@ private:
             Vector3F beaconPosNED; // beacon NED position
         } *fusionReport;
         uint8_t numFusionReports;
-    } rngBcn;
+
+        AP_DAL &dal;
+    } rngBcn{dal};
 #endif  // if EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_DRAG_FUSION
