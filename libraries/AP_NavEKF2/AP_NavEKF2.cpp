@@ -675,7 +675,7 @@ bool NavEKF2::InitialiseFilter(void)
         }
 
         // try to allocate from CCM RAM, fallback to Normal RAM if not available or full
-        core = (NavEKF2_core*)AP::dal().malloc_type(sizeof(NavEKF2_core)*num_cores, AP_DAL::MEM_FAST);
+        core = (NavEKF2_core*)AP::dal().malloc_type(sizeof(NavEKF2_core)*num_cores, AP_DAL::MemoryType::FAST);
         if (core == nullptr) {
             initFailure = InitFailures::NO_MEM;
             core_malloc_failed = true;
@@ -695,7 +695,7 @@ bool NavEKF2::InitialiseFilter(void)
             if (_imuMask & (1U<<i)) {
                 if(!core[num_cores].setup_core(i, num_cores)) {
                     // if any core setup fails, free memory, zero the core pointer and abort
-                    hal.util->free_type(core, sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
+                    AP::dal().free_type(core, sizeof(NavEKF2_core)*num_cores, AP_DAL::MemoryType::FAST);
                     core = nullptr;
                     initFailure = InitFailures::NO_SETUP;
                     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NavEKF2: core %d setup failed", num_cores);
