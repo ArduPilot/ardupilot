@@ -8,9 +8,9 @@
 #include <AP_DAL/AP_DAL.h>
 
 // constructor
-NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
+NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
     frontend(_frontend),
-    dal(AP::dal()),
+    dal(_dal),
     public_origin(frontend->common_EKF_origin)
 {
     firstInitTime_ms = 0;
