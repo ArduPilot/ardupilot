@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #define LOG_IDS_FROM_NAVEKF3 \
     LOG_XKF0_MSG, \
