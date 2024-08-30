@@ -128,7 +128,7 @@ class NavEKF3_core : public NavEKF_core_common
 {
 public:
     // Constructor
-    NavEKF3_core(class NavEKF3 *_frontend, AP_DAL &dal);
+    NavEKF3_core(class NavEKF3 *_frontend, class AP_DAL &dal);
 
     // setup this core backend
     bool setup_core(uint8_t _imu_index, uint8_t _core_index);
