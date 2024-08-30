@@ -1,9 +1,6 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF2_core.h"
 
-extern const AP_HAL::HAL& hal;
-
+#include "AP_NavEKF2.h"
 
 /* Monitor GPS data to see if quality is good enough to initialise the EKF
    Monitor magnetometer innovations to see if the heading is good enough to use GPS
