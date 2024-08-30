@@ -9212,8 +9212,7 @@ Also, ignores heartbeats not from our target system'''
                         m.mission_type == 0):
                     # this is just MAVProxy trying to screw us up
                     continue
-                else:
-                    raise NotAchievedException("Received unexpected mission ack %s" % str(m))
+                raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
             self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
             self.progress("Item (%s)" % str(items[m.seq]))
