@@ -1,3 +1,5 @@
+#include "AP_NavEKF2.h"
+
 #include "AP_NavEKF2_core.h"
 
 #include <AP_DAL/AP_DAL.h>
