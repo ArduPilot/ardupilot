@@ -650,6 +650,11 @@ uint32_t RCOutput::get_disabled_channels(uint32_t digital_mask)
     }
 
     disabled_chan_mask <<= chan_offset;
+#if HAL_WITH_IO_MCU
+    if (iomcu_dshot) {
+       disabled_chan_mask |= iomcu.get_disabled_channels(digital_mask);
+    }
+#endif
     return disabled_chan_mask;
 }
 
@@ -1464,9 +1469,9 @@ void RCOutput::dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t tim
     }
 
     for (auto &group : pwm_group_list) {
-        bool pulse_sent;
+        bool pulse_sent = false;
         // send a dshot command
-        if (is_dshot_protocol(group.current_mode)
+        if (group.can_send_dshot_pulse()
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
             pulse_sent = true;
