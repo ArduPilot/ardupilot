@@ -24,7 +24,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
 #include <AP_HAL/Semaphores.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 #include "fcntl.h"
 
