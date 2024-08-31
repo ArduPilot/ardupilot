@@ -69,7 +69,7 @@ public:
     void thread_main();
 
     // returns true if communicating with the motor
-    bool healthy();
+    bool motor_healthy();
 
     // run pre-arm check.  returns false on failure and fills in failure_msg
     // any failure_msg returned will not include a prefix
@@ -160,7 +160,7 @@ private:
     void parse_message();
 
     // returns true if it is safe to send a message
-    bool safe_to_send() const { return ((_send_delay_us == 0) && (_reply_wait_start_ms == 0)); }
+    bool safe_to_send() const { return ((_send_delay_us == 0) && (_reply_wait_start_us == 0)); }
 
     // set pin to enable sending a message
     void send_start();
@@ -246,7 +246,7 @@ private:
     uint32_t _motor_speed_zero_ms;  // system time that _motor_speed_limited reached zero.  0 if currently not zero
 
     // health reporting
-    HAL_Semaphore _last_healthy_sem;// semaphore protecting reading and updating of _last_send_motor_ms and _last_received_ms
+    HAL_Semaphore _last_motor_healthy_sem;// semaphore protecting reading and updating of _last_send_motor_ms and _last_received_motor_ms
     uint32_t _last_log_TRQD_ms;     // system time (in millis) that TRQD was last logged
 
     // reset/wake
@@ -259,11 +259,11 @@ private:
     uint32_t _parse_success_count;  // number of messages successfully parsed (for reporting)
     uint8_t _received_buff[TORQEEDO_MESSAGE_LEN_MAX];   // characters received
     uint8_t _received_buff_len;     // number of characters received
-    uint32_t _last_received_ms;     // system time (in millis) that a message was successfully parsed (for health reporting)
+    uint32_t _last_received_motor_ms;     // system time (in millis) that a motor message was successfully parsed (for health reporting)
 
     // reply message handling
     uint8_t _reply_msgid;           // replies expected msgid (reply often does not specify the msgid so we must record it)
-    uint32_t _reply_wait_start_ms;  // system time that we started waiting for a reply message
+    uint32_t _reply_wait_start_us;  // system time that we started waiting for a reply message
 
     // Display system state flags
     typedef union PACKED {

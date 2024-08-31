@@ -38,7 +38,7 @@
 #define TORQEEDO_REPLY_TIMEOUT_MS   25      // stop waiting for replies after 25ms
 #define TORQEEDO_ERROR_REPORT_INTERVAL_MAX_MS   10000   // errors reported to user at no less than once every 10 seconds
 #define TORQEEDO_MIN_RESET_INTERVAL_MS 5000    // minimum time between hard resets/wake
-#define TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS 5000 // throttle hold down time after reset/wake
+#define TORQEEDO_RESET_THROTTLE_HOLDDOWN_MS 6000 // throttle hold down time after reset/wake
 
 extern const AP_HAL::HAL& hal;
 
@@ -206,8 +206,8 @@ void AP_Torqeedo::thread_main()
     _initialised = true;
 
     while (true) {
-        // 1ms loop delay
-        hal.scheduler->delay_microseconds(1000);
+        // loop delay
+        hal.scheduler->delay_microseconds(100);
 
         // check if transmit pin should be unset
         check_for_send_end();
@@ -266,6 +266,7 @@ void AP_Torqeedo::thread_main()
                 _send_motor_speed = false;
                 log_update = true;
             }
+            // if not sending motor speed, send battery status request (if connected to external battery)
             else if (_type == ConnectionType::TYPE_TILLER && _ext_batt) {
                 // send request for battery status
                 if (now_ms - _last_send_battery_status_request_ms > TORQEEDO_SEND_BATTERY_STATUS_REQUEST_INTERVAL_MS) {
@@ -275,9 +276,9 @@ void AP_Torqeedo::thread_main()
             }
         }
 
-        // if not healthy and auto reset is enabled,
+        // if motor is not healthy and auto reset is enabled,
         // toggle the on/off pin to try to hard wake or reset the motor
-        if (!healthy() && _auto_reset) {
+        if (!motor_healthy() && _auto_reset) {
             const uint32_t now_ms = AP_HAL::millis();
             // only reset if not reset recently (to avoid infinite reset loop)
             if ((now_ms - _last_reset_ms > TORQEEDO_MIN_RESET_INTERVAL_MS)) {
@@ -292,16 +293,16 @@ void AP_Torqeedo::thread_main()
 }
 
 // returns true if communicating with the motor
-bool AP_Torqeedo::healthy()
+bool AP_Torqeedo::motor_healthy()
 {
     if (!_initialised) {
         return false;
     }
     {
         // healthy if both receive and send have occurred in the last 3 seconds
-        WITH_SEMAPHORE(_last_healthy_sem);
+        WITH_SEMAPHORE(_last_motor_healthy_sem);
         const uint32_t now_ms = AP_HAL::millis();
-        return ((now_ms - _last_received_ms < 3000) && (now_ms - _last_send_motor_ms < 3000));
+        return ((now_ms - _last_received_motor_ms < 3000) && (now_ms - _last_send_motor_ms < 3000));
     }
 }
 
@@ -318,7 +319,7 @@ bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
         strncpy(failure_msg, "not initialised", failure_msg_len);
         return false;
     }
-    if (!healthy()) {
+    if (!motor_healthy()) {
         strncpy(failure_msg, "not healthy", failure_msg_len);
         return false;
     }
@@ -578,11 +579,6 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
                 break;
             }
             _parse_success_count++;
-            {
-                // record time of successful receive for health reporting
-                WITH_SEMAPHORE(_last_healthy_sem);
-                _last_received_ms = AP_HAL::millis();
-            }
             complete_msg_received = true;
         } else {
             // escape character handling
@@ -621,6 +617,11 @@ void AP_Torqeedo::parse_message()
         if (msg_id == RemoteMsgId::REMOTE) {
             // request received to send updated motor speed
             _send_motor_speed = true;
+
+            // record time of successful receive for health reporting
+            WITH_SEMAPHORE(_last_motor_healthy_sem);
+            _last_received_motor_ms = AP_HAL::millis();
+
         }
         return;
     }
@@ -866,6 +867,11 @@ void AP_Torqeedo::parse_message()
     if ((_type == ConnectionType::TYPE_MOTOR) && (msg_addr == MsgAddress::BUS_MASTER)) {
         // replies strangely do not return the msgid so we must have stored it
         MotorMsgId msg_id = (MotorMsgId)_reply_msgid;
+
+        // record time of successful receive for health reporting
+        WITH_SEMAPHORE(_last_motor_healthy_sem);
+        _last_received_motor_ms = AP_HAL::millis();
+
         switch (msg_id) {
 
         case MotorMsgId::PARAM:
@@ -1010,9 +1016,9 @@ uint32_t AP_Torqeedo::calc_send_delay_us(uint8_t num_bytes)
 {
     // baud rate of 19200 bits/sec
     // total number of bits = 10 x num_bytes
+    // Subtract 5 bits to stop transmission during the padding byte (but after its start bit
     // convert from seconds to micros by multiplying by 1,000,000
-    // plus additional 300us safety margin
-    const uint32_t delay_us = 1e6 * num_bytes * 10 / TORQEEDO_SERIAL_BAUD + 300;
+    const uint32_t delay_us = 1e6 * ((num_bytes * 10) - 5) / TORQEEDO_SERIAL_BAUD;
     return delay_us;
 }
 
@@ -1020,18 +1026,18 @@ uint32_t AP_Torqeedo::calc_send_delay_us(uint8_t num_bytes)
 void AP_Torqeedo::set_expected_reply_msgid(uint8_t msg_id)
 {
     _reply_msgid = msg_id;
-    _reply_wait_start_ms = AP_HAL::millis();
+    _reply_wait_start_us = AP_HAL::micros();
 }
 
 // check for timeout waiting for reply message
 void AP_Torqeedo::check_for_reply_timeout()
 {
     // return immediately if not waiting for reply
-    if (_reply_wait_start_ms == 0) {
+    if (_reply_wait_start_us == 0) {
         return;
     }
-    if (AP_HAL::millis() - _reply_wait_start_ms > TORQEEDO_REPLY_TIMEOUT_MS) {
-        _reply_wait_start_ms = 0;
+    if (AP_HAL::micros() - _reply_wait_start_us > (TORQEEDO_REPLY_TIMEOUT_MS * 1000)) {
+        _reply_wait_start_us = 0;
         _parse_error_count++;
     }
 }
@@ -1039,7 +1045,7 @@ void AP_Torqeedo::check_for_reply_timeout()
 // mark reply received. should be called whenever a message is received regardless of whether we are actually waiting for a reply
 void AP_Torqeedo::set_reply_received()
 {
-    _reply_wait_start_ms = 0;
+    _reply_wait_start_us = 0;
 }
 
 // send a message to the motor with the specified message contents
@@ -1077,6 +1083,13 @@ bool AP_Torqeedo::send_message(const uint8_t msg_contents[], uint8_t num_bytes)
         return false;
     }
     send_buff[send_buff_num_bytes++] = TORQEEDO_PACKET_FOOTER;
+
+    // add padding byte
+    if (send_buff_num_bytes >= ARRAY_SIZE(send_buff)) {
+        _parse_error_count++;
+        return false;
+    }
+    send_buff[send_buff_num_bytes++] = 0xFF;
 
     // set send pin
     send_start();
@@ -1170,7 +1183,7 @@ void AP_Torqeedo::send_motor_speed_cmd(bool set_zero_speed)
     // send a message
     if (send_message(mot_speed_cmd_buff, ARRAY_SIZE(mot_speed_cmd_buff))) {
         // record time of send for health reporting
-        WITH_SEMAPHORE(_last_healthy_sem);
+        WITH_SEMAPHORE(_last_motor_healthy_sem);
         _last_send_motor_ms = AP_HAL::millis();
     }
 }
@@ -1182,11 +1195,11 @@ void AP_Torqeedo::send_motor_msg_request(MotorMsgId msg_id)
     // prepare message
     uint8_t mot_status_request_buff[] = {(uint8_t)MsgAddress::MOTOR, (uint8_t)msg_id};
 
+    // record waiting for reply
+    set_expected_reply_msgid((uint8_t)msg_id);
+
     // send a message
-    if (send_message(mot_status_request_buff, ARRAY_SIZE(mot_status_request_buff))) {
-        // record waiting for reply
-        set_expected_reply_msgid((uint8_t)msg_id);
-    }
+    send_message(mot_status_request_buff, ARRAY_SIZE(mot_status_request_buff));
 }
 
 // send request to battery to reply with a particular message
@@ -1196,11 +1209,11 @@ void AP_Torqeedo::send_battery_msg_request(BatteryMsgId msg_id)
     // prepare message
     uint8_t batt_status_request_buff[] = {(uint8_t)MsgAddress::BATTERY, (uint8_t)msg_id};
 
+    // record waiting for reply
+    set_expected_reply_msgid((uint8_t)msg_id);
+
     // send a message
-    if (send_message(batt_status_request_buff, ARRAY_SIZE(batt_status_request_buff))) {
-        // record waiting for reply
-        set_expected_reply_msgid((uint8_t)msg_id);
-    }
+    send_message(batt_status_request_buff, ARRAY_SIZE(batt_status_request_buff));
 }
 
 // calculate the limited motor speed that is sent to the motors
@@ -1291,7 +1304,7 @@ void AP_Torqeedo::log_TRQD(bool force_logging)
     _last_log_TRQD_ms = now_ms;
 
 #if HAL_LOGGING_ENABLED || HAL_GCS_ENABLED
-    const bool health = healthy();
+    const bool health = motor_healthy();
     int16_t actual_motor_speed = get_motor_speed_limited();
 
 #if HAL_LOGGING_ENABLED
