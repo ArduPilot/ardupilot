@@ -190,6 +190,9 @@ class TestBuildOptions(object):
 
         self.test_compile_with_defines(defines)
 
+        self.assert_feature_not_in_code(defines, feature)
+
+    def assert_feature_not_in_code(self, defines, feature):
         # if the feature is truly disabled then extract_features.py
         # should say so:
         for target in self.build_targets:
@@ -221,6 +224,177 @@ class TestBuildOptions(object):
                 ",".join(enabled)))
 
         self.test_compile_with_defines(defines)
+
+        self.assert_feature_in_code(defines, feature)
+
+    def define_is_whitelisted_for_feature_in_code(self, target, define):
+        '''returns true if we can not expect the define to be extracted from
+        the binary'''
+        # the following defines are known not to work on some
+        # or all vehicles:
+        feature_define_whitelist = set([
+            'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
+            'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
+            'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED',  # broken, no subscriber
+            # Baro drivers either come in because you have
+            # external-probing enabled or you have them specified in
+            # your hwdef.  If you're not probing and its not in your
+            # hwdef then the code will be elided as unreachable
+            'AP_BARO_ICM20789_ENABLED',
+            'AP_BARO_ICP101XX_ENABLED',
+            'AP_BARO_ICP201XX_ENABLED',
+            'AP_BARO_BMP085_ENABLED',
+            'AP_BARO_BMP280_ENABLED',
+            'AP_BARO_BMP388_ENABLED',
+            'AP_BARO_BMP581_ENABLED',
+            'AP_BARO_DPS280_ENABLED',
+            'AP_BARO_FBM320_ENABLED',
+            'AP_BARO_KELLERLD_ENABLED',
+            'AP_BARO_LPS2XH_ENABLED',
+            'AP_BARO_MS56XX_ENABLED',
+            'AP_BARO_SPL06_ENABLED',
+            'AP_CAMERA_SEND_FOV_STATUS_ENABLED',  # elided unless AP_CAMERA_SEND_FOV_STATUS_ENABLED
+            'AP_COMPASS_LSM9DS1_ENABLED',  # must be in hwdef, not probed
+            'AP_COMPASS_MAG3110_ENABLED',  # must be in hwdef, not probed
+            'AP_COMPASS_MMC5XX3_ENABLED',  # must be in hwdef, not probed
+            'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED',  # completely elided
+            'AP_MAVLINK_MSG_HIL_GPS_ENABLED',  # no symbol available
+            'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED',  # no symbol available
+            'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED',  # no symbol available
+            'HAL_MSP_SENSORS_ENABLED',  # no symbol available
+            'AP_OSD_LINK_STATS_EXTENSIONS_ENABLED',  # FIXME: need a new define/feature
+            'HAL_OSD_SIDEBAR_ENABLE',  # FIXME: need a new define/feature
+            'HAL_PLUSCODE_ENABLE',  # FIXME: need a new define/feature
+            'AP_SERIALMANAGER_REGISTER_ENABLED',  # completely elided without a caller
+            'AP_OPTICALFLOW_ONBOARD_ENABLED',  # only instantiated on Linux
+            'HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL',  # entirely elided if no user
+            'AP_PLANE_BLACKBOX_LOGGING',  # entirely elided if no user
+        ])
+        if target.lower() != "copter":
+            feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
+            feature_define_whitelist.add('MODE_SYSTEMID_ENABLED')
+            feature_define_whitelist.add('MODE_SPORT_ENABLED')
+            feature_define_whitelist.add('MODE_FOLLOW_ENABLED')
+            feature_define_whitelist.add('MODE_TURTLE_ENABLED')
+            feature_define_whitelist.add('MODE_GUIDED_NOGPS_ENABLED')
+            feature_define_whitelist.add('MODE_FLOWHOLD_ENABLED')
+            feature_define_whitelist.add('MODE_FLIP_ENABLED')
+            feature_define_whitelist.add('MODE_BRAKE_ENABLED')
+            feature_define_whitelist.add('AP_TEMPCALIBRATION_ENABLED')
+            feature_define_whitelist.add('AC_PAYLOAD_PLACE_ENABLED')
+            feature_define_whitelist.add('AP_AVOIDANCE_ENABLED')
+            feature_define_whitelist.add('AP_WINCH_ENABLED')
+            feature_define_whitelist.add('AP_WINCH_DAIWA_ENABLED')
+            feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
+            feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
+
+        if target.lower() != "plane":
+            # only on Plane:
+            feature_define_whitelist.add('AP_ICENGINE_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED')
+            feature_define_whitelist.add('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED')
+            feature_define_whitelist.add('AP_ADVANCEDFAILSAFE_ENABLED')
+            feature_define_whitelist.add('AP_TUNING_ENABLED')
+            feature_define_whitelist.add('HAL_LANDING_DEEPSTALL_ENABLED')
+            feature_define_whitelist.add('HAL_SOARING_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_BLACKBOX_LOGGING')
+            feature_define_whitelist.add('QAUTOTUNE_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED')
+            feature_define_whitelist.add('HAL_QUADPLANE_ENABLED')
+            feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
+
+        if target.lower() not in ["plane", "copter"]:
+            feature_define_whitelist.add('HAL_ADSB_ENABLED')
+            feature_define_whitelist.add('AP_LANDINGGEAR_ENABLED')
+            # only Plane and Copter instantiate Parachute
+            feature_define_whitelist.add('HAL_PARACHUTE_ENABLED')
+            # only Plane and Copter have AP_Motors:
+
+        if target.lower() not in ["rover", "copter"]:
+            # only Plane and Copter instantiate Beacon
+            feature_define_whitelist.add('AP_BEACON_ENABLED')
+
+        if target.lower() != "rover":
+            # only on Rover:
+            feature_define_whitelist.add('HAL_TORQEEDO_ENABLED')
+            feature_define_whitelist.add('AP_ROVER_ADVANCED_FAILSAFE_ENABLED')
+        if target.lower() != "sub":
+            # only on Sub:
+            feature_define_whitelist.add('AP_BARO_KELLERLD_ENABLED')
+        if target.lower() not in frozenset(["rover", "sub"]):
+            # only Rover and Sub get nmea airspeed
+            feature_define_whitelist.add('AP_AIRSPEED_NMEA_ENABLED')
+        if target.lower() not in frozenset(["copter", "rover"]):
+            feature_define_whitelist.add('HAL_SPRAYER_ENABLED')
+            feature_define_whitelist.add('HAL_PROXIMITY_ENABLED')
+            feature_define_whitelist.add('AP_PROXIMITY_.*_ENABLED')
+            feature_define_whitelist.add('AP_OAPATHPLANNER_ENABLED')
+
+        if target.lower() in ["blimp", "antennatracker"]:
+            # no airspeed on blimp/tracker
+            feature_define_whitelist.add(r'AP_AIRSPEED_.*_ENABLED')
+            feature_define_whitelist.add(r'HAL_MOUNT_ENABLED')
+            feature_define_whitelist.add(r'AP_MOUNT_.*_ENABLED')
+            feature_define_whitelist.add(r'HAL_MOUNT_.*_ENABLED')
+            feature_define_whitelist.add(r'HAL_SOLO_GIMBAL_ENABLED')
+            feature_define_whitelist.add(r'AP_OPTICALFLOW_ENABLED')
+            feature_define_whitelist.add(r'AP_OPTICALFLOW_.*_ENABLED')
+            feature_define_whitelist.add(r'HAL_MSP_OPTICALFLOW_ENABLED')
+            # missing calls to fence.check():
+            feature_define_whitelist.add(r'AP_FENCE_ENABLED')
+            # RPM not instantiated on Blimp or Rover:
+            feature_define_whitelist.add(r'AP_RPM_ENABLED')
+            feature_define_whitelist.add(r'AP_RPM_.*_ENABLED')
+            # rangefinder init is not called:
+            feature_define_whitelist.add(r'HAL_MSP_RANGEFINDER_ENABLED')
+            # these guys don't instantiate anything which uses sd-card storage:
+            feature_define_whitelist.add(r'AP_SDCARD_STORAGE_ENABLED')
+            feature_define_whitelist.add(r'AP_RANGEFINDER_ENABLED')
+            feature_define_whitelist.add(r'AP_RANGEFINDER_.*_ENABLED')
+
+        if target.lower() in ["blimp", "antennatracker", "sub"]:
+            # no OSD on Sub/blimp/tracker
+            feature_define_whitelist.add(r'OSD_ENABLED')
+            feature_define_whitelist.add(r'OSD_PARAM_ENABLED')
+            # AP_OSD is not instantiated, , so no MSP backend:
+            feature_define_whitelist.add(r'HAL_WITH_MSP_DISPLAYPORT')
+            # camera instantiated in specific vehicles:
+            feature_define_whitelist.add(r'AP_CAMERA_ENABLED')
+            feature_define_whitelist.add(r'AP_CAMERA_.*_ENABLED')
+            # button update is not called in these vehicles
+            feature_define_whitelist.add(r'HAL_BUTTON_ENABLED')
+            # precland not instantiated on these vehicles
+            feature_define_whitelist.add(r'AC_PRECLAND_ENABLED')
+            feature_define_whitelist.add(r'AC_PRECLAND_.*_ENABLED')
+            # RSSI is not initialised - probably should be for some
+            feature_define_whitelist.add(r'AP_RSSI_ENABLED')
+
+        if target.lower() in ["antennatracker", "sub"]:
+            # missing the init call to the relay library:
+            feature_define_whitelist.add(r'AP_RELAY_ENABLED')
+            feature_define_whitelist.add(r'AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED')
+
+        for some_re in feature_define_whitelist:
+            if re.match(some_re, define):
+                return True
+
+    def assert_feature_in_code(self, defines, feature):
+        # if the feature is truly disabled then extract_features.py
+        # should say so:
+        for target in self.build_targets:
+            path = self.target_to_elf_path(target)
+            extracter = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            for define in defines:
+                if not defines[define]:
+                    continue
+                if define in compiled_in_feature_defines:
+                    continue
+                error = f"feature gated by {define} not compiled into ({target}); extract_features.py bug?"
+                if self.define_is_whitelisted_for_feature_in_code(target, define):
+                    print("warn: " + error)
+                    continue
+                raise ValueError(error)
 
     def board(self):
         '''returns board to build for'''
