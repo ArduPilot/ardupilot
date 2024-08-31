@@ -48,18 +48,18 @@ void AP_AHRS::Write_AOA_SSA(void) const
     AP::logger().WriteBlock(&aoa_ssa, sizeof(aoa_ssa));
 }
 
-// Write an attitude packet
+// Write an attitude packet, targets in degrees
 void AP_AHRS::Write_Attitude(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)pitch_sensor,
-        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
-        yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
+        control_roll    : targets.x,
+        roll            : degrees(roll),
+        control_pitch   : targets.y,
+        pitch           : degrees(pitch),
+        control_yaw     : wrap_360(targets.z),
+        yaw             : wrap_360(degrees(yaw)),
         active          : uint8_t(active_EKF_type()),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
@@ -122,18 +122,18 @@ void AP_AHRS::write_video_stabilisation() const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write an attitude view packet
+// Write an attitude view packet, targets in degrees
 void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)pitch_sensor,
-        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
-        yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
+        control_roll    : targets.x,
+        roll            : degrees(roll),
+        control_pitch   : targets.y,
+        pitch           : degrees(pitch),
+        control_yaw     : wrap_360(targets.z),
+        yaw             : wrap_360(degrees(yaw)),
         active          : uint8_t(AP::ahrs().active_EKF_type()),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
