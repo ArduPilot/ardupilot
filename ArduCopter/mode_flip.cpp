@@ -6,11 +6,14 @@
  * Init and run calls for flip flight mode
  *      original implementation in 2010 by Jose Julio
  *      Adapted and updated for AC2 in 2011 by Jason Short
- *
+ *      Modified to add configurable parameters for direction and exit throttle in 2022 by Nick MacDonald
+ * 
  *      Controls:
  *          RC7_OPTION - RC12_OPTION parameter must be set to "Flip" (AUXSW_FLIP) which is "2"
  *          Pilot switches to Stabilize, Acro or AltHold flight mode and puts ch7/ch8 switch to ON position
- *          Vehicle will Roll right by default but if roll or pitch stick is held slightly left, forward or back it will flip in that direction
+ *          Vehicle default direction is set using the parameter: flip_mode.
+ *          Vehicle recovery throttle is set using the parameter: flip_throttle
+ *          If roll or pitch stick is held slightly left, right, forward or back the vehicle will flip in that direction
  *          Vehicle should complete the roll within 2.5sec and will then return to the original flight mode it was in before flip was triggered
  *          Pilot may manually exit flip by switching off ch7/ch8 or by moving roll stick to >40deg left or right
  *
@@ -55,8 +58,9 @@ bool ModeFlip::init(bool ignore_checks)
         return false;
     }
 
-    // capture original flight mode so that we can return to it after completion
+    // capture original flight mode and throttle so that we can return to it after completion
     orig_control_mode = copter.flightmode->mode_number();
+    _flip_start_throttle = get_pilot_desired_throttle();
 
     // initialise state
     _state = FlipState::Start;
@@ -64,15 +68,35 @@ bool ModeFlip::init(bool ignore_checks)
 
     roll_dir = pitch_dir = 0;
 
-    // choose direction based on pilot's roll and pitch sticks
+    // choose direction based on pilot's roll and pitch input
     if (channel_pitch->get_control_in() > 300) {
         pitch_dir = FLIP_PITCH_BACK;
     } else if (channel_pitch->get_control_in() < -300) {
         pitch_dir = FLIP_PITCH_FORWARD;
-    } else if (channel_roll->get_control_in() >= 0) {
+    } else if (channel_roll->get_control_in() > 300) {
         roll_dir = FLIP_ROLL_RIGHT;
-    } else {
+    } else if (channel_roll->get_control_in() < -300) {
         roll_dir = FLIP_ROLL_LEFT;
+    } else {
+        // if controls are neutral, then choose direction based on parameter settings
+        // this will default to a left flip if the flip_roll parameter is out of bounds (0-3).
+        switch((Dir)g.flip_mode.get()){
+            case Dir::LEFT:
+                roll_dir = FLIP_ROLL_LEFT;
+                break;
+            case Dir::RIGHT:
+                roll_dir = FLIP_ROLL_RIGHT;
+                break;
+            case Dir::FWD:
+                pitch_dir = FLIP_PITCH_FORWARD;
+                break;
+            case Dir::BACK:
+                pitch_dir = FLIP_PITCH_BACK;
+                break;
+            // default to the right in case flip_mode parameter is out of bounds for any reason
+            default:
+                roll_dir = FLIP_ROLL_RIGHT;
+        }
     }
 
     // log start of flip
@@ -96,8 +120,8 @@ void ModeFlip::run()
         _state = FlipState::Abandon;
     }
 
-    // get pilot's desired throttle
-    float throttle_out = get_pilot_desired_throttle();
+    // utilize the pilots starting throttle as a baseline for the maneuver
+    float throttle_out = _flip_start_throttle;
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -174,8 +198,13 @@ void ModeFlip::run()
         // use originally captured earth-frame angle targets to recover
         attitude_control->input_euler_angle_roll_pitch_yaw(orig_attitude.x, orig_attitude.y, orig_attitude.z, false);
 
-        // increase throttle to gain any lost altitude
-        throttle_out += FLIP_THR_INC;
+        // reset throttle to original pilot input +/- desired throttle adjustment on exit
+        // this is sanity-checked to ensure the flight mode is only passing throttle inputs between 0 - 1.0
+        if (is_positive(g.flip_throttle)) {
+            throttle_out = MIN(_flip_start_throttle + g.flip_throttle, 1.0);            
+        } else {
+            throttle_out = MAX(_flip_start_throttle + g.flip_throttle, 0.0);
+        }
 
         float recovery_angle;
         if (roll_dir != 0) {
