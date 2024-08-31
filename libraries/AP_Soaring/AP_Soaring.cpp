@@ -2,6 +2,7 @@
 
 #if HAL_SOARING_ENABLED
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_TECS/AP_TECS.h>
 #include <GCS_MAVLink/GCS.h>
