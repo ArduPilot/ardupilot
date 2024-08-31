@@ -18,6 +18,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsHeli_RSC.h"
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 

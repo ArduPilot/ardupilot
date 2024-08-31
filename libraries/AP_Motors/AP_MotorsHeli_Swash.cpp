@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "AP_MotorsHeli_Swash.h"
 
