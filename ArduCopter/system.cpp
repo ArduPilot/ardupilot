@@ -257,6 +257,10 @@ void Copter::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
+#if AP_OPENDRONEID_ENABLED
+    g2.opendroneid.init();
+#endif
+   
     vehicle_setup();
 
     hal.console->printf("\nReady to FLY ");

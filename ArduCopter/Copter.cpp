@@ -207,6 +207,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+#if AP_OPENDRONEID_ENABLED
+    SCHED_TASK_CLASS(AP_OpenDroneID, &copter.g2.opendroneid,  update,                   10,  50),
+#endif
 };
 
 constexpr int8_t Copter::_failsafe_priorities[7];

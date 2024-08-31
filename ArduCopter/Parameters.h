@@ -620,6 +620,10 @@ public:
     // Autonmous autorotation
     AC_Autorotation arot;
 #endif
+
+#if AP_OPENDRONEID_ENABLED
+    AP_OpenDroneID opendroneid;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];

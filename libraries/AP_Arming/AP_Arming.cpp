@@ -191,6 +191,21 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
     va_end(arg_list);
 }
 
+// OpenDroneID Checks
+bool AP_Arming::opendroneid_checks(bool display_failure)
+{
+#if AP_OPENDRONEID_ENABLED
+    auto &opendroneid = AP::opendroneid();
+
+    char failure_msg[50] {};
+    if (!opendroneid.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "OpenDroneID: %s", failure_msg);
+        return false;
+    }
+#endif
+    return true;
+}
+
 bool AP_Arming::barometer_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
@@ -834,7 +849,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  board_voltage_checks(report)
         &  system_checks(report)
         &  can_checks(report)
-        &  proximity_checks(report);
+        &  proximity_checks(report)
+        &  opendroneid_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -872,6 +888,11 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
 bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
     if (armed) { //already armed
+        return false;
+    }
+
+    if (!opendroneid_checks(true)) {
+        AP::logger().arming_failure();
         return false;
     }
 
