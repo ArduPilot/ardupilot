@@ -100,6 +100,10 @@ void AP_Mission::init()
         clear();
     }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     _last_change_time_ms = AP_HAL::millis();
 }
 
@@ -122,6 +126,9 @@ void AP_Mission::start()
 void AP_Mission::stop()
 {
     _flags.state = MISSION_STOPPED;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 }
 
 /// resume - continues the mission execution from where we last left off
@@ -270,6 +277,9 @@ void AP_Mission::reset()
     _prev_nav_cmd_id       = AP_MISSION_CMD_ID_NONE;
     init_jump_tracking();
     reset_wp_history();
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    clear_item_progress();
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 }
 
 /// clear - clears out mission
@@ -3084,6 +3094,89 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
 }
 #endif // AP_SCRIPTING_ENABLED
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+void AP_Mission::set_item_progress(uint16_t index, float distance_remaining_m, float time_remaining_s, float count_remaining, uint8_t percentage_complete)
+{
+    _current_item_progress.index = index;
+    _current_item_progress.distance_remaining_m = distance_remaining_m;
+    _current_item_progress.time_remaining_s = time_remaining_s;
+    _current_item_progress.count_remaining = count_remaining;
+    _current_item_progress.percentage_complete = percentage_complete;
+}
+
+AP_Mission::ItemProgress AP_Mission::get_item_progress(uint16_t index) const
+{
+    if (index && (index == _current_item_progress.index)) {
+        return _current_item_progress;
+    }
+    return kInvalidProgress;
+}
+
+void AP_Mission::clear_item_progress(void)
+{
+    _current_item_progress = kInvalidProgress;
+}
+
+uint8_t AP_Mission::calc_item_percentage_complete(float completed, float total) const
+{
+    uint8_t percentage_complete;
+    if (isnan(total) || isnan(completed)) {
+        percentage_complete = kInvalidProgress.percentage_complete;
+    } else if  ((total <= 0.0f) || (completed < 0.0f)) {
+        percentage_complete = kInvalidProgress.percentage_complete;
+    } else if (completed >= total) {
+        percentage_complete = 100;
+    } else {
+        percentage_complete = (completed * 100.0f) / total;
+    }
+    return percentage_complete;
+}
+
+void AP_Mission::set_item_progress_distance_remaining(uint16_t index, float remaining_m, float total_m)
+{
+    const uint8_t percentage_complete = calc_item_percentage_complete(total_m - remaining_m, total_m);
+    set_item_progress(index, remaining_m, kInvalidProgress.time_remaining_s, kInvalidProgress.count_remaining, percentage_complete);
+}
+
+void AP_Mission::set_item_progress_time_remaining(uint16_t index, float remaining_s, float total_s)
+{
+    const uint8_t percentage_complete = calc_item_percentage_complete(total_s - remaining_s, total_s);
+    set_item_progress(index, kInvalidProgress.distance_remaining_m, remaining_s, kInvalidProgress.count_remaining, percentage_complete);
+}
+
+void AP_Mission::set_item_progress_count_remaining(uint16_t index, float remaining, float total)
+{
+    const uint8_t percentage_complete = calc_item_percentage_complete(total - remaining, total);
+    set_item_progress(index, kInvalidProgress.distance_remaining_m, kInvalidProgress.time_remaining_s, remaining, percentage_complete);
+}
+
+void AP_Mission::set_item_progress_distance_traveled(uint16_t index, float traveled_m, float total_m)
+{
+    if (total_m > traveled_m) {
+        set_item_progress_distance_remaining(index, total_m - traveled_m, total_m);
+    } else {
+        set_item_progress(index, 0.0f, kInvalidProgress.time_remaining_s, kInvalidProgress.count_remaining, 100);
+    }
+}
+
+void AP_Mission::set_item_progress_time_elapsed(uint16_t index, float elapsed_s, float total_s)
+{
+    if (total_s > elapsed_s) {
+        set_item_progress_time_remaining(index, total_s - elapsed_s, total_s);
+    } else {
+        set_item_progress(index, kInvalidProgress.distance_remaining_m, 0.0f, kInvalidProgress.count_remaining, 100);
+    }
+}
+
+void AP_Mission::set_item_progress_count_completed(uint16_t index, float completed, float total)
+{
+    if (total > completed) {
+        set_item_progress_count_remaining(index, total - completed, total);
+    } else {
+        set_item_progress(index, kInvalidProgress.distance_remaining_m, kInvalidProgress.time_remaining_s, 0.0f, 100);
+    }
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
 // singleton instance
 AP_Mission *AP_Mission::_singleton;

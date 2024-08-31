@@ -5965,6 +5965,40 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
 #endif  // AP_AHRS_ENABLED
 }
 
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+void GCS_MAVLINK::send_nav_controller_progress() const
+{
+#if AP_VEHICLE_ENABLED
+    const bool mission_mode = AP::vehicle()->current_mode_requires_mission();
+#else
+    const bool mission_mode = false;
+#endif // AP_VEHICLE_ENABLED
+
+    if (mission_mode) {
+#if AP_MISSION_ENABLED
+        AP_Mission *mission = AP::mission();
+
+        const uint16_t index = mission->get_current_nav_index();
+        const AP_Mission::ItemProgress progress = mission->get_item_progress(index);
+
+        mavlink_msg_nav_controller_progress_send(
+            chan,
+            progress.percentage_complete,
+            progress.distance_remaining_m,
+            progress.time_remaining_s,
+            progress.count_remaining,
+            MAV_MISSION_TYPE_MISSION,
+            index,
+            // Setting location to invalid. GCS can extract the location (if any) from the mission item.
+            INT32_MAX, INT32_MAX, NAN, MAV_FRAME_GLOBAL
+        );
+#endif // AP_MISSION_ENABLED
+    } else {
+        // TODO: Progress for other modes...
+    }
+}
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
     // we're not expecting very many of these ever, so a tiny bit of
@@ -6395,6 +6429,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = send_relay_status();
         break;
 #endif
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    case MSG_NAV_CONTROLLER_PROGRESS:
+        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_PROGRESS);
+        send_nav_controller_progress();
+        break;
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     default:
         // try_send_message must always at some stage return true for

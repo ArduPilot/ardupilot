@@ -949,7 +949,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_LOITER_TO_ALT:
-        return verify_loiter_to_alt();
+        return verify_loiter_to_alt(cmd);
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         cmd_complete = verify_RTL();
@@ -2127,6 +2127,10 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // return immediately if we haven't reached our destination
     if (!copter.wp_nav->reached_wp_destination()) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        const float distance_m = copter.wp_nav->get_wp_distance_to_destination() / 100.0f;
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2135,8 +2139,13 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
         loiter_time = millis();
     }
 
+    const uint32_t loiter_time_elapsed_s = (millis() - loiter_time) / 1000;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(cmd.index, loiter_time_elapsed_s, loiter_time_max);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (loiter_time_elapsed_s >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -2146,12 +2155,21 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
 // verify_loiter_to_alt - check if we have reached both destination
 // (roughly) and altitude (precisely)
-bool ModeAuto::verify_loiter_to_alt() const
+bool ModeAuto::verify_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     if (loiter_to_alt.reached_destination_xy &&
         loiter_to_alt.reached_alt) {
         return true;
     }
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // Copter nav flies a straight line in 3D space to get to the Loiter Alt
+    // waypoint (it doesn't fly to the xy pos then ascend/descend).
+    const Vector2f vector_cm = Vector2f(copter.wp_nav->get_wp_distance_to_destination(), (copter.current_loc.alt - loiter_to_alt.alt));
+    const float distance_m = vector_cm.length() / 100.0f;
+    mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     return false;
 }
 
@@ -2202,6 +2220,10 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        float distance_m = copter.wp_nav->get_wp_distance_to_destination() / 100.0f;
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2214,8 +2236,17 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
+    const uint32_t loiter_time_elapsed_s = (millis() - loiter_time) / 1000;
+
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    // only publish progress if we have a loiter time defined
+    if (loiter_time_max > 0) {
+        mission.set_item_progress_time_elapsed(cmd.index, loiter_time_elapsed_s, loiter_time_max);
+    }
+#endif //AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (loiter_time_elapsed_s >= loiter_time_max) {
         if (loiter_time_max == 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
@@ -2235,13 +2266,21 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
             // start circling
             circle_start();
         }
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        float distance_m = copter.wp_nav->get_wp_distance_to_destination() / 100.0f;
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
     const float turns = cmd.get_loiter_turns();
+    const float turns_completed = fabsf(copter.circle_nav->get_angle_total()/float(M_2PI));
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_count_completed(cmd.index, turns_completed, turns);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= turns;
+    return turns_completed >= turns;
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
@@ -2249,6 +2288,10 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+        float distance_m = copter.wp_nav->get_wp_distance_to_destination() / 100.0f;
+        mission.set_item_progress_distance_remaining(cmd.index, distance_m);
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
         return false;
     }
 
@@ -2282,7 +2325,16 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+    const uint32_t delay_time_elapsed_ms = millis() - nav_delay_time_start_ms;
+#if AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+    mission.set_item_progress_time_elapsed(
+        cmd.index,
+        delay_time_elapsed_ms / 1000.0f,
+        nav_delay_time_max_ms / 1000.0f
+    );
+#endif // AP_MAVLINK_MAV_MSG_NAV_CONTROLLER_PROGRESS_ENABLED
+
+    if (delay_time_elapsed_ms > nav_delay_time_max_ms) {
         nav_delay_time_max_ms = 0;
         return true;
     }
