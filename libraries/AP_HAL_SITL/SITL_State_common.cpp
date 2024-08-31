@@ -70,6 +70,9 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         benewake_tfmini = NEW_NOTHROW SITL::RF_Benewake_TFmini();
         return benewake_tfmini;
+    } else if (streq(name, "ecoefi")) {
+        sitl_model->set_ecoefi(&_sitl->ecoefi_sim);
+        return _sitl->ecoefi_sim;
     } else if (streq(name, "nooploop_tofsense")) {
         if (nooploop != nullptr) {
             AP_HAL::panic("Only one nooploop_tofsense at a time");
