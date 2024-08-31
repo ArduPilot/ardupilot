@@ -509,7 +509,7 @@ if __name__ == '__main__':
                       help="file containing extra hwdef information")
     parser.add_option("--board",
                       type='string',
-                      default="DevEBoxH7v2",
+                      default="CubeOrange",
                       help='board to build for')
     parser.add_option("--emit-disable-all-defines",
                       action='store_true',
