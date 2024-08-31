@@ -403,6 +403,9 @@ class PSpawnStdPrettyPrinter(object):
         for line in lines:
             self.print_prefixed_line(line)
 
+    def set_output(self, output):
+        self.output = output
+
     def print_prefixed_line(self, line):
         print("%s: %s" % (self.prefix, line), file=self.output)
 
@@ -605,6 +608,7 @@ def start_SITL(binary,
         # TODO: have a SITL-compiled ardupilot able to have its
         # console on an output fd.
     else:
+        child.pexpect_logfile = pexpect_logfile
         child.expect('Waiting for ', timeout=300)
     return child
 

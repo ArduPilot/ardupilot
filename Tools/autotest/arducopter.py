@@ -11840,6 +11840,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
+    def ContextCorking(self):
+        '''test infrastructure for silencing tests'''
+        count = 0
+
+        self.context_push()
+        self.progress(f"################ THIS SHOULD BE SEEN {count}")
+        count += 1
+        self.context_pop()
+
+        self.context_push(cork_stdout_and_stderr=True)
+        not_seen_text = "################ THIS SHOULD NOT BE SEEN"
+        self.progress(not_seen_text)
+        dead = self.context_pop()
+        if dead.std_obj.output.endswith(not_seen_text):
+            raise NotAchievedException(f"output was not as expected want={not_seen_text} got={dead.std_obj.output}")
+        raise ValueError("Bad")
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11941,6 +11958,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MissionRTLYawBehaviour,
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
+            self.ContextCorking,
         ])
         return ret
 

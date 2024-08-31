@@ -201,8 +201,36 @@ class ArmedAtEndOfTestException(ErrorException):
     pass
 
 
-class Context(object):
+class ContextTextIOWrapper():
+    '''an object which looks like an TextIOWrapper, so can be assigned to
+    sys.stdout to capture output'''
     def __init__(self):
+        self.output = ""
+
+    def close(self):
+        pass
+
+    def write(self, data):
+        if isinstance(data, bytes):
+            data = data.decode('ascii')
+        self.output += data
+
+    def flush(self):
+        pass
+
+    def capture(self):
+        self.old_stdout = sys.stdout
+        self.old_stderr = sys.stderr
+        sys.stdout = self
+        sys.stderr = self
+
+    def release(self):
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
+
+
+class Context(object):
+    def __init__(self, cork_stdout_and_stderr=False):
         self.parameters = []
         self.sitl_commandline_customised = False
         self.reboot_sitl_was_done = False
@@ -213,25 +241,21 @@ class Context(object):
         self.installed_scripts = []
         self.installed_modules = []
         self.overridden_message_rates = {}
+        self.cork_stdout_and_stderr = cork_stdout_and_stderr
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
-class TeeBoth(object):
-    def __init__(self, name, mode, mavproxy_logfile, suppress_stdout=False):
-        self.suppress_stdout = suppress_stdout
-        self.file = open(name, mode)
+class Tee(object):
+    def __init__(self, name):
+        self.file = open(name, "w")
         self.stdout = sys.stdout
         self.stderr = sys.stderr
-        self.mavproxy_logfile = mavproxy_logfile
-        self.mavproxy_logfile.set_fh(self)
         sys.stdout = self
         sys.stderr = self
 
     def close(self):
         sys.stdout = self.stdout
         sys.stderr = self.stderr
-        self.mavproxy_logfile.set_fh(None)
-        self.mavproxy_logfile = None
         self.file.close()
         self.file = None
 
@@ -239,8 +263,7 @@ class TeeBoth(object):
         if isinstance(data, bytes):
             data = data.decode('ascii')
         self.file.write(data)
-        if not self.suppress_stdout:
-            self.stdout.write(data)
+        self.stdout.write(data)
 
     def flush(self):
         self.file.flush()
@@ -1865,7 +1888,9 @@ class TestSuite(ABC):
                  num_aux_imus=0,
                  dronecan_tests=False,
                  generate_junit=False,
-                 build_opts={}):
+                 build_opts={},
+                 verbose=True,
+                 ):
 
         self.start_time = time.time()
 
@@ -1894,6 +1919,7 @@ class TestSuite(ABC):
         self.build_opts = build_opts
         self.num_aux_imus = num_aux_imus
         self.generate_junit = generate_junit
+        self.verbose = verbose
         if generate_junit:
             try:
                 spec = importlib.util.find_spec("junitparser")
@@ -2009,9 +2035,6 @@ class TestSuite(ABC):
         elif got_minor < minor:
             return False
         return got_point > point
-
-    def open_mavproxy_logfile(self):
-        return MAVProxyLogFile()
 
     def buildlogs_path(self, path):
         """Return a string representing path in the buildlogs directory."""
@@ -3368,9 +3391,9 @@ class TestSuite(ABC):
         self.sitl = None
 
     def start_test(self, description):
-        self.progress("##################################################################################")
+        self.progress("####################################################################")
         self.progress("########## %s  ##########" % description)
-        self.progress("##################################################################################")
+        self.progress("####################################################################")
 
     def try_symlink_tlog(self):
         self.buildlog = self.buildlogs_path(self.log_name() + "-test.tlog")
@@ -6373,9 +6396,12 @@ class TestSuite(ABC):
         """Get Saved parameters."""
         return self.contexts[-1]
 
-    def context_push(self):
+    def context_push(self, cork_stdout_and_stderr=None):
         """Save a copy of the parameters."""
-        context = Context()
+        if cork_stdout_and_stderr is None:
+            if len(self.contexts):
+                cork_stdout_and_stderr = self.contexts[-1].cork_stdout_and_stderr
+        context = Context(cork_stdout_and_stderr=cork_stdout_and_stderr)
         self.contexts.append(context)
         # add a message hook so we can collect messages conveniently:
 
@@ -6384,6 +6410,11 @@ class TestSuite(ABC):
             if t in context.collections:
                 context.collections[t].append(m)
         self.install_message_hook_context(mh)
+
+        # cork the output if required:
+        if context.cork_stdout_and_stderr:
+            context.std_obj = ContextTextIOWrapper()
+            context.std_obj.capture()
 
     def context_collect(self, msg_type):
         '''start collecting messages of type msg_type into context collection'''
@@ -6449,6 +6480,15 @@ class TestSuite(ABC):
         elif dead.reboot_sitl_was_done:
             self.progress("Doing implicit context-pop reboot")
             self.reboot_sitl(mark_context=False)
+
+        if dead.cork_stdout_and_stderr:
+            # if the new current context is also corked then add to
+            # its output
+            if len(self.contexts) and self.contexts[-1].cork_stdout_and_stderr:
+                self.contexts[-1].std_obj.output += dead.std_obj.output
+                dead.std_obj.release()
+
+        return dead
 
     # the following method is broken under Python2; can't **build_opts
     # def context_start_custom_binary(self, extra_defines={}):
@@ -8755,14 +8795,14 @@ Also, ignores heartbeats not from our target system'''
             util.run_cmd('/bin/cp build/sitl/bin/* %s' % to_dir,
                          directory=util.reltopdir('.'))
 
-    def run_one_test(self, test, interact=False, suppress_stdout=False):
+    def run_one_test(self, test, interact=False):
         '''new-style run-one-test used by run_tests'''
         for i in range(0, test.attempts-1):
-            result = self.run_one_test_attempt(test, interact=interact, attempt=i+2, suppress_stdout=suppress_stdout)
+            result = self.run_one_test_attempt(test, interact=interact, attempt=i+2)
             if result.passed:
                 return result
             self.progress("Run attempt failed.  Retrying")
-        return self.run_one_test_attempt(test, interact=interact, attempt=1, suppress_stdout=suppress_stdout)
+        return self.run_one_test_attempt(test, interact=interact, attempt=1)
 
     def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
@@ -8803,7 +8843,7 @@ Also, ignores heartbeats not from our target system'''
         else:
             self.progress("... does not exist")
 
-    def run_one_test_attempt(self, test, interact=False, attempt=1, suppress_stdout=False):
+    def run_one_test_attempt(self, test, interact=False, attempt=1):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
         desc = test.description
@@ -8817,7 +8857,7 @@ Also, ignores heartbeats not from our target system'''
             test_output_filename = self.buildlogs_path("%s-%s.txt" %
                                                        (self.log_name(), name))
 
-        tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile, suppress_stdout=suppress_stdout)
+        self.tee = Tee(test_output_filename)
 
         start_message_hooks = copy.copy(self.message_hooks)
 
@@ -8825,11 +8865,23 @@ Also, ignores heartbeats not from our target system'''
         self.start_test(prettyname)
         self.set_current_test_name(name)
         old_contexts_length = len(self.contexts)
-        self.context_push()
+        self.context_push(cork_stdout_and_stderr=not self.verbose)
+
+        old_pexpect_logfile = None
+        if not self.verbose:
+            old_pexpect_logfile = getattr(self.sitl, "pexpect_logfile")
+            # redirect ArduPilot process output to this test's logfile
+            if old_pexpect_logfile:
+                self.sitl.pexpect_logfile.set_output(self.contexts[-1].std_obj)
+                self.sitl.logfile = self.sitl.pexpect_logfile
 
         start_time = time.time()
 
         orig_speedup = None
+
+        # back these up in case we have a context mismatch
+        orig_stdout = sys.stdout
+        orig_stderr = sys.stderr
 
         hooks_removed = False
 
@@ -8882,9 +8934,13 @@ Also, ignores heartbeats not from our target system'''
             passed = False
             reset_needed = True
 
+        old_context = None
         try:
-            self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
+            old_context = self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
+            self.tee.file.write(old_context.std_obj.output)
         except Exception as e:
+            sys.stdout = orig_stdout
+            sys.stderr = orig_stderr
             self.print_exception_caught(e, send_statustext=False)
             passed = False
 
@@ -8959,6 +9015,9 @@ Also, ignores heartbeats not from our target system'''
         if passed:
             self.progress('PASSED: "%s"' % prettyname)
         else:
+            if not self.verbose and old_context:
+                print(old_context.std_obj.output)
+
             self.progress('FAILED: "%s": %s (see %s)' %
                           (prettyname, repr(ex), test_output_filename))
             result.exception = ex
@@ -8977,7 +9036,15 @@ Also, ignores heartbeats not from our target system'''
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
             self.set_current_waypoint(0, check_afterwards=False)
 
-        tee.close()
+        if old_pexpect_logfile is not None:
+            self.sitl.pexpect_logfile.set_output(old_pexpect_logfile)
+            self.sitl.logfile = self.sitl.pexpect_logfile
+
+        self.tee.close()
+        self.tee = None
+
+        if not self.verbose and passed:
+            self.progress('PASSED: "%s"' % prettyname)
 
         result.passed = passed
         return result
@@ -9013,7 +9080,7 @@ Also, ignores heartbeats not from our target system'''
         mavproxy = util.start_MAVProxy_SITL(
             self.vehicleinfo_key(),
             master=master,
-            logfile=self.mavproxy_logfile,
+            logfile=sys.stdout,
             options=options,
             pexpect_timeout=pexpect_timeout,
             sitl_rcin_port=sitl_rcin_port,
@@ -9138,9 +9205,22 @@ Also, ignores heartbeats not from our target system'''
         return self.use_map
 
     def init(self):
-        """Initilialize autotest feature."""
-        self.mavproxy_logfile = self.open_mavproxy_logfile()
+        if not self.verbose:
+            std_obj = ContextTextIOWrapper()
+            std_obj.capture()
+        try:
+            self._init()
+        except Exception as ex:
+            if not self.verbose:
+                std_obj.release()
+                print(std_obj.output)
+            raise ex
 
+        if not self.verbose:
+            std_obj.release()
+
+    def _init(self):
+        """Initilialize autotest feature."""
         if self.frame is None:
             self.frame = self.default_frame()
 
@@ -9177,6 +9257,16 @@ Also, ignores heartbeats not from our target system'''
             # work OK.
             raise NotAchievedException("SITL is not running")
         self.progress("SITL is running")
+
+        self.progress("Waiting for a heartbeat with mavlink protocol %s"
+                      % self.mav.WIRE_PROTOCOL_VERSION)
+        self.wait_heartbeat()
+        self.wait_for_initial_mode()
+        self.progress("Setting up RC parameters")
+        self.set_rc_default()
+        self.wait_for_mode_switch_poll()
+        if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
         self.progress("Ready to start testing!")
 
@@ -12192,16 +12282,6 @@ switch value'''
 
         try:
             self.init()
-
-            self.progress("Waiting for a heartbeat with mavlink protocol %s"
-                          % self.mav.WIRE_PROTOCOL_VERSION)
-            self.wait_heartbeat()
-            self.wait_for_initial_mode()
-            self.progress("Setting up RC parameters")
-            self.set_rc_default()
-            self.wait_for_mode_switch_poll()
-            if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
             for test in tests:
                 self.drain_mav_unparsed()
