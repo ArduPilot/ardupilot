@@ -116,25 +116,19 @@ bool Tracker::set_home_eeprom(const Location &temp)
     return true;
 }
 
-bool Tracker::set_home_to_current_location(bool lock)
-{
-    return set_home(AP::gps().location(), lock);
-}
-
 bool Tracker::set_home(const Location &temp, bool lock)
 {
-    // check EKF origin has been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        if (!ahrs.set_home(temp)) {
-            return false;
-        }
+    if (!AP_Vehicle::set_home(temp, lock)) {
+        return false;
     }
 
+    // also store this away for next boot:
     if (!set_home_eeprom(temp)) {
         return false;
     }
 
+    // and move our current location there, in case we don't have an
+    // absolute position source:
     current_loc = temp;
 
     return true;

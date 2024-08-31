@@ -37,42 +37,16 @@ void Copter::set_home_to_current_location_inflight() {
 }
 
 // set_home_to_current_location - set home to current GPS location
-bool Copter::set_home_to_current_location(bool lock) {
-    // get current location from EKF
-    Location temp_loc;
-    if (ahrs.get_location(temp_loc)) {
-        if (!set_home(temp_loc, lock)) {
-            return false;
-        }
-        // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
-        g2.smart_rtl.set_home(true);
-#endif
-        return true;
-    }
-    return false;
-}
-
-// set_home - sets ahrs home (used for RTL) to specified location
-//  returns true if home location set successfully
-bool Copter::set_home(const Location& loc, bool lock)
+bool Copter::set_home_to_current_location(bool lock)
 {
-    // check EKF origin has been set
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
+    if (!AP_Vehicle::set_home_to_current_location(lock)) {
         return false;
     }
 
-    // set ahrs home (used for RTL)
-    if (!ahrs.set_home(loc)) {
-        return false;
-    }
+    // we have successfully set AHRS home, set it for SmartRTL
+#if MODE_SMARTRTL_ENABLED == ENABLED
+    g2.smart_rtl.set_home(true);
+#endif
 
-    // lock home position
-    if (lock) {
-        ahrs.lock_home();
-    }
-
-    // return success
     return true;
 }

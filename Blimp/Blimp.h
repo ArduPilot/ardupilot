@@ -310,8 +310,6 @@ private:
     // commands.cpp
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
-    bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
     // ekf_check.cpp
     void ekf_check();

@@ -197,7 +197,6 @@ private:
     void init_ardupilot() override;
     bool get_home_eeprom(Location &loc) const;
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
-    bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location &temp, bool lock) override WARN_IF_UNUSED;
     void prepare_servos();
     void set_mode(Mode &newmode, ModeReason reason);
