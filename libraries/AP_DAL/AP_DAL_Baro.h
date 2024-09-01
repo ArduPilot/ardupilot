@@ -1,5 +1,9 @@
 #pragma once
 
+#include <AP_Baro/AP_Baro_config.h>
+
+#if AP_BARO_ENABLED
+
 #include <AP_Baro/AP_Baro.h>
 
 #include <AP_Logger/LogStructure.h>
@@ -51,3 +55,5 @@ private:
     struct log_RBRI _RBRI[BARO_MAX_INSTANCES];
 };
 
+
+#endif  // AP_BARO_ENABLED
