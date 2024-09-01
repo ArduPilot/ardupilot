@@ -275,7 +275,11 @@ void AP_AHRS::Log_Write_Home_And_Origin()
 
 // get apparent to true airspeed ratio
 float AP_AHRS_Backend::get_EAS2TAS(void) {
+#if AP_BARO_ENABLED
     return AP::baro()._get_EAS2TAS();
+#else
+    return 1.0;
+#endif
 }
 
 // return current vibration vector for primary IMU
