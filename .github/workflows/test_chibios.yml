@@ -19,7 +19,6 @@ on:
       - 'Tools/GIT_Test/**'
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'

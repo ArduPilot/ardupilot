@@ -51,7 +51,7 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
         slewrate = g.takeoff_throttle_slewrate;
     }
 #if HAL_QUADPLANE_ENABLED
-    if (g.takeoff_throttle_slewrate != 0 && quadplane.in_transition()) {
+    if (g.takeoff_throttle_slewrate != 0 && quadplane.in_frwd_transition()) {
         slewrate = g.takeoff_throttle_slewrate;
     }
 #endif
@@ -555,9 +555,21 @@ float Plane::apply_throttle_limits(float throttle_in)
 
     // Handle throttle limits for transition conditions.
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_transition()) {
+    if (quadplane.in_frwd_transition()) {
         if (aparm.takeoff_throttle_max != 0) {
             max_throttle = aparm.takeoff_throttle_max.get();
+        }
+
+        // Apply minimum throttle limits only for SLT thrust types.
+        // The other types don't support it well.
+        if (quadplane.get_thrust_type() == QuadPlane::ThrustType::SLT
+            && control_mode->does_auto_throttle()
+        ) {
+            if (aparm.takeoff_throttle_min.get() != 0) {
+                min_throttle = MAX(min_throttle, aparm.takeoff_throttle_min.get());
+            } else {
+                min_throttle = MAX(min_throttle, aparm.throttle_cruise.get());
+            }
         }
     }
 #endif
@@ -793,7 +805,7 @@ void Plane::servos_twin_engine_mix(void)
 void Plane::force_flare(void)
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_transition() && plane.arming.is_armed()) { //allows for ground checking of flare tilts
+    if (quadplane.in_frwd_transition() && plane.arming.is_armed()) { //allows for ground checking of flare tilts
         return;
     }
     if (control_mode->is_vtol_mode()) {

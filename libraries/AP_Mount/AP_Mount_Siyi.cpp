@@ -28,7 +28,7 @@ const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
         {{'7','3'}, "A8"},
         {{'6','B'}, "ZR10"},
         {{'7','8'}, "ZR30"},
-        {{'8','2'}, "ZT6"},
+        {{'8','3'}, "ZT6"},
         {{'7','A'}, "ZT30"},
 };
 
@@ -910,30 +910,55 @@ SetFocusResult AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
 // set camera lens as a value from 0 to 8
 bool AP_Mount_Siyi::set_lens(uint8_t lens)
 {
-    // only supported on ZT30.  sanity check lens values
-    if ((_hardware_model != HardwareModel::ZT30) || (lens > 8)) {
-        return false;
+    CameraImageType selected_lens;
+
+    switch (_hardware_model) {
+
+    case HardwareModel::ZT30: {
+        // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
+        static const CameraImageType cam_image_type_table[] {
+            CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
+            CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL,          // 5
+            CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
+            CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE, // 0
+            CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM, // 1
+            CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL, // 2
+            CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE,             // 4
+            CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM,             // 6
+            CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE,          // 8
+        };
+
+        // sanity check lens values
+        if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+            return false;
+        }
+        selected_lens = cam_image_type_table[lens];
+        break;
     }
 
-    // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
-    static const CameraImageType cam_image_type_table[] {
-        CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
-        CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL,          // 5
-        CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
-        CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE, // 0
-        CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM, // 1
-        CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL, // 2
-        CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE,             // 4
-        CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM,             // 6
-        CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE,          // 8
-    };
+    case HardwareModel::ZT6: {
+        // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
+        static const CameraImageType cam_image_type_table[] {
+            CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
+            CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
+            CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE, // 0
+        };
 
-    if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+        // sanity check lens values
+        if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+            return false;
+        }
+        selected_lens = cam_image_type_table[lens];
+        break;
+    }
+
+    default:
+        // set lens not supported on this camera
         return false;
     }
 
     // send desired image type to camera
-    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type_table[lens]);
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)selected_lens);
 }
 
 // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type

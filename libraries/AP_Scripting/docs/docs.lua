@@ -392,6 +392,10 @@ efi = {}
 ---@return EFI_State_ud
 function efi:get_state() end
 
+-- get last update time in milliseconds
+---@return uint32_t_ud
+function efi:get_last_update_ms() end
+
 -- desc
 ---@param instance integer
 ---@return AP_EFI_Backend_ud|nil
@@ -2073,6 +2077,11 @@ function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 ---@param scale_factor number -- factor
 function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 
+-- get the timestamp of last telemetry data for an ESC
+---@param esc_index integer
+---@return uint32_t_ud
+function esc_telem:get_last_telem_data_ms(esc_index) end
+
 -- desc
 optical_flow = {}
 
@@ -2496,6 +2505,12 @@ function vehicle:is_taking_off() end
 -- desc
 ---@return boolean
 function vehicle:is_landing() end
+
+-- Set the previous target location for crosstrack and crosstrack if available in the current mode
+-- It's up to the Lua code to ensure the new_start_location makes sense
+---@param new_start_location Location_ud
+---@return boolean -- true on success
+function vehicle:set_crosstrack_start(new_start_location) end
 
 -- desc
 onvif = {}

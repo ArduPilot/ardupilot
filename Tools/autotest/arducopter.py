@@ -1789,7 +1789,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.user_takeoff(alt_min=25)
 
         # Check fence is enabled
-        self.do_fence_enable()
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
@@ -1810,11 +1809,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # lower throttle and try and land
         self.set_rc(3, 1300)
         self.wait_altitude(0, 2, relative=True)
-        self.wait_disarmed()
+        self.zero_throttle()
+        self.wait_landed_and_disarmed()
         self.assert_fence_enabled()
+        # must not be in RTL
+        self.assert_mode("LOITER")
 
-        # Assert fence is not healthy since it was enabled manually
-        self.assert_sensor_state(fence_bit, healthy=False)
+        # Assert fence is healthy since it was enabled automatically
+        self.assert_sensor_state(fence_bit, healthy=True)
 
         # Disable the fence using mavlink command to ensure cleaned up SITL state
         self.do_fence_disable()
@@ -8614,6 +8616,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def fly_rangefinder_sitl(self):
+        self.set_parameters({
+            "RNGFND1_TYPE": 100,
+        })
+        self.reboot_sitl()
+        self.fly_rangefinder_drivers_fly([("unused", "sitl")])
+        self.wait_disarmed()
+
     def RangeFinderDrivers(self):
         '''Test rangefinder drivers'''
         self.set_parameters({
@@ -8667,6 +8677,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.context_pop()
 
         self.fly_rangefinder_mavlink()
+        self.fly_rangefinder_sitl()  # i.e. type 100
 
         i2c_drivers = [
             ("maxbotixi2cxl", 2),
@@ -9140,19 +9151,89 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.TimeUS != current_ts:
                 current_ts = None
                 continue
-            measurements[m.I] = (m.Lat, m.Lng)
+            measurements[m.I] = (m.Lat, m.Lng, m.Alt)
             if len(measurements) == 3:
                 # check lat:
-                for n in 0, 1:
+                for n in 0, 1, 2:
                     expected_blended = 0.8*measurements[0][n] + 0.2*measurements[1][n]
-                    epsilon = 0.0000002
+                    axis_epsilons = [0.0000002, 0.0000002, 0.2]
+                    epsilon = axis_epsilons[n]
                     error = abs(measurements[2][n] - expected_blended)
                     if error > epsilon:
-                        raise NotAchievedException(f"Blended diverged {measurements[0][n]=} {measurements[1][n]=}")
+                        raise NotAchievedException(f"Blended diverged {n=} {measurements[0][n]=} {measurements[1][n]=}")
                 current_ts = None
 
         self.context_pop()
         self.reboot_sitl()
+
+    def GPSBlendingAffinity(self):
+        '''test blending when affinity in use'''
+        # configure:
+        self.set_parameters({
+            "WP_YAW_BEHAVIOR": 0,  # do not yaw
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_DISABLE": 0,
+            "SIM_GPS_POS_X": 1.0,
+            "SIM_GPS_POS_Y": -1.0,
+            "SIM_GPS2_POS_X": -1.0,
+            "SIM_GPS2_POS_Y": 1.0,
+            "GPS_AUTO_SWITCH": 2,
+
+            "EK3_AFFINITY" : 1,
+            "EK3_IMU_MASK": 7,
+            "SIM_IMU_COUNT": 3,
+            "INS_ACC3OFFS_X": 0.001,
+            "INS_ACC3OFFS_Y": 0.001,
+            "INS_ACC3OFFS_Z": 0.001,
+        })
+        # force-calibration of accel:
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, p5=76)
+        self.reboot_sitl()
+
+        alt = 10
+        self.takeoff(alt, mode='GUIDED')
+        self.fly_guided_move_local(30, 0, alt)
+        self.fly_guided_move_local(30, 30, alt)
+        self.fly_guided_move_local(0, 30, alt)
+        self.fly_guided_move_local(0, 0, alt)
+        self.change_mode('LAND')
+
+        current_log_file = self.dfreader_for_current_onboard_log()
+
+        self.wait_disarmed()
+
+        # ensure that the blended solution is always about half-way
+        # between the two GPSs:
+        current_ts = None
+        max_errors = [0, 0, 0]
+        while True:
+            m = current_log_file.recv_match(type='XKF1')
+            if m is None:
+                break
+            if current_ts is None:
+                if m.C != 0:  # noqa
+                    continue
+                current_ts = m.TimeUS
+                measurements = {}
+            if m.TimeUS != current_ts:
+                current_ts = None
+                continue
+            measurements[m.C] = (m.PN, m.PE, m.PD)
+            if len(measurements) == 3:
+                # check lat:
+                for n in 0, 1, 2:
+                    expected_blended = 0.5*measurements[0][n] + 0.5*measurements[1][n]
+                    axis_epsilons = [0.02, 0.02, 0.03]
+                    epsilon = axis_epsilons[n]
+                    error = abs(measurements[2][n] - expected_blended)
+                    # self.progress(f"{n=} {error=}")
+                    if error > max_errors[n]:
+                        max_errors[n] = error
+                    if error > epsilon:
+                        raise NotAchievedException(f"Blended diverged {n=} {measurements[0][n]=} {measurements[1][n]=} {measurements[2][n]=} {error=}")  # noqa:E501
+                current_ts = None
+        self.progress(f"{max_errors=}")
 
     def Callisto(self):
         '''Test Callisto'''
@@ -11729,6 +11810,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "id": 1
             })
 
+    def MAV_CMD_MISSION_START_p1_p2(self):
+        '''make sure we deny MAV_CMD_MISSION_START if either p1 or p2 non-zero'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+        ])
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+        })
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_MISSION_START,
+            p1=1,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_MISSION_START,
+            p2=1,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_MISSION_START,
+            p1=1,
+            p2=1,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11759,6 +11870,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GPSBlending,
             self.GPSWeightedBlending,
             self.GPSBlendingLog,
+            self.GPSBlendingAffinity,
             self.DataFlash,
             Test(self.DataFlashErase, attempts=8),
             self.Callisto,
@@ -11828,6 +11940,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.LoggingFormat,
             self.MissionRTLYawBehaviour,
             self.BatteryInternalUseOnly,
+            self.MAV_CMD_MISSION_START_p1_p2,
         ])
         return ret
 

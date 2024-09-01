@@ -578,7 +578,8 @@ void Copter::ten_hz_logging_loop()
     if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_EKF_POS();
     }
-    if (should_log(MASK_LOG_MOTBATT)) {
+    if ((FRAME_CONFIG == HELI_FRAME) || should_log(MASK_LOG_MOTBATT)) {
+        // always write motors log if we are a heli
         motors->Log_Write();
     }
     if (should_log(MASK_LOG_RCIN)) {
@@ -607,9 +608,6 @@ void Copter::ten_hz_logging_loop()
         g2.beacon.log();
 #endif
     }
-#if FRAME_CONFIG == HELI_FRAME
-    Log_Write_Heli();
-#endif
 #if AP_WINCH_ENABLED
     if (should_log(MASK_LOG_ANY)) {
         g2.winch.write_log();

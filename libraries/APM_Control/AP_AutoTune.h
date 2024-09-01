@@ -128,9 +128,9 @@ private:
     // 5 point mode filter for FF estimate
     ModeFilterFloat_Size5 ff_filter;
 
-    LowPassFilterFloat actuator_filter;
-    LowPassFilterFloat rate_filter;
-    LowPassFilterFloat target_filter;
+    LowPassFilterConstDtFloat actuator_filter;
+    LowPassFilterConstDtFloat rate_filter;
+    LowPassFilterConstDtFloat target_filter;
 
     // separate slew limiters for P and D
     float slew_limit_max, slew_limit_tau;

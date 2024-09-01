@@ -106,6 +106,8 @@ void Tiltrotor::setup()
         return;
     }
 
+    quadplane.thrust_type = QuadPlane::ThrustType::TILTROTOR;
+
     _is_vectored = tilt_mask != 0 && type == TILT_TYPE_VECTORED_YAW;
 
     // true if a fixed forward motor is configured, either throttle, throttle left  or throttle right.

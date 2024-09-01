@@ -553,11 +553,11 @@ void check_ecc_errors(void)
     }
     uint32_t ofs = 0;
     while (ofs < BOARD_FLASH_SIZE*1024) {
-        if (FLASH->SR1 != 0) {
+        if (FLASH->SR1 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
             break;
         }
 #if BOARD_FLASH_SIZE > 1024
-        if (FLASH->SR2 != 0) {
+        if (FLASH->SR2 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
             break;
         }
 #endif

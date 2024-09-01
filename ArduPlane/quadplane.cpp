@@ -695,6 +695,9 @@ bool QuadPlane::setup(void)
     case AP_Motors::MOTOR_FRAME_Y6:
         setup_default_channels(7);
         break;
+    case AP_Motors::MOTOR_FRAME_DECA:
+        setup_default_channels(10);
+        break;
     case AP_Motors::MOTOR_FRAME_TRI:
         SRV_Channels::set_default_function(CH_5, SRV_Channel::k_motor1);
         SRV_Channels::set_default_function(CH_6, SRV_Channel::k_motor2);
@@ -809,6 +812,10 @@ bool QuadPlane::setup(void)
     pilot_speed_z_max_up.convert_centi_parameter(AP_PARAM_INT16);
     pilot_speed_z_max_dn.convert_centi_parameter(AP_PARAM_INT16);
     pilot_accel_z.convert_centi_parameter(AP_PARAM_INT16);
+
+    // Provisionally assign the SLT thrust type.
+    // It will be overwritten by tailsitter or tiltorotor setups.
+    thrust_type = ThrustType::SLT;
 
     tailsitter.setup();
 
@@ -3967,9 +3974,9 @@ bool QuadPlane::is_vtol_land(uint16_t id) const
 /*
   return true if we are in a transition to fwd flight from hover
  */
-bool QuadPlane::in_transition(void) const
+bool QuadPlane::in_frwd_transition(void) const
 {
-    return available() && transition->active();
+    return available() && transition->active_frwd();
 }
 
 /*
@@ -4348,7 +4355,7 @@ bool SLT_Transition::allow_update_throttle_mix() const
     return !(quadplane.assisted_flight && (transition_state == TRANSITION_AIRSPEED_WAIT || transition_state == TRANSITION_TIMER));
 }
 
-bool SLT_Transition::active() const
+bool SLT_Transition::active_frwd() const
 {
     return quadplane.assisted_flight && ((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER));
 }

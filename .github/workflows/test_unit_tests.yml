@@ -33,7 +33,6 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'

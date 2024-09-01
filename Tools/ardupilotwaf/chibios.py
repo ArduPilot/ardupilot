@@ -452,6 +452,10 @@ def chibios_firmware(self):
         _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
 
+    if self.bld.options.upload_blueos:
+        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
+        _upload_task.set_run_after(generate_apj_task)
+
 def setup_canmgr_build(cfg):
     '''enable CANManager build. By doing this here we can auto-enable CAN in
     the build based on the presence of CAN pins in hwdef.dat except for AP_Periph builds'''

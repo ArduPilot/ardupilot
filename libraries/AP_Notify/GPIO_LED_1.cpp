@@ -47,6 +47,8 @@ void GPIO_LED_1::update(void)
     uint32_t new_pattern;
     if (AP_Notify::flags.initialising) {
         new_pattern = INITIALIZING;
+    } else if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_gcs || AP_Notify::flags.failsafe_battery) {
+        new_pattern = FAILSAFE;
     } else if (AP_Notify::flags.armed) {
         new_pattern = ARMED;
     } else if (AP_Notify::flags.pre_arm_check) {

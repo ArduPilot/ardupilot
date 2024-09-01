@@ -279,3 +279,11 @@ void AP_MotorsHeli_Quad::servo_test()
 {
     // not implemented
 }
+
+#if HAL_LOGGING_ENABLED
+// heli motors logging - called at 10 Hz
+void AP_MotorsHeli_Quad::Log_Write(void)
+{
+    _main_rotor.write_log();
+}
+#endif

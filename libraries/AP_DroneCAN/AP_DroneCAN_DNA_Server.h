@@ -18,11 +18,26 @@ class AP_DroneCAN_DNA_Server
 {
     StorageAccess storage;
 
-    struct NodeData {
-        uint8_t hwid_hash[6];
+    struct NodeRecord {
+        uint8_t uid_hash[6];
         uint8_t crc;
     };
 
+    /*
+     * For each node ID (1 through MAX_NODE_ID), the database can have one
+     * registration for it. Each registration consists of a NodeRecord which
+     * contains the (hash of the) unique ID reported by that node ID. Other
+     * info could be added to the registration in the future.
+     *
+     * Physically, the database is stored as a header and format version,
+     * followed by an array of NodeRecords indexed by node ID. If a particular
+     * NodeRecord has an all-zero unique ID hash or an invalid CRC, then that
+     * node ID isn't considerd to have a registration.
+     *
+     * The database has public methods which handle the server behavior for the
+     * relevant message. The methods can be used by multiple servers in
+     * different threads, so each holds a lock for its duration.
+     */
     class Database {
     public:
         Database() {};
@@ -30,50 +45,52 @@ class AP_DroneCAN_DNA_Server
         // initialize database (storage accessor is always replaced with the one supplied)
         void init(StorageAccess *storage_);
 
-        //Reset the Server Record
+        // remove all registrations from the database
         void reset();
 
-        // returns true if the given node ID is occupied (has valid stored data)
-        bool isOccupied(uint8_t node_id) {
-            return node_storage_occupied.get(node_id);
+        // return true if the given node ID is registered
+        bool is_registered(uint8_t node_id) {
+            return node_registered.get(node_id);
         }
 
-        // handle initializing the server with the given expected node ID and unique ID
-        void initServer(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
+        // handle initializing the server with its own node ID and unique ID
+        void init_server(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
 
-        // handle processing the node info message. returns true if duplicate.
-        bool handleNodeInfo(uint8_t source_node_id, const uint8_t unique_id[]);
+        // handle processing the node info message. returns true if from a duplicate node
+        bool handle_node_info(uint8_t source_node_id, const uint8_t unique_id[]);
 
-        // handle the allocation message. returns the new node ID.
-        uint8_t handleAllocation(uint8_t node_id, const uint8_t unique_id[]);
+        // handle the allocation message. returns the allocated node ID, or 0 if allocation failed
+        uint8_t handle_allocation(uint8_t node_id, const uint8_t unique_id[]);
 
     private:
-        //Generates 6Byte long hash from the specified unique_id
-        void getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const;
+        // search for a free node ID, starting at the preferred ID (which can be 0 if
+        // none are preferred). returns 0 if none found. based on pseudocode in
+        // uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
+        uint8_t find_free_node_id(uint8_t preferred);
 
-        //Methods to set, clear and report NodeIDs allocated/registered so far
-        void freeNodeID(uint8_t node_id);
+        // retrieve node ID that matches the given unique ID. returns 0 if not found
+        uint8_t find_node_id(const uint8_t unique_id[], uint8_t size);
 
-        //Go through List to find node id for specified unique id
-        uint8_t getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size);
+        // fill the given record with the hash of the given unique ID
+        void compute_uid_hash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
 
-        //Add Node ID info to the record and setup necessary mask fields
-        void addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
+        // create the registration for the given node ID and set its record's unique ID
+        void create_registration(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
 
-        //Finds next available free Node, starting from preferred NodeID
-        uint8_t findFreeNodeID(uint8_t preferred);
+        // delete the given node ID's registration
+        void delete_registration(uint8_t node_id);
 
-        //Look in the storage and check if there's a valid Server Record there
-        bool isValidNodeDataAvailable(uint8_t node_id);
+        // return true if the given node ID has a registration
+        bool check_registration(uint8_t node_id);
 
-        //Reads the Server Record from storage for specified node id
-        void readNodeData(NodeData &data, uint8_t node_id);
+        // read the given node ID's registration's record
+        void read_record(NodeRecord &record, uint8_t node_id);
 
-        //Writes the Server Record from storage for specified node id
-        void writeNodeData(const NodeData &data, uint8_t node_id);
+        // write the given node ID's registration's record
+        void write_record(const NodeRecord &record, uint8_t node_id);
 
         // bitmasks containing a status for each possible node ID (except 0 and > MAX_NODE_ID)
-        Bitmask<128> node_storage_occupied; // storage has a valid entry
+        Bitmask<128> node_registered; // have a registration for this node ID
 
         StorageAccess *storage;
         HAL_Semaphore sem;

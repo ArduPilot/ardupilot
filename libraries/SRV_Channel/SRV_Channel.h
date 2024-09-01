@@ -415,7 +415,13 @@ public:
 
     // set MIN/MAX parameters for a function
     static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
-    
+
+    // set MIN/MAX parameter defaults for a function
+    static void set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
+    // Save MIN/MAX/REVERSED parameters for a function
+    static void save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
     // save trims
     void save_trim(void);
 

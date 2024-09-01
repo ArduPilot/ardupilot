@@ -334,9 +334,15 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+    uint8_t get_motor_number(const uint8_t esc_number) const;
     uint32_t last_esc_telem_update_ms;
     void esc_telem_update();
     uint32_t esc_telem_update_period_ms;
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    void esc_telem_extended_update(const uint32_t &now_ms);
+    uint32_t last_esc_telem_extended_update;
+    uint8_t last_esc_telem_extended_sent_id;
+#endif
 #endif
 
     SRV_Channels servo_channels;

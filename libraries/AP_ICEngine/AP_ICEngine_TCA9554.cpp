@@ -82,7 +82,7 @@ void AP_ICEngine_TCA9554::TCA9554_set(TCA9554_state_t value)
     }
 }
 
-void AP_ICEngine_TCA9554::set_starter(bool on)
+void AP_ICEngine_TCA9554::set_starter(bool on, bool crank_dir_reverse)
 {
     if (!initialised) {
         initialised = TCA9554_init();
@@ -91,7 +91,11 @@ void AP_ICEngine_TCA9554::set_starter(bool on)
             return;
         }
     }
-    TCA9554_set(on? STARTER_ON : STARTER_OFF);
+    if (!crank_dir_reverse) {
+        TCA9554_set(on? STARTER_FORWARD : STARTER_OFF);
+    } else {
+        TCA9554_set(on? STARTER_REVERSE : STARTER_OFF);
+    }
 }
 
 #endif // AP_ICENGINE_TCA9554_STARTER_ENABLED

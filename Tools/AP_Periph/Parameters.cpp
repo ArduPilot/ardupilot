@@ -712,6 +712,17 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(rpm_msg_rate, "RPM_MSG_RATE", 0),
 #endif
 
+#if AP_EXTENDED_ESC_TELEM_ENABLED && HAL_WITH_ESC_TELEM
+    // @Param: ESC_EXT_TLM_RATE
+    // @DisplayName: ESC Extended telemetry message rate
+    // @Description: This is the rate at which extended ESC Telemetry will be sent across the CAN bus for each ESC
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(esc_extended_telem_rate, "ESC_EXT_TLM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT / 10),
+#endif
+
     AP_VAREND
 };
 

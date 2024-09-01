@@ -89,17 +89,10 @@ AP_Notify *AP_Notify::_singleton;
 #endif
 
 #ifndef DEFAULT_NTF_LED_TYPES
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-  #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
-// Linux boards
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_PCA9685LED_I2C_External)
-
-  #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
@@ -117,17 +110,12 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_ToshibaLED_I2C_External)
+  #endif  // board subtype
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#endif  // defined (DEFAULT_NTF_LED_TYPES)
 
-  #else // other linux
+#ifndef DEFAULT_NTF_LED_TYPES
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-  #endif
-
-// All other builds
-#else
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
-
-#endif // board selection
-
 #endif // DEFAULT_NTF_LED_TYPES
 
 #ifndef BUZZER_ENABLE_DEFAULT

@@ -565,16 +565,25 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
 // find first channel that a function is assigned to
 bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan)
 {
-    if (!function_assigned(function)) {
+    // Must have populated channel masks
+    if (!initialised) {
+        update_aux_servo_function();
+    }
+
+    // Make sure function is valid
+    if (!SRV_Channel::valid_function(function)) {
         return false;
     }
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            chan = channels[i].ch_num;
-            return true;
-        }
+
+    // Get the index of the first set bit, returns 0 if no bits are set
+    const int first_chan = __builtin_ffs(functions[function].channel_mask);
+    if (first_chan == 0) {
+        return false;
     }
-    return false;
+
+    // Convert to 0 indexed
+    chan = first_chan - 1;
+    return true;
 }
 
 /*
@@ -831,6 +840,31 @@ void SRV_Channels::set_output_min_max(SRV_Channel::Aux_servo_function_t function
         if (channels[i].function == function) {
             channels[i].set_output_min(min_pwm);
             channels[i].set_output_max(max_pwm);
+        }
+    }
+}
+
+// set MIN/MAX parameter defaults for a function
+void SRV_Channels::set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].servo_min.set_default(min_pwm);
+            channels[i].servo_max.set_default(max_pwm);
+        }
+    }
+}
+
+// Save MIN/MAX/REVERSED parameters for a function
+void SRV_Channels::save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            // If min is larger than max swap and set reversed
+            const bool reversed = min_pwm > max_pwm;
+            channels[i].servo_min.set_and_save(reversed ? max_pwm : min_pwm);
+            channels[i].servo_max.set_and_save(reversed ? min_pwm : max_pwm);
+            channels[i].reversed.set_and_save(reversed ? 1 : 0);
         }
     }
 }

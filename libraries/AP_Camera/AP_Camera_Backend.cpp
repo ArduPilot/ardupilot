@@ -22,7 +22,7 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
 void AP_Camera_Backend::update()
 {
     // Check camera options and start/stop recording based on arm/disarm
-    if ((_params.options.get() & (uint8_t)Options::RecordWhileArmed) != 0) {
+    if (option_is_enabled(Option::RecordWhileArmed)) {
         if (hal.util->get_soft_armed() != last_is_armed) {
             last_is_armed = hal.util->get_soft_armed();
             if (!record_video(last_is_armed)) {

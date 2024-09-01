@@ -165,6 +165,9 @@ void AP_Periph_FW::rcout_update()
         last_esc_telem_update_ms = now_ms;
         esc_telem_update();
     }
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    esc_telem_extended_update(now_ms);
+#endif
 #endif
 }
 

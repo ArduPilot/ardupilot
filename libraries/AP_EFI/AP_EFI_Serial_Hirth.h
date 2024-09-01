@@ -31,6 +31,28 @@ public:
 
     void update() override;
 
+    enum class Error_Excess_Temp_Bitfield : uint16_t {
+        CHT_1_LOW = 1U<<0, // true if CHT1 is too low
+        CHT_1_HIGH = 1U<<1, // true if CHT1 is too high
+        CHT_1_ENRC_ACTIVE = 1U<<2, // true if CHT1 Enrichment is active
+        CHT_2_LOW = 1U<<3, // true if CHT2 is too low
+        CHT_2_HIGH = 1U<<4, // true if CHT2 is too high
+        CHT_2_ENRC_ACTIVE = 1U<<5, // true if CHT2 Enrichment is active
+        EGT_1_LOW = 1U<<6, // true if EGT1 is too low
+        EGT_1_HIGH = 1U<<7, // true if EGT1 is too high
+        EGT_1_ENRC_ACTIVE = 1U<<8, // true if EGT1 Enrichment is active
+        EGT_2_LOW = 1U<<9, // true if EGT2 is too low
+        EGT_2_HIGH = 1U<<10, // true if EGT2 is too high
+        EGT_2_ENRC_ACTIVE = 1U<<11, // true if EGT2 Enrichment is active
+    };
+
+    enum class Sensor_Status_Bitfield : uint8_t {
+        ENGINE_TEMP_SENSOR_OK = 1U<<0, // true if engine temperature sensor is OK
+        AIR_TEMP_SENSOR_OK = 1U<<1, // true if air temperature sensor is OK
+        AIR_PRESSURE_SENSOR_OK = 1U<<2, // true if intake air pressure sensor is OK
+        THROTTLE_SENSOR_OK = 1U<<3, // true if throttle sensor is OK
+    };
+
 private:
     // serial port instance
     AP_HAL::UARTDriver *port;
@@ -61,20 +83,15 @@ private:
     uint8_t expected_bytes;
 
     // Throttle values
-    uint16_t last_throttle;
+    uint16_t last_throttle;    
+    uint16_t throttle_to_hirth;
 
     uint32_t last_fuel_integration_ms;
 
     // custom status for Hirth
-    bool engine_temperature_sensor_status;
-    bool air_temperature_sensor_status;
-    bool air_pressure_sensor_status;
-    bool throttle_sensor_status;
+    uint16_t sensor_status;
 
-    bool CHT_1_error_excess_temperature_status;
-    bool CHT_2_error_excess_temperature_status;
-    bool EGT_1_error_excess_temperature_status;
-    bool EGT_2_error_excess_temperature_status;
+    uint16_t error_excess_temperature;
     uint32_t crc_fail_cnt;
     uint32_t uptime;
     uint32_t ack_fail_cnt;

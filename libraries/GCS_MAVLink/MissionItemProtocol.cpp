@@ -33,7 +33,7 @@ void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
                                                    const mavlink_message_t &msg)
 {
     bool success = true;
-    success = success && !receiving;
+    success = success && cancel_upload(_link, msg);
     success = success && clear_all_items();
     send_mission_ack(_link, msg, success ? MAV_MISSION_ACCEPTED : MAV_MISSION_ERROR);
 }
@@ -52,6 +52,29 @@ bool MissionItemProtocol::mavlink2_requirement_met(const GCS_MAVLINK &_link, con
     return false;
 }
 
+// returns true if we are either not receiving, or we successfully
+// cancelled an existing upload:
+bool MissionItemProtocol::cancel_upload(const GCS_MAVLINK &_link, const mavlink_message_t &msg)
+{
+    if (receiving) {
+        // someone is already uploading a mission.  If we are
+        // receiving from someone then we will allow them to restart -
+        // otherwise we deny.
+        if (msg.sysid != dest_sysid || msg.compid != dest_compid) {
+            // reject another upload until
+            send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+            return false;
+        }
+        // the upload count may have changed; free resources and
+        // allocate them again:
+        free_upload_resources();
+        receiving = false;
+        link = nullptr;
+    }
+
+    return true;
+}
+
 void MissionItemProtocol::handle_mission_count(
     GCS_MAVLINK &_link,
     const mavlink_mission_count_t &packet,
@@ -61,20 +84,8 @@ void MissionItemProtocol::handle_mission_count(
         return;
     }
 
-    if (receiving) {
-        // someone is already uploading a mission.  If we are
-        // receiving from someone then we will allow them to restart -
-        // otherwise we deny.
-        if (msg.sysid != dest_sysid || msg.compid != dest_compid) {
-            // reject another upload until
-            send_mission_ack(_link, msg, MAV_MISSION_DENIED);
-            return;
-        }
-        // the upload count may have changed; free resources and
-        // allocate them again:
-        free_upload_resources();
-        receiving = false;
-        link = nullptr;
+    if (!cancel_upload(_link, msg)) {
+        return;
     }
 
     if (packet.count > max_items()) {

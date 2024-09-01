@@ -161,7 +161,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Pilot maximum vertical ascending speed
     // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 20 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
@@ -170,7 +170,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Pilot maximum vertical descending speed
     // @Description: The maximum vertical descending velocity the pilot may request in cm/s
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 20 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_speed_dn,     "PILOT_SPEED_DN",   0),

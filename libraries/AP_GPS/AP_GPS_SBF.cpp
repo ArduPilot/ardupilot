@@ -423,6 +423,15 @@ AP_GPS_SBF::parse(uint8_t temp)
     return false;
 }
 
+static bool is_DNU(double value)
+{
+    constexpr double DNU = -2e-10f;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
+    return value != DNU;
+#pragma GCC diagnostic pop
+}
+
 bool
 AP_GPS_SBF::process_message(void)
 {
@@ -466,9 +475,13 @@ AP_GPS_SBF::process_message(void)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
-            state.have_undulation = true;
-            state.undulation = -temp.Undulation;
-            set_alt_amsl_cm(state, ((float)temp.Height - temp.Undulation) * 1e2f);
+            state.have_undulation = !is_DNU(temp.Undulation);
+            double height = temp.Height;  // in metres
+            if (state.have_undulation) {
+                height -= temp.Undulation;
+                state.undulation = -temp.Undulation;
+            }
+            set_alt_amsl_cm(state, (float)height * 1e2f);  // m -> cm
         }
 
         state.num_sats = temp.NrSV;
@@ -670,7 +683,7 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 
 bool AP_GPS_SBF::is_configured (void) const {
     return ((gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) ||
-            (config_step == Config_State::Complete));
+            (config_step == Config_State::Complete) ||AP_SIM_GPS_SBF_ENABLED);
 }
 
 bool AP_GPS_SBF::is_healthy (void) const {
