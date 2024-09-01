@@ -23,6 +23,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 

@@ -13,6 +13,8 @@
 #include <AP_AHRS/AP_AHRS_DCM.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {

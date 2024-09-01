@@ -9,6 +9,8 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define LOG_TEST_MSG 1

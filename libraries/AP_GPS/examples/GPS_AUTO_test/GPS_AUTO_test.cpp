@@ -26,6 +26,8 @@
 #include <SITL/SITL.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 
+#include <AP_Common/ExampleFirmwareVersion.h>
+
 void setup();                                                   //This function is defined in most of the libraries. This function is called only once at boot up time. This function is called by main() function in HAL.
 void loop();                                                    //This function is defined in most of the libraries. This function is called by main function in HAL. The main work of the sketch is typically in this function only.
 
