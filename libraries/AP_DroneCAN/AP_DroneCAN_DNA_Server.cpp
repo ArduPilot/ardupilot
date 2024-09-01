@@ -32,6 +32,7 @@ extern const AP_HAL::HAL& hal;
 // FORMAT REVISION DREAMS (things to address if the NodeRecord needs to be changed substantially)
 // * have DNA server accept only a 16 byte local UID to avoid overhead from variable sized hash
 // * have a real empty flag for entries and/or use a CRC which is not zero for an input of all zeros
+// * fix FNV-1a hash folding to be to 48 bits (6 bytes) instead of 56
 
 #define NODERECORD_MAGIC 0xAC01
 #define NODERECORD_MAGIC_LEN 2 // uint16_t
@@ -112,12 +113,9 @@ bool AP_DroneCAN_DNA_Server::Database::handle_node_info(uint8_t source_node_id, 
     WITH_SEMAPHORE(sem);
 
     if (is_registered(source_node_id)) {
-        // verify that the unique ID matches our registration for the node ID
-        if (source_node_id == find_node_id(unique_id, 16)) {
-            return false;
-        } else {
-            // this device's node ID is associated with a different device
-            return true;
+        // this device's node ID is associated with a different unique ID
+        if (source_node_id != find_node_id(unique_id, 16)) {
+            return true; // so raise as duplicate
         }
     } else {
         // we don't know about this node ID, let's register it
@@ -126,11 +124,11 @@ bool AP_DroneCAN_DNA_Server::Database::handle_node_info(uint8_t source_node_id, 
             delete_registration(prev_node_id); // yes, delete old registration
         }
         create_registration(source_node_id, unique_id, 16);
-        return false;
     }
+    return false; // not a duplicate
 }
 
-// handle the allocation message. returns the new node ID.
+// handle the allocation message. returns the allocated node ID, or 0 if allocation failed
 uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, const uint8_t unique_id[])
 {
     WITH_SEMAPHORE(sem);
@@ -140,14 +138,11 @@ uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, con
         resp_node_id = find_free_node_id(node_id > MAX_NODE_ID ? 0 : node_id);
         if (resp_node_id != 0) {
             create_registration(resp_node_id, unique_id, 16);
-            return resp_node_id;
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
-            return 0;
         }
-    } else {
-        return resp_node_id;
     }
+    return resp_node_id; // will be 0 if not found and not created
 }
 
 // search for a free node ID, starting at the preferred ID (which can be 0 if
@@ -156,17 +151,17 @@ uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, con
 uint8_t AP_DroneCAN_DNA_Server::Database::find_free_node_id(uint8_t preferred)
 {
     if (preferred == 0) {
-        preferred = 125;
+        preferred = MAX_NODE_ID;
     }
-    // Search up
+    // search for an ID >= preferred
     uint8_t candidate = preferred;
-    while (candidate <= 125) {
+    while (candidate <= MAX_NODE_ID) {
         if (!node_registered.get(candidate)) {
             return candidate;
         }
         candidate++;
     }
-    // Search down
+    // search for an ID <= preferred
     candidate = preferred;
     while (candidate > 0) {
         if (!node_registered.get(candidate)) {
@@ -174,7 +169,7 @@ uint8_t AP_DroneCAN_DNA_Server::Database::find_free_node_id(uint8_t preferred)
         }
         candidate--;
     }
-    // Not found
+    // no IDs free
     return 0;
 }
 
@@ -202,7 +197,7 @@ void AP_DroneCAN_DNA_Server::Database::compute_uid_hash(NodeRecord &record, cons
     hash_fnv_1a(size, unique_id, &hash);
 
     // xor-folding per http://www.isthe.com/chongo/tech/comp/fnv/
-    hash = (hash>>56) ^ (hash&(((uint64_t)1<<56)-1));
+    hash = (hash>>56) ^ (hash&(((uint64_t)1<<56)-1)); // 56 should be 48 since we use 6 bytes
 
     // write it to ret
     for (uint8_t i=0; i<6; i++) {
@@ -244,7 +239,7 @@ bool AP_DroneCAN_DNA_Server::Database::check_registration(uint8_t node_id)
     NodeRecord record;
     read_record(record, node_id);
 
-    uint8_t empty_uid[sizeof(NodeRecord::uid_hash)] = {0};
+    uint8_t empty_uid[sizeof(NodeRecord::uid_hash)] {};
     uint8_t crc = crc_crc8(record.uid_hash, sizeof(record.uid_hash));
     if (crc == record.crc && memcmp(&record.uid_hash[0], &empty_uid[0], sizeof(empty_uid)) != 0) {
         return true; // CRC matches and UID hash is not all zero
