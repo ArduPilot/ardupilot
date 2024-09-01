@@ -20,7 +20,7 @@ CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE = 1024              # Camera supports tr
 CAMERA_CAP_FLAGS_HAS_TRACKING_GEO_STATUS = 2048             # Camera supports tracking geo status
 
 class CameraTrackingScript:
-    def __init__(self, ip, port, sysid, compid):
+    def __init__(self, ip, port, sysid, compid, resh, resv):
         self.ip = ip
         self.port = port
         self.sysid = sysid
@@ -29,6 +29,8 @@ class CameraTrackingScript:
         self.udp_ip = "127.0.0.1"  # Localhost
         self.udp_port = 14580      # Port to send to
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.resh = resh
+        self.resv = resv
 
     def connect_to_mavlink(self):
         self.connection = mavutil.mavlink_connection(f'udp:{self.ip}:{self.port}', source_system=self.sysid)
@@ -70,8 +72,8 @@ class CameraTrackingScript:
             float('nan'),                                  # focal_length
             float('nan'),                                  # sensor_size_h
             float('nan'),                                  # sensor_size_v
-            640,                                           # resolution_h
-            480,                                           # resolution_v
+            self.resh,                                     # resolution_h
+            self.resv,                                     # resolution_v
             0,                                             # lens_id
             flags,                                         # flags
             0,                                             # cam_definition_version
@@ -133,15 +135,17 @@ class CameraTrackingScript:
                     print("Received but not for us")
 
 def main():
-    parser = argparse.ArgumentParser(description="A script to demonstrate command-line arguments for sysid and compid.")
+    parser = argparse.ArgumentParser(description="A script to send camera information and Forward track rectangle and track point messages to tracking script")
     parser.add_argument('--sysid', type=int, help='System ID', required=True)
     parser.add_argument('--compid', type=int, help='Component ID', required=True)
+    parser.add_argument('--resh', type=int, help='Video Resolution horizontal', required=True)
+    parser.add_argument('--resv', type=int, help='Video Resolution vertical', required=True)
     args = parser.parse_args()
 
     ip = "127.0.0.1"
-    port = 14570
+    port = 14560
 
-    script = CameraTrackingScript(ip, port, args.sysid, args.compid)
+    script = CameraTrackingScript(ip, port, args.sysid, args.compid, args.resh, args.resv)
     script.run()
 
 if __name__ == "__main__":

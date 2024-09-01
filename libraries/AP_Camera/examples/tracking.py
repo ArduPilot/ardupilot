@@ -69,7 +69,7 @@ class VideoStreamer:
         self.out = self.initialize_video_writer()
         self.frame = None
 
-        self.tracker = cv2.legacy.TrackerKCF_create()  # Change to legacy namespace
+        self.tracker = cv2.legacy.TrackerCSRT_create()  # Change to legacy namespace
         self.initBB = None
         self.last_change_time = 0
 
@@ -99,7 +99,7 @@ class VideoStreamer:
 
     def update_tracker(self, new_roi):
         self.initBB = new_roi
-        self.tracker = cv2.legacy.TrackerKCF_create()  # Change to legacy namespace
+        self.tracker = cv2.legacy.TrackerCSRT_create()  # Change to legacy namespace
         if self.frame is not None:
             self.tracker.init(self.frame, new_roi)
 
@@ -115,14 +115,14 @@ class VideoStreamer:
                 (success, box) = self.tracker.update(self.frame)
                 if success:
                     (x, y, w, h) = [int(v) for v in box]
-                    center_x = x + ((w) // 2)
-                    center_y = y + ((h) // 2)
+                    center_x = x + (w // 2)
+                    center_y = y + (h // 2)
                     gimbal_control.update_center(center_x, center_y)
                     cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     self.last_change_time = time.time()
                 else:
-                    if time.time() - self.last_change_time >= 0.2:
-                        gimbal_control.update_center(0, 0)
+                    print("Tracking failure detected, reinitializing tracker.")
+                    self.reinitialize_tracker(gimbal_control)
 
             # Write the frame to the RTSP stream
             self.out.write(self.frame)
@@ -134,6 +134,17 @@ class VideoStreamer:
                 break
 
         self.cleanup()
+
+    def reinitialize_tracker(self, gimbal_control):
+        """Reinitialize tracker on loss."""
+        gimbal_control.update_center(0, 0)
+        self.initBB = None  # Reset the bounding box
+        # Optionally, use object detection to find the new location of the object and update tracker
+
+        # Example: Use an object detection method to reinitialize the bounding box
+        # detection_box = self.object_detection_method(self.frame)
+        # if detection_box:
+        #     self.update_tracker(detection_box)
 
     def cleanup(self):
         self.cap.release()
@@ -162,7 +173,7 @@ class UDPReceiver:
 
 
 def main():
-    gimbal_control = GimbalControl('127.0.0.1:14560')
+    gimbal_control = GimbalControl('127.0.0.1:14570')
     video_streamer = VideoStreamer(input_port=5600, output_port=5700)
     udp_receiver = UDPReceiver(gimbal_control, video_streamer)
 
