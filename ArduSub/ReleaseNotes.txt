@@ -1,5 +1,8 @@
 APM:Sub Release Notes:
 
+Sub-4.5.0 beta3 2-September-2024
+- Add BMP390 support to Navigator
+
 Sub-4.5.0 beta2 18-July-2024
 - Created ORIGIN_LAT/LON/ALT parameters for setting a default efk origin when no positioning sensor is available
 - Allow estimating the World Magnetic Model using location or ekf origin instead of GPS
