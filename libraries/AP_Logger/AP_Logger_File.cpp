@@ -642,6 +642,14 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     return ret;
 }
 
+void AP_Logger_File::end_log_transfer()
+{
+    if (_read_fd != -1) {
+        AP::FS().close(_read_fd);
+        _read_fd = -1;
+    }
+}
+
 /*
   find size and date of a log
  */
