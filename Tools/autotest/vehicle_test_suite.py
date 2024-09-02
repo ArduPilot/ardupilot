@@ -3876,7 +3876,7 @@ class TestSuite(ABC):
                     raise NotAchievedException("Sequence not increasing")
                 if m.num_logs != num_logs:
                     raise NotAchievedException("Number of logs changed")
-                if m.time_utc < 1000:
+                if m.time_utc < 1000 and m.id != m.num_logs:
                     raise NotAchievedException("Bad timestamp")
                 if m.id != m.last_log_num:
                     if m.size == 0:
@@ -4176,6 +4176,55 @@ class TestSuite(ABC):
         # if len(actual_bytes) != len(backwards_data_downloaded):
         #     raise NotAchievedException("Size delta: actual=%u vs downloaded=%u" %
         #                                (len(actual_bytes), len(backwards_data_downloaded)))
+
+    def download_log(self, log_id, timeout=360):
+        tstart = self.get_sim_time()
+        data_downloaded = []
+        bytes_read = 0
+        last_print = 0
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not download log in good time")
+            self.mav.mav.log_request_data_send(
+                self.sysid_thismav(),
+                1, # target component
+                log_id,
+                bytes_read,
+                90
+            )
+            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            if m.ofs != bytes_read:
+                raise NotAchievedException(f"Unexpected offset {bytes_read=} {self.dump_message_verbose(m)}")
+            if m.id != log_id:
+                raise NotAchievedException(f"Unexpected id {log_id=} {self.dump_message_verbose(m)}")
+            data_downloaded.extend(m.data[0:m.count])
+            bytes_read += m.count
+            if m.count < 90:  # FIXME: constant
+                break
+            # self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
+            if time.time() - last_print > 10:
+                last_print = time.time()
+                self.progress(f"{bytes_read=}")
+        return data_downloaded
+
+    def TestLogDownloadLogRestart(self):
+        '''test logging restarts after log download'''
+#        self.delay_sim_time(30)
+        self.set_parameters({
+            "LOG_FILE_RATEMAX": 1,
+        })
+        self.reboot_sitl()
+        number = self.current_onboard_log_number()
+        content = self.download_log(number)
+        print(f"Content is of length {len(content)}")
+        # current_log_filepath = self.current_onboard_log_filepath()
+        self.delay_sim_time(5)
+        new_number = self.current_onboard_log_number()
+        if number == new_number:
+            raise NotAchievedException("Did not start logging again")
+        new_content = self.download_log(new_number)
+        if len(new_content) == 0:
+            raise NotAchievedException(f"Unexpected length {len(new_content)=}")
 
     #################################################
     # SIM UTILITIES
@@ -12155,6 +12204,10 @@ switch value'''
             mavproxy.expect("Unloaded module log")
         self.stop_mavproxy(mavproxy)
         return num_log
+
+    def current_onboard_log_number(self):
+        logs = self.download_full_log_list(print_logs=False)
+        return sorted(logs.keys())[-1]
 
     def current_onboard_log_filepath(self):
         '''return filepath to currently open dataflash log.  We assume that's
