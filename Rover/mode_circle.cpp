@@ -91,6 +91,9 @@ bool ModeCircle::_enter()
     // check speed around circle does not lead to excessive lateral acceleration
     check_config_speed();
 
+    // reset tracking_back 
+    tracking_back = false;
+
     // calculate speed, accel and jerk limits
     // otherwise the vehicle uses wp_nav default speed limit
     float atc_accel_max = MIN(g2.attitude_control.get_accel_max(), g2.attitude_control.get_decel_max());
@@ -155,7 +158,14 @@ void ModeCircle::update()
     // Update depending on stage
     if (!reached_edge) {
         update_drive_to_radius();
-
+    } else if (dist_to_edge_m > 2 * MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST) && !tracking_back) {
+        // if more than 2* turn_radius outside circle radius, slow vehicle by 20%
+        config.speed = 0.8 * config.speed;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: cannot keep up, slowing to %.1fm/s", config.speed);
+        tracking_back = true;
+    } else if (dist_to_edge_m < MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST) && tracking_back) {
+        // if within turn_radius, call the vehicle back on track
+        tracking_back = false;
     } else {
         update_circling();
     }
@@ -193,12 +203,16 @@ void ModeCircle::update_circling()
     const float accel_fb = constrain_float(config.speed - target.speed, -speed_change_max, speed_change_max);
     target.speed += accel_fb;
 
-    // calculate angular rate and update target angle
-    const float circumference = 2.0 * M_PI * config.radius;
-    const float angular_rate_rad = (target.speed / circumference) * M_2PI * (config.dir == Direction::CW ? 1.0 : -1.0);
-    const float angle_dt = angular_rate_rad * rover.G_Dt;
-    target.yaw_rad = wrap_PI(target.yaw_rad + angle_dt);
-    angle_total_rad += angle_dt;
+    // calculate angular rate and update target angle, if the vehicle is not trying to track back
+    if (!tracking_back) {
+        const float circumference = 2.0 * M_PI * config.radius;
+        const float angular_rate_rad = (target.speed / circumference) * M_2PI * (config.dir == Direction::CW ? 1.0 : -1.0);
+        const float angle_dt = angular_rate_rad * rover.G_Dt;
+        target.yaw_rad = wrap_PI(target.yaw_rad + angle_dt);
+        angle_total_rad += angle_dt;
+    } else {
+        init_target_yaw_rad();
+    }
 
     // calculate target point's position, velocity and acceleration
     target.pos = config.center_pos.topostype();
