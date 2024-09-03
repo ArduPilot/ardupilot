@@ -327,6 +327,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-EKF2" ]; then
+        echo "Building CubeOrange with EKF2 enabled"
+        $waf configure --board CubeOrange --enable-ekf2
+        $waf clean
+        $waf copter
+        continue
+    fi
+
     if [ "$t" == "SOHW" ]; then
         echo "Building CubeOrange-SOHW"
         Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter
