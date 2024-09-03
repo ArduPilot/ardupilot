@@ -516,6 +516,7 @@ def run_step(step):
         "reset_after_every_test": opts.reset_after_every_test,
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
+        "enable_fgview": opts.enable_fgview,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -862,6 +863,9 @@ if __name__ == "__main__":
     parser.add_option("--viewerip",
                       default=None,
                       help='IP address to send MAVLink and fg packets to')
+    parser.add_option("--enable-fgview",
+                      action='store_true',
+                      help="Enable FlightGear output")
     parser.add_option("--map",
                       action='store_true',
                       default=False,
