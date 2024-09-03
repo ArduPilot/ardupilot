@@ -525,6 +525,7 @@ protected:
 
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
 #if AP_HOME_ENABLED
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
