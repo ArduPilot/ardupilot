@@ -181,6 +181,13 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("FMT_VER", 19, AP_ICEngine, param_format_version, 0, AP_PARAM_FLAG_HIDDEN),
 
+    // @Param: STRT_MX_RTRY
+    // @DisplayName: Maximum number of retries
+    // @Description: If set 0 then there is no limit to retrials. If set to a value greater than 0 then the engine will retry starting the engine this many times before giving up.
+    // @User: Standard
+    // @Range: 0 127
+    AP_GROUPINFO("STRT_MX_RTRY", 20, AP_ICEngine, max_crank_retry, 0),
+
     AP_GROUPEND
 };
 
@@ -379,6 +386,10 @@ void AP_ICEngine::update(void)
         if (should_run) {
             state = ICE_START_DELAY;
         }
+        crank_retry_ct = 0;
+        // clear the last uncommanded stop time, we only care about tracking
+        // the last one since the engine was started
+        last_uncommanded_stop_ms = 0;
         break;
 
     case ICE_START_HEIGHT_DELAY: {
@@ -402,8 +413,16 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
-            state = ICE_STARTING;
+            // check if we should retry starting the engine
+            if (max_crank_retry <= 0 || crank_retry_ct < max_crank_retry) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
+                state = ICE_STARTING;
+                crank_retry_ct++;
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine max crank attempts reached");
+                // Mark the last run now so we don't send this message every loop
+                starter_last_run_ms = now;
+            }
         }
         break;
 
@@ -430,6 +449,13 @@ void AP_ICEngine::update(void)
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Uncommanded engine stop");
+                if (last_uncommanded_stop_ms != 0 &&
+                        now - last_uncommanded_stop_ms > 3*(starter_time + starter_delay)*1000) {
+                    // if it has been a long enough time since the last uncommanded stop
+                    // (3 times the time between start attempts) then reset the retry count
+                    crank_retry_ct = 0;
+                }
+                last_uncommanded_stop_ms = now;
             }
         }
 #endif
