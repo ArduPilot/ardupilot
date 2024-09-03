@@ -1272,7 +1272,7 @@ class ChibiOSHWDef(object):
             if flash_size == 0:
                 flash_size = self.get_config('FLASH_SIZE_KB', type=int)
             flash_length = min(flash_size, self.get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
-            if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw and flash_length < 128:
+            if not self.env_vars['EXT_FLASH_SIZE_MB'] and not self.signed_fw and flash_length < 128:
                 f.write('''
 #ifndef CH_CFG_USE_MEMCORE
 #define CH_CFG_USE_MEMCORE FALSE
@@ -1472,7 +1472,7 @@ INCLUDE common.ld
         if self.is_bootloader_fw():
             default_product += "-BL"
         product_string = self.get_config("USB_STRING_PRODUCT", default="\"%s\"" % default_product)
-        if self.is_bootloader_fw() and args.signed_fw:
+        if self.is_bootloader_fw() and self.signed_fw:
             product_string = product_string.replace("-BL", "-Secure-BL-v10")
         f.write('#define HAL_USB_STRING_PRODUCT %s\n' % product_string)
 
@@ -2610,7 +2610,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
 ''')
 
-        if args.signed_fw:
+        if self.signed_fw:
             f.write('''
 #define AP_SIGNED_FIRMWARE 1
 ''')
