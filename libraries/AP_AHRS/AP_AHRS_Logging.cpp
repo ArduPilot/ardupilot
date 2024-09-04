@@ -4,6 +4,7 @@
 
 #include "AP_AHRS.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
@@ -53,7 +54,7 @@ void AP_AHRS::Write_Attitude(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_us         : AP_HAL::micros64(),
+        time_us         : AP::scheduler().get_loop_start_time_us(),
         control_roll    : (int16_t)targets.x,
         roll            : (int16_t)roll_sensor,
         control_pitch   : (int16_t)targets.y,
@@ -61,6 +62,7 @@ void AP_AHRS::Write_Attitude(const Vector3f &targets) const
         control_yaw     : (uint16_t)wrap_360_cd(targets.z),
         yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
         active          : uint8_t(active_EKF_type()),
+        sensor_dt       : AP::scheduler().get_last_loop_time_s()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
@@ -127,7 +129,7 @@ void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_us         : AP_HAL::micros64(),
+        time_us         : AP::scheduler().get_loop_start_time_us(),
         control_roll    : (int16_t)targets.x,
         roll            : (int16_t)roll_sensor,
         control_pitch   : (int16_t)targets.y,
@@ -135,6 +137,7 @@ void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
         control_yaw     : (uint16_t)wrap_360_cd(targets.z),
         yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
         active          : uint8_t(AP::ahrs().active_EKF_type()),
+        sensor_dt       : AP::scheduler().get_last_loop_time_s()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

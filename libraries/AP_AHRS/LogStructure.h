@@ -58,6 +58,7 @@ struct PACKED log_AOA_SSA {
 // @Field: DesYaw: vehicle desired yaw
 // @Field: Yaw: achieved vehicle yaw
 // @Field: AEKF: active EKF type
+// @Field: Dt: attitude delta time
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -68,6 +69,7 @@ struct PACKED log_Attitude {
     uint16_t control_yaw;
     uint16_t yaw;
     uint8_t  active;
+    float sensor_dt;
 };
 
 // @LoggerMessage: ORGN
@@ -195,7 +197,7 @@ struct PACKED log_ATSC {
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA), \
         "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" , true }, \
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-        "ATT", "QccccCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,AEKF", "sddddhh-", "FBBBBBB-" , true }, \
+        "ATT", "QccccCCBf", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,AEKF,Dt", "sddddhh-s", "FBBBBBB-0" , true }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
         "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s#DUm", "F-GGB" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
