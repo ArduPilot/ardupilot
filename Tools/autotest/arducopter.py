@@ -11889,6 +11889,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(10, 2000)
         self.wait_statustext('Using EKF Source Set 3', check_context=True)
 
+    def GUIDEDArmingCheckThrottle(self):
+        '''check the way throttle is handled when arming in guided mode'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.start_subtest("With zero throttle should be able to arm")
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("Without option set we should be able to arm with non-zero throttle in guided")
+        self.set_rc(3, 1600)
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("With option enabled should not be able to arm with non-zero throttle")
+        self.set_parameter("GUID_OPTIONS", 1 << 8)
+        self.assert_arm_failure("is not neutral")
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11992,6 +12009,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
+            self.GUIDEDArmingCheckThrottle,
         ])
         return ret
 
