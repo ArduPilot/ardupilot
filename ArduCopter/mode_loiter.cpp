@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_LOITER_ENABLED == ENABLED
+#if MODE_LOITER_ENABLED
 
 /*
  * Init and run calls for loiter flight mode

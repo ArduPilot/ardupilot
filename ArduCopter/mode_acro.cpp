@@ -2,7 +2,7 @@
 
 #include "mode.h"
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
 
 /*
  * Init and run calls for acro flight mode

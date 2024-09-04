@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if TOY_MODE_ENABLED == ENABLED
+#if TOY_MODE_ENABLED
 
 // times in 0.1s units
 #define TOY_COMMAND_DELAY 15
@@ -490,7 +490,7 @@ void ToyMode::update()
         break;
 
     case ACTION_MODE_ACRO:
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
         new_mode = Mode::Number::ACRO;
 #else
         gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: ACRO is disabled");
@@ -542,7 +542,7 @@ void ToyMode::update()
         break;
 
     case ACTION_MODE_THROW:
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
         new_mode = Mode::Number::THROW;
 #else
         gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: THROW is disabled");

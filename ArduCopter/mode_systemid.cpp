@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <AP_Math/control.h>
 
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
 
 /*
  * Init and run calls for systemId, flight mode

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
 
 #if FRAME_CONFIG == HELI_FRAME
 /*
@@ -153,4 +153,4 @@ void ModeAcro_Heli::virtual_flybar( float &roll_out, float &pitch_out, float &ya
 
 }
 #endif  //HELI_FRAME
-#endif  //MODE_ACRO_ENABLED == ENABLED
+#endif  //MODE_ACRO_ENABLED

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
 
 // throw_init - initialise throw controller
 bool ModeThrow::init(bool ignore_checks)

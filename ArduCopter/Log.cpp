@@ -258,7 +258,7 @@ struct PACKED log_SysIdD {
 // Write an rate packet
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
 {
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     struct log_SysIdD pkt_sidd = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
         time_us         : AP_HAL::micros64(),
@@ -292,7 +292,7 @@ struct PACKED log_SysIdS {
 // Write an rate packet
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out)
 {
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     struct log_SysIdS pkt_sids = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDS_MSG),
         time_us             : AP_HAL::micros64(),

@@ -11,7 +11,7 @@
 
 #include <utility>
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if MODE_AUTOROTATE_ENABLED
 
 #define AUTOROTATE_ENTRY_TIME          2.0f    // (s) number of seconds that the entry phase operates for
 #define BAILOUT_MOTOR_RAMP_TIME        1.0f    // (s) time set on bailout ramp up timer for motors - See AC_MotorsHeli_Single

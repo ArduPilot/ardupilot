@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <utility>
 
-#if MODE_FLOWHOLD_ENABLED == ENABLED
+#if MODE_FLOWHOLD_ENABLED
 
 /*
   implement FLOWHOLD mode, for position hold using optical flow

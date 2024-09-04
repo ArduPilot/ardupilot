@@ -6,10 +6,10 @@
 #include "RC_Channel.h"
 #include <AP_Proximity/AP_Proximity.h>
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
  #include <AC_AttitudeControl/AC_WeatherVane.h>
 #endif
 
@@ -398,7 +398,7 @@ public:
     AP_Int16        throttle_behavior;
     AP_Float        pilot_takeoff_alt;
 
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
     AP_Int32        rtl_altitude;
     AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
@@ -415,7 +415,7 @@ public:
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
 
-#if MODE_POSHOLD_ENABLED == ENABLED
+#if MODE_POSHOLD_ENABLED
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
 #endif
@@ -459,7 +459,7 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
     AP_Int16         throw_altitude_min; // minimum altitude in m above which a throw can be detected
     AP_Int16         throw_altitude_max; // maximum altitude in m below which a throw can be detected
@@ -467,13 +467,13 @@ public:
 
     AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
-#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     // Acro parameters
     AP_Float                acro_balance_roll;
     AP_Float                acro_balance_pitch;
 #endif
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
     // Acro parameters
     AP_Int8                 acro_trainer;
 #endif
@@ -504,7 +504,7 @@ public:
     AP_Button *button_ptr;
 #endif
 
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
     // Throw mode parameters
     AP_Int8 throw_nextmode;
     AP_Enum<ModeThrow::ThrowType> throw_type;
@@ -531,7 +531,7 @@ public:
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
     
-#if ADVANCED_FAILSAFE == ENABLED
+#if ADVANCED_FAILSAFE
     // advanced failsafe library
     AP_AdvancedFailsafe_Copter afs;
 #endif
@@ -539,7 +539,7 @@ public:
     // developer options
     AP_Int32 dev_options;
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
     AP_Float acro_thr_mid;
 #endif
 
@@ -552,7 +552,7 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
     // Safe RTL library
     AP_SmartRTL smart_rtl;
 #endif
@@ -568,7 +568,7 @@ public:
     // Land alt final stage
     AP_Int16 land_alt_low;
 
-#if TOY_MODE_ENABLED == ENABLED
+#if TOY_MODE_ENABLED
     ToyMode toy_mode;
 #endif
 
@@ -577,17 +577,17 @@ public:
     void *mode_flowhold_ptr;
 #endif
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     // follow
     AP_Follow follow;
 #endif
 
-#if USER_PARAMS_ENABLED == ENABLED
+#if USER_PARAMS_ENABLED
     // User custom parameters
     UserParameters user_parameters;
 #endif
 
-#if AUTOTUNE_ENABLED == ENABLED
+#if AUTOTUNE_ENABLED
     // we need a pointer to autotune for the G2 table
     void *autotune_ptr;
 #endif
@@ -600,7 +600,7 @@ public:
     AP_OAPathPlanner oa;
 #endif
 
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     // we need a pointer to the mode for the G2 table
     void *mode_systemid_ptr;
 #endif
@@ -611,42 +611,42 @@ public:
     // Failsafe options bitmask #36
     AP_Int32 fs_options;
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if MODE_AUTOROTATE_ENABLED
     // Autonmous autorotation
     AC_Autorotation arot;
 #endif
 
-#if MODE_ZIGZAG_ENABLED == ENABLED
+#if MODE_ZIGZAG_ENABLED
     // we need a pointer to the mode for the G2 table
     void *mode_zigzag_ptr;
 #endif
 
     // command model parameters
-#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     AC_CommandModel command_model_acro_rp;
 #endif
 
-#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
     AC_CommandModel command_model_acro_y;
 #endif
 
     AC_CommandModel command_model_pilot;
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
     AP_Int8 acro_options;
 #endif
 
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     AP_Int32 auto_options;
 #endif
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
     AP_Int32 guided_options;
 #endif
 
     AP_Float fs_gcs_timeout;
 
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
     AP_Int32 rtl_options;
 #endif
 
@@ -656,7 +656,7 @@ public:
     AP_Float rangefinder_filt;
 #endif
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
     AP_Float guided_timeout;
 #endif
 
@@ -676,7 +676,7 @@ public:
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
     AC_WeatherVane weathervane;
 #endif
 

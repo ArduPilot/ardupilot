@@ -37,7 +37,7 @@ void Copter::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED
     osd.init();
 #endif
 
@@ -157,12 +157,12 @@ void Copter::init_ardupilot()
     rpm_sensor.init();
 #endif
 
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     // initialise mission library
     mode_auto.mission.init();
 #endif
 
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
     // initialize SmartRTL
     g2.smart_rtl.init();
 #endif
@@ -174,7 +174,7 @@ void Copter::init_ardupilot()
 
     startup_INS_ground();
 
-#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+#if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.init();
 #endif
 
@@ -469,7 +469,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
-#if MODE_CIRCLE_ENABLED == ENABLED
+#if MODE_CIRCLE_ENABLED
     circle_nav = NEW_NOTHROW AC_Circle(inertial_nav, *ahrs_view, *pos_control);
     if (circle_nav == nullptr) {
         AP_BoardConfig::allocation_error("CircleNav");

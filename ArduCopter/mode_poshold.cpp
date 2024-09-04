@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_POSHOLD_ENABLED == ENABLED
+#if MODE_POSHOLD_ENABLED
 
 /*
  * Init and run calls for PosHold flight mode
