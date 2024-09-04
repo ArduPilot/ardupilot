@@ -1,0 +1,43 @@
+# hw definition file f405 Holybro CAN PMU
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 5401
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+FLASH_RESERVE_START_KB 0
+FLASH_SIZE_KB 1024
+FLASH_BOOTLOADER_LOAD_KB 64
+
+PB0 LED_BOOTLOADER OUTPUT LOW GPIO(0)  # blue
+define HAL_LED_ON 0
+
+# debug
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# order of UARTs
+SERIAL_ORDER USART3
+
+PC10  USART3_TX USART3
+PC11  USART3_RX USART3
+
+# enable CAN support
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+define HAL_USE_CAN TRUE
+define STM32_CAN_USE_CAN1 TRUE
+
+define CAN_APP_NODE_NAME "org.ardupilot.f405_HolybroPMU"
+
+
+# Add CS pins to ensure they are high in bootloader
