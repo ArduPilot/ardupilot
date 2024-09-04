@@ -63,6 +63,8 @@ class XmlEmit(Emit):
 
             # Add values as chidren of this node
             for field in param.__dict__.keys():
+                if not self.should_emit_field(param, field):
+                    continue
                 if field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues'] and field in known_param_fields:
                     if field == 'Values' and Emit.prog_values_field.match(param.__dict__[field]):
                         xml_values = etree.SubElement(xml_param, 'values')
