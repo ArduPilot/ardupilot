@@ -121,6 +121,8 @@ public:
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(AP_Arming::Method method) const = 0;
+    virtual bool arming_check_throttle() const { return true; }
+
     virtual bool is_autopilot() const { return false; }
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
@@ -1120,6 +1122,8 @@ public:
     bool allows_weathervaning(void) const override;
 #endif
 
+    bool arming_check_throttle() const override;
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
@@ -1140,7 +1144,8 @@ private:
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
         WPNavUsedForPosControl = (1U << 6),
-        AllowWeatherVaning = (1U << 7)
+        AllowWeatherVaning = (1U << 7),
+        ArmingCheckThrottle = (1U << 8),
     };
 
     // returns true if the Guided-mode-option is set (see GUID_OPTIONS)

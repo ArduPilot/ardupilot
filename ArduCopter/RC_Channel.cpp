@@ -60,6 +60,9 @@ bool RC_Channels_Copter::arming_check_throttle() const {
         // Copter already checks this case in its own arming checks
         return false;
     }
+    if (!copter.flightmode->arming_check_throttle()) {
+        return false;
+    }
     return RC_Channels::arming_check_throttle();
 }
 

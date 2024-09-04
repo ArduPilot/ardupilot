@@ -114,6 +114,11 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return option_is_enabled(Option::AllowArmingFromTX);
 };
 
+bool ModeGuided::arming_check_throttle() const
+{
+    return option_is_enabled(Option::ArmingCheckThrottle);
+}
+
 #if WEATHERVANE_ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
