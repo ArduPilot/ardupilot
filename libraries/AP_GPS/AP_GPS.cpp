@@ -2008,22 +2008,26 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @CopyFieldsFrom: GPS_TYPE
     // @DisplayName: 2nd GPS type.Renamed in 4.6 to GPS2_TYPE
     // @Description: GPS type of 2nd GPS
+    // @Legacy: 4.5 param
 
     // @Param: _GNSS_MODE
     // @DisplayName: GNSS system configuration
     // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured).Renamed in 4.6 and later to GPS1_GNSS_MODE.
+    // @Legacy: 4.5 param
     // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
 
     // @Param: _GNSS_MODE2
     // @DisplayName: GNSS system configuration.
     // @Description: Bitmask for what GNSS system to use on the second GPS (all unchecked or zero to leave GPS as configured). Renamed in 4.6 and later to GPS2_GNSS_MODE
+    // @Legacy: 4.5 param
     // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
 
     // @Param: _RATE_MS
     // @DisplayName: GPS update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS1_RATE_MS
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -2032,6 +2036,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS2_RATE_MS
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -2040,6 +2045,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS1_X
     // @DisplayName: Antenna X position offset
     // @Description: X position of the first GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_X.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2048,6 +2054,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS1_Y
     // @DisplayName: Antenna Y position offset
     // @Description: Y position of the first GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_Y.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2056,6 +2063,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS1_Z
     // @DisplayName: Antenna Z position offset
     // @Description: Z position of the first GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_Z.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2064,6 +2072,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS2_X
     // @DisplayName: Antenna X position offset
     // @Description: X position of the second GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_X.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2072,6 +2081,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS2_Y
     // @DisplayName: Antenna Y position offset
     // @Description: Y position of the second GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_Y.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2080,6 +2090,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS2_Z
     // @DisplayName: Antenna Z position offset
     // @Description: Z position of the second GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_Z.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2088,6 +2099,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _DELAY_MS
     // @DisplayName: GPS delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.Renamed in 4.6 and later to GPS1_DELAY_MS.
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
@@ -2096,6 +2108,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _DELAY_MS2
     // @DisplayName: GPS 2 delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.Renamed in 4.6 and later to GPS2_DELAY_MS.
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
@@ -2104,6 +2117,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _COM_PORT
     // @DisplayName: GPS physical COM port
     // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS,Renamed in 4.6 and later to GPS1_COM_PORT.
+    // @Legacy: 4.5 param
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -2113,6 +2127,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _COM_PORT2
     // @DisplayName: GPS physical COM port
     // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS.Renamed in 4.6 and later to GPS1_COM_PORT.
+    // @Legacy: 4.5 param
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -2120,19 +2135,23 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Group: _MB1_
     // @Path: MovingBase.cpp
+    // @Legacy: 4.5 param
 
     // @Group: _MB2_
     // @Path: MovingBase.cpp
+    // @Legacy: 4.5 param
 
     // @Param: _CAN_NODEID1
     // @DisplayName: GPS Node ID 1
     // @Description: GPS Node id for first-discovered GPS.Renamed in 4.6 and later to GPS1_CAN_NODEID.
+    // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
 
     // @Param: _CAN_NODEID2
     // @DisplayName: GPS Node ID 2
     // @Description: GPS Node id for second-discovered GPS.Renamed in 4.6 and later to GPS2_CAN_NODEID.
+    // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
 
