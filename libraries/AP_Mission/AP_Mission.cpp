@@ -701,46 +701,42 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
 
 bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet) const
 {
-    // setting ret_packet.command = -1  and/or returning false
-    //  means it contains invalid data after it leaves here.
-
-    // this is the on-storage format
-    AP_Mission::Mission_Command cmd {};
+    mavlink_mission_item_int_t tmp;
 
     // can't handle request for anything bigger than the mission size...
     if (index >= num_commands()) {
-        ret_packet.command = -1;
         return false;
     }
 
     // minimal placeholder values during read-from-storage
-    ret_packet.target_system = 1;     // unused sysid
-    ret_packet.target_component =  1; // unused compid
+    tmp.target_system = 1;     // unused sysid
+    tmp.target_component =  1; // unused compid
 
     // 0=home, higher number/s = mission item number.
-    ret_packet.seq = index;
+    tmp.seq = index;
 
     // retrieve mission from eeprom
-    if (!read_cmd_from_storage(ret_packet.seq, cmd)) {
-        ret_packet.command = -1;
+    AP_Mission::Mission_Command cmd {};
+    if (!read_cmd_from_storage(tmp.seq, cmd)) {
         return false;
     }
     // convert into mavlink-ish format for lua and friends.
-    if (!mission_cmd_to_mavlink_int(cmd, ret_packet)) {
-        ret_packet.command = -1;
+    if (!mission_cmd_to_mavlink_int(cmd, tmp)) {
         return false;
     }
 
     // set packet's current field to 1 if this is the command being executed
     if (cmd.id == (uint16_t)get_current_nav_cmd().index) {
-        ret_packet.current = 1;
+        tmp.current = 1;
     } else {
-        ret_packet.current = 0;
+        tmp.current = 0;
     }
 
     // set auto continue to 1, becasue that's what's done elsewhere.
-    ret_packet.autocontinue = 1;     // 1 (true), 0 (false)
-    ret_packet.command = cmd.id;
+    tmp.autocontinue = 1;     // 1 (true), 0 (false)
+    tmp.command = cmd.id;
+
+    ret_packet = tmp;
 
     return true;
 }
