@@ -183,7 +183,7 @@ void Sub::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        attitude_control.Write_Rate(pos_control);
         if (should_log(MASK_LOG_PID)) {
             logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
@@ -222,7 +222,7 @@ void Sub::twentyfive_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        attitude_control.Write_Rate(pos_control);
         if (should_log(MASK_LOG_PID)) {
             logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
