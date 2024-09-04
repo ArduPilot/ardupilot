@@ -149,11 +149,6 @@ define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 undef define AP_BARO_BMP280_ENABLED
 define AP_BARO_BMP280_ENABLED 1
 
-# disable SMBUS battery monitors to save flash
-undef AP_BATTERY_SMBUS_ENABLED
-define AP_BATTERY_SMBUS_ENABLED 0
-
-
 # setup for OSD
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
