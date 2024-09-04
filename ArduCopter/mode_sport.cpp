@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_SPORT_ENABLED == ENABLED
+#if MODE_SPORT_ENABLED
 
 /*
  * Init and run calls for sport flight mode

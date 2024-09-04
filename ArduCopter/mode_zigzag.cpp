@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_ZIGZAG_ENABLED == ENABLED
+#if MODE_ZIGZAG_ENABLED
 
 /*
 * Init and run calls for zigzag flight mode
@@ -604,4 +604,4 @@ float ModeZigZag::crosstrack_error() const
     return is_auto ? wp_nav->crosstrack_error() : 0;
 }
 
-#endif // MODE_ZIGZAG_ENABLED == ENABLED
+#endif // MODE_ZIGZAG_ENABLED

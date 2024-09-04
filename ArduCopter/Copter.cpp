@@ -114,7 +114,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK_CLASS(AP_InertialSensor, &copter.ins, update),
     // run low level rate controllers that only require IMU data
     FAST_TASK(run_rate_controller),
-#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+#if AC_CUSTOMCONTROL_MULTI_ENABLED
     FAST_TASK(run_custom_controller),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
@@ -159,7 +159,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_batt_compass,   10,    120, 15),
     SCHED_TASK_CLASS(RC_Channels, (RC_Channels*)&copter.g2.rc_channels, read_aux_all,    10,  50,  18),
     SCHED_TASK(arm_motors_check,      10,     50, 21),
-#if TOY_MODE_ENABLED == ENABLED
+#if TOY_MODE_ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50,  24),
 #endif
     SCHED_TASK(auto_disarm_check,     10,     50,  27),
@@ -176,7 +176,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(update_altitude,       10,    100,  42),
     SCHED_TASK(run_nav_updates,       50,    100,  45),
     SCHED_TASK(update_throttle_hover,100,     90,  48),
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
     SCHED_TASK_CLASS(ModeSmartRTL,         &copter.mode_smartrtl,       save_position,    3, 100,  51),
 #endif
 #if HAL_SPRAYER_ENABLED
@@ -232,7 +232,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_ADSB_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100, 138),
 #endif
-#if ADVANCED_FAILSAFE == ENABLED
+#if ADVANCED_FAILSAFE
     SCHED_TASK(afs_fs_check,          10,    100, 141),
 #endif
 #if AP_TERRAIN_AVAILABLE
@@ -274,7 +274,7 @@ constexpr int8_t Copter::_failsafe_priorities[7];
 
 
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 // set target location (for use by external control and scripting)
 bool Copter::set_target_location(const Location& target_loc)
 {
@@ -285,11 +285,11 @@ bool Copter::set_target_location(const Location& target_loc)
 
     return mode_guided.set_destination(target_loc);
 }
-#endif //MODE_GUIDED_ENABLED == ENABLED
+#endif //MODE_GUIDED_ENABLED
 #endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
 #if AP_SCRIPTING_ENABLED
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 // start takeoff to given altitude (for use by scripting)
 bool Copter::start_takeoff(float alt)
 {
@@ -391,7 +391,7 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
 }
 #endif
 
-#if MODE_CIRCLE_ENABLED == ENABLED
+#if MODE_CIRCLE_ENABLED
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
@@ -412,7 +412,7 @@ bool Copter::set_desired_speed(float speed)
     return flightmode->set_speed_xy(speed * 100.0f);
 }
 
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Copter::nav_scripting_enable(uint8_t mode)
 {
@@ -488,7 +488,7 @@ bool Copter::is_taking_off() const
 
 bool Copter::current_mode_requires_mission() const
 {
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
         return flightmode == &mode_auto;
 #else
         return false;
@@ -631,7 +631,7 @@ void Copter::twentyfive_hz_logging()
         AP::ins().Write_IMU();
     }
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if MODE_AUTOROTATE_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
         //update autorotation log
         g2.arot.Log_Write_Autorotation();
@@ -702,7 +702,7 @@ void Copter::one_hz_loop()
     // slowly update the PID notches with the average loop rate
     attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
     pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+#if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #endif
 }

@@ -117,101 +117,101 @@
 //////////////////////////////////////////////////////////////////////////////
 //  Auto Tuning
 #ifndef AUTOTUNE_ENABLED
- # define AUTOTUNE_ENABLED  ENABLED
+ # define AUTOTUNE_ENABLED  1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef AC_NAV_GUIDED
- # define AC_NAV_GUIDED    ENABLED
+ # define AC_NAV_GUIDED    1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Acro - fly vehicle in acrobatic mode
 #ifndef MODE_ACRO_ENABLED
-# define MODE_ACRO_ENABLED ENABLED
+# define MODE_ACRO_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
 #ifndef MODE_AUTO_ENABLED
-# define MODE_AUTO_ENABLED ENABLED
+# define MODE_AUTO_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Brake mode - bring vehicle to stop
 #ifndef MODE_BRAKE_ENABLED
-# define MODE_BRAKE_ENABLED ENABLED
+# define MODE_BRAKE_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Circle - fly vehicle around a central point
 #ifndef MODE_CIRCLE_ENABLED
-# define MODE_CIRCLE_ENABLED ENABLED
+# define MODE_CIRCLE_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
-# define MODE_DRIFT_ENABLED ENABLED
+# define MODE_DRIFT_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // flip - fly vehicle in flip in pitch and roll direction mode
 #ifndef MODE_FLIP_ENABLED
-# define MODE_FLIP_ENABLED ENABLED
+# define MODE_FLIP_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
 #if AP_FOLLOW_ENABLED && AP_AVOIDANCE_ENABLED
-#define MODE_FOLLOW_ENABLED ENABLED
+#define MODE_FOLLOW_ENABLED 1
 #else
-#define MODE_FOLLOW_ENABLED DISABLED
+#define MODE_FOLLOW_ENABLED 0
 #endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Guided mode - control vehicle's position or angles from GCS
 #ifndef MODE_GUIDED_ENABLED
-# define MODE_GUIDED_ENABLED ENABLED
+# define MODE_GUIDED_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED ENABLED
+# define MODE_GUIDED_NOGPS_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter mode - allows vehicle to hold global position
 #ifndef MODE_LOITER_ENABLED
-# define MODE_LOITER_ENABLED ENABLED
+# define MODE_LOITER_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Position Hold - enable holding of global position
 #ifndef MODE_POSHOLD_ENABLED
-# define MODE_POSHOLD_ENABLED ENABLED
+# define MODE_POSHOLD_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // RTL - Return To Launch
 #ifndef MODE_RTL_ENABLED
-# define MODE_RTL_ENABLED ENABLED
+# define MODE_RTL_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
 #ifndef MODE_SMARTRTL_ENABLED
-# define MODE_SMARTRTL_ENABLED ENABLED
+# define MODE_SMARTRTL_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Sport - fly vehicle in rate-controlled (earth-frame) mode
 #ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED DISABLED
+# define MODE_SPORT_ENABLED 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -223,13 +223,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throw - fly vehicle after throwing it in the air
 #ifndef MODE_THROW_ENABLED
-# define MODE_THROW_ENABLED ENABLED
+# define MODE_THROW_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ZigZag - allow vehicle to fly in a zigzag manner with predefined point A B
 #ifndef MODE_ZIGZAG_ENABLED
-# define MODE_ZIGZAG_ENABLED ENABLED
+# define MODE_ZIGZAG_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -249,7 +249,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Weathervane - allow vehicle to yaw into wind
 #ifndef WEATHERVANE_ENABLED
-# define WEATHERVANE_ENABLED ENABLED
+# define WEATHERVANE_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -260,13 +260,13 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #if FRAME_CONFIG == HELI_FRAME
         #ifndef MODE_AUTOROTATE_ENABLED
-        # define MODE_AUTOROTATE_ENABLED ENABLED
+        # define MODE_AUTOROTATE_ENABLED 1
         #endif
     #else
-        # define MODE_AUTOROTATE_ENABLED DISABLED
+        # define MODE_AUTOROTATE_ENABLED 0
     #endif
 #else
-    # define MODE_AUTOROTATE_ENABLED DISABLED
+    # define MODE_AUTOROTATE_ENABLED 0
 #endif
 #endif
 
@@ -575,7 +575,7 @@
 //
 
 #ifndef ADVANCED_FAILSAFE
-# define ADVANCED_FAILSAFE DISABLED
+# define ADVANCED_FAILSAFE 0
 #endif
 
 #ifndef CH_MODE_DEFAULT
@@ -583,7 +583,7 @@
 #endif
 
 #ifndef TOY_MODE_ENABLED
-#define TOY_MODE_ENABLED DISABLED
+#define TOY_MODE_ENABLED 0
 #endif
 
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
@@ -603,5 +603,5 @@
 #endif
 
 #ifndef USER_PARAMS_ENABLED
-  #define USER_PARAMS_ENABLED DISABLED
+  #define USER_PARAMS_ENABLED 0
 #endif

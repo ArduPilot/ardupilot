@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 
 /*
  * Init and run calls for guided flight mode
@@ -114,7 +114,7 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return option_is_enabled(Option::AllowArmingFromTX);
 };
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
     return option_is_enabled(Option::AllowWeatherVaning);

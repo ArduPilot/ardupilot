@@ -107,14 +107,14 @@ void Copter::tuning()
         wp_nav->set_speed_xy(tuning_value);
         break;
 
-#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     // Acro roll pitch rates
     case TUNING_ACRO_RP_RATE:
         g2.command_model_acro_rp.set_rate(tuning_value);
         break;
 #endif
 
-#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
     // Acro yaw rate
     case TUNING_ACRO_YAW_RATE:
         g2.command_model_acro_y.set_rate(tuning_value);
@@ -143,7 +143,7 @@ void Copter::tuning()
         compass.set_declination(ToRad(tuning_value), false);     // 2nd parameter is false because we do not want to save to eeprom because this would have a performance impact
         break;
 
-#if MODE_CIRCLE_ENABLED == ENABLED
+#if MODE_CIRCLE_ENABLED
     case TUNING_CIRCLE_RATE:
         circle_nav->set_rate(tuning_value);
         break;
@@ -188,7 +188,7 @@ void Copter::tuning()
         break;
 
     case TUNING_SYSTEM_ID_MAGNITUDE:
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
         copter.mode_systemid.set_magnitude(tuning_value);
 #endif
         break;

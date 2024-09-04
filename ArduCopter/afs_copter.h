@@ -18,7 +18,7 @@
   advanced failsafe support for copter
  */
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if ADVANCED_FAILSAFE
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 /*
