@@ -123,8 +123,8 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     // check for special case of input and output throttle being in opposite directions
     float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
     if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
-        ((PilotSteerType(g.pilot_steer_type.get()) == PilotSteerType::DEFAULT) ||
-         (PilotSteerType(g.pilot_steer_type.get()) == PilotSteerType::DIR_REVERSED_WHEN_REVERSING))) {
+        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
+         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
         steering_out *= -1;
     }
     throttle_out = throttle_out_limited;
@@ -139,8 +139,8 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
     // check for special case of input and output throttle being in opposite directions
     float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
     if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
-        ((PilotSteerType(g.pilot_steer_type.get()) == PilotSteerType::DEFAULT) ||
-         (PilotSteerType(g.pilot_steer_type.get()) == PilotSteerType::DIR_REVERSED_WHEN_REVERSING))) {
+        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
+         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
         steering_out *= -1;
     }
     speed_out = speed_out_limited;
@@ -167,7 +167,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
 
     // handle two paddle input
-    if ((PilotSteerType)g.pilot_steer_type.get() == PilotSteerType::TWO_PADDLES) {
+    if (g.pilot_steer_type == PilotSteerType::TWO_PADDLES) {
         const float left_paddle = desired_steering;
         const float right_paddle = desired_throttle;
         desired_steering = (left_paddle - right_paddle) * 0.5f;
