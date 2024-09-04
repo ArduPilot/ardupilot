@@ -44,6 +44,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: START_CHAN
     // @DisplayName: Input channel for engine start
     // @Description: This is an RC input channel for requesting engine start. Engine will try to start when channel is at or above 1700. Engine will stop when channel is at or below 1300. Between 1301 and 1699 the engine will not change state unless a MAVLink command or mission item commands a state change, or the vehicle is disarmed. See ICE_STARTCHN_MIN parameter to change engine stop PWM value and/or to enable debouncing of the START_CH to avoid accidental engine kills due to noise on channel.
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Values: 0:None,1:Chan1,2:Chan2,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
 
@@ -77,6 +78,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: PWM_IGN_ON
     // @DisplayName: PWM value for ignition on
     // @Description: This is the value sent to the ignition channel when on
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
 
@@ -85,6 +87,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: PWM_IGN_OFF
     // @DisplayName: PWM value for ignition off
     // @Description: This is the value sent to the ignition channel when off
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
 
@@ -93,6 +96,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: PWM_STRT_ON
     // @DisplayName: PWM value for starter on
     // @Description: This is the value sent to the starter channel when on
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
 
@@ -101,6 +105,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: PWM_STRT_OFF
     // @DisplayName: PWM value for starter off
     // @Description: This is the value sent to the starter channel when off
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
 
