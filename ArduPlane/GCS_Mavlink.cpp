@@ -863,7 +863,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
         plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+#endif
         
         // add home alt if needed
         if (requested_position.relative_alt) {
