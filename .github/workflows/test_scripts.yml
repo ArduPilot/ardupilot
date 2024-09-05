@@ -26,6 +26,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+      - name: install pre-commit
+        shell: bash
+        run: |
+          pre-commit install
+        if: ${{ matrix.config == 'pre-commit-cleanliness' }}
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
