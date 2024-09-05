@@ -198,7 +198,7 @@ jobs:
         shell: 'bash'
         run: |
           source install/setup.bash
-          colcon test --packages-select ardupilot_dds_tests --event-handlers=console_cohesion+
+          colcon test --executor sequential --parallel-workers 0 --base-paths src/ardupilot --event-handlers=console_cohesion+
       - name: Report colcon test results
         run: |
           colcon test-result --all --verbose
