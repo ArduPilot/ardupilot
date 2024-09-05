@@ -3029,6 +3029,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int
 
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_int_t &packet)
 {
+    if (!is_zero(packet.param3)) {
+        return MAV_RESULT_DENIED;
+    }
     return set_message_interval((uint32_t)packet.param1, (int32_t)packet.param2);
 }
 
