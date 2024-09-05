@@ -4372,8 +4372,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=180)
 
     def TakeoffAuto1(self):
-        '''Test the behaviour of an AUTO takeoff, pt1.
-
+        '''Test the behaviour of an AUTO takeoff, pt1.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=0
@@ -4417,8 +4417,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffAuto2(self):
-        '''Test the behaviour of an AUTO takeoff, pt2.
-
+        '''Test the behaviour of an AUTO takeoff, pt2.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=0
@@ -4462,8 +4462,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffAuto3(self):
-        '''Test the behaviour of an AUTO takeoff, pt3.
-
+        '''Test the behaviour of an AUTO takeoff, pt3.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=1
@@ -4511,8 +4511,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffAuto4(self):
-        '''Test the behaviour of an AUTO takeoff, pt4.
-
+        '''Test the behaviour of an AUTO takeoff, pt4.'''
+        '''
         Conditions:
         - ARSPD_USE=0
         - TKOFF_OPTIONS[0]=1
@@ -4562,8 +4562,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffTakeoff1(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt1.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt1.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=0
@@ -4612,8 +4612,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def TakeoffTakeoff2(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt2.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt2.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=1
@@ -4663,8 +4663,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def TakeoffTakeoff3(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt3.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt3.'''
+        '''
         This is the same as case #1, but with disabled airspeed sensor.
 
         Conditions:
@@ -4715,8 +4715,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def TakeoffTakeoff4(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt4.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt4.'''
+        '''
         This is the same as case #3, but with almost stock parameters and without a catapult.
 
         Conditions:
