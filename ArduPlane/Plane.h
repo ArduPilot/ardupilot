@@ -212,6 +212,13 @@ private:
 
 #if AP_RANGEFINDER_ENABLED
     AP_FixedWing::Rangefinder_State rangefinder_state;
+
+    /*
+      orientation of rangefinder to use for landing
+     */
+    Rotation rangefinder_orientation(void) const {
+        return Rotation(g2.rangefinder_land_orient.get());
+    }
 #endif
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
