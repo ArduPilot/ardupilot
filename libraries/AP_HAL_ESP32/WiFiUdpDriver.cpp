@@ -32,7 +32,8 @@
 #include "lwip/sys.h"
 #include "lwip/netdb.h"
 
-#include "soc/rtc_wdt.h"
+#include "rtc_wdt.h"
+#include "freertos/idf_additions.h"
 
 using namespace ESP32;
 

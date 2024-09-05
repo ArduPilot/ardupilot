@@ -23,13 +23,16 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "soc/rtc_wdt.h"
-#include "esp_int_wdt.h"
+#include "rtc_wdt.h"
+
+//#include "esp_int_wdt.h"
 #include "esp_task_wdt.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <stdio.h>
+
+#include "esp_rom_sys.h"
 
 //#define SCHEDULERDEBUG 1
 
@@ -232,7 +235,7 @@ void Scheduler::delay(uint16_t ms)
 void Scheduler::delay_microseconds(uint16_t us)
 {
     if (in_main_thread() && us < 100) {
-        ets_delay_us(us);
+        esp_rom_delay_us(us);
     } else { // Minimum delay for FreeRTOS is 1ms
         uint32_t tick = portTICK_PERIOD_MS * 1000;
 

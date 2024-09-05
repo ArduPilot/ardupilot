@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #include "SPIDevice.h"
 
-#include "soc/rtc_wdt.h"
+#include "rtc_wdt.h"
 
 #ifdef HAL_ESP32_SDCARD
 

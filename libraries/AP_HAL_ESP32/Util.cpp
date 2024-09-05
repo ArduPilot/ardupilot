@@ -35,6 +35,8 @@
 #include "esp_heap_caps.h"
 #include <AP_Common/ExpandingString.h>
 
+#include "esp_mac.h"
+
 
 extern const AP_HAL::HAL& hal;
 

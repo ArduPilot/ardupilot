@@ -145,7 +145,7 @@ bool WiFiDriver::start_listen()
 bool WiFiDriver::try_accept()
 {
     struct sockaddr_in sourceAddr;
-    uint addrLen = sizeof(sourceAddr);
+    socklen_t addrLen = sizeof(sourceAddr);
     short i = available_socket();
     if (i != WIFI_MAX_CONNECTION) {
         socket_list[i] = accept(accept_socket, (struct sockaddr *)&sourceAddr, &addrLen);

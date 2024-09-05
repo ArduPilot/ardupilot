@@ -37,7 +37,7 @@ class AnalogSource : public AP_HAL::AnalogSource
 {
 public:
     friend class AnalogIn;
-    AnalogSource( adc_oneshot_unit_handle_t adc1_handle, int16_t ardupin, int16_t pin, float scaler, float initial_value, uint8_t unit);
+    AnalogSource( adc_oneshot_unit_handle_t adc_handle, int16_t ardupin, adc_channel_t channel, float scaler, float initial_value, adc_unit_t unit);
     float read_average() override;
     float read_latest() override;
     bool set_pin(uint8_t p) override;
@@ -49,15 +49,15 @@ public:
 
 private:
 
-    adc_oneshot_unit_handle_t _adc1_handle;
+    adc_oneshot_unit_handle_t _adc_handle;
     adc_cali_handle_t _adc_cali_handle;
 
     //ADC number (1 or 2). ADC2 is unavailable when WIFI on
-    uint8_t _unit;
+    adc_unit_t _unit;
 
     //adc Pin number (1-8)
     // gpio-adc lower level pin name
-    int16_t _pin;
+    adc_channel_t _channel;
 
     //human readable Pin number used in ardu params
     int16_t _ardupin;
@@ -76,6 +76,8 @@ private:
     float _sum_value;
 
     void _add_value();
+
+    int adc_read();
 
     HAL_Semaphore _semaphore;
 };
@@ -106,17 +108,12 @@ private:
     uint16_t _power_flags;
     uint16_t _accumulated_power_flags;  // bitmask of all _power_flags ever set
 
-    adc_oneshot_unit_handle_t _adc1_handle;
-    
+    adc_oneshot_unit_handle_t _adc_handle;
 
     struct pin_info {
-
-        adc_oneshot_unit_handle_t _adc1_handle;
-
-        uint8_t channel;  // adc1 pin offset
+        adc_channel_t channel;  // adc1 pin offset
         float scaling;
         uint8_t ardupin; // eg 3 , as typed into an ardupilot parameter
-        uint8_t gpio; // eg 32 for D32 esp pin number/s
     };
 
     static const pin_info pin_config[];
