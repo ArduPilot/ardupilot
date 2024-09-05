@@ -179,7 +179,7 @@ bool AP_Arming_Copter::terrain_database_required() const
     }
 
     if (copter.wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE &&
-        copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
+        copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::TERRAIN) {
         return true;
     }
     return AP_Arming::terrain_database_required();
@@ -252,7 +252,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 
         // checks when using range finder for RTL
 #if MODE_RTL_ENABLED == ENABLED
-        if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
+        if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::TERRAIN) {
             // get terrain source from wpnav
             const char *failure_template = "RTL_ALT_TYPE is above-terrain but %s";
             switch (copter.wp_nav->get_terrain_source()) {
