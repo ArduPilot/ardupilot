@@ -1280,6 +1280,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(precland, "PLND_", 35, ParametersG2, AC_PrecLand),
 #endif
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: RNGFND_LND_ORNT
+    // @DisplayName: rangefinder landing orientation
+    // @Description: The orientation of rangefinder to use for landing detection. Should be set to Down for normal downward facing rangefinder and Back for rearward facing rangefinder for quadplane tailsitters. Custom orientation can be used with Custom1 or Custom2. The orientation must match at least one of the available rangefinders.
+    // @Values: 4:Back, 25:Down, 101:Custom1, 102:Custom2
+    // @User: Standard
+    AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
+#endif
+    
     AP_GROUPEND
 };
 
