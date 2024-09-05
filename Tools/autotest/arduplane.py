@@ -4703,7 +4703,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
 
         # Check whether we're still at max throttle past TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
+        test_alt = self.get_parameter("TKOFF_LVL_ALT")+20
         self.wait_altitude(test_alt, test_alt+2, relative=True)
         self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
         self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
