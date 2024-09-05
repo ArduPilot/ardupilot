@@ -1420,8 +1420,8 @@ public:
 
     // enum for RTL_ALT_TYPE parameter
     enum class RTLAltType : int8_t {
-        RTL_ALTTYPE_RELATIVE = 0,
-        RTL_ALTTYPE_TERRAIN = 1
+        RELATIVE = 0,
+        TERRAIN = 1
     };
     ModeRTL::RTLAltType get_alt_type() const;
 
