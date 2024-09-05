@@ -16,6 +16,9 @@
 
 #define HAL_ESP32_BOARD_NAME "esp32-buzz"
 
+
+#define ESP_PLATFORM 1
+
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
@@ -84,20 +87,13 @@
 //
 // two different pin numbering schemes, both are ok, but only one at a time:
 #define HAL_ESP32_ADC_PINS_OPTION1 {\
-	{ADC1_GPIO35_CHANNEL, 11, 1},\
-	{ADC1_GPIO34_CHANNEL, 11, 2},\
-	{ADC1_GPIO39_CHANNEL, 11, 3},\
-	{ADC1_GPIO36_CHANNEL, 11, 4}\
+	{ADC_CHANNEL_0, 11, 1},\
+	{ADC_CHANNEL_1, 11, 2},\
+	{ADC_CHANNEL_2, 11, 3},\
+	{ADC_CHANNEL_3, 11, 4}\
 }
-#define HAL_ESP32_ADC_PINS_OPTION2 {\
-	{ADC1_GPIO35_CHANNEL, 11, 35},\
-	{ADC1_GPIO34_CHANNEL, 11, 34},\
-	{ADC1_GPIO39_CHANNEL, 11, 39},\
-	{ADC1_GPIO36_CHANNEL, 11, 36}\
-}
-// pick one:
-//#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION1
-#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION2
+
+#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION1
 
 
 

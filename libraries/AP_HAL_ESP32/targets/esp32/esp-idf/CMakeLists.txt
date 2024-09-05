@@ -15,14 +15,19 @@ idf_build_process(esp32
     # although esptool_py does not generate static library,
     # processing the component is needed for flashing related
     # targets and file generation
-    COMPONENTS esp32
-               freertos
-               tcpip_adapter
-               fatfs
-               esp_adc_cal
-               nvs_flash
-               esptool_py
-               app_update
+    COMPONENTS  freertos
+                fatfs
+                nvs_flash
+                esptool_py
+                app_update
+                esp_adc
+                esp_driver_mcpwm
+                driver
+                lwip
+                esp_wifi
+                esp_system
+                esp_rom
+                
     SDKCONFIG ${CMAKE_CURRENT_LIST_DIR}/sdkconfig
     BUILD_DIR ${CMAKE_BINARY_DIR})
 
@@ -94,14 +99,18 @@ add_custom_target(showinc ALL
 
 # Link the static libraries to the executable
 target_link_libraries(${elf_file}
-                idf::esp32
                 idf::freertos
                 idf::fatfs
-                idf::esp_adc_cal
                 idf::nvs_flash
                 idf::spi_flash
-                idf::tcpip_adapter
                 idf::app_update
+                idf::esp_adc
+                idf::esp_driver_mcpwm
+                idf::driver
+                idf::lwip
+                idf::esp_wifi
+                idf::esp_system
+                idf::esp_rom
                 )
 
 # Attach additional targets to the executable file for flashing,
