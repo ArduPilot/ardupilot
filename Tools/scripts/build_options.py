@@ -136,6 +136,7 @@ BUILD_OPTIONS = [
     Feature('Camera', 'Camera_Servo', 'AP_CAMERA_SERVO_ENABLED', 'Enable Camera Trigger via Servo support', 0, 'Camera'),
     Feature('Camera', 'Camera_Solo', 'AP_CAMERA_SOLOGIMBAL_ENABLED', 'Enable Solo Gimbal support', 0, 'Camera'),
     Feature('Camera', 'Camera_FOV_Status', 'AP_CAMERA_SEND_FOV_STATUS_ENABLED', 'Enable Camera FOV Status send to GCS', 0, 'Camera,MOUNT'),  # noqa: E501
+    Feature('Camera', 'Camera_ThermalRange', 'AP_CAMERA_SEND_THERMAL_RANGE_ENABLED', 'Enable Camera Thermal Range send to GCS', 0, 'Camera,MOUNT'),  # noqa: E501
 
     Feature('Camera', 'RUNCAM', 'HAL_RUNCAM_ENABLED', 'Enable RunCam Control', 0, None),
 
