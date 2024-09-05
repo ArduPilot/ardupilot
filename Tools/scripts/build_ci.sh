@@ -467,7 +467,6 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "pre-commit-cleanliness" ]; then
         echo "Checking pre-commit code cleanliness"
-        pre-commit install
         pre-commit run --all-files --verbose --show-diff-on-failure
         continue
     fi
