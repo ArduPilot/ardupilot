@@ -246,7 +246,7 @@ static void _sta_event_handler(void* arg, esp_event_base_t event_base,
 void WiFiDriver::initialize_wifi()
 {
 #ifndef WIFI_PWD
-    #default WIFI_PWD "ardupilot1"
+    #define WIFI_PWD "ardupilot1"
 #endif
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();

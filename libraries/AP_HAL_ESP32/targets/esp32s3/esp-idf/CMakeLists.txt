@@ -15,11 +15,8 @@ idf_build_process(esp32s3
     # although esptool_py does not generate static library,
     # processing the component is needed for flashing related
     # targets and file generation
-    COMPONENTS esp32s3
-               freertos
-               tcpip_adapter
+    COMPONENTS freertos
                fatfs
-               esp_adc_cal
                nvs_flash
                esptool_py
                app_update
@@ -93,13 +90,10 @@ add_custom_target(showinc ALL
 
 # Link the static libraries to the executable
 target_link_libraries(${elf_file}
-                idf::esp32s3
                 idf::freertos
                 idf::fatfs
-                idf::esp_adc_cal
                 idf::nvs_flash
                 idf::spi_flash
-                idf::tcpip_adapter
                 idf::app_update
                 )
 

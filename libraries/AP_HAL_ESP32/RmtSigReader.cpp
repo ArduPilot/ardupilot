@@ -7,19 +7,22 @@ using namespace ESP32;
 
 void RmtSigReader::init()
 {
-    rmt_config_t config;
+    rmt_config_t config = RMT_DEFAULT_CONFIG_RX(HAL_ESP32_RCIN, RMT_CHANNEL_4);
+
     config.rmt_mode = RMT_MODE_RX;
-    config.channel = RMT_CHANNEL_0;
+    config.channel = RMT_CHANNEL_4;
+
     config.clk_div = 80;   //80MHZ APB clock to the 1MHZ target frequency
     config.gpio_num = HAL_ESP32_RCIN;
-    config.mem_block_num = 2; //each block could store 64 pulses
+    config.mem_block_num = 4; //each block could store 64 pulses
+
     config.flags = 0;
     config.rx_config.filter_en = true;
     config.rx_config.filter_ticks_thresh = 8;
     config.rx_config.idle_threshold = idle_threshold;
 
     rmt_config(&config);
-    rmt_driver_install(config.channel, max_pulses * 8, 0);
+    rmt_driver_install(config.channel, max_pulses*16, 0 );
     rmt_get_ringbuf_handle(config.channel, &handle);
     rmt_rx_start(config.channel, true);
 }

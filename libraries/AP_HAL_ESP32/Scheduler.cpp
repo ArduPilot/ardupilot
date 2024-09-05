@@ -399,7 +399,7 @@ void Scheduler::_rcin_thread(void *arg)
     }
     hal.rcin->init();
     while (true) {
-        sched->delay_microseconds(1000);
+        sched->delay_microseconds(10);
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
