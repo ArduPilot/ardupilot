@@ -23,7 +23,7 @@
 
 #define ESP32_SCHEDULER_MAX_TIMER_PROCS 10
 #define ESP32_SCHEDULER_MAX_IO_PROCS 10
-
+#define TWDT_TIMEOUT_MS 3000
 
 /* Scheduler implementation: */
 class ESP32::Scheduler : public AP_HAL::Scheduler
@@ -31,6 +31,7 @@ class ESP32::Scheduler : public AP_HAL::Scheduler
 
 public:
     Scheduler();
+    ~Scheduler();
     /* AP_HAL::Scheduler methods */
     void     init() override;
     void     set_callbacks(AP_HAL::HAL::Callbacks *cb)

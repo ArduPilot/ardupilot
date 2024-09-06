@@ -49,11 +49,15 @@ Scheduler::Scheduler()
     _initialized = false;
 }
 
+Scheduler::~Scheduler()
+{
+}
+
 void disableCore0WDT()
 {
      idle_0 = xTaskGetIdleTaskHandleForCore(0);
     if (idle_0 == NULL || esp_task_wdt_delete(idle_0) != ESP_OK) {
-        //print("Failed to remove Core 0 IDLE task from WDT");
+        printf("Failed to remove Core 0 IDLE task from WDT");
     }
 }
 
@@ -61,19 +65,19 @@ void disableCore1WDT()
 {
      idle_1 = xTaskGetIdleTaskHandleForCore(1);
     if (idle_1 == NULL || esp_task_wdt_delete(idle_1) != ESP_OK) {
-        //print("Failed to remove Core 1 IDLE task from WDT");
+        printf("Failed to remove Core 1 IDLE task from WDT");
     }
 }
 void enableCore0WDT()
 {
     if (idle_0 != NULL && esp_task_wdt_add(idle_0) != ESP_OK) {
-        //print("Failed to add Core 0 IDLE task to WDT");
+        printf("Failed to add Core 0 IDLE task to WDT");
     }
 }
 void enableCore1WDT()
 {
     if (idle_1 != NULL && esp_task_wdt_add(idle_1) != ESP_OK) {
-        //print("Failed to add Core 1 IDLE task to WDT");
+        printf("Failed to add Core 1 IDLE task to WDT");
     }
 }
 
@@ -84,11 +88,11 @@ void Scheduler::init()
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
+/*
     // disable wd while booting, as things like mounting the sd-card in the io thread can take a while, especially if there isn't hardware attached.
     disableCore0WDT(); //FASTCPU
     disableCore1WDT(); //SLOWCPU
-
-
+*/
     hal.console->printf("%s:%d running with CONFIG_FREERTOS_HZ=%d\n", __PRETTY_FUNCTION__, __LINE__,CONFIG_FREERTOS_HZ);
 
     // keep main tasks that need speed on CPU 0
@@ -129,7 +133,7 @@ void Scheduler::init()
     	hal.console->printf("OK created task _uart_thread on FASTCPU\n");
     }	  
 
-    // we put thos on the SLOW core as it mounts the sd card, and that often isn't conencted.
+    // we put those on the SLOW core as it mounts the sd card, and that often isn't conencted.
     if (xTaskCreatePinnedToCore(_io_thread, "SchedulerIO:APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle,SLOWCPU) != pdPASS) {
         hal.console->printf("FAILED to create task _io_thread on SLOWCPU\n");
     } else {
