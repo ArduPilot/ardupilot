@@ -4504,7 +4504,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Ensure that after that the aircraft does not go full throttle anymore.
         test_alt = 50
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX")-10, operator.lt)
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            3,  # throttle
+            1000+10*self.get_parameter("TKOFF_THR_MAX")-10,
+            comparator=operator.lt,
+            minimum_duration=1,
+        )
+        w.run()
 
         # Wait for landing waypoint.
         self.wait_current_waypoint(11, timeout=1200)
