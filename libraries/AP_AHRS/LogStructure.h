@@ -57,8 +57,6 @@ struct PACKED log_AOA_SSA {
 // @Field: Pitch: achieved vehicle pitch
 // @Field: DesYaw: vehicle desired yaw
 // @Field: Yaw: achieved vehicle yaw
-// @Field: ErrRP: lowest estimated gyro drift error
-// @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
 // @Field: AEKF: active EKF type
 struct PACKED log_Attitude {
     LOG_PACKET_HEADER;
@@ -69,8 +67,6 @@ struct PACKED log_Attitude {
     int16_t  pitch;
     uint16_t control_yaw;
     uint16_t yaw;
-    uint16_t error_rp;
-    uint16_t error_yaw;
     uint8_t  active;
 };
 
@@ -199,7 +195,7 @@ struct PACKED log_ATSC {
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA), \
         "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" , true }, \
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-        "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" , true }, \
+        "ATT", "QccccCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,AEKF", "sddddhh-", "FBBBBBB-" , true }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
         "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s#DUm", "F-GGB" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
