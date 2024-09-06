@@ -1008,6 +1008,8 @@ class esp32(Board):
         else:
             env.DEFINES.update(AP_SIM_ENABLED = 0)
 
+        env.DEFINES.update(ESP_PLATFORM = 1)
+
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
         ]

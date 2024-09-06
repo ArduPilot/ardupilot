@@ -51,7 +51,7 @@ Scheduler::Scheduler()
 
 void disableCore0WDT()
 {
-     idle_0 = xTaskGetIdleTaskHandleForCPU(0);
+     idle_0 = xTaskGetIdleTaskHandleForCore(0);
     if (idle_0 == NULL || esp_task_wdt_delete(idle_0) != ESP_OK) {
         //print("Failed to remove Core 0 IDLE task from WDT");
     }
@@ -59,7 +59,7 @@ void disableCore0WDT()
 
 void disableCore1WDT()
 {
-     idle_1 = xTaskGetIdleTaskHandleForCPU(1);
+     idle_1 = xTaskGetIdleTaskHandleForCore(1);
     if (idle_1 == NULL || esp_task_wdt_delete(idle_1) != ESP_OK) {
         //print("Failed to remove Core 1 IDLE task from WDT");
     }

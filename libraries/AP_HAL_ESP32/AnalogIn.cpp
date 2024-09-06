@@ -23,9 +23,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include "driver/adc.h"
-#include "esp_adc_cal.h"
+
 #include "soc/adc_channel.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_adc/adc_cali.h"
 
 #if HAL_USE_ADC
 //== TRUE && !defined(HAL_DISABLE_ADC_DRIVER)
@@ -258,7 +259,7 @@ bool AnalogSource::set_pin(uint8_t ardupin)
     }
     const AnalogIn::pin_info *p = AnalogIn::pin_config + pinconfig_offset;
 
-    adc_channel_t newChannel = p->channel;
+    adc_channel_t newChannel = adc_channel_t(p->channel);
     float newscaler = p->scaling;
 
     if (_channel == newChannel) {
@@ -406,7 +407,6 @@ int8_t AnalogIn::find_pinconfig(int16_t ardupin)
     }
     // can't find a match in definitons
     return -1;
-
 }
 
 //
@@ -424,7 +424,7 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
     // although ANALOG_INPUT_NONE=255 is not a valid pin, we let it through here as
     //  a special case, so that it can be changed with set_pin(..) later.
     if (ardupin != ANALOG_INPUT_NONE) {
-        gpioAdcPin = pin_config[(uint8_t)pinconfig_offset].channel;
+        gpioAdcPin = adc_channel_t(pin_config[(uint8_t)pinconfig_offset].channel);
         scaler = pin_config[(uint8_t)pinconfig_offset].scaling;
     }
 

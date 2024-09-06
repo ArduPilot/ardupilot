@@ -48,7 +48,7 @@ void SoftSigReaderRMT::init()
 
     rmt_config_t config;
     config.rmt_mode = RMT_MODE_RX;
-    config.channel = RMT_CHANNEL_0;
+    config.channel = RMT_CHANNEL_4;
 
 #ifndef HAL_ESP32_RMT_RX_PIN_NUMBER
     #error HAL_ESP32_RMT_RX_PIN_NUMBER undefined in libraries/AP_HAL_ESP32/boards/esp32... .h

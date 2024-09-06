@@ -111,7 +111,7 @@ private:
     adc_oneshot_unit_handle_t _adc_handle;
 
     struct pin_info {
-        adc_channel_t channel;  // adc1 pin offset
+        uint8_t channel;
         float scaling;
         uint8_t ardupin; // eg 3 , as typed into an ardupilot parameter
     };

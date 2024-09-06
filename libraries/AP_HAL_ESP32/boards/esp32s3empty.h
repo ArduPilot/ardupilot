@@ -17,7 +17,7 @@
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
 // make sensor selection clearer
 
-#define ESP_PLATFORM 1
+//#define ESP_PLATFORM 1
 
 #define HAL_LOGGING_ENABLED 1
 #define AP_RCPROTOCOL_ENABLED 1

@@ -254,8 +254,16 @@ void mount_sdcard()
 {
     mount_sdcard_spi();
 }
+
 #endif // end spi
 
+void unmount_sdcard()
+{
+    if (card != nullptr) {
+        esp_vfs_fat_sdcard_unmount( "/SDCARD", card);
+    }
+    sdcard_running = false;
+}
 
 bool sdcard_retry(void)
 {
@@ -264,16 +272,6 @@ bool sdcard_retry(void)
     }
     return sdcard_running;
 }
-
-
-void unmount_sdcard()
-{
-    if (card != nullptr) {
-        esp_vfs_fat_sdmmc_unmount();
-    }
-    sdcard_running = false;
-}
-
 
 #else
 // empty impl's
