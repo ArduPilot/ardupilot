@@ -48,6 +48,12 @@
 #define AP_SIM_INS_ENABLED 0
 #define AP_SIM_BARO_ENABLED 0
 #define AP_COMPASS_SITL_ENABLED 0
+
+// see boards.py
+#ifndef ENABLE_HEAP
+#define ENABLE_HEAP 1
+#endif
+
 */
 
 #define AP_BARO_BMP280_ENABLED 1
@@ -105,11 +111,6 @@
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"
 // */
-
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
 
 //RCOUT which pins are used?
 
