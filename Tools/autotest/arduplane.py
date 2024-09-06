@@ -4697,22 +4697,40 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Throw the catapult.
         self.set_servo(7, 2000)
 
+        # we expect to maintain this throttle level past the takeoff
+        # altitude through to our takeoff altitude:
+        expected_takeoff_throttle = 1000+10*self.get_parameter("TKOFF_THR_MAX")
+
         # Check whether we're at max throttle below TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            3,  # throttle
+            expected_takeoff_throttle,
+            epsilon=1,
+            minimum_duration=1,
+        )
+        w.run()
 
         # Check whether we're still at max throttle past TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            3,  # throttle
+            expected_takeoff_throttle,
+            epsilon=1,
+            minimum_duration=1,
+        )
+        w.run()
 
         # Wait for the takeoff to complete.
         target_alt = self.get_parameter("TKOFF_ALT")
-        self.wait_altitude(target_alt-5, target_alt, relative=True)
+        self.wait_altitude(target_alt-2.5, target_alt+2.5, relative=True, minimum_duration=10, timeout=30)
 
-        self.fly_home_land_and_disarm()
+        self.reboot_sitl(force=True)
 
     def TakeoffTakeoff4(self):
         '''Test the behaviour of a takeoff in TAKEOFF mode, pt4.'''
