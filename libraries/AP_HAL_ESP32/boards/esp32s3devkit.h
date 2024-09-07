@@ -48,24 +48,29 @@
 #define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
 #define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
 
+#define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
+#define PROBE_BARO_SPI(driver, devname, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.spi->get_device(devname)),##args))
+
 //ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
 
 #define AP_INERTIALSENSOR_ENABLED 1
 
-#define HAL_INS_DEFAULT HAL_INS_MPU9250_I2C
+#define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
 #define HAL_INS_MPU9250_NAME "MPU9250"
 // IMU probing:
-#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_YAW_180)
+//#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_YAW_180)
+#define HAL_INS_PROBE_LIST PROBE_IMU_SPI( Invensense, HAL_INS_MPU9250_NAME, ROTATION_NONE)
 
 // BARO choices:
 #define AP_BARO_ENABLED 1
 
 #define AP_BARO_BMP280_ENABLED 1
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
+#define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
 #define HAL_BARO_BMP280_NAME "BMP280"
 
 // BARO probing:
-#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x76)
+//#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x76)
+#define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
 
 #define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
@@ -107,12 +112,12 @@
 
 // SPI BUS setup, including gpio, dma, etc
 // note... we use 'vspi' for the bmp280 and mpu9250
-#define HAL_ESP32_SPI_BUSES {}
-//    {.host=SPI3_HOST, .dma_ch=SPI_DMA_CH_AUTO, .mosi=GPIO_NUM_35, .miso=GPIO_NUM_37, .sclk=GPIO_NUM_36}
+#define HAL_ESP32_SPI_BUSES \
+    {.host=SPI2_HOST, .dma_ch=SPI_DMA_CH_AUTO, .mosi=GPIO_NUM_35, .miso=GPIO_NUM_37, .sclk=GPIO_NUM_36}
 
 // SPI per-device setup, including speeds, etc.
-#define HAL_ESP32_SPI_DEVICES {}
-//    {.name= "mpu9250", .bus=0, .device=0, .cs=GPIO_NUM_7,  .mode = 0, .lspeed=2*MHZ, .hspeed=1*MHZ},
+#define HAL_ESP32_SPI_DEVICES \
+    {.name= "mpu9250", .bus=0, .device=0, .cs=GPIO_NUM_7,  .mode = 0, .lspeed=4*MHZ, .hspeed=1*MHZ}
 //	  {.name= "bmp280",  .bus=0, .device=1, .cs=GPIO_NUM_17, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}
 
 //I2C bus list
@@ -125,7 +130,7 @@
 //HARDWARE UARTS
 #define HAL_ESP32_UART_DEVICES \
   {.port=UART_NUM_0, .rx=GPIO_NUM_44, .tx=GPIO_NUM_43 }, \
-  {.port=UART_NUM_1, .rx=GPIO_NUM_17, .tx=GPIO_NUM_18 }
+  {.port=UART_NUM_1, .rx=GPIO_NUM_15, .tx=GPIO_NUM_16 }
 
 #define HAVE_FILESYSTEM_SUPPORT 1
 
