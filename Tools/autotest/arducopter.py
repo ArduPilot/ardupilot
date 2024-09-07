@@ -11840,6 +11840,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
+    def ScriptingAHRSSource(self):
+        '''test ahrs-source.lua script'''
+        self.install_example_script_context("ahrs-source.lua")
+        self.set_parameters({
+            "RC10_OPTION": 90,
+            "SCR_ENABLE": 1,
+            "SCR_USER1": 10,    # something else
+            "SCR_USER2": 10,    # GPS something
+            "SCR_USER3": 0.2,   # ExtNav innovation
+        })
+        self.set_rc(10, 2000)
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(10, 1000)
+        self.wait_statustext('Using EKF Source Set 1', check_context=True)
+        self.set_rc(10, 1500)
+        self.wait_statustext('Using EKF Source Set 2', check_context=True)
+        self.set_rc(10, 2000)
+        self.wait_statustext('Using EKF Source Set 3', check_context=True)
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11941,6 +11961,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MissionRTLYawBehaviour,
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
+            self.ScriptingAHRSSource,
         ])
         return ret
 
