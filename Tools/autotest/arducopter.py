@@ -6011,6 +6011,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def hover_and_check_matched_frequency_with_fft_and_psd(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
                                                            reverse=None, takeoff=True, instance=0):
+        '''Takeoff and hover, checking the noise against the provided db level and returning psd'''
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
@@ -6041,6 +6042,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
                                                    reverse=None, takeoff=True, instance=0):
+        '''Takeoff and hover, checking the noise against the provided db level and returning peak db'''
         freq, hover_throttle, peakdb, psd = \
             self.hover_and_check_matched_frequency_with_fft_and_psd(dblevel, minhz,
                                                                     maxhz, peakhz, reverse, takeoff, instance)
@@ -6334,6 +6336,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.hover_and_check_matched_frequency_with_fft(dblevel=5, minhz=20, maxhz=350, reverse=True)
+
+    def StaticNotches(self):
+        """Use static harmonic notch to control motor noise."""
+        self.progress("Flying with Static notches")
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            "INS_LOG_BAT_MASK": 3,
+            "INS_LOG_BAT_OPT": 4,
+            "INS_GYRO_FILTER": 100, # set the gyro filter high so we can observe behaviour
+            "LOG_BITMASK": 65535,
+            "LOG_DISARMED": 0,
+            "SIM_VIB_FREQ_X": 120,  # roll
+            "SIM_VIB_FREQ_Y": 120,  # pitch
+            "SIM_VIB_FREQ_Z": 120,  # yaw
+            "SIM_VIB_MOT_MULT": 0,
+            "SIM_GYR1_RND": 5,
+            "INS_HNTCH_ENABLE": 1,
+            "INS_HNTCH_FREQ": 120,
+            "INS_HNTCH_REF": 1.0,
+            "INS_HNTCH_HMNCS": 3, # first and second harmonic
+            "INS_HNTCH_ATT": 50,
+            "INS_HNTCH_BW": 40,
+            "INS_HNTCH_MODE": 0, # static notch
+        })
+        self.reboot_sitl()
+
+        self.hover_and_check_matched_frequency_with_fft(dblevel=-15, minhz=20, maxhz=350, reverse=True, instance=2)
 
     def ThrottleGainBoost(self):
         """Use PD and Angle P boost for anti-gravity."""
@@ -11848,6 +11877,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.PositionWhenGPSIsZero,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.PIDNotches,
+            self.StaticNotches,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
