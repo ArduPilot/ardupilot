@@ -175,7 +175,7 @@ public:
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
-    bool active() const override { return transition_state != TRANSITION_DONE; }
+    bool active_frwd() const override { return transition_state == TRANSITION_ANGLE_WAIT_FW; }
 
     bool show_vtol_view() const override;
 

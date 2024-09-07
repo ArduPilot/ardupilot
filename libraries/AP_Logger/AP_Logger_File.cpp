@@ -428,7 +428,7 @@ bool AP_Logger_File::StartNewLogOK() const
     if (recent_open_error()) {
         return false;
     }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (hal.scheduler->in_main_thread()) {
         return false;
     }
@@ -640,6 +640,14 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         _read_offset += ret;
     }
     return ret;
+}
+
+void AP_Logger_File::end_log_transfer()
+{
+    if (_read_fd != -1) {
+        AP::FS().close(_read_fd);
+        _read_fd = -1;
+    }
 }
 
 /*
@@ -869,7 +877,7 @@ bool AP_Logger_File::write_lastlog_file(uint16_t log_num)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 void AP_Logger_File::flush(void)
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
     while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {

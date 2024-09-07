@@ -94,10 +94,6 @@ private:
     // Parses current data and returns the number of parsed GSOF messages.
     int process_message() WARN_IF_UNUSED;
 
-    double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     void parse_pos_time(uint32_t a);
     void parse_pos(uint32_t a);
     void parse_vel(uint32_t a);

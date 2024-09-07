@@ -289,7 +289,11 @@ void NavEKF3_core::setAidingMode()
             // GPS aiding is the preferred option unless excluded by the user
             if (readyToUseGPS() || readyToUseRangeBeacon() || readyToUseExtNav()) {
                 PV_AidingMode = AID_ABSOLUTE;
-            } else if (readyToUseOptFlow() || readyToUseBodyOdm()) {
+            } else if (
+#if EK3_FEATURE_OPTFLOW_FUSION
+                readyToUseOptFlow() ||
+#endif
+                readyToUseBodyOdm()) {
                 PV_AidingMode = AID_RELATIVE;
             }
             break;
@@ -332,7 +336,7 @@ void NavEKF3_core::setAidingMode()
 #endif
 
             // Check if GPS or external nav is being used
-            bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
+            bool posUsed = (imuSampleTime_ms - lastGpsPosPassTime_ms <= minTestTime_ms);
             bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
             // Check if attitude drift has been constrained by a measurement source
@@ -361,7 +365,7 @@ void NavEKF3_core::setAidingMode()
 #if EK3_FEATURE_BEACON_FUSION
                         (imuSampleTime_ms - rngBcn.lastPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
 #endif
-                        (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                        (imuSampleTime_ms - lastGpsPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                         (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
             }
 
@@ -378,7 +382,7 @@ void NavEKF3_core::setAidingMode()
 #if EK3_FEATURE_BEACON_FUSION
                     (imuSampleTime_ms - rngBcn.lastPassTime_ms > maxLossTime_ms) &&
 #endif
-                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+                    (imuSampleTime_ms - lastGpsPosPassTime_ms > maxLossTime_ms);
             }
 
             if (attAidLossCritical) {
@@ -432,11 +436,14 @@ void NavEKF3_core::setAidingMode()
         case AID_RELATIVE:
             // We are doing relative position navigation where velocity errors are constrained, but position drift will occur
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u started relative aiding",(unsigned)imu_index);
+#if EK3_FEATURE_OPTFLOW_FUSION
             if (readyToUseOptFlow()) {
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
                 prevFlowFuseTime_ms = imuSampleTime_ms;
-            } else if (readyToUseBodyOdm()) {
+            } else
+#endif
+                if (readyToUseBodyOdm()) {
                  // Reset time stamps
                 lastbodyVelPassTime_ms = imuSampleTime_ms;
                 prevBodyVelFuseTime_ms = imuSampleTime_ms;
@@ -481,7 +488,7 @@ void NavEKF3_core::setAidingMode()
             velTimeout = false;
 
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
-            lastPosPassTime_ms = imuSampleTime_ms;
+            lastGpsPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
 #if EK3_FEATURE_BEACON_FUSION
             rngBcn.lastPassTime_ms = imuSampleTime_ms;
@@ -530,6 +537,7 @@ bool NavEKF3_core::useRngFinder(void) const
     return true;
 }
 
+#if EK3_FEATURE_OPTFLOW_FUSION
 // return true if the filter is ready to start using optical flow measurements
 bool NavEKF3_core::readyToUseOptFlow(void) const
 {
@@ -545,6 +553,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
     // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use optical flow
     return (imuSampleTime_ms - flowMeaTime_ms < 200) && tiltAlignComplete && delAngBiasLearned;
 }
+#endif  // EK3_FEATURE_OPTFLOW_FUSION
 
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
@@ -777,7 +786,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
     status.flags.takeoff = dal.get_takeoff_expected(); // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     status.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
-    status.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
+    status.flags.using_gps = ((imuSampleTime_ms - lastGpsPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     status.flags.gps_quality_good = gpsGoodToAlign;
     // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data

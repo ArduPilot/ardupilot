@@ -208,6 +208,8 @@ void Tailsitter::setup()
         return;
     }
 
+    quadplane.thrust_type = QuadPlane::ThrustType::TAILSITTER;
+
     // Set tailsitter transition rate to match old calculation
     if (!transition_rate_fw.configured()) {
         transition_rate_fw.set_and_save(transition_angle_fw / (quadplane.transition_time_ms/2000.0f));

@@ -55,40 +55,7 @@ graph LR
 
 While DDS support in Ardupilot is mostly through git submodules, another tool needs to be available on your system: Micro XRCE DDS Gen.
 
-- Go to a directory on your system to clone the repo (perhaps next to `ardupilot`)
-- Install java
-  ```console
-  sudo apt install default-jre
-  ````
-- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the latest version of the generator using Ardupilot's mirror
-  ```console
-  git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
-  cd Micro-XRCE-DDS-Gen
-  ./gradlew assemble
-  ```
-
-- Add the generator directory to $PATH.
-  ```console
-  # Add this to ~/.bashrc
-
-  export PATH=$PATH:/your/path/to/Micro-XRCE-DDS-Gen/scripts
-  ```
-- Test it
-  ```console
-  cd /path/to/ardupilot
-  microxrceddsgen -version
-  # openjdk version "11.0.18" 2023-01-17
-  # OpenJDK Runtime Environment (build 11.0.18+10-post-Ubuntu-0ubuntu122.04)
-  # OpenJDK 64-Bit Server VM (build 11.0.18+10-post-Ubuntu-0ubuntu122.04, mixed mode, sharing)
-  # microxrceddsgen version: 1.0.0beta2
-  ```
-
-> :warning: **If you have installed FastDDS or FastDDSGen globally on your system**:
-eProsima's libraries and the packaging system in Ardupilot are not deterministic in this scenario.
-You may experience the wrong version of a library brought in, or runtime segfaults.
-For now, avoid having simultaneous local and global installs.
-If you followed the [global install](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_linux.html#global-installation)
-section, you should remove it and switch to local install.
+Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html#installation-ubuntu) to set up your environment.
 
 ### Serial Only: Set up serial for SITL with DDS
 

@@ -66,9 +66,11 @@ PB11 ETH_RMII_TX_EN      ETH1
 PA7 ETH_RMII_CRS_DV      ETH1
 PA1 ETH_RMII_REF_CLK     ETH1
 
-define BOARD_PHY_ID  MII_LAN8742A_ID
-define BOARD_PHY_ADDRESS 0x0005
+define BOARD_PHY_ADDRESS 5
 define BOARD_PHY_RMII
+
+# auto-negotiation doesn't work, force 100MBit full duplex
+define STM32_MAC_PHY_LINK_TYPE MAC_LINK_100_FULLDUPLEX
 
 include ../include/network_bootloader.inc
 

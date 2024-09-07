@@ -920,6 +920,7 @@ bool AP_IOMCU_FW::handle_code_write()
             mode_out.mode = rx_io_packet.regs[1];
             mode_out.bdmask = rx_io_packet.regs[2];
             mode_out.esc_type = rx_io_packet.regs[3];
+            mode_out.reversible_mask = rx_io_packet.regs[4];
             break;
 
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
@@ -1097,6 +1098,8 @@ void AP_IOMCU_FW::safety_update(void)
             hal.rcout->force_safety_on();
         }
     }
+    // update the armed state
+    hal.util->set_soft_armed((reg_setup.arming & P_SETUP_ARMING_FMU_ARMED) != 0);
 
 #if IOMCU_ENABLE_RESET_TEST
     {
@@ -1175,6 +1178,7 @@ void AP_IOMCU_FW::rcout_config_update(void)
     // see if there is anything to do, we only support setting the mode for a particular channel once
     if ((last_output_mode_mask & mode_out.mask) == mode_out.mask
         && (last_output_bdmask & mode_out.bdmask) == mode_out.bdmask
+        && (last_output_reversible_mask & mode_out.reversible_mask) == mode_out.reversible_mask
         && last_output_esc_type == mode_out.esc_type) {
         return;
     }
@@ -1187,13 +1191,15 @@ void AP_IOMCU_FW::rcout_config_update(void)
 #endif
 #ifdef HAL_WITH_BIDIR_DSHOT
         hal.rcout->set_bidir_dshot_mask(mode_out.bdmask);
-        hal.rcout->set_dshot_esc_type(AP_HAL::RCOutput::DshotEscType(mode_out.esc_type));
 #endif
+        hal.rcout->set_reversible_mask(mode_out.reversible_mask);
+        hal.rcout->set_dshot_esc_type(AP_HAL::RCOutput::DshotEscType(mode_out.esc_type));
         hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
         // enabling dshot changes the memory allocation
         reg_status.freemem = hal.util->available_memory();
         last_output_mode_mask |= mode_out.mask;
         last_output_bdmask |= mode_out.bdmask;
+        last_output_reversible_mask |= mode_out.reversible_mask;
         last_output_esc_type = mode_out.esc_type;
         break;
     case AP_HAL::RCOutput::MODE_PWM_ONESHOT:

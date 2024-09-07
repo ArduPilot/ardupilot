@@ -15,6 +15,7 @@
 #ifndef GPS_MAX_RECEIVERS
 #define GPS_MAX_RECEIVERS 2 // maximum number of physical GPS sensors allowed - does not include virtual GPS created by blending receiver data
 #endif
+
 #if !defined(GPS_MAX_INSTANCES)
 #if GPS_MAX_RECEIVERS > 1
 #define GPS_MAX_INSTANCES  (GPS_MAX_RECEIVERS + 1) // maximum number of GPS instances including the 'virtual' GPS created by blending receiver data
@@ -26,18 +27,22 @@
 #if GPS_MAX_RECEIVERS <= 1 && GPS_MAX_INSTANCES > 1
 #error "GPS_MAX_INSTANCES should be 1 for GPS_MAX_RECEIVERS <= 1"
 #endif
-
-#if GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
-#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
-#endif
 #endif
 
 #ifndef AP_GPS_BACKEND_DEFAULT_ENABLED
 #define AP_GPS_BACKEND_DEFAULT_ENABLED AP_GPS_ENABLED
 #endif
 
+#if !defined(AP_GPS_BLENDED_ENABLED) && defined(GPS_MAX_INSTANCES)
+#define AP_GPS_BLENDED_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED && GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
+#endif
+
 #ifndef AP_GPS_BLENDED_ENABLED
-#define AP_GPS_BLENDED_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED && defined(GPS_BLENDED_INSTANCE)
+#define AP_GPS_BLENDED_ENABLED 0
+#endif
+
+#if AP_GPS_BLENDED_ENABLED
+#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #endif
 
 #ifndef AP_GPS_DRONECAN_ENABLED

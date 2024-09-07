@@ -36,9 +36,10 @@ private:
 
     // left-to-right, each bit represents 100ms
     static const uint32_t INITIALIZING = 0b10101010101010101010101010101010UL;
-    static const uint32_t NOT_READY_TO_ARM = 0b11111111000000001111111100000000UL;
+    static const uint32_t NOT_READY_TO_ARM = 0b11110000000000001111111110000000UL;
     static const uint32_t READY_TO_ARM = 0b11111111111111100000000000000000UL;
     static const uint32_t ARMED = 0b11111111111111111111111111111111UL;
+    static const uint32_t FAILSAFE = 0b11110000111100001111000011110000UL;
 
     uint32_t current_pattern = INITIALIZING;
     uint32_t last_timestep_ms;

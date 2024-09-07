@@ -24,6 +24,7 @@ import fnmatch
 import optparse
 import os
 import pathlib
+import re
 import sys
 
 from pysim import util
@@ -53,6 +54,7 @@ class TestBuildOptions(object):
                  board="CubeOrange",  # DevEBoxH7v2 also works
                  extra_hwdef=None,
                  emit_disable_all_defines=None,
+                 resume=False,
                  ):
         self.extra_hwdef = extra_hwdef
         self.sizes_nothing_disabled = None
@@ -67,6 +69,7 @@ class TestBuildOptions(object):
             self.build_targets = self.all_targets()
         self._board = board
         self.emit_disable_all_defines = emit_disable_all_defines
+        self.resume = resume
         self.results = {}
 
         self.enable_in_turn_results = {}
@@ -198,8 +201,7 @@ class TestBuildOptions(object):
                 # or all vehicles:
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
-                    'BEACON_ENABLED',  # Rover doesn't obey this (should also be AP_BEACON_ENABLED)
-                    'WINCH_ENABLED',  # Copter doesn't use this; should use AP_WINCH_ENABLED
+                    'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
                 ])
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
@@ -314,13 +316,19 @@ class TestBuildOptions(object):
                 f.write(self.csv_for_results(self.results))
 
     def run_disable_in_turn(self):
+        progress_file = pathlib.Path("/tmp/run-disable-in-turn-progress")
+        resume_number = self.resume_number_from_progress_Path(progress_file)
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
         for feature in sorted(options, key=lambda x : x.define):
+            if resume_number is not None:
+                if count < resume_number:
+                    count += 1
+                    continue
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
-            with open("/tmp/run-disable-in-turn-progress", "w") as f:
+            with open(progress_file, "w") as f:
                 f.write(f"{count}/{len(options)} {feature.define}\n")
                 #            if feature.define < "WINCH_ENABLED":
                 #                count += 1
@@ -351,16 +359,35 @@ class TestBuildOptions(object):
             with open("/tmp/enable-in-turn.csv", "w") as f:
                 f.write(self.csv_for_results(self.enable_in_turn_results))
 
+    def resume_number_from_progress_Path(self, progress_file):
+        if not self.resume:
+            return None
+        try:
+            content = progress_file.read_text().rstrip()
+            m = re.match(r"(\d+)/\d+ \w+", content)
+            if m is None:
+                raise ValueError(f"{progress_file} not matched")
+            return int(m.group(1))
+        except FileNotFoundError:
+            pass
+        return None
+
     def run_enable_in_turn(self):
+        progress_file = pathlib.Path("/tmp/run-enable-in-turn-progress")
+        resume_number = self.resume_number_from_progress_Path(progress_file)
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
         for feature in options:
+            if resume_number is not None:
+                if count < resume_number:
+                    count += 1
+                    continue
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
-            with open("/tmp/run-enable-in-turn-progress", "w") as f:
+            with open(progress_file, "w") as f:
                 f.write(f"{count}/{len(options)} {feature.define}\n")
             self.test_enable_feature(feature, options)
             count += 1
@@ -482,11 +509,14 @@ if __name__ == '__main__':
                       help="file containing extra hwdef information")
     parser.add_option("--board",
                       type='string',
-                      default="DevEBoxH7v2",
+                      default="CubeOrange",
                       help='board to build for')
     parser.add_option("--emit-disable-all-defines",
                       action='store_true',
                       help='emit defines used for disabling all features then exit')
+    parser.add_option("--resume",
+                      action='store_true',
+                      help='resume from previous progress file')
 
     opts, args = parser.parse_args()
 
@@ -501,6 +531,7 @@ if __name__ == '__main__':
         board=opts.board,
         extra_hwdef=opts.extra_hwdef,
         emit_disable_all_defines=opts.emit_disable_all_defines,
+        resume=opts.resume,
     )
 
     tbo.run()

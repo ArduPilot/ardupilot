@@ -141,7 +141,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 
     // clear the timeout flags and counters
     posTimeout = false;
-    lastPosPassTime_ms = imuSampleTime_ms;
+    lastGpsPosPassTime_ms = imuSampleTime_ms;
 }
 
 #if EK3_FEATURE_POSITION_RESET
@@ -150,7 +150,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 // Returns true if the set was successful
 bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
-    if ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
+    if ((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
         (PV_AidingMode == AID_NONE)
         || !validOrigin) {
         return false;
@@ -500,8 +500,8 @@ void NavEKF3_core::SelectVelPosFusion()
         CorrectGPSForAntennaOffset(gpsDataDelayed);
         // calculate innovations and variances for reporting purposes only
         CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise, frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
-        // record time innovations were calculated (for timeout checks)
-        gpsVelInnovTime_ms = dal.millis();
+        // record time GPS data was retrieved from the buffer (for timeout checks)
+        gpsRetrieveTime_ms = dal.millis();
     }
 
     // detect position source changes.  Trigger position reset if position source is valid
@@ -775,17 +775,17 @@ void NavEKF3_core::FuseVelPosNED()
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
                 posCheckPassed = true;
-                lastPosPassTime_ms = imuSampleTime_ms;
+                lastGpsPosPassTime_ms = imuSampleTime_ms;
             } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
                 // Handle the special case where the glitch radius parameter has been set to a non-positive number.
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
                 posCheckPassed = true;
-                lastPosPassTime_ms = imuSampleTime_ms;
+                lastGpsPosPassTime_ms = imuSampleTime_ms;
                 varInnovVelPos[3] *= posTestRatio;
                 varInnovVelPos[4] *= posTestRatio;
                 posCheckPassed = true;
-                lastPosPassTime_ms = imuSampleTime_ms;
+                lastGpsPosPassTime_ms = imuSampleTime_ms;
             }
 
             // Use position data if healthy or timed out or bad IMU data
@@ -856,7 +856,7 @@ void NavEKF3_core::FuseVelPosNED()
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
                 posCheckPassed = true;
-                lastPosPassTime_ms = imuSampleTime_ms;
+                lastGpsPosPassTime_ms = imuSampleTime_ms;
                 for (uint8_t i = 0; i<=imax; i++) {
                     varInnovVelPos[i] *= velTestRatio;
                 }
@@ -904,7 +904,7 @@ void NavEKF3_core::FuseVelPosNED()
                 // The innovation variance is increased to limit the state update to an amount corresponding
                 // to a test ratio of 1.
                 posCheckPassed = true;
-                lastPosPassTime_ms = imuSampleTime_ms;
+                lastGpsPosPassTime_ms = imuSampleTime_ms;
                 varInnovVelPos[5] *= hgtTestRatio;
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;

@@ -110,8 +110,14 @@ public:
     // set bi-directional mask
     void set_bidir_dshot_mask(uint16_t mask);
 
+    // set reversible mask
+    void set_reversible_mask(uint16_t mask);
+
     // get output mode
     AP_HAL::RCOutput::output_mode get_output_mode(uint8_t& mask) const;
+
+    // approximation to disabled channel
+    uint32_t get_disabled_channels(uint32_t digital_mask) const;
 
     // MCUID
     uint32_t get_mcu_id() const { return config.mcuid; }

@@ -6052,6 +6052,43 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
             self.disarm_vehicle()
 
+    def _MAV_CMD_EXTERNAL_WIND_ESTIMATE(self, command):
+        self.reboot_sitl()
+
+        def cmp_with_variance(a, b, p):
+            return abs(a - b) < p
+
+        def check_eq(speed, direction, ret_dir, timeout=1):
+            command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=speed, p3=direction)
+
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        f"Failed to set wind speed or/and direction: speed != {speed} or direction != {direction}")
+
+                m = self.assert_receive_message("WIND")
+                if cmp_with_variance(m.speed, speed, 0.5) and cmp_with_variance(m.direction, ret_dir, 5):
+                    return True
+
+        check_eq(1, 45, 45)
+        check_eq(2, 90, 90)
+        check_eq(3, 120, 120)
+        check_eq(4, 180, -180)
+        check_eq(5, 240, -120)
+        check_eq(6, 320, -40)
+        check_eq(7, 360, 0)
+
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=-2, p3=90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=2, p3=-90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=-2, p3=-90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=2, p3=370, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
+    def MAV_CMD_EXTERNAL_WIND_ESTIMATE(self):
+        '''test MAV_CMD_EXTERNAL_WIND_ESTIMATE as a mavlink command'''
+        self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd)
+        self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd_int)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -6183,6 +6220,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GPSPreArms,
             self.SetHomeAltChange,
             self.ForceArm,
+            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
         ])
         return ret
 

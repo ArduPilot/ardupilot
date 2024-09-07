@@ -141,7 +141,7 @@ void executor(T oui)
     oui();
 }
 
-void Scheduler::thread_create_trampoline(void *ctx)
+void IRAM_ATTR Scheduler::thread_create_trampoline(void *ctx)
 {
     AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
     (*t)();
@@ -204,7 +204,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     return true;
 }
 
-void Scheduler::delay(uint16_t ms)
+void IRAM_ATTR Scheduler::delay(uint16_t ms)
 {
     uint64_t start = AP_HAL::micros64();
     while ((AP_HAL::micros64() - start)/1000 < ms) {
@@ -217,7 +217,7 @@ void Scheduler::delay(uint16_t ms)
     }
 }
 
-void Scheduler::delay_microseconds(uint16_t us)
+void IRAM_ATTR Scheduler::delay_microseconds(uint16_t us)
 {
     if (in_main_thread() && us < 100) {
         esp_rom_delay_us(us);
@@ -228,7 +228,7 @@ void Scheduler::delay_microseconds(uint16_t us)
     }
 }
 
-void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
+void IRAM_ATTR Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
 #ifdef SCHEDDEBUG
     DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
@@ -248,7 +248,7 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     _timer_sem.give();
 }
 
-void Scheduler::register_io_process(AP_HAL::MemberProc proc)
+void IRAM_ATTR Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
 #ifdef SCHEDDEBUG
     DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
@@ -269,7 +269,7 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
     _io_sem.give();
 }
 
-void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
+void IRAM_ATTR Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
 {
     _failsafe = failsafe;
 }
@@ -282,7 +282,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     esp_restart();
 }
 
-bool Scheduler::in_main_thread() const
+bool IRAM_ATTR Scheduler::in_main_thread() const
 {
     return _main_task_handle == xTaskGetCurrentTaskHandle();
 }
@@ -304,7 +304,7 @@ bool Scheduler::is_system_initialized()
     return _initialized;
 }
 
-void Scheduler::_timer_thread(void *arg)
+void IRAM_ATTR Scheduler::_timer_thread(void *arg)
 {
 #ifdef SCHEDDEBUG
     DBG_PRINTF("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
@@ -331,7 +331,7 @@ void Scheduler::_timer_thread(void *arg)
     }
 }
 
-void Scheduler::_rcout_thread(void* arg)
+void IRAM_ATTR Scheduler::_rcout_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
@@ -345,7 +345,7 @@ void Scheduler::_rcout_thread(void* arg)
     }
 }
 
-void Scheduler::_run_timers()
+void IRAM_ATTR Scheduler::_run_timers()
 {
 #ifdef SCHEDULERDEBUG
     DBG_PRINTF("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
@@ -379,7 +379,7 @@ void Scheduler::_run_timers()
     _in_timer_proc = false;
 }
 
-void Scheduler::_rcin_thread(void *arg)
+void IRAM_ATTR Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
@@ -392,7 +392,7 @@ void Scheduler::_rcin_thread(void *arg)
     }
 }
 
-void Scheduler::_run_io(void)
+void IRAM_ATTR Scheduler::_run_io(void)
 {
 #ifdef SCHEDULERDEBUG
     DBG_PRINTF("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
@@ -418,7 +418,7 @@ void Scheduler::_run_io(void)
     _in_io_proc = false;
 }
 
-void Scheduler::_io_thread(void* arg)
+void IRAM_ATTR Scheduler::_io_thread(void* arg)
 {
 #ifdef SCHEDDEBUG
     DBG_PRINTF("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
@@ -484,7 +484,7 @@ void Scheduler::_print_profile(void* arg)
 
 }
 
-void Scheduler::_uart_thread(void *arg)
+void IRAM_ATTR Scheduler::_uart_thread(void *arg)
 {
 #ifdef SCHEDDEBUG
     DBG_PRINTF("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
@@ -507,7 +507,7 @@ void Scheduler::_uart_thread(void *arg)
 
 
 // get the active main loop rate
-uint16_t Scheduler::get_loop_rate_hz(void)
+uint16_t IRAM_ATTR Scheduler::get_loop_rate_hz(void)
 {
     if (_active_loop_rate_hz == 0) {
         _active_loop_rate_hz = _loop_rate_hz;

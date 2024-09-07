@@ -321,6 +321,8 @@ AP_HW_MountainEagleH743              1444
 AP_HW_StellarF4                      1500
 AP_HW_GEPRCF745BTHD                  1501
 
+AP_HW_HGLRCF405V4                    1524
+
 AP_HW_MFT-SEMA100                    2000
 
 AP_HW_SakuraRC-H743                  2714
@@ -374,6 +376,10 @@ AP_HW_ZeroOne_X6                     5600
 AP_HW_ZeroOne_PMU                    5601
 AP_HW_ZeroOne_GNSS                   5602
 
+#IDs 5700-5710 reserved for DroneBuild  
+AP_HW_DroneBuild_G1                  5700
+AP_HW_DroneBuild_G2                  5701
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
@@ -382,6 +388,9 @@ AP_HW_ZeroOne_GNSS                   5602
 
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
+
+# IDs 7100-7109 reserved for VIEWPRO
+AP_HW_VUAV-V7pro                     7100
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140

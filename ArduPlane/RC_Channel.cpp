@@ -169,6 +169,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
     case AUX_FUNC::PRECISION_LOITER:
+#if AP_ICENGINE_ENABLED
+    case AUX_FUNC::ICE_START_STOP:
+#endif
 #if QAUTOTUNE_ENABLED
     case AUX_FUNC::AUTOTUNE_TEST_GAINS:
 #endif
@@ -287,6 +290,9 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     case AUX_FUNC::FLAP:
     case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::AIRBRAKE:
+#if AP_ICENGINE_ENABLED
+    case AUX_FUNC::ICE_START_STOP:
+#endif
         break; // input labels, nothing to do
 
 #if HAL_QUADPLANE_ENABLED
