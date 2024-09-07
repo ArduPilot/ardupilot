@@ -30,6 +30,7 @@ extern const AP_HAL::HAL& hal;
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_RCMapper/AP_RCMapper.h>
 
 #include "RC_Channel.h"
 
@@ -306,6 +307,39 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
     }
 }
 #endif // AP_SCRIPTING_ENABLED
+
+#if AP_RCMAPPER_ENABLED
+// these methods return an RC_Channel pointers based on values from
+// AP_::rcmap().  The return value is guaranteed to be not-null to
+// allow use of the pointer without checking it for null-ness.  If an
+// invalid option has been chosen somehow then the returned channel
+// will be a dummy channel.
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
+{
+    RC_Channel *ret = RC_Channels::rc_channel(rcmap_number-1);
+    if (ret != nullptr) {
+        return *ret;
+    }
+    return dummy_rcchannel;
+}
+RC_Channel &RC_Channels::get_roll_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+};
+RC_Channel &RC_Channels::get_pitch_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+};
+RC_Channel &RC_Channels::get_throttle_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+};
+RC_Channel &RC_Channels::get_yaw_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+};
+#endif  // AP_RCMAPPER_ENABLED
+
 
 // singleton instance
 RC_Channels *RC_Channels::_singleton;
