@@ -87,7 +87,6 @@ void Scheduler::init()
 #ifdef SCHEDDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
-
 /*
     // disable wd while booting, as things like mounting the sd-card in the io thread can take a while, especially if there isn't hardware attached.
     disableCore0WDT(); //FASTCPU
@@ -147,11 +146,11 @@ void Scheduler::init()
     }
 
     //   xTaskCreatePinnedToCore(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr,SLOWCPU);
-
+/*
     hal.console->printf("OK Sched Init, enabling WD\n");
     enableCore0WDT();   //FASTCPU
     //enableCore1WDT();   //we don't enable WD on SLOWCPU right now.
-
+*/
 }
 
 template <typename T>

@@ -50,10 +50,11 @@ void RCOutput::init()
 {
     _max_channels = MAX_CHANNELS;
 
-
+#ifdef CONFIG_IDF_TARGET_ESP32     
     //32 and 33 are special as they dont default to gpio, but can be if u disable their rtc setup:
     rtc_gpio_deinit(GPIO_NUM_32);
     rtc_gpio_deinit(GPIO_NUM_33);
+#endif
 
     printf("oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo\n");
     printf("RCOutput::init() - channels available: %d \n",(int)MAX_CHANNELS);

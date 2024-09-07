@@ -56,8 +56,6 @@
 
 */
 
-#define AP_BARO_BMP280_ENABLED 1
-
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
 #define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
@@ -68,17 +66,20 @@
 
 #define HAL_INS_DEFAULT HAL_INS_MPU9250_I2C
 #define HAL_INS_MPU9250_NAME "MPU9250"
+// IMU probing:
+#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_YAW_180)
 
 // BARO choices:
+#define AP_BARO_ENABLED 1
+
+#define AP_BARO_BMP280_ENABLED 1
 #define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
 #define HAL_BARO_BMP280_NAME "BMP280"
 
-// IMU probing:
-#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_YAW_180)
 // BARO probing:
 #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x76)
 
-//#define HAL_BARO_ALLOW_INIT_NO_BARO 1
+#define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 
 #define AP_COMPASS_ENABLE 0
@@ -127,7 +128,7 @@
 //	  {.name= "bmp280",  .bus=0, .device=1, .cs=GPIO_NUM_17, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}
 
 //I2C bus list
-#define HAL_ESP32_I2C_BUSES {.port=I2C_NUM_0, .sda=GPIO_NUM_8, .scl=GPIO_NUM_9, .speed=400*KHZ, .internal=false, .soft = false }
+#define HAL_ESP32_I2C_BUSES {.port=I2C_NUM_0, .sda=GPIO_NUM_8, .scl=GPIO_NUM_9, .speed=100*KHZ, .internal=false, .soft = false }
 
 // rcin on what pin?
 #define HAL_ESP32_RCIN GPIO_NUM_4

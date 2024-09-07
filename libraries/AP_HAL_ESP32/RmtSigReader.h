@@ -21,6 +21,12 @@
 
 #include "driver/rmt.h"
 
+#ifdef CONFIG_IDF_TARGET_ESP32S3
+  #if SOC_RMT_SUPPORT_RX_PINGPONG == 1
+    #error SOC_RMT_SUPPORT_RX_PINGPONG should be defined as 0 for esp32s3 target in modules/esp_idf/components/soc/esp32s3/include/soc/soc_caps.h
+  #endif
+#endif
+
 class ESP32::RmtSigReader
 {
 public:

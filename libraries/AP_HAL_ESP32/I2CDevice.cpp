@@ -21,8 +21,11 @@
 
 using namespace ESP32;
 
+//#define BUSDEBUG 1
+
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
+#define I2C_TIMEOUT_VALUE_MS (50)
 
 I2CBusDesc i2c_bus_desc[] = { HAL_ESP32_I2C_BUSES };
 
@@ -32,18 +35,15 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(i2c_bus_desc)];
 
 #define ESP_CHK( fn, args ...) \
 { \
-    printf("%s:%d %s(%s):",  __PRETTY_FUNCTION__, __LINE__, #fn, #args); \
     int err = fn(args); \
-    if (err != ESP_OK) \
-      printf("error %d\n", err); \
-    else \
-      printf("OK\n"); \
+    if (err != ESP_OK) {\
+        printf("%s:%d :",  __PRETTY_FUNCTION__, __LINE__); \
+        printf("error %d\n", err); \
+    } \
 }
-
 #else
    #define ESP_CHK( fn, args ...) fn(args)
 #endif
-
 
 I2CDeviceManager::I2CDeviceManager(void)
 {
@@ -108,9 +108,11 @@ I2CDevice::~I2CDevice()
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
+/*
 #ifdef BUSDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
+*/
     if (!bus.semaphore.check_owner()) {
         printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
         return false;
@@ -152,20 +154,24 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         }
         ESP_CHK(i2c_master_stop, cmd);
 
-        TickType_t timeout = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
+        TickType_t timeout = I2C_TIMEOUT_VALUE_MS; //1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
         
         for (int i = 0; i < 2; i++) {
             int ret = i2c_master_cmd_begin(bus.port, cmd, timeout);
             result = ( ret == ESP_OK);
             if (!result) {
 #ifdef BUSDEBUG
-                printf("i2c_master_cmd_begin failed with %d, bus.port = %x, addr = 0x%x, timeout = %d\n", ret, bus.port, _address, timeout);
+                printf("i2c_master_cmd_begin failed with %d, bus.port = %x, addr = 0x%x, timeout = %ld\n", ret, bus.port, _address, timeout);
 #endif              
                 ESP_CHK(i2c_reset_tx_fifo, bus.port);
                 ESP_CHK(i2c_reset_rx_fifo, bus.port);
             }
-            else 
+            else {
+#ifdef BUSDEBUG
+                printf("i2c_master_cmd_begin bus.port = %x, addr = 0x%x, timeout = %ld : OK\n", bus.port, _address, timeout);
+#endif                              
                break;
+            }
         }
 
         i2c_cmd_link_delete(cmd);
