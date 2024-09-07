@@ -33,7 +33,7 @@
 
 #include "AnalogIn.h"
 
-#define ESP32_ADC_MAVLINK_DEBUG 1
+#define ESP32_ADC_MAVLINK_DEBUG 0
 
 #ifndef ESP32_ADC_MAVLINK_DEBUG
 // this allows the first 6 analog channels to be reported by mavlink for debugging purposes
@@ -42,14 +42,14 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define ANALOGIN_DEBUGGING 1
+#define ANALOGIN_DEBUGGING 0
 
 
 // base voltage scaling for 12 bit 3.3V ADC
 #define VOLTAGE_SCALING (3.3f/4096.0f)
 
 #if ANALOGIN_DEBUGGING
-# define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
+# define Debug(fmt, args ...) DBG_PRINTF( fmt, ## args)
 #else
 # define Debug(fmt, args ...)
 #endif
@@ -94,7 +94,7 @@ gpio_num_t adc_gpio_pin_lookup(int adc_unit, adc_channel_t adc_channel)
     };
 
     if (adc_unit != 1) {
-        printf("AnalogIn: Only ADC1 is usable on ESP32 device\n");
+        Debug("AnalogIn: Only ADC1 is usable on ESP32 device\n");
         return gpio_num_t(-1);
     }
     for (int i = 0; i < ARRAY_SIZE(m); i++)
@@ -103,7 +103,7 @@ gpio_num_t adc_gpio_pin_lookup(int adc_unit, adc_channel_t adc_channel)
             return (gpio_num_t)(m[i].pin);
         }
     }
-    printf("AnalogIn: ADC1 pin lookup failed for channel %d\n", adc_channel);
+    Debug("AnalogIn: ADC1 pin lookup failed for channel %d\n", adc_channel);
     return gpio_num_t(-1);
 }
 
@@ -119,7 +119,7 @@ bool adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t at
 
 #if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
     if (!calibrated) {
-        printf("AnalogIn: calibration scheme version is %s", "Curve Fitting");
+        Debug("AnalogIn: calibration scheme version is %s", "Curve Fitting");
         adc_cali_curve_fitting_config_t cali_config = {
             .unit_id = unit,
             .chan = channel,
@@ -135,7 +135,7 @@ bool adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t at
 
 #if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
     if (!calibrated) {
-        printf("AnalogIn: calibration scheme version is %s", "Line Fitting");
+        Debug("AnalogIn: calibration scheme version is %s", "Line Fitting");
         adc_cali_line_fitting_config_t cali_config = {
             .unit_id = unit,
             .atten = atten,
@@ -150,11 +150,11 @@ bool adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t at
 
     *out_handle = handle;
     if (ret == ESP_OK) {
-        printf("AnalogIn: Calibration Success");
+        Debug("AnalogIn: Calibration Success");
     } else if (ret == ESP_ERR_NOT_SUPPORTED || !calibrated) {
-        printf("AnalogIn: eFuse not burnt, skip software calibration");
+        Debug("AnalogIn: eFuse not burnt, skip software calibration");
     } else {
-        printf("AnalogIn: Invalid arg or no memory");
+        Debug("AnalogIn: Invalid arg or no memory");
     }
 
     return calibrated;
@@ -163,10 +163,10 @@ bool adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t at
 void adc_calibration_deinit(adc_cali_handle_t handle)
 {
 #if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
-    printf("AnalogIn: deregister %s calibration scheme", "Curve Fitting");
+    Debug("AnalogIn: deregister %s calibration scheme", "Curve Fitting");
     adc_cali_delete_scheme_curve_fitting(handle);
 #elif ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
-    printf("AnalogIn: deregister %s calibration scheme", "Line Fitting");
+    Debug("AnalogIn: deregister %s calibration scheme", "Line Fitting");
     adc_cali_delete_scheme_line_fitting(handle);
 #endif
 }
@@ -280,19 +280,19 @@ bool AnalogSource::set_pin(uint8_t ardupin)
         // determine actual gpio from adc offset and configure it
         gpio_num_t gpio = adc_gpio_pin_lookup(_unit, newChannel);
 
-        printf("AnalogIn: determined actual gpio as: %d\n", gpio);
+        Debug("AnalogIn: determined actual gpio as: %d\n", gpio);
 
         adc_oneshot_chan_cfg_t config = {
             .atten = atten,
             .bitwidth = ADC_BITWIDTH_DEFAULT
         };
         if (ESP_OK != adc_oneshot_config_channel(_adc_handle, newChannel, &config)) {
-            printf("AnalogIn: adc_oneshot_config_channel failed\n");
+            Debug("AnalogIn: adc_oneshot_config_channel failed\n");
             return false;
         }
 
         if (ESP_OK !=  adc_calibration_init(_unit, newChannel, atten, &_adc_cali_handle)){
-            printf("AnalogIn: adc_calibration_init failed\n");
+            Debug("AnalogIn: adc_calibration_init failed\n");
             return false;
         }
 
@@ -319,13 +319,13 @@ int AnalogSource::adc_read()
     int raw, value = 0;
 
     if (ESP_OK != adc_oneshot_read(_adc_handle, _channel, &raw)) {
-        printf("AnalogIn: adc_oneshot_read failed\n");
+        Debug("AnalogIn: adc_oneshot_read failed\n");
         return 0;
     }
 
     if (_adc_cali_handle) {
         if(ESP_OK != adc_cali_raw_to_voltage(_adc_cali_handle, raw, &value)) {
-            printf("AnalogIn: adc_oneshot_read failed\n");
+            Debug("AnalogIn: adc_oneshot_read failed\n");
             return 0;
         }
     }
@@ -365,7 +365,7 @@ void AnalogIn::init()
 {
    adc_oneshot_unit_init_cfg_t init_config = { .unit_id = ADC_UNIT_1 };
     if (ESP_OK != adc_oneshot_new_unit(&init_config, &_adc_handle)) {
-        printf("AnalogIn: adc_oneshot_new_unit failed\n");
+        Debug("AnalogIn: adc_oneshot_new_unit failed\n");
         return;
     }
 }
@@ -375,14 +375,18 @@ void AnalogIn::init()
 */
 void AnalogIn::_timer_tick()
 {
-    double buf_adc[ANALOG_MAX_CHANNELS] {};
+#if ESP32_ADC_MAVLINK_DEBUG
+    double buf_adc[ANALOG_MAX_CHANNELS];
+#endif
 
     for (uint8_t j = 0; j < ANALOG_MAX_CHANNELS; j++) {
         ESP32::AnalogSource *c = _channels[j];
         if (c != nullptr) {
             // add a value
             c->_add_value();
+#if ESP32_ADC_MAVLINK_DEBUG            
             buf_adc[j] = c->voltage_latest();
+#endif
         }
     }
 
@@ -390,7 +394,7 @@ void AnalogIn::_timer_tick()
     static int count;
     if (AP_HAL::millis() > 5000 && count++ == 1000) {
         count = 0;
-        printf("ADC: %f, %f, %f, %f, %f, %f\n", buf_adc[0], buf_adc[1], buf_adc[2], buf_adc[3], buf_adc[4], buf_adc[5]);
+        Debug("ADC: %f, %f, %f, %f, %f, %f\n", buf_adc[0], buf_adc[1], buf_adc[2], buf_adc[3], buf_adc[4], buf_adc[5]);
     }
 #endif
 
@@ -400,12 +404,13 @@ void AnalogIn::_timer_tick()
 int8_t AnalogIn::find_pinconfig(int16_t ardupin)
 {
     // from ardupin, lookup which adc gpio that is..
-    for (uint8_t j = 0; j < ADC_GRP1_NUM_CHANNELS; j++) {
-        if (pin_config[j].ardupin == ardupin) {
-            return j;
+    for (uint8_t i = 0; i < ARRAY_SIZE(pin_config); i++) {
+        if (pin_config[i].ardupin == ardupin) {
+            return i;
         }
     }
     // can't find a match in definitons
+    Debug("find_pinconfig(%d): KO\n", ardupin);
     return -1;
 }
 

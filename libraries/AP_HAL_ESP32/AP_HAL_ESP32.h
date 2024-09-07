@@ -5,3 +5,9 @@
 
 
 #include "HAL_ESP32_Class.h"
+
+#ifndef NDEBUG
+    #define DBG_PRINTF(fmt, args ...)  do { printf(fmt, ## args); } while(0)
+#else
+    #define DBG_PRINTF(fmt, args ...)
+#endif

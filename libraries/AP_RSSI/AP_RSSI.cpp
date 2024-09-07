@@ -127,7 +127,8 @@ AP_RSSI *AP_RSSI::get_singleton()
 void AP_RSSI::init()
 {
     // a pin for reading the receiver RSSI voltage. The scaling by 0.25 
-    // is to take the 0 to 1024 range down to an 8 bit range for MAVLink    
+    // is to take the 0 to 1024 range down to an 8 bit range for MAVLink
+    //AR    
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);    
 }
 

@@ -42,19 +42,7 @@
 #define AP_RCPROTOCOL_FDM_ENABLED 0
 #define AP_RCPROTOCOL_RADIO_ENABLED 0
 
-#define AP_SIM_INS_ENABLED 0
-#define AP_SIM_BARO_ENABLED 0
-#define AP_COMPASS_SITL_ENABLED 0
-
-/*
 #define HAL_LOGGING_ENABLED 1
-
-// see boards.py
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 1
-#endif
-
-*/
 
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
@@ -128,7 +116,7 @@
 //	  {.name= "bmp280",  .bus=0, .device=1, .cs=GPIO_NUM_17, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}
 
 //I2C bus list
-#define HAL_ESP32_I2C_BUSES {.port=I2C_NUM_0, .sda=GPIO_NUM_8, .scl=GPIO_NUM_9, .speed=100*KHZ, .internal=false, .soft = false }
+#define HAL_ESP32_I2C_BUSES {.port=I2C_NUM_0, .sda=GPIO_NUM_8, .scl=GPIO_NUM_9, .speed=400*KHZ, .internal=false, .soft = false }
 
 // rcin on what pin?
 #define HAL_ESP32_RCIN GPIO_NUM_4

@@ -84,7 +84,7 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
-    _retries(1),
+    _retries(3),
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
@@ -92,16 +92,16 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
-//#ifdef BUSDEBUG
-    printf("NEW %s\n", pname);
-//#endif
+#ifdef BUSDEBUG
+    DBG_PRINTF("NEW %s\n", pname);
+#endif
 }
 
 I2CDevice::~I2CDevice()
 {
-//#ifdef BUSDEBUG
-    printf("DEL %s\n", pname);
-//#endif
+#ifdef BUSDEBUG
+    DBG_PRINTF("DEL %s\n", pname);
+#endif
    free(pname);
 }
 
@@ -110,11 +110,11 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 {
 /*
 #ifdef BUSDEBUG
-    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 */
     if (!bus.semaphore.check_owner()) {
-        printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
+        DBG_PRINTF("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
         return false;
     }
 
@@ -156,19 +156,19 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 
         TickType_t timeout = I2C_TIMEOUT_VALUE_MS; //1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
         
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < _retries; i++) {
             int ret = i2c_master_cmd_begin(bus.port, cmd, timeout);
             result = ( ret == ESP_OK);
             if (!result) {
 #ifdef BUSDEBUG
-                printf("i2c_master_cmd_begin failed with %d, bus.port = %x, addr = 0x%x, timeout = %ld\n", ret, bus.port, _address, timeout);
+                DBG_PRINTF("i2c_master_cmd_begin failed with %d, bus.port = %x, addr = 0x%x, timeout = %ld\n", ret, bus.port, _address, timeout);
 #endif              
                 ESP_CHK(i2c_reset_tx_fifo, bus.port);
                 ESP_CHK(i2c_reset_rx_fifo, bus.port);
             }
             else {
 #ifdef BUSDEBUG
-                printf("i2c_master_cmd_begin bus.port = %x, addr = 0x%x, timeout = %ld : OK\n", bus.port, _address, timeout);
+                DBG_PRINTF("i2c_master_cmd_begin bus.port = %x, addr = 0x%x, timeout = %ld : OK\n", bus.port, _address, timeout);
 #endif                              
                break;
             }
@@ -186,7 +186,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
 AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
 #ifdef BUSDEBUG
-    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     return bus.register_periodic_callback(period_usec, cb, this);
 }
@@ -198,7 +198,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint32_t period_usec)
 {
 #ifdef BUSDEBUG
-    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     return bus.adjust_timer(h, period_usec);
 }
@@ -210,7 +210,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              uint32_t timeout_ms)
 {
 #ifdef BUSDEBUG
-    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     if (bus >= ARRAY_SIZE(i2c_bus_desc)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
@@ -233,7 +233,7 @@ uint32_t I2CDeviceManager::get_bus_mask(void) const
 uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
 {
 #ifdef BUSDEBUG
-    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     uint32_t result = 0;
     for (size_t i = 0; i < ARRAY_SIZE(i2c_bus_desc); i++) {
@@ -250,7 +250,7 @@ uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
 uint32_t I2CDeviceManager::get_bus_mask_external(void) const
 {
 #ifdef BUSDEBUG
-    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    DBG_PRINTF("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     return get_bus_mask() & ~get_bus_mask_internal();
 }
