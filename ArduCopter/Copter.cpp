@@ -167,6 +167,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if RANGEFINDER_ENABLED == ENABLED
     SCHED_TASK(read_rangefinder,      20,    100,  33),
 #endif
+#if FORCETORQUE_ENABLED == ENABLED
+    SCHED_TASK(read_forcetorque,      20,    200,  34),
+#endif
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200,  50,  36),
 #endif

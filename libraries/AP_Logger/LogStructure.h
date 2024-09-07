@@ -472,6 +472,24 @@ struct PACKED log_RFND {
 };
 
 /*
+  forceTorque - support for 2 sensors
+ */
+struct PACKED log_FRTQ
+{
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  uint8_t instance;
+  float force_x_N;
+  float force_y_N;
+  float force_z_N;
+  float torque_x_N;
+  float torque_y_N;
+  float torque_z_N;
+  uint8_t status;
+  uint8_t location;
+};
+
+/*
   terrain log structure
  */
 struct PACKED log_TERRAIN {
@@ -1067,6 +1085,19 @@ struct PACKED log_VER {
 // @Field: Orient: Sensor orientation
 // @Field: Quality: Signal quality. -1 means invalid, 0 is no signal, 100 is perfect signal
 
+// @LoggerMessage: FRTQ
+// @Description: Force and torque message on coaxial with different install location of ForceTorque sensor
+// @Field: TimeUS: Time since system startup
+// @Field: Instance: ForceTorque instance number this data is from
+// @Field: force_x_N: force x in body axis from sensor
+// @Field: force_y_N: force y in body axis from sensor
+// @Field: force_z_N: force z in body axis from sensor
+// @Field: torque_x_N: torque y in body axis from sensor
+// @Field: torque_y_N: torque x in body axis from sensor
+// @Field: torque_z_N: torque y in body axis from sensor
+// @Field: Stat: Sensor state
+// @Field: Location: Sensor location
+
 // @LoggerMessage: RSSI
 // @Description: Received Signal Strength Indicator for RC receiver
 // @Field: TimeUS: Time since system startup
@@ -1260,6 +1291,8 @@ LOG_STRUCTURE_FROM_MOUNT \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-B---", true }, \
+    { LOG_FRTQ_MSG, sizeof(log_FRTQ), \
+      "FRTQ", "QBffffffBB", "TimeUS,Instance,Fx,Fy,Fz,Mx,My,Mz,State,location", "s#--------", "F---------", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
@@ -1382,6 +1415,7 @@ enum LogMessages : uint8_t {
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
+    LOG_FRTQ_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,

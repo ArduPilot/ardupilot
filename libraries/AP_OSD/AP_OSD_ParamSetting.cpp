@@ -117,8 +117,7 @@ static const char* SERIAL_PROTOCOL_VALUES[] = {
     "FSKY_TX", "LID360", "", "BEACN", "VOLZ", "SBUS", "ESC_TLM", "DEV_TLM", "OPTFLW", "RBTSRV",
     "NMEA", "WNDVNE", "SLCAN", "RCIN", "MGSQRT", "LTM", "RUNCAM", "HOT_TLM", "SCRIPT", "CRSF",
     "GEN", "WNCH", "MSP", "DJI", "AIRSPD", "ADSB", "AHRS", "AUDIO", "FETTEC", "TORQ",
-    "AIS", "CD_ESC", "MSP_DP", "MAV_HL", "TRAMP", "DDS", "IMUOUT", "IQ", "PPP",
-};
+    "AIS", "CD_ESC", "MSP_DP", "MAV_HL", "TRAMP", "DDS", "IMUOUT", "IQ", "PPP", "", "ForceTorque"};
 static_assert(AP_SerialManager::SerialProtocol_NumProtocols == ARRAY_SIZE(SERIAL_PROTOCOL_VALUES), "Wrong size SerialProtocol_NumProtocols");
 
 static const char* SERVO_FUNCTIONS[] = {
@@ -187,7 +186,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
 
 #elif APM_BUILD_COPTER_OR_HELI
 
-static const char* AUX_OPTIONS[] = {
+                                                     static const char *AUX_OPTIONS[] = {
     "NONE", "", "FLIP", "SIMP", "RTL", "SAV_TRM", "", "SAV_WP", "", "CAM_TRG",
     "RNG", "FENCE", "", "SSIMP", "ACRO_TRN", "SPRAY", "AUTO", "AUTOTN", "LAND", "GRIP",
     "", "CHUTE_EN", "CHUTE_RL", "CHUTE_3P", "MIS_RST", "ATT_FF", "ATT_ACC", "RET_MNT", "RLY", "LAND_GR",
@@ -198,8 +197,7 @@ static const char* AUX_OPTIONS[] = {
     "AHOLD", "FHOLD", "CIRCLE", "DRIFT", "", "", "STANDBY", "", "RCAM_CTL", "RCAM_OSD",
     "VISO_CAL", "DISARM", "", "ZZ_Auto", "AIR", "", "", "", "", "",
     "", "", "", "", "", "", "", "", "", "",
-    "KILLIMU1", "KILLIMU2", "CAM_MOD_TOG", "", "", "GPSYAW_DIS"
-};
+    "KILLIMU1", "KILLIMU2", "CAM_MOD_TOG", "", "", "GPSYAW_DIS"};
 
 static const char* FLTMODES[] = {
     "STAB", "ACRO", "ALTHOLD", "AUTO", "GUIDED", "LOIT", "RTL", "CIRC", "", "LAND",
@@ -233,7 +231,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
 };
 
 #else
-const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OSD_PARAM_NUM_TYPES] = {};
+                                                     const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OSD_PARAM_NUM_TYPES] = {};
 #endif
 
 extern const AP_HAL::HAL& hal;

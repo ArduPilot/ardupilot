@@ -172,3 +172,9 @@ bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret) const
     ret += inertial_alt_cm - rangefinder_state.inertial_alt_cm;
     return true;
 }
+
+// read the forceTorque
+void Copter::read_forcetorque(void)
+{
+    forcetorque.update();
+}

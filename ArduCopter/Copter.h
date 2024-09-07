@@ -128,6 +128,9 @@
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
 #endif
+#if FORCETORQUE_ENABLED == ENABLED
+#include <AC_ForceTorque/AC_ForceTorque.h>
+#endif
 
 #include <AP_Mount/AP_Mount.h>
 
@@ -932,6 +935,7 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
+    void read_forcetorque(void); // forceTorque
     bool rangefinder_alt_ok() const;
     bool rangefinder_up_ok() const;
     void update_rangefinder_terrain_offset();

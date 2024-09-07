@@ -17,6 +17,14 @@
  */
 #pragma once
 
+// Up_Rotor, Down_Rotor of ForceTorque Install Location
+enum InstallLocation : uint8_t
+{
+    LOCATION_NONE = 0,
+    Up_Rotor,
+    Down_Rotor
+};
+
 // these rotations form a full set - every rotation in the following
 // list when combined with another in the list forms an entry which is
 // also in the list. This is an important property. Please run the

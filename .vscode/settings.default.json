@@ -1,4 +1,20 @@
 {
     "cSpell.language": "en-GB",
-    "astyle.astylerc": "${workspaceFolder}/Tools/CodeStyle/astylerc"
+    "astyle.astylerc": "${workspaceFolder}/Tools/CodeStyle/astylerc",
+    "files.associations": {
+        "istream": "cpp",
+        "functional": "cpp",
+        "string_view": "cpp",
+        "regex": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "algorithm": "cpp",
+        "array": "cpp",
+        "*.tcc": "cpp",
+        "memory": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled",
+    "cmake.configureOnOpen": false
 }

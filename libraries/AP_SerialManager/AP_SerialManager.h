@@ -31,23 +31,24 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_SerialManager);
 
-    enum SerialProtocol {
+    enum SerialProtocol
+    {
         SerialProtocol_None = -1,
         SerialProtocol_Console = 0, // unused
         SerialProtocol_MAVLink = 1,
-        SerialProtocol_MAVLink2 = 2,                 // do not use - use MAVLink and provide instance of 1
-        SerialProtocol_FrSky_D = 3,                  // FrSky D protocol (D-receivers)
-        SerialProtocol_FrSky_SPort = 4,              // FrSky SPort protocol (X-receivers)
+        SerialProtocol_MAVLink2 = 2,    // do not use - use MAVLink and provide instance of 1
+        SerialProtocol_FrSky_D = 3,     // FrSky D protocol (D-receivers)
+        SerialProtocol_FrSky_SPort = 4, // FrSky SPort protocol (X-receivers)
         SerialProtocol_GPS = 5,
-        SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
+        SerialProtocol_GPS2 = 6, // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
-        SerialProtocol_Gimbal = 8,                   // SToRM32, Siyi custom serial protocols
+        SerialProtocol_Gimbal = 8, // SToRM32, Siyi custom serial protocols
         SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
-        SerialProtocol_Aerotenna_USD1      = 12, // USD1 support - deprecated, users should use Rangefinder
+        SerialProtocol_Aerotenna_USD1 = 12,          // USD1 support - deprecated, users should use Rangefinder
         SerialProtocol_Beacon = 13,
-        SerialProtocol_Volz = 14,                    // Volz servo protocol
+        SerialProtocol_Volz = 14, // Volz servo protocol
         SerialProtocol_Sbus1 = 15,
         SerialProtocol_ESCTelemetry = 16,
         SerialProtocol_Devo_Telem = 17,
@@ -57,7 +58,7 @@ public:
         SerialProtocol_WindVane = 21,
         SerialProtocol_SLCAN = 22,
         SerialProtocol_RCIN = 23,
-        SerialProtocol_EFI = 24,                   // EFI serial protocol
+        SerialProtocol_EFI = 24, // EFI serial protocol
         SerialProtocol_LTM_Telem = 25,
         SerialProtocol_RunCam = 26,
         SerialProtocol_Hott = 27,
@@ -82,7 +83,9 @@ public:
         SerialProtocol_IMUOUT = 46,
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
-        SerialProtocol_NumProtocols                    // must be the last value
+        SerialProtocol_ForceTorque = 50, // forceTorque
+        
+        SerialProtocol_NumProtocols      // must be the last value
     };
 
     // get singleton instance

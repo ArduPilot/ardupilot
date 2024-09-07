@@ -40,6 +40,7 @@
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AC_ForceTorque/AC_ForceTorque.h>          // AC_ForceTorque library
 #include <AP_Relay/AP_Relay.h>                      // APM relay
 #include <AP_RSSI/AP_RSSI.h>                        // RSSI Library
 #include <AP_Scheduler/AP_Scheduler.h>
@@ -308,7 +309,7 @@ protected:
     AP_Button button;
 #endif
     RangeFinder rangefinder;
-
+    ForceTorque forcetorque;
 #if AP_RSSI_ENABLED
     AP_RSSI rssi;
 #endif
