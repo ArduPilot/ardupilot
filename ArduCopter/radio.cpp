@@ -20,10 +20,11 @@ void Copter::default_dead_zones()
 
 void Copter::init_rc_in()
 {
-    channel_roll     = rc().get_roll_channel();
-    channel_pitch    = rc().get_pitch_channel();
-    channel_throttle = rc().get_throttle_channel();
-    channel_yaw      = rc().get_yaw_channel();
+    // the library gaurantees that these are non-nullptr:
+    channel_roll     = &rc().get_roll_channel();
+    channel_pitch    = &rc().get_pitch_channel();
+    channel_throttle = &rc().get_throttle_channel();
+    channel_yaw      = &rc().get_yaw_channel();
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
