@@ -6151,6 +6151,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm(timeout=400)
 
+    def BadRollChannelDefined(self):
+        '''ensure we don't die with a  bad Roll channel defined'''
+        self.set_parameter("RCMAP_ROLL", 17)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -6284,6 +6288,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ForceArm,
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
+            self.BadRollChannelDefined,
         ])
         return ret
 
