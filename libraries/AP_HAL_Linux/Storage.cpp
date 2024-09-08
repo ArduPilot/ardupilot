@@ -104,8 +104,6 @@ int Storage::_storage_create(const char *dpath)
     unlinkat(dfd, dpath, 0);
     int fd = openat(dfd, STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
 
-    close(dfd);
-
     if (fd == -1) {
         fprintf(stderr, "Failed to create storage file %s/%s\n", dpath,
                 STORAGE_FILE);
