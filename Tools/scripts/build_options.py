@@ -23,6 +23,10 @@ class Feature:
         self.default = default
         self.dependency = dependency
 
+    def config_option(self):
+        '''the name of the configure option to be used by waf'''
+        return "enable-" + self.label.replace(" ", "-")
+
 
 # list of build options to offer NOTE: the dependencies must be
 # written as a single string with commas and no spaces,
@@ -384,14 +388,14 @@ BUILD_OPTIONS = [
 
 
     Feature('Airspeed Drivers', 'Analog', 'AP_AIRSPEED_ANALOG_ENABLED', 'Enable Analog Airspeed', 0, 'AIRSPEED'),
-    Feature('Airspeed Drivers', 'ASP5033', 'AP_AIRSPEED_ASP5033_ENABLED', 'ENABLE ASP5033 AIRSPEED', 0, 'AIRSPEED'),  # NOQA: E501
-    Feature('Airspeed Drivers', 'DLVR', 'AP_AIRSPEED_DLVR_ENABLED', 'ENABLE DLVR AIRSPEED', 0, 'AIRSPEED'),
-    Feature('Airspeed Drivers', 'MS4525', 'AP_AIRSPEED_MS4525_ENABLED', 'ENABLE MS4525 AIRSPEED', 0, 'AIRSPEED'),
-    Feature('Airspeed Drivers', 'MS5525', 'AP_AIRSPEED_MS5525_ENABLED', 'ENABLE MS5525 AIRSPEED', 0, 'AIRSPEED'),
-    Feature('Airspeed Drivers', 'MSP_AIRSPEED', 'AP_AIRSPEED_MSP_ENABLED', 'ENABLE MSP AIRSPEED', 0, 'AIRSPEED,MSP,OSD'),
-    Feature('Airspeed Drivers', 'NMEA_AIRSPEED', 'AP_AIRSPEED_NMEA_ENABLED', 'ENABLE NMEA AIRSPEED', 0, 'AIRSPEED'),
-    Feature('Airspeed Drivers', 'SDP3X', 'AP_AIRSPEED_SDP3X_ENABLED', 'ENABLE SDP3X AIRSPEED', 0, 'AIRSPEED'),
-    Feature('Airspeed Drivers', 'DRONECAN_ASPD', 'AP_AIRSPEED_DRONECAN_ENABLED', 'ENABLE DroneCAN AIRSPEED', 0, 'AIRSPEED,DroneCAN'),   # NOQA: E501
+    Feature('Airspeed Drivers', 'ASP5033', 'AP_AIRSPEED_ASP5033_ENABLED', 'Enable ASP5033 AIRSPEED', 0, 'AIRSPEED'),  # NOQA: E501
+    Feature('Airspeed Drivers', 'DLVR', 'AP_AIRSPEED_DLVR_ENABLED', 'Enable DLVR AIRSPEED', 0, 'AIRSPEED'),
+    Feature('Airspeed Drivers', 'MS4525', 'AP_AIRSPEED_MS4525_ENABLED', 'Enable MS4525 AIRSPEED', 0, 'AIRSPEED'),
+    Feature('Airspeed Drivers', 'MS5525', 'AP_AIRSPEED_MS5525_ENABLED', 'Enable MS5525 AIRSPEED', 0, 'AIRSPEED'),
+    Feature('Airspeed Drivers', 'MSP_AIRSPEED', 'AP_AIRSPEED_MSP_ENABLED', 'Enable MSP AIRSPEED', 0, 'AIRSPEED,MSP,OSD'),
+    Feature('Airspeed Drivers', 'NMEA_AIRSPEED', 'AP_AIRSPEED_NMEA_ENABLED', 'Enable NMEA AIRSPEED', 0, 'AIRSPEED'),
+    Feature('Airspeed Drivers', 'SDP3X', 'AP_AIRSPEED_SDP3X_ENABLED', 'Enable SDP3X AIRSPEED', 0, 'AIRSPEED'),
+    Feature('Airspeed Drivers', 'DRONECAN_ASPD', 'AP_AIRSPEED_DRONECAN_ENABLED', 'Enable DroneCAN AIRSPEED', 0, 'AIRSPEED,DroneCAN'),   # NOQA: E501
 
     Feature('Actuators', 'Volz', 'AP_VOLZ_ENABLED', 'Enable Volz Protocol', 0, None),
     Feature('Actuators', 'Volz_DroneCAN', 'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', 'Enable Volz DroneCAN Feedback', 0, "DroneCAN,Volz"),  # noqa: E501
