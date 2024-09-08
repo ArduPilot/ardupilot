@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 echo "---------- $0 start ----------"
 set -e
-set -x
+#set -x
 
 if [ $EUID == 0 ]; then
     echo "Please do not run this script as root; don't sudo it!"
@@ -375,8 +375,8 @@ fi
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-PYTHON_VENV_PACKAGE="python$(python --version | awk '{ print $2 }' | cut -d '.' -f 1,2)-venv"
-VENV_LOOKUP=$(apt search $V 2>/dev/null| grep venv)
+PYTHON_VENV_PACKAGE="python$(python3 --version | awk '{ print $2 }' | cut -d '.' -f 1,2)-venv"
+VENV_LOOKUP=$(apt search $PYTHON_VENV_PACKAGE 2>/dev/null| grep venv)
 
 if [[ $VENV_LOOKUP ]]; then
     $APT_GET install $PYTHON_VENV_PACKAGE

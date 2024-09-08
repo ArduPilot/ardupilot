@@ -14,18 +14,11 @@ or
 Tools/environment_install/install-prereqs-arch.sh
 ```
 
-Take attention to "Make ArduPilot venv default for python [N/y]?" prompt, by default it will not install Python venv with required packages and build tools will not be working.
-In order to fix it use
-```
-source $HOME/venv-ardupilot/bin/activate
-```
-
-
-3. install esp-idf python deps:
+2. install esp-idf python deps:
 
 ```
 # from: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html
-sudo apt-get install git wget flex bison gperf python-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+sudo apt-get install git wget flex bison gperf cmake ninja-build ccache libffi-dev libssl-dev dfu-util
 sudo apt-get install python3 python3-pip python3-setuptools
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
@@ -68,7 +61,7 @@ TIPS:
 
  -  we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc.
 https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
- (note we currently use https://github.com/espressif/esp-idf/tree/release/v4.0 )
+ (note we currently use https://github.com/espressif/esp-idf/tree/release/v5.3 )
 
 
  -   if you get compile error/s to do with CONFIG... such as

@@ -57,9 +57,16 @@ cd ../..
 cd modules/esp_idf
 git submodule update --init --recursive
 
+echo
 echo "apply patch for SOC_RMT_SUPPORT_RX_PINGPONG bug"
 sed -i 's/^#define SOC_RMT_SUPPORT_RX_PINGPONG.*/#define SOC_RMT_SUPPORT_RX_PINGPONG 0 \/* esps32s3 does not support PING-PONG feature *\//' ./components/soc/esp32s3/include/soc/soc_caps.h
-sed -i 's/^#define SOC_RMT_SUPPORT_RX_PINGPONG.*/#define SOC_RMT_SUPPORT_RX_PINGPONG 0 \/* esps32s2 does not support PING-PONG feature *\//' ./components/soc/esp32s2/include/soc/soc_caps.h
+
+echo
+echo "installing missing python modules"
+python -m pip install empy==3.3.4
+python -m pip install pexpect
+python -m pip install future
+
 
 cd ../..
 echo "after changing IDF versions [ such as between 4.4 and 5.3 ] you should re-run these in your console:"
