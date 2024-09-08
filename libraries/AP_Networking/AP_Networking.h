@@ -8,6 +8,7 @@
 
 #include "AP_Networking_address.h"
 #include "AP_Networking_Backend.h"
+#include "AP_Networking_CAN.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -155,6 +156,10 @@ public:
 
     enum class OPTION {
         PPP_ETHERNET_GATEWAY=(1U<<0),
+#if AP_NETWORKING_CAN_MCAST_ENABLED
+        CAN1_MCAST_GATEWAY=(1U<<1),
+        CAN2_MCAST_GATEWAY=(1U<<2),
+#endif
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
@@ -295,6 +300,10 @@ private:
 #if AP_NETWORKING_REGISTER_PORT_ENABLED
     // ports for registration with serial manager
     Port ports[AP_NETWORKING_NUM_PORTS];
+#endif
+
+#if AP_NETWORKING_CAN_MCAST_ENABLED
+    AP_Networking_CAN mcast_server;
 #endif
 
     // support for sendfile()
