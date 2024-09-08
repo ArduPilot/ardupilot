@@ -3209,6 +3209,13 @@ function battery:num_instances() end
 ---@return number|nil
 function battery:get_cell_voltage(instance, cell) end
 
+-- The Airspeed library provides access to airspeed sensors information.
+airspeed = {}
+
+-- desc
+---@param instance integer
+---@return airspeed float
+function airspeed:get_airspeed(instance) end
 
 -- The Arming library provides access to arming status and commands.
 arming = {}
