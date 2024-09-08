@@ -54,7 +54,7 @@ else
 fi
 cd ../..
 
-cd modules/esp_idf 
+cd modules/esp_idf
 git submodule update --init --recursive
 
 echo "apply patch for SOC_RMT_SUPPORT_RX_PINGPONG bug"

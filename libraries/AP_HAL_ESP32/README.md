@@ -14,6 +14,13 @@ or
 Tools/environment_install/install-prereqs-arch.sh
 ```
 
+Take attention to "Make ArduPilot venv default for python [N/y]?" prompt, by default it will not install Python venv with required packages and build tools will not be working.
+In order to fix it use
+```
+source $HOME/venv-ardupilot/bin/activate
+```
+
+
 3. install esp-idf python deps:
 
 ```

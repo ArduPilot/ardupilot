@@ -66,6 +66,8 @@ fi
 
 if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
     echo "$SOURCE_LINE" >> ~/.bashrc
+else
+    echo "Use $SOURCE_LINE to ativate Ardupilot venv"
 fi
 
 pip3 -q install -U $PYTHON_PKGS
