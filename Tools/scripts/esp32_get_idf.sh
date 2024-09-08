@@ -67,8 +67,9 @@ python -m pip install empy==3.3.4
 python -m pip install pexpect
 python -m pip install future
 
-
 cd ../..
+
+echo
 echo "after changing IDF versions [ such as between 4.4 and 5.3 ] you should re-run these in your console:"
 echo "./modules/esp_idf/install.sh"
 echo "source ./modules/esp_idf/export.sh"
