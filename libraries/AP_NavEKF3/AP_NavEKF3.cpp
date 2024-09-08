@@ -787,7 +787,7 @@ bool NavEKF3::InitialiseFilter(void)
     }
 #endif
 
-    if (core == nullptr) {
+    if (!core) {
 
         // don't run multiple filters for 1 IMU
         uint8_t mask = (1U<<ins.get_accel_count())-1;
@@ -819,7 +819,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         //try to allocate from CCM RAM, fallback to Normal RAM if not available or full
         core = (NavEKF3_core*)dal.malloc_type(sizeof(NavEKF3_core)*num_cores, AP_DAL::MemoryType::FAST);
-        if (core == nullptr) {
+        if (!core) {
             _enable.set(0);
             num_cores = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 allocation failed");
@@ -1313,7 +1313,7 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 // returns true if wind state estimation is active
 bool NavEKF3::getWind(Vector3f &wind) const
 {
-    if (core == nullptr) {
+    if (!core) {
         return false;
     }
     return core[primary].getWind(wind);
@@ -1484,7 +1484,7 @@ void NavEKF3::getQuaternion(Quaternion &quat) const
 // return the innovations
 bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    if (core == nullptr) {
+    if (!core) {
         return false;
     }
 
@@ -1494,7 +1494,7 @@ bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &m
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    if (core == nullptr) {
+    if (!core) {
         return false;
     }
 
