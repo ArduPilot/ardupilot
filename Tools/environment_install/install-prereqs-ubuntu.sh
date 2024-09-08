@@ -375,7 +375,7 @@ fi
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-PYTHON_VENV_PACKAGE="python$(python --version | awk '{ print $2 } | cut -d '.' -f 1,2')-venv"
+PYTHON_VENV_PACKAGE="python$(python --version | awk '{ print $2 }' | cut -d '.' -f 1,2)-venv"
 VENV_LOOKUP=$(apt search $V 2>/dev/null| grep venv)
 
 if [[ $VENV_LOOKUP ]]; then
