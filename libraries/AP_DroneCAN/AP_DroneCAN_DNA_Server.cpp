@@ -138,8 +138,6 @@ uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, con
         resp_node_id = find_free_node_id(node_id > MAX_NODE_ID ? 0 : node_id);
         if (resp_node_id != 0) {
             create_registration(resp_node_id, unique_id, 16);
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
         }
     }
     return resp_node_id; // will be 0 if not found and not created
@@ -465,11 +463,11 @@ void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer,
 
     if (rcvd_unique_id_offset) {
         debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting Followup part! %u\n",
-                     now,
+                     (unsigned long)now,
                      unsigned((now - last_alloc_msg_ms)));
     } else {
         debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting First part! %u\n",
-                     now,
+                     (unsigned long)now,
                      unsigned((now - last_alloc_msg_ms)));
     }
 
@@ -492,6 +490,13 @@ void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer,
     if (rcvd_unique_id_offset == sizeof(rcvd_unique_id)) { // full unique ID received, allocate it!
         rsp.node_id = db.handle_allocation(msg.node_id, rcvd_unique_id);
         rcvd_unique_id_offset = 0; // reset state for next allocation
+        if (rsp.node_id == 0) { // allocation failed
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN DNA allocation failed; database full");
+            // don't send reply with a failed ID in case the allocatee does
+            // silly things, though it is technically legal. the allocatee will
+            // then time out and try again (though we still won't have an ID!)
+            return;
+        }
     }
 
     allocation_pub.broadcast(rsp, false); // never publish allocation message with CAN FD
