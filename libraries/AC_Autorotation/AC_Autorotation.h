@@ -18,6 +18,16 @@ public:
     AC_Autorotation();
 
     //--------Functions--------
+    bool enabled(void) const { return _param_enable.get() > 0; }
+
+
+
+    // Arming checks for autorotation, mostly checking for miss-configurations
+    bool arming_checks(size_t buflen, char *buffer) const;
+
+
+
+    // not yet checked
     void init_hs_controller(void);  // Initialise head speed controller
     void init_fwd_spd_controller(void);  // Initialise forward speed controller
     bool update_hs_glide_controller(float dt);  // Update head speed controller
@@ -29,7 +39,6 @@ public:
     float get_col_entry_freq(void) { return _param_col_entry_cutoff_freq; }
     float get_col_glide_freq(void) { return _param_col_glide_cutoff_freq; }
     float get_last_collective() const { return _collective_out; }
-    bool is_enable(void) { return _param_enable; }
     void Log_Write_Autorotation(void) const;
     void update_forward_speed_controller(void);  // Update forward speed controller
     void set_desired_fwd_speed(void) { _vel_target = _param_target_speed; } // Overloaded: Set desired speed for forward controller to parameter value

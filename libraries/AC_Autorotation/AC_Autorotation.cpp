@@ -115,6 +115,7 @@ AC_Autorotation::AC_Autorotation() :
         AP_Param::setup_object_defaults(this, var_info);
     }
 
+
 // Initialisation of head speed controller
 void AC_Autorotation::init_hs_controller()
 {
@@ -372,5 +373,41 @@ float AC_Autorotation::calc_speed_forward(void)
     Vector2f groundspeed_vector = ahrs.groundspeed_vector();
     float speed_forward = (groundspeed_vector.x*ahrs.cos_yaw() + groundspeed_vector.y*ahrs.sin_yaw())* 100; //(c/s)
     return speed_forward;
+}
+
+// Arming checks for autorotation, mostly checking for miss-configurations
+bool AC_Autorotation::arming_checks(size_t buflen, char *buffer) const
+{
+    if (!enabled()) {
+        // Don't run arming checks if not enabled
+        return true;
+    }
+
+    const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+    // Check for correct RPM sensor config
+#if AP_RPM_ENABLED
+    // Get singleton for RPM library
+    const AP_RPM *rpm = AP_RPM::get_singleton();
+
+    // Get current rpm, checking to ensure no nullptr
+    if (rpm == nullptr) {
+        hal.util->snprintf(buffer, buflen, "Can't access RPM");
+        return false;
+    }
+
+    // Sanity check that the designated rpm sensor instance is there
+    if ((_param_rpm_instance.get() < 0)) {
+        hal.util->snprintf(buffer, buflen, "RPM instance <0");
+        return false;
+    }
+
+    if (!rpm->enabled(_param_rpm_instance.get())) {
+        hal.util->snprintf(buffer, buflen, "RPM%i not enabled", _param_rpm_instance.get()+1);
+        return false;
+    }
+#endif
+
+    return true;
 }
 
