@@ -458,7 +458,6 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
         (now - last_alloc_msg_ms) > 500) {
         if (msg.first_part_of_unique_id) {
             rcvd_unique_id_offset = 0;
-            memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
         } else {
             //we are only accepting first part
             return;
@@ -482,7 +481,6 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
     if ((rcvd_unique_id_offset + msg.unique_id.len) > 16) {
         //This request is malformed, Reset!
         rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
         return;
     }
 
@@ -505,7 +503,6 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
         rsp.node_id = db.handle_allocation(msg.node_id, (const uint8_t*)rcvd_unique_id);
         //reset states as well        
         rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
     }
 
     allocation_pub.broadcast(rsp, false); // never publish allocation message with CAN FD
