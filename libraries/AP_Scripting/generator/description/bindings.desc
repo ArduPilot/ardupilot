@@ -63,6 +63,7 @@ singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 
 include AP_Airspeed/AP_Airspeed.h
+singleton AP_Airspeed depends AP_AIRSPEED_ENABLED
 singleton AP_Airspeed rename airspeed
 singleton AP_Airspeed method get_airspeed float uint8_t'skip_check
 
