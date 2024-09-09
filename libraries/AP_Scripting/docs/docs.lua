@@ -3214,7 +3214,7 @@ airspeed = {}
 
 -- desc
 ---@param instance integer
----@return airspeed float
+---@return number -- airspeed in m/s -1 if invalid.
 function airspeed:get_airspeed(instance) end
 
 -- The Arming library provides access to arming status and commands.
