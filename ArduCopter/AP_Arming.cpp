@@ -50,6 +50,14 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         passed = false;
     }
 
+#if FRAME_CONFIG == HELI_FRAME && MODE_AUTOROTATE_ENABLED
+    // check on autorotation config
+    if (!copter.g2.arot.arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
+        check_failed(display_failure, "AROT: %s", failure_msg);
+        passed = false;
+    }
+#endif
+
     // If not passed all checks return false
     if (!passed) {
         return false;
