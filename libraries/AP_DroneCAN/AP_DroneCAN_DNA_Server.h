@@ -54,7 +54,7 @@ class AP_DroneCAN_DNA_Server
         }
 
         // handle initializing the server with its own node ID and unique ID
-        void init_server(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
+        void init_server(uint8_t own_node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
 
         // handle processing the node info message. returns true if from a duplicate node
         bool handle_node_info(uint8_t source_node_id, const uint8_t unique_id[]);
@@ -73,6 +73,9 @@ class AP_DroneCAN_DNA_Server
 
         // fill the given record with the hash of the given unique ID
         void compute_uid_hash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
+
+        // register a given unique ID to a given node ID, deleting any existing registration for the unique ID
+        void register_uid(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
 
         // create the registration for the given node ID and set its record's unique ID
         void create_registration(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
