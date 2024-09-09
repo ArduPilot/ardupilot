@@ -26,7 +26,7 @@ bool ModeAutorotate::init(bool ignore_checks)
 
     // Check that mode is enabled, make sure this is the first check as this is the most
     // important thing for users to fix if they are planning to use autorotation mode
-    if (!g2.arot.is_enable()) {
+    if (!g2.arot.enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Autorot Mode Not Enabled");
         return false;
     }
