@@ -254,7 +254,7 @@ bool AnalogSource::set_pin(uint8_t ardupin)
     int8_t pinconfig_offset = AnalogIn::find_pinconfig(ardupin);
 
     if (pinconfig_offset == -1 ) {
-        DEV_PRINTF("AnalogIn: sorry set_pin() can't determine ADC1 offset from ardupin : %d \n",ardupin);
+        Debug("AnalogIn: sorry set_pin() can't determine ADC1 offset from ardupin : %d \n",ardupin);
         return false;
     }
     const AnalogIn::pin_info *p = AnalogIn::pin_config + pinconfig_offset;
@@ -296,7 +296,7 @@ bool AnalogSource::set_pin(uint8_t ardupin)
             return false;
         }
 
-        DEV_PRINTF("AnalogIn: set_pin() FROM (ardupin:%d adc1_offset:%d gpio:%d) TO (ardupin:%d adc1_offset:%d gpio:%d)\n", 
+        Debug("AnalogIn: set_pin() FROM (ardupin:%d adc1_offset:%d gpio:%d) TO (ardupin:%d adc1_offset:%d gpio:%d)\n", 
             _ardupin, _channel, _gpio, ardupin, newChannel, gpio);
 
         _channel = newChannel;
@@ -423,7 +423,7 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
     float scaler = 0;
 
     if ((ardupin != ANALOG_INPUT_NONE) && (pinconfig_offset == -1 )) {
-        DEV_PRINTF("AnalogIn: sorry channel() can't determine ADC1 offset from ardupin : %d \n",ardupin);
+        Debug("AnalogIn: sorry channel() can't determine ADC1 offset from ardupin : %d \n",ardupin);
         ardupin = ANALOG_INPUT_NONE; // default it to this not terrible value and allow to continue
     }
     // although ANALOG_INPUT_NONE=255 is not a valid pin, we let it through here as
@@ -439,18 +439,18 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
             _channels[j] = NEW_NOTHROW AnalogSource( _adc_handle, ardupin, gpioAdcPin, scaler, 0.0f, ADC_UNIT_1);
 
             if (ardupin != ANALOG_INPUT_NONE) {
-                DEV_PRINTF("AnalogIn: channel:%d attached to ardupin:%d at adc1_offset:%d on gpio:%d\n",\
+                Debug("AnalogIn: channel:%d attached to ardupin:%d at adc1_offset:%d on gpio:%d\n",\
                                     j,ardupin, gpioAdcPin, _channels[j]->_gpio);
             }
 
             if (ardupin == ANALOG_INPUT_NONE) {
-                DEV_PRINTF("AnalogIn: channel:%d created but using delayed adc and gpio pin configuration\n",j );
+                Debug("AnalogIn: channel:%d created but using delayed adc and gpio pin configuration\n",j );
             }
 
             return _channels[j];
         }
     }
-    DEV_PRINTF("AnalogIn: out of channels\n");
+    Debug("AnalogIn: out of channels\n");
     return nullptr;
 }
 
