@@ -18,6 +18,13 @@
 
 #define AP_PARAM_VEHICLE_NAME rover
 
+// NOVA changes
+#ifndef NOVA_CUSTOM
+#define NOVA_CUSTOM
+#include "NOVA_Custom/NovaParameters.h"
+#endif
+
+
 // Global parameter class.
 //
 class Parameters {
@@ -231,6 +238,7 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
+
         };
 
     AP_Int16    format_version;
@@ -444,6 +452,11 @@ public:
     AP_Float fs_gcs_timeout;
 
     class ModeCircle mode_circle;
+
+#ifdef NOVA_CUSTOM
+    NovaParameters novaParams;
+#endif
+
 };
 
 extern const AP_Param::Info var_info[];
