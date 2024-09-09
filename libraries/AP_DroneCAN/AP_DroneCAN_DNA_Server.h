@@ -123,7 +123,7 @@ class AP_DroneCAN_DNA_Server
     char fault_node_name[15];
 
 
-    //Allocation params
+    // dynamic node ID allocation state variables
     uint8_t rcvd_unique_id[16];
     uint8_t rcvd_unique_id_offset;
     uint32_t last_alloc_msg_ms;
@@ -133,7 +133,7 @@ class AP_DroneCAN_DNA_Server
 
     Canard::Publisher<uavcan_protocol_dynamic_node_id_Allocation> allocation_pub{_canard_iface};
 
-    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_dynamic_node_id_Allocation> allocation_cb{this, &AP_DroneCAN_DNA_Server::handleAllocation};
+    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_dynamic_node_id_Allocation> allocation_cb{this, &AP_DroneCAN_DNA_Server::handle_allocation};
     Canard::Subscriber<uavcan_protocol_dynamic_node_id_Allocation> allocation_sub;
 
     Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_NodeStatus> node_status_cb{this, &AP_DroneCAN_DNA_Server::handleNodeStatus};
@@ -159,8 +159,8 @@ public:
     //report the server state, along with failure message if any
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
-    //Callbacks
-    void handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg);
+    // canard message handler callbacks
+    void handle_allocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg);
     void handleNodeStatus(const CanardRxTransfer& transfer, const uavcan_protocol_NodeStatus& msg);
     void handleNodeInfo(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoResponse& rsp);
 

@@ -444,65 +444,54 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     }
 }
 
-/* Handle the allocation message from the devices supporting
-dynamic node allocation. */
-void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
+// process node ID allocation messages for DNA
+void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
 {
     if (transfer.source_node_id != 0) {
-        //Ignore Allocation messages that are not DNA requests
-        return;
+        return; // ignore allocation messages that are not DNA requests
     }
     uint32_t now = AP_HAL::millis();
 
     if (rcvd_unique_id_offset == 0 ||
-        (now - last_alloc_msg_ms) > 500) {
+        (now - last_alloc_msg_ms) > UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
         if (msg.first_part_of_unique_id) {
             rcvd_unique_id_offset = 0;
         } else {
-            //we are only accepting first part
-            return;
+            return; // only accepting the first part
         }
     } else if (msg.first_part_of_unique_id) {
-        // we are only accepting follow up messages
-        return;
+        return; // only accepting follow up messages
     }
 
     if (rcvd_unique_id_offset) {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n",
-                     (long int)AP_HAL::millis(),
+        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting Followup part! %u\n",
+                     now,
                      unsigned((now - last_alloc_msg_ms)));
     } else {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n",
-                     (long int)AP_HAL::millis(),
+        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting First part! %u\n",
+                     now,
                      unsigned((now - last_alloc_msg_ms)));
     }
 
     last_alloc_msg_ms = now;
-    if ((rcvd_unique_id_offset + msg.unique_id.len) > 16) {
-        //This request is malformed, Reset!
-        rcvd_unique_id_offset = 0;
+    if ((rcvd_unique_id_offset + msg.unique_id.len) > sizeof(rcvd_unique_id)) {
+        rcvd_unique_id_offset = 0; // reset state, request contains an over-long ID
         return;
     }
 
-    //copy over the unique_id
-    for (uint8_t i=rcvd_unique_id_offset; i<(rcvd_unique_id_offset + msg.unique_id.len); i++) {
-        rcvd_unique_id[i] = msg.unique_id.data[i - rcvd_unique_id_offset];
-    }
+    // save the new portion of the unique ID
+    memcpy(&rcvd_unique_id[rcvd_unique_id_offset], msg.unique_id.data, msg.unique_id.len);
     rcvd_unique_id_offset += msg.unique_id.len;
 
-    //send follow up message
+    // respond with the message containing the received unique ID so far, or
+    // with the node ID if we successfully allocated one
     uavcan_protocol_dynamic_node_id_Allocation rsp {};
-
-    /* Respond with the message containing the received unique ID so far
-    or with node id if we successfully allocated one. */
     memcpy(rsp.unique_id.data, rcvd_unique_id, rcvd_unique_id_offset);
     rsp.unique_id.len = rcvd_unique_id_offset;
 
-    if (rcvd_unique_id_offset == 16) {
-        //We have received the full Unique ID, time to do allocation
-        rsp.node_id = db.handle_allocation(msg.node_id, (const uint8_t*)rcvd_unique_id);
-        //reset states as well        
-        rcvd_unique_id_offset = 0;
+    if (rcvd_unique_id_offset == sizeof(rcvd_unique_id)) { // full unique ID received, allocate it!
+        rsp.node_id = db.handle_allocation(msg.node_id, rcvd_unique_id);
+        rcvd_unique_id_offset = 0; // reset state for next allocation
     }
 
     allocation_pub.broadcast(rsp, false); // never publish allocation message with CAN FD
