@@ -86,9 +86,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
     // @Param: CAN_NODE
-    // @DisplayName: UAVCAN node that is used for this network
-    // @Description: UAVCAN node should be set implicitly or 0 for dynamic node allocation
-    // @Range: 0 250
+    // @DisplayName: DroneCAN node ID used by this node on all networks
+    // @Description: Value of 0 requests any ID from a DNA server, any other value sets that ID ignoring DNA
+    // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(can_node,         "CAN_NODE", HAL_CAN_DEFAULT_NODE_ID),
