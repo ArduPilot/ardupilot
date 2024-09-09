@@ -217,6 +217,10 @@ void Plane::update_speed_height(void)
     }
 #endif
 
+    if (auto_state.idle_mode) {
+        should_run_tecs = false;
+    }
+
 #if AP_PLANE_GLIDER_PULLUP_ENABLED
     if (mode_auto.in_pullup()) {
         should_run_tecs = false;
