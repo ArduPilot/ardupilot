@@ -26,7 +26,7 @@ static int ia6_hack = 0;
 //static int fd = 0;
 
 // decode a full IBUS frame
-bool ibus_decode_std(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe)
+bool AP_RCProtocol_IBUS::ibus_decode_std(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe)
 {
     uint16_t chksum = 96;
 
@@ -65,7 +65,7 @@ bool ibus_decode_std(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, boo
 
 
 // decode a full IBUS frame
-bool ibus_decode_ia6(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe)
+bool AP_RCProtocol_IBUS::ibus_decode_ia6(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe)
 {
     uint16_t chksum = 0;
 
@@ -84,12 +84,12 @@ bool ibus_decode_ia6(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, boo
 
     if (chksum != fr_chksum) {
 
-//#ifdef DEBUG_IBUS
+#ifdef DEBUG_IBUS
 //        if (! (fd & 2)) {
             printf("ibus_decode_ia6 chksum err %04x != %04x \n", chksum, fr_chksum);
 //            fd |= 2;
 //       }
-//endif
+#endif
         return false;
     }
 #ifdef DEBUG_IBUS
