@@ -3212,7 +3212,7 @@ function battery:get_cell_voltage(instance, cell) end
 -- The Airspeed library provides access to airspeed sensors information.
 airspeed = {}
 
--- desc
+-- Get airspeed for the given sensor instance
 ---@param instance integer
 ---@return number -- airspeed in m/s -1 if invalid.
 function airspeed:get_airspeed(instance) end
