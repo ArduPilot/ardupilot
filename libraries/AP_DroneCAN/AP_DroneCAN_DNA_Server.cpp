@@ -450,15 +450,18 @@ void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer,
     }
     uint32_t now = AP_HAL::millis();
 
-    if (rcvd_unique_id_offset == 0 ||
-        (now - last_alloc_msg_ms) > UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
-        if (msg.first_part_of_unique_id) {
-            rcvd_unique_id_offset = 0;
-        } else {
-            return; // only accepting the first part
-        }
-    } else if (msg.first_part_of_unique_id) {
-        return; // only accepting follow up messages
+    if ((now - last_alloc_msg_ms) > UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
+        rcvd_unique_id_offset = 0; // reset state, timed out
+    }
+
+    if (msg.first_part_of_unique_id) {
+        // nodes waiting to send a follow up will instead send a first part
+        // again if they see another allocation message. therefore we should
+        // always reset and process a received first part, since any node we
+        // were allocating will never send its follow up and we'd just time out
+        rcvd_unique_id_offset = 0;
+    } else if (rcvd_unique_id_offset == 0) {
+        return; // not first part but we are expecting one, ignore
     }
 
     if (rcvd_unique_id_offset) {
