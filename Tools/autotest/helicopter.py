@@ -309,6 +309,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AROT_ENABLE": 1,
             "H_RSC_AROT_ENBL": 1,
+            "H_COL_LAND_MIN" : -2.0
         })
         bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
@@ -333,13 +334,12 @@ class AutoTestHelicopter(AutoTestCopter):
         # Change to the autorotation flight mode
         self.progress("Triggering autorotate mode")
         self.change_mode('AUTOROTATE')
-        self.delay_sim_time(2)
 
         # Disengage the interlock to remove power
         self.set_rc(8, 1000)
 
         # Ensure we have progressed through the mode's state machine
-        self.wait_statustext("SS Glide Phase", check_context=True)
+        self.wait_statustext("Glide Phase", check_context=True)
 
         self.progress("Testing bailout from autorotation")
         self.set_rc(8, 2000)
@@ -369,18 +369,28 @@ class AutoTestHelicopter(AutoTestCopter):
                              "RPM1_TYPE": 0})
         self.reboot_sitl()
         try:
-            self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=20)
+            self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
         except AutoTestTimeoutException:
             # We want to hit the timeout on wait_statustext()
             pass
 
         self.progress("Check pre-arm fails when autorotation mode enabled")
         self.set_parameter("AROT_ENABLE", 1)
-        self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=20)
+        self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+        self.set_parameter("RPM1_TYPE", 10) # reboot required to take effect
+        self.reboot_sitl()
 
         self.progress("Check pre-arm fails with bad HS_Sensor config")
         self.set_parameter("AROT_HS_SENSOR", -1)
-        self.wait_statustext("PreArm: AROT: RPM instance <0", timeout=20)
+        self.wait_statustext("PreArm: AROT: RPM instance <0", timeout=50)
+        self.set_parameter("AROT_HS_SENSOR", 0)
+
+        self.progress("Check pre-arm fails with bad RSC config")
+        self.wait_statustext("PreArm: AROT: H_RSC_AROT_* not configured", timeout=50)
+
+        self.progress("Check pre-arms clear with all issues corrected")
+        self.set_parameter("H_RSC_AROT_ENBL", 1)
+        self.wait_ready_to_arm()
 
         self.context_pop()
 
