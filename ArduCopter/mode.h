@@ -2033,46 +2033,21 @@ protected:
 
 private:
 
-    // --- Internal variables ---
-    float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
-    float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
-    float _desired_v_z;             // Desired vertical
-    int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
-    uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
-    float _hs_decay;                // The head accerleration during the entry phase
+    uint32_t _entry_time_start_ms;  // time remaining until entry phase moves on to glide phase
+    uint32_t _last_logged_ms;       // used for timing slow rate autorotation log
 
-    enum class Autorotation_Phase {
+    enum class Phase {
+        ENTRY_INIT,
         ENTRY,
-        SS_GLIDE,
+        GLIDE_INIT,
+        GLIDE,
+        FLARE_INIT,
         FLARE,
+        TOUCH_DOWN_INIT,
         TOUCH_DOWN,
-        LANDED } phase_switch;
-
-    enum class Navigation_Decision {
-        USER_CONTROL_STABILISED,
-        STRAIGHT_AHEAD,
-        INTO_WIND,
-        NEAREST_RALLY} nav_pos_switch;
-
-    // --- Internal flags ---
-    struct controller_flags {
-            bool entry_initial             : 1;
-            bool ss_glide_initial          : 1;
-            bool flare_initial             : 1;
-            bool touch_down_initial        : 1;
-            bool landed_initial            : 1;
-            bool straight_ahead_initial    : 1;
-            bool level_initial             : 1;
-            bool break_initial             : 1;
-            bool bad_rpm                   : 1;
-    } _flags;
-
-    struct message_flags {
-            bool bad_rpm                   : 1;
-    } _msg_flags;
-
-    //--- Internal functions ---
-    void warning_message(uint8_t message_n);    //Handles output messages to the terminal
+        LANDED_INIT,
+        LANDED,
+    } current_phase;
 
 };
 #endif
