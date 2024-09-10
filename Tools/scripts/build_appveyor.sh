@@ -18,7 +18,7 @@ cd /cygdrive/c/work
 
     ./waf configure --board sitl
 
-    /usr/bin/python waf -j4 copter plane rover heli sub
+    python3 waf -j4 copter plane rover heli sub
 
     # map to the names that MissionPlanner expects
     cp /cygdrive/c/work/build/sitl/bin/ardurover.exe /cygdrive/c/work/sitl/Rover.elf
