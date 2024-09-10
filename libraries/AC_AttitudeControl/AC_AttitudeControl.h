@@ -434,6 +434,9 @@ public:
     // write RATE message
     void Write_Rate(const AC_PosControl &pos_control) const;
 
+    // write ANG message
+    void Write_ANG() const;
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
