@@ -30,7 +30,7 @@ void AC_AttitudeControl::Write_ANG() const
 // Write a rate packet
 void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
 {
-    const Vector3f &rate_targets = rate_bf_targets();
+    const Vector3f rate_targets = rate_bf_targets();
     const Vector3f &accel_target = pos_control.get_accel_target_cmss();
     const Vector3f &gyro_rate = _rate_gyro;
     const struct log_Rate pkt_rate{
