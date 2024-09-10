@@ -1273,7 +1273,7 @@ ParametersG2::ParametersG2(void)
     ,mode_systemid_ptr(&copter.mode_systemid)
 #endif
 #if MODE_AUTOROTATE_ENABLED
-    ,arot()
+    ,arot(copter.ahrs, copter.motors, copter.pos_control, copter.attitude_control)
 #endif
 #if HAL_BUTTON_ENABLED
     ,button_ptr(&copter.button)

@@ -658,7 +658,7 @@ void Copter::twentyfive_hz_logging()
 #if MODE_AUTOROTATE_ENABLED
     if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
         //update autorotation log
-        g2.arot.Log_Write_Autorotation();
+        g2.arot.log_write_autorotation();
     }
 #endif
 #if HAL_GYROFFT_ENABLED
