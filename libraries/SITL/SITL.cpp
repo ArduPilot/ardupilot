@@ -65,8 +65,14 @@ SIM *SIM::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SIM::var_info[] = {
-    
+
+    // @Param: DRIFT_SPEED
+    // @DisplayName: Gyro drift speed
+    // @Description: Gyro drift rate of change in degrees/second/minute
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
+    // @Param: DRIFT_TIME
+    // @DisplayName: Gyro drift time
+    // @Description: Gyro drift duration of one full drift cycle (period in minutes)
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     // @Param: ENGINE_MUL
     // @DisplayName: Engine failure thrust scaler
@@ -111,6 +117,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: V
     // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
+    // @Param: BATT_CAP_AH
+    // @DisplayName: Simulated battery capacity
+    // @Description: Simulated battery capacity
+    // @Units: Ah
+    // @User: Advanced
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
@@ -168,10 +179,25 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Opflow data delay
     // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
+    // @Param: ADSB_COUNT
+    // @DisplayName: Number of ADSB aircrafts
+    // @Description: Total number of ADSB simulated aircraft
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
+    // @Param: ADSB_RADIUS
+    // @DisplayName: ADSB radius stddev of another aircraft
+    // @Description: Simulated standard deviation of radius in ADSB of another aircraft
+    // @Units: m
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
+    // @Param: ADSB_ALT
+    // @DisplayName: ADSB altitude of another aircraft
+    // @Description: Simulated ADSB altitude of another aircraft
+    // @Units: m
     AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
     AP_GROUPINFO("PIN_MASK",      50, SIM,  pin_mask, 0),
+    // @Param: ADSB_TX
+    // @DisplayName: ADSB transmit enable
+    // @Description: ADSB transceiever enable and disable
+    // @Values: 0:Transceiever disable, 1:Transceiever enable
     AP_GROUPINFO("ADSB_TX",       51, SIM,  adsb_tx, 0),
     // @Param: SPEEDUP
     // @DisplayName: Sim Speedup
@@ -261,7 +287,9 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Path: ./SIM_Parachute.cpp
     AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SIM, Parachute),
 
-    // enable bandwidth limitting on telemetry ports:
+    // @Param: BAUDLIMIT_EN
+    // @DisplayName: Telemetry bandwidth limitting
+    // @Description: SITL enable bandwidth limitting on telemetry ports with non-zero values
     AP_GROUPINFO("BAUDLIMIT_EN",   28, SIM,  telem_baudlimit_enable, 0),
 
     // @Group: PLD_
@@ -327,6 +355,10 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Path: ./SIM_ToneAlarm.cpp
     AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SIM, ToneAlarm),
 
+    // @Param: EFI_TYPE
+    // @DisplayName: Type of Electronic Fuel Injection
+    // @Description: Different types of Electronic Fuel Injection (EFI) systems
+    // @Values: 0:None,1:MegaSquirt EFI system, 2:Löweheiser EFI system, 8:Hirth engines
     AP_GROUPINFO("EFI_TYPE",    58, SIM,  efi_type,  SIM::EFI_TYPE_NONE),
 
     // 59 was SAFETY_STATE
@@ -468,6 +500,10 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SIM, IntelligentEnergy24),
 
     // user settable barometer parameters
+
+    // @Param: BARO_COUNT
+    // @DisplayName: Baro count
+    // @Description: Total baro count
     AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
 
     AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, SIM::BaroParm),
@@ -525,6 +561,10 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
+    // @Param: ESC_ARM_RPM
+    // @DisplayName: ESC RPM when armed
+    // @Description: Simulated RPM when motors are armed
+    // @User: Advanced
     AP_GROUPINFO("ESC_ARM_RPM", 41, SIM,  esc_rpm_armed, 0.0f),
 
     // @Param: UART_LOSS
@@ -1043,8 +1083,16 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: channels which are passed through to actual hardware when running sim on actual hardware
     AP_GROUPINFO("OH_MASK",     28, SIM, on_hardware_output_enable_mask, 0),
 #if AP_SIM_INS_FILE_ENABLED
-    // read and write IMU data to/from files
+
+    // @Param: GYR_FILE_RW
+    // @DisplayName: Gyro data to/from files
+    // @Description: Read and write gyro data to/from files
+    // @Values: 0:Stop writing data, 1:Read data from file, 2:Write data to a file, 3: Read data from file and stop on EOF
     AP_GROUPINFO("GYR_FILE_RW", 29, SIM, gyro_file_rw, INSFileMode::INS_FILE_NONE),
+    // @Param: ACC_FILE_RW
+    // @DisplayName: Accelerometer data to/from files
+    // @Description: Read and write accelerometer data to/from files
+    // @Values: 0:Stop writing data, 1:Read data from file, 2:Write data to a file, 3: Read data from file and stop on EOF
     AP_GROUPINFO("ACC_FILE_RW", 30, SIM, accel_file_rw, INSFileMode::INS_FILE_NONE),
 #endif
 
