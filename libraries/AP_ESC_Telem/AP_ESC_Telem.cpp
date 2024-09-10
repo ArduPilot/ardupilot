@@ -568,16 +568,16 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 
 #if AP_EXTENDED_ESC_TELEM_ENABLED
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY) {
-        _telem_data[esc_index].input_duty = new_data.input_duty;
+        telemdata.input_duty = new_data.input_duty;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY) {
-        _telem_data[esc_index].output_duty = new_data.output_duty;
+        telemdata.output_duty = new_data.output_duty;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::FLAGS) {
-        _telem_data[esc_index].flags = new_data.flags;
+        telemdata.flags = new_data.flags;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE) {
-        _telem_data[esc_index].power_percentage = new_data.power_percentage;
+        telemdata.power_percentage = new_data.power_percentage;
     }
 #endif //AP_EXTENDED_ESC_TELEM_ENABLED
 
