@@ -321,7 +321,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "CubeOrange-PPP" ]; then
         echo "Building CubeOrange-PPP"
-        $waf configure --board CubeOrange --enable-ppp
+        $waf configure --board CubeOrange --enable-PPP
         $waf clean
         $waf copter
         continue
@@ -329,7 +329,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "CubeOrange-EKF2" ]; then
         echo "Building CubeOrange with EKF2 enabled"
-        $waf configure --board CubeOrange --enable-ekf2
+        $waf configure --board CubeOrange --enable-EKF2
         $waf clean
         $waf copter
         continue
