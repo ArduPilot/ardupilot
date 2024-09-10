@@ -49,7 +49,7 @@ def ros_quat_to_heading(quat):
 
 
 def validate_position_cmac(position):
-    """Returns true if the vehicle is at CMAC"""
+    """Return true if the vehicle is at CMAC."""
     LAT_LON_TOL = 1e-5
     return (
         math.isclose(position.latitude, CMAC_LAT, abs_tol=LAT_LON_TOL)
@@ -59,12 +59,12 @@ def validate_position_cmac(position):
 
 
 def validate_heading_cmac(orientation):
-    """Returns true if the vehicle is facing the right way for CMAC"""
+    """Return true if the vehicle is facing the right way for CMAC."""
     return math.isclose(ros_quat_to_heading(orientation), CMAC_HEADING)
 
 
 class GeoPoseListener(rclpy.node.Node):
-    """Subscribe to GeoPoseStamped messages"""
+    """Subscribe to GeoPoseStamped messages."""
 
     def __init__(self):
         """Initialise the node."""
