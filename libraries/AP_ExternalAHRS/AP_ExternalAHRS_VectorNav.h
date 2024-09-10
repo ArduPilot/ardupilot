@@ -65,8 +65,8 @@ private:
 
     void run_command(const char *fmt, ...);
 
-    struct EAHA;
-    void write_eaha(const EAHA& data_to_log) const;
+    struct VNAT;
+    void write_vnat(const VNAT& data_to_log) const;
     void process_imu_packet(const uint8_t *b);
     void process_ahrs_ekf_packet(const uint8_t *b);
     void process_ins_ekf_packet(const uint8_t *b);
