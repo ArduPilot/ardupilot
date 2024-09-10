@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "GCS_config.h"
+
 #include <AP_AHRS/AP_AHRS_config.h>
 
 enum ap_message : uint8_t {
