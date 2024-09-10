@@ -273,12 +273,6 @@ public:
     // Return the angle between the target thrust vector and the current thrust vector.
     float get_att_error_angle_deg() const { return degrees(_thrust_error_angle); }
 
-    // Set x-axis angular velocity in centidegrees/s
-    void rate_bf_roll_target(float rate_cds) { _ang_vel_body.x = radians(rate_cds * 0.01f); }
-
-    // Set y-axis angular velocity in centidegrees/s
-    void rate_bf_pitch_target(float rate_cds) { _ang_vel_body.y = radians(rate_cds * 0.01f); }
-
     // Set z-axis angular velocity in centidegrees/s
     void rate_bf_yaw_target(float rate_cds) { _ang_vel_body.z = radians(rate_cds * 0.01f); }
 
