@@ -347,6 +347,9 @@ public:
     Vector3f euler_accel_limit(const Quaternion &att, const Vector3f &euler_accel);
 
     // Calculates the body frame angular velocities to follow the target attitude
+    void update_attitude_target();
+
+    // Calculates the body frame angular velocities to follow the target attitude
     void attitude_controller_run_quat();
 
     // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
