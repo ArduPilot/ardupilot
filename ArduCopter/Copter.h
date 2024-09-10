@@ -164,6 +164,10 @@
   #error AP_OAPathPlanner relies on AP_FENCE_ENABLED which is disabled
 #endif
 
+#if MODE_AUTOROTATE_ENABLED && !AP_RPM_ENABLED
+  #error AC_Autorotation relies on AP_RPM_ENABLED which is disabled
+#endif
+
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
