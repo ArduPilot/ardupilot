@@ -498,7 +498,7 @@ void ModeAuto::land_start()
     set_submode(SubMode::LAND);
 }
 
-// auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
+// circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has performed all required GPS_ok checks
 void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn)
 {
