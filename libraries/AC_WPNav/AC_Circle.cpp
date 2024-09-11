@@ -234,27 +234,28 @@ bool AC_Circle::update(float climb_rate_cms)
 
 // get_closest_point_on_circle - returns closest point on the circle
 //  circle's center should already have been set
-//  closest point on the circle will be placed in result
+//  closest point on the circle will be placed in result, dist_cm will be updated with the 3D distance to the center
 //  result's altitude (i.e. z) will be set to the circle_center's altitude
 //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
+void AC_Circle::get_closest_point_on_circle(Vector3f& result, float& dist_cm) const
 {
+    // get current position
+    Vector3p stopping_point;
+    _pos_control.get_stopping_point_xy_cm(stopping_point.xy());
+    _pos_control.get_stopping_point_z_cm(stopping_point.z);
+
+    // calc vector from stopping point to circle center
+    Vector3f vec = (stopping_point - _center).tofloat();
+    dist_cm = vec.length();
+
     // return center if radius is zero
     if (!is_positive(_radius)) {
         result = _center.tofloat();
         return;
     }
 
-    // get current position
-    Vector2p stopping_point;
-    _pos_control.get_stopping_point_xy_cm(stopping_point);
-
-    // calc vector from stopping point to circle center
-    Vector2f vec = (stopping_point - _center.xy()).tofloat();
-    float dist = vec.length();
-
     // if current location is exactly at the center of the circle return edge directly behind vehicle
-    if (is_zero(dist)) {
+    if (is_zero(dist_cm)) {
         result.x = _center.x - _radius * _ahrs.cos_yaw();
         result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;
@@ -262,8 +263,8 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
     }
 
     // calculate closest point on edge of circle
-    result.x = _center.x + vec.x / dist * _radius;
-    result.y = _center.y + vec.y / dist * _radius;
+    result.x = _center.x + vec.x / dist_cm * _radius;
+    result.y = _center.y + vec.y / dist_cm * _radius;
     result.z = _center.z;
 }
 
