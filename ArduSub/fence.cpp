@@ -22,7 +22,7 @@ void Sub::fence_check()
     if (new_breaches) {
 
         // if the user wants some kind of response and motors are armed
-        if (fence.get_action() != AC_FENCE_ACTION_REPORT_ONLY) {
+        if (static_cast<AC_Fence::Action>(fence.get_action()) != AC_Fence::Action::REPORT_ONLY) {
             //
             //            // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             //            // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down
