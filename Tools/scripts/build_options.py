@@ -40,10 +40,11 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'AHRS_EXT_VECTORNAV', 'AP_EXTERNAL_AHRS_VECTORNAV_ENABLED', 'Enable VectorNav external AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'InertialLabs', 'AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED', 'Enable InertialLabs external AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'VISUALODOM', 'HAL_VISUALODOM_ENABLED', 'Enable Visual Odometry', 0, None),
-    Feature('AHRS', 'EKF3_EXTNAV', 'EK3_FEATURE_EXTERNAL_NAV', 'Enable External navigation for EKF3', 0, 'EKF3'),
-    Feature('AHRS', 'EKF3_WINDEST', 'EK3_FEATURE_DRAG_FUSION', 'Enable Wind estimation for EKF3', 0, 'EKF3'),
-    Feature('AHRS', 'EKF3_OPTFLOW', 'EK3_FEATURE_OPTFLOW_FUSION', 'Enable OpticalFlow fusion for EKF3', 0, 'EKF3,OPTICALFLOW'),
-    Feature('AHRS', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro wind compensation', 0, None),
+    Feature('AHRS', 'EKF3_EXTNAV', 'EK3_FEATURE_EXTERNAL_NAV', 'Enable External Navigation for EKF3', 0, 'EKF3'),
+    Feature('AHRS', 'EKF3_WINDEST', 'EK3_FEATURE_DRAG_FUSION', 'Enable Wind Estimation for EKF3', 0, 'EKF3'),
+    Feature('AHRS', 'EKF3_OPTFLOW', 'EK3_FEATURE_OPTFLOW_FUSION', 'Enable OpticalFlow Fusion for EKF3', 0, 'EKF3,OPTICALFLOW'),
+    Feature('AHRS', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro Wind Compensation', 0, None),
+    Feature('AHRS', 'CINS', 'AP_EXTERNAL_AHRS_CINS_ENABLED', 'Enable CINS state estimator', 0, None),
 
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
     Feature('Safety', 'FENCE', 'AP_FENCE_ENABLED', 'Enable Geofences', 2, None),
