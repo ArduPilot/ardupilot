@@ -889,6 +889,11 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         }
     }
 
+    if (!acc_ignore) {
+        // ignore any command where acceleration is not ignored
+        return;
+    }
+
     // set guided mode targets
     if (!pos_ignore) {
         // consume position target
@@ -896,19 +901,22 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
             // GCS will just need to look at desired location
             // outputs to see if it having an effect.
         }
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && yaw_rate_ignore) {
+        return;
+    }
+
+    if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
-    } else if (!vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
-    } else if (vel_ignore && acc_ignore && !yaw_ignore && yaw_rate_ignore) {
+    } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
-    } else if (vel_ignore && acc_ignore && yaw_ignore && !yaw_rate_ignore) {
+    } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate(probably only skid steering vehicles can do this)
         rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
     }
