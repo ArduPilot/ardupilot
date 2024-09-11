@@ -102,6 +102,8 @@ if ! grep -Fxq "$SOURCE_LINE" ~/.bashrc; then
 
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/.bashrc
+    else
+        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
 
