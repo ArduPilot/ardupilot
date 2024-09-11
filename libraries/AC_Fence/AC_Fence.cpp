@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
-    AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
+    AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        static_cast<uint8_t>(AC_Fence::Action::RTL_AND_LAND)),
 
     // @Param{Copter, Plane, Sub}: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
@@ -878,7 +878,7 @@ bool AC_Fence::sys_status_enabled() const
     if (!sys_status_present()) {
         return false;
     }
-    if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
+    if (static_cast<AC_Fence::Action>(static_cast<uint8_t>(_action)) == AC_Fence::Action::REPORT_ONLY) {
         return false;
     }
     // Fence is only enabled when the flag is enabled
