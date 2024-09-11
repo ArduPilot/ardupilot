@@ -517,8 +517,8 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
-    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
+    float dist_to_edge;
+    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu, dist_to_edge);
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
