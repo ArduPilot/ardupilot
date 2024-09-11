@@ -1,6 +1,8 @@
 # Bi-directional dshot version of SpeedyBeeF405WING
 
 include ../SpeedyBeeF405WING/hwdef.dat
+USE_BOOTLOADER_FROM_BOARD SpeedyBeeF405WING
+
 undef PB6 PB0 PC8 PC9
 
 PB6  TIM4_CH1  TIM4 PWM(2) GPIO(51) BIDIR
