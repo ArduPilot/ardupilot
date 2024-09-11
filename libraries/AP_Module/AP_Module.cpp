@@ -17,6 +17,8 @@
 
 #if AP_MODULE_SUPPORTED
 
+#include <AP_AHRS/AP_AHRS.h>
+
 /*
   support for external modules
  */

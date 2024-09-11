@@ -15,7 +15,7 @@ class _AutoTakeoff {
 public:
     void run();
     void start(float complete_alt_cm, bool terrain_alt);
-    bool get_position(Vector3p& completion_pos);
+    bool get_completion_pos(Vector3p& pos_neu_cm);
 
     bool complete;          // true when takeoff is complete
 
@@ -190,7 +190,7 @@ public:
     void make_safe_ground_handling(bool force_throttle_unlimited = false);
 
     // true if weathervaning is allowed in the current mode
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
     virtual bool allows_weathervaning() const { return false; }
 #endif
 
@@ -331,7 +331,7 @@ public:
 
         bool reached_fixed_yaw_target();
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
         void update_weathervane(const int16_t pilot_yaw_cds);
 #endif
 
@@ -390,7 +390,7 @@ public:
 };
 
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
 class ModeAcro : public Mode {
 
 public:
@@ -582,7 +582,7 @@ public:
     AP_Mission_ChangeDetector mis_change_detector;
 
     // true if weathervaning is allowed in auto
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
     bool allows_weathervaning(void) const override;
 #endif
 
@@ -641,7 +641,7 @@ private:
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     void do_spline_wp(const AP_Mission::Mission_Command& cmd);
     void get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline);
-#if AC_NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -679,7 +679,7 @@ private:
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_circle(const AP_Mission::Mission_Command& cmd);
     bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
-#if AC_NAV_GUIDED == ENABLED
+#if AC_NAV_GUIDED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
@@ -752,7 +752,7 @@ private:
     } desired_speed_override;
 };
 
-#if AUTOTUNE_ENABLED == ENABLED
+#if AUTOTUNE_ENABLED
 /*
   wrapper class for AC_AutoTune
  */
@@ -935,7 +935,7 @@ private:
 };
 
 
-#if MODE_FLOWHOLD_ENABLED == ENABLED
+#if MODE_FLOWHOLD_ENABLED
 /*
   class to support FLOWHOLD mode, which is a position hold mode using
   optical flow directly, avoiding the need for a rangefinder
@@ -1116,7 +1116,7 @@ public:
     bool resume() override;
 
     // true if weathervaning is allowed in guided
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
     bool allows_weathervaning(void) const override;
 #endif
 
@@ -1420,8 +1420,8 @@ public:
 
     // enum for RTL_ALT_TYPE parameter
     enum class RTLAltType : int8_t {
-        RTL_ALTTYPE_RELATIVE = 0,
-        RTL_ALTTYPE_TERRAIN = 1
+        RELATIVE = 0,
+        TERRAIN = 1
     };
     ModeRTL::RTLAltType get_alt_type() const;
 
@@ -1753,7 +1753,7 @@ private:
     float free_fall_start_velz;     // vertical velocity when free fall was detected
 };
 
-#if MODE_TURTLE_ENABLED == ENABLED
+#if MODE_TURTLE_ENABLED
 class ModeTurtle : public Mode {
 
 public:
@@ -1814,7 +1814,7 @@ private:
 
 };
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
 class ModeFollow : public ModeGuided {
 
 public:
@@ -1943,7 +1943,7 @@ private:
     bool is_suspended;              // true if zigzag auto is suspended
 };
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if MODE_AUTOROTATE_ENABLED
 class ModeAutorotate : public Mode {
 
 public:

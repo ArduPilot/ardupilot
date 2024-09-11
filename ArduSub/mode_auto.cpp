@@ -50,7 +50,7 @@ void ModeAuto::run()
         break;
 
     case Auto_NavGuided:
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
         auto_nav_guided_run();
 #endif
         break;
@@ -252,7 +252,7 @@ void ModeAuto::auto_circle_run()
     attitude_control->input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw(), true);
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::auto_nav_guided_start()
 {

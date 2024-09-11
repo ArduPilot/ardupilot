@@ -25,6 +25,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Common/Location.h>
+#include <AP_NavEKF/AP_NavEKF_Source.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -117,7 +118,7 @@ public:
     virtual void request_yaw_reset(void) {}
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    virtual void set_posvelyaw_source_set(uint8_t source_set_idx) {}
+    virtual void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx) {}
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated

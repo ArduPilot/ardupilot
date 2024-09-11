@@ -125,10 +125,7 @@ HAL_GPIO_PIN_TERMCAN1
 };
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
 
-#ifndef HAL_CAN_DEFAULT_NODE_ID
-#define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
-#endif
-uint8_t PreferredNodeID = HAL_CAN_DEFAULT_NODE_ID;
+uint8_t user_set_node_id = HAL_CAN_DEFAULT_NODE_ID;
 
 #ifndef AP_PERIPH_PROBE_CONTINUOUS
 #define AP_PERIPH_PROBE_CONTINUOUS 0
@@ -472,7 +469,7 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
         dronecan.send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
 
         printf("Matching allocation response: %d\n", msg.unique_id.len);
-    } else {
+    } else if (msg.node_id != CANARD_BROADCAST_NODE_ID) { // new ID valid? (if not we will time out and start over)
         // Allocation complete - copying the allocated node ID from the message
         canardSetLocalNodeID(canard_instance, msg.node_id);
         printf("IF%d Node ID allocated: %d\n", dronecan.dna_interface, msg.node_id);
@@ -1550,7 +1547,7 @@ bool AP_Periph_FW::can_do_dna()
     // Structure of the request is documented in the DSDL definition
     // See http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
     uint8_t allocation_request[CANARD_CAN_FRAME_MAX_DATA_LEN - 1];
-    allocation_request[0] = (uint8_t)(PreferredNodeID << 1U);
+    allocation_request[0] = 0; // we are only called if the user has not set an ID, so request any ID
 
     if (dronecan.node_id_allocation_unique_id_offset == 0) {
         allocation_request[0] |= 1;     // First part of unique ID
@@ -1590,7 +1587,7 @@ void AP_Periph_FW::can_start()
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
     if (g.can_node >= 0 && g.can_node < 128) {
-        PreferredNodeID = g.can_node;
+        user_set_node_id = g.can_node;
     }
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
@@ -1662,8 +1659,8 @@ void AP_Periph_FW::can_start()
     canardInit(&dronecan.canard, (uint8_t *)dronecan.canard_memory_pool, sizeof(dronecan.canard_memory_pool),
                onTransferReceived_trampoline, shouldAcceptTransfer_trampoline, this);
 
-    if (PreferredNodeID != CANARD_BROADCAST_NODE_ID) {
-        canardSetLocalNodeID(&dronecan.canard, PreferredNodeID);
+    if (user_set_node_id != CANARD_BROADCAST_NODE_ID) {
+        canardSetLocalNodeID(&dronecan.canard, user_set_node_id);
     }
 }
 

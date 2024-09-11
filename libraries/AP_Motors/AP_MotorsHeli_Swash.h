@@ -5,7 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Param/AP_Param.h>
-#include <AP_Logger/AP_Logger.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 // swashplate types
 enum SwashPlateType {

@@ -120,6 +120,7 @@ public:
     uint16_t last_output_mode_mask;
     uint16_t last_output_bdmask;
     uint16_t last_output_esc_type;
+    uint16_t last_output_reversible_mask;
 
     // MIXER values
     struct page_mixing mixing;

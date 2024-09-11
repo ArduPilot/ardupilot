@@ -50,6 +50,11 @@
 #define AP_CAMERA_SET_CAMERA_SOURCE_ENABLED HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 #endif
 
+// send thermal range is supported on a few thermal cameras but all are within mounts
+#ifndef AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+#define AP_CAMERA_SEND_THERMAL_RANGE_ENABLED AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+#endif
+
 #ifndef HAL_RUNCAM_ENABLED
 #define HAL_RUNCAM_ENABLED 1
 #endif

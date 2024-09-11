@@ -156,10 +156,9 @@ void AP_IOMCU::thread_main(void)
 
             DEV_PRINTF("IOMCU: 0x%lx\n", config.mcuid);
 
-            // set IO_ARM_OK and FMU_ARMED
-            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
+            // set IO_ARM_OK and clear FMU_ARMED
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, P_SETUP_ARMING_FMU_ARMED,
                                  P_SETUP_ARMING_IO_ARM_OK |
-                                 P_SETUP_ARMING_FMU_ARMED |
                                  P_SETUP_ARMING_RC_HANDLING_DISABLED)) {
                 event_failed(mask);
                 continue;
@@ -338,7 +337,8 @@ void AP_IOMCU::thread_main(void)
             last_telem_read_ms = AP_HAL::millis();
         }
 #endif
-        if (now - last_safety_option_check_ms > 1000) {
+        // update options at the same rate that the iomcu updates the state
+        if (now - last_safety_option_check_ms > 100) {
             update_safety_options();
             last_safety_option_check_ms = now;
         }
@@ -990,10 +990,27 @@ void AP_IOMCU::set_bidir_dshot_mask(uint16_t mask)
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
 }
 
+// set reversible mask
+void AP_IOMCU::set_reversible_mask(uint16_t mask)
+{
+    mode_out.reversible_mask = mask;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
 AP_HAL::RCOutput::output_mode AP_IOMCU::get_output_mode(uint8_t& mask) const
 {
     mask = reg_status.rcout_mask;
     return AP_HAL::RCOutput::output_mode(reg_status.rcout_mode);
+}
+
+uint32_t AP_IOMCU::get_disabled_channels(uint32_t digital_mask) const
+{
+    uint32_t dig_out = reg_status.rcout_mask & (digital_mask & 0xFF);
+    if (dig_out > 0
+        && AP_HAL::RCOutput::is_dshot_protocol(AP_HAL::RCOutput::output_mode(reg_status.rcout_mode))) {
+        return ~dig_out & 0xFF;
+    }
+    return 0;
 }
 
 // setup channels
@@ -1022,17 +1039,23 @@ void AP_IOMCU::update_safety_options(void)
     }
     uint16_t desired_options = 0;
     uint16_t options = boardconfig->get_safety_button_options();
+    bool armed = hal.util->get_soft_armed();
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_OFF;
     }
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_ON;
     }
-    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && AP::arming().is_armed()) {
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && armed) {
         desired_options |= (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
     }
+    // update armed state
+    if (armed) {
+        desired_options |= P_SETUP_ARMING_FMU_ARMED;
+    }
+
     if (last_safety_options != desired_options) {
-        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
+        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF | P_SETUP_ARMING_FMU_ARMED);
         uint32_t bits_to_set = desired_options & mask;
         uint32_t bits_to_clear = (~desired_options) & mask;
         if (modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, bits_to_clear, bits_to_set)) {

@@ -966,6 +966,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
             self.TestLogDownloadMAVProxyNetwork,
+            self.TestLogDownloadLogRestart,
             self.MAV_CMD_NAV_LOITER_UNLIM,
             self.MAV_CMD_NAV_LAND,
             self.MAV_CMD_MISSION_START,

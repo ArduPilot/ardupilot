@@ -29,7 +29,8 @@
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF/EKF_Buffer.h>
-#include <AP_DAL/AP_DAL.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Beacon/AP_Beacon_config.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -341,7 +342,7 @@ public:
     
 private:
     EKFGSF_yaw *yawEstimator;
-    AP_DAL &dal;
+    class AP_DAL &dal;
 
     // Reference to the global EKF frontend for parameters
     class NavEKF2 *frontend;

@@ -4372,8 +4372,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=180)
 
     def TakeoffAuto1(self):
-        '''Test the behaviour of an AUTO takeoff, pt1.
-
+        '''Test the behaviour of an AUTO takeoff, pt1.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=0
@@ -4417,8 +4417,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffAuto2(self):
-        '''Test the behaviour of an AUTO takeoff, pt2.
-
+        '''Test the behaviour of an AUTO takeoff, pt2.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=0
@@ -4462,8 +4462,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffAuto3(self):
-        '''Test the behaviour of an AUTO takeoff, pt3.
-
+        '''Test the behaviour of an AUTO takeoff, pt3.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=1
@@ -4504,15 +4504,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Ensure that after that the aircraft does not go full throttle anymore.
         test_alt = 50
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX")-10, operator.lt)
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            3,  # throttle
+            1000+10*self.get_parameter("TKOFF_THR_MAX")-10,
+            comparator=operator.lt,
+            minimum_duration=1,
+        )
+        w.run()
 
         # Wait for landing waypoint.
         self.wait_current_waypoint(11, timeout=1200)
         self.wait_disarmed(120)
 
     def TakeoffAuto4(self):
-        '''Test the behaviour of an AUTO takeoff, pt4.
-
+        '''Test the behaviour of an AUTO takeoff, pt4.'''
+        '''
         Conditions:
         - ARSPD_USE=0
         - TKOFF_OPTIONS[0]=1
@@ -4562,8 +4569,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(120)
 
     def TakeoffTakeoff1(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt1.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt1.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=0
@@ -4612,8 +4619,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def TakeoffTakeoff2(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt2.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt2.'''
+        '''
         Conditions:
         - ARSPD_USE=1
         - TKOFF_OPTIONS[0]=1
@@ -4663,8 +4670,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_home_land_and_disarm()
 
     def TakeoffTakeoff3(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt3.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt3.'''
+        '''
         This is the same as case #1, but with disabled airspeed sensor.
 
         Conditions:
@@ -4697,26 +4704,44 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Throw the catapult.
         self.set_servo(7, 2000)
 
+        # we expect to maintain this throttle level past the takeoff
+        # altitude through to our takeoff altitude:
+        expected_takeoff_throttle = 1000+10*self.get_parameter("TKOFF_THR_MAX")
+
         # Check whether we're at max throttle below TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*self.get_parameter("TKOFF_THR_MAX"))
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            3,  # throttle
+            expected_takeoff_throttle,
+            epsilon=1,
+            minimum_duration=1,
+        )
+        w.run()
 
         # Check whether we're still at max throttle past TKOFF_LVL_ALT.
         test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
         self.wait_altitude(test_alt, test_alt+2, relative=True)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX")), operator.le)
-        self.assert_servo_channel_value(3, 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-1, operator.ge)
+
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            3,  # throttle
+            expected_takeoff_throttle,
+            epsilon=1,
+            minimum_duration=1,
+        )
+        w.run()
 
         # Wait for the takeoff to complete.
         target_alt = self.get_parameter("TKOFF_ALT")
-        self.wait_altitude(target_alt-5, target_alt, relative=True)
+        self.wait_altitude(target_alt-2.5, target_alt+2.5, relative=True, minimum_duration=10, timeout=30)
 
-        self.fly_home_land_and_disarm()
+        self.reboot_sitl(force=True)
 
     def TakeoffTakeoff4(self):
-        '''Test the behaviour of a takeoff in TAKEOFF mode, pt4.
-
+        '''Test the behaviour of a takeoff in TAKEOFF mode, pt4.'''
+        '''
         This is the same as case #3, but with almost stock parameters and without a catapult.
 
         Conditions:
@@ -6052,6 +6077,84 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
             self.disarm_vehicle()
 
+    def _MAV_CMD_EXTERNAL_WIND_ESTIMATE(self, command):
+        self.reboot_sitl()
+
+        def cmp_with_variance(a, b, p):
+            return abs(a - b) < p
+
+        def check_eq(speed, direction, ret_dir, timeout=1):
+            command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=speed, p3=direction)
+
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        f"Failed to set wind speed or/and direction: speed != {speed} or direction != {direction}")
+
+                m = self.assert_receive_message("WIND")
+                if cmp_with_variance(m.speed, speed, 0.5) and cmp_with_variance(m.direction, ret_dir, 5):
+                    return True
+
+        check_eq(1, 45, 45)
+        check_eq(2, 90, 90)
+        check_eq(3, 120, 120)
+        check_eq(4, 180, -180)
+        check_eq(5, 240, -120)
+        check_eq(6, 320, -40)
+        check_eq(7, 360, 0)
+
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=-2, p3=90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=2, p3=-90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=-2, p3=-90, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        command(mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE, p1=2, p3=370, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
+    def MAV_CMD_EXTERNAL_WIND_ESTIMATE(self):
+        '''test MAV_CMD_EXTERNAL_WIND_ESTIMATE as a mavlink command'''
+        self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd)
+        self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd_int)
+
+    def GliderPullup(self):
+        '''test pullup of glider after ALTITUDE_WAIT'''
+        self.start_subtest("test glider pullup")
+
+        self.customise_SITL_commandline(
+            [],
+            model="glider",
+            defaults_filepath="Tools/autotest/default_params/glider.parm",
+            wipe=True)
+
+        self.set_parameters({
+            "PUP_ENABLE": 1,
+            "SERVO6_FUNCTION": 0, # balloon lift
+            "SERVO10_FUNCTION": 156, # lift release
+            "EK3_IMU_MASK": 1, # lane switches just make log harder to read
+        })
+
+        self.set_servo(6, 1000)
+
+        self.load_mission("glider-pullup-mission.txt")
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+
+        self.progress("Start balloon lift")
+        self.set_servo(6, 2000)
+
+        self.wait_text("Reached altitude", check_context=True, timeout=300)
+        self.wait_text("Start pullup airspeed", check_context=True)
+        self.wait_text("Pullup airspeed", check_context=True)
+        self.wait_text("Pullup pitch", check_context=True)
+        self.wait_text("Pullup level", check_context=True)
+        self.wait_text("Mission complete, changing mode to RTL", check_context=True)
+
+        self.fly_home_land_and_disarm(timeout=400)
+
+    def BadRollChannelDefined(self):
+        '''ensure we don't die with a  bad Roll channel defined'''
+        self.set_parameter("RCMAP_ROLL", 17)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -6183,6 +6286,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GPSPreArms,
             self.SetHomeAltChange,
             self.ForceArm,
+            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
+            self.GliderPullup,
+            self.BadRollChannelDefined,
         ])
         return ret
 

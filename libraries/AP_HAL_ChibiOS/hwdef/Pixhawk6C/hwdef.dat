@@ -256,6 +256,10 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 define HAL_OS_FATFS_IO 1
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
+
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_BIDIR_DSHOT 1

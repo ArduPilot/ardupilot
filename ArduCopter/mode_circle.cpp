@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <AP_Mount/AP_Mount.h>
 
-#if MODE_CIRCLE_ENABLED == ENABLED
+#if MODE_CIRCLE_ENABLED
 
 /*
  * Init and run calls for circle flight mode

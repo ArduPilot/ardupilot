@@ -54,7 +54,7 @@ sudo usermod -a -G uucp "$USER"
 
 sudo pacman -Syu --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
-python3 -m venv "$HOME"/venv-ardupilot
+python3 -m venv --system-site-packages "$HOME"/venv-ardupilot
 
 # activate it:
 SOURCE_LINE="source $HOME/venv-ardupilot/bin/activate"

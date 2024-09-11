@@ -26,9 +26,11 @@ from launch_pytest.tools import process as process_tools
 
 from builtin_interfaces.msg import Time
 
+TOPIC = "ap/time"
+
 
 class TimeListener(rclpy.node.Node):
-    """Subscribe to Time messages on /ap/time."""
+    """Subscribe to Time messages."""
 
     def __init__(self):
         """Initialise the node."""
@@ -36,7 +38,7 @@ class TimeListener(rclpy.node.Node):
         self.msg_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter.
-        self.declare_parameter("topic", "ap/time")
+        self.declare_parameter("topic", TOPIC)
         self.topic = self.get_parameter("topic").get_parameter_value().string_value
 
     def start_subscriber(self):
@@ -89,7 +91,7 @@ def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
 def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial):
-    """Test /ap/time is published by AP_DDS."""
+    """Test Time is published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_serial
     virtual_ports = actions["virtual_ports"].action
     micro_ros_agent = actions["micro_ros_agent"].action
@@ -107,7 +109,7 @@ def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial)
         node = TimeListener()
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
-        assert msgs_received_flag, "Did not receive 'ROS_Time' msgs."
+        assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
     yield
@@ -115,7 +117,7 @@ def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial)
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
 def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
-    """Test /ap/time is published by AP_DDS."""
+    """Test Time is published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_udp
     micro_ros_agent = actions["micro_ros_agent"].action
     mavproxy = actions["mavproxy"].action
@@ -131,7 +133,7 @@ def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
         node = TimeListener()
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
-        assert msgs_received_flag, "Did not receive 'ROS_Time' msgs."
+        assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
         rclpy.shutdown()
     yield

@@ -4,7 +4,7 @@
 
 #include "Sub.h"
 
-#if POSHOLD_ENABLED == ENABLED
+#if POSHOLD_ENABLED
 
 // poshold_init - initialise PosHold controller
 bool ModePoshold::init(bool ignore_checks)
@@ -111,4 +111,4 @@ void ModePoshold::run()
     // Update z axis //
     control_depth();
 }
-#endif  // POSHOLD_ENABLED == ENABLED
+#endif  // POSHOLD_ENABLED

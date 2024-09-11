@@ -181,6 +181,9 @@ public:
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     bool get_state(uint8_t instance, camera_state_t& cam_state);
+
+    // change camera settings not normally used by autopilot
+    bool change_setting(uint8_t instance, CameraSetting setting, float value);
 #endif
 
     // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
@@ -236,6 +239,11 @@ private:
 
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan);
+
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan);
+#endif
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

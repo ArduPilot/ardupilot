@@ -257,7 +257,7 @@ public:
     // Throttle
     //
     AP_Int8     throttle_cruise;
-    AP_Int8     pilot_steer_type;
+    AP_Enum<PilotSteerType>     pilot_steer_type;
 
     // failsafe control
     AP_Int8     fs_action;

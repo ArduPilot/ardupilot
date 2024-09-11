@@ -32,6 +32,7 @@ extern const AP_HAL::HAL& hal;
 // FORMAT REVISION DREAMS (things to address if the NodeRecord needs to be changed substantially)
 // * have DNA server accept only a 16 byte local UID to avoid overhead from variable sized hash
 // * have a real empty flag for entries and/or use a CRC which is not zero for an input of all zeros
+// * fix FNV-1a hash folding to be to 48 bits (6 bytes) instead of 56
 
 #define NODERECORD_MAGIC 0xAC01
 #define NODERECORD_MAGIC_LEN 2 // uint16_t
@@ -112,12 +113,9 @@ bool AP_DroneCAN_DNA_Server::Database::handle_node_info(uint8_t source_node_id, 
     WITH_SEMAPHORE(sem);
 
     if (is_registered(source_node_id)) {
-        // verify that the unique ID matches our registration for the node ID
-        if (source_node_id == find_node_id(unique_id, 16)) {
-            return false;
-        } else {
-            // this device's node ID is associated with a different device
-            return true;
+        // this device's node ID is associated with a different unique ID
+        if (source_node_id != find_node_id(unique_id, 16)) {
+            return true; // so raise as duplicate
         }
     } else {
         // we don't know about this node ID, let's register it
@@ -126,11 +124,11 @@ bool AP_DroneCAN_DNA_Server::Database::handle_node_info(uint8_t source_node_id, 
             delete_registration(prev_node_id); // yes, delete old registration
         }
         create_registration(source_node_id, unique_id, 16);
-        return false;
     }
+    return false; // not a duplicate
 }
 
-// handle the allocation message. returns the new node ID.
+// handle the allocation message. returns the allocated node ID, or 0 if allocation failed
 uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, const uint8_t unique_id[])
 {
     WITH_SEMAPHORE(sem);
@@ -140,14 +138,9 @@ uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, con
         resp_node_id = find_free_node_id(node_id > MAX_NODE_ID ? 0 : node_id);
         if (resp_node_id != 0) {
             create_registration(resp_node_id, unique_id, 16);
-            return resp_node_id;
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
-            return 0;
         }
-    } else {
-        return resp_node_id;
     }
+    return resp_node_id; // will be 0 if not found and not created
 }
 
 // search for a free node ID, starting at the preferred ID (which can be 0 if
@@ -156,17 +149,17 @@ uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, con
 uint8_t AP_DroneCAN_DNA_Server::Database::find_free_node_id(uint8_t preferred)
 {
     if (preferred == 0) {
-        preferred = 125;
+        preferred = MAX_NODE_ID;
     }
-    // Search up
+    // search for an ID >= preferred
     uint8_t candidate = preferred;
-    while (candidate <= 125) {
+    while (candidate <= MAX_NODE_ID) {
         if (!node_registered.get(candidate)) {
             return candidate;
         }
         candidate++;
     }
-    // Search down
+    // search for an ID <= preferred
     candidate = preferred;
     while (candidate > 0) {
         if (!node_registered.get(candidate)) {
@@ -174,7 +167,7 @@ uint8_t AP_DroneCAN_DNA_Server::Database::find_free_node_id(uint8_t preferred)
         }
         candidate--;
     }
-    // Not found
+    // no IDs free
     return 0;
 }
 
@@ -202,7 +195,7 @@ void AP_DroneCAN_DNA_Server::Database::compute_uid_hash(NodeRecord &record, cons
     hash_fnv_1a(size, unique_id, &hash);
 
     // xor-folding per http://www.isthe.com/chongo/tech/comp/fnv/
-    hash = (hash>>56) ^ (hash&(((uint64_t)1<<56)-1));
+    hash = (hash>>56) ^ (hash&(((uint64_t)1<<56)-1)); // 56 should be 48 since we use 6 bytes
 
     // write it to ret
     for (uint8_t i=0; i<6; i++) {
@@ -244,7 +237,7 @@ bool AP_DroneCAN_DNA_Server::Database::check_registration(uint8_t node_id)
     NodeRecord record;
     read_record(record, node_id);
 
-    uint8_t empty_uid[sizeof(NodeRecord::uid_hash)] = {0};
+    uint8_t empty_uid[sizeof(NodeRecord::uid_hash)] {};
     uint8_t crc = crc_crc8(record.uid_hash, sizeof(record.uid_hash));
     if (crc == record.crc && memcmp(&record.uid_hash[0], &empty_uid[0], sizeof(empty_uid)) != 0) {
         return true; // CRC matches and UID hash is not all zero
@@ -449,68 +442,61 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     }
 }
 
-/* Handle the allocation message from the devices supporting
-dynamic node allocation. */
-void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
+// process node ID allocation messages for DNA
+void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
 {
     if (transfer.source_node_id != 0) {
-        //Ignore Allocation messages that are not DNA requests
-        return;
+        return; // ignore allocation messages that are not DNA requests
     }
     uint32_t now = AP_HAL::millis();
 
     if (rcvd_unique_id_offset == 0 ||
-        (now - last_alloc_msg_ms) > 500) {
+        (now - last_alloc_msg_ms) > UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
         if (msg.first_part_of_unique_id) {
             rcvd_unique_id_offset = 0;
-            memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
         } else {
-            //we are only accepting first part
-            return;
+            return; // only accepting the first part
         }
     } else if (msg.first_part_of_unique_id) {
-        // we are only accepting follow up messages
-        return;
+        return; // only accepting follow up messages
     }
 
     if (rcvd_unique_id_offset) {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n",
-                     (long int)AP_HAL::millis(),
+        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting Followup part! %u\n",
+                     (unsigned long)now,
                      unsigned((now - last_alloc_msg_ms)));
     } else {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n",
-                     (long int)AP_HAL::millis(),
+        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting First part! %u\n",
+                     (unsigned long)now,
                      unsigned((now - last_alloc_msg_ms)));
     }
 
     last_alloc_msg_ms = now;
-    if ((rcvd_unique_id_offset + msg.unique_id.len) > 16) {
-        //This request is malformed, Reset!
-        rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
+    if ((rcvd_unique_id_offset + msg.unique_id.len) > sizeof(rcvd_unique_id)) {
+        rcvd_unique_id_offset = 0; // reset state, request contains an over-long ID
         return;
     }
 
-    //copy over the unique_id
-    for (uint8_t i=rcvd_unique_id_offset; i<(rcvd_unique_id_offset + msg.unique_id.len); i++) {
-        rcvd_unique_id[i] = msg.unique_id.data[i - rcvd_unique_id_offset];
-    }
+    // save the new portion of the unique ID
+    memcpy(&rcvd_unique_id[rcvd_unique_id_offset], msg.unique_id.data, msg.unique_id.len);
     rcvd_unique_id_offset += msg.unique_id.len;
 
-    //send follow up message
+    // respond with the message containing the received unique ID so far, or
+    // with the node ID if we successfully allocated one
     uavcan_protocol_dynamic_node_id_Allocation rsp {};
-
-    /* Respond with the message containing the received unique ID so far
-    or with node id if we successfully allocated one. */
     memcpy(rsp.unique_id.data, rcvd_unique_id, rcvd_unique_id_offset);
     rsp.unique_id.len = rcvd_unique_id_offset;
 
-    if (rcvd_unique_id_offset == 16) {
-        //We have received the full Unique ID, time to do allocation
-        rsp.node_id = db.handle_allocation(msg.node_id, (const uint8_t*)rcvd_unique_id);
-        //reset states as well        
-        rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
+    if (rcvd_unique_id_offset == sizeof(rcvd_unique_id)) { // full unique ID received, allocate it!
+        rsp.node_id = db.handle_allocation(msg.node_id, rcvd_unique_id);
+        rcvd_unique_id_offset = 0; // reset state for next allocation
+        if (rsp.node_id == 0) { // allocation failed
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN DNA allocation failed; database full");
+            // don't send reply with a failed ID in case the allocatee does
+            // silly things, though it is technically legal. the allocatee will
+            // then time out and try again (though we still won't have an ID!)
+            return;
+        }
     }
 
     allocation_pub.broadcast(rsp, false); // never publish allocation message with CAN FD

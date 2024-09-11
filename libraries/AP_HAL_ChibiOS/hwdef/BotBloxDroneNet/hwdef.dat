@@ -79,9 +79,11 @@ PB11 ETH_RMII_TX_EN      ETH1
 PA7 ETH_RMII_CRS_DV      ETH1
 PA1 ETH_RMII_REF_CLK     ETH1
 
-define BOARD_PHY_ID  MII_LAN8742A_ID
-define BOARD_PHY_ADDRESS 0x0005
+define BOARD_PHY_ADDRESS 5
 define BOARD_PHY_RMII
+
+# auto-negotiation doesn't work, force 100MBit full duplex
+define STM32_MAC_PHY_LINK_TYPE MAC_LINK_100_FULLDUPLEX
 
 define HAL_PERIPH_ENABLE_NETWORKING
 define AP_NETWORKING_MAX_INSTANCES 4
@@ -97,6 +99,10 @@ define HAL_USE_ADC FALSE
 define AP_SERIALMANAGER_REGISTER_ENABLED 1
 define AP_SCRIPTING_ENABLED 1
 define AP_FILESYSTEM_ROMFS_ENABLED 1
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the network enabled bootloader at runtime
+env ROMFS_UNCOMPRESSED True
 
 include ../include/network_PPPGW.inc
 

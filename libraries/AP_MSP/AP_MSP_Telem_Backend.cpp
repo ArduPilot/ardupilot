@@ -25,7 +25,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
@@ -1068,17 +1067,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-#if AP_RCMAPPER_ENABLED
-    const RCMapper* rcmap = AP::rcmap();
-    if (rcmap == nullptr) {
-        return MSP_RESULT_ERROR;
-    }
-
-    // note: rcmap channels start at 1
-    float roll = rc().rc_channel(rcmap->roll()-1)->norm_input_dz();
-    float pitch = -rc().rc_channel(rcmap->pitch()-1)->norm_input_dz();
-    float yaw = rc().rc_channel(rcmap->yaw()-1)->norm_input_dz();
-    float throttle = rc().rc_channel(rcmap->throttle()-1)->norm_input_dz();
+    float roll = rc().get_roll_channel().norm_input_dz();
+    float pitch = -rc().get_pitch_channel().norm_input_dz();
+    float yaw = rc().get_yaw_channel().norm_input_dz();
+    float throttle = rc().get_throttle_channel().norm_input_dz();
 
     const struct PACKED {
         uint16_t a;
@@ -1095,9 +1087,6 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
-#else
-    return MSP_RESULT_ERROR;
-#endif
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 

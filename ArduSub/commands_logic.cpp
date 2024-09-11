@@ -61,7 +61,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_time(cmd);
         break;
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     case MAV_CMD_NAV_GUIDED_ENABLE:             // 92  accept navigation commands from external nav computer
         do_nav_guided_enable(cmd);
         break;
@@ -107,7 +107,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_mount_control(cmd);
         break;
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 222  accept guided mode limits
         do_guided_limits(cmd);
         break;
@@ -170,7 +170,7 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     case MAV_CMD_NAV_GUIDED_ENABLE:
         return verify_nav_guided_enable(cmd);
 #endif
@@ -384,7 +384,7 @@ void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;     // units are (seconds)
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // do_nav_guided_enable - initiate accepting commands from external nav computer
 void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
@@ -417,7 +417,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // do_guided_limits - pass guided limits to guided controller
 void Sub::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 {
@@ -550,7 +550,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // verify_nav_guided - check if we have breached any limits
 bool Sub::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
