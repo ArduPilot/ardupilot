@@ -162,8 +162,8 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect python3-packaging python3-setuptools python3-wheel"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect python3-packaging python3-setuptools python3-wheel python3-lxml"
+PYTHON_PKGS="future pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
