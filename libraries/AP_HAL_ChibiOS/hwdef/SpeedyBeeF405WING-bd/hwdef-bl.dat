@@ -1,4 +1,1 @@
-# hw definition file for processing by chibios_pins.py
-# for SpeedyBeeF405WING bootloader
-
 include ../SpeedyBeeF405WING/hwdef-bl.dat
