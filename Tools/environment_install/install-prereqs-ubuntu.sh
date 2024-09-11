@@ -373,16 +373,10 @@ fi
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-PYTHON_VENV_PACKAGE=""
-if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ]; then
-    PYTHON_VENV_PACKAGE=python3.11-venv
-elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    PYTHON_VENV_PACKAGE=python3.12-venv
-fi
+PYTHON_VENV_PACKAGE="python$(python3 --version | awk '{ print $2 }' | cut -d '.' -f 1,2)-venv"
+VENV_LOOKUP=$(apt search $PYTHON_VENV_PACKAGE 2>/dev/null| grep venv)
 
-if [ -n "$PYTHON_VENV_PACKAGE" ]; then
+if [[ $VENV_LOOKUP ]]; then
     $APT_GET install $PYTHON_VENV_PACKAGE
     python3 -m venv --system-site-packages $HOME/venv-ardupilot
 
