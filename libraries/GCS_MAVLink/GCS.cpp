@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
@@ -13,6 +17,8 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_GPS/AP_GPS.h>
+#include <RC_Channel/RC_Channel.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -20,16 +26,16 @@
 
 extern const AP_HAL::HAL& hal;
 
-// if this assert fails then fix it and the comment in GCS.h where
-// _statustext_queue is declared
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-assert_storage_size<GCS::statustext_t, 58> _assert_statustext_t_size;
-#endif
-
 void GCS::get_sensor_status_flags(uint32_t &present,
                                   uint32_t &enabled,
                                   uint32_t &health)
 {
+// if this assert fails then fix it and the comment in GCS.h where
+// _statustext_queue is declared
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+ASSERT_STORAGE_SIZE(GCS::statustext_t, 58);
+#endif
+
     update_sensor_status_flags();
 
     present = control_sensors_present;
@@ -93,6 +99,11 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
         if (!c.is_active()) {
             continue;
         }
+#if HAL_HIGH_LATENCY2_ENABLED
+        if (c.is_high_latency_link) {
+            continue;
+        }
+#endif
         // size checks done by this method:
         c.send_message(pkt, entry);
     }
@@ -114,7 +125,7 @@ void GCS::send_named_float(const char *name, float value) const
 void GCS::enable_high_latency_connections(bool enabled)
 {
     high_latency_link_enabled = enabled;
-    gcs().send_text(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
 }
 
 bool GCS::get_high_latency_status()
@@ -149,9 +160,12 @@ void GCS::update_sensor_status_flags()
     control_sensors_enabled = 0;
     control_sensors_health = 0;
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
-    AP_AHRS &ahrs = AP::ahrs();
+#if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &ins = AP::ins();
+#endif
+
+#if AP_AHRS_ENABLED && AP_INERTIALSENSOR_ENABLED
+    AP_AHRS &ahrs = AP::ahrs();
 
     control_sensors_present |= MAV_SYS_STATUS_AHRS;
     if (ahrs.initialised()) {
@@ -164,7 +178,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_MAG)
+#if AP_COMPASS_ENABLED
     const Compass &compass = AP::compass();
     if (AP::compass().available()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_MAG;
@@ -175,16 +189,18 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BARO)
+#if AP_BARO_ENABLED
     const AP_Baro &barometer = AP::baro();
-    control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    if (barometer.all_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+    if (barometer.num_instances() > 0) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        if (barometer.all_healthy()) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
+        }
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)
+#if AP_GPS_ENABLED
     const AP_GPS &gps = AP::gps();
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
@@ -195,7 +211,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
     if (battery.num_instances() > 0) {
@@ -206,7 +222,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_INERTIALSENSOR_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_GYRO;
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_ACCEL;
     if (!ins.calibrating()) {
@@ -226,7 +242,7 @@ void GCS::update_sensor_status_flags()
     bool logging_present = logger.logging_present();
     bool logging_enabled = logger.logging_enabled();
     bool logging_healthy = !logger.logging_failed();
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)
+#if AP_GPS_ENABLED
     // some GPS units do logging, so they have to be healthy too:
     logging_present |= gps.logging_present();
     logging_enabled |= gps.logging_enabled();
@@ -252,7 +268,7 @@ void GCS::update_sensor_status_flags()
     control_sensors_health |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_ENABLED
     if (ahrs.get_ekf_type() == 10) {
         // always show EKF type 10 as healthy. This prevents spurious error
         // messages in xplane and other simulators that use EKF type 10
@@ -281,7 +297,12 @@ void GCS::update_sensor_status_flags()
     if (airspeed && airspeed->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
         const bool use = airspeed->use();
+#if AP_AHRS_ENABLED
         const bool enabled = AP::ahrs().airspeed_sensor_enabled();
+#else
+        const AP_Airspeed *_airspeed = AP::airspeed();
+        const bool enabled = (_airspeed != nullptr && _airspeed->use());
+#endif
         if (use) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
         }
@@ -315,12 +336,22 @@ void GCS::update_sensor_status_flags()
 
     // give GCS status of prearm checks. This is enabled if any arming checks are enabled.
     // it is healthy if armed or checks are passing
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_ARMING_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_PREARM_CHECK;
     if (AP::arming().get_enabled_checks()) {
         control_sensors_enabled |= MAV_SYS_STATUS_PREARM_CHECK;
         if (hal.util->get_soft_armed() || AP_Notify::flags.pre_arm_check) {
             control_sensors_health |= MAV_SYS_STATUS_PREARM_CHECK;
+        }
+    }
+#endif
+
+#if AP_RC_CHANNEL_ENABLED
+    if (rc().has_ever_seen_rc_input()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
+        if (!rc().in_rc_failsafe()) {  // should this be has_valid_input?
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
         }
     }
 #endif
@@ -345,9 +376,11 @@ bool GCS::out_of_time() const
         return false;
     }
 
+#if AP_SCHEDULER_ENABLED
     if (min_loop_time_remaining_for_message_send_us() <= AP::scheduler().time_available_usec()) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -372,3 +405,26 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
     }
     return true;
 }
+
+#if AP_SCRIPTING_ENABLED
+/*
+  lua access to command_int
+
+  Note that this is called with the AP_Scheduler lock, ensuring the
+  main thread does not race with a lua command_int
+*/
+MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
+{
+    // for now we assume channel 0. In the future we may create a dedicated channel
+    auto *ch = chan(0);
+    if (ch == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    // we need a dummy message for some calls
+    mavlink_message_t msg {};
+
+    return ch->handle_command_int_packet(packet, msg);
+}
+#endif // AP_SCRIPTING_ENABLED
+
+#endif  // HAL_GCS_ENABLED

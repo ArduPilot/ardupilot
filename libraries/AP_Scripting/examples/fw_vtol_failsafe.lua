@@ -8,6 +8,8 @@
 -- If the aircraft drops below a predetermined minimum altitude, QLAND mode is engaged and the aircraft lands at its current position.
 -- If the aircraft arrives within Q_FW_LND_APR_RAD of the return point before dropping below the minimum altitude, it should loiter down to the minimum altitude before switching to QRTL and landing.
 
+---@diagnostic disable: cast-local-type
+
 -- setup param block for VTOL failsafe params
 local PARAM_TABLE_KEY = 77
 local PARAM_TABLE_PREFIX = "VTFS_"

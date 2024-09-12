@@ -149,7 +149,16 @@ void Battery::set_current(float current)
         voltage = get_resting_voltage(100 * remaining_Ah / capacity_Ah) - voltage_delta;
     }
 
-    voltage_filter.apply(voltage);
+    voltage_filter.apply(voltage, dt);
+
+    {
+        const uint64_t temperature_dt = now - temperature.last_update_micros;
+        temperature.last_update_micros = now;
+        // 1 amp*1 second == 0.1 degrees of energy.  Did those units hurt?
+        temperature.kelvin += 0.1 * current * temperature_dt * 0.000001;
+        // decay temperature at some %second towards ambient
+        temperature.kelvin -= (temperature.kelvin - 273) * 0.10 * temperature_dt * 0.000001;
+    }
 }
 
 float Battery::get_voltage(void) const

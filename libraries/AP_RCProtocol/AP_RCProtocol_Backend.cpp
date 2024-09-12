@@ -15,6 +15,10 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
@@ -78,7 +82,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     // failsafed is sorted out in AP_IOMCU.cpp
     in_failsafe = false;
 #else
-    if (rc().ignore_rc_failsafe()) {
+    if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
         in_failsafe = false;
     }
 #endif
@@ -174,8 +178,14 @@ void AP_RCProtocol_Backend::configure_vtx(uint8_t band, uint8_t channel, uint8_t
  */
 void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
 {
-#if HAL_LOGGING_ENABLED
-    if (rc().log_raw_data()) {
+#if HAL_LOGGING_ENABLED && AP_RC_CHANNEL_ENABLED
+
+#if (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+    if (RC_Channels::get_singleton() == nullptr) { // allow running without RC_Channels if we are doing the examples
+        return;
+    }
+#endif
+    if (rc().option_is_enabled(RC_Channels::Option::LOG_RAW_DATA)) {
         uint32_t u32[10] {};
         if (len > sizeof(u32)) {
             len = sizeof(u32);
@@ -205,5 +215,7 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
                            u32[0], u32[1], u32[2], u32[3], u32[4],
                            u32[5], u32[6], u32[7], u32[8], u32[9]);
     }
-#endif  // HAL_LOGGING_ENABLED
+#endif  // HAL_LOGGING_ENABLED && AP_RC_CHANNEL_ENABLED
 }
+
+#endif  // AP_RCPROTOCOL_ENABLED

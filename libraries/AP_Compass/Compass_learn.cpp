@@ -9,13 +9,15 @@
 
 #if COMPASS_LEARN_ENABLED
 
+#include <AP_Logger/AP_Logger.h>
+
 extern const AP_HAL::HAL &hal;
 
 // constructor
 CompassLearn::CompassLearn(Compass &_compass) :
     compass(_compass)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: Initialised");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassLearn: Initialised");
 }
 
 // accuracy threshold applied for GSF yaw estimate
@@ -60,11 +62,11 @@ void CompassLearn::update(void)
         return;
     }
 
-    const auto result = compass.mag_cal_fixed_yaw(degrees(yaw_rad), (1U<<HAL_COMPASS_MAX_SENSORS)-1, 0, 0, true);
-    if (result == MAV_RESULT_ACCEPTED) {
+    const bool result = compass.mag_cal_fixed_yaw(degrees(yaw_rad), (1U<<HAL_COMPASS_MAX_SENSORS)-1, 0, 0, true);
+    if (result) {
         AP_Notify::flags.compass_cal_running = false;
         compass.set_learn_type(Compass::LEARN_NONE, true);
-        gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: Finished");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassLearn: Finished");
     }
 }
 

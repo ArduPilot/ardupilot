@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_Loiter.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AC_Avoidance/AC_Avoid.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -265,7 +266,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         desired_vel.y = desired_vel.y * gnd_speed_limit_cms / horizSpdDem;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {
         // Limit the velocity to prevent fence violations
         // TODO: We need to also limit the _desired_accel

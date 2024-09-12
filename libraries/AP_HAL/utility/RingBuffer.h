@@ -52,6 +52,9 @@ public:
     // set size of ringbuffer, caller responsible for locking
     bool set_size(uint32_t size);
 
+    // set size of ringbuffer, reducing down if size can't be achieved
+    bool set_size_best(uint32_t size);
+    
     // advance the read pointer (discarding bytes)
     bool advance(uint32_t n);
 
@@ -113,7 +116,7 @@ public:
         // gives one less byte than requested. We round up to a full
         // multiple of the object size so that we always get aligned
         // elements, which makes the readptr() method possible
-        buffer = new ByteBuffer(((_size+1) * sizeof(T)));
+        buffer = NEW_NOTHROW ByteBuffer(((_size+1) * sizeof(T)));
         external_buf = false;
     }
 
@@ -285,7 +288,7 @@ public:
         // gives one less byte than requested. We round up to a full
         // multiple of the object size so that we always get aligned
         // elements, which makes the readptr() method possible
-        buffer = new ByteBuffer(((_size+1) * sizeof(T)));
+        buffer = NEW_NOTHROW ByteBuffer(((_size+1) * sizeof(T)));
     }
     ~ObjectBuffer_TS(void) {
         delete buffer;
@@ -469,7 +472,7 @@ public:
     ObjectArray(uint16_t size_) {
         _size = size_;
         _head = _count = 0;
-        _buffer = new T[_size];
+        _buffer = NEW_NOTHROW T[_size];
     }
     ~ObjectArray(void) {
         delete[] _buffer;

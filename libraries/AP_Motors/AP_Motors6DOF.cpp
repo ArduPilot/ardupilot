@@ -232,7 +232,9 @@ void AP_Motors6DOF::output_min()
 
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
 {
-    return constrain_int16(1500 + thrust_in * 400, get_pwm_output_min(), get_pwm_output_max());
+    int16_t range_up = get_pwm_output_max() - 1500;
+    int16_t range_down = 1500 - get_pwm_output_min();
+    return 1500 + thrust_in * (thrust_in > 0 ? range_up : range_down);
 }
 
 void AP_Motors6DOF::output_to_motors()
@@ -357,6 +359,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
         }
     }
 
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
 
 	// Current limiting
@@ -382,6 +385,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
         batt_current_ratio = predicted_current_ratio;
     }
     _output_limited += (_dt / (_dt + _batt_current_time_constant)) * (1 - batt_current_ratio);
+#endif
 
     _output_limited = constrain_float(_output_limited, 0.0f, 1.0f);
 

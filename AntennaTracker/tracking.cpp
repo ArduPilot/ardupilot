@@ -138,10 +138,12 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.vel = Vector3f(msg.vx/100.0f, msg.vy/100.0f, msg.vz/100.0f);
     vehicle.last_update_us = AP_HAL::micros();
     vehicle.last_update_ms = AP_HAL::millis();
+#if HAL_LOGGING_ENABLED
     // log vehicle as GPS2
     if (should_log(MASK_LOG_GPS)) {
         Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.vel);
     }
+#endif
 }
 
 
@@ -167,8 +169,10 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
 		}
     }
 
+#if HAL_LOGGING_ENABLED
     // log vehicle baro data
     Log_Write_Vehicle_Baro(aircraft_pressure, alt_diff);
+#endif
 }
 
 /**

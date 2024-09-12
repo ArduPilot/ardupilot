@@ -91,7 +91,7 @@ MSPCommandResult AP_MSP_Telem_DJI::msp_process_out_esc_sensor_data(sbuf_t *dst)
     int16_t highest_temperature = 0;
     AP_ESC_Telem& telem = AP::esc_telem();
     if (!displaying_stats_screen()) {
-        telem.get_highest_motor_temperature(highest_temperature);
+        telem.get_highest_temperature(highest_temperature);
     } else {
 #if OSD_ENABLED
         AP_OSD *osd = AP::osd();
@@ -224,6 +224,7 @@ bool AP_MSP_Telem_DJI::get_rssi(float &rssi) const
     if (!displaying_stats_screen()) {
         return true;
     }
+#if AP_RSSI_ENABLED
     AP_RSSI* ap_rssi = AP::rssi();
     if (ap_rssi == nullptr) {
         return false;
@@ -231,6 +232,9 @@ bool AP_MSP_Telem_DJI::get_rssi(float &rssi) const
     if (!ap_rssi->enabled()) {
         return false;
     }
+#else
+    return false;
+#endif
     AP_OSD *osd = AP::osd();
     if (osd == nullptr) {
         return false;

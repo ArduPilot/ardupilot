@@ -16,8 +16,9 @@
   Scripting CANSensor class, for easy scripting CAN support
  */
 #include "AP_Scripting_CANSensor.h"
+#include <AP_Math/AP_Math.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_SCRIPTING_CAN_SENSOR_ENABLED
 
 // handler for outgoing frames, using uint32
 bool ScriptingCANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
@@ -38,7 +39,7 @@ void ScriptingCANSensor::handle_frame(AP_HAL::CANFrame &frame)
 ScriptingCANBuffer* ScriptingCANSensor::add_buffer(uint32_t buffer_len)
 {
     WITH_SEMAPHORE(sem);
-    ScriptingCANBuffer *new_buff = new ScriptingCANBuffer(*this, buffer_len);
+    ScriptingCANBuffer *new_buff = NEW_NOTHROW ScriptingCANBuffer(*this, buffer_len);
     if (buffer_list == nullptr) {
         buffer_list = new_buff;
     } else {
@@ -62,8 +63,25 @@ bool ScriptingCANBuffer::read_frame(AP_HAL::CANFrame &frame)
 // recursively add frame to buffer
 void ScriptingCANBuffer::handle_frame(AP_HAL::CANFrame &frame)
 {
+    // accept everything if no filters are setup
+    bool accept = num_filters == 0;
+
+    // Check if frame matches any filters
+    for (uint8_t i = 0; i < MIN(num_filters, ARRAY_SIZE(filter)); i++) {
+        if ((frame.id & filter[i].mask) == filter[i].value) {
+            accept = true;
+            break;
+        }
+    }
+
     WITH_SEMAPHORE(sem);
-    buffer.push(frame);
+
+    // Add to buffer for scripting to read
+    if (accept) {
+        buffer.push(frame);
+    }
+
+    // filtering is not applied to other buffers
     if (next != nullptr) {
         next->handle_frame(frame);
     }
@@ -79,4 +97,19 @@ void ScriptingCANBuffer::add_buffer(ScriptingCANBuffer* new_buff) {
     next->add_buffer(new_buff);
 }
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+// Add a filter, will pass ID's that match value given the mask
+bool ScriptingCANBuffer::add_filter(uint32_t mask, uint32_t value) {
+
+    // Run out of filters
+    if (num_filters >= ARRAY_SIZE(filter)) {
+        return false;
+    }
+
+    // Add to list and increment
+    filter[num_filters].mask = mask;
+    filter[num_filters].value = value & mask;
+    num_filters++;
+    return true;
+}
+
+#endif // AP_SCRIPTING_CAN_SENSOR_ENABLED

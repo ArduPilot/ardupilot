@@ -1,7 +1,5 @@
 #include "SIM_BattMonitor_SMBus.h"
 
-#include <AP_Stats/AP_Stats.h>
-
 SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
     SMBusDevice()
 {

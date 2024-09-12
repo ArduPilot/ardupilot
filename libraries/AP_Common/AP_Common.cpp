@@ -22,6 +22,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+/* assert that const vals are float, not double. so 100.0 means 100.0f */
+static_assert(sizeof(1e6) == sizeof(float), "Compilation needs to use single-precision constants");
+
 /*
   Return true if value is between lower and upper bound inclusive.
   False otherwise.
@@ -94,10 +97,12 @@ size_t strncpy_noterm(char *dest, const char *src, size_t n)
  */
 int16_t char_to_hex(char a)
 {
-    if (a >= 'A' && a <= 'F')
+    if (a >= 'A' && a <= 'F') {
         return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
+    } else if (a >= 'a' && a <= 'f') {
         return a - 'a' + 10;
-    else
+    } else if (a >= '0' && a <= '9') {
         return a - '0';
+    }
+    return 0;
 }

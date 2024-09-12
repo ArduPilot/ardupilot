@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <AC_PID/AP_PIDInfo.h>
+#include <Filter/SlewCalculator2D.h>
 
 /// @class	AC_PID_2D
 /// @brief	Copter PID control class
@@ -58,19 +59,22 @@ public:
     float get_filt_D_alpha(float dt) const;
 
     // set accessors
-    void kP(float v) { _kp.set(v); }
-    void kI(float v) { _ki.set(v); }
-    void kD(float v) { _kd.set(v); }
-    void ff(float v) { _kff.set(v); }
-    void imax(float v) { _kimax.set(fabsf(v)); }
-    void filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
-    void filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
+    void set_kP(float v) { _kp.set(v); }
+    void set_kI(float v) { _ki.set(v); }
+    void set_kD(float v) { _kd.set(v); }
+    void set_ff(float v) { _kff.set(v); }
+    void set_imax(float v) { _kimax.set(fabsf(v)); }
+    void set_filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
+    void set_filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
 
     // integrator setting functions
     void set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i);
     void set_integrator(const Vector2f& error, const Vector2f& i);
     void set_integrator(const Vector3f& i) { set_integrator(Vector2f{i.x, i.y}); }
     void set_integrator(const Vector2f& i);
+
+    // return current slew rate of slew limiter. Will return 0 if SMAX is zero
+    float get_slew_rate(void) const { return _slew_calc.get_slew_rate(); }
 
     const AP_PIDInfo& get_pid_info_x(void) const { return _pid_info_x; }
     const AP_PIDInfo& get_pid_info_y(void) const { return _pid_info_y; }
@@ -98,6 +102,8 @@ protected:
 
     AP_PIDInfo _pid_info_x;
     AP_PIDInfo _pid_info_y;
+
+    SlewCalculator2D _slew_calc;    // 2D slew rate calculator
 
 private:
     const float default_kp;

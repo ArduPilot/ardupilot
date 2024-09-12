@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2023 ArduPilot.org.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -39,9 +40,7 @@ class TimeListener(Node):
     def cb(self, msg):
         """Process a Time message."""
         if msg.sec:
-            self.get_logger().info(
-                "From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec)
-            )
+            self.get_logger().info("From AP : True [sec:{}, nsec: {}]".format(msg.sec, msg.nanosec))
         else:
             self.get_logger().info("From AP : False")
 

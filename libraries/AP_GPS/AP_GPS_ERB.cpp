@@ -150,9 +150,9 @@ AP_GPS_ERB::_parse_gps(void)
         _last_pos_time        = _buffer.pos.time;
         state.location.lng    = (int32_t)(_buffer.pos.longitude * (double)1e7);
         state.location.lat    = (int32_t)(_buffer.pos.latitude * (double)1e7);
-        state.location.alt    = (int32_t)(_buffer.pos.altitude_msl * 100);
         state.have_undulation = true;
         state.undulation = _buffer.pos.altitude_msl - _buffer.pos.altitude_ellipsoid;
+        set_alt_amsl_cm(state, _buffer.pos.altitude_msl * 100);
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.pos.horizontal_accuracy * 1.0e-3f;

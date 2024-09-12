@@ -74,13 +74,6 @@ def micro_ros_agent_serial(device_dir):
         LaunchDescriptionSource(mra_ld),
         launch_arguments={
             "transport": "serial",
-            "refs": PathJoinSubstitution(
-                [
-                    FindPackageShare("ardupilot_sitl"),
-                    "config",
-                    "dds_xrce_profile.xml",
-                ]
-            ),
             "baudrate": "115200",
             "device": str(tty0),
         }.items(),
@@ -97,13 +90,6 @@ def micro_ros_agent_udp():
         LaunchDescriptionSource(mra_ld),
         launch_arguments={
             "transport": "udp4",
-            "refs": PathJoinSubstitution(
-                [
-                    FindPackageShare("ardupilot_sitl"),
-                    "config",
-                    "dds_xrce_profile.xml",
-                ]
-            ),
         }.items(),
     )
     yield ld, mra_actions
@@ -145,7 +131,7 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
             "speedup": "10",
             "slave": "0",
             "instance": "0",
-            "uartC": f"uart:{str(tty1)}",
+            "serial1": f"uart:{str(tty1)}",
             "defaults": str(
                 Path(
                     get_package_share_directory("ardupilot_sitl"),

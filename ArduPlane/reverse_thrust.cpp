@@ -125,6 +125,10 @@ bool Plane::have_reverse_thrust(void) const
  */
 float Plane::get_throttle_input(bool no_deadzone) const
 {
+    if (!rc().has_valid_input()) {
+        // Return 0 if there is no valid input
+        return 0.0;
+    }
     float ret;
     if (no_deadzone) {
         ret = channel_throttle->get_control_in_zero_dz();
@@ -143,6 +147,10 @@ float Plane::get_throttle_input(bool no_deadzone) const
  */
 float Plane::get_adjusted_throttle_input(bool no_deadzone) const
 {
+    if (!rc().has_valid_input()) {
+        // Return 0 if there is no valid input
+        return 0.0;
+    }
     if ((plane.channel_throttle->get_type() != RC_Channel::ControlType::RANGE) ||
         (flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)) == 0) {
        return  get_throttle_input(no_deadzone);

@@ -188,6 +188,7 @@ public:
         k_rcin14_mapped         = 153,
         k_rcin15_mapped         = 154,
         k_rcin16_mapped         = 155,
+        k_lift_release          = 156,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -279,6 +280,9 @@ public:
     bool function_configured(void) const {
         return function.configured();
     }
+
+    // convert a scaled value (either range or angle depending on setup) to a pwm
+    uint16_t pwm_from_scaled_value(float scaled_value) const;
 
     // specify that small rc input changes should be ignored during passthrough
     // used by DO_SET_SERVO commands
@@ -373,7 +377,7 @@ public:
     static void set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uint16_t timeout_ms);
 
     // set output value for a function channel as a scaled value. This
-    // calls calc_pwm() to also set the pwm value
+    // this should be followed by a call to calc_pwm() to output the pwm values
     static void set_output_scaled(SRV_Channel::Aux_servo_function_t function, float value);
 
     // get scaled output for the given function type.
@@ -412,7 +416,13 @@ public:
 
     // set MIN/MAX parameters for a function
     static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
-    
+
+    // set MIN/MAX parameter defaults for a function
+    static void set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
+    // Save MIN/MAX/REVERSED parameters for a function
+    static void save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
     // save trims
     void save_trim(void);
 
@@ -508,6 +518,8 @@ public:
 
     static uint8_t get_dshot_rate() { return _singleton->dshot_rate.get(); }
 
+    static uint32_t get_rc_fs_mask() { return _singleton->rc_fs_mask.get(); }
+
     static SRV_Channel *srv_channel(uint8_t i) {
 #if NUM_SERVO_CHANNELS > 0
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
@@ -601,11 +613,11 @@ private:
     static AP_Volz_Protocol *volz_ptr;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if AP_ROBOTISSERVO_ENABLED
     // support for Robotis servo protocol
@@ -655,6 +667,7 @@ private:
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
     AP_Int32 gpio_mask;
+    AP_Int32 rc_fs_mask;
 #if NUM_SERVO_CHANNELS >= 17
     AP_Int8 enable_32_channels;
 #endif

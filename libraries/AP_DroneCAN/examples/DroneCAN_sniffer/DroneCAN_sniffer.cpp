@@ -48,6 +48,10 @@ private:
 static struct {
     const char *msg_name;
     uint32_t count;
+    uint64_t last_time_us;
+    uint32_t avg_period_us;
+    uint32_t max_period_us;
+    uint32_t min_period_us;
 } counters[100];
 
 static void count_msg(const char *name)
@@ -55,11 +59,26 @@ static void count_msg(const char *name)
     for (uint16_t i=0; i<ARRAY_SIZE(counters); i++) {
         if (counters[i].msg_name == name) {
             counters[i].count++;
+            uint64_t now = AP_HAL::micros64();
+            uint32_t period_us = now - counters[i].last_time_us;
+            counters[i].last_time_us = now;
+            if (counters[i].avg_period_us == 0) {
+                counters[i].avg_period_us = period_us;
+            } else {
+                counters[i].avg_period_us = (counters[i].avg_period_us * (counters[i].count - 1) + period_us) / counters[i].count;
+            }
+            if (counters[i].max_period_us < period_us) {
+                counters[i].max_period_us = period_us;
+            }
+            if (counters[i].min_period_us == 0 || counters[i].min_period_us > period_us) {
+                counters[i].min_period_us = period_us;
+            }
             break;
         }
         if (counters[i].msg_name == nullptr) {
             counters[i].msg_name = name;
             counters[i].count++;
+            counters[i].last_time_us = AP_HAL::micros64();
             break;
         }
     }
@@ -98,37 +117,40 @@ static void cb_GetNodeInfoRequest(const CanardRxTransfer &transfer, const uavcan
 
 void DroneCAN_sniffer::init(void)
 {
-    const_cast <AP_HAL::HAL&> (hal).can[driver_index] = new HAL_CANIface(driver_index);
+    // we need to mutate the HAL to install new CAN interfaces
+    AP_HAL::HAL& hal_mutable = AP_HAL::get_HAL_mutable();
+
+    hal_mutable.can[driver_index] = NEW_NOTHROW HAL_CANIface(driver_index);
     
-    if (hal.can[driver_index] == nullptr) {
+    if (hal_mutable.can[driver_index] == nullptr) {
         AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
     }
 
-    hal.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
+    hal_mutable.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
 
-    if (!hal.can[driver_index]->is_initialized()) {
+    if (!hal_mutable.can[driver_index]->is_initialized()) {
         debug_dronecan("Can not initialised\n");
         return;
     }
-    _uavcan_iface_mgr = new CanardInterface{driver_index};
+    _uavcan_iface_mgr = NEW_NOTHROW CanardInterface{driver_index};
 
     if (_uavcan_iface_mgr == nullptr) {
         return;
     }
 
-    if (!_uavcan_iface_mgr->add_interface(hal.can[driver_index])) {
+    if (!_uavcan_iface_mgr->add_interface(hal_mutable.can[driver_index])) {
         debug_dronecan("Failed to add iface");
         return;
     }
 
     _uavcan_iface_mgr->init(node_memory_pool, sizeof(node_memory_pool), 9);
 
-    node_status_pub = new Canard::Publisher<uavcan_protocol_NodeStatus>{*_uavcan_iface_mgr};
+    node_status_pub = NEW_NOTHROW Canard::Publisher<uavcan_protocol_NodeStatus>{*_uavcan_iface_mgr};
     if (node_status_pub == nullptr) {
         return;
     }
 
-    node_info_srv = new Canard::Server<uavcan_protocol_GetNodeInfoRequest>{*_uavcan_iface_mgr, *Canard::allocate_static_callback(cb_GetNodeInfoRequest)};
+    node_info_srv = NEW_NOTHROW Canard::Server<uavcan_protocol_GetNodeInfoRequest>{*_uavcan_iface_mgr, *Canard::allocate_static_callback(cb_GetNodeInfoRequest)};
     if (node_info_srv == nullptr) {
         return;
     }
@@ -187,8 +209,15 @@ void DroneCAN_sniffer::print_stats(void)
         if (counters[i].msg_name == nullptr) {
             break;
         }
-        hal.console->printf("%s: %u\n", counters[i].msg_name, unsigned(counters[i].count));
+        hal.console->printf("%s: %lu AVG_US: %lu MAX_US: %lu MIN_US: %lu\n", counters[i].msg_name,
+                                                                            (long unsigned)counters[i].count,
+                                                                            (long unsigned)counters[i].avg_period_us,
+                                                                            (long unsigned)counters[i].max_period_us,
+                                                                            (long unsigned)counters[i].min_period_us);
         counters[i].count = 0;
+        counters[i].avg_period_us = 0;
+        counters[i].max_period_us = 0;
+        counters[i].min_period_us = 0;
     }
     hal.console->printf("\n");
 }
@@ -223,7 +252,7 @@ void loop(void)
     if (hal.console->available() > 50) {
         hal.console->printf("rebooting\n");
         hal.console->discard_input();
-        hal.scheduler->reboot(false);
+        hal.scheduler->reboot();
     }
     hal.console->discard_input();
 }

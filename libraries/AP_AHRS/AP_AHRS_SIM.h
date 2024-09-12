@@ -60,9 +60,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // dead-reckoning support
-    virtual bool get_location(Location &loc) const override;
-
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
 
@@ -92,7 +89,7 @@ public:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate(float &velocity) const override;
+    bool get_vert_pos_rate_D(float &velocity) const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
@@ -118,6 +115,9 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
 private:
+
+    // dead-reckoning support
+    bool get_location(Location &loc) const;
 
 #if HAL_NAVEKF3_AVAILABLE
     // a reference to the EKF3 backend that we can use to send in

@@ -76,19 +76,19 @@ public:
     T        x, y, z;
 
     // trivial ctor
-    constexpr Vector3<T>()
+    constexpr Vector3()
         : x(0)
         , y(0)
         , z(0) {}
 
     // setting ctor
-    constexpr Vector3<T>(const T x0, const T y0, const T z0)
+    constexpr Vector3(const T x0, const T y0, const T z0)
         : x(x0)
         , y(y0)
         , z(z0) {}
 
     //Create a Vector3 from a Vector2 with z
-    constexpr Vector3<T>(const Vector2<T> &v0, const T z0)
+    constexpr Vector3(const Vector2<T> &v0, const T z0)
         : x(v0.x)
         , y(v0.y)
         , z(z0) {}
@@ -279,6 +279,12 @@ public:
     }
     Vector3<double> todouble() const {
         return Vector3<double>{x,y,z};
+    }
+
+    // convert from right-front-up to front-right-down
+    // or ENU to NED
+    Vector3<T> rfu_to_frd() const {
+        return Vector3<T>{y,x,-z};
     }
 
     // given a position p1 and a velocity v1 produce a vector

@@ -25,7 +25,7 @@ void RCInput::init()
     if (_init) {
         return;
     }
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
     AP::RC().init();
 #endif
 
@@ -89,10 +89,10 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 
 void RCInput::_timer_tick(void)
 {
+#if AP_RCPROTOCOL_ENABLED
     if (!_init) {
         return;
     }
-
     AP_RCProtocol &rcprot = AP::RC();
 
 #ifdef HAL_ESP32_RCIN
@@ -121,9 +121,10 @@ void RCInput::_timer_tick(void)
 #ifndef HAL_NO_UARTDRIVER
     if (rc_protocol && rc_protocol != last_protocol) {
         last_protocol = rc_protocol;
-        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
     }
 #endif
 
 #endif
+#endif // AP_RCPROTOCOL_ENABLED
 }

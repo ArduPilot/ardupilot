@@ -45,11 +45,7 @@ define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
 
@@ -59,7 +55,6 @@ MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN_RX CAN
@@ -118,8 +113,6 @@ PB11  USART3_RX USART3 SPEED_HIGH
 
 # use DNA for node allocation
 
-define CAN_APP_NODE_NAME "org.ardupilot.f303_MatekGPS"
-
 # added QMC5883L mag on I2C
 COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 
@@ -149,3 +142,5 @@ define GPS_MAX_RATE_MS 200
 # 10" DLVR sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 9
 define AIRSPEED_MAX_SENSORS 1
+
+define HAL_MONITOR_THREAD_ENABLED 1

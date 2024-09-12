@@ -81,9 +81,9 @@ press [tab] then enter on the [exit]  box to exit the app
 done.    the 'sdkconfig' file in this folder should have been updated
 cd ../../../..
 
-OR locate the 'libraries/AP_HAL_ESP32/targets/esp-idf/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
+OR locate the 'libraries/AP_HAL_ESP32/targets/esp32/esp-idf/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
 
-'cd libraries/AP_HAL_ESP32/targets/esp-idf ; idf.py defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
+'cd libraries/AP_HAL_ESP32/targets/esp32/esp-idf ; idf.py defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
 
 ... try ./waf plane"
 
@@ -96,8 +96,10 @@ ESPBAUD=921600 ./waf plane --upload
 You can use your default build system (make or ninja) to build other esp-idf target.
 
 For example :
-- ninja flash
-- ninja monitor
+  source modules/esp_idf/export.sh
+  cd /home/buzz2/ardupilot/build/esp32buzz/esp-idf_build
+  ninja flash
+  ninja monitor
 
 If you want to specify the port, specify before any command:
 ```
@@ -112,7 +114,7 @@ ESPTOOL_BAUD=921600
 
 You can find more info here : [ESPTOOL](https://github.com/espressif/esptool)
 
-You can also find the cmake esp-idf project at `libraries/AP_HAL_ESP32/targets/esp-idf` for idf.py command. But see next section to understand how ardupilot is compiled on ESP32.
+You can also find the cmake esp-idf project at `libraries/AP_HAL_ESP32/targets/esp32/esp-idf` for idf.py command. But see next section to understand how ardupilot is compiled on ESP32.
 
 
 For flashing from another machine you need the following files:

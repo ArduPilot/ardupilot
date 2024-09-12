@@ -7,7 +7,7 @@ import sys
 try:
     import em
 except ImportError:
-    print("you need to install empy with 'python -m pip install empy'")
+    print("you need to install empy with 'python -m pip install empy==3.3.4'")
     sys.exit(1)
 
 try:
@@ -44,6 +44,8 @@ def build(bld):
                      'AP_FlashStorage',
                      'AP_RAMTRON',
                      'AP_GPS',
+                     'AP_GSOF',
+                     'AP_Networking',
                      'AP_SerialManager',
                      'AP_RTC',
                      'AP_Compass',
@@ -69,8 +71,20 @@ def build(bld):
                      'AP_Stats',
                      'AP_EFI',
                      'AP_CheckFirmware',
+                     'AP_RPM',
                      'AP_Proximity',
+                     'AP_RCProtocol',
+                     'AP_AHRS',
+                     'AP_Terrain',
+                     'AP_Torqeedo',
+                     'AP_Volz_Protocol',
+                     'AP_SBusOut',
+                     'AP_RobotisServo',
+                     'AP_FETtecOneWire',
+                     'GCS_MAVLink',
+                     'AP_Relay'
                      ]
+
     bld.ap_stlib(
         name= 'AP_Periph_libs',
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',

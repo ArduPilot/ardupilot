@@ -29,6 +29,11 @@
 
 -- luacheck: ignore 581 (Negation of a relational operator - operator can be flipped)
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: undefined-global
+
+
 gcs:send_text(6, 'testing strings and string library')
 
 local maxi, mini = math.maxinteger, math.mininteger

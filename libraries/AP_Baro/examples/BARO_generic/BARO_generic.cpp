@@ -33,7 +33,6 @@ static AP_Baro barometer;
 #endif // HAL_EXTERNAL_AHRS_ENABLED
 
 static uint32_t timer;
-static uint8_t counter;
 static AP_BoardConfig board_config;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -69,14 +68,9 @@ void loop()
         return;
     }
 
-    // run accumulate() at 50Hz and update() at 10Hz
-    if ((AP_HAL::micros() - timer) > 20 * 1000UL) {
+    // run update() at 10Hz
+    if ((AP_HAL::micros() - timer) > 100 * 1000UL) {
         timer = AP_HAL::micros();
-        barometer.accumulate();
-        if (counter++ < 5) {
-            return;
-        }
-        counter = 0;
         barometer.update();
 
         //calculate time taken for barometer readings to update

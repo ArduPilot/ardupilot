@@ -27,6 +27,7 @@
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Common/ExpandingString.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include "sdcard.h"
 #include "shared_dma.h"
 #if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM_ENABLED || HAL_CANMANAGER_ENABLED || HAL_USE_PWM == TRUE
@@ -34,8 +35,10 @@
 #endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 #endif
-#ifndef HAL_BOOTLOADER_BUILD
+#include <AP_Logger/AP_Logger_config.h>
+#if HAL_LOGGING_ENABLED
 #include <AP_Logger/AP_Logger.h>
 #endif
 
@@ -48,6 +51,7 @@ extern AP_IOMCU iomcu;
 #if AP_SIGNED_FIRMWARE && !defined(HAL_BOOTLOADER_BUILD)
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #endif
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,6 +77,12 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
         return malloc_dma(size);
     } else if (mem_type == AP_HAL::Util::MEM_FAST) {
         return malloc_fastmem(size);
+    } else if (mem_type == AP_HAL::Util::MEM_FILESYSTEM) {
+#if defined(STM32H7)
+        return malloc_axi_sram(size);
+#else
+        return malloc_dma(size);
+#endif
     } else {
         return calloc(1, size);
     }
@@ -86,7 +96,7 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 
 void *Util::allocate_heap_memory(size_t size)
 {
@@ -135,7 +145,7 @@ void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size
     void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
     if (new_mem != nullptr) {
         const size_t old_size2 = chHeapGetSize(ptr);
-#ifdef HAL_DEBUG_BUILD
+#if defined(HAL_DEBUG_BUILD) && !defined(IOMCU_FW)
         if (new_size != 0 && old_size2 != old_size) {
             INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         }
@@ -217,7 +227,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 #endif // HAL_USE_PWM
 #if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
-    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
+    if (!(_toneAlarm_types & uint8_t(AP_Notify::BuzzerType::DSHOT)) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
         return;
     }
 
@@ -258,7 +268,8 @@ uint64_t Util::get_hw_rtc() const
 #if AP_BOOTLOADER_FLASHING_ENABLED
 
 #if HAL_GCS_ENABLED
-#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#include <GCS_MAVLink/GCS.h>
+#define Debug(fmt, args ...)  do { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
 
 #ifndef Debug
@@ -532,6 +543,12 @@ bool Util::get_persistent_params(ExpandingString &str) const
         ins->get_persistent_params(str);
     }
 #endif
+#if AP_OPENDRONEID_ENABLED
+    const auto *odid = AP_OpenDroneID::get_singleton();
+    if (odid) {
+        odid->get_persistent_params(str);
+    }
+#endif
     if (str.has_failed_allocation() || str.get_length() <= strlen(persistent_header)) {
         // no data
         return false;
@@ -556,6 +573,38 @@ bool Util::load_persistent_params(ExpandingString &str) const
     if (s) {
         str.append(s, (addr+size) - uint32_t(s));
         return !str.has_failed_allocation();
+    }
+    return false;
+}
+
+/*
+  get a persistent variable by name,
+  len is the length of the value buffer, and is updated with the length of the value
+ */
+bool Util::get_persistent_param_by_name(const char *name, char* value, size_t& len) const
+{
+    ExpandingString persistent_params {};
+    if (!load_persistent_params(persistent_params)) {
+        return false;
+    }
+    char *s = persistent_params.get_writeable_string();
+    if (s == nullptr) {
+        return false;
+    }
+    char *saveptr;
+    s += strlen(persistent_header);
+    for (char *p = strtok_r(s, "\n", &saveptr);
+         p; p = strtok_r(nullptr, "\n", &saveptr)) {
+        char *eq = strchr(p, int('='));
+        if (eq) {
+            *eq = 0;
+            if (strcmp(p, name) == 0) {
+                // also get the length of the value
+                strncpy(value, eq+1, len);
+                len = strlen(value);
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -592,8 +641,11 @@ void Util::apply_persistent_params(void) const
                   been done by whether the IDs are configured in
                   storage
                  */
-                if (strncmp(pname, "INS_ACC", 7) == 0 &&
-                    strcmp(pname+strlen(pname)-3, "_ID") == 0) {
+                bool legacy_acc_id = strncmp(pname, "INS_ACC", 7) == 0 &&
+                    strcmp(pname+strlen(pname)-3, "_ID") == 0;
+                bool new_acc_id = strncmp(pname, "INS", 3) == 0 &&
+                    strcmp(pname+strlen(pname)-6, "ACC_ID") == 0;
+                if (legacy_acc_id || new_acc_id) {
                     enum ap_var_type ptype;
                     AP_Int32 *ap = (AP_Int32 *)AP_Param::find(pname, &ptype);
                     if (ap && ptype == AP_PARAM_INT32) {
@@ -633,21 +685,49 @@ extern ChibiOS::UARTDriver uart_io;
 // request information on uart I/O
 void Util::uart_info(ExpandingString &str)
 {
+    // Calculate time since last call
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - sys_uart_stats.last_ms;
+    sys_uart_stats.last_ms = now_ms;
+
     // a header to allow for machine parsers to determine format
     str.printf("UARTV1\n");
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart) {
             str.printf("SERIAL%u ", i);
-            uart->uart_info(str);
+            uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
 #if HAL_WITH_IO_MCU
     str.printf("IOMCU   ");
-    uart_io.uart_info(str);
+    uart_io.uart_info(str, sys_uart_stats.io, dt_ms);
 #endif
 }
+
+// Log UART message for each serial port
+#if HAL_LOGGING_ENABLED
+void Util::uart_log()
+{
+    // Calculate time since last call
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - log_uart_stats.last_ms;
+    log_uart_stats.last_ms = now_ms;
+
+    // Loop over all numbered ports
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        auto *uart = hal.serial(i);
+        if (uart) {
+            uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
+        }
+    }
+#if HAL_WITH_IO_MCU
+    // Use magic instance 100 for IOMCU
+    uart_io.log_stats(100, log_uart_stats.io, dt_ms);
 #endif
+}
+#endif // HAL_LOGGING_ENABLED
+#endif // HAL_UART_STATS_ENABLED
 
 // request information on uart I/O
 #if HAL_USE_PWM == TRUE
@@ -665,9 +745,7 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
 {
 #if HAL_USE_HW_RNG && defined(RNG)
     size_t true_random_vals = stm32_rand_generate_nonblocking(data, size);
-    if (true_random_vals == size) {
-        return true;
-    } else {
+    if (true_random_vals != size) {
         if (!(true_random_vals % 2)) {
             data[true_random_vals] = (uint8_t)(get_random16() & 0xFF);
             true_random_vals++;
@@ -678,10 +756,18 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
             true_random_vals+=sizeof(uint16_t);
         }
     }
-    return true;
 #else
-    return false;
+    size_t true_random_vals = 0;
+    while(true_random_vals < size) {
+        uint16_t val = get_random16();
+        memcpy(&data[true_random_vals], &val, sizeof(uint16_t));
+        true_random_vals+=sizeof(uint16_t);
+    }
+    if (size % 2) {
+        data[size-1] = get_random16() & 0xFF;
+    }
 #endif
+    return true;
 }
 
 /**
@@ -708,7 +794,7 @@ bool Util::get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us)
 */
 void Util::log_stack_info(void)
 {
-#if !defined(HAL_BOOTLOADER_BUILD) && HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED
     static thread_t *last_tp;
     static uint8_t thread_id;
     thread_t *tp = last_tp;
@@ -780,7 +866,7 @@ void Util::boot_to_dfu()
 {
     hal.util->persistent_data.boot_to_dfu = true;
     stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
-    hal.scheduler->reboot(false);
+    hal.scheduler->reboot();
 }
 #endif
 

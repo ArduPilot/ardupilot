@@ -1,7 +1,7 @@
 #include "AC_CommandModel.h"
 #include <AP_HAL/AP_HAL.h>
 
-// The Commmand Model class holds parameters that shape the pilot desired angular rate input.  This class can 
+// The Command Model class holds parameters that shape the pilot desired angular rate input.  This class can 
 // be expanded to hold the methods that shape the pilot desired input.
 
 extern const AP_HAL::HAL& hal;

@@ -48,5 +48,7 @@ private:
     float _recent_press;
     float _last_altitude;
 
+    uint32_t last_drift_delta_t_ms;  // allows for integration of drift over time
+    float total_alt_drift;  // integrated altitude drift in metres
 };
 #endif  // AP_SIM_BARO_ENABLED

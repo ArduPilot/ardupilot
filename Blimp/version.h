@@ -17,3 +17,4 @@
 #define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
 
 #include <AP_Common/AP_FWVersionDefine.h>
+#include <AP_CheckFirmware/AP_CheckFirmwareDefine.h>

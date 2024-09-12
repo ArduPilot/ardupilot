@@ -28,6 +28,10 @@
 
 extern const AP_HAL::HAL &hal;
 
+#ifndef AP_BEACON_MINIMUM_FENCE_BEACONS
+#define AP_BEACON_MINIMUM_FENCE_BEACONS 3
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Beacon::var_info[] = {
 
@@ -97,24 +101,30 @@ void AP_Beacon::init(void)
     }
 
     // create backend
-    if (_type == AP_BeaconType_Pozyx) {
-        _driver = new AP_Beacon_Pozyx(*this);
-    } else if (_type == AP_BeaconType_Marvelmind) {
-        _driver = new AP_Beacon_Marvelmind(*this);
-    } else if (_type == AP_BeaconType_Nooploop) {
-        _driver = new AP_Beacon_Nooploop(*this);
-    }
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (_type == AP_BeaconType_SITL) {
-        _driver = new AP_Beacon_SITL(*this);
-    }
+    switch ((Type)_type) {
+    case Type::Pozyx:
+        _driver = NEW_NOTHROW AP_Beacon_Pozyx(*this);
+        break;
+    case Type::Marvelmind:
+        _driver = NEW_NOTHROW AP_Beacon_Marvelmind(*this);
+        break;
+    case Type::Nooploop:
+        _driver = NEW_NOTHROW AP_Beacon_Nooploop(*this);
+        break;
+#if AP_BEACON_SITL_ENABLED
+    case Type::SITL:
+        _driver = NEW_NOTHROW AP_Beacon_SITL(*this);
+        break;
 #endif
+    case Type::None:
+        break;
+    }
 }
 
 // return true if beacon feature is enabled
 bool AP_Beacon::enabled(void) const
 {
-    return (_type != AP_BeaconType_None);
+    return (_type != Type::None);
 }
 
 // return true if sensor is basically healthy (we are receiving data)
@@ -236,7 +246,7 @@ Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
 // return last update time from beacon in milliseconds
 uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
 {
-    if (_type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+    if (_type == Type::None || beacon_instance >= num_beacons) {
         return 0;
     }
     return beacon_state[beacon_instance].distance_update_ms;
@@ -388,9 +398,10 @@ const Vector2f* AP_Beacon::get_boundary_points(uint16_t& num_points) const
 // check if the device is ready
 bool AP_Beacon::device_ready(void) const
 {
-    return ((_driver != nullptr) && (_type != AP_BeaconType_None));
+    return ((_driver != nullptr) && (_type != Type::None));
 }
 
+#if HAL_LOGGING_ENABLED
 // Write beacon sensor (position) data
 void AP_Beacon::log()
 {
@@ -417,6 +428,7 @@ void AP_Beacon::log()
     };
     AP::logger().WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
+#endif
 
 // singleton instance
 AP_Beacon *AP_Beacon::_singleton;

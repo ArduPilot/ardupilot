@@ -70,7 +70,7 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ESP32_ADC_PINS;
 #define DEFAULT_VREF    1100       //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   256          //Multisampling
 
-static const adc_atten_t atten = ADC_ATTEN_DB_11;
+static const adc_atten_t atten = ADC_ATTEN_DB_12;
 
 //ardupin is the ardupilot assigned number, starting from 1-8(max)
 // 'pin' and _pin is a macro like 'ADC1_GPIO35_CHANNEL' from board config .h
@@ -348,7 +348,7 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t ardupin)
 
     for (uint8_t j = 0; j < ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(ardupin,gpioAdcPin, scaler,0.0f,1);
+            _channels[j] = NEW_NOTHROW AnalogSource(ardupin,gpioAdcPin, scaler,0.0f,1);
 
             if (ardupin != ANALOG_INPUT_NONE) {
                 DEV_PRINTF("AnalogIn: channel:%d attached to ardupin:%d at adc1_offset:%d on gpio:%d\n",\

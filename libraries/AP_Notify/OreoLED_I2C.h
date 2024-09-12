@@ -136,7 +136,7 @@ private:
         OREOLED_MODE_RGB_EXTENDED,
     };
 
-    // Oreo LED modes
+    // Oreo LED Themes
     enum Oreo_LED_Theme {
         OreoLED_Disabled        = 0,
         OreoLED_Aircraft        = 1,

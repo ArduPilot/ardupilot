@@ -1,6 +1,8 @@
-#include "AC_CustomControl_Empty.h"
+#include "AC_CustomControl_config.h"
 
-#if CUSTOMCONTROL_EMPTY_ENABLED
+#if AP_CUSTOMCONTROL_EMPTY_ENABLED
+
+#include "AC_CustomControl_Empty.h"
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -8,19 +10,19 @@
 const AP_Param::GroupInfo AC_CustomControl_Empty::var_info[] = {
     // @Param: PARAM1
     // @DisplayName: Empty param1
-    // @Description: Dumy parameter for empty custom controller backend
+    // @Description: Dummy parameter for empty custom controller backend
     // @User: Advanced
     AP_GROUPINFO("PARAM1", 1, AC_CustomControl_Empty, param1, 0.0f),
 
     // @Param: PARAM2
     // @DisplayName: Empty param2
-    // @Description: Dumy parameter for empty custom controller backend
+    // @Description: Dummy parameter for empty custom controller backend
     // @User: Advanced
     AP_GROUPINFO("PARAM2", 2, AC_CustomControl_Empty, param2, 0.0f),
 
     // @Param: PARAM3
     // @DisplayName: Empty param3
-    // @Description: Dumy parameter for empty custom controller backend
+    // @Description: Dummy parameter for empty custom controller backend
     // @User: Advanced
     AP_GROUPINFO("PARAM3", 3, AC_CustomControl_Empty, param3, 0.0f),
 
@@ -28,7 +30,7 @@ const AP_Param::GroupInfo AC_CustomControl_Empty::var_info[] = {
 };
 
 // initialize in the constructor
-AC_CustomControl_Empty::AC_CustomControl_Empty(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt) :
+AC_CustomControl_Empty::AC_CustomControl_Empty(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt) :
     AC_CustomControl_Backend(frontend, ahrs, att_control, motors, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -54,10 +56,10 @@ Vector3f AC_CustomControl_Empty::update(void)
             break;
     }
 
-    // arducopter main attitude controller already runned
+    // arducopter main attitude controller already ran
     // we don't need to do anything else
 
-    gcs().send_text(MAV_SEVERITY_INFO, "empty custom controller working");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "empty custom controller working");
 
     // return what arducopter main controller outputted
     return Vector3f(_motors->get_roll(), _motors->get_pitch(), _motors->get_yaw());
@@ -69,4 +71,4 @@ void AC_CustomControl_Empty::reset(void)
 {
 }
 
-#endif
+#endif  // AP_CUSTOMCONTROL_EMPTY_ENABLED

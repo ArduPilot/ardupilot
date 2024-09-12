@@ -3,8 +3,12 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_GPS/AP_GPS_config.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include "AP_Arming_config.h"
+#include "AP_InertialSensor/AP_InertialSensor_config.h"
+#include "AP_Proximity/AP_Proximity_config.h"
 
 class AP_Arming {
 public:
@@ -38,6 +42,7 @@ public:
         ARMING_CHECK_AUX_AUTH    = (1U << 17),
         ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
+        ARMING_CHECK_OSD         = (1U << 20),
     };
 
     enum class Method {
@@ -75,6 +80,8 @@ public:
         TOYMODELANDFORCE = 31, // only disarm uses this...
         LANDING = 32, // only disarm uses this...
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
+        BLACKBOX = 34,
+        DDS = 35,
         UNKNOWN = 100,
     };
 
@@ -89,6 +96,7 @@ public:
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required() const;
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
+    virtual bool arm_force(AP_Arming::Method method) { return arm(method, false); }
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
@@ -135,12 +143,18 @@ public:
     
     // enum for ARMING_OPTIONS parameter
     enum class Option : int32_t {
-        DISABLE_PREARM_DISPLAY   = (1U << 0),
+        DISABLE_PREARM_DISPLAY             = (1U << 0),
+        DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
     }
 
+    void send_arm_disarm_statustext(const char *string) const;
+
+    static bool method_is_GCS(Method method) {
+        return (method == Method::MAVLINK || method == Method::DDS);
+    }
 protected:
 
     // Parameters
@@ -150,6 +164,7 @@ protected:
     AP_Int8                 _rudder_arming;
     AP_Int32                _required_mission_items;
     AP_Int32                _arming_options;
+    AP_Int16                magfield_error_threshold;
 
     // internal members
     bool                    armed;
@@ -162,7 +177,9 @@ protected:
 
     bool logging_checks(bool report);
 
+#if AP_INERTIALSENSOR_ENABLED
     virtual bool ins_checks(bool report);
+#endif
 
     bool compass_checks(bool report);
 
@@ -216,15 +233,19 @@ protected:
     
     bool estop_checks(bool display_failure);
 
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    bool crashdump_checks(bool report);
+#endif
+
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
 
     bool fettec_checks(bool display_failure) const;
 
-    bool kdecan_checks(bool display_failure) const;
-
+#if HAL_PROXIMITY_ENABLED
     virtual bool proximity_checks(bool report) const;
+#endif
 
     bool servo_checks(bool report) const;
     bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
@@ -248,8 +269,10 @@ private:
 
     static AP_Arming *_singleton;
 
+#if AP_INERTIALSENSOR_ENABLED
     bool ins_accels_consistent(const class AP_InertialSensor &ins);
     bool ins_gyros_consistent(const class AP_InertialSensor &ins);
+#endif
 
     // check if we should keep logging after disarming
     void check_forced_logging(const AP_Arming::Method method);
@@ -288,6 +311,23 @@ private:
 
     uint32_t last_prearm_display_ms;  // last time we send statustexts for prearm failures
     bool running_arming_checks;  // true if the arming checks currently being performed are being done because the vehicle is trying to arm the vehicle
+    
+    bool last_prearm_checks_result; // result of last prearm check
+    bool report_immediately; // set to true when check goes from true to false, to trigger immediate report
+
+    void update_arm_gpio();
+
+#if !AP_GPS_BLENDED_ENABLED
+    bool blending_auto_switch_checks(bool report);
+#endif
+
+#if AP_ARMING_CRASHDUMP_ACK_ENABLED
+    struct CrashDump {
+        void check_reset();
+        AP_Int8  acked;
+    } crashdump_ack;
+#endif  // AP_ARMING_CRASHDUMP_ACK_ENABLED
+
 };
 
 namespace AP {

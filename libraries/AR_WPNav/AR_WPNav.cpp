@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AR_WPNav.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
@@ -425,7 +426,7 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
         float track_velocity = curr_vel_NED.xy().dot(track_direction);
         // set time scaler to be consistent with the achievable vehicle speed with a 5% buffer for short term variation.
         const float time_scaler_dt_max = _overspeed_enabled ? AR_WPNAV_OVERSPEED_RATIO_MAX : 1.0f;
-        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_p().kP() * track_error) / curr_target_vel.length(), 0.1f, time_scaler_dt_max);
+        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_p().kP() * track_error) / curr_target_vel.length(), 0.0f, time_scaler_dt_max);
     }
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
     float track_scaler_tc = 1.0f;
@@ -505,6 +506,10 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
 {
     _cross_track_error = calc_crosstrack_error(current_loc);
 
+    // update position controller
+    _pos_control.set_reversed(_reversed);
+    _pos_control.update(dt);
+
     // handle pivot turns
     if (_pivot.active()) {
         // decelerate to zero
@@ -512,14 +517,11 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
         _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
         _desired_turn_rate_rads = is_zero(_desired_speed_limited) ? _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt) : 0;
         _desired_lat_accel = 0.0f;
-        return;
+    } else {
+        _desired_speed_limited = _pos_control.get_desired_speed();
+        _desired_turn_rate_rads = _pos_control.get_desired_turn_rate_rads();
+        _desired_lat_accel = _pos_control.get_desired_lat_accel();
     }
-
-    _pos_control.set_reversed(_reversed);
-    _pos_control.update(dt);
-    _desired_speed_limited = _pos_control.get_desired_speed();
-    _desired_turn_rate_rads = _pos_control.get_desired_turn_rate_rads();
-    _desired_lat_accel = _pos_control.get_desired_lat_accel();
 }
 
 // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)

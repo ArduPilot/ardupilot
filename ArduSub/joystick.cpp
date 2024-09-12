@@ -1,4 +1,5 @@
 #include "Sub.h"
+#include "mode.h"
 
 // Functions that will handle joystick/gamepad input
 // ----------------------------------------------------------------------------
@@ -16,7 +17,7 @@ int16_t xTrim = 0;
 int16_t yTrim = 0;
 int16_t video_switch = 1100;
 int16_t x_last, y_last, z_last;
-uint16_t buttons_prev;
+uint32_t buttons_prev;
 
 // Servo control output channels
 // TODO: Allow selecting output channels
@@ -34,7 +35,7 @@ void Sub::init_joystick()
     lights1 = RC_Channels::rc_channel(8)->get_radio_min();
     lights2 = RC_Channels::rc_channel(9)->get_radio_min();
 
-    set_mode(MANUAL, ModeReason::RC_COMMAND); // Initialize flight mode
+    set_mode(Mode::Number::MANUAL, ModeReason::RC_COMMAND); // Initialize flight mode
 
     if (g.numGainSettings < 1) {
         g.numGainSettings.set_and_save(1);
@@ -50,7 +51,15 @@ void Sub::init_joystick()
     gain = constrain_float(gain, 0.1, 1.0);
 }
 
-void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons)
+void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t z, int16_t r, uint16_t buttons, uint16_t buttons2, uint8_t enabled_extensions,
+            int16_t s,
+            int16_t t,
+            int16_t aux1,
+            int16_t aux2,
+            int16_t aux3,
+            int16_t aux4,
+            int16_t aux5,
+            int16_t aux6)
 {
 
     float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
@@ -64,17 +73,18 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     cam_tilt = 1500;
     cam_pan = 1500;
 
+    uint32_t all_buttons = buttons | (buttons2 << 16);
     // Detect if any shift button is pressed
-    for (uint8_t i = 0 ; i < 16 ; i++) {
-        if ((buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
+    for (uint8_t i = 0 ; i < 32 ; i++) {
+        if ((all_buttons & (1 << i)) && get_button(i)->function() == JSButton::button_function_t::k_shift) {
             shift = true;
         }
     }
 
     // Act if button is pressed
     // Only act upon pressing button and ignore holding. This provides compatibility with Taranis as joystick.
-    for (uint8_t i = 0 ; i < 16 ; i++) {
-        if ((buttons & (1 << i))) {
+    for (uint8_t i = 0 ; i < 32 ; i++) {
+        if ((all_buttons & (1 << i))) {
             handle_jsbutton_press(i,shift,(buttons_prev & (1 << i)));
             // buttonDebounce = tnow_ms;
         } else if (buttons_prev & (1 << i)) {
@@ -82,7 +92,7 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         }
     }
 
-    buttons_prev = buttons;
+    buttons_prev = all_buttons;
 
     // attitude mode:
     if (roll_pitch_flag == 1) {
@@ -109,8 +119,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    RC_Channels::set_override(0, constrain_int16(pitchTrim + rpyCenter,1100,1900), tnow); // pitch
-    RC_Channels::set_override(1, constrain_int16(rollTrim  + rpyCenter,1100,1900), tnow); // roll
+    RC_Channels::set_override(0, constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow); // pitch
+    RC_Channels::set_override(1, constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow); // roll
 
     RC_Channels::set_override(2, constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow); // throttle
     RC_Channels::set_override(3, constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);                 // yaw
@@ -157,29 +167,34 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mode_manual:
-        set_mode(MANUAL, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::MANUAL, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_stabilize:
-        set_mode(STABILIZE, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::STABILIZE, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_depth_hold:
-        set_mode(ALT_HOLD, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::ALT_HOLD, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_auto:
-        set_mode(AUTO, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::AUTO, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_guided:
-        set_mode(GUIDED, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::GUIDED, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_circle:
-        set_mode(CIRCLE, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::CIRCLE, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_acro:
-        set_mode(ACRO, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::ACRO, ModeReason::RC_COMMAND);
         break;
     case JSButton::button_function_t::k_mode_poshold:
-        set_mode(POSHOLD, ModeReason::RC_COMMAND);
+        set_mode(Mode::Number::POSHOLD, ModeReason::RC_COMMAND);
         break;
+#if AP_RANGEFINDER_ENABLED
+    case JSButton::button_function_t::k_mode_surftrak:
+        set_mode(Mode::Number::SURFTRAK, ModeReason::RC_COMMAND);
+        break;
+#endif
 
     case JSButton::button_function_t::k_mount_center:
 #if HAL_MOUNT_ENABLED
@@ -359,6 +374,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             controls_reset_since_input_hold = !input_hold_engaged;
         }
         break;
+#if AP_RELAY_ENABLED
     case JSButton::button_function_t::k_relay_1_on:
         relay.on(0);
         break;
@@ -423,10 +439,12 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             relay.on(3);
         }
         break;
+#endif
 
     ////////////////////////////////////////////////
     // Servo functions
     // TODO: initialize
+#if AP_SERVORELAYEVENTS_ENABLED
     case JSButton::button_function_t::k_servo_1_inc:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
@@ -507,12 +525,32 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_min()); // 1-indexed
     }
         break;
+    case JSButton::button_function_t::k_servo_2_min_toggle:
+        if(!held) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+            if(chan->get_output_pwm() != chan->get_output_min()) {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_min()); // 1-indexed
+            } else {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
+            }
+        }
+        break;
     case JSButton::button_function_t::k_servo_2_max:
     case JSButton::button_function_t::k_servo_2_max_momentary:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_max()); // 1-indexed
     }
+        break;
+    case JSButton::button_function_t::k_servo_2_max_toggle:
+        if(!held) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_2 - 1); // 0-indexed
+            if(chan->get_output_pwm() != chan->get_output_max()) {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_output_max()); // 1-indexed
+            } else {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_2, chan->get_trim()); // 1-indexed
+            }
+        }
         break;
     case JSButton::button_function_t::k_servo_2_center:
     {
@@ -544,6 +582,16 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_min()); // 1-indexed
     }
         break;
+    case JSButton::button_function_t::k_servo_3_min_toggle:
+        if(!held) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+            if(chan->get_output_pwm() != chan->get_output_min()) {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_min()); // 1-indexed
+            } else {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
+            }
+        }
+        break;
     case JSButton::button_function_t::k_servo_3_max:
     case JSButton::button_function_t::k_servo_3_max_momentary:
     {
@@ -551,12 +599,23 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_max()); // 1-indexed
     }
         break;
+    case JSButton::button_function_t::k_servo_3_max_toggle:
+        if(!held) {
+            SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
+            if(chan->get_output_pwm() != chan->get_output_max()) {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_output_max()); // 1-indexed
+            } else {
+                ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
+            }
+        }
+        break;
     case JSButton::button_function_t::k_servo_3_center:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_3 - 1); // 0-indexed
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
     }
         break;
+#endif  // AP_SERVORELAYEVENTS_ENABLED
 
     case JSButton::button_function_t::k_roll_pitch_toggle:
         if (!held) {
@@ -588,6 +647,21 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_custom_6:
         // Not implemented
         break;
+
+#if AP_SCRIPTING_ENABLED
+    case JSButton::button_function_t::k_script_1:
+        sub.script_buttons[0].press();
+        break;
+    case JSButton::button_function_t::k_script_2:
+        sub.script_buttons[1].press();
+        break;
+    case JSButton::button_function_t::k_script_3:
+        sub.script_buttons[2].press();
+        break;
+    case JSButton::button_function_t::k_script_4:
+        sub.script_buttons[3].press();
+        break;
+#endif // AP_SCRIPTING_ENABLED
     }
 }
 
@@ -595,6 +669,7 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
 
     // Act based on the function assigned to this button
     switch (get_button(_button)->function(shift)) {
+#if AP_RELAY_ENABLED
     case JSButton::button_function_t::k_relay_1_momentary:
         relay.off(0);
         break;
@@ -607,6 +682,8 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
     case JSButton::button_function_t::k_relay_4_momentary:
         relay.off(3);
         break;
+#endif
+#if AP_SERVORELAYEVENTS_ENABLED
     case JSButton::button_function_t::k_servo_1_min_momentary:
     case JSButton::button_function_t::k_servo_1_max_momentary:
     {
@@ -628,6 +705,22 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
     }
         break;
+#endif
+
+#if AP_SCRIPTING_ENABLED
+    case JSButton::button_function_t::k_script_1:
+        sub.script_buttons[0].release();
+        break;
+    case JSButton::button_function_t::k_script_2:
+        sub.script_buttons[1].release();
+        break;
+    case JSButton::button_function_t::k_script_3:
+        sub.script_buttons[2].release();
+        break;
+    case JSButton::button_function_t::k_script_4:
+        sub.script_buttons[3].release();
+        break;
+#endif // AP_SCRIPTING_ENABLED
     }
 }
 
@@ -667,6 +760,40 @@ JSButton* Sub::get_button(uint8_t index)
         return &g.jbtn_14;
     case 15:
         return &g.jbtn_15;
+
+    // add 16 more cases for 32 buttons with MANUAL_CONTROL extensions
+    case 16:
+        return &g.jbtn_16;
+    case 17:
+        return &g.jbtn_17;
+    case 18:
+        return &g.jbtn_18;
+    case 19:
+        return &g.jbtn_19;
+    case 20:
+        return &g.jbtn_20;
+    case 21:
+        return &g.jbtn_21;
+    case 22:
+        return &g.jbtn_22;
+    case 23:
+        return &g.jbtn_23;
+    case 24:
+        return &g.jbtn_24;
+    case 25:
+        return &g.jbtn_25;
+    case 26:
+        return &g.jbtn_26;
+    case 27:
+        return &g.jbtn_27;
+    case 28:
+        return &g.jbtn_28;
+    case 29:
+        return &g.jbtn_29;
+    case 30:
+        return &g.jbtn_30;
+    case 31:
+        return &g.jbtn_31;
     default:
         return &g.jbtn_0;
     }
@@ -721,3 +848,15 @@ void Sub::clear_input_hold()
     zTrim = 0;
     input_hold_engaged = false;
 }
+
+#if AP_SCRIPTING_ENABLED
+bool Sub::is_button_pressed(uint8_t index)
+{
+    return script_buttons[index - 1].is_pressed();
+}
+
+uint8_t Sub::get_and_clear_button_count(uint8_t index)
+{
+    return script_buttons[index - 1].get_and_clear_count();
+}
+#endif // AP_SCRIPTING_ENABLED

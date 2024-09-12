@@ -3,12 +3,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_AIRSPEED_SITL_ENABLED
-#define AP_AIRSPEED_SITL_ENABLED AP_SIM_ENABLED
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_SITL_ENABLED
 

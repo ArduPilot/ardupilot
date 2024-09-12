@@ -8,7 +8,7 @@ public:
 
     virtual void reset() = 0;
     virtual void process() = 0;
-    virtual bool finished() { return _finished; }
+    bool finished() const { return _finished; }
 
     virtual void set_logger_backend(class AP_Logger_Backend *backend) {
         _logger_backend = backend;
@@ -110,7 +110,7 @@ public:
         {
         }
 
-    virtual void set_logger_backend(class AP_Logger_Backend *backend) override {
+    void set_logger_backend(class AP_Logger_Backend *backend) override final {
         LoggerMessageWriter::set_logger_backend(backend);
         _writesysinfo.set_logger_backend(backend);
 #if AP_MISSION_ENABLED
@@ -124,7 +124,7 @@ public:
 #endif
     }
 
-    bool out_of_time_for_writing_messages() const;
+    bool out_of_time_for_writing_messages_df() const;
 
     void reset() override;
     void process() override;

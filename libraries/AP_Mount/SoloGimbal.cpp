@@ -245,7 +245,7 @@ void SoloGimbal::update_fast() {
         // single gyro mode - one of the first two gyros are unhealthy or don't exist
         // just read primary gyro
         Vector3f dAng;
-        readVehicleDeltaAngle(ins.get_primary_gyro(), dAng);
+        readVehicleDeltaAngle(ins.get_first_usable_gyro(), dAng);
         _vehicle_delta_angles += dAng;
     }
 }
@@ -400,6 +400,7 @@ void SoloGimbal::update_target(const Vector3f &newTarget)
     _att_target_euler_rad.x = constrain_float(_att_target_euler_rad.x,radians(-30),radians(30));
 }
 
+#if HAL_LOGGING_ENABLED
 void SoloGimbal::write_logs()
 {
     AP_Logger &logger = AP::logger();
@@ -481,6 +482,7 @@ void SoloGimbal::write_logs()
     _log_del_ang.zero();
     _log_del_vel.zero();
 }
+#endif
 
 bool SoloGimbal::joints_near_limits() const
 {

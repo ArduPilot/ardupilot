@@ -98,6 +98,7 @@ define HAL_SPI_CHECK_CLOCK_FREQ
 PC7 MPU_CS CS
 
 # status LEDs
+define AP_NOTIFY_GPIO_LED_3_ENABLED 1
 define HAL_LED_ON 0
 PB0 LED OUTPUT HIGH GPIO(0) #Green
 PE1 LED1 OUTPUT HIGH GPIO(2) #Yellow
@@ -105,8 +106,6 @@ PB14 LED2 OUTPUT HIGH GPIO(1) #Red
 define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
-define HAL_GPIO_LED_OFF 1
-define HAL_GPIO_LED_ON 0
 
 # I2C
 I2C_ORDER I2C2
@@ -116,9 +115,6 @@ PB11 I2C2_SDA I2C2
 
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # barometers
 BARO BMP388 I2C:0:0x77
@@ -145,3 +141,6 @@ IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
 
 # compass as part of ICM20948 on newer cubes
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0

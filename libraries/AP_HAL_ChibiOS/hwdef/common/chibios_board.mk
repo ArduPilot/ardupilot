@@ -5,7 +5,11 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -g -fomit-frame-pointer -falign-functions=16
+  USE_OPT = -fomit-frame-pointer -falign-functions=16
+endif
+
+ifeq ($(ENABLE_DEBUG_SYMBOLS), yes)
+  USE_OPT += -g3
 endif
 
 # C specific options here (added to USE_OPT).
@@ -259,6 +263,10 @@ endif
 
 # Define ASM defines here
 UADEFS =
+
+ifeq ($(COPY_VECTORS_TO_RAM),yes)
+ UADEFS += -DCRT0_INIT_VECTORS=1
+endif
 
 # List all user directories here
 UINCDIR =

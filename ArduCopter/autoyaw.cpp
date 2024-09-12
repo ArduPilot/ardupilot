@@ -8,13 +8,14 @@ float Mode::AutoYaw::roi_yaw() const
     return get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
 }
 
+// returns a yaw in degrees, direction of vehicle travel:
 float Mode::AutoYaw::look_ahead_yaw()
 {
     const Vector3f& vel = copter.inertial_nav.get_velocity_neu_cms();
     const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
     if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
-        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x))*100.0f;
+        _look_ahead_yaw = degrees(atan2f(vel.y,vel.x));
     }
     return _look_ahead_yaw;
 }
@@ -80,7 +81,7 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
 
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        _look_ahead_yaw = copter.ahrs.yaw_sensor;
+        _look_ahead_yaw = copter.ahrs.yaw_sensor * 0.01;  // cdeg -> deg
         break;
 
     case Mode::RESETTOARMEDYAW:
@@ -110,13 +111,16 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
 
     // calculate final angle as relative to vehicle heading or absolute
     if (relative_angle) {
+        if (_mode == Mode::HOLD) {
+            _yaw_angle_cd = copter.ahrs.yaw_sensor;
+        }
         _fixed_yaw_offset_cd = angle_deg * 100.0 * (direction >= 0 ? 1.0 : -1.0);
     } else {
         // absolute angle
         _fixed_yaw_offset_cd = wrap_180_cd(angle_deg * 100.0 - _yaw_angle_cd);
-        if ( direction < 0 && is_positive(_fixed_yaw_offset_cd) ) {
+        if (direction < 0 && is_positive(_fixed_yaw_offset_cd)) {
             _fixed_yaw_offset_cd -= 36000.0;
-        } else if ( direction > 0 && is_negative(_fixed_yaw_offset_cd) ) {
+        } else if (direction > 0 && is_negative(_fixed_yaw_offset_cd)) {
             _fixed_yaw_offset_cd += 36000.0;
         }
     }
@@ -154,9 +158,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         auto_yaw.set_mode_to_default(false);
 #if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
-        if (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-            copter.camera_mount.set_mode_to_default();
-        }
+        copter.camera_mount.clear_roi_target();
 #endif  // HAL_MOUNT_ENABLED
     } else {
 #if HAL_MOUNT_ENABLED
@@ -232,7 +234,7 @@ float Mode::AutoYaw::yaw_cd()
 
     case Mode::LOOK_AHEAD:
         // Commanded Yaw to automatically look ahead.
-        _yaw_angle_cd = look_ahead_yaw();
+        _yaw_angle_cd = look_ahead_yaw() * 100.0;
         break;
 
     case Mode::RESETTOARMEDYAW:
@@ -321,7 +323,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
         auto_yaw.set_mode(AutoYaw::Mode::HOLD);
     }
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
     update_weathervane(_pilot_yaw_rate_cds);
 #endif
 
@@ -352,7 +354,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
 
 // handle the interface to the weathervane library
 // pilot_yaw can be an angle or a rate or rcin from yaw channel. It just needs to represent a pilot's request to yaw the vehicle to enable pilot overrides.
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
 void Mode::AutoYaw::update_weathervane(const int16_t pilot_yaw_cds)
 {
     if (!copter.flightmode->allows_weathervaning()) {
@@ -380,4 +382,4 @@ void Mode::AutoYaw::update_weathervane(const int16_t pilot_yaw_cds)
         }
     }
 }
-#endif // WEATHERVANE_ENABLED == ENABLED
+#endif // WEATHERVANE_ENABLED

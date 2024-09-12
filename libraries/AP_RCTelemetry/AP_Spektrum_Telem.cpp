@@ -33,9 +33,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#ifdef HAVE_AP_BLHELI_SUPPORT
-#include <AP_BLheli/AP_BLHeli.h>
-#endif
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <math.h>
 
 #if HAL_SPEKTRUM_TELEM_ENABLED
@@ -296,12 +294,16 @@ void AP_Spektrum_Telem::calc_qos()
 // prepare rpm data - B/E mandatory frame that must be sent periodically
 void AP_Spektrum_Telem::calc_rpm()
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
+#endif
 
     _telem.rpm.identifier = TELE_DEVICE_RPM;
     _telem.rpm.sID = 0;
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
+#if AP_BATTERY_ENABLED
     _telem.rpm.volts = htobe16(((uint16_t)roundf(_battery.voltage(0) * 100.0f)));
+#endif
     _telem.rpm.temperature = htobe16(int16_t(roundf(32.0f + AP::baro().get_temperature(0) * 9.0f / 5.0f)));
 #if AP_RPM_ENABLED
     const AP_RPM *rpm = AP::rpm();
@@ -328,10 +330,12 @@ void AP_Spektrum_Telem::send_msg_chunk(const MessageChunk& chunk)
 // prepare battery data - B/E but not supported by Spektrum
 void AP_Spektrum_Telem::calc_batt_volts(uint8_t instance)
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
 
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     _telem.hv.volts = htobe16(uint16_t(roundf(_battery.voltage(instance) * 100.0f)));
+#endif
     _telem.hv.identifier = TELE_DEVICE_VOLTAGE;
     _telem.hv.sID = 0;
     _telem_pending = true;
@@ -340,6 +344,7 @@ void AP_Spektrum_Telem::calc_batt_volts(uint8_t instance)
 // prepare battery data - B/E but not supported by Spektrum
 void AP_Spektrum_Telem::calc_batt_amps(uint8_t instance)
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
 
     float current;
@@ -349,6 +354,7 @@ void AP_Spektrum_Telem::calc_batt_amps(uint8_t instance)
 
     // Range: +/- 150A     Resolution: 300A / 2048 = 0.196791 A/count
     _telem.amps.current = htobe16(int16_t(roundf(current * 2048.0f / 300.0f)));
+#endif
     _telem.amps.identifier = TELE_DEVICE_AMPS;
     _telem.amps.sID = 0;
     _telem_pending = true;
@@ -357,11 +363,14 @@ void AP_Spektrum_Telem::calc_batt_amps(uint8_t instance)
 // prepare battery data - L/E
 void AP_Spektrum_Telem::calc_batt_mah()
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &_battery = AP::battery();
+#endif
 
     _telem.fpMAH.identifier = TELE_DEVICE_FP_MAH;
     _telem.fpMAH.sID = 0;
 
+#if AP_BATTERY_ENABLED
     float current;
     if (!_battery.current_amps(current, 0)) {
         current = 0;
@@ -396,6 +405,10 @@ void AP_Spektrum_Telem::calc_batt_mah()
     } else {
         _telem.fpMAH.temp_B = 0x7FFF;
     }
+#else
+        _telem.fpMAH.temp_A = 0x7FFF;
+        _telem.fpMAH.temp_B = 0x7FFF;
+#endif
 
     _telem_pending = true;
 }
@@ -544,7 +557,15 @@ void AP_Spektrum_Telem::calc_gps_status()
     _telem.gpsstat.speed = ((knots % 10000 / 1000) << 12) | ((knots % 1000 / 100) << 8) | ((knots % 100 / 10) << 4) | (knots % 10); // BCD, knots, format 3.1
     uint16_t ms;
     uint8_t h, m, s;
+#if AP_RTC_ENABLED
     AP::rtc().get_system_clock_utc(h, m, s, ms);                    // BCD, format HH:MM:SS.S, format 6.1
+    // FIXME: the above call can fail!
+#else
+    h = 0;
+    m = 0;
+    s = 0;
+    ms = 0;
+#endif
     _telem.gpsstat.UTC = ((((h / 10) << 4) | (h % 10)) << 20) | ((((m / 10) << 4) | (m % 10)) << 12) | ((((s / 10) << 4) | (s % 10)) << 4) | (ms / 100) ;
     uint8_t nsats =  AP::gps().num_sats();
     _telem.gpsstat.numSats = ((nsats / 10) << 4) | (nsats % 10);    // BCD, 0-99
@@ -556,25 +577,21 @@ void AP_Spektrum_Telem::calc_gps_status()
 // prepare ESC information - B/E
 void AP_Spektrum_Telem::calc_esc()
 {
-#ifdef HAVE_AP_BLHELI_SUPPORT
-    AP_BLHeli* blh = AP_BLHeli::get_singleton();
-
-    if (blh == nullptr) {
-        return;
-    }
-
-    AP_BLHeli::telem_data td;
-
-    if (!blh->get_telem_data(0, td)) {
-        return;
+#if HAL_WITH_ESC_TELEM
+    uint8_t esc = AP::esc_telem().get_max_rpm_esc();
+    const volatile AP_ESC_Telem_Backend::TelemetryData& td = AP::esc_telem().get_telem_data(esc); // ideally should rotate between ESCs
+    float rpm = 0.0f;
+    uint16_t rpmdata = 0xFFFFU;
+    if (AP::esc_telem().get_rpm(esc, rpm)) {
+        rpmdata = uint16_t(roundf(rpm));
     }
 
 	_telem.esc.identifier = TELE_DEVICE_ESC;	    // Source device = 0x20
 	_telem.esc.sID = 0;									// Secondary ID
-	_telem.esc.RPM = htobe16(uint16_t(roundf(blh->get_average_motor_frequency_hz() * 60)));	// Electrical RPM, 10RPM (0-655340 RPM)  0xFFFF --> "No data"
-	_telem.esc.voltsInput = htobe16(td.voltage);	    // Volts, 0.01v (0-655.34V)       0xFFFF --> "No data"
-	_telem.esc.tempFET = htobe16(td.temperature * 10);	// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
-	_telem.esc.currentMotor = htobe16(td.current);		// Current, 10mA (0-655.34A)      0xFFFF --> "No data"
+	_telem.esc.RPM = htobe16(rpmdata);	// Electrical RPM, 10RPM (0-655340 RPM)  0xFFFF --> "No data"
+	_telem.esc.voltsInput = htobe16(td.voltage * 100);	    // Volts, 0.01v (0-655.34V)       0xFFFF --> "No data"
+	_telem.esc.tempFET = htobe16(td.temperature_cdeg * 10);	// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
+	_telem.esc.currentMotor = htobe16(td.current * 100);		// Current, 10mA (0-655.34A)      0xFFFF --> "No data"
 	_telem.esc.tempBEC = 0xFFFF;						// Temperature, 0.1C (0-6553.4C)  0xFFFF --> "No data"
 	_telem.esc.currentBEC = 0xFF;						// BEC Current, 100mA (0-25.4A)   0xFF ----> "No data"
 	_telem.esc.voltsBEC = 0xFF;							// BEC Volts, 0.05V (0-12.70V)    0xFF ----> "No data"
@@ -607,7 +624,7 @@ bool AP_Spektrum_Telem::get_telem_data(uint8_t* data)
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_Spektrum_Telem object then try to allocate one
-        new AP_Spektrum_Telem();
+        NEW_NOTHROW AP_Spektrum_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init();

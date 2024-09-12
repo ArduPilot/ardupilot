@@ -81,6 +81,15 @@ public:
 #if AP_PROXIMITY_DRONECAN_ENABLED
         DroneCAN = 14,
 #endif
+#if AP_PROXIMITY_SCRIPTING_ENABLED
+        Scripting = 15,
+#endif
+#if AP_PROXIMITY_LD06_ENABLED
+        LD06 = 16,
+#endif
+#if AP_PROXIMITY_MR72_ENABLED
+        MR72 = 17,
+#endif
     };
 
     enum class Status {
@@ -106,6 +115,8 @@ public:
 
     // return sensor health
     Status get_instance_status(uint8_t instance) const;
+
+    // Returns status of first good sensor. If no good sensor found, returns status of last instance sensor 
     Status get_status() const;
 
     // prearm checks
@@ -173,12 +184,19 @@ public:
     struct Proximity_State {
         uint8_t instance;   // the instance number of this proximity sensor
         Status status;      // sensor status
+
+        const struct AP_Param::GroupInfo *var_info; // stores extra parameter information for the sensor (if it exists)
     };
+
+    static const struct AP_Param::GroupInfo *backend_var_info[PROXIMITY_MAX_INSTANCES];
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
     static AP_Proximity *get_singleton(void) { return _singleton; };
+
+    // return backend object for Lua scripting
+    AP_Proximity_Backend *get_backend(uint8_t id) const;
 
     // 3D boundary
     AP_Proximity_Boundary_3D boundary;

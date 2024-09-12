@@ -708,8 +708,10 @@ extern "C" {
  * @brief   Threads descriptor structure extension.
  * @details User fields added to the end of the @p thread_t structure.
  */
+#ifndef CH_CFG_THREAD_EXTRA_FIELDS
 #define CH_CFG_THREAD_EXTRA_FIELDS                                          \
   /* Add threads custom fields here.*/
+#endif
 
 /**
  * @brief   Threads initialization hook.

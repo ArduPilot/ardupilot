@@ -17,7 +17,7 @@
   Andrew Tridgell, September 2016
 
   Co author: Roman Kirchner, September 2016
-   - 2016.10.23: SRXL variant V1 sucessfully (Testbench and Pixhawk/MissionPlanner) tested with RX-9-DR M-LINK (SW v1.26)
+   - 2016.10.23: SRXL variant V1 successfully (Testbench and Pixhawk/MissionPlanner) tested with RX-9-DR M-LINK (SW v1.26)
  */
 
 #include "srxl.h"
@@ -49,7 +49,7 @@
 #define SRXL_HEADER_V1          0xA1U    /* Headerbyte for:  Mpx SRXLv1 or XBUS Mode B */
 #define SRXL_HEADER_V2          0xA2U    /* Headerbyte for:  Mpx SRXLv2  */
 #define SRXL_HEADER_V5          0xA5U    /* Headerbyte for:  Spk AR7700 etc. */
-#define SRXL_HEADER_NOT_IMPL    0xFFU    /* Headerbyte for non impemented srxl header*/
+#define SRXL_HEADER_NOT_IMPL    0xFFU    /* Headerbyte for non implemented srxl header*/
 
 
 

@@ -1,13 +1,11 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
-
-#ifndef AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
-#define AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_LightWareSerial : public AP_RangeFinder_Backend_Serial
 {
@@ -17,7 +15,7 @@ public:
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
-        return new AP_RangeFinder_LightWareSerial(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_LightWareSerial(_state, _params);
     }
 
 protected:
@@ -28,9 +26,8 @@ protected:
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
-    bool get_signal_quality_pct(uint8_t &quality_pct) const override {
-        quality_pct = no_signal ? 0 : 100;
-        return true;
+    int8_t get_signal_quality_pct() const override {
+        return no_signal ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
     }
 
 private:

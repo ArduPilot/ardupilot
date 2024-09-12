@@ -37,14 +37,13 @@ public:
     // calculate_armed_scalars - recalculates scalars that can change while armed
     void calculate_armed_scalars() override;
 
-    // has_flybar - returns true if we have a mechanical flybar
-    bool has_flybar() const  override { return AP_MOTORS_HELI_NOFLYBAR; }
-
-    // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const  override { return false; }
-
     // servo_test - move servos through full range of movement
     void servo_test() override;
+
+#if HAL_LOGGING_ENABLED
+    // heli motors logging - called at 10 Hz
+    void Log_Write(void) override;
+#endif
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -52,19 +51,16 @@ public:
 protected:
 
     // init_outputs
-    bool init_outputs () override;
+    void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
     void calculate_roll_pitch_collective_factors ();
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
-
-    // output_test_seq - spin a motor at the pwm value specified
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     const char* _get_frame_string() const override { return "HELI_QUAD"; }
 

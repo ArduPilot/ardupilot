@@ -24,12 +24,14 @@ The param SCR_VM_I_COUNT may need to be increased in some circumstances
 Written by Stephen Dade (stephen_dade@hotmail.com)
 ]]--
 
+---@diagnostic disable: cast-local-type
+
 local PARAM_TABLE_KEY = 10
 local PARAM_TABLE_PREFIX = "RCK_"
 
 local port = serial:find_serial(0)
 
-if not port or baud == 0 then
+if not port then
     gcs:send_text(0, "Rockblock: No Scripting Serial Port")
     return
 end
@@ -99,7 +101,8 @@ local function MAVLinkProcessor()
         COMMAND_LONG = 76,
         COMMAND_INT = 75,
         HIGH_LATENCY2 = 235,
-        MISSION_ITEM_INT = 73
+        MISSION_ITEM_INT = 73,
+        SET_MODE = 11
     }
 
     -- private fields
@@ -117,6 +120,7 @@ local function MAVLinkProcessor()
     _crc_extra[76] = 0x98
     _crc_extra[235] = 0xb3
     _crc_extra[73] = 0x26
+    _crc_extra[11] = 0x59
     
     local _messages = {}
     _messages[75] = { -- COMMAND_INT
@@ -149,7 +153,9 @@ local function MAVLinkProcessor()
         {"command", "<I2"}, {"target_system", "<B"}, {"target_component", "<B"},
         {"frame", "<B"}, {"current", "<B"}, {"autocontinue", "<B"}
     }
-
+    _messages[11] = { -- SET_MODE
+        { "custom_mode", "<I4" }, { "target_system", "<B" }, { "base_mode", "<B" },
+    }
     function self.getSeqID() return _txseqid end
 
     function self.generateCRC(buffer)
@@ -261,6 +267,8 @@ local function MAVLinkProcessor()
                     end
                     vehicle:set_target_location(loc)
                 end
+            elseif _mavresult.msgid == self.SET_MODE then
+                vehicle:set_mode(_mavresult.custom_mode)
             elseif _mavresult.msgid == self.COMMAND_LONG or _mavresult.msgid ==
                 self.COMMAND_INT then
                 if _mavresult.command == 400 then -- MAV_CMD_COMPONENT_ARM_DISARM
@@ -778,7 +786,7 @@ function HLSatcom()
 
         hl2.temperature_air = math.floor(baro:get_external_temperature())
         
-        if battery:num_instances() > 0 then
+        if battery:num_instances() > 0 and battery:capacity_remaining_pct(0) ~= nil then
             hl2.battery = battery:capacity_remaining_pct(0)
         else
             hl2.battery = 0

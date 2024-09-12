@@ -119,12 +119,10 @@ int32_t AP_Filesystem_ROMFS::lseek(int fd, int32_t offset, int seek_from)
 int AP_Filesystem_ROMFS::stat(const char *name, struct stat *stbuf)
 {
     uint32_t size;
-    const uint8_t *data = AP_ROMFS::find_decompress(name, size);
-    if (data == nullptr) {
+    if (!AP_ROMFS::find_size(name, size)) {
         errno = ENOENT;
         return -1;
     }
-    AP_ROMFS::free(data);
     memset(stbuf, 0, sizeof(*stbuf));
     stbuf->st_size = size;
     return 0;
@@ -159,6 +157,15 @@ void *AP_Filesystem_ROMFS::opendir(const char *pathname)
     if (!dir[idx].path) {
         return nullptr;
     }
+
+    // Take a sneak peek and reset
+    const char *name = AP_ROMFS::dir_list(dir[idx].path, dir[idx].ofs);
+    dir[idx].ofs = 0;
+    if (!name) {
+        // Directory does not exist
+        return nullptr;
+    }
+
     return (void*)&dir[idx];
 }
 
@@ -174,12 +181,31 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
         return nullptr;
     }
     const uint32_t plen = strlen(dir[idx].path);
-    if (strncmp(name, dir[idx].path, plen) != 0 || name[plen] != '/') {
-        return nullptr;
+    if (plen > 0) {
+        // Offset to get just file/directory name
+        name += plen + 1;
     }
-    name += plen + 1;
-    dir[idx].de.d_type = DT_REG;
+
+    // Copy full name
     strncpy(dir[idx].de.d_name, name, sizeof(dir[idx].de.d_name));
+
+    const char* slash = strchr(name, '/');
+    if (slash == nullptr) {
+        // File
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
+        dir[idx].de.d_type = DT_REG;
+#endif
+    } else {
+        // Directory
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
+        dir[idx].de.d_type = DT_DIR;
+#endif
+
+        // Add null termination after directory name
+        const size_t index = slash - name;
+        dir[idx].de.d_name[index] = 0;
+    }
+
     return &dir[idx].de;
 }
 
@@ -216,15 +242,17 @@ bool AP_Filesystem_ROMFS::set_mtime(const char *filename, const uint32_t mtime_s
 }
 
 /*
-  load a full file. Use delete to free the data
-  we override this in ROMFS to avoid taking twice the memory
+  Load a file's contents into memory. Returned object must be `delete`d to free
+  the data. The data is guaranteed to be null-terminated such that it can be
+  treated as a string. Overridden in ROMFS to avoid taking twice the memory.
 */
 FileData *AP_Filesystem_ROMFS::load_file(const char *filename)
 {
-    FileData *fd = new FileData(this);
+    FileData *fd = NEW_NOTHROW FileData(this);
     if (!fd) {
         return nullptr;
     }
+    // AP_ROMFS adds the guaranteed termination so we don't have to.
     fd->data = AP_ROMFS::find_decompress(filename, fd->length);
     if (fd->data == nullptr) {
         delete fd;

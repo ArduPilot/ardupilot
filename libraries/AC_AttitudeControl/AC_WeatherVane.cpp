@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable
-    // @Description: Enable weather vaning.  When active, the aircraft will automatically yaw into wind when in a VTOL position controlled mode. Pilot yaw commands overide the weathervaning action.
+    // @Description: Enable weather vaning.  When active, the aircraft will automatically yaw into wind when in a VTOL position controlled mode. Pilot yaw commands override the weathervaning action.
     // @Values: -1:Only use during takeoffs or landing see weathervane takeoff and land override parameters,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1, AC_WeatherVane, _direction, WVANE_PARAM_ENABLED, AP_PARAM_FLAG_ENABLE),
@@ -139,7 +139,7 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
     if (is_positive(_max_vel_xy) || is_positive(_max_vel_z)) {
         Vector3f vel_ned;
         if (!AP::ahrs().get_velocity_NED(vel_ned) || // need speed estimate
-                (is_positive(_max_vel_xy) && (vel_ned.xy().length_squared() > (_max_vel_xy*_max_vel_xy))) || // check xy speeed
+                (is_positive(_max_vel_xy) && (vel_ned.xy().length_squared() > (_max_vel_xy*_max_vel_xy))) || // check xy speed
                 (is_positive(_max_vel_z) && (fabsf(vel_ned.z) > _max_vel_z))) { // check z speed
             reset();
             return false;
@@ -219,7 +219,8 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
     }
 
     if (!active_msg_sent) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Weathervane Active: %s", dir_string);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Weathervane Active: %s", dir_string);
+        (void)dir_string;  // in case GCS is disabled
         active_msg_sent = true;
     }
 

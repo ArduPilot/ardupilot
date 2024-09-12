@@ -12,7 +12,7 @@ bool Copter::failsafe_option(FailsafeOption opt) const
 
 void Copter::failsafe_radio_on_event()
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
     // set desired action based on FS_THR_ENABLE parameter
     FailsafeAction desired_action;
@@ -83,7 +83,7 @@ void Copter::failsafe_radio_off_event()
 {
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
     gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
 }
 
@@ -98,7 +98,7 @@ void Copter::announce_failsafe(const char *type, const char *action_undertaken)
 
 void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
 
     FailsafeAction desired_action = (FailsafeAction)action;
 
@@ -162,7 +162,7 @@ void Copter::failsafe_gcs_check()
 // failsafe_gcs_on_event - actions to take when GCS contact is lost
 void Copter::failsafe_gcs_on_event(void)
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_OCCURRED);
     RC_Channels::clear_overrides();
 
     // convert the desired failsafe response to the FailsafeAction enum
@@ -186,6 +186,9 @@ void Copter::failsafe_gcs_on_event(void)
             break;
         case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
+            break;
+        case FS_GCS_ENABLED_BRAKE_OR_LAND:
+            desired_action = FailsafeAction::BRAKE_LAND;
             break;
         default: // if an invalid parameter value is set, the fallback is RTL
             desired_action = FailsafeAction::RTL;
@@ -233,7 +236,7 @@ void Copter::failsafe_gcs_on_event(void)
 void Copter::failsafe_gcs_off_event(void)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
 // executes terrain failsafe if data is missing for longer than a few seconds
@@ -248,7 +251,7 @@ void Copter::failsafe_terrain_check()
         if (trigger_event) {
             failsafe_terrain_on_event();
         } else {
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::ERROR_RESOLVED);
             failsafe.terrain = false;
         }
     }
@@ -279,11 +282,11 @@ void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
     gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
         arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
     } else if (flightmode->mode_number() == Mode::Number::RTL) {
         mode_rtl.restart_without_terrain();
 #endif
@@ -303,10 +306,10 @@ void Copter::gpsglitch_check()
     if (ap.gps_glitching != gps_glitching) {
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
-            AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
         } else {
-            AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");
         }
     }
@@ -358,7 +361,7 @@ void Copter::failsafe_deadreckon_check()
         if (failsafe.deadreckon && copter.flightmode->requires_GPS()) {
 
             // log error
-            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
 
             // immediately disarm while landed
             if (should_disarm_on_failsafe()) {
@@ -376,48 +379,53 @@ void Copter::failsafe_deadreckon_check()
 //  this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_RTL_or_land_with_pause(ModeReason reason)
 {
+#if MODE_RTL_ENABLED
     // attempt to switch to RTL, if this fails then switch to Land
-    if (!set_mode(Mode::Number::RTL, reason)) {
-        // set mode to land will trigger mode change notification to pilot
-        set_mode_land_with_pause(reason);
-    } else {
-        // alert pilot to mode change
+    if (set_mode(Mode::Number::RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
+        return;
     }
+#endif
+    // set mode to land will trigger mode change notification to pilot
+    set_mode_land_with_pause(reason);
 }
 
 // set_mode_SmartRTL_or_land_with_pause - sets mode to SMART_RTL if possible or LAND with 4 second delay before descent starts
 // this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_SmartRTL_or_land_with_pause(ModeReason reason)
 {
+#if MODE_SMARTRTL_ENABLED
     // attempt to switch to SMART_RTL, if this failed then switch to Land
-    if (!set_mode(Mode::Number::SMART_RTL, reason)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
-        set_mode_land_with_pause(reason);
-    } else {
+    if (set_mode(Mode::Number::SMART_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
+        return;
     }
+#endif
+    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
+    set_mode_land_with_pause(reason);
 }
 
 // set_mode_SmartRTL_or_RTL - sets mode to SMART_RTL if possible or RTL if possible or LAND with 4 second delay before descent starts
 // this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
 {
+#if MODE_SMARTRTL_ENABLED
     // attempt to switch to SmartRTL, if this failed then attempt to RTL
     // if that fails, then land
-    if (!set_mode(Mode::Number::SMART_RTL, reason)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
-        set_mode_RTL_or_land_with_pause(reason);
-    } else {
+    if (set_mode(Mode::Number::SMART_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
+        return;
     }
+#endif
+    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
+    set_mode_RTL_or_land_with_pause(reason);
 }
 
 // Sets mode to Auto and jumps to DO_LAND_START, as set with AUTO_RTL param
 // This can come from failsafe or RC option
 void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
 {
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     if (set_mode(Mode::Number::AUTO_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
         return;
@@ -432,7 +440,7 @@ void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
 // This can come from failsafe or RC option
 void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
 {
-#if MODE_BRAKE_ENABLED == ENABLED
+#if MODE_BRAKE_ENABLED
     if (set_mode(Mode::Number::BRAKE, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
         return;
@@ -484,7 +492,7 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
             set_mode_SmartRTL_or_land_with_pause(reason);
             break;
         case FailsafeAction::TERMINATE: {
-#if ADVANCED_FAILSAFE == ENABLED
+#if ADVANCED_FAILSAFE
             g2.afs.gcs_terminate(true, "Failsafe");
 #else
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
@@ -501,7 +509,7 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
 
 #if AP_GRIPPER_ENABLED
     if (failsafe_option(FailsafeOption::RELEASE_GRIPPER)) {
-        copter.g2.gripper.release();
+        gripper.release();
     }
 #endif
 }

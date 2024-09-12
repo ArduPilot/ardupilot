@@ -17,7 +17,7 @@ public:
         RelativeToCustomBase        = 1,
     };
 
-    AP_Int8 type;            // an option from MovingBaseType
+    AP_Enum<Type> type;      // an option from MovingBaseType
     AP_Vector3f base_offset; // base position offset from the selected GPS receiver
 
 };

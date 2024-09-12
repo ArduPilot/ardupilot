@@ -47,7 +47,14 @@ public:
 
     // enum for OPTIONS parameter
     enum class SourceOptions {
-        FUSE_ALL_VELOCITIES = (1 << 0)  // fuse all velocities configured in source sets
+        FUSE_ALL_VELOCITIES = (1 << 0),                 // fuse all velocities configured in source sets
+        ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW = (1 << 1)  // align position of inactive sources to ahrs when using optical flow
+    };
+
+    enum class SourceSetSelection : uint8_t {
+        PRIMARY = 0,
+        SECONDARY = 1,
+        TERTIARY = 2,
     };
 
     // initialisation
@@ -55,10 +62,10 @@ public:
 
     // get current position source
     SourceXY getPosXYSource() const { return _source_set[active_source_set].posxy; }
-    SourceZ getPosZSource() const { return _source_set[active_source_set].posz; }
+    SourceZ getPosZSource() const;
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(uint8_t source_set_idx);
+    void setPosVelYawSourceSet(SourceSetSelection source_set_idx);
     uint8_t getPosVelYawSourceSet() const { return active_source_set; }
 
     // get/set velocity source
@@ -117,6 +124,9 @@ private:
         AP_Enum<SourceZ>   velz;   // velocity z source
         AP_Enum<SourceYaw> yaw;    // yaw source
     } _source_set[AP_NAKEKF_SOURCE_SET_MAX];
+
+    // helper to check if an option parameter bit has been set
+    bool option_is_set(SourceOptions option) const { return (_options.get() & int16_t(option)) != 0; }
 
     AP_Int16 _options;      // source options bitmask
 

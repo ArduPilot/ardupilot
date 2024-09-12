@@ -19,7 +19,10 @@
 #pragma once
 #include <stdint.h>
 
-#define RTCM3_MAX_PACKET_LEN 300
+// maximum packet length with MAVLink GPS_RTCM_DATA is 4*180 as we
+// handle up to 4 fragments
+#define RTCM3_MAX_PACKET_LEN 720
+
 class RTCM3_Parser {
 public:
     // process one byte, return true if packet found
@@ -40,7 +43,7 @@ public:
 private:
     const uint8_t RTCMv3_PREAMBLE = 0xD3;
 
-    // raw packet, we shouldn't need over 300 bytes for the MB configs we use
+    // raw packet, we shouldn't need over 600 bytes for the MB configs we use
     uint8_t pkt[RTCM3_MAX_PACKET_LEN];
 
     // number of bytes in pkt[]

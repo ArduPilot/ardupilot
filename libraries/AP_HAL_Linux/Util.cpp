@@ -10,7 +10,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Heat_Pwm.h"
-#include "ToneAlarm_Disco.h"
 #include "Util.h"
 
 using namespace Linux;
@@ -29,7 +28,7 @@ void Util::init(int argc, char * const *argv) {
 
 #ifdef HAL_UTILS_HEAT
 #if HAL_UTILS_HEAT == HAL_LINUX_HEAT_PWM
-    _heat = new Linux::HeatPwm(HAL_LINUX_HEAT_PWM_NUM,
+    _heat = NEW_NOTHROW Linux::HeatPwm(HAL_LINUX_HEAT_PWM_NUM,
                                HAL_LINUX_HEAT_KP,
                                HAL_LINUX_HEAT_KI,
                                HAL_LINUX_HEAT_PERIOD_NS);
@@ -37,7 +36,7 @@ void Util::init(int argc, char * const *argv) {
     #error Unrecognized Heat
 #endif // #if
 #else
-    _heat = new Linux::Heat();
+    _heat = NEW_NOTHROW Linux::Heat();
 #endif // #ifdef
 }
 
@@ -242,7 +241,7 @@ int Util::get_hw_arm32()
     return -ENOENT;
 }
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 void *Util::allocate_heap_memory(size_t size)
 {
     struct heap *new_heap = (struct heap*)malloc(sizeof(struct heap));

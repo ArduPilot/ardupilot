@@ -18,9 +18,9 @@ void AP_DAL_InertialSensor::start_frame()
     const log_RISH old_RISH = _RISH;
 
     _RISH.loop_rate_hz = ins.get_loop_rate_hz();
-    _RISH.primary_gyro = ins.get_primary_gyro();
+    _RISH.first_usable_gyro = ins.get_first_usable_gyro();
     _RISH.loop_delta_t = ins.get_loop_delta_t();
-    _RISH.primary_accel = ins.get_primary_accel();
+    _RISH.first_usable_accel = ins.get_first_usable_accel();
     _RISH.accel_count = ins.get_accel_count();
     _RISH.gyro_count = ins.get_gyro_count();
     WRITE_REPLAY_BLOCK_IFCHANGED(RISH, _RISH, old_RISH);
@@ -54,9 +54,9 @@ void AP_DAL_InertialSensor::start_frame()
 void AP_DAL_InertialSensor::update_filtered(uint8_t i)
 {
     if (!is_positive(alpha)) {
-        // we use a constant 20Hz for EKF filtered accel/gyro, making the EKF
+        // we use a constant 10Hz for EKF filtered accel/gyro, making the EKF
         // independent of the INS filter settings
-        const float cutoff_hz = 20.0;
+        const float cutoff_hz = 10.0;
         alpha = calc_lowpass_alpha_dt(get_loop_delta_t(), cutoff_hz);
     }
     if (is_positive(_RISI[i].delta_angle_dt)) {

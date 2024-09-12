@@ -1,0 +1,38 @@
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+APJ_BOARD_ID 6002
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+define CAN_APP_NODE_NAME "sw-nav-f405-bl"
+
+FLASH_RESERVE_START_KB 0
+FLASH_SIZE_KB 1024
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# jtag
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# status light
+PC4 LED_BOOTLOADER OUTPUT LOW GPIO(0)
+define HAL_LED_ON 1
+
+# strap LED/nav lights off
+PA3 LED_CTRL_VIS OUTPUT LOW GPIO(1) # vis light power
+PA1 LED_COLOR OUTPUT LOW GPIO(2)    # red/green
+PA2 LED_WHITE OUTPUT LOW GPIO(3)    # white
+PB0 LED_IR OUTPUT LOW GPIO(4)       # IR
+
+# can
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# disable serial
+define HAL_USE_SERIAL FALSE

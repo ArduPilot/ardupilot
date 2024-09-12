@@ -8,16 +8,17 @@
  */
 void Plane::set_control_channels(void)
 {
+    // the library gaurantees that these are non-nullptr:
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.
-        channel_roll = RC_Channels::rc_channel(rcmap.yaw()-1);
+        channel_roll = &rc().get_yaw_channel();
     } else {
-        channel_roll = RC_Channels::rc_channel(rcmap.roll()-1);
+        channel_roll = &rc().get_roll_channel();
     }
-    channel_pitch    = RC_Channels::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
-    channel_rudder   = RC_Channels::rc_channel(rcmap.yaw()-1);
+    channel_pitch    = &rc().get_pitch_channel();
+    channel_throttle = &rc().get_throttle_channel();
+    channel_rudder   = &rc().get_yaw_channel();
 
     // set rc channel ranges
     channel_roll->set_angle(SERVO_MAX);
@@ -196,8 +197,8 @@ void Plane::read_radio()
         && channel_throttle->get_control_in() > 50
         && stickmixing) {
         float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
-        if (ahrs.airspeed_sensor_enabled()) {
-            airspeed_nudge_cm = (aparm.airspeed_max * 100 - aparm.airspeed_cruise_cm) * nudge;
+        if (ahrs.using_airspeed_sensor()) {
+            airspeed_nudge_cm = (aparm.airspeed_max - aparm.airspeed_cruise) * nudge * 100;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }
@@ -210,8 +211,10 @@ void Plane::read_radio()
     quadplane.tailsitter.check_input();
 #endif
 
+#if AP_TUNING_ENABLED
     // check for transmitter tuning changes
     tuning.check_input(control_mode->mode_number());
+#endif
 }
 
 int16_t Plane::rudder_input(void)
@@ -436,11 +439,15 @@ float Plane::rudder_in_expo(bool use_dz) const
 
 bool Plane::throttle_at_zero(void) const
 {
-/* true if throttle stick is at idle position...if throttle trim has been moved
-   to center stick area in conjunction with sprung throttle, cannot use in_trim, must use rc_min
-*/
-    if (((!(flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM) && channel_throttle->in_trim_dz())) ||
-        (flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)&& channel_throttle->in_min_dz()))) {
+    /*
+      true if throttle stick is at idle position...if throttle trim has been moved
+       to center stick area in conjunction with sprung throttle, cannot use in_trim, must use rc_min
+    */
+    const bool center_trim = flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM);
+    if (center_trim && channel_throttle->in_trim_dz()) {
+        return true;
+    }
+    if (!center_trim && channel_throttle->in_min_dz()) {
         return true;
     }
     return false;

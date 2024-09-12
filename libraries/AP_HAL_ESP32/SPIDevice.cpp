@@ -169,7 +169,7 @@ void SPIDevice::acquire_bus(bool accuire)
 AP_HAL::Semaphore *SPIDevice::get_semaphore()
 {
 #ifdef SPIDEBUG
-    rintf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+    printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     return &bus.semaphore;
 }
@@ -220,7 +220,7 @@ SPIDeviceManager::get_device(const char *name)
 #endif
     if (busp == nullptr) {
         // create a new one
-        busp = new SPIBus(desc.bus);
+        busp = NEW_NOTHROW SPIBus(desc.bus);
         if (busp == nullptr) {
             return nullptr;
         }
@@ -233,6 +233,6 @@ SPIDeviceManager::get_device(const char *name)
     printf("%s:%d 444\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
+    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
 }
 

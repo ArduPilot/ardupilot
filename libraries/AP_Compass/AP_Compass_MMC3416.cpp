@@ -50,7 +50,7 @@ AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_MMC3416 *sensor = new AP_Compass_MMC3416(std::move(dev), force_external, rotation);
+    AP_Compass_MMC3416 *sensor = NEW_NOTHROW AP_Compass_MMC3416(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -99,7 +99,7 @@ bool AP_Compass_MMC3416::init()
     
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a MMC3416 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
+    printf("Found a MMC3416 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
     
     set_rotation(compass_instance, rotation);
 

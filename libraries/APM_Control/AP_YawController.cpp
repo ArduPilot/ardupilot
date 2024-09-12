@@ -145,6 +145,31 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _RATE_PDMX
+    // @DisplayName: Yaw axis rate controller PD sum maximum
+    // @Description: Yaw axis rate controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1
+    // @Increment: 0.01
+
+    // @Param: _RATE_D_FF
+    // @DisplayName: Yaw Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _RATE_NTF
+    // @DisplayName: Yaw Target notch filter index
+    // @Description: Yaw Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _RATE_NEF
+    // @DisplayName: Yaw Error notch filter index
+    // @Description: Yaw Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_YawController, AC_PID),
 
     AP_GROUPEND
@@ -181,7 +206,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     // Calculate yaw rate required to keep up with a constant height coordinated turn
     float aspeed;
     float rate_offset;
-    float bank_angle = AP::ahrs().roll;
+    float bank_angle = AP::ahrs().get_roll();
     // limit bank angle between +- 80 deg if right way up
     if (fabsf(bank_angle) < 1.5707964f)	{
         bank_angle = constrain_float(bank_angle,-1.3962634f,1.3962634f);
@@ -319,6 +344,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
+    pinfo.DFF *= deg_scale;
     pinfo.limit = limit_I;
 
     // fix the logged target and actual values to not have the scalers applied
@@ -326,7 +352,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.actual = degrees(rate_z);
 
     // sum components
-    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D + pinfo.DFF;
 
     // remember the last output to trigger the I limit
     _last_out = out;
@@ -365,7 +391,7 @@ void AP_YawController::autotune_start(void)
         gains.tau.set(0.5);
         gains.rmax_pos.set(90);
 
-        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_YAW, aparm, rate_pid);
+        autotune = NEW_NOTHROW AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_YAW, aparm, rate_pid);
         if (autotune == nullptr) {
             if (!failed_autotune_alloc) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed yaw allocation");

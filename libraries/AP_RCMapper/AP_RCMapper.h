@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_RCMapper_config.h"
+
+#if AP_RCMAPPER_ENABLED
+
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -52,3 +56,5 @@ namespace AP
 {
 RCMapper *rcmap();
 };
+
+#endif  // AP_RCMAPPER_ENABLED

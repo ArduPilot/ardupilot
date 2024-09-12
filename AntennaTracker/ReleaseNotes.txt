@@ -1,5 +1,240 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+Release 4.5.6 03 Sep 2024
+
+No changes from 4.5.6-beta1
+------------------------------------------------------------------
+Release 4.5.6-beta1 20 Aug 2024
+
+Changes from 4.5.5
+
+1) Board specific enhancements and bug fixes
+
+- 3DR Control Zero H7 Rev G support
+- CUAV-7-Nano support
+- FoxeerF405v2 servo outputs increased from 9 to 11
+- Holybro Pixhawk6C hi-power peripheral overcurrent reporting fixed
+- iFlight 2RAW H7 support
+- MFT-SEMA100 support
+- TMotorH743 support BMI270 baro
+- ZeroOneX6 support
+
+2) Minor enhancements and bug fixes
+
+- Cameras using MAVLink report vendor and model name correctly
+- DroneCAN fix to remove occasional NodeID registration error
+- GPS NMEA and GSoF driver ground course corrected (now always 0 ~ 360 deg)
+- ICP101XX barometer slowed to avoid I2C communication errors
+- IMU temp cal param (INSn_ACCSCAL_Z) stored correctly when bootloader is flashed
+- IMU gyro/accel duplicate id registration fixed to avoid possible pre-arm failure
+- Logging to flash timestamp fix
+- OSD displays ESC temp instead of motor temp
+- PID controller error calculation bug fix (was using target from prev iteration)
+- Relay on MAIN pins fixed
+------------------------------------------------------------------
+Release 4.5.5 1st Aug 2024
+
+No changes from 4.5.5-beta2
+------------------------------------------------------------------
+Release 4.5.5-beta2 27 July 2024
+
+Changes from 4.5.5-beta1
+
+1) Board specific enhancements and bug fixes
+
+- CubeRed's second core disabled at boot to avoid spurious writes to RAM
+- CubeRed bootloader's dual endpoint update method fixed
+------------------------------------------------------------------
+Release 4.5.5-beta1 1st July 2024
+
+Changes from 4.5.4
+
+1) Board specific enhancements and bug fixes
+
+- fixed IOMCU transmission errors when using bdshot
+- update relay parameter names on various boards
+- add ASP5033 airspeed in minimal builds
+- added RadiolinkPIX6
+- fix Aocoda-RC H743Dual motor issue
+- use ICM45686 as an ICM20649 alternative in CubeRedPrimary
+
+2) System level minor enhancements and bug fixes
+
+- correct use-after-free in script statistics
+- added arming check for eeprom full
+- fixed a block logging issue which caused log messages to be dropped
+- enable Socket SO_REUSEADDR on LwIP
+- removed IST8310 overrun message
+- added Siyi ZT6 support
+- added BTFL sidebar symbols to the OSD
+- added CRSF extended link stats to the OSD
+- use the ESC with the highest RPM in the OSD when only one can be displayed
+- support all Tramp power levels on high power VTXs
+- emit jump count in missions even if no limit
+- improve the bitmask indicating persistent parameters on bootloader flash	
+- fix duplicate error condition in the MicroStrain7
+
+5) Other minor enhancements and bug fixes
+
+- specify pymonocypher version in more places
+- added DroneCAN dependencies to custom builds
+
+------------------------------------------------------------------
+Release 4.5.4 12th June 2024
+
+Changes from 4.5.3
+
+Disable highres IMU sampling on ICM42670 fixing an issue on some versions of Pixhawk6X
+
+------------------------------------------------------------------
+Release 4.5.3 28th May 2024
+
+No changes from 4.5.3-beta1
+------------------------------------------------------------------
+Release 4.5.3-beta1 16th May 2024
+
+Changes from 4.5.2
+
+1) Board specific enhancements and bug fixes
+
+- correct default GPS port on MambaH743v4
+- added SDMODELV2
+- added iFlight Blitz H7 Pro
+- added BLITZ Wing H743
+- added highres IMU sampling on Pixhawk6X
+
+2) System level minor enhancements and bug fixes
+
+- fixed rare crash bug in lua scripting on script fault handling
+- fixed Neopixel pulse proportions to work with more LED variants
+- fixed timeout in lua rangefinder drivers
+- workaround hardware issue in IST8310 compass
+- allow FIFO rate logging for highres IMU sampling
+
+------------------------------------------------------------------
+Release 4.5.2 14th May 2024
+
+No changes from 4.5.2-beta1
+------------------------------------------------------------------
+Release 4.5.2-beta1 29th April 2024
+
+Changes from 4.5.1
+
+1) Board specific enhancements and bug fixes
+
+- FoxeerF405v2 support
+- iFlight BLITZ Mini F745 support
+- Pixhawk5X, Pixhawk6C, Pixhawk6X, Durandal power peripherals immediately at startup
+
+2) System level minor enhancements and bug fixes
+
+- Camera lens (e.g. RGB, IR) can be selected from GCS or during missions using set-camera-source
+- Crashdump pre-arm check added
+- Gimbal gets improved yaw lock reporting to GCS
+- Gimbal default mode fixed (MNTx_DEFLT_MODE was being overriden by RC input)
+- RM3100 compass SPI bus speed reduced to 1Mhz
+- SBUS output fix for channels 1 to 8 also applying to 9 to 16
+- ViewPro gimbal supports enable/disable rangefinder from RC aux switch
+- Visual Odometry delay fixed (was always using 1ms delay, see VISO_DELAY_MS)
+- fixed serial passthrough to avoid data loss at high data rates
+
+3) AHRS / EKF fixes
+
+- Compass learning disabled when using GPS-for-yaw
+- GSF reset minimum speed reduced to 1m/s (except Plane which remains 5m/s)
+- MicroStrain7 External AHRS position quantization bug fix
+- MicroStrain7 init failure warning added
+- MicroStrain5 and 7 position and velocity variance reporting fix
+
+4) Other minor enhancements and bug fixes
+
+- DDS_UDP_PORT parameter renamed (was DDS_PORT)
+- Harmonic Notch bitmask parameter conversion fix (see INS_HNTCH_HMNCS)
+
+------------------------------------------------------------------
+Release 4.5.1 8th April 2024
+
+This release fixes a critical bug in the CRSF R/C protocol parser that
+can lead to a handfault and a vehicle crashing. A similar fix was
+applied to the GHST protocol, although we believe that GHST could not
+be affected by the bug, so this was just a precaution.
+
+There are no other changes in this release.
+
+------------------------------------------------------------------
+Release 4.5.0 2nd April 2024
+
+No changes from 4.5.0-beta4
+------------------------------------------------------------------
+Release 4.5.0-beta4 22nd March 2024
+Changes from 4.5.0-beta3
+1) system changes
+
+- fixed a cache corruption issue with microSD card data on H7 based boards
+- rename parameter NET_ENABLED to NET_ENABLE
+- fixed FDCAN labels for adding new H7 boards
+- avoid logging dma.txt to save CPU
+- fixed roll/pitch in viewpro driver
+- added band X in VideoTX
+- fixed quaternion attitude reporting for Microstrain external AHRS
+- add RPLidarC1 proximity support
+
+2) new boards
+- added MicoAir405v2
+- add Orqa F405 Pro
+
+------------------------------------------------------------------
+AntennaTracker 4.5.0 beta3 14-Mar-2024
+Changes from 4.5.0 beta1
+
+Board specific changes
+- added PixFlamingo F7 board
+- support ICM42688 on BlitzF745AIO
+- fixed IMU orientation of CubeRedSecondary
+- enable all FPV features on SpeedyBeeF405WING
+
+System level changes
+
+- improved robustness of CRSF parser
+- reduced memory used by DDS/ROS2
+- added filesystem crc32 binding in lua scripting
+- support visual odometry quality metric and added autoswitching lua script
+- allow for expansion of fence storage to microSD for larger pologon fences
+- allow FTP upload of fence and rally points
+- fixed vehicle type of ship simulation for ship landing
+- make severity level depend on generator error level in IE 2400 generator
+- speed up initial GPS probe by using SERIALn_BAUD first
+- allow NanoRadar radar and proximity sensor to share the CAN bus
+- added MR72 CAN proximity sensor
+- only produce *_with_bl.hex not *.hex in builds if bootloader available
+- fixed check for GPS antenna separation in moving baseline yaw
+- added GPS_DRV_OPTIONS options for fully parsing RTCMv3 stream
+- fixed logging of RTCM fragments in GPS driver
+- fixed video recording while armed
+- robostness and logging improvements for ExternalAHRS
+- fixed RPM from bdshot on boards with IOMCU
+- fixed accel cal simple to remove unused IMUs
+- fixed float rounding issue in HAL_Linux millis and micros functions
+- fixed loading of defaults.parm parameters for dynamic parameter subtrees
+- fixed discrimination between GHST and CRSF protocols
+- fixed bug in DroneCAN packet parsing for corrupt packets that could cause a crash
+- fixed handling of network sockets in scripting when used after close
+- fixed bit timing of CANFD buses
+
+New Autopilots supported
+ - YJUAV_A6Ultra
+ - AnyLeaf H7
+
+- do relay parameter conversion for parachute parameters if ever has been used
+- broaden acceptance criteria for GPS yaw measurement for moving baseline yaw
+
+------------------------------------------------------------------
+AntennaTracker 4.5.0 beta1 22-Feb-2024
+Changes from 4.2.0
+1) Innumerable system-level improvements; see Copter and Plane release notes
+2) fix EKF2/EKF3 parameters
+3) improve logging
+------------------------------------------------------------------
 AntennaTracker 4.2.0 beta1 25-May-2022
 Changes from 1.1.0
 1) Many new supported boards

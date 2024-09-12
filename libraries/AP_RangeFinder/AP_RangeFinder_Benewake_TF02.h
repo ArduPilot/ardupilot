@@ -1,12 +1,10 @@
 #pragma once
 
-#include "AP_RangeFinder_Benewake.h"
-
-#ifndef AP_RANGEFINDER_BENEWAKE_TF02_ENABLED
-#define AP_RANGEFINDER_BENEWAKE_TF02_ENABLED (AP_RANGEFINDER_BENEWAKE_ENABLED && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BENEWAKE_TF02_ENABLED
+
+#include "AP_RangeFinder_Benewake.h"
 
 class AP_RangeFinder_Benewake_TF02 : public AP_RangeFinder_Benewake
 {
@@ -15,7 +13,7 @@ public:
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
-        return new AP_RangeFinder_Benewake_TF02(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_Benewake_TF02(_state, _params);
     }
 
 protected:

@@ -1,6 +1,6 @@
 #include "Sub.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Code to Write and Read packets from AP_Logger log memory
 // Code to interact with the user to dump or erase logs
@@ -28,7 +28,13 @@ void Sub::Log_Write_Control_Tuning()
     // get terrain altitude
     float terr_alt = 0.0f;
 #if AP_TERRAIN_AVAILABLE
-    terrain.height_above_terrain(terr_alt, true);
+    if (terrain.enabled()) {
+        terrain.height_above_terrain(terr_alt, true);
+    } else {
+        terr_alt = rangefinder_state.rangefinder_terrain_offset_cm * 0.01f;
+    }
+#else
+    terr_alt = rangefinder_state.rangefinder_terrain_offset_cm * 0.01f;
 #endif
 
     struct log_Control_Tuning pkt = {
@@ -41,7 +47,7 @@ void Sub::Log_Write_Control_Tuning()
         desired_alt         : pos_control.get_pos_target_z_cm() / 100.0f,
         inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : barometer.get_altitude(),
-        desired_rangefinder_alt   : (int16_t)target_rangefinder_alt,
+        desired_rangefinder_alt   : (int16_t)mode_surftrak.get_rangefinder_target_cm(),
         rangefinder_alt           : rangefinder_state.alt_cm,
         terr_alt            : terr_alt,
         target_climb_rate   : (int16_t)pos_control.get_vel_target_z_cms(),
@@ -53,9 +59,7 @@ void Sub::Log_Write_Control_Tuning()
 // Write an attitude packet
 void Sub::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control.get_att_target_euler_cd();
-    targets.z = wrap_360_cd(targets.z);
-    ahrs.Write_Attitude(targets);
+    ahrs.Write_Attitude(attitude_control.get_att_target_euler_rad() * RAD_TO_DEG);
 
     AP::ahrs().Log_Write();
 }
@@ -275,32 +279,18 @@ const struct LogStructure Sub::log_structure[] = {
       "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
 
+uint8_t Sub::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Sub::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Write_Mode(control_mode, control_mode_reason);
+    logger.Write_Mode((uint8_t)control_mode, control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
 
-void Sub::log_init()
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
-
-#else // LOGGING_ENABLED
-
-void Sub::Log_Write_Control_Tuning() {}
-void Sub::Log_Write_Attitude(void) {}
-void Sub::Log_Write_Data(LogDataID id, int32_t value) {}
-void Sub::Log_Write_Data(LogDataID id, uint32_t value) {}
-void Sub::Log_Write_Data(LogDataID id, int16_t value) {}
-void Sub::Log_Write_Data(LogDataID id, uint16_t value) {}
-void Sub::Log_Write_Data(LogDataID id, float value) {}
-void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
-void Sub::Log_Write_Vehicle_Startup_Messages() {}
-
-void Sub::log_init(void) {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

@@ -9,7 +9,7 @@ void Copter::set_auto_armed(bool b)
 
     ap.auto_armed = b;
     if(b){
-        AP::logger().Write_Event(LogEvent::AUTO_ARMED);
+        LOGGER_WRITE_EVENT(LogEvent::AUTO_ARMED);
     }
 }
 
@@ -24,17 +24,17 @@ void Copter::set_simple_mode(SimpleMode b)
     if (simple_mode != b) {
         switch (b) {
             case SimpleMode::NONE:
-                AP::logger().Write_Event(LogEvent::SET_SIMPLE_OFF);
+                LOGGER_WRITE_EVENT(LogEvent::SET_SIMPLE_OFF);
                 gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode off");
                 break;
             case SimpleMode::SIMPLE:
-                AP::logger().Write_Event(LogEvent::SET_SIMPLE_ON);
+                LOGGER_WRITE_EVENT(LogEvent::SET_SIMPLE_ON);
                 gcs().send_text(MAV_SEVERITY_INFO, "SIMPLE mode on");
                 break;
             case SimpleMode::SUPERSIMPLE:
                 // initialise super simple heading
                 update_super_simple_bearing(true);
-                AP::logger().Write_Event(LogEvent::SET_SUPERSIMPLE_ON);
+                LOGGER_WRITE_EVENT(LogEvent::SET_SUPERSIMPLE_ON);
                 gcs().send_text(MAV_SEVERITY_INFO, "SUPERSIMPLE mode on");
                 break;
         }

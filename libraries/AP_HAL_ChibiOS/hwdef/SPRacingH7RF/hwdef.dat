@@ -172,9 +172,9 @@ BARO BMP388 I2C:1:0x76
 #ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define BOARD_PWM_COUNT_DEFAULT 9
 
 define HAL_STORAGE_SIZE 16384
+
+include ../include/minimize_fpv_osd.inc

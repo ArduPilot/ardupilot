@@ -42,10 +42,6 @@ private:
     const uint8_t system_id = 17;
     const uint8_t component_id = 18;
 
-    // we share channels with the ArduPilot binary!
-    // Beware: the mavlink rangefinder shares this channel.
-    const mavlink_channel_t mavlink_ch = (mavlink_channel_t)(MAVLINK_COMM_0+5);
-
     uint64_t last_observation_usec; // time last observation was sent
     uint64_t time_offset_us;        // simulated timeoffset between external system and autopilot
 
@@ -81,6 +77,8 @@ private:
     // position delta message 
     Quaternion _attitude_prev; // Rotation to previous MAV_FRAME_BODY_FRD from MAV_FRAME_LOCAL_NED
     Vector3d _position_prev;  // previous position from origin (m) MAV_FRAME_LOCAL_NED
+
+    mavlink_status_t mav_status;
 };
 
 }

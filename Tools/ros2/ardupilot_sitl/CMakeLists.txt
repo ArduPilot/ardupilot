@@ -12,6 +12,13 @@ find_package(ament_cmake_python REQUIRED)
 # TODO(srmainwaring): add cache variables for vehicle type, debug etc.
 # set(ARDUPILOT_VEHICLE "copter" CACHE STRING "Vehicle type")
 
+option(ARDUPILOT_DISABLE_NETWORKING "Disable the networking API code" OFF)
+option(ARDUPILOT_DISABLE_SCRIPTING "Disable the scripting API code" OFF)
+option(ARDUPILOT_DISABLE_WATCHDOG "Build with watchdog disabled" OFF)
+option(ARDUPILOT_ENABLE_DDS "Enable the DDS client" ON)
+option(ARDUPILOT_ENABLE_NETWORKING_TESTS "Enable the networking test code" OFF)
+option(ARDUPILOT_ENABLE_PPP "Enable PPP networking" OFF)
+
 # NOTE: look for `waf` and set source and build directories to top level.
 # ${PROJECT_SOURCE_DIR} = ./Tools/ros2/ardupilot
 #
@@ -22,9 +29,22 @@ message(STATUS "WAF_COMMAND: ${WAF_COMMAND}")
 
 # Set the build config.
 set(WAF_CONFIG $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:"--debug">)
+set(WAF_DISABLE_NETWORKING $<$<BOOL:${ARDUPILOT_DISABLE_NETWORKING}>:"--disable-networking">)
+set(WAF_DISABLE_SCRIPTING $<$<BOOL:${ARDUPILOT_DISABLE_SCRIPTING}>:"--disable-scripting">)
+set(WAF_DISABLE_WATCHDOG $<$<BOOL:${ARDUPILOT_DISABLE_WATCHDOG}>:"--disable-watchdog">)
+set(WAF_ENABLE_DDS $<$<BOOL:${ARDUPILOT_ENABLE_DDS}>:"--enable-dds">)
+set(WAF_ENABLE_NETWORKING_TESTS $<$<BOOL:${ARDUPILOT_ENABLE_NETWORKING_TESTS}>:"--enable-networking-tests">)
+set(WAF_ENABLE_PPP $<$<BOOL:${ARDUPILOT_ENABLE_PPP}>:"--enable-PPP">)
 
 add_custom_target(ardupilot_configure ALL
-  ${WAF_COMMAND} configure --board sitl --enable-dds ${WAF_CONFIG}
+  ${WAF_COMMAND} configure --board sitl
+    ${WAF_CONFIG}
+    ${WAF_DISABLE_NETWORKING}
+    ${WAF_DISABLE_SCRIPTING}
+    ${WAF_DISABLE_WATCHDOG}
+    ${WAF_ENABLE_DDS}
+    ${WAF_ENABLE_NETWORKING_TESTS}
+    ${WAF_ENABLE_PPP}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 
@@ -61,12 +81,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Install DDS profile.
-install(FILES
-  ${ARDUPILOT_ROOT}/libraries/AP_DDS/dds_xrce_profile.xml
-  DESTINATION share/${PROJECT_NAME}/config
-)
-
 # Install additional default params.
 install(DIRECTORY
   config/default_params
@@ -79,6 +93,12 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/config/
 )
 
+# Install additional autotest model params.
+install(DIRECTORY
+  ${ARDUPILOT_ROOT}/Tools/autotest/models
+  DESTINATION share/${PROJECT_NAME}/config/
+)
+
 # Install Python package.
 ament_python_install_package(${PROJECT_NAME}
   PACKAGE_DIR src/${PROJECT_NAME}
@@ -88,9 +108,6 @@ ament_python_install_package(${PROJECT_NAME}
 # build tests
 
 if(BUILD_TESTING)
-  # Override default flake8 configuration.
-  set(ament_cmake_flake8_CONFIG_FILE ${CMAKE_SOURCE_DIR}/.flake8)
-
   # Add linters.
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

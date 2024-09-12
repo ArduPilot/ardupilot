@@ -1,0 +1,58 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H743 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 5200
+
+# the nucleo seems to have trouble with flashing the last sector?
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# USB setup
+USB_STRING_MANUFACTURER "Airvolute"
+
+# baudrate to run bootloader at on uarts
+define BOOTLOADER_BAUDRATE 115200
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1
+
+# this is the pin that senses USB being connected. It is an input pin
+# setup as OPENDRAIN
+PA9 VBUS INPUT OPENDRAIN
+
+# UART1 (SE_CONNECTOR)
+PB14 USART1_TX USART1
+PA10 USART1_RX USART1
+
+PB1 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+define HAL_USE_SERIAL TRUE
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Add CS pins to ensure they are high in bootloader
+PD12 IMU_CS0 CS
+PE13 IMU_CS1 CS
+PD13 BARO_CS CS
+PD15 EXT_0 CS
+PD14 EXT_1 CS
+PD11 EXT_2 CS
+PD10 EXT_3 CS

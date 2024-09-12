@@ -74,14 +74,8 @@ class ExecuteFunction(Action):
         """Create an ExecuteFunction action."""
         super().__init__(**left_over_kwargs)
         if not callable(function):
-            raise TypeError(
-                "ExecuteFunction expected a callable for 'function', got '{}'".format(
-                    type(function)
-                )
-            )
-        ensure_argument_type(
-            args, (collections.abc.Iterable, type(None)), "args", "ExecuteFunction"
-        )
+            raise TypeError("ExecuteFunction expected a callable for 'function', got '{}'".format(type(function)))
+        ensure_argument_type(args, (collections.abc.Iterable, type(None)), "args", "ExecuteFunction")
         ensure_argument_type(kwargs, (dict, type(None)), "kwargs", "ExecuteFunction")
         self.__function = function
         self.__args = []  # type: Iterable
@@ -98,9 +92,7 @@ class ExecuteFunction(Action):
         """Return the Action obtained by executing the function."""
         return self.__action
 
-    def execute(
-        self, context: LaunchContext
-    ) -> Optional[List[LaunchDescriptionEntity]]:
+    def execute(self, context: LaunchContext) -> Optional[List[LaunchDescriptionEntity]]:
         """Execute the function."""
         action = self.__function(context, *self.__args, **self.__kwargs)
         self.__action = action

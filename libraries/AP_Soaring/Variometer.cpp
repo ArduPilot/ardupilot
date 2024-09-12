@@ -4,6 +4,7 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 */
 #include "Variometer.h"
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
 Variometer::Variometer(const AP_FixedWing &parms, const PolarParams &polarParams) :
@@ -21,7 +22,7 @@ void Variometer::update(const float thermal_bank)
 
     float aspd = 0;
     if (!_ahrs.airspeed_estimate(aspd)) {
-            aspd = _aparm.airspeed_cruise_cm * 0.01f;
+        aspd = _aparm.airspeed_cruise;
     }
 
     float aspd_filt = _sp_filter.apply(aspd);
@@ -62,7 +63,7 @@ void Variometer::update(const float thermal_bank)
     float smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, dt);
 
     // Compute still-air sinkrate
-    float roll = _ahrs.roll;
+    float roll = _ahrs.get_roll();
     float sinkrate = calculate_aircraft_sinkrate(roll);
 
     reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
@@ -79,6 +80,7 @@ void Variometer::update(const float thermal_bank)
 
     _expected_thermalling_sink = calculate_aircraft_sinkrate(radians(thermal_bank));
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: VAR
 // @Vehicles: Plane
 // @Description: Variometer data
@@ -107,8 +109,11 @@ void Variometer::update(const float thermal_bank)
                        (double)_expected_thermalling_sink,
                        (double)dsp,
                        (double)dsp_bias);
+#else
+    (void)filtered_reading;
+    (void)smoothed_climb_rate;
+#endif
 }
-
 
 float Variometer::calculate_aircraft_sinkrate(float phi) const
 {

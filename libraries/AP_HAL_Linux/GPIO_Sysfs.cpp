@@ -205,7 +205,7 @@ AP_HAL::DigitalSource* GPIO_Sysfs::channel(uint16_t vpin)
     /* Even if we couldn't open the fd, return a new DigitalSource and let
      * reads and writes fail later due to invalid. Otherwise we
      * could crash in undesired places */
-    return new DigitalSource_Sysfs(pin, value_fd);
+    return NEW_NOTHROW DigitalSource_Sysfs(pin, value_fd);
 }
 
 bool GPIO_Sysfs::usb_connected(void)

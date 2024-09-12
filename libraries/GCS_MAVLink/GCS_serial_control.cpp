@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "GCS_config.h"
+
+#if AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include "GCS.h"
@@ -61,6 +64,7 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         link->lock(exclusive);
         break;
     }
+#if AP_GPS_ENABLED
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.serial(3);
         AP::gps().lock_port(0, exclusive);
@@ -69,12 +73,7 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         stream = port = hal.serial(4);
         AP::gps().lock_port(1, exclusive);
         break;
-    case SERIAL_CONTROL_DEV_SHELL:
-        stream = hal.util->get_shell_stream();
-        if (stream == nullptr) {
-            return;
-        }
-        break;
+#endif  // AP_GPS_ENABLED
     case SERIAL_CONTROL_SERIAL0 ... SERIAL_CONTROL_SERIAL9: {
         // direct access to a SERIALn port
         stream = port = AP::serialmanager().get_serial_by_id(packet.device - SERIAL_CONTROL_SERIAL0);
@@ -199,3 +198,5 @@ more_data:
         goto more_data;
     }
 }
+
+#endif  // AP_MAVLINK_MSG_SERIAL_CONTROL_ENABLED

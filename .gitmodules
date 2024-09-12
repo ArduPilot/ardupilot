@@ -39,3 +39,6 @@
 	path = modules/Micro-CDR
 	url = https://github.com/ardupilot/Micro-CDR.git
 	branch = master
+[submodule "modules/lwip"]
+	path = modules/lwip
+	url = https://github.com/ArduPilot/lwip.git

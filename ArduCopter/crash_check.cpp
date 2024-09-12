@@ -36,18 +36,18 @@ void Copter::crash_check()
     }
 
     // exit immediately if in force flying
-    if (force_flying && !flightmode->is_landing()) {
+    if (get_force_flying() && !flightmode->is_landing()) {
         crash_counter = 0;
         return;
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
+    if (!flightmode->crash_check_enabled()) {
         crash_counter = 0;
         return;
     }
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if MODE_AUTOROTATE_ENABLED
     //return immediately if in autorotation mode
     if (flightmode->mode_number() == Mode::Number::AUTOROTATE) {
         crash_counter = 0;
@@ -88,7 +88,7 @@ void Copter::crash_check()
 
     // check if crashing for 2 seconds
     if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
-        AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", angle_error, CRASH_CHECK_ANGLE_DEVIATION_DEG, filtered_acc, CRASH_CHECK_ACCEL_MAX);
         // disarm motors
@@ -101,8 +101,8 @@ void Copter::thrust_loss_check()
 {
     static uint16_t thrust_loss_counter;  // number of iterations vehicle may have been crashed
 
-    // no-op if suppresed by flight options param
-    if ((copter.g2.flight_options & uint32_t(FlightOptions::DISABLE_THRUST_LOSS_CHECK)) != 0) {
+    // no-op if suppressed by flight options param
+    if (copter.option_is_enabled(FlightOption::DISABLE_THRUST_LOSS_CHECK)) {
         return;
     }
 
@@ -163,7 +163,7 @@ void Copter::thrust_loss_check()
     if (thrust_loss_counter >= (THRUST_LOSS_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
         // reset counter
         thrust_loss_counter = 0;
-        AP::logger().Write_Error(LogErrorSubsystem::THRUST_LOSS_CHECK, LogErrorCode::FAILSAFE_OCCURRED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::THRUST_LOSS_CHECK, LogErrorCode::FAILSAFE_OCCURRED);
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY, "Potential Thrust Loss (%d)", (int)motors->get_lost_motor() + 1);
         // enable thrust loss handling
@@ -171,8 +171,8 @@ void Copter::thrust_loss_check()
         // the motors library disables this when it is no longer needed to achieve the commanded output
 
 #if AP_GRIPPER_ENABLED
-        if ((copter.g2.flight_options & uint32_t(FlightOptions::RELEASE_GRIPPER_ON_THRUST_LOSS)) != 0) {
-            copter.g2.gripper.release();
+        if (copter.option_is_enabled(FlightOption::RELEASE_GRIPPER_ON_THRUST_LOSS)) {
+            gripper.release();
         }
 #endif
     }
@@ -181,8 +181,8 @@ void Copter::thrust_loss_check()
 // check for a large yaw imbalance, could be due to badly calibrated ESC or misaligned motors
 void Copter::yaw_imbalance_check()
 {
-    // no-op if suppresed by flight options param
-    if ((copter.g2.flight_options & uint32_t(FlightOptions::DISABLE_YAW_IMBALANCE_WARNING)) != 0) {
+    // no-op if suppressed by flight options param
+    if (copter.option_is_enabled(FlightOption::DISABLE_YAW_IMBALANCE_WARNING)) {
         return;
     }
 
@@ -229,7 +229,7 @@ void Copter::yaw_imbalance_check()
     }
 }
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
 
 // Code to detect a crash main ArduCopter code
 #define PARACHUTE_CHECK_TRIGGER_SEC         1       // 1 second of loss of control triggers the parachute
@@ -269,12 +269,11 @@ void Copter::parachute_check()
     }
 
     if (parachute.release_initiated()) {
-        copter.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE);
         return;
     }
 
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
-    if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
+    if (!flightmode->crash_check_enabled()) {
         control_loss_count = 0;
         return;
     }
@@ -322,7 +321,7 @@ void Copter::parachute_check()
     } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
         // reset control loss counter
         control_loss_count = 0;
-        AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);
         // release parachute
         parachute_release();
     }
@@ -331,9 +330,6 @@ void Copter::parachute_check()
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user
 void Copter::parachute_release()
 {
-    // disarm motors
-    arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE);
-
     // release parachute
     parachute.release();
 
@@ -357,7 +353,7 @@ void Copter::parachute_manual_release()
     if (ap.land_complete) {
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Landed");
-        AP::logger().Write_Error(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_LANDED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_LANDED);
         return;
     }
 
@@ -365,7 +361,7 @@ void Copter::parachute_manual_release()
     if ((parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100))) {
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_ALERT,"Parachute: Too low");
-        AP::logger().Write_Error(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_TOO_LOW);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_TOO_LOW);
         return;
     }
 
@@ -373,4 +369,4 @@ void Copter::parachute_manual_release()
     parachute_release();
 }
 
-#endif // PARACHUTE == ENABLED
+#endif  // HAL_PARACHUTE_ENABLED

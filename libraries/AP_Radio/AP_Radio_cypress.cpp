@@ -1,6 +1,8 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Radio_config.h"
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#if AP_RADIO_CYRF6936_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_Math/AP_Math.h>
 #include "AP_Radio_cypress.h"
@@ -40,7 +42,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
+#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
 #define LP_FIFO_SIZE  16      // Physical data FIFO lengths in Radio
 
@@ -1681,5 +1683,4 @@ void AP_Radio_cypress::handle_data_packet(mavlink_channel_t chan, const mavlink_
     }
 }
 
-#endif // HAL_RCINPUT_WITH_AP_RADIO
-
+#endif  // AP_RADIO_CYRF6936_ENABLED

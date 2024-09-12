@@ -1,10 +1,10 @@
 #pragma once
 
-#include "AP_Camera_Backend.h"
-#include <AP_Mount/AP_Mount.h>
+#include "AP_Camera_config.h"
 
 #if AP_CAMERA_SOLOGIMBAL_ENABLED
 
+#include "AP_Camera_Backend.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Camera_SoloGimbal : public AP_Camera_Backend

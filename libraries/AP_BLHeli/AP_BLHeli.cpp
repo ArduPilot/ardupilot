@@ -23,7 +23,7 @@
 
 #include "AP_BLHeli.h"
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAVE_AP_BLHELI_SUPPORT
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
@@ -51,7 +51,7 @@ extern const AP_HAL::HAL& hal;
 // the MSP protocol on hal.console
 #define BLHELI_UART_LOCK_KEY 0x20180402
 
-// if no packets are received for this time and motor control is active BLH will disconect (stoping motors)
+// if no packets are received for this time and motor control is active BLH will disconnect (stoping motors)
 #define MOTOR_ACTIVE_TIMEOUT 1000
 
 const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
@@ -128,16 +128,16 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 
     // @Param: 3DMASK
     // @DisplayName: BLHeli bitmask of 3D channels
-    // @Description: Mask of channels which are dynamically reversible. This is used to configure ESCs in '3D' mode, allowing for the motor to spin in either direction
+    // @Description: Mask of channels which are dynamically reversible. This is used to configure ESCs in '3D' mode, allowing for the motor to spin in either direction. Do not use for channels selected with SERVO_BLH_RVMASK.
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("3DMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
 
-#ifdef HAL_WITH_BIDIR_DSHOT
+#if defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT
     // @Param: BDMASK
     // @DisplayName: BLHeli bitmask of bi-directional dshot channels
-    // @Description: Mask of channels which support bi-directional dshot. This is used for ESCs which have firmware that supports bi-directional dshot allowing fast rpm telemetry values to be returned for the harmonic notch.
+    // @Description: Mask of channels which support bi-directional dshot telemetry. This is used for ESCs which have firmware that supports bi-directional dshot allowing fast rpm telemetry values to be returned for the harmonic notch.
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
     // @RebootRequired: True
@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 #endif
     // @Param: RVMASK
     // @DisplayName: BLHeli bitmask of reversed channels
-    // @Description: Mask of channels which are reversed. This is used to configure ESCs in reversed mode
+    // @Description: Mask of channels which are reversed. This is used to configure ESCs to reverse motor direction for unidirectional rotation.Do not use for channels selected with SERVO_BLH_RVMASK.Do not use for channels selected with SERVO_BLH_3DMASK.
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
     // @RebootRequired: True
@@ -395,18 +395,22 @@ void AP_BLHeli::msp_process_command(void)
         break;
 
     case MSP_UID:
-        // MCU identifer
+        // MCU identifier
         debug("MSP_UID");
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
         break;
 
+        // a literal "4" is used for the PWMType here to allow Rover
+        // to use the same number for the same protocol.  At time of
+        // writing the AP_MotorsUGV::PWMType has not been unified with
+        // AP_Motors::PWMType.
     case MSP_ADVANCED_CONFIG: {
         debug("MSP_ADVANCED_CONFIG");
         uint8_t buf[10];
         buf[0] = 1; // gyro sync denom
         buf[1] = 4; // pid process denom
         buf[2] = 0; // use unsynced pwm
-        buf[3] = (uint8_t)PWM_TYPE_DSHOT150; // motor PWM protocol
+        buf[3] = 4; // (uint8_t)AP_Motors::PWMType::DSHOT150;
         putU16(&buf[4], 480); // motor PWM Rate
         putU16(&buf[6], 450); // idle offset value
         buf[8] = 0; // use 32kHz
@@ -446,6 +450,18 @@ void AP_BLHeli::msp_process_command(void)
         putU16(&buf[0], 1406); // 3D deadband low
         putU16(&buf[2], 1514); // 3D deadband high
         putU16(&buf[4], 1460); // 3D neutral
+        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
+        break;
+    }
+
+    case MSP_BATTERY_STATE: {
+        debug("MSP_BATTERY_STATE");
+        uint8_t buf[8];
+        buf[0] = 4; // cell count
+        putU16(&buf[1], 1500); // mAh
+        buf[3] = 16; // V
+        putU16(&buf[4], 1500); // mAh
+        putU16(&buf[6], 1); // A
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -1397,6 +1413,8 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
 #ifdef HAL_WITH_BIDIR_DSHOT
     // possibly enable bi-directional dshot
     hal.rcout->set_motor_poles(motor_poles);
+#endif
+#if defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT
     hal.rcout->set_bidir_dshot_mask(uint32_t(channel_bidir_dshot_mask.get()) & digital_mask);
 #endif
     // add motors from channel mask
@@ -1409,7 +1427,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
     motor_mask = mask;
     debug("ESC: %u motors mask=0x%08lx", num_motors, mask);
 
-    // check if we have a combination of reversable and normal
+    // check if we have a combination of reversible and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
 
     if (num_motors != 0 && telem_rate > 0) {
@@ -1448,7 +1466,14 @@ void AP_BLHeli::read_telemetry_packet(void)
     const uint8_t motor_idx = motor_map[last_telem_esc];
     // we have received valid data, mark the ESC as now active
     hal.rcout->set_active_escs_mask(1<<motor_idx);
-    update_rpm(motor_idx - chan_offset, new_rpm);
+
+    uint8_t normalized_motor_idx = motor_idx - chan_offset;
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_dshot()) {
+        normalized_motor_idx = motor_idx;
+    }
+#endif
+    update_rpm(normalized_motor_idx, new_rpm);
 
     TelemetryData t {
         .temperature_cdeg = int16_t(buf[0] * 100),
@@ -1457,7 +1482,7 @@ void AP_BLHeli::read_telemetry_packet(void)
         .consumption_mah = float(uint16_t((buf[5]<<8) | buf[6])),
     };
 
-    update_telem_data(motor_idx - chan_offset, t,
+    update_telem_data(normalized_motor_idx, t,
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
             | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
             | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION

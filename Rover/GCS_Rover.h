@@ -32,7 +32,7 @@ protected:
 
     GCS_MAVLINK_Rover *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
-        return new GCS_MAVLINK_Rover(params, uart);
+        return NEW_NOTHROW GCS_MAVLINK_Rover(params, uart);
     }
 
 };

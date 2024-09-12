@@ -19,10 +19,11 @@
 // @Field: TimeUS: Time since system startup
 // @Field: I: GPS instance number
 // @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
+// @FieldValueEnum: Status: AP_GPS::GPS_Status
 // @Field: GMS: milliseconds since start of GPS Week
 // @Field: GWk: weeks since 5 Jan 1980
 // @Field: NSats: number of satellites visible
-// @Field: HDop: horizontal precision
+// @Field: HDop: horizontal dilution of precision
 // @Field: Lat: latitude
 // @Field: Lng: longitude
 // @Field: Alt: altitude
@@ -54,7 +55,7 @@ struct PACKED log_GPS {
 // @Description: GPS accuracy information
 // @Field: I: GPS instance number
 // @Field: TimeUS: Time since system startup
-// @Field: VDop: vertical degree of procession
+// @Field: VDop: vertical dilution of precision
 // @Field: HAcc: horizontal position accuracy
 // @Field: VAcc: vertical position accuracy
 // @Field: SAcc: speed accuracy
@@ -63,6 +64,8 @@ struct PACKED log_GPS {
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
 // @Field: Und: Undulation
+// @Field: RTCMFU: RTCM fragments used
+// @Field: RTCMFD: RTCM fragments discarded
 struct PACKED log_GPA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -76,6 +79,8 @@ struct PACKED log_GPA {
     uint32_t sample_ms;
     uint16_t delta_ms;
     float undulation;
+    uint16_t rtcm_fragments_used;
+    uint16_t rtcm_fragments_discarded;
 };
 
 /*
@@ -200,15 +205,15 @@ struct PACKED log_GPS_RAWS {
 
 #define LOG_STRUCTURE_FROM_GPS \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#---SmDUmnhnh-", "F----0BGGB000--" , true }, \
+      "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#-s-S-DUmnhnh-", "F--C-0BGGB000--" , true }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QBCCCCfBIHf", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,Und", "s#mmmnd-ssm", "F-BBBB0-CC0" , true }, \
+      "GPA",  "QBCCCCfBIHfHH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,Und,RTCMFU,RTCMFD", "s#-mmnd-ssm--", "F-BBBB0-CC0--" , true }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
       "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  , true }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
       "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s#----", "F-----" , true }, \
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
-      "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli", "s--S-------", "F--0-------" , true }, \
+      "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli", "ss-S-------", "FC-0-------" , true }, \
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \

@@ -11,6 +11,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OADATABASE_ENABLED
+
 #include "AP_OADatabase.h"
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -125,7 +129,7 @@ void AP_OADatabase::init()
     dist_to_radius_scalar = tanf(radians(MAX(_beam_width, 1.0f)));
 
     if (!healthy()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "DB init failed . Sizes queue:%u, db:%u", (unsigned int)_queue.size, (unsigned int)_database.size);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DB init failed . Sizes queue:%u, db:%u", (unsigned int)_queue.size, (unsigned int)_database.size);
         delete _queue.items;
         delete[] _database.items;
         return;
@@ -186,7 +190,7 @@ void AP_OADatabase::init_queue()
         return;
     }
 
-    _queue.items = new ObjectBuffer<OA_DbItem>(_queue.size);
+    _queue.items = NEW_NOTHROW ObjectBuffer<OA_DbItem>(_queue.size);
     if (_queue.items != nullptr && _queue.items->get_size() == 0) {
         // allocation failed
         delete _queue.items;
@@ -201,7 +205,7 @@ void AP_OADatabase::init_database()
         return;
     }
 
-    _database.items = new OA_DbItem[_database.size];
+    _database.items = NEW_NOTHROW OA_DbItem[_database.size];
 }
 
 // get bitmask of gcs channels item should be sent to based on its importance
@@ -230,7 +234,7 @@ uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importanc
     return 0x0;
 }
 
-// returns true when there's more work inthe queue to do
+// returns true when there's more work in the queue to do
 bool AP_OADatabase::process_queue()
 {
     if (!healthy()) {
@@ -365,6 +369,7 @@ bool AP_OADatabase::is_close_to_item_in_database(const uint16_t index, const OA_
     return ((distance_sq < sq(item.radius)) || (distance_sq < sq(_database.items[index].radius)));
 }
 
+#if HAL_GCS_ENABLED
 // send ADSB_VEHICLE mavlink messages
 void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_ms)
 {
@@ -469,6 +474,7 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
         num_sent++;
     }
 }
+#endif  // HAL_GCS_ENABLED
 
 // singleton instance
 AP_OADatabase *AP_OADatabase::_singleton;
@@ -480,3 +486,5 @@ AP_OADatabase *oadatabase()
 }
 
 }
+
+#endif  // AP_OADATABASE_ENABLED

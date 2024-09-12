@@ -73,6 +73,7 @@ void HALSITL::UARTDriver::configure_parity(uint8_t v)
     if (_fd < 0) {
         return;
     }
+    UARTDriver::parity = v;
 #ifdef USE_TERMIOS
     struct termios t;
 

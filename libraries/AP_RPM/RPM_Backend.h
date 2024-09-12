@@ -38,6 +38,8 @@ public:
         return ap_rpm._params[state.instance].pin.get();
     }
 
+    void update_esc_telem_outbound();
+
 protected:
 
     AP_RPM &ap_rpm;

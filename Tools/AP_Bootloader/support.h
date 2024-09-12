@@ -18,13 +18,16 @@ int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
 void cout(uint8_t *data, uint32_t len);
 void port_setbaud(uint32_t baudrate);
-
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+bool update_otg2_serial_forward(void);
+#endif
 void flash_init();
 
 uint32_t flash_func_read_word(uint32_t offset);
 bool flash_func_write_word(uint32_t offset, uint32_t v);
 bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n);
 uint32_t flash_func_sector_size(uint32_t sector);
+bool flash_func_is_erased(uint32_t sector);
 bool flash_func_erase_sector(uint32_t sector, bool force_erase = false);
 uint32_t flash_func_read_otp(uint32_t idx);
 uint32_t flash_func_read_sn(uint32_t idx);
@@ -43,6 +46,14 @@ void board_set_rtc_signature(uint32_t sig);
 void led_on(unsigned led);
 void led_off(unsigned led);
 void led_toggle(unsigned led);
+
+void thread_sleep_ms(uint32_t ms);
+
+void custom_startup(void);
+
+#if defined(STM32H7) && CH_CFG_USE_HEAP
+void check_ecc_errors(void);
+#endif
 
 // printf to debug uart (or USB)
 extern "C" {

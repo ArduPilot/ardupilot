@@ -16,9 +16,12 @@
 //
 //  UAVCAN GPS driver
 //
+#include "AP_GPS_config.h"
+
+#if AP_GPS_DRONECAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_GPS_DroneCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
@@ -52,7 +55,7 @@ extern const AP_HAL::HAL& hal;
 #define LOG_TAG "GPS"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::native_micros64())
+#define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
 #else
 #define NATIVE_TIME_OFFSET 0
 #endif
@@ -60,8 +63,11 @@ AP_GPS_DroneCAN::DetectedModules AP_GPS_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_GPS_DroneCAN::_sem_registry;
 
 // Member Methods
-AP_GPS_DroneCAN::AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role _role) :
-    AP_GPS_Backend(_gps, _state, nullptr),
+AP_GPS_DroneCAN::AP_GPS_DroneCAN(AP_GPS &_gps,
+                                 AP_GPS::Params &_params,
+                                 AP_GPS::GPS_State &_state,
+                                 AP_GPS::GPS_Role _role) :
+    AP_GPS_Backend(_gps, _params, _state, nullptr),
     interim_state(_state),
     role(_role)
 {
@@ -123,13 +129,13 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     bool bad_override_config = false;
     for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
-            if (_gps._override_node_id[_state.instance] != 0 &&
-                _gps._override_node_id[_state.instance] != _detected_modules[i].node_id) {
+            if (_gps.params[_state.instance].override_node_id != 0 &&
+                _gps.params[_state.instance].override_node_id != _detected_modules[i].node_id) {
                 continue; // This device doesn't match the correct node
             }
             last_match = found_match;
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-                if (_detected_modules[i].node_id == _gps._override_node_id[j] &&
+                if (_detected_modules[i].node_id == _gps.params[j].override_node_id &&
                     (j != _state.instance)) {
                     //wrong instance
                     found_match = -1;
@@ -140,13 +146,13 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 
             // Handle Duplicate overrides
             for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-                if (_gps._override_node_id[i] != 0 && (i != j) &&
-                    _gps._override_node_id[i] == _gps._override_node_id[j]) {
+                if (_gps.params[i].override_node_id != 0 && (i != j) &&
+                    _gps.params[i].override_node_id == _gps.params[j].override_node_id) {
                     bad_override_config = true;
                 }
             }
             if (bad_override_config) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Same Node Id %lu set for multiple GPS", (unsigned long int)_gps._override_node_id[i].get());
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Same Node Id %lu set for multiple GPS", (unsigned long int)_gps.params[i].override_node_id.get());
                 last_match = i;
             }
 
@@ -164,14 +170,14 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     // initialise the backend based on the UAVCAN Moving baseline selection
     switch (_gps.get_type(_state.instance)) {
         case AP_GPS::GPS_TYPE_UAVCAN:
-            backend = new AP_GPS_DroneCAN(_gps, _state, AP_GPS::GPS_ROLE_NORMAL);
+            backend = NEW_NOTHROW AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_NORMAL);
             break;
 #if GPS_MOVING_BASELINE
         case AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE:
-            backend = new AP_GPS_DroneCAN(_gps, _state, AP_GPS::GPS_ROLE_MB_BASE);
+            backend = NEW_NOTHROW AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_BASE);
             break;
         case AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER:
-            backend = new AP_GPS_DroneCAN(_gps, _state, AP_GPS::GPS_ROLE_MB_ROVER);
+            backend = NEW_NOTHROW AP_GPS_DroneCAN(_gps, _gps.params[_state.instance], _state, AP_GPS::GPS_ROLE_MB_ROVER);
             break;
 #endif
         default:
@@ -195,20 +201,20 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
-            if (_detected_modules[found_match].node_id == AP::gps()._node_id[i]) {
+            if (_detected_modules[found_match].node_id == AP::gps().params[i].node_id) {
                 if (i == _state.instance) {
                     // Nothing to do here
                     break;
                 }
                 // else swap
-                uint8_t tmp = AP::gps()._node_id[_state.instance].get();
-                AP::gps()._node_id[_state.instance].set_and_notify(_detected_modules[found_match].node_id);
-                AP::gps()._node_id[i].set_and_notify(tmp);
+                uint8_t tmp = AP::gps().params[_state.instance].node_id.get();
+                AP::gps().params[_state.instance].node_id.set_and_notify(_detected_modules[found_match].node_id);
+                AP::gps().params[i].node_id.set_and_notify(tmp);
             }
         }
 #if GPS_MOVING_BASELINE
         if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
-            backend->rtcm3_parser = new RTCM3_Parser;
+            backend->rtcm3_parser = NEW_NOTHROW RTCM3_Parser;
             if (backend->rtcm3_parser == nullptr) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
             }
@@ -219,34 +225,45 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     return backend;
 }
 
-bool AP_GPS_DroneCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_len)
+bool AP_GPS_DroneCAN::inter_instance_pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
 {
+    // lint parameters and detected node IDs:
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        const auto &params_i = AP::gps().params[i];
+        // we are only interested in parameters for DroneCAN GPSs:
+        if (!is_dronecan_gps_type(params_i.type)) {
+            continue;
+        }
         bool overriden_node_found = false;
         bool bad_override_config = false;
-        if (AP::gps()._override_node_id[i] == 0) {
+        if (params_i.override_node_id == 0) {
             //anything goes
             continue;
         }
         for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
-            if (AP::gps()._override_node_id[i] == AP::gps()._override_node_id[j] && (i != j)) {
+            const auto &params_j = AP::gps().params[j];
+            // we are only interested in parameters for DroneCAN GPSs:
+            if (!is_dronecan_gps_type(params_j.type)) {
+                continue;
+            }
+            if (params_i.override_node_id == params_j.override_node_id && (i != j)) {
                 bad_override_config = true;
                 break;
             }
             if (i == _detected_modules[j].instance && _detected_modules[j].driver) {
-                if (AP::gps()._override_node_id[i] == _detected_modules[j].node_id) {
+                if (params_i.override_node_id == _detected_modules[j].node_id) {
                     overriden_node_found = true;
                     break;
                 }
             }
         }
         if (bad_override_config) {
-            snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)AP::gps()._override_node_id[i].get());
+            snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)params_i.override_node_id.get());
             return false;
         }
 
         if (!overriden_node_found) {
-            snprintf(failure_msg, failure_msg_len, "Selected GPS Node %lu not set as instance %d", (unsigned long int)AP::gps()._override_node_id[i].get(), i + 1);
+            snprintf(failure_msg, failure_msg_len, "Selected GPS Node %lu not set as instance %d", (unsigned long int)params_i.override_node_id.get(), i + 1);
             return false;
         }
     }
@@ -284,7 +301,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
                 _detected_modules[i].node_id = node_id;
                 // Just set the Node ID in order of appearance
                 // This will be used to set select ids
-                AP::gps()._node_id[i].set_and_notify(node_id);
+                AP::gps().params[i].node_id.set_and_notify(node_id);
                 break;
             }
         }
@@ -318,7 +335,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
  */
 void AP_GPS_DroneCAN::handle_velocity(const float vx, const float vy, const float vz)
 {
-    if (!isnanf(vx)) {
+    if (!isnan(vx)) {
         const Vector3f vel(vx, vy, vz);
         interim_state.velocity = vel;
         velocity_to_speed_course(interim_state);
@@ -380,29 +397,30 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
         Location loc = { };
         loc.lat = msg.latitude_deg_1e8 / 10;
         loc.lng = msg.longitude_deg_1e8 / 10;
-        loc.alt = msg.height_msl_mm / 10;
+        const int32_t alt_amsl_cm = msg.height_msl_mm / 10;
         interim_state.have_undulation = true;
         interim_state.undulation = (msg.height_msl_mm - msg.height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
+        set_alt_amsl_cm(interim_state, alt_amsl_cm);
 
         handle_velocity(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
 
         if (msg.covariance.len == 6) {
-            if (!isnanf(msg.covariance.data[0])) {
+            if (!isnan(msg.covariance.data[0])) {
                 interim_state.horizontal_accuracy = sqrtf(msg.covariance.data[0]);
                 interim_state.have_horizontal_accuracy = true;
             } else {
                 interim_state.have_horizontal_accuracy = false;
             }
-            if (!isnanf(msg.covariance.data[2])) {
+            if (!isnan(msg.covariance.data[2])) {
                 interim_state.vertical_accuracy = sqrtf(msg.covariance.data[2]);
                 interim_state.have_vertical_accuracy = true;
             } else {
                 interim_state.have_vertical_accuracy = false;
             }
-            if (!isnanf(msg.covariance.data[3]) &&
-                !isnanf(msg.covariance.data[4]) &&
-                !isnanf(msg.covariance.data[5])) {
+            if (!isnan(msg.covariance.data[3]) &&
+                !isnan(msg.covariance.data[4]) &&
+                !isnan(msg.covariance.data[5])) {
                 interim_state.speed_accuracy = sqrtf((msg.covariance.data[3] + msg.covariance.data[4] + msg.covariance.data[5])/3);
                 interim_state.have_speed_accuracy = true;
             } else {
@@ -476,12 +494,12 @@ void AP_GPS_DroneCAN::handle_aux_msg(const uavcan_equipment_gnss_Auxiliary& msg)
 {
     WITH_SEMAPHORE(sem);
 
-    if (!isnanf(msg.hdop)) {
+    if (!isnan(msg.hdop)) {
         seen_aux = true;
         interim_state.hdop = msg.hdop * 100.0;
     }
 
-    if (!isnanf(msg.vdop)) {
+    if (!isnan(msg.vdop)) {
         seen_aux = true;
         interim_state.vdop = msg.vdop * 100.0;
     }
@@ -490,7 +508,7 @@ void AP_GPS_DroneCAN::handle_aux_msg(const uavcan_equipment_gnss_Auxiliary& msg)
 void AP_GPS_DroneCAN::handle_heading_msg(const ardupilot_gnss_Heading& msg)
 {
 #if GPS_MOVING_BASELINE
-    if (seen_relposheading && gps.mb_params[interim_state.instance].type.get() != 0) {
+    if (seen_relposheading && gps.params[interim_state.instance].mb_params.type.get() != 0) {
         // we prefer to use the relposheading to get yaw as it allows
         // the user to more easily control the relative antenna positions
         return;
@@ -522,10 +540,12 @@ void AP_GPS_DroneCAN::handle_status_msg(const ardupilot_gnss_Status& msg)
     healthy = msg.healthy;
     status_flags = msg.status;
     if (error_code != msg.error_codes) {
+#if HAL_LOGGING_ENABLED
         AP::logger().Write_MessageF("GPS %d: error changed (0x%08x/0x%08x)",
                                     (unsigned int)(state.instance + 1),
                                     error_code,
                                     msg.error_codes);
+#endif
         error_code = msg.error_codes;
     }
 }
@@ -665,7 +685,10 @@ bool AP_GPS_DroneCAN::do_config()
     
     switch(cfg_step) {
         case STEP_SET_TYPE:
+            // GPS_TYPE was renamed GPS1_TYPE.  Request both and
+            // handle whichever we receive.
             ap_dronecan->get_parameter_on_node(node_id, "GPS_TYPE", &param_int_cb);
+            ap_dronecan->get_parameter_on_node(node_id, "GPS1_TYPE", &param_int_cb);
             break;
         case STEP_SET_MB_CAN_TX:
             if (role != AP_GPS::GPS_Role::GPS_ROLE_NORMAL) {
@@ -699,6 +722,9 @@ bool AP_GPS_DroneCAN::read(void)
     }
 
     WITH_SEMAPHORE(sem);
+
+    send_rtcm();
+
     if (_new_data) {
         _new_data = false;
 
@@ -707,6 +733,9 @@ bool AP_GPS_DroneCAN::read(void)
         interim_state.horizontal_accuracy = MIN(interim_state.horizontal_accuracy, 1000.0);
         interim_state.vertical_accuracy = MIN(interim_state.vertical_accuracy, 1000.0);
         interim_state.speed_accuracy = MIN(interim_state.speed_accuracy, 1000.0);
+
+        // prevent announcing multiple times
+        interim_state.announced_detection = state.announced_detection;
 
         state = interim_state;
         if (interim_state.last_corrected_gps_time_us) {
@@ -756,17 +785,60 @@ bool AP_GPS_DroneCAN::is_configured(void) const
 }
 
 /*
+  send pending RTCM data
+ */
+void AP_GPS_DroneCAN::send_rtcm(void)
+{
+    if (_rtcm_stream.buf == nullptr) {
+        return;
+    }
+    WITH_SEMAPHORE(sem);
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - _rtcm_stream.last_send_ms < 20) {
+        // don't send more than 50 per second
+        return;
+    }
+    uint32_t outlen = 0;
+    const uint8_t *ptr = _rtcm_stream.buf->readptr(outlen);
+    if (ptr == nullptr || outlen == 0) {
+        return;
+    }
+    uavcan_equipment_gnss_RTCMStream msg {};
+    outlen = MIN(outlen, sizeof(msg.data.data));
+    msg.protocol_id = UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_PROTOCOL_ID_RTCM3;
+    memcpy(msg.data.data, ptr, outlen);
+    msg.data.len = outlen;
+    if (_detected_modules[_detected_module].ap_dronecan->rtcm_stream.broadcast(msg)) {
+        _rtcm_stream.buf->advance(outlen);
+        _rtcm_stream.last_send_ms = now;
+    }
+}
+
+/*
   handle RTCM data from MAVLink GPS_RTCM_DATA, forwarding it over MAVLink
  */
 void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 {
     // we only handle this if we are the first DroneCAN GPS or we are
     // using a different uavcan instance than the first GPS, as we
-    // send the data as broadcast on all DroneCAN devive ports and we
+    // send the data as broadcast on all DroneCAN device ports and we
     // don't want to send duplicates
+    const uint32_t now_ms = AP_HAL::millis();
     if (_detected_module == 0 ||
-        _detected_modules[_detected_module].ap_dronecan != _detected_modules[0].ap_dronecan) {
-        _detected_modules[_detected_module].ap_dronecan->send_RTCMStream(data, len);
+        _detected_modules[_detected_module].ap_dronecan != _detected_modules[0].ap_dronecan ||
+        now_ms - _detected_modules[0].last_inject_ms > 2000) {
+        if (_rtcm_stream.buf == nullptr) {
+            // give enough space for a full round from a NTRIP server with all
+            // constellations
+            _rtcm_stream.buf = NEW_NOTHROW ByteBuffer(2400);
+            if (_rtcm_stream.buf == nullptr) {
+                return;
+            }
+        }
+        _detected_modules[_detected_module].last_inject_ms = now_ms;
+        _rtcm_stream.buf->write(data, len);
+        send_rtcm();
     }
 }
 
@@ -776,7 +848,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 bool AP_GPS_DroneCAN::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, uint8_t node_id, const char* name, int32_t &value)
 {
     Debug("AP_GPS_DroneCAN: param set/get response from %d %s %ld\n", node_id, name, value);
-    if (strcmp(name, "GPS_TYPE") == 0 && cfg_step == STEP_SET_TYPE) {
+    if (((strcmp(name, "GPS_TYPE") == 0) || (strcmp(name, "GPS1_TYPE") == 0)) && (cfg_step == STEP_SET_TYPE)) {
         if (role == AP_GPS::GPS_ROLE_MB_BASE && value != AP_GPS::GPS_TYPE_UBLOX_RTK_BASE) {
             value = (int32_t)AP_GPS::GPS_TYPE_UBLOX_RTK_BASE;
             requires_save_and_reboot = true;
@@ -845,4 +917,4 @@ bool AP_GPS_DroneCAN::instance_exists(const AP_DroneCAN* ap_dronecan)
 }
 #endif // AP_DRONECAN_SEND_GPS
 
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+#endif // AP_GPS_DRONECAN_ENABLED

@@ -1,11 +1,13 @@
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_BK2425_ENABLED
+
 /*
   driver for Beken_2425 radio
  */
 #include <AP_HAL/AP_HAL.h>
 
 //#pragma GCC optimize("O0")
-
-#if defined(HAL_RCINPUT_WITH_AP_RADIO) && CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412
 
 #include <AP_Math/AP_Math.h>
 #include "AP_Radio_bk2425.h"
@@ -33,7 +35,7 @@ extern const AP_HAL::HAL& hal;
 // This is for debugging issues with frequency hopping and synchronisation.
 #define DebugPrintf(level, fmt, args...)   do { if (AP_Radio_beken::radio_singleton && ((level) <= AP_Radio_beken::radio_singleton->get_debug_level())) { printf(fmt, ##args); }} while (0)
 // Output debug information on the mavlink to the UART connected to the WiFi, wrapped in MavLink packets
-#define DebugMavlink(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
+#define DebugMavlink(level, fmt, args...)   do { if ((level) <= get_debug_level()) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
 
 #if SUPPORT_BK_DEBUG_PINS
@@ -1421,7 +1423,4 @@ void SyncAdaptive::Miss(uint8_t channel)
     }
 }
 
-
-
-#endif // HAL_RCINPUT_WITH_AP_RADIO
-
+#endif // AP_RADIO_BK2425_ENABLED

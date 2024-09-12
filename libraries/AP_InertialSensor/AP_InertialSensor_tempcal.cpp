@@ -26,6 +26,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Common/ExpandingString.h>
 #include <AP_Notify/AP_Notify.h>
+#include "AP_InertialSensor.h"
 
 // this scale factor ensures params are easy to work with in GUI parameter editors
 #define SCALE_FACTOR 1.0e6
@@ -348,7 +349,7 @@ void AP_InertialSensor_TCal::update_accel_learning(const Vector3f &accel, float 
         return;
     }
     if (learn == nullptr && hal.scheduler->is_system_initialized()) {
-        learn = new Learn(*this, temperature);
+        learn = NEW_NOTHROW Learn(*this, temperature);
         if (learn) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
                           instance()+1,
@@ -516,7 +517,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
         }
 #if INS_AUX_INSTANCES
         for (uint8_t i=0; i<INS_AUX_INSTANCES; i++) {
-            const uint8_t imu = i+(INS_MAX_INSTANCES-INS_AUX_INSTANCES);
+            const uint8_t imu = i+(INS_MAX_INSTANCES-INS_AUX_INSTANCES)+1;
             const Vector3f &aoff = params[i]._accel_offset.get();
             const Vector3f &ascl = params[i]._accel_scale.get();
             str.printf("INS%u_ACC_ID=%u\n", imu, unsigned(params[i]._accel_id.get()));
@@ -525,6 +526,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
             str.printf("INS%u_ACCOFFS_Z=%f\n", imu, aoff.z);
             str.printf("INS%u_ACCSCAL_X=%f\n", imu, ascl.x);
             str.printf("INS%u_ACCSCAL_Y=%f\n", imu, ascl.y);
+            str.printf("INS%u_ACCSCAL_Z=%f\n", imu, ascl.z);
             str.printf("INS%u_ACC_CALTEMP=%.2f\n", imu, params[i].caltemp_accel.get());
         }
 #endif

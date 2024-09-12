@@ -3,9 +3,6 @@ include ../f103-periph/hwdef.inc
 #STDOUT_SERIAL SD1
 #STDOUT_BAUDRATE 115200
 
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_adsb"
-
-
 define HAL_AIRSPEED_BUS_DEFAULT 0
 define AIRSPEED_MAX_SENSORS 1
 

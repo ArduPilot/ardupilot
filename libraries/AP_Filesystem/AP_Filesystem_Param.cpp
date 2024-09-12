@@ -50,7 +50,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
     }
     struct rfile &r = file[idx];
     if (read_only) {
-        r.cursors = new cursor[num_cursors];
+        r.cursors = NEW_NOTHROW cursor[num_cursors];
         if (r.cursors == nullptr) {
             errno = ENOMEM;
             return -1;
@@ -66,7 +66,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
     r.writebuf = nullptr;
     if (!read_only) {
         // setup for upload
-        r.writebuf = new ExpandingString();
+        r.writebuf = NEW_NOTHROW ExpandingString();
         if (r.writebuf == nullptr) {
             close(idx);
             errno = ENOMEM;

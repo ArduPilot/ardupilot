@@ -1,8 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_EFI_DroneCAN.h"
+#include "AP_EFI_config.h"
 
 #if AP_EFI_DRONECAN_ENABLED
+#include "AP_EFI_DroneCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
@@ -149,6 +150,9 @@ void AP_EFI_DroneCAN::handle_status(const uavcan_equipment_ice_reciprocating_Sta
         c.exhaust_gas_temperature = cs.exhaust_gas_temperature;
         c.lambda_coefficient = cs.lambda_coefficient;
     }
+
+    // Required for healthy message
+    istate.last_updated_ms = AP_HAL::millis();
 
     copy_to_frontend();
 }

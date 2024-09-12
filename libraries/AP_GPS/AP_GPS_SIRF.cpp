@@ -18,10 +18,14 @@
 //	Code by Michael Smith.
 //
 
-#include "AP_GPS_SIRF.h"
-#include <stdint.h>
+#include "AP_GPS_config.h"
 
 #if AP_GPS_SIRF_ENABLED
+
+#include "AP_GPS_SIRF.h"
+#include <AP_HAL/utility/sparse-endian.h>
+#include <stdint.h>
+
 // Initialisation messages
 //
 // Turn off all messages except for 0x29.
@@ -33,8 +37,8 @@ const uint8_t AP_GPS_SIRF::_initialisation_blob[] = {
     0xa0, 0xa2, 0x00, 0x08, 0xa6, 0x00, 0x29, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0, 0xb0, 0xb3 
 };
 
-AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
+AP_GPS_SIRF::AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
+    AP_GPS_Backend(_gps, _params, _state, _port)
 {
     gps.send_blob_start(state.instance, (const char *)_initialisation_blob, sizeof(_initialisation_blob));
 }
@@ -177,13 +181,15 @@ AP_GPS_SIRF::_parse_gps(void)
         }else{
             state.status = AP_GPS::GPS_OK_FIX_2D;
         }
-        state.location.lat      = swap_int32(_buffer.nav.latitude);
-        state.location.lng      = swap_int32(_buffer.nav.longitude);
-        state.location.alt      = swap_int32(_buffer.nav.altitude_msl);
+        state.location.lat      = int32_t(be32toh(_buffer.nav.latitude));
+        state.location.lng      = int32_t(be32toh(_buffer.nav.longitude));
+        const int32_t alt_amsl = int32_t(be32toh(_buffer.nav.altitude_msl));
+        const int32_t alt_ellipsoid = int32_t(be32toh(_buffer.nav.altitude_ellipsoid));
+        state.undulation = (alt_amsl - alt_ellipsoid)*0.01;
         state.have_undulation = true;
-        state.undulation = (state.location.alt - swap_int32(_buffer.nav.altitude_ellipsoid))*0.01;
-        state.ground_speed      = swap_int32(_buffer.nav.ground_speed)*0.01f;
-        state.ground_course     = wrap_360(swap_int16(_buffer.nav.ground_course)*0.01f);
+        set_alt_amsl_cm(state, alt_amsl);
+        state.ground_speed      = int32_t(be32toh(_buffer.nav.ground_speed))*0.01f;
+        state.ground_course     = wrap_360(int16_t(be16toh(_buffer.nav.ground_course)*0.01f));
         state.num_sats          = _buffer.nav.satellites;
         fill_3d_velocity();
         return true;
@@ -248,4 +254,5 @@ bool AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
     }
     return false;
 }
-#endif
+
+#endif  // AP_GPS_SIRF_ENABLED

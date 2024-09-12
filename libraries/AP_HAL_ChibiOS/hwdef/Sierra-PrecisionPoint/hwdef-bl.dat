@@ -1,0 +1,88 @@
+# hw definition file for processing by chibios_pins.py
+
+# Sierra-PrecisionPoint
+
+# MCU class and specific type
+MCU STM32F4xx STM32F412Rx
+
+FLASH_RESERVE_START_KB 0
+
+# two sectors for bootloader, two for storage
+FLASH_BOOTLOADER_LOAD_KB 64
+
+# board ID for firmware load
+APJ_BOARD_ID 1095
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+define CH_CFG_ST_FREQUENCY 1000000
+
+# assume 512k flash part
+FLASH_SIZE_KB 512
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# USB
+PA11 USB_FS_DM OTG1
+PA12 USB_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# USB setup
+USB_STRING_MANUFACTURER "Sierra Aerospace"
+USB_STRING_PRODUCT "Sierra-PrecisionPoint-BL"
+
+# workaround missing define in headers
+define RCC_AHB1RSTR_OTGHRST 0x20000000
+
+# order of UARTs
+SERIAL_ORDER OTG1 USART1
+
+# USART1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+define STM32_SERIAL_USE_USART2 FALSE
+define STM32_SERIAL_USE_USART3 FALSE
+
+define HAL_NO_GPIO_IRQ
+define HAL_USE_EMPTY_IO TRUE
+define DMA_RESERVE_SIZE 0
+
+# avoid timer and RCIN threads to save memory
+define HAL_NO_TIMER_THREAD
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB14 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW LOW
+
+define CAN_APP_NODE_NAME "in.sierraaerospace.PrecisionPoint"
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+# Add CS pins to ensure they are high in bootloader
+PC0 RM3100_CS CS
+PC1 DPS310_CS CS
+Pc4 ICM42688_CS CS
+
+# USB select
+PC6 USB_SEL OUTPUT PUSHPULL SPEED_LOW HIGH
+
+PB12 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0

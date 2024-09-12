@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <setjmp.h>
@@ -30,7 +34,7 @@
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options);
 
     ~lua_scripts();
 
@@ -50,16 +54,18 @@ public:
         SUPPRESS_SCRIPT_LOG = 1U << 2,
         LOG_RUNTIME = 1U << 3,
         DISABLE_PRE_ARM = 1U << 4,
+        SAVE_CHECKSUM = 1U << 5,
     };
 
 private:
 
     void create_sandbox(lua_State *L);
-    void repl_cleanup(void);
 
     typedef struct script_info {
-       int lua_ref;          // reference to the loaded script object
+       int env_ref;          // reference to the script's environment table
+       int run_ref;          // reference to the function to run
        uint64_t next_run_ms; // time (in milliseconds) the script should next be run at
+       uint32_t crc;         // crc32 checksum
        char *name;           // filename for the script // FIXME: This information should be available from Lua
        script_info *next;
     } script_info;
@@ -76,20 +82,6 @@ private:
 
     // reschedule the script for execution. It is assumed the script is not in the list already
     void reschedule_script(script_info *script);
-
-    // REPL stuff
-    struct AP_Scripting::terminal_s &terminal;
-    void doREPL(lua_State *L);
-    void l_print(lua_State *L);
-    void terminal_print(const char *str);
-    int loadline(lua_State *L);
-    int multiline(lua_State *L);
-    int addreturn(lua_State *L);
-    int pushline(lua_State *L, int firstline);
-    int incomplete(lua_State *L, int status);
-    const char * get_prompt(lua_State *L, int firstline);
-    int docall(lua_State *L, int narg, int nres) const;
-    int sandbox_ref;
 
     script_info *scripts; // linked list of scripts to be run, sorted by next run time (soonest first)
 
@@ -119,7 +111,11 @@ private:
     static HAL_Semaphore error_msg_buf_sem;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
-    int current_ref;
+
+    // XOR of crc32 of running scripts
+    static uint32_t loaded_checksum;
+    static uint32_t running_checksum;
+    static HAL_Semaphore crc_sem;
 
 public:
     // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
@@ -131,4 +127,10 @@ public:
     // get semaphore for above error buffer
     static AP_HAL::Semaphore* get_last_error_semaphore() { return &error_msg_buf_sem; }
 
+    // Return the file checksums of running and loaded scripts
+    static uint32_t get_loaded_checksum();
+    static uint32_t get_running_checksum();
+
 };
+
+#endif  // AP_SCRIPTING_ENABLED

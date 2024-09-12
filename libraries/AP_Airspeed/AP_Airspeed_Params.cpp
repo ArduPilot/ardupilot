@@ -14,6 +14,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_ENABLED
+
 #include "AP_Airspeed.h"
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -42,7 +46,7 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,100:SITL
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,16:ExternalAHRS,100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_Airspeed_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -71,7 +75,8 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
-    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
+    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Values for some autopilots are given as examples. Search wiki for "Analog pins".
+    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 5:Navigator, 13:Pixhawk2_PM2/CubeOrange_PM2, 14:CubeOrange, 16:Durandal, 100:PX4-v1
     // @User: Advanced
     AP_GROUPINFO("PIN", 5, AP_Airspeed_Params, pin, 0),
 #endif // HAL_BUILD_AP_PERIPH
@@ -138,3 +143,5 @@ AP_Airspeed_Params::AP_Airspeed_Params(void) {};
 const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = { AP_GROUPEND };
 
 #endif
+
+#endif  // AP_AIRSPEED_ENABLED

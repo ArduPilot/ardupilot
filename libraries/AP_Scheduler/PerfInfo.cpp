@@ -1,3 +1,7 @@
+#include "AP_Scheduler_config.h"
+
+#if AP_SCHEDULER_ENABLED
+
 #include "PerfInfo.h"
 
 #include <AP_Logger/AP_Logger.h>
@@ -12,6 +16,11 @@ extern const AP_HAL::HAL& hal;
 //
 //  we measure the main loop time
 //
+
+// loops over time by this amount or more won't be counted in filtered loop time (and thus loop rate)
+#ifndef AP_SCHEDULER_OVERTIME_MARGIN_US
+#define AP_SCHEDULER_OVERTIME_MARGIN_US 10000UL
+#endif
 
 // reset - reset all records of loop time to zero
 void AP::PerfInfo::reset()
@@ -36,7 +45,7 @@ void AP::PerfInfo::ignore_this_loop()
 // allocate the array of task statistics for use by @SYS/tasks.txt
 void AP::PerfInfo::allocate_task_info(uint8_t num_tasks)
 {
-    _task_info = new TaskInfo[num_tasks];
+    _task_info = NEW_NOTHROW TaskInfo[num_tasks];
     if (_task_info == nullptr) {
         DEV_PRINTF("Unable to allocate scheduler TaskInfo\n");
         _num_tasks = 0;
@@ -90,10 +99,10 @@ void AP::PerfInfo::TaskInfo::print(const char* task_name, uint32_t total_time, E
         pct = elapsed_time_us * 100.0f / total_time;
         avg = MIN(uint16_t(elapsed_time_us / tick_count), 9999);
     }
-#if HAL_MINIMIZE_FEATURES
-    const char* fmt = "%-16.16s MIN=%4u MAX=%4u AVG=%4u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
-#else
+#if AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED
     const char* fmt = "%-32.32s MIN=%4u MAX=%4u AVG=%4u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
+#else
+    const char* fmt = "%-16.16s MIN=%4u MAX=%4u AVG=%4u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
 #endif
     str.printf(fmt, task_name,
                 unsigned(MIN(min_time_us, 9999)), unsigned(MIN(max_time_us, 9999)), unsigned(avg),
@@ -136,8 +145,16 @@ void AP::PerfInfo::check_loop_time(uint32_t time_in_micros)
     const uint32_t now = AP_HAL::micros();
     const uint32_t loop_time_us = now - last_check_us;
     last_check_us = now;
-    if (loop_time_us < overtime_threshold_micros + 10000UL) {
+    if (loop_time_us < overtime_threshold_micros + AP_SCHEDULER_OVERTIME_MARGIN_US) {
         filtered_loop_time = 0.99f * filtered_loop_time + 0.01f * loop_time_us * 1.0e-6f;
+    } else {
+        // esp32 is most likely to regularly trigger long loops, might be
+        // helpful for bringup of other boards too
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#ifdef SCHEDDEBUG
+        DEV_PRINTF("way overtime: %dus\n", loop_time_us);
+#endif
+#endif
     }
 }
 
@@ -196,7 +213,7 @@ float AP::PerfInfo::get_filtered_loop_rate_hz() const
 
 void AP::PerfInfo::update_logging() const
 {
-    gcs().send_text(MAV_SEVERITY_INFO,
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                     "PERF: %u/%u [%lu:%lu] F=%uHz sd=%lu Ex=%lu",
                     (unsigned)get_num_long_running(),
                     (unsigned)get_num_loops(),
@@ -217,3 +234,5 @@ void AP::PerfInfo::set_loop_rate(uint16_t rate_hz)
         filtered_loop_time = 1.0f / rate_hz;
     }
 }
+
+#endif  // AP_SCHEDULER_ENABLED

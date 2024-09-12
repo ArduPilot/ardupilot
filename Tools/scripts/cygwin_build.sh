@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # script to build cygwin binaries for using in MissionPlanner
 # the contents of artifacts directory is uploaded to:
@@ -7,6 +7,7 @@
 # the script assumes you start in the root of the ardupilot git tree
 
 set -x
+set -e
 
 # TOOLCHAIN=i686-pc-cygwin
 TOOLCHAIN=x86_64-pc-cygwin
@@ -17,18 +18,19 @@ $GPP_COMPILER -print-sysroot
 SYS_ROOT=$($GPP_COMPILER -print-sysroot)
 echo "SYS_ROOT=$SYS_ROOT"
 
-git config --global --add safe.directory /cygdrive/d/a/ardupilot/ardupilot
-
 rm -rf artifacts
 mkdir artifacts
 
+# cygwin doesn't work out the parallelism properly
+WAF_OPTIONS="-j8"
+
 (
     python ./waf --color yes --toolchain $TOOLCHAIN --board sitl configure 2>&1
-    python ./waf plane 2>&1
-    python ./waf copter 2>&1
-    python ./waf heli 2>&1
-    python ./waf rover 2>&1
-    python ./waf sub 2>&1
+    python ./waf plane $WAF_OPTIONS 2>&1
+    python ./waf copter $WAF_OPTIONS 2>&1
+    python ./waf heli $WAF_OPTIONS 2>&1
+    python ./waf rover $WAF_OPTIONS 2>&1
+    python ./waf sub $WAF_OPTIONS 2>&1
 ) | tee artifacts/build.txt
 
 # copy both with exe and without to cope with differences

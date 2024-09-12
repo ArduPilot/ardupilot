@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_ENABLED
+
 #include "AP_OAVisGraph.h"
 
 // constructor initialises expanding array to use 20 elements per chunk
@@ -39,3 +43,5 @@ bool AP_OAVisGraph::add_item(const OAItemID &id1, const OAItemID &id2, float dis
     _num_items++;
     return true;
 }
+
+#endif  // AP_OAPATHPLANNER_ENABLED

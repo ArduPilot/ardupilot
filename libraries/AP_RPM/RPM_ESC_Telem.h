@@ -14,21 +14,21 @@
  */
 #pragma once
 
-#include "AP_RPM.h"
-#include "RPM_Backend.h"
+#include "AP_RPM_config.h"
 
 #if AP_RPM_ESC_TELEM_ENABLED
+
+#include "RPM_Backend.h"
 
 class AP_RPM_ESC_Telem : public AP_RPM_Backend
 {
 public:
     // constructor
-    AP_RPM_ESC_Telem(AP_RPM &ranger, uint8_t instance, AP_RPM::RPM_State &_state);
+    using AP_RPM_Backend::AP_RPM_Backend;
 
     // update state
     void update(void) override;
 private:
-    uint8_t instance;
 };
 
 #endif  // AP_RPM_ESC_TELEM_ENABLED

@@ -64,6 +64,8 @@ compass_types = {
     0x12 : "DEVTYPE_RM3100",
     0x13 : "DEVTYPE_MMC5883",
     0x14 : "DEVTYPE_AK09918",
+    0x15 : "DEVTYPE_AK09915",
+    0x16 : "DEVTYPE_QMC5883P",
 }
 
 imu_types = {
@@ -99,6 +101,8 @@ imu_types = {
     0x38 : "DEVTYPE_INS_BMI270",
     0x39 : "DEVTYPE_INS_BMI085",
     0x3A : "DEVTYPE_INS_ICM42670",
+    0x3B : "DEVTYPE_INS_ICM45686",
+    0x3C : "DEVTYPE_INS_SCHA63T",
 }
 
 baro_types = {
@@ -122,6 +126,7 @@ baro_types = {
     0x12 : "DEVTYPE_BARO_MS5837",
     0x13 : "DEVTYPE_BARO_MS5637",
     0x14 : "DEVTYPE_BARO_BMP390",
+    0x15 : "DEVTYPE_BARO_BMP581",
 }
 
 airspeed_types = {

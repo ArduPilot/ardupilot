@@ -18,9 +18,12 @@
 //
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_DRONECAN_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include "RTCM3_Parser.h"
@@ -28,7 +31,7 @@
 
 class AP_GPS_DroneCAN : public AP_GPS_Backend {
 public:
-    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
+    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
     ~AP_GPS_DroneCAN();
 
     bool read() override;
@@ -53,7 +56,7 @@ public:
     static void handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
     static void handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
 #endif
-    static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
+    static bool inter_instance_pre_arm_checks(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
 
     bool get_error_codes(uint32_t &error_codes) const override { error_codes = error_code; return seen_status; };
@@ -119,6 +122,7 @@ private:
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t instance;
+        uint32_t last_inject_ms;
         AP_GPS_DroneCAN* driver;
     } _detected_modules[GPS_MAX_RECEIVERS];
 
@@ -138,5 +142,22 @@ private:
     bool handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, int32_t &value);
     bool handle_param_get_set_response_float(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, float &value);
     void handle_param_save_response(AP_DroneCAN* ap_dronecan, const uint8_t node_id, bool success);
+    void send_rtcm(void);
+
+    // GNSS RTCM injection
+    struct {
+        uint32_t last_send_ms;
+        ByteBuffer *buf;
+    } _rtcm_stream;
+
+    // returns true if the supplied GPS_Type is a DroneCAN GPS type
+    static bool is_dronecan_gps_type(AP_GPS::GPS_Type type) {
+        return (
+            type == AP_GPS::GPS_TYPE_UAVCAN ||
+            type == AP_GPS::GPS_TYPE_UAVCAN_RTK_BASE ||
+            type == AP_GPS::GPS_TYPE_UAVCAN_RTK_ROVER
+       );
+    }
 };
-#endif
+
+#endif  // AP_GPS_DRONECAN_ENABLED

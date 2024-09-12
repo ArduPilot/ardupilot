@@ -16,6 +16,10 @@ public:
     float get_rate_out(float desired_rate, float scaler);
     float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);
 
+    // setup a one loop FF scale multiplier. This replaces any previous scale applied
+    // so should only be used when only one source of scaling is needed
+    void set_ff_scale(float _ff_scale) { ff_scale = _ff_scale; }
+
     void reset_I();
 
     /*
@@ -35,6 +39,9 @@ public:
     {
         return _pid_info;
     }
+
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) { rate_pid.set_notch_sample_rate(sample_rate); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -56,6 +63,7 @@ private:
     float _last_out;
     AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 3, 0, 12, 150, 1};
     float angle_err_deg;
+    float ff_scale = 1.0;
 
     AP_PIDInfo _pid_info;
 

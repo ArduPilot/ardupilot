@@ -10,7 +10,7 @@ extern const AP_HAL::HAL& hal;
 *                   RESET FUNCTIONS                     *
 ********************************************************/
 
-// Reset velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
+// Reset XY velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF2_core::ResetVelocity(void)
 {
@@ -23,7 +23,7 @@ void NavEKF2_core::ResetVelocity(void)
     zeroCols(P,3,4);
     
     if (PV_AidingMode != AID_ABSOLUTE) {
-        stateStruct.velocity.zero();
+        stateStruct.velocity.xy().zero();
         // set the variances using the measurement noise parameter
         P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
     } else {
@@ -942,6 +942,7 @@ void NavEKF2_core::FuseVelPosNED()
 // select the height measurement to be fused from the available baro, range finder and GPS sources
 void NavEKF2_core::selectHeightForFusion()
 {
+#if AP_RANGEFINDER_ENABLED
     // Read range finder data and check for new data in the buffer
     // This data is used by both height and optical flow fusion processing
     readRangeFinder();
@@ -961,6 +962,7 @@ void NavEKF2_core::selectHeightForFusion()
             }
         }
     }
+#endif
 
     // read baro height data from the sensor and check for new data in the buffer
     readBaroData();
@@ -971,6 +973,7 @@ void NavEKF2_core::selectHeightForFusion()
     if (extNavUsedForPos) {
         // always use external navigation as the height source if using for position.
         activeHgtSource = HGT_SOURCE_EXTNAV;
+#if AP_RANGEFINDER_ENABLED
     } else if ((frontend->_altSource == 1) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = HGT_SOURCE_RNG;
@@ -1004,6 +1007,7 @@ void NavEKF2_core::selectHeightForFusion()
             // reliable terrain and range finder so start using range finder height
             activeHgtSource = HGT_SOURCE_RNG;
         }
+#endif  // AP_RANGEFINDER_ENABLED
     } else if (frontend->_altSource == 0) {
         activeHgtSource = HGT_SOURCE_BARO;
     } else if ((frontend->_altSource == 2) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {

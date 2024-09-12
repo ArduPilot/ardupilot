@@ -85,7 +85,7 @@ AP_InertialSensor_BMI055::probe(AP_InertialSensor &imu,
     if (!dev_accel || !dev_gyro) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI055(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_BMI055(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
 
     if (!sensor) {
         return nullptr;

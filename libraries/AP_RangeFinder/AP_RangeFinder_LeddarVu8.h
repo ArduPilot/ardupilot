@@ -1,13 +1,11 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
-
-#ifndef AP_RANGEFINDER_LEDDARVU8_ENABLED
-#define AP_RANGEFINDER_LEDDARVU8_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_LEDDARVU8_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 #define LEDDARVU8_PAYLOAD_LENGTH (8*2)
 
@@ -19,7 +17,7 @@ public:
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
-        return new AP_RangeFinder_LeddarVu8(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_LeddarVu8(_state, _params);
     }
 
 protected:

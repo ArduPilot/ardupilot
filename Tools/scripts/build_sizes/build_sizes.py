@@ -15,13 +15,15 @@ parser = argparse.ArgumentParser(description='create builds.html for list of bui
 parser.add_argument('basedir', default=None, help='base directory (binaries directory)')
 parser.add_argument('--outfile', default="builds.html", help='output file')
 
-build_dirs = ['latest', 'beta', 'stable']
+build_dirs = ['latest', 'beta', 'beta-4.3', 'stable']
 builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AntennaTracker', 'AP_Periph']
 
 args = parser.parse_args()
 
 warning_flash_free = 5000
 warning_build_days = 3
+
+LINUX_BINARIES = ["arduplane", "arducopter", "arducopter-heli", "ardurover", "ardusub", "antennatracker"]
 
 
 class APJInfo:
@@ -34,20 +36,29 @@ class APJInfo:
         self.warning = 0
 
 
-def apj_list(basedir):
+def firmware_list(basedir):
     '''list of APJInfo for one directory'''
     boards = []
     for root, subdirs, files in os.walk(basedir):
         for f in files:
-            if not fnmatch.fnmatch(f, "*.apj"):
+            if not fnmatch.fnmatch(f, "*.apj") and f not in LINUX_BINARIES:
                 continue
             fname = os.path.join(root, f)
             board = os.path.basename(root)
             vehicle = fname.split('/')[-4]
-            fw_json = json.load(open(fname, "r"))
-            githash = fw_json['git_identity']
-            flash_free = fw_json.get('flash_free', -1)
             mtime = os.stat(fname).st_mtime
+            if f in LINUX_BINARIES:
+                git_version = os.path.join(root, "git-version.txt")
+                try:
+                    line = open(git_version, 'r').readline()
+                    githash = line.split()[1][:8]
+                except OSError:
+                    githash = "unknown"
+                flash_free = 999999
+            else:
+                fw_json = json.load(open(fname, "r"))
+                githash = fw_json['git_identity']
+                flash_free = fw_json.get('flash_free', -1)
             apjinfo = APJInfo(vehicle, board, githash, mtime, flash_free)
             boards.append(apjinfo)
     return boards
@@ -97,6 +108,7 @@ a {
 <ul>
 <li>Jump to <a href='#latest'>latest</a></li>
 <li>Jump to <a href='#beta'>beta</a></li>
+<li>Jump to <a href='#beta-4.3'>beta-4.3</a></li>
 <li>Jump to <a href='#stable'>stable</a></li>
 </ul>
 ''' % datetime.now().strftime("%F %k:%M"))
@@ -116,7 +128,7 @@ def write_table(h, build_type):
     boards = []
 
     for build in builds:
-        boards.extend(apj_list(os.path.join(args.basedir, build, build_type)))
+        boards.extend(firmware_list(os.path.join(args.basedir, build, build_type)))
 
     max_mtime = 0
     for apjinfo in boards:

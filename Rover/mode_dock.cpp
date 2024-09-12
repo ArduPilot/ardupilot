@@ -1,6 +1,6 @@
 #include "Rover.h"
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
 
 const AP_Param::GroupInfo ModeDock::var_info[] = {
     // @Param: _SPEED
@@ -171,6 +171,7 @@ void ModeDock::update()
     calc_steering_from_turn_rate(desired_turn_rate);
     calc_throttle(desired_speed, true);
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: DOCK
 // @Description: Dock mode target information
 // @Field: TimeUS: Time since system startup
@@ -196,6 +197,7 @@ void ModeDock::update()
             target_cm.y,
             desired_speed,
             desired_turn_rate);
+#endif
 }
 
 float ModeDock::apply_slowdown(float desired_speed)

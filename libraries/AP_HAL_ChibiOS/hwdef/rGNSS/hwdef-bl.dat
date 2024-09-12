@@ -58,18 +58,13 @@ define HAL_USE_EMPTY_IO TRUE
 
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_RCIN_THREAD
 
 define DMA_RESERVE_SIZE 0
-
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
 PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
-
-define CAN_APP_NODE_NAME "org.ardupilot.rGNSS"
 
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600

@@ -19,6 +19,11 @@
 This provides some support code and variables for MAVLink enabled sketches
 
 */
+
+#include "GCS_config.h"
+
+#if HAL_MAVLINK_BINDINGS_ENABLED
+
 #include "GCS.h"
 #include "GCS_MAVLink.h"
 
@@ -35,6 +40,34 @@ extern const AP_HAL::HAL& hal;
 #include "include/mavlink/v2.0/mavlink_helpers.h"
 #pragma GCC diagnostic pop
 #endif
+
+mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
+#if HAL_GCS_ENABLED
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return nullptr;
+    }
+    return link->channel_buffer();
+#else
+    return nullptr;
+#endif
+}
+
+mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
+#if HAL_GCS_ENABLED
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return nullptr;
+    }
+    return link->channel_status();
+#else
+    return nullptr;
+#endif
+}
+
+#endif // HAL_MAVLINK_BINDINGS_ENABLED
+
+#if HAL_GCS_ENABLED
 
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
@@ -115,7 +148,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     }
     const size_t written = mavlink_comm_port[chan]->write(buf, len);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (written < len) {
+    if (written < len && !mavlink_comm_port[chan]->is_write_locked()) {
         AP_HAL::panic("Short write on UART: %lu < %u", (unsigned long)written, len);
     }
 #else
@@ -157,3 +190,5 @@ HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan)
 {
     return chan_locks[uint8_t(chan)];
 }
+
+#endif  // HAL_GCS_ENABLED

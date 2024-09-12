@@ -18,15 +18,11 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_SIM_ADSB_ENABLED
-#define HAL_SIM_ADSB_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
+#include "SIM_config.h"
 
 #if HAL_SIM_ADSB_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -38,28 +34,40 @@ namespace SITL {
 class ADSB_Vehicle {
     friend class ADSB;
 
-private:
-    void update(float delta_t);
-    
-    Vector3f position; // NED from origin
-    Vector3f velocity_ef; // NED
-    char callsign[9];
-    uint32_t ICAO_address;
+public:
     bool initialised = false;
+
+    const Location &get_location() const;  // return vehicle absolute location
+    // return earth-frame vehicle velocity:
+    bool velocity(Vector3F &ret) const { ret = velocity_ef; return true; }
+
+    uint32_t ICAO_address;
+    Vector3F velocity_ef; // NED
+    char callsign[9];
+
+private:
+    void update(const class Aircraft &aircraft, float delta_t);
+
+    Vector3p position; // NED from origin
+    Location location;
+
     ADSB_EMITTER_TYPE type;
     uint64_t stationary_object_created_ms; // allows expiring of slow/stationary objects
+
 };
-        
-    class ADSB : public SerialDevice {
+
+class ADSB : public SerialDevice {
 public:
     ADSB() {};
     void update(const class Aircraft &aircraft);
 
-private:
     uint8_t num_vehicles;
     static const uint8_t num_vehicles_MAX = 200;
     ADSB_Vehicle vehicles[num_vehicles_MAX];
-    
+
+private:
+    void update_simulated_vehicles(const class Aircraft &aircraft);
+
     // reporting period in ms
     const float reporting_period_ms = 1000;
     uint32_t last_report_us;

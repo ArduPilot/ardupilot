@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_RPM_ENABLED
+
 #include "AP_WindVane_Backend.h"
 
 class AP_WindVane_RPM : public AP_WindVane_Backend
@@ -25,3 +29,5 @@ public:
     // update state
     void update_speed() override;
 };
+
+#endif  // AP_WINDVANE_RPM_ENABLED

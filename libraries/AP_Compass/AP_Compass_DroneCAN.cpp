@@ -22,6 +22,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -31,11 +32,8 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_DroneCAN::DetectedModules AP_Compass_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_DroneCAN::_sem_registry;
 
-AP_Compass_DroneCAN::AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
-    : _ap_dronecan(ap_dronecan)
-    , _node_id(node_id)
-    , _sensor_id(sensor_id)
-    , _devid(devid)
+AP_Compass_DroneCAN::AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint32_t devid) :
+    _devid(devid)
 {
 }
 
@@ -51,6 +49,12 @@ void AP_Compass_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_2, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("mag2_sub");
     }
+
+#if AP_COMPASS_DRONECAN_HIRES_ENABLED
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_hires, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("mag3_sub");
+    }
+#endif
 }
 
 AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
@@ -59,7 +63,7 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
     if (!_detected_modules[index].driver && _detected_modules[index].ap_dronecan) {
         WITH_SEMAPHORE(_sem_registry);
         // Register new Compass mode to a backend
-        driver = new AP_Compass_DroneCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].node_id, _detected_modules[index].sensor_id, _detected_modules[index].devid);
+        driver = NEW_NOTHROW AP_Compass_DroneCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].devid);
         if (driver) {
             if (!driver->init()) {
                 delete driver;
@@ -96,7 +100,7 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
 
 bool AP_Compass_DroneCAN::init()
 {
-    // Adding 1 is necessary to allow backward compatibilty, where this field was set as 1 by default
+    // Adding 1 is necessary to allow backward compatibility, where this field was set as 1 by default
     if (!register_compass(_devid, _instance)) {
         return false;
     }
@@ -123,7 +127,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
     }
 
     bool already_detected = false;
-    // Check if there's an empty spot for possible registeration
+    // Check if there's an empty spot for possible registration
     for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
         if (_detected_modules[i].ap_dronecan == ap_dronecan && 
             _detected_modules[i].node_id == node_id &&
@@ -200,6 +204,37 @@ void AP_Compass_DroneCAN::handle_magnetic_field_2(AP_DroneCAN *ap_dronecan, cons
         driver->handle_mag_msg(mag_vector);
     }
 }
+
+#if AP_COMPASS_DRONECAN_HIRES_ENABLED
+/*
+  just log hires magnetic field data for magnetic surveying
+ */
+void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer,
+                                                      const dronecan_sensors_magnetometer_MagneticFieldStrengthHiRes &msg)
+{
+// @LoggerMessage: MAGH
+// @Description: Magnetometer high resolution data
+// @Field: TimeUS: Time since system startup
+// @Field: Node: CAN node
+// @Field: Sensor: sensor ID on node
+// @Field: Bus: CAN bus
+// @Field: Mx: X axis field
+// @Field: My: y axis field
+// @Field: Mz: z axis field
+
+#if HAL_LOGGING_ENABLED
+    // just log it for now
+    AP::logger().WriteStreaming("MAGH", "TimeUS,Node,Sensor,Bus,Mx,My,Mz", "s#-----", "F------", "QBBBfff",
+                                transfer.timestamp_usec,
+                                transfer.source_node_id,
+                                ap_dronecan->get_driver_index(),
+                                msg.sensor_id,
+                                msg.magnetic_field_ga[0]*1000,
+                                msg.magnetic_field_ga[1]*1000,
+                                msg.magnetic_field_ga[2]*1000);
+#endif  // HAL_LOGGING_ENABLED
+}
+#endif  // AP_COMPASS_DRONECAN_HIRES_ENABLED
 
 void AP_Compass_DroneCAN::read(void)
 {

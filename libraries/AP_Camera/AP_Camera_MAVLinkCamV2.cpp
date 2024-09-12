@@ -23,7 +23,7 @@ void AP_Camera_MAVLinkCamV2::update()
 bool AP_Camera_MAVLinkCamV2::trigger_pic()
 {
     // exit immediately if have not found camera or does not support taking pictures
-    if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_CAPTURE_IMAGE)) {
+    if (_link == nullptr || !(_cam_info.flags & CAMERA_CAP_FLAGS_CAPTURE_IMAGE)) {
         return false;
     }
 
@@ -43,7 +43,7 @@ bool AP_Camera_MAVLinkCamV2::trigger_pic()
 bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
 {
     // exit immediately if have not found camera or does not support recording video
-    if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_CAPTURE_VIDEO)) {
+    if (_link == nullptr || !(_cam_info.flags & CAMERA_CAP_FLAGS_CAPTURE_VIDEO)) {
         return false;
     }
 
@@ -68,7 +68,7 @@ bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
 bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     // exit immediately if have not found camera or does not support zoom
-    if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM)) {
+    if (_link == nullptr || !(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM)) {
         return false;
     }
 
@@ -92,11 +92,11 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float focus_value)
+SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float focus_value)
 {
     // exit immediately if have not found camera or does not support focus
-    if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS)) {
-        return false;
+    if (_link == nullptr || !(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS)) {
+        return SetFocusResult::FAILED;
     }
 
     // prepare and send message
@@ -120,7 +120,7 @@ bool AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float focus_value)
 
     _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
 
-    return true;
+    return SetFocusResult::ACCEPTED;
 }
 
 // handle incoming mavlink message including CAMERA_INFORMATION
@@ -133,28 +133,51 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
 
     // handle CAMERA_INFORMATION
     if (msg.msgid == MAVLINK_MSG_ID_CAMERA_INFORMATION) {
-        mavlink_camera_information_t cam_info;
-        mavlink_msg_camera_information_decode(&msg, &cam_info);
+        mavlink_msg_camera_information_decode(&msg, &_cam_info);
 
-        const uint8_t fw_ver_major = cam_info.firmware_version & 0x000000FF;
-        const uint8_t fw_ver_minor = (cam_info.firmware_version & 0x0000FF00) >> 8;
-        const uint8_t fw_ver_revision = (cam_info.firmware_version & 0x00FF0000) >> 16;
-        const uint8_t fw_ver_build = (cam_info.firmware_version & 0xFF000000) >> 24;
+        const uint8_t fw_ver_major = _cam_info.firmware_version & 0x000000FF;
+        const uint8_t fw_ver_minor = (_cam_info.firmware_version & 0x0000FF00) >> 8;
+        const uint8_t fw_ver_revision = (_cam_info.firmware_version & 0x00FF0000) >> 16;
+        const uint8_t fw_ver_build = (_cam_info.firmware_version & 0xFF000000) >> 24;
 
         // display camera info to user
-        gcs().send_text(MAV_SEVERITY_INFO, "Camera: %s.32 %s.32 fw:%u.%u.%u.%u",
-                cam_info.vendor_name,
-                cam_info.model_name,
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera: %.32s %.32s fw:%u.%u.%u.%u",
+                _cam_info.vendor_name,
+                _cam_info.model_name,
                 (unsigned)fw_ver_major,
                 (unsigned)fw_ver_minor,
                 (unsigned)fw_ver_revision,
                 (unsigned)fw_ver_build);
 
-        // capability flags
-        _cap_flags = cam_info.flags;
-
         _got_camera_info = true;
     }
+}
+
+// send camera information message to GCS
+void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) const
+{
+    // exit immediately if we have not yet received cam info
+    if (!_got_camera_info) {
+        return;
+    }
+
+    // send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),           // time_boot_ms
+        _cam_info.vendor_name,      // vendor_name uint8_t[32]
+        _cam_info.model_name,       // model_name uint8_t[32]
+        _cam_info.firmware_version, // firmware version uint32_t
+        _cam_info.focal_length,     // focal_length float (mm)
+        _cam_info.sensor_size_h,    // sensor_size_h float (mm)
+        _cam_info.sensor_size_v,    // sensor_size_v float (mm)
+        _cam_info.resolution_h,     // resolution_h uint16_t (pix)
+        _cam_info.resolution_v,     // resolution_v uint16_t (pix)
+        _cam_info.lens_id,          // lens_id, uint8_t
+        _cam_info.flags,            // flags uint32_t (CAMERA_CAP_FLAGS)
+        _cam_info.cam_definition_version,   // cam_definition_version uint16_t
+        _cam_info.cam_definition_uri,       // cam_definition_uri char[140]
+        get_gimbal_device_id());    // gimbal_device_id uint8_t
 }
 
 // search for camera in GCS_MAVLink routing table

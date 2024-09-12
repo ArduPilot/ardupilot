@@ -1,5 +1,7 @@
 -- switch between DCM and EKF3 on a switch
 
+---@diagnostic disable: need-check-nil
+
 local scripting_rc1 = rc:find_channel_for_option(300)
 local EKF_TYPE = Parameter('AHRS_EKF_TYPE')
 

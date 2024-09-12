@@ -5,7 +5,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_RTC/AP_RTC.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -13,28 +13,25 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SIYI_HEADER2       0x66    // second header byte
 #define AP_MOUNT_SIYI_PACKETLEN_MIN 10      // minimum number of bytes in a packet.  this is a packet with no data bytes
 #define AP_MOUNT_SIYI_DATALEN_MAX   (AP_MOUNT_SIYI_PACKETLEN_MAX-AP_MOUNT_SIYI_PACKETLEN_MIN) // max bytes for data portion of packet
-#define AP_MOUNT_SIYI_SERIAL_RESEND_MS   1000    // resend angle targets to gimbal once per second
-#define AP_MOUNT_SIYI_MSG_BUF_DATA_START 8  // data starts at this byte in _msg_buf
 #define AP_MOUNT_SIYI_RATE_MAX_RADS radians(90) // maximum physical rotation rate of gimbal in radans/sec
 #define AP_MOUNT_SIYI_PITCH_P       1.50    // pitch controller P gain (converts pitch angle error to target rate)
 #define AP_MOUNT_SIYI_YAW_P         1.50    // yaw controller P gain (converts yaw angle error to target rate)
-#define AP_MOUNT_SIYI_LOCK_RESEND_COUNT 5   // lock value is resent to gimbal every 5 iterations
+#define AP_MOUNT_SIYI_TIMEOUT_MS    1000    // timeout for health and rangefinder readings
+#define AP_MOUNT_SIYI_THERM_TIMEOUT_MS  3000// timeout for temp min/max readings
 
 #define AP_MOUNT_SIYI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_SIYI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: " fmt, ## args); } } while (0)
 
-// init - performs any required initialisation for this instance
-void AP_Mount_Siyi::init()
-{
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_SToRM32, 0);
-    if (_uart != nullptr) {
-        _initialised = true;
-        set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
-    }
-    AP_Mount_Backend::init();
-}
+// hardware lookup table indexed by HardwareModel enum values
+const AP_Mount_Siyi::HWInfo AP_Mount_Siyi::hardware_lookup_table[] {
+        {{'0','0'}, "Unknown"},
+        {{'7','5'}, "A2"},
+        {{'7','3'}, "A8"},
+        {{'6','B'}, "ZR10"},
+        {{'7','8'}, "ZR30"},
+        {{'8','3'}, "ZT6"},
+        {{'7','A'}, "ZT30"},
+};
 
 // update mount position - should be called periodically
 void AP_Mount_Siyi::update()
@@ -52,12 +49,26 @@ void AP_Mount_Siyi::update()
     uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - _last_send_ms) >= 1000) {
         _last_send_ms = now_ms;
-        if (!_got_firmware_version) {
+        if (!_got_hardware_id) {
+            request_hardware_id();
+            return;
+        } else if (!_fw_version.received) {
             request_firmware_version();
             return;
         } else {
             request_configuration();
         }
+
+#if AP_RTC_ENABLED
+        // send UTC time to the camera
+        if (sent_time_count < 5) {
+            uint64_t utc_usec;
+            if (AP::rtc().get_utc_usec(utc_usec) &&
+                send_packet(SiyiCommandId::SET_TIME, (const uint8_t *)&utc_usec, sizeof(utc_usec))) {
+                sent_time_count++;
+            }
+        }
+#endif
     }
 
     // request attitude at regular intervals
@@ -66,77 +77,99 @@ void AP_Mount_Siyi::update()
         _last_req_current_angle_rad_ms = now_ms;
     }
 
+    // request rangefinder distance from ZT30 at 10hz
+    if ((_hardware_model == HardwareModel::ZT30) && (now_ms - _last_rangefinder_req_ms > 100)) {
+        request_rangefinder_distance();
+        _last_rangefinder_req_ms = now_ms;
+    }
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // request thermal min/max from ZT30 or ZT6
+    request_thermal_minmax();
+#endif
+
+    // send attitude to gimbal at 10Hz
+    if (now_ms - _last_attitude_send_ms > 100) {
+        _last_attitude_send_ms = now_ms;
+        send_attitude_position();
+    }
+
     // run zoom control
     update_zoom_control();
 
-    // update based on mount mode
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
+    // Get the target angles or rates first depending on the current mount mode
     switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
         case MAV_MOUNT_MODE_RETRACT: {
             const Vector3f &angle_bf_target = _params.retract_angles.get();
-            send_target_angles(ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             break;
         }
 
-        // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            send_target_angles(ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             break;
         }
 
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            switch (mavt_target.target_type) {
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
+            // mavlink targets are stored while handling the incoming message
+            break;
+        }
+
+        case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's RC inputs
+            MountTarget rc_target;
+            get_rc_target(mnt_target.target_type, rc_target);
+            switch (mnt_target.target_type) {
             case MountTargetType::ANGLE:
-                send_target_angles(mavt_target.angle_rad.pitch, mavt_target.angle_rad.yaw, mavt_target.angle_rad.yaw_is_ef);
+                mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
-                send_target_rates(mavt_target.rate_rads.pitch, mavt_target.rate_rads.yaw, mavt_target.rate_rads.yaw_is_ef);
+                mnt_target.rate_rads = rc_target;
                 break;
-            }
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's rc inputs
-            MountTarget rc_target {};
-            if (get_rc_rate_target(rc_target)) {
-                send_target_rates(rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
-            } else if (get_rc_angle_target(rc_target)) {
-                send_target_angles(rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
             }
             break;
         }
 
         // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_roi(angle_target_rad)) {
-                send_target_angles(angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        case MAV_MOUNT_MODE_GPS_POINT:
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
-        case MAV_MOUNT_MODE_HOME_LOCATION: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_home(angle_target_rad)) {
-                send_target_angles(angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        // point mount to Home location
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            if (get_angle_target_to_home(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
-        case MAV_MOUNT_MODE_SYSID_TARGET:{
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_sysid(angle_target_rad)) {
-                send_target_angles(angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        // point mount to another vehicle
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
         default:
             // we do not know this mode so raise internal error
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+    }
+
+    // send target angles or rates depending on the target type
+    switch (mnt_target.target_type) {
+        case MountTargetType::ANGLE:
+            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
+            break;
+        case MountTargetType::RATE:
+            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
             break;
     }
 }
@@ -145,12 +178,13 @@ void AP_Mount_Siyi::update()
 bool AP_Mount_Siyi::healthy() const
 {
     // unhealthy until gimbal has been found and replied with firmware version info
-    if (!_initialised || !_got_firmware_version) {
+    if (!_initialised || !_fw_version.received) {
         return false;
     }
 
     // unhealthy if attitude information NOT received recently
-    if (AP_HAL::millis() - _last_current_angle_rad_ms > 1000) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_current_angle_rad_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
         return false;
     }
 
@@ -161,7 +195,8 @@ bool AP_Mount_Siyi::healthy() const
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Siyi::get_attitude_quaternion(Quaternion& att_quat)
 {
-    att_quat.from_euler(_current_angle_rad.x, _current_angle_rad.y, _current_angle_rad.z);
+    // Order of rotation for Siyi gimbals is (yaw, roll, pitch), which is 312 order
+    att_quat.from_vector312(_current_angle_rad.x, _current_angle_rad.y, _current_angle_rad.z);
     return true;
 }
 
@@ -282,6 +317,7 @@ void AP_Mount_Siyi::read_incoming_packets()
         if (reset_parser) {
             _parsed_msg.state = ParseState::WAITING_FOR_HEADER_LOW;
             _msg_buff_len = 0;
+            reset_parser = false;
         }
     }
 }
@@ -305,38 +341,66 @@ void AP_Mount_Siyi::process_packet()
 #endif
             break;
         }
-        _got_firmware_version = true;
 
-        // set hardware version based on message length
-        _hardware_model = (_parsed_msg.data_bytes_received <= 8) ? HardwareModel::A8 : HardwareModel::ZR10;
+        // consume and display camera firmware version
+        _fw_version = {};
+        _fw_version.camera.major = _msg_buff[_msg_buff_data_start+2];  // firmware major version
+        _fw_version.camera.minor = _msg_buff[_msg_buff_data_start+1];  // firmware minor version
+        _fw_version.camera.patch = _msg_buff[_msg_buff_data_start+0];  // firmware revision (aka patch)
 
-        // display camera firmware version
-        debug("Mount: SiyiCam fw:%u.%u.%u",
-              (unsigned)_msg_buff[_msg_buff_data_start+2],      // firmware major version
-              (unsigned)_msg_buff[_msg_buff_data_start+1],      // firmware minor version
-              (unsigned)_msg_buff[_msg_buff_data_start+0]);     // firmware revision
+        _fw_version.gimbal.major = _msg_buff[_msg_buff_data_start+6];  // firmware major version
+        _fw_version.gimbal.minor = _msg_buff[_msg_buff_data_start+5];  // firmware minor version
+        _fw_version.gimbal.patch = _msg_buff[_msg_buff_data_start+4];  // firmware revision (aka patch)
+
+        // camera firmware version may be all zero soon after startup.  giveup and try again later
+        if (_fw_version.camera.major == 0 && _fw_version.camera.minor == 0 && _fw_version.camera.patch == 0) {
+            break;
+        }
+
+        _fw_version.received = true;
+
+        // display camera info to user
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi camera fw v%u.%u.%u",
+                _fw_version.camera.major,
+                _fw_version.camera.minor,
+                _fw_version.camera.patch);
 
         // display gimbal info to user
-        gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
-                (unsigned)_msg_buff[_msg_buff_data_start+6],    // firmware major version
-                (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware minor version
-                (unsigned)_msg_buff[_msg_buff_data_start+4]);   // firmware revision
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi gimbal fw v%u.%u.%u",
+                _fw_version.gimbal.major,
+                _fw_version.gimbal.minor,
+                _fw_version.gimbal.patch);
 
-        // display zoom firmware version
-#if AP_MOUNT_SIYI_DEBUG
+        // display zoom firmware version for those that have it
         if (_parsed_msg.data_bytes_received >= 12) {
-            debug("Mount: SiyiZoom fw:%u.%u.%u",
-                (unsigned)_msg_buff[_msg_buff_data_start+10],    // firmware major version
-                (unsigned)_msg_buff[_msg_buff_data_start+9],     // firmware minor version
-                (unsigned)_msg_buff[_msg_buff_data_start+8]);    // firmware revision
+            _fw_version.zoom.major = _msg_buff[_msg_buff_data_start+10];
+            _fw_version.zoom.minor = _msg_buff[_msg_buff_data_start+ 9];
+            _fw_version.zoom.patch = _msg_buff[_msg_buff_data_start+ 8];
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi zoom fw v%u.%u.%u",
+                _fw_version.zoom.major,
+                _fw_version.zoom.minor,
+                _fw_version.zoom.patch);
         }
-#endif
+
+        // report to the user if gimbal firmware is not up-to-date
+        check_firmware_version();
+
         break;
     }
 
-    case SiyiCommandId::HARDWARE_ID:
-        // unsupported
+    case SiyiCommandId::HARDWARE_ID: {
+        // lookup first two digits of hardware id
+        const uint8_t hwid0 = _msg_buff[_msg_buff_data_start];
+        const uint8_t hwid1 = _msg_buff[_msg_buff_data_start+1];
+        for (uint8_t i=1; i<ARRAY_SIZE(hardware_lookup_table); i++) {
+            if (hwid0 == hardware_lookup_table[i].hwid[0] && hwid1 == hardware_lookup_table[i].hwid[1]) {
+               _hardware_model = (HardwareModel)i;
+               GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: Siyi %s", get_model_name());
+            }
+        }
+        _got_hardware_id = true;
         break;
+    }
 
     case SiyiCommandId::AUTO_FOCUS:
 #if AP_MOUNT_SIYI_DEBUG
@@ -391,22 +455,45 @@ void AP_Mount_Siyi::process_packet()
         break;
 
     case SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO: {
-        if (_parsed_msg.data_bytes_received != 5 &&     // ZR10 firmware version reply is 5 bytes
-            _parsed_msg.data_bytes_received != 7) {     // A8 firmware version reply is 7 bytes
-#if AP_MOUNT_SIYI_DEBUG
-            unexpected_len = true;
-#endif
-            break;
+        const RecordingStatus prev_record_status = _config_info.record_status;
+
+        // Update Gimbal Config Information
+        size_t config_sz = MIN(_parsed_msg.data_bytes_received, sizeof(_config_info));
+        memcpy(&_config_info, &_msg_buff[_msg_buff_data_start], config_sz);
+
+        // Alert user if recording status changed
+        if (prev_record_status != _config_info.record_status) {
+            const char * msg = "?";
+            MAV_SEVERITY sev = MAV_SEVERITY_INFO;
+            switch (_config_info.record_status) {
+                case RecordingStatus::OFF:
+                    msg = "OFF";
+                    break;
+                case RecordingStatus::ON:
+                    msg = "ON";
+                    break;
+                case RecordingStatus::NO_CARD:
+                    msg = "NO CARD!";
+                    sev = MAV_SEVERITY_WARNING;
+                    break;
+                case RecordingStatus::DATA_LOSS:
+                    msg = "DATA LOSS!";
+                    sev = MAV_SEVERITY_WARNING;
+                    break;
+            }
+            (void)msg;  // in case GCS_SEND_TEXT not available
+            (void)sev;  // in case GCS_SEND_TEXT not available
+            GCS_SEND_TEXT(sev, "Siyi: recording %s", msg);
         }
-        // update recording state and warn user of mismatch
-        const bool recording = _msg_buff[_msg_buff_data_start+3] > 0;
-        if (recording != _last_record_video) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Siyi: recording %s", recording ? "ON" : "OFF");
-        }
-        _last_record_video = recording;
-        debug("GimConf hdr:%u rec:%u foll:%u", (unsigned)_msg_buff[_msg_buff_data_start+1],
-                                               (unsigned)_msg_buff[_msg_buff_data_start+3],
-                                               (unsigned)_msg_buff[_msg_buff_data_start+4]);
+
+        debug(
+            "GimConf hdr:%u rec:%u foll:%u mntdir:%u vid:%u",
+            (uint8_t)_config_info.hdr_status,
+            (uint8_t)_config_info.record_status,
+            (uint8_t)_config_info.motion_mode,
+            (uint8_t)_config_info.mounting_dir,
+            (uint8_t)_config_info.video_mode
+        );
         break;
     }
 
@@ -419,12 +506,13 @@ void AP_Mount_Siyi::process_packet()
         }
         const uint8_t func_feedback_info = _msg_buff[_msg_buff_data_start];
         const char* err_prefix = "Mount: Siyi";
+        (void)err_prefix;  // in case !HAL_GCS_ENABLED
         switch ((FunctionFeedbackInfo)func_feedback_info) {
         case FunctionFeedbackInfo::SUCCESS:
             debug("FnFeedB success");
             break;
         case FunctionFeedbackInfo::FAILED_TO_TAKE_PHOTO:
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s failed to take picture", err_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s failed to take picture", err_prefix);
             break;
         case FunctionFeedbackInfo::HDR_ON:
             debug("HDR on");
@@ -433,7 +521,7 @@ void AP_Mount_Siyi::process_packet()
             debug("HDR off");
             break;
         case FunctionFeedbackInfo::FAILED_TO_RECORD_VIDEO:
-            gcs().send_text(MAV_SEVERITY_ERROR, "%s failed to record video", err_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s failed to record video", err_prefix);
             break;
         default:
             debug("FnFeedB unexpected val:%u", (unsigned)func_feedback_info);
@@ -456,9 +544,34 @@ void AP_Mount_Siyi::process_packet()
         _current_angle_rad.z = -radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * 0.1);   // yaw angle
         _current_angle_rad.y = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+3], _msg_buff[_msg_buff_data_start+2]) * 0.1);  // pitch angle
         _current_angle_rad.x = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+5], _msg_buff[_msg_buff_data_start+4]) * 0.1);  // roll angle
-        //const float yaw_rate_degs = -(int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+7], _msg_buff[_msg_buff_data_start+6]) * 0.1;   // yaw rate
-        //const float pitch_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]) * 0.1;   // pitch rate
-        //const float roll_rate_deg = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]) * 0.1;  // roll rate
+        _current_rates_rads.z = -radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+7], _msg_buff[_msg_buff_data_start+6]) * 0.1);   // yaw rate
+        _current_rates_rads.y = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]) * 0.1);   // pitch rate
+        _current_rates_rads.x = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]) * 0.1);  // roll rate
+        break;
+    }
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    case SiyiCommandId::GET_TEMP_FULL_IMAGE: {
+        if (_parsed_msg.data_bytes_received != 12) {
+#if AP_MOUNT_SIYI_DEBUG
+            unexpected_len = true;
+#endif
+            break;
+        }
+        _thermal.last_update_ms = AP_HAL::millis();
+        _thermal.max_C = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * 0.01;
+        _thermal.min_C = (int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+3], _msg_buff[_msg_buff_data_start+2]) * 0.01;
+        _thermal.max_pos.x = UINT16_VALUE(_msg_buff[_msg_buff_data_start+5], _msg_buff[_msg_buff_data_start+4]);
+        _thermal.max_pos.y = UINT16_VALUE(_msg_buff[_msg_buff_data_start+7], _msg_buff[_msg_buff_data_start+6]);
+        _thermal.min_pos.x = UINT16_VALUE(_msg_buff[_msg_buff_data_start+9], _msg_buff[_msg_buff_data_start+8]);
+        _thermal.min_pos.y = UINT16_VALUE(_msg_buff[_msg_buff_data_start+11], _msg_buff[_msg_buff_data_start+10]);
+        break;
+    }
+#endif
+
+    case SiyiCommandId::READ_RANGEFINDER: {
+        _rangefinder_dist_m = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]);
+        _last_rangefinder_dist_ms = AP_HAL::millis();
         break;
     }
 
@@ -479,6 +592,9 @@ void AP_Mount_Siyi::process_packet()
 // returns true on success, false if outgoing serial buffer is full
 bool AP_Mount_Siyi::send_packet(SiyiCommandId cmd_id, const uint8_t* databuff, uint8_t databuff_len)
 {
+    if (!_initialised) {
+        return false;
+    }
     // calculate and sanity check packet size
     const uint16_t packet_size = AP_MOUNT_SIYI_PACKETLEN_MIN + databuff_len;
     if (packet_size > AP_MOUNT_SIYI_PACKETLEN_MAX) {
@@ -541,31 +657,42 @@ bool AP_Mount_Siyi::send_1byte_packet(SiyiCommandId cmd_id, uint8_t data_byte)
 // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
 void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef)
 {
-    // send lock/follow value if it has changed
-    if ((yaw_is_ef != _last_lock) || (_lock_send_counter >= AP_MOUNT_SIYI_LOCK_RESEND_COUNT)) {
-        set_lock(yaw_is_ef);
-        _lock_send_counter = 0;
-        _last_lock = yaw_is_ef;
-    } else {
-        _lock_send_counter++;
+    // send lock/follow value
+    const GimbalMotionMode mode = yaw_is_ef ? GimbalMotionMode::LOCK : GimbalMotionMode::FOLLOW;
+    if (!set_motion_mode(mode)) {
+        // couldn't set mode, so don't send rotation
+        return;
     }
 
     const uint8_t yaw_and_pitch_rates[] {(uint8_t)yaw_scalar, (uint8_t)pitch_scalar};
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
 }
 
-// center gimbal
-void AP_Mount_Siyi::center_gimbal()
+// Set gimbal's motion mode if it has changed. Use force=true to always send.
+//   FOLLOW: roll and pitch are in earth-frame, yaw is in body-frame
+//   LOCK: roll, pitch and yaw are all in earth-frame
+//   FPV: roll, pitch and yaw are all in body-frame
+// Returns true if mode successfully sent to Gimbal
+bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool force)
 {
-    send_1byte_packet(SiyiCommandId::CENTER, 1);
-}
+    if (!force && (mode == _config_info.motion_mode)) {
+        // we're already in the right mode...
+        return true;
+    }
 
-// set gimbal's lock vs follow mode
-// lock should be true if gimbal should maintain an earth-frame target
-// lock is false to follow / maintain a body-frame target
-void AP_Mount_Siyi::set_lock(bool lock)
-{
-    send_1byte_packet(SiyiCommandId::PHOTO, lock ? (uint8_t)PhotoFunction::LOCK_MODE : (uint8_t)PhotoFunction::FOLLOW_MODE);
+    PhotoFunction data = PhotoFunction::LOCK_MODE;
+    switch (mode) {
+        case GimbalMotionMode::LOCK:   data = PhotoFunction::LOCK_MODE; break;
+        case GimbalMotionMode::FOLLOW: data = PhotoFunction::FOLLOW_MODE; break;
+        case GimbalMotionMode::FPV:    data = PhotoFunction::FPV_MODE; break;
+    }
+    bool sent = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)data);
+    if (sent) {
+        // assume the mode is set correctly until told otherwise
+        _config_info.motion_mode = mode;
+        request_configuration();
+    }
+    return sent;
 }
 
 // send target pitch and yaw rates to gimbal
@@ -588,13 +715,30 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
         return;
     }
 
+    // if gimbal mounting direction is 2 i.e. upside down, then transform the angles
+    Vector3f current_angle_transformed = _current_angle_rad;
+    if (_config_info.mounting_dir == GimbalMountingDirection::UPSIDE_DOWN) {
+        current_angle_transformed.y = -wrap_PI(_current_angle_rad.y + M_PI);
+        current_angle_transformed.z = -_current_angle_rad.z;
+    }
+
     // use simple P controller to convert pitch angle error (in radians) to a target rate scalar (-100 to +100)
-    const float pitch_err_rad = (pitch_rad - _current_angle_rad.y);
+    const float pitch_err_rad = (pitch_rad - current_angle_transformed.y);
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
-    // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
-    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
-    const float yaw_err_rad = (yaw_bf_rad - _current_angle_rad.z);
+    // convert yaw angle to body-frame
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw()) : yaw_rad;
+
+    // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
+    const float yaw_bf_min = radians(_params.yaw_angle_min);
+    const float yaw_bf_max = radians(_params.yaw_angle_max);
+    if (yaw_bf_rad < yaw_bf_min || yaw_bf_rad > yaw_bf_max) {
+        yaw_bf_rad = constrain_float(yaw_bf_rad, yaw_bf_min, yaw_bf_max);
+        yaw_is_ef = false;
+    }
+
+    // use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
+    const float yaw_err_rad = (yaw_bf_rad - current_angle_transformed.z);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
@@ -617,18 +761,45 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
         return false;
     }
 
-    // check desired recording state has changed
-    bool ret = true;
-    if (_last_record_video != start_recording) {
-        // request recording start or stop (sadly the same message is used)
-        const uint8_t func_type = (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE;
-        ret = send_packet(SiyiCommandId::PHOTO, &func_type, 1);
+    bool success = true;
+    bool send_toggle = false;
+    if (start_recording) {
+        switch (_config_info.record_status) {
+            case RecordingStatus::ON:
+                // already recording...
+                break;
+            // assume that DATA_LOSS is the same as OFF
+            case RecordingStatus::DATA_LOSS:
+            case RecordingStatus::OFF:
+                send_toggle = true;
+                break;
+            case RecordingStatus::NO_CARD:
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Siyi: can't start recording: No Card");
+                success = false;
+                break;
+        }
+    } else {
+        switch (_config_info.record_status) {
+            case RecordingStatus::ON:
+                send_toggle = true;
+                break;
+            // assume that DATA_LOSS is the same as OFF
+            case RecordingStatus::DATA_LOSS:
+            case RecordingStatus::OFF:
+            case RecordingStatus::NO_CARD:
+                // already off...
+                break;
+        }
+    }
+
+    if (send_toggle) {
+        success = send_1byte_packet(SiyiCommandId::PHOTO, (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE);
     }
 
     // request recording state update from gimbal
     request_configuration();
 
-    return ret;
+    return success;
 }
 
 // send zoom rate command to camera. zoom out = -1, hold = 0, zoom in = 1
@@ -665,11 +836,15 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
         return 0;
+    case HardwareModel::A2:
     case HardwareModel::A8:
-        // a8 has 6x digital zoom
+    case HardwareModel::ZT6:
+        // a8, zt6 have 6x digital zoom
         return 6;
     case HardwareModel::ZR10:
-        // zr10 has 30x hybrid zoom (optical + digital)
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT30:
+        // 30x hybrid zoom (optical + digital)
         return 30;
     }
     return 0;
@@ -678,68 +853,56 @@ float AP_Mount_Siyi::get_zoom_mult_max() const
 // set zoom specified as a rate or percentage
 bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 {
-    if (zoom_type == ZoomType::RATE) {
-        // disable absolute zoom target
-        _zoom_mult_target = 0;
-        return send_zoom_rate(zoom_value);
-    }
-
-    // absolute zoom
-    if (zoom_type == ZoomType::PCT) {
+    switch (zoom_type) {
+    case ZoomType::RATE:
+        if (send_zoom_rate(zoom_value)) {
+            _zoom_type = zoom_type;
+            _zoom_rate_target = zoom_value;
+            return true;
+        }
+        return false;
+    case ZoomType::PCT: {
+        // absolute zoom
         float zoom_mult_max = get_zoom_mult_max();
         if (is_positive(zoom_mult_max)) {
             // convert zoom percentage (0~100) to target zoom multiple (e.g. 0~6x or 0~30x)
             const float zoom_mult = linear_interpolate(1, zoom_mult_max, zoom_value, 0, 100);
-            switch (_hardware_model) {
-            case HardwareModel::UNKNOWN:
-                // unknown model
-                return false;
-            case HardwareModel::A8:
-                // set internal zoom control target
-                _zoom_mult_target = zoom_mult;
+            if (send_zoom_mult(zoom_mult)) {
+                _zoom_type = zoom_type;
                 return true;
-            case HardwareModel::ZR10:
-                return send_zoom_mult(zoom_mult);
             }
+            return false;
         }
+        return false;
+    }
     }
 
     // unsupported zoom type
     return false;
 }
 
-// update absolute zoom controller
-// only used for A8 that does not support abs zoom control
+// update zoom controller
 void AP_Mount_Siyi::update_zoom_control()
 {
-    // exit immediately if no target
-    if (!is_positive(_zoom_mult_target)) {
-        return;
-    }
+    if (_zoom_type == ZoomType::RATE) {
+        // limit updates to 1hz
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _last_zoom_control_ms < 1000) {
+            return;
+        }
+        _last_zoom_control_ms = now_ms;
 
-    // limit update rate to 20hz
-    const uint32_t now_ms = AP_HAL::millis();
-    if ((now_ms - _last_zoom_control_ms) <= 50) {
-        return;
+        // only send zoom rate target if it's non-zero because if zero it has already been sent
+        // and sending zero rate also triggers autofocus
+        if (!is_zero(_zoom_rate_target)) {
+            send_zoom_rate(_zoom_rate_target);
+        }
     }
-    _last_zoom_control_ms = now_ms;
-
-    // zoom towards target zoom multiple
-    if (_zoom_mult_target > _zoom_mult + 0.1f) {
-        send_zoom_rate(1);
-    } else if (_zoom_mult_target < _zoom_mult - 0.1f) {
-        send_zoom_rate(-1);
-    } else {
-        send_zoom_rate(0);
-        _zoom_mult_target = 0;
-    }
-
-    debug("Siyi zoom targ:%f act:%f", (double)_zoom_mult_target, (double)_zoom_mult);
 }
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
 {
     switch (focus_type) {
     case FocusType::RATE: {
@@ -750,17 +913,409 @@ bool AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
             // Siyi API specifies -1 should be sent as 255
             focus_step = UINT8_MAX;
         }
-        return send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step);
+        if (!send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step)) {
+            return SetFocusResult::FAILED;
+        }
+        return SetFocusResult::ACCEPTED;
     }
     case FocusType::PCT:
         // not supported
-        return false;
+        return SetFocusResult::INVALID_PARAMETERS;
     case FocusType::AUTO:
-        return send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1);
+        if (!send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1)) {
+            return SetFocusResult::FAILED;
+        }
+        return SetFocusResult::ACCEPTED;
     }
 
     // unsupported focus type
+    return SetFocusResult::INVALID_PARAMETERS;
+}
+
+// set camera lens as a value from 0 to 8
+bool AP_Mount_Siyi::set_lens(uint8_t lens)
+{
+    CameraImageType selected_lens;
+
+    switch (_hardware_model) {
+
+    case HardwareModel::ZT30: {
+        // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
+        static const CameraImageType cam_image_type_table[] {
+            CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
+            CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL,          // 5
+            CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
+            CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE, // 0
+            CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM, // 1
+            CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL, // 2
+            CameraImageType::MAIN_ZOOM_SUB_WIDEANGLE,             // 4
+            CameraImageType::MAIN_WIDEANGLE_SUB_ZOOM,             // 6
+            CameraImageType::MAIN_THERMAL_SUB_WIDEANGLE,          // 8
+        };
+
+        // sanity check lens values
+        if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+            return false;
+        }
+        selected_lens = cam_image_type_table[lens];
+        break;
+    }
+
+    case HardwareModel::ZT6: {
+        // maps lens to siyi camera image type so that lens of 0, 1, 2 are more useful
+        static const CameraImageType cam_image_type_table[] {
+            CameraImageType::MAIN_ZOOM_SUB_THERMAL,               // 3
+            CameraImageType::MAIN_THERMAL_SUB_ZOOM,               // 7
+            CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE, // 0
+        };
+
+        // sanity check lens values
+        if (lens >= ARRAY_SIZE(cam_image_type_table)) {
+            return false;
+        }
+        selected_lens = cam_image_type_table[lens];
+        break;
+    }
+
+    default:
+        // set lens not supported on this camera
+        return false;
+    }
+
+    // send desired image type to camera
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)selected_lens);
+}
+
+// set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+// primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
+bool AP_Mount_Siyi::set_camera_source(uint8_t primary_source, uint8_t secondary_source)
+{
+    // only supported on ZT30.  sanity check lens values
+    if (_hardware_model != HardwareModel::ZT30) {
+        return false;
+    }
+
+    // maps primary and secondary source to siyi camera image type
+    CameraImageType cam_image_type;
+    switch (primary_source) {
+    case 0: // Default (RGB)
+        FALLTHROUGH;
+    case 1: // RGB
+        switch (secondary_source) {
+        case 0: // RGB + Default (None)
+            cam_image_type = CameraImageType::MAIN_ZOOM_SUB_THERMAL;                // 3
+            break;
+        case 2: // PIP RGB+IR
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_THERMAL_SUB_WIDEANGLE;  // 0
+            break;
+        case 4: // PIP RGB+RGB_WIDEANGLE
+            cam_image_type = CameraImageType::MAIN_PIP_ZOOM_WIDEANGLE_SUB_THERMAL;  // 2
+            break;
+        default:
+            return false;
+        }
+        break;
+    case 2: // IR
+        switch (secondary_source) {
+        case 0: // IR + Default (None)
+            cam_image_type = CameraImageType::MAIN_THERMAL_SUB_ZOOM;                // 7
+            break;
+        default:
+            return false;
+        }
+        break;
+    case 4: // RGB_WIDEANGLE
+        switch (secondary_source) {
+        case 0: // RGB_WIDEANGLE + Default (None)
+            cam_image_type = CameraImageType::MAIN_WIDEANGLE_SUB_THERMAL;           // 5
+            break;
+        case 2: // PIP RGB_WIDEANGLE+IR
+            cam_image_type = CameraImageType::MAIN_PIP_WIDEANGLE_THERMAL_SUB_ZOOM;  // 1
+            break;
+        default:
+            return false;
+        }
+        break;
+    default:
+        return false;
+    }
+
+    // send desired image type to camera
+    return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
+}
+
+// send camera information message to GCS
+void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
+{
+    // exit immediately if not initialised
+    if (!_initialised || !_fw_version.received) {
+        return;
+    }
+
+    static const uint8_t vendor_name[32] = "Siyi";
+    static uint8_t model_name[32] {};
+    const uint32_t fw_version = _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
+    const char cam_definition_uri[140] {};
+
+    // copy model name
+    strncpy((char *)model_name, get_model_name(), sizeof(model_name)-1);
+
+    // focal length
+    // To-Do: check these values are correct for A2, ZR30, ZT30
+    float focal_length_mm = 0;
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+    case HardwareModel::A2:
+    case HardwareModel::A8:
+    case HardwareModel::ZT6:
+        focal_length_mm = 21;
+        break;
+    case HardwareModel::ZR10:
+    case HardwareModel::ZR30:
+    case HardwareModel::ZT30:
+        // focal length range from 5.15 ~ 47.38
+        focal_length_mm = 5.15;
+        break;
+    }
+
+    // capability flags
+    const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
+                           CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+                           CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
+                           CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS;
+
+    // send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),       // time_boot_ms
+        vendor_name,            // vendor_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
+        fw_version,             // firmware version uint32_t
+        focal_length_mm,        // focal_length float (mm)
+        0,                      // sensor_size_h float (mm)
+        0,                      // sensor_size_v float (mm)
+        0,                      // resolution_h uint16_t (pix)
+        0,                      // resolution_v uint16_t (pix)
+        0,                      // lens_id uint8_t
+        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
+        0,                      // cam_definition_version uint16_t
+        cam_definition_uri,     // cam_definition_uri char[140]
+        _instance + 1);         // gimbal_device_id uint8_t
+}
+
+// send camera settings message to GCS
+void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
+{
+    const uint8_t mode_id = (_config_info.record_status == RecordingStatus::ON) ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE;
+    const float NaN = nanf("0x4152");
+    const float zoom_mult_max = get_zoom_mult_max();
+    float zoom_pct = 0.0;
+    if (is_positive(zoom_mult_max)) {
+        zoom_pct = linear_interpolate(0, 100, _zoom_mult, 1.0, zoom_mult_max);
+    }
+
+    // send CAMERA_SETTINGS message
+    mavlink_msg_camera_settings_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        mode_id,            // camera mode (0:image, 1:video, 2:image survey)
+        zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+}
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+// send camera thermal range message to GCS
+void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
+{
+    const float NaN = nanf("0x4152");
+    const uint32_t now_ms = AP_HAL::millis();
+    bool timeout = now_ms - _thermal.last_update_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS;
+
+    // send CAMERA_THERMAL_RANGE message
+    mavlink_msg_camera_thermal_range_send(
+        chan,
+        now_ms,             // time_boot_ms
+        _instance + 1,      // video stream id (assume one-to-one mapping with camera id)
+        _instance + 1,      // camera device id
+        timeout ? NaN : _thermal.max_C,     // max in degC
+        timeout ? NaN : _thermal.max_pos.x, // max x position
+        timeout ? NaN : _thermal.max_pos.y, // max y position
+        timeout ? NaN : _thermal.min_C,     // min in degC
+        timeout ? NaN : _thermal.min_pos.x, // min x position
+        timeout ? NaN : _thermal.min_pos.y);// min y position
+}
+#endif
+
+// change camera settings not normally used by autopilot
+// THERMAL_PALETTE: 0:WhiteHot, 2:Sepia, 3:IronBow, 4:Rainbow, 5:Night, 6:Aurora, 7:RedHot, 8:Jungle, 9:Medical, 10:BlackHot, 11:GloryHot
+// THERMAL_GAIN: 0:Low gain (50C ~ 550C), 1:High gain (-20C ~ 150C)
+// THERMAL_RAW_DATA: 0:Disable Raw Data (30fps), 1:Enable Raw Data (25fps)
+bool AP_Mount_Siyi::change_setting(CameraSetting setting, float value)
+{
+    switch (setting) {
+    case CameraSetting::THERMAL_PALETTE:
+        return send_1byte_packet(SiyiCommandId::SET_THERMAL_PALETTE, (uint8_t)value);
+    case CameraSetting::THERMAL_GAIN:
+        return send_1byte_packet(SiyiCommandId::SET_THERMAL_GAIN, (uint8_t)value);
+    case CameraSetting::THERMAL_RAW_DATA:
+        return send_1byte_packet(SiyiCommandId::SET_THERMAL_RAW_DATA, (uint8_t)value);
+    }
+
+    // invalid setting so return false
     return false;
+}
+
+// get model name string. returns "Unknown" if hardware model is not yet known
+const char* AP_Mount_Siyi::get_model_name() const
+{
+    uint8_t model_idx = (uint8_t)_hardware_model;
+    if (model_idx < ARRAY_SIZE(hardware_lookup_table)) {
+        return hardware_lookup_table[model_idx].model_name;
+    }
+    return hardware_lookup_table[0].model_name;
+}
+
+// get rangefinder distance.  Returns true on success
+bool AP_Mount_Siyi::get_rangefinder_distance(float& distance_m) const
+{
+    // only supported on ZT30
+    if (_hardware_model != HardwareModel::ZT30) {
+        return false;
+    }
+
+    // unhealthy if distance not received recently
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_rangefinder_dist_ms > AP_MOUNT_SIYI_TIMEOUT_MS) {
+        return false;
+    }
+
+    distance_m = _rangefinder_dist_m;
+    return true;
+}
+
+// Checks that the firmware version on the Gimbal meets the minimum supported version.
+void AP_Mount_Siyi::check_firmware_version() const
+{
+    if (!_fw_version.received) {
+        debug("Can't check firmware if we haven't received it...");
+        return;
+    }
+
+    if (!_got_hardware_id) {
+        debug("Can't check firmware without Hardware ID!");
+        return;
+    }
+
+    FirmwareVersion minimum_ver {};
+    switch (_hardware_model) {
+        case HardwareModel::A8:
+            minimum_ver.camera.major = 0;
+            minimum_ver.camera.minor = 2;
+            minimum_ver.camera.patch = 1;
+            break;
+
+        case HardwareModel::A2:
+        case HardwareModel::ZR10:
+        case HardwareModel::ZR30:
+        case HardwareModel::ZT6:
+        case HardwareModel::ZT30:
+            // TBD
+            break;
+
+        case HardwareModel::UNKNOWN:
+            debug("Can't check FW on unknown hardware model!");
+            return;
+    }
+
+    const uint32_t minimum_camera_val =  (minimum_ver.camera.major << 16) + (minimum_ver.camera.minor << 8) + minimum_ver.camera.patch;
+    const uint32_t firmware_camera_val = (_fw_version.camera.major << 16) + (_fw_version.camera.minor << 8) + _fw_version.camera.patch;
+
+    const bool is_camera_supported = firmware_camera_val >= minimum_camera_val;
+
+    if (!is_camera_supported) {
+        GCS_SEND_TEXT(
+            MAV_SEVERITY_WARNING,
+            "Mount: Siyi running old camera fw (need v%u.%u.%u)",
+            minimum_ver.camera.major, minimum_ver.camera.minor, minimum_ver.camera.patch
+        );
+    }
+}
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+// get thermal min/max if available at 5hz
+void AP_Mount_Siyi::request_thermal_minmax()
+{
+    // only supported on ZT6 and ZT30
+    if (_hardware_model != HardwareModel::ZT6 &&
+        _hardware_model != HardwareModel::ZT30) {
+        return;
+    }
+
+    // check for timeout
+    uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - _thermal.last_update_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS) &&
+        (now_ms - _thermal.last_req_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS)) {
+        // request thermal min/max at 5hz
+        send_1byte_packet(SiyiCommandId::GET_TEMP_FULL_IMAGE, 2);
+        _thermal.last_req_ms = now_ms;
+    }
+}
+#endif
+
+/*
+  send ArduPilot attitude and position to gimbal
+*/
+void AP_Mount_Siyi::send_attitude_position(void)
+{
+    const auto &ahrs = AP::ahrs();
+    struct {
+        uint32_t time_boot_ms;
+        float roll, pitch, yaw;
+        float rollspeed, pitchspeed, yawspeed;
+    } attitude;
+
+    // get attitude as euler 321
+    const auto &gyro = ahrs.get_gyro();
+    const uint32_t now_ms = AP_HAL::millis();
+
+    attitude.time_boot_ms = now_ms;
+    attitude.roll = ahrs.get_roll();
+    attitude.pitch = ahrs.get_pitch();
+    attitude.yaw = ahrs.get_yaw();
+    attitude.rollspeed = gyro.x;
+    attitude.pitchspeed = gyro.y;
+    attitude.yawspeed = gyro.z;
+
+    send_packet(SiyiCommandId::EXTERNAL_ATTITUDE, (const uint8_t *)&attitude, sizeof(attitude));
+
+    // send location and velocity
+    struct {
+        uint32_t time_boot_ms;
+        int32_t lat, lon;
+        int32_t alt_msl, alt_ellipsoid;
+        Vector3l velocity_ned_int32;
+    } position;
+    Location loc;
+    Vector3f velocity_ned;
+    float undulation = 0;
+    if (!ahrs.get_location(loc) ||
+        !ahrs.get_velocity_NED(velocity_ned)) {
+        return;
+    }
+    AP::gps().get_undulation(undulation);
+
+    position.time_boot_ms = now_ms;
+    position.lat = loc.lat;
+    position.lon = loc.lng;
+    position.alt_msl = loc.alt;
+    position.alt_ellipsoid = position.alt_msl - undulation*100;
+
+    // convert velocity to int32 and scale to mm/s
+    position.velocity_ned_int32.x = velocity_ned.x * 1000;
+    position.velocity_ned_int32.y = velocity_ned.y * 1000;
+    position.velocity_ned_int32.z = velocity_ned.z * 1000;
+
+    send_packet(SiyiCommandId::POSITION_DATA, (const uint8_t *)&position, sizeof(position));
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED

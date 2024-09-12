@@ -34,6 +34,8 @@
 #include "AP_DroneCAN_DNA_Server.h"
 #include <canard.h>
 #include <dronecan_msgs.h>
+#include <AP_SerialManager/AP_SerialManager_config.h>
+#include <AP_Relay/AP_Relay_config.h>
 
 #ifndef DRONECAN_SRV_NUMBER
 #define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
@@ -49,10 +51,30 @@
 #define AP_DRONECAN_HW_VERS_MAJOR 1
 #define AP_DRONECAN_HW_VERS_MINOR 0
 
-#define AP_DRONECAN_MAX_LED_DEVICES 4
+
+#ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
+#ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
+#define AP_DRONECAN_HIMARK_SERVO_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
+#ifndef AP_DRONECAN_SERIAL_ENABLED
+#define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
+#endif
+
+#ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+#define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
+#endif
+
+#if AP_DRONECAN_SERIAL_ENABLED
+#include "AP_DroneCAN_serial.h"
+#endif
 
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
+class CANSensor;
 
 class AP_DroneCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
     friend class AP_DroneCAN_DNA_Server;
@@ -69,10 +91,20 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
+    // add an 11 bit auxillary driver
+    bool add_11bit_driver(CANSensor *sensor) override;
+
+    // handler for outgoing frames for auxillary drivers
+    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) override;
+    
     uint8_t get_driver_index() const { return _driver_index; }
+
+    // define string with length structure
+    struct string { uint8_t len; uint8_t data[128]; };
 
     FUNCTOR_TYPEDEF(ParamGetSetIntCb, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
     FUNCTOR_TYPEDEF(ParamGetSetFloatCb, bool, AP_DroneCAN*, const uint8_t, const char*, float &);
+    FUNCTOR_TYPEDEF(ParamGetSetStringCb, bool, AP_DroneCAN*, const uint8_t, const char*, string &);
     FUNCTOR_TYPEDEF(ParamSaveCb, void, AP_DroneCAN*,  const uint8_t, bool);
 
     void send_node_status();
@@ -86,20 +118,21 @@ public:
     // buzzer
     void set_buzzer_tone(float frequency, float duration_s);
 
-    // send RTCMStream packets
-    void send_RTCMStream(const uint8_t *data, uint32_t len);
-
     // Send Reboot command
     // Note: Do not call this from outside UAVCAN thread context,
     // you can call this from dronecan callbacks and handlers.
     // THIS IS NOT A THREAD SAFE API!
     void send_reboot_request(uint8_t node_id);
 
-    // set param value
+    // get or set param value
+    // returns true on success, false on failure
+    // failures occur when waiting on node to respond to previous get or set request
     bool set_parameter_on_node(uint8_t node_id, const char *name, float value, ParamGetSetFloatCb *cb);
     bool set_parameter_on_node(uint8_t node_id, const char *name, int32_t value, ParamGetSetIntCb *cb);
+    bool set_parameter_on_node(uint8_t node_id, const char *name, const string &value, ParamGetSetStringCb *cb);
     bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetFloatCb *cb);
     bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetIntCb *cb);
+    bool get_parameter_on_node(uint8_t node_id, const char *name, ParamGetSetStringCb *cb);
 
     // Save parameters
     bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
@@ -113,6 +146,8 @@ public:
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
+        USE_HOBBYWING_ESC         = (1U<<7),
+        ENABLE_STATS              = (1U<<8),
     };
 
     // check if a option is set
@@ -126,19 +161,33 @@ public:
 
     CanardInterface& get_canard_iface() { return canard_iface; }
 
+    Canard::Publisher<uavcan_equipment_indication_LightsCommand> rgb_led{canard_iface};
+    Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
+    Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
+
+    // xacti specific publishers
+    Canard::Publisher<com_xacti_CopterAttStatus> xacti_copter_att_status{canard_iface};
+    Canard::Publisher<com_xacti_GimbalControlData> xacti_gimbal_control_data{canard_iface};
+    Canard::Publisher<com_xacti_GnssStatus> xacti_gnss_status{canard_iface};
+
+#if AP_RELAY_DRONECAN_ENABLED
+    // Hardpoint for relay
+    // Needs to be public so relay can edge trigger as well as streaming
+    Canard::Publisher<uavcan_equipment_hardpoint_Command> relay_hardpoint{canard_iface};
+#endif
+
 private:
     void loop(void);
 
     ///// SRV output /////
     void SRV_send_actuator();
     void SRV_send_esc();
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     void SRV_send_himark();
+#endif
 
-    ///// LED /////
-    void led_out_send();
-
-    // buzzer
-    void buzzer_send();
+    //scale servo output appropriately before sending
+    int16_t scale_esc_output(uint8_t idx);
 
     // SafetyState
     void safety_state_send();
@@ -146,30 +195,32 @@ private:
     // send notify vehicle state
     void notify_state_send();
 
-    // send GNSS injection
-    void rtcm_stream_send();
+    // check for parameter get/set response timeout
+    void check_parameter_callback_timeout();
 
-    // send parameter get/set request
+    // send queued parameter get/set request. called from loop
     void send_parameter_request();
     
-    // send parameter save request
+    // send queued parameter save request. called from loop
     void send_parameter_save_request();
 
     // periodic logging
     void logging();
     
-    // set parameter on a node
-    ParamGetSetIntCb *param_int_cb;
-    ParamGetSetFloatCb *param_float_cb;
-    bool param_request_sent = true;
-    HAL_Semaphore _param_sem;
-    uint8_t param_request_node_id;
+    // get parameter on a node
+    ParamGetSetIntCb *param_int_cb;         // latest get param request callback function (for integers)
+    ParamGetSetFloatCb *param_float_cb;     // latest get param request callback function (for floats)
+    ParamGetSetStringCb *param_string_cb;   // latest get param request callback function (for strings)
+    bool param_request_sent = true;         // true after a param request has been sent, false when queued to be sent
+    uint32_t param_request_sent_ms;         // system time that get param request was sent
+    HAL_Semaphore _param_sem;               // semaphore protecting this block of variables
+    uint8_t param_request_node_id;          // node id of most recent get param request
 
     // save parameters on a node
-    ParamSaveCb *save_param_cb;
-    bool param_save_request_sent = true;
-    HAL_Semaphore _param_save_sem;
-    uint8_t param_save_request_node_id;
+    ParamSaveCb *save_param_cb;             // latest save param request callback function
+    bool param_save_request_sent = true;    // true after a save param request has been sent, false when queued to be sent
+    HAL_Semaphore _param_save_sem;          // semaphore protecting this block of variables
+    uint8_t param_save_request_node_id;     // node id of most recent save param request
 
     // UAVCAN parameters
     AP_Int8 _dronecan_node;
@@ -180,6 +231,7 @@ private:
     AP_Int16 _options;
     AP_Int16 _notify_state_hz;
     AP_Int16 _pool_size;
+    AP_Int32 _esc_rv;
 
     uint32_t *mem_pool;
 
@@ -200,36 +252,13 @@ private:
     uint32_t _srv_send_count;
     uint32_t _fail_send_count;
 
-    uint8_t _SRV_armed;
+    uint32_t _SRV_armed_mask; // mask of servo outputs that are active
+    uint32_t _ESC_armed_mask; // mask of ESC outputs that are active
     uint32_t _SRV_last_send_us;
     HAL_Semaphore SRV_sem;
 
     // last log time
     uint32_t last_log_ms;
-
-    ///// LED /////
-    struct led_device {
-        uint8_t led_index;
-        uint8_t red;
-        uint8_t green;
-        uint8_t blue;
-    };
-
-    struct {
-        led_device devices[AP_DRONECAN_MAX_LED_DEVICES];
-        uint8_t devices_count;
-        uint64_t last_update;
-    } _led_conf;
-
-    HAL_Semaphore _led_out_sem;
-
-    // buzzer
-    struct {
-        HAL_Semaphore sem;
-        float frequency;
-        float duration;
-        uint8_t pending_mask; // mask of interfaces to send to
-    } _buzzer;
 
 #if AP_DRONECAN_SEND_GPS
     // send GNSS Fix and yaw, same thing AP_GPS_DroneCAN would receive
@@ -244,17 +273,6 @@ private:
     } _gnss;
 #endif
 
-    // GNSS RTCM injection
-    struct {
-        HAL_Semaphore sem;
-        uint32_t last_send_ms;
-        ByteBuffer *buf;
-    } _rtcm_stream;
-    
-     // ESC
-
-    static HAL_Semaphore _telem_sem;
-
     // node status send
     uint32_t _node_status_last_send_ms;
 
@@ -265,17 +283,33 @@ private:
     uint32_t _last_notify_state_ms;
     uavcan_protocol_NodeStatus node_status_msg;
 
+#if AP_RELAY_DRONECAN_ENABLED
+    void relay_hardpoint_send();
+    struct {
+        AP_Int16 rate_hz;
+        uint32_t last_send_ms;
+        uint8_t last_index;
+    } _relay;
+#endif
+
     CanardInterface canard_iface;
+
+#if AP_DRONECAN_SERIAL_ENABLED
+    AP_DroneCAN_Serial serial;
+#endif
+
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
+    Canard::Publisher<dronecan_protocol_CanStats> can_stats{canard_iface};
+    Canard::Publisher<dronecan_protocol_Stats> protocol_stats{canard_iface};
     Canard::Publisher<uavcan_equipment_actuator_ArrayCommand> act_out_array{canard_iface};
     Canard::Publisher<uavcan_equipment_esc_RawCommand> esc_raw{canard_iface};
-    Canard::Publisher<uavcan_equipment_indication_LightsCommand> rgb_led{canard_iface};
-    Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
     Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};
     Canard::Publisher<uavcan_equipment_safety_ArmingStatus> arming_status{canard_iface};
-    Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
     Canard::Publisher<ardupilot_indication_NotifyState> notify_state{canard_iface};
+
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     Canard::Publisher<com_himark_servo_ServoCmd> himark_out{canard_iface};
+#endif
 
 #if AP_DRONECAN_SEND_GPS
     Canard::Publisher<uavcan_equipment_gnss_Fix2> gnss_fix2{canard_iface};
@@ -296,8 +330,18 @@ private:
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
 
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_StatusExtended> esc_status_extended_cb{this, &AP_DroneCAN::handle_esc_ext_status};
+    Canard::Subscriber<uavcan_equipment_esc_StatusExtended> esc_status_extended_listener{esc_status_extended_cb, _driver_index};
+#endif
+
     Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_debug_LogMessage> debug_cb{this, &AP_DroneCAN::handle_debug};
     Canard::Subscriber<uavcan_protocol_debug_LogMessage> debug_listener{debug_cb, _driver_index};
+
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+    Canard::ObjCallback<AP_DroneCAN, com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_cb{this, &AP_DroneCAN::handle_actuator_status_Volz};
+    Canard::Subscriber<com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_listener{volz_servo_ActuatorStatus_cb, _driver_index};
+#endif
 
     // param client
     Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_param_GetSetResponse> param_get_set_res_cb{this, &AP_DroneCAN::handle_param_get_set_response};
@@ -319,13 +363,47 @@ private:
     Canard::Server<uavcan_protocol_GetNodeInfoRequest> node_info_server{canard_iface, node_info_req_cb};
     uavcan_protocol_GetNodeInfoResponse node_info_rsp;
 
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+    /*
+      Hobbywing ESC support. Note that we need additional meta-data as
+      the status messages do not have an ESC ID in them, so we need a
+      mapping from node ID
+    */
+    #define HOBBYWING_MAX_ESC 8
+    struct {
+        uint32_t last_GetId_send_ms;
+        uint8_t thr_chan[HOBBYWING_MAX_ESC];
+    } hobbywing;
+    void hobbywing_ESC_update();
+
+    void SRV_send_esc_hobbywing();
+    Canard::Publisher<com_hobbywing_esc_RawCommand> esc_hobbywing_raw{canard_iface};
+    Canard::Publisher<com_hobbywing_esc_GetEscID> esc_hobbywing_GetEscID{canard_iface};
+    Canard::ObjCallback<AP_DroneCAN, com_hobbywing_esc_GetEscID> esc_hobbywing_GetEscID_cb{this, &AP_DroneCAN::handle_hobbywing_GetEscID};
+    Canard::Subscriber<com_hobbywing_esc_GetEscID> esc_hobbywing_GetEscID_listener{esc_hobbywing_GetEscID_cb, _driver_index};
+    Canard::ObjCallback<AP_DroneCAN, com_hobbywing_esc_StatusMsg1> esc_hobbywing_StatusMSG1_cb{this, &AP_DroneCAN::handle_hobbywing_StatusMsg1};
+    Canard::Subscriber<com_hobbywing_esc_StatusMsg1> esc_hobbywing_StatusMSG1_listener{esc_hobbywing_StatusMSG1_cb, _driver_index};
+    Canard::ObjCallback<AP_DroneCAN, com_hobbywing_esc_StatusMsg2> esc_hobbywing_StatusMSG2_cb{this, &AP_DroneCAN::handle_hobbywing_StatusMsg2};
+    Canard::Subscriber<com_hobbywing_esc_StatusMsg2> esc_hobbywing_StatusMSG2_listener{esc_hobbywing_StatusMSG2_cb, _driver_index};
+    bool hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) const;
+    void handle_hobbywing_GetEscID(const CanardRxTransfer& transfer, const com_hobbywing_esc_GetEscID& msg);
+    void handle_hobbywing_StatusMsg1(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg1& msg);
+    void handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg2& msg);
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+
+#if AP_DRONECAN_HIMARK_SERVO_SUPPORT
+    void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
+#endif
+    
     // incoming button handling
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
-    void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    void handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg);
+#endif
     static bool is_esc_data_index_valid(const uint8_t index);
     void handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg);
     void handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp);

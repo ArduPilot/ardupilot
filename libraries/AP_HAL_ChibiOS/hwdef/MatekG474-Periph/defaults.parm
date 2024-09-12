@@ -1,0 +1,24 @@
+# ----setup for PORT defaults
+#| EMPTY | USART1 | USART2 | USART3 | UART4 |
+GPS_PORT     2
+MSP_PORT     3
+RNGFND_PORT  4
+ADSB_PORT   -1
+RC_PORT      1
+EFI_PORT    -1
+PRX_PORT    -1
+ESC_TELEM_PORT -1
+
+# ----I2C AirSpeed sensor, disabled by default
+ARSPD_BUS     0   # I2C1
+ARSPD_TYPE    0
+
+# ----I2C External Baro
+BARO_EXT_BUS    -1
+BARO_PROBE_EXT  4095
+
+# ----I2C BATT_MONITOR INA2xx
+BATT_I2C_BUS 0
+BATT_I2C_ADDR 0
+BATT_SHUNT 0.0002
+

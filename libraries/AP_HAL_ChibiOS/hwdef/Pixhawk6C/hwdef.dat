@@ -1,6 +1,10 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the HolybroV6C hardware
 
+
+# default to all pins low to avoid ESD issues
+#DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -32,12 +36,6 @@ env OPTIMIZE -O2
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 USART3 OTG2
 
-# default the 2nd interface to MAVLink2
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
-
 # USB
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -50,13 +48,13 @@ PA14 JTCK-SWCLK SWD
 # telem1
 PE8  UART7_TX UART7
 PE7  UART7_RX UART7
-PE9  UART7_RTS UART7
+PE9  UART7_RTS UART7 LOW PULLDOWN
 PE10 UART7_CTS UART7
 
 # telem2
 PC12 UART5_TX UART5
 PD2 UART5_RX UART5
-PC8 UART5_RTS UART5
+PC8 UART5_RTS UART5 LOW PULLDOWN
 PC9 UART5_CTS UART5
 
 # GPS1
@@ -166,11 +164,9 @@ define HAL_IMUHEAT_I_DEFAULT 0.07
 # power enable pins
 PB2 VDD_3V3_SENSORS1_EN OUTPUT HIGH
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
-PC10 nVDD_5V_HIPOWER_EN OUTPUT HIGH
-PE2  nVDD_5V_PERIPH_EN  OUTPUT HIGH
+# start peripheral power on
+PC10 nVDD_5V_HIPOWER_EN OUTPUT LOW
+PE2  nVDD_5V_PERIPH_EN  OUTPUT LOW
 
 # Control of Spektrum power pin
 PH2 SPEKTRUM_PWR OUTPUT HIGH GPIO(73)
@@ -181,7 +177,7 @@ define HAL_SPEKTRUM_PWR_ENABLED 1
 
 # power sensing
 PE3 VDD_5V_PERIPH_nOC INPUT PULLUP
-PF13 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PC11 VDD_5V_HIPOWER_nOC INPUT PULLUP
 
 PA15 VDD_BRICK_nVALID INPUT PULLUP
 PB12 VDD_BRICK2_nVALID INPUT PULLUP
@@ -200,9 +196,9 @@ PD10 LED_RED OUTPUT OPENDRAIN GPIO(90) HIGH
 PD11 LED_BLUE OUTPUT OPENDRAIN GPIO(92) HIGH
 
 # setup for BoardLED2
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
-define HAL_GPIO_LED_ON 0
 
 # ID pins
 PE12 HW_VER_REV_DRIVE OUTPUT LOW
@@ -241,6 +237,9 @@ SPIDEV ramtron  SPI2 DEVID1  FRAM_CS      MODE3  8*MHZ  8*MHZ
 # 2 IMUs
 IMU Invensensev3 SPI:icm42688 ROTATION_PITCH_180_YAW_90
 IMU BMI055 SPI:bmi055_a SPI:bmi055_g ROTATION_PITCH_180
+# BMI055 is replaced by BMI088 on the lastest hardware revision
+# They use the same CPU signal pins
+IMU BMI088 SPI:bmi055_a SPI:bmi055_g ROTATION_PITCH_180
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
@@ -256,7 +255,11 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
 
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_BIDIR_DSHOT 1

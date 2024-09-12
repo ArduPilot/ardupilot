@@ -24,6 +24,8 @@
 #include <inttypes.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Common/Location.h>
+#include <AP_NavEKF/AP_NavEKF_Source.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -57,6 +59,14 @@ public:
         Vector3f gyro_drift;
         Vector3f accel_ef;
         Vector3f accel_bias;
+
+        Location location;
+        bool location_valid;
+
+        bool get_location(Location &loc) const {
+            loc = location;
+            return location_valid;
+        };
     };
 
     // init sets up INS board orientation
@@ -67,12 +77,20 @@ public:
 
     // get the index of the current primary accelerometer sensor
     virtual uint8_t get_primary_accel_index(void) const {
-        return AP::ins().get_primary_accel();
+#if AP_INERTIALSENSOR_ENABLED
+        return AP::ins().get_first_usable_accel();
+#else
+        return 0;
+#endif
     }
 
     // get the index of the current primary gyro sensor
     virtual uint8_t get_primary_gyro_index(void) const {
-        return AP::ins().get_primary_gyro();
+#if AP_INERTIALSENSOR_ENABLED
+        return AP::ins().get_first_usable_gyro();
+#else
+        return 0;
+#endif
     }
 
     // Methods
@@ -100,7 +118,7 @@ public:
     virtual void request_yaw_reset(void) {}
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    virtual void set_posvelyaw_source_set(uint8_t source_set_idx) {}
+    virtual void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx) {}
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
@@ -108,10 +126,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // get our current position estimate. Return true if a position is available,
-    // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_location(Location &loc) const WARN_IF_UNUSED = 0;
 
     // get latest altitude estimate above ground level in meters and validity flag
     virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
@@ -141,11 +155,11 @@ public:
     }
 
     // get apparent to true airspeed ratio
-    float get_EAS2TAS(void) const;
+    static float get_EAS2TAS(void);
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
-    bool airspeed_sensor_enabled(void) const {
+    static bool airspeed_sensor_enabled(void) {
     #if AP_AIRSPEED_ENABLED
         const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
@@ -156,7 +170,7 @@ public:
 
     // return true if airspeed comes from a specific airspeed sensor, as
     // opposed to an IMU estimate
-    bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
+    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
     #if AP_AIRSPEED_ENABLED
         const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
@@ -177,7 +191,7 @@ public:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    virtual bool get_vert_pos_rate(float &velocity) const = 0;
+    virtual bool get_vert_pos_rate_D(float &velocity) const = 0;
 
     // returns the estimated magnetic field offsets in body frame
     virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
@@ -284,7 +298,7 @@ public:
         return false;
     }
 
-    virtual bool get_filter_status(nav_filter_status &status) const {
+    virtual bool get_filter_status(union nav_filter_status &status) const {
         return false;
     }
 
@@ -303,12 +317,6 @@ public:
     }
 
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
-
-    // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
-        ret.zero();
-        AP::ins().get_delta_velocity(ret, dt);
-    }
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return

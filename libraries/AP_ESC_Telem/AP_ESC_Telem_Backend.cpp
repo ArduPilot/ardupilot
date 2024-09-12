@@ -20,14 +20,19 @@
 #if HAL_WITH_ESC_TELEM
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
 AP_ESC_Telem_Backend::AP_ESC_Telem_Backend() {
     _frontend = AP_ESC_Telem::_singleton;
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // we allow for no frontend in example fw and tools to make it
+    // possible to run them on hardware with IOMCU
     if (_frontend == nullptr) {
         AP_HAL::panic("No ESC frontend");
     }
+#endif
 }
 
 // callback to update the rpm in the frontend, should be called by the driver when new data is available
@@ -38,6 +43,26 @@ void AP_ESC_Telem_Backend::update_rpm(const uint8_t esc_index, const float new_r
 // callback to update the data in the frontend, should be called by the driver when new data is available
 void AP_ESC_Telem_Backend::update_telem_data(const uint8_t esc_index, const TelemetryData& new_data, const uint16_t data_present_mask) {
     _frontend->update_telem_data(esc_index, new_data, data_present_mask);
+}
+
+/*
+  return true if the data is stale
+ */
+bool AP_ESC_Telem_Backend::TelemetryData::stale(uint32_t now_ms) const volatile
+{
+    return last_update_ms == 0 || now_ms - last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS;
+}
+
+/*
+  return true if the requested types of data are available and not stale
+ */
+bool AP_ESC_Telem_Backend::TelemetryData::valid(const uint16_t type_mask) const volatile
+{
+    if ((types & type_mask) == 0) {
+        // Requested type not available
+        return false;
+    }
+    return !stale(AP_HAL::millis());
 }
 
 #endif

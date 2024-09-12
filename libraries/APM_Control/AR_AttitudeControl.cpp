@@ -63,6 +63,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AR_AttitudeControl *AR_AttitudeControl::_singleton;
+
 const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_RAT_P
@@ -139,6 +141,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _STR_RAT_PDMX
+    // @DisplayName: Steering control PD sum maximum
+    // @Description: Steering control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _STR_RAT_D_FF
+    // @DisplayName: Steering control Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _STR_RAT_NTF
+    // @DisplayName: Steering control Target notch filter index
+    // @Description: Steering control Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _STR_RAT_NEF
+    // @DisplayName: Steering control Error notch filter index
+    // @Description: Steering control Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 1, AR_AttitudeControl, AC_PID),
 
     // @Param: _SPEED_P
@@ -213,6 +240,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
+    // @User: Advanced
+
+    // @Param: _SPEED_PDMX
+    // @DisplayName: Speed control PD sum maximum
+    // @Description: Speed control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _SPEED_D_FF
+    // @DisplayName: Speed control Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _SPEED_NTF
+    // @DisplayName: Speed control Target notch filter index
+    // @Description: Speed control Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _SPEED_NEF
+    // @DisplayName: Speed control Error notch filter index
+    // @Description: Speed control Error notch filter index
+    // @Range: 1 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
@@ -351,6 +403,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _BAL_PDMX
+    // @DisplayName: Pitch control PD sum maximum
+    // @Description: Pitch control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _BAL_D_FF
+    // @DisplayName: Pitch control Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _BAL_NTF
+    // @DisplayName: Pitch control Target notch filter index
+    // @Description: Pitch control Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _BAL_NEF
+    // @DisplayName: Pitch control Error notch filter index
+    // @Description: Pitch control Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
 
     // @Param: _BAL_PIT_FF
@@ -435,6 +512,31 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _SAIL_PDMX
+    // @DisplayName: Sail Heel control PD sum maximum
+    // @Description: Sail Heel control PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0.000 1.000
+    // @Increment: 0.01
+
+    // @Param: _SAIL_D_FF
+    // @DisplayName: Sail Heel Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.03
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: _SAIL_NTF
+    // @DisplayName: Sail Heel Target notch filter index
+    // @Description: Sail Heel Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _SAIL_NEF
+    // @DisplayName: Sail Heel Error notch filter index
+    // @Description: Sail Heel Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
 
     // @Param: _TURN_MAX_G
@@ -471,7 +573,8 @@ AR_AttitudeControl::AR_AttitudeControl() :
     _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, 0.0f, AR_ATTCONTROL_THR_SPEED_IMAX, 0.0f, AR_ATTCONTROL_THR_SPEED_FILT, 0.0f),
     _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, 0.0f, AR_ATTCONTROL_PITCH_THR_IMAX, 0.0f, AR_ATTCONTROL_PITCH_THR_FILT, 0.0f),
     _sailboat_heel_pid(AR_ATTCONTROL_HEEL_SAIL_P, AR_ATTCONTROL_HEEL_SAIL_I, AR_ATTCONTROL_HEEL_SAIL_D, 0.0f, AR_ATTCONTROL_HEEL_SAIL_IMAX, 0.0f, AR_ATTCONTROL_HEEL_SAIL_FILT, 0.0f)
-    {
+{
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -510,7 +613,7 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate
 // return a desired turn-rate given a desired heading in radians
 float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float rate_max_rads) const
 {
-    const float yaw_error = wrap_PI(heading_rad - AP::ahrs().yaw);
+    const float yaw_error = wrap_PI(heading_rad - AP::ahrs().get_yaw());
 
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
     float desired_rate = _steer_angle_p.get_p(yaw_error);
@@ -529,12 +632,18 @@ float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float ra
     return desired_rate;
 }
 
-// return a steering servo output from -1 to +1 given a
-// desired yaw rate in radians/sec. Positive yaw is to the right.
+// return a steering servo output given a desired yaw rate in radians/sec.
+// positive yaw is to the right
+// return value is normally in range -1.0 to +1.0 but can be higher or lower
+// also sets steering_limit_left and steering_limit_right flags
 float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt)
 {
     // sanity check dt
     dt = constrain_float(dt, 0.0f, 1.0f);
+
+    // update steering limit flags used by higher level controllers (e.g. position controller)
+    _steering_limit_left = motor_limit_left;
+    _steering_limit_right = motor_limit_right;
 
     // if not called recently, reset input filter and desired turn rate to actual turn rate (used for accel limiting)
     const uint32_t now = AP_HAL::millis();
@@ -548,6 +657,12 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     // acceleration limit desired turn rate
     if (is_positive(_steer_accel_max)) {
         const float change_max = radians(_steer_accel_max) * dt;
+        if (desired_rate <= _desired_turn_rate - change_max) {
+            _steering_limit_left = true;
+        }
+        if (desired_rate >= _desired_turn_rate + change_max) {
+            _steering_limit_right = true;
+        }
         desired_rate = constrain_float(desired_rate, _desired_turn_rate - change_max, _desired_turn_rate + change_max);
     }
     _desired_turn_rate = desired_rate;
@@ -555,6 +670,12 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     // rate limit desired turn rate
     if (is_positive(_steer_rate_max)) {
         const float steer_rate_max_rad = radians(_steer_rate_max);
+        if (_desired_turn_rate <= -steer_rate_max_rad) {
+            _steering_limit_left = true;
+        }
+        if (_desired_turn_rate >= steer_rate_max_rad) {
+            _steering_limit_right = true;
+        }
         _desired_turn_rate = constrain_float(_desired_turn_rate, -steer_rate_max_rad, steer_rate_max_rad);
     }
 
@@ -563,9 +684,16 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
     if (get_forward_speed(speed)) {
         // do not limit to less than 1 deg/s
         const float turn_rate_max = MAX(get_turn_rate_from_lat_accel(get_turn_lat_accel_max(), fabsf(speed)), radians(1.0f));
+        if (_desired_turn_rate <= -turn_rate_max) {
+            _steering_limit_left = true;
+        }
+        if (_desired_turn_rate >= turn_rate_max) {
+            _steering_limit_right = true;
+        }
         _desired_turn_rate = constrain_float(_desired_turn_rate, -turn_rate_max, turn_rate_max);
     }
 
+    // update pid to calculate output to motors
     float output = _steer_rate_pid.update_all(_desired_turn_rate, AP::ahrs().get_yaw_rate_earth(), dt, (motor_limit_left || motor_limit_right));
     output += _steer_rate_pid.get_ff();
     // constrain and return final output
@@ -756,7 +884,7 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, float
     }
 
     // initialise output to feed forward from current pitch angle
-    const float pitch_rad = AP::ahrs().pitch;
+    const float pitch_rad = AP::ahrs().get_pitch();
     float output = sinf(pitch_rad) * _pitch_to_throttle_ff;
 
     // add regular PID control
@@ -812,7 +940,7 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
     }
     _heel_controller_last_ms = now;
 
-    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().roll), dt);
+    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().get_roll()), dt);
 
     // get feed-forward
     const float ff = _sailboat_heel_pid.get_ff();
@@ -835,6 +963,13 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
 
     // constrain and return final output
     return (ff + p + i + d) * -1.0f;
+}
+
+// get the slew rate value for speed and steering for oscillation detection in lua scripts
+void AR_AttitudeControl::get_srate(float &steering_srate, float &speed_srate)
+{
+    steering_srate = get_steering_rate_pid().get_pid_info().slew_rate;
+    speed_srate = _throttle_speed_pid_info.slew_rate;
 }
 
 // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
@@ -940,4 +1075,13 @@ void AR_AttitudeControl::relax_I()
     _steer_rate_pid.reset_I();
     _throttle_speed_pid.reset_I();
     _pitch_to_throttle_pid.reset_I();
+}
+
+void AR_AttitudeControl::set_notch_sample_rate(float sample_rate)
+{
+#if AP_FILTER_ENABLED
+    _steer_rate_pid.set_notch_sample_rate(sample_rate);
+    _throttle_speed_pid.set_notch_sample_rate(sample_rate);
+    _pitch_to_throttle_pid.set_notch_sample_rate(sample_rate);
+#endif
 }

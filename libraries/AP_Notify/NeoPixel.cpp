@@ -61,7 +61,11 @@ uint16_t NeoPixel::init_ports()
 
     for (uint16_t chan=0; chan<16; chan++) {
         if ((1U<<chan) & mask) {
-            led->set_num_neopixel(chan+1, (pNotify->get_led_len()));
+            if (pNotify->get_led_type() & AP_Notify::Notify_LED_NeoPixel) {
+                led->set_num_neopixel(chan+1, pNotify->get_led_len());
+            } else if (pNotify->get_led_type() & AP_Notify::Notify_LED_NeoPixelRGB) {
+                led->set_num_neopixel_rgb(chan+1, pNotify->get_led_len());
+            }
         }
     }
 

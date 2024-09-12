@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
 
 // Code to Write and Read packets from AP_Logger log memory
 // Code to interact with the user to dump or erase logs
@@ -39,11 +39,15 @@ void Copter::Log_Write_Control_Tuning()
         target_climb_rate_cms = pos_control->get_vel_target_z_cms();
     }
 
-    // get surface tracking alts
     float desired_rangefinder_alt;
+#if AP_RANGEFINDER_ENABLED
     if (!surface_tracking.get_target_dist_for_logging(desired_rangefinder_alt)) {
         desired_rangefinder_alt = AP::logger().quiet_nan();
     }
+#else
+    // get surface tracking alts
+    desired_rangefinder_alt = AP::logger().quiet_nan();
+#endif
 
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
@@ -56,7 +60,11 @@ void Copter::Log_Write_Control_Tuning()
         inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : baro_alt,
         desired_rangefinder_alt : desired_rangefinder_alt,
+#if AP_RANGEFINDER_ENABLED
         rangefinder_alt     : surface_tracking.get_dist_for_logging(),
+#else
+        rangefinder_alt     : AP::logger().quiet_nanf(),
+#endif
         terr_alt            : terr_alt,
         target_climb_rate   : target_climb_rate_cms,
         climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()) // float -> int16_t
@@ -67,11 +75,9 @@ void Copter::Log_Write_Control_Tuning()
 // Write an attitude packet
 void Copter::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control->get_att_target_euler_cd();
-    targets.z = wrap_360_cd(targets.z);
-    ahrs.Write_Attitude(targets);
-    ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
- }
+    ahrs.Write_Attitude(attitude_control->get_att_target_euler_rad() * RAD_TO_DEG);
+    attitude_control->Write_Rate(*pos_control);
+}
 
 // Write PIDS packets
 void Copter::Log_Write_PIDS()
@@ -250,7 +256,7 @@ struct PACKED log_SysIdD {
 // Write an rate packet
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
 {
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     struct log_SysIdD pkt_sidd = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
         time_us         : AP_HAL::micros64(),
@@ -284,7 +290,7 @@ struct PACKED log_SysIdS {
 // Write an rate packet
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out)
 {
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     struct log_SysIdS pkt_sids = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDS_MSG),
         time_us             : AP_HAL::micros64(),
@@ -300,31 +306,6 @@ void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitu
     logger.WriteBlock(&pkt_sids, sizeof(pkt_sids));
 #endif
 }
-
-#if FRAME_CONFIG == HELI_FRAME
-struct PACKED log_Heli {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    desired_rotor_speed;
-    float    main_rotor_speed;
-    float    governor_output;
-    float    control_output;
-};
-
-// Write an helicopter packet
-void Copter::Log_Write_Heli()
-{
-    struct log_Heli pkt_heli = {
-        LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
-        time_us                 : AP_HAL::micros64(),
-        desired_rotor_speed     : motors->get_desired_rotor_speed(),
-        main_rotor_speed        : motors->get_main_rotor_speed(),
-        governor_output         : motors->get_governor_output(),
-        control_output          : motors->get_control_output(),
-    };
-    logger.WriteBlock(&pkt_heli, sizeof(pkt_heli));
-}
-#endif
 
 // guided position target logging
 struct PACKED log_Guided_Position_Target {
@@ -481,18 +462,6 @@ const struct LogStructure Copter::log_structure[] = {
       "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
-    
-// @LoggerMessage: HELI
-// @Description: Helicopter related messages 
-// @Field: TimeUS: Time since system startup
-// @Field: DRRPM: Desired rotor speed
-// @Field: ERRPM: Estimated rotor speed
-// @Field: Gov: Governor Output
-// @Field: Throt: Throttle output
-#if FRAME_CONFIG == HELI_FRAME
-    { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" , true },
-#endif
 
 // @LoggerMessage: SIDD
 // @Description: System ID data
@@ -560,6 +529,11 @@ const struct LogStructure Copter::log_structure[] = {
       "GUIA",  "QBffffffff",    "TimeUS,Type,Roll,Pitch,Yaw,RollRt,PitchRt,YawRt,Thrust,ClimbRt", "s-dddkkk-n", "F-000000-0" , true },
 };
 
+uint8_t Copter::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
+
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
@@ -571,32 +545,4 @@ void Copter::Log_Write_Vehicle_Startup_Messages()
     gps.Write_AP_Logger_Log_Startup_messages();
 }
 
-void Copter::log_init(void)
-{
-    logger.Init(log_structure, ARRAY_SIZE(log_structure));
-}
-
-#else // LOGGING_ENABLED
-
-void Copter::Log_Write_Control_Tuning() {}
-void Copter::Log_Write_Attitude(void) {}
-void Copter::Log_Write_EKF_POS() {}
-void Copter::Log_Write_Data(LogDataID id, int32_t value) {}
-void Copter::Log_Write_Data(LogDataID id, uint32_t value) {}
-void Copter::Log_Write_Data(LogDataID id, int16_t value) {}
-void Copter::Log_Write_Data(LogDataID id, uint16_t value) {}
-void Copter::Log_Write_Data(LogDataID id, float value) {}
-void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target) {}
-void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate) {}
-void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
-void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
-void Copter::Log_Write_Vehicle_Startup_Messages() {}
-
-#if FRAME_CONFIG == HELI_FRAME
-void Copter::Log_Write_Heli() {}
-#endif
-
-void Copter::log_init(void) {}
-
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED

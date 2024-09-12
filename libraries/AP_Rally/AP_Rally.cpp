@@ -1,5 +1,7 @@
-/// @file    AP_Rally.h
-/// @brief   Handles rally point storage and retrieval.
+#include "AP_Rally_config.h"
+
+#if HAL_RALLY_ENABLED
+
 #include "AP_Rally.h"
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -7,11 +9,8 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#if HAL_RALLY_ENABLED
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
-
-assert_storage_size<RallyLocation, 15> _assert_storage_size_RallyLocation;
 
 #if APM_BUILD_COPTER_OR_HELI
   #define RALLY_LIMIT_KM_DEFAULT 0.3f
@@ -55,6 +54,8 @@ const AP_Param::GroupInfo AP_Rally::var_info[] = {
 // constructor
 AP_Rally::AP_Rally()
 {
+    ASSERT_STORAGE_SIZE(RallyLocation, 15);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
         AP_HAL::panic("Rally must be singleton");
@@ -115,7 +116,9 @@ bool AP_Rally::set_rally_point_with_index(uint8_t i, const RallyLocation &rallyL
 
     _last_change_time_ms = AP_HAL::millis();
 
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_RallyPoint(_rally_point_total_count, i, rallyLoc);
+#endif
 
     return true;
 }
@@ -128,12 +131,8 @@ Location AP_Rally::rally_location_to_location(const RallyLocation &rally_loc) co
         rally_loc.lat,
         rally_loc.lng,
         rally_loc.alt * 100,
-        Location::AltFrame::ABOVE_HOME
+        (rally_loc.alt_frame_valid == 1) ? Location::AltFrame(rally_loc.alt_frame) : Location::AltFrame::ABOVE_HOME
     };
-
-    // notionally the following call can fail, but we have no facility
-    // to return that fact here:
-    ret.change_alt_frame(Location::AltFrame::ABSOLUTE);
 
     return ret;
 }

@@ -35,7 +35,7 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#if HAVE_FILESYSTEM_SUPPORT
+#if AP_FILESYSTEM_FATFS_ENABLED
 #include "AP_Filesystem_FATFS.h"
 #endif
 
@@ -51,15 +51,10 @@ struct dirent {
 #include <unistd.h>
 
 #ifndef AP_FILESYSTEM_FORMAT_ENABLED
-// only enable for SDMMC filesystems for now as other types can't query
-// block size
-#ifndef HAL_USE_SDMMC
-#define HAL_USE_SDMMC 0
-#endif
-#define AP_FILESYSTEM_FORMAT_ENABLED HAL_USE_SDMMC
+#define AP_FILESYSTEM_FORMAT_ENABLED 1
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_QURT
 #include "AP_Filesystem_posix.h"
 #endif
 
@@ -68,10 +63,6 @@ struct dirent {
 #endif
 
 #include "AP_Filesystem_backend.h"
-
-#ifndef AP_FILESYSTEM_FORMAT_ENABLED
-#define AP_FILESYSTEM_FORMAT_ENABLED 0
-#endif
 
 class AP_Filesystem {
 private:
@@ -91,6 +82,20 @@ public:
     int fsync(int fd);
     int32_t lseek(int fd, int32_t offset, int whence);
     int stat(const char *pathname, struct stat *stbuf);
+
+    // stat variant for scripting
+    typedef struct Stat {
+        uint32_t size;
+        int32_t mode;
+        uint32_t mtime;
+        uint32_t atime;
+        uint32_t ctime;
+        bool is_directory(void) const {
+            return (mode & S_IFMT) == S_IFDIR;
+        }
+    } stat_t;
+    bool stat(const char *pathname, stat_t &stbuf);
+
     int unlink(const char *pathname);
     int mkdir(const char *pathname);
     int rename(const char *oldpath, const char *newpath);
@@ -117,6 +122,9 @@ public:
     // returns null-terminated string; cr or lf terminates line
     bool fgets(char *buf, uint8_t buflen, int fd);
 
+    // run crc32 over file with given name, returns true if successful
+    bool crc32(const char *fname, uint32_t& checksum) WARN_IF_UNUSED;
+
     // format filesystem.  This is async, monitor get_format_status for progress
     bool format(void);
 
@@ -124,10 +132,15 @@ public:
     AP_Filesystem_Backend::FormatStatus get_format_status() const;
 
     /*
-      load a full file. Use delete to free the data
+      Load a file's contents into memory. Returned object must be `delete`d to
+      free the data. The data is guaranteed to be null-terminated such that it
+      can be treated as a string.
      */
     FileData *load_file(const char *filename);
-    
+
+    // get_singleton for scripting
+    static AP_Filesystem *get_singleton(void);
+
 private:
     struct Backend {
         const char *prefix;
@@ -144,6 +157,14 @@ private:
       find backend by open fd
      */
     const Backend &backend_by_fd(int &fd) const;
+
+    // support for listing out virtual directory entries (e.g. @SYS
+    // then @MISSION)
+    struct {
+        uint8_t backend_ofs;
+        struct dirent de;
+        uint8_t d_off;
+    } virtual_dirent;
 };
 
 namespace AP {

@@ -1,14 +1,13 @@
 #pragma once
 
 #include <AP_Arming/AP_Arming.h>
-#include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 class AP_MotorsUGV {
 public:
     // Constructor
-    AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller);
+    AP_MotorsUGV(AP_WheelRateControl& rate_controller);
 
     // singleton support
     static AP_MotorsUGV    *get_singleton(void) { return _singleton; }
@@ -28,6 +27,7 @@ public:
         FRAME_TYPE_OMNI3 = 1,
         FRAME_TYPE_OMNIX = 2,
         FRAME_TYPE_OMNIPLUS = 3,
+        FRAME_TYPE_OMNI3MECANUM = 4,
     };
 
     // initialise motors
@@ -115,6 +115,9 @@ public:
     // returns true if the vehicle is omni
     bool is_omni() const { return _frame_type != FRAME_TYPE_UNDEFINED && _motors_num > 0; }
 
+    // Return the relay index that would be used for param conversion to relay functions
+    bool get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const;
+
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {
         uint8_t steer_left      : 1; // we have reached the steering controller's left most limit
@@ -128,16 +131,16 @@ public:
 
 private:
 
-    enum pwm_type {
-        PWM_TYPE_NORMAL = 0,
-        PWM_TYPE_ONESHOT = 1,
-        PWM_TYPE_ONESHOT125 = 2,
-        PWM_TYPE_BRUSHED_WITH_RELAY = 3,
-        PWM_TYPE_BRUSHED_BIPOLAR = 4,
-        PWM_TYPE_DSHOT150 = 5,
-        PWM_TYPE_DSHOT300 = 6,
-        PWM_TYPE_DSHOT600 = 7,
-        PWM_TYPE_DSHOT1200 = 8
+    enum PWMType {
+        NORMAL = 0,
+        ONESHOT = 1,
+        ONESHOT125 = 2,
+        BRUSHED_WITH_RELAY = 3,
+        BRUSHED_BIPOLAR = 4,
+        DSHOT150 = 5,
+        DSHOT300 = 6,
+        DSHOT600 = 7,
+        DSHOT1200 = 8
     };
 
     // sanity check parameters
@@ -190,7 +193,6 @@ private:
     float get_rate_controlled_throttle(SRV_Channel::Aux_servo_function_t function, float throttle, float dt);
 
     // external references
-    AP_ServoRelayEvents &_relayEvents;
     AP_WheelRateControl &_rate_controller;
 
     static const int8_t AP_MOTORS_NUM_MOTORS_MAX = 4;
@@ -203,6 +205,7 @@ private:
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
+    AP_Float _thrust_asymmetry; // asymmetry factor, how much better your skid-steering motors are at going forward than backwards (forward/backward thrust ratio)
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles

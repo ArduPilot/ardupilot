@@ -28,11 +28,13 @@
 class AP_GPS_SBP : public AP_GPS_Backend
 {
 public:
-    AP_GPS_SBP(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+    AP_GPS_SBP(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
 
+#if HAL_GCS_ENABLED
     bool supports_mavlink_gps_rtk_message() const override { return true; }
+#endif
 
     // Methods
     bool read() override;

@@ -15,15 +15,15 @@
 
 #pragma once
 
+#include "AP_Landing_config.h"
+
+#if HAL_LANDING_DEEPSTALL_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <PID/PID.h>
-
-#ifndef HAL_LANDING_DEEPSTALL_ENABLED
-#define HAL_LANDING_DEEPSTALL_ENABLED (BOARD_FLASH_SIZE > 1024)
-#endif
 
 class AP_Landing;
 
@@ -110,3 +110,5 @@ private:
 
     #define DEEPSTALL_LOITER_ALT_TOLERANCE 5.0f
 };
+
+#endif  // HAL_LANDING_DEEPSTALL_ENABLED

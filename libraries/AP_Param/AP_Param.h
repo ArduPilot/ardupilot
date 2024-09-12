@@ -27,13 +27,18 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Scripting/AP_Scripting_config.h>
+
+#include "AP_Param_config.h"
 
 #include "float.h"
 
 #define AP_MAX_NAME_SIZE 16
 
 // optionally enable debug code for dumping keys
+#ifndef AP_PARAM_KEY_DUMP
 #define AP_PARAM_KEY_DUMP 0
+#endif
 
 #if defined(HAL_GCS_ENABLED)
     #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED
@@ -45,15 +50,21 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#if BOARD_FLASH_SIZE <= 1024
-# define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-#else
-# define AP_PARAM_MAX_EMBEDDED_PARAM 8192
-#endif
+  #if FORCE_APJ_DEFAULT_PARAMETERS
+    #if BOARD_FLASH_SIZE <= 1024
+      #define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+    #else
+      #define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+    #endif
+  #else
+    #define AP_PARAM_MAX_EMBEDDED_PARAM 0
+  #endif
 #endif
 
 // allow for dynamically added tables when scripting enabled
+#ifndef AP_PARAM_DYNAMIC_ENABLED
 #define AP_PARAM_DYNAMIC_ENABLED AP_SCRIPTING_ENABLED
+#endif
 
 // maximum number of dynamically created tables (from scripts)
 #ifndef AP_PARAM_MAX_DYNAMIC
@@ -419,6 +430,11 @@ public:
     ///
     static bool load_all();
 
+    // return true if eeprom is full, used for arming check
+    static bool get_eeprom_full(void) {
+        return eeprom_full;
+    }
+
     // returns storage space used:
     static uint16_t storage_used() { return sentinal_offset; }
 
@@ -458,14 +474,43 @@ public:
 
     // convert old vehicle parameters to new object parameters
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
+    // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
+    static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
+
+    // convert an object which was stored in a vehicle's G2 into a new
+    // object in AP_Vehicle.cpp:
+    struct G2ObjectConversion {
+        void *object_pointer;
+        const struct AP_Param::GroupInfo *var_info;
+        uint16_t old_index;  // Old parameter index in g2
+    };
+    static void         convert_g2_objects(const void *g2, const G2ObjectConversion g2_conversions[], uint8_t num_conversions);
+
+    // convert an object which was stored in a vehicle's top-level
+    // Parameters object into a new object in AP_Vehicle.cpp:
+    struct TopLevelObjectConversion {
+        void *object_pointer;
+        const struct AP_Param::GroupInfo *var_info;
+        uint16_t old_index;  // Old parameter index in g
+    };
+    static void         convert_toplevel_objects(const TopLevelObjectConversion g2_conversions[], uint8_t num_conversions);
 
     /*
       convert width of a parameter, allowing update to wider scalar
       values without changing the parameter indexes. This will return
       true if the parameter was converted from an old parameter value
     */
-    bool convert_parameter_width(ap_var_type old_ptype);
-    
+    bool convert_parameter_width(ap_var_type old_ptype, float scale_factor=1.0) {
+        return _convert_parameter_width(old_ptype, scale_factor, false);
+    }
+    bool convert_centi_parameter(ap_var_type old_ptype) {
+        return convert_parameter_width(old_ptype, 0.01f);
+    }
+    // Converting bitmasks should be done bitwise rather than numerically
+    bool convert_bitmask_parameter_width(ap_var_type old_ptype) {
+        return _convert_parameter_width(old_ptype, 1.0, true);
+    }
+
     // convert a single parameter with scaling
     enum {
         CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
@@ -477,7 +522,7 @@ public:
     // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
     static void         convert_class(uint16_t param_key, void *object_pointer,
                                         const struct AP_Param::GroupInfo *group_info,
-                                        uint16_t old_index, uint16_t old_top_element, bool is_top_level);
+                                        uint16_t old_index, bool is_top_level);
 
     /*
       fetch a parameter value based on the index within a group. This
@@ -623,6 +668,11 @@ private:
     static uint16_t             _frame_type_flags;
 
     /*
+      this is true if when scanning a defaults file we find all of the parameters
+     */
+    static bool done_all_default_params;
+
+    /*
       structure for built-in defaults file that can be modified using apj_tool.py
      */
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0
@@ -723,7 +773,16 @@ private:
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
-    static bool read_param_defaults_file(const char *filename, bool last_pass);
+    static bool count_param_defaults(const volatile char *ptr, int32_t length, uint16_t &count);
+    static bool read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx);
+
+    // load a defaults.parm using AP_FileSystem:
+    static void load_defaults_file_from_filesystem(const char *filename, bool lastpass);
+    // load an @ROMFS defaults.parm using ROMFS API:
+    static void load_defaults_file_from_romfs(const char *filename, bool lastpass);
+
+    // load defaults from supplied string:
+    static void load_param_defaults(const volatile char *ptr, int32_t length, bool last_pass);
 
     /*
       load defaults from embedded parameters
@@ -736,6 +795,13 @@ private:
 
     // return true if the parameter is configured in EEPROM/FRAM
     bool configured_in_storage(void) const;
+
+    /*
+      convert width of a parameter, allowing update to wider scalar
+      values without changing the parameter indexes. This will return
+      true if the parameter was converted from an old parameter value
+    */
+    bool _convert_parameter_width(ap_var_type old_ptype, float scale_factor, bool bitmask);
 
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
@@ -774,6 +840,7 @@ private:
     };
     static struct param_override *param_overrides;
     static uint16_t num_param_overrides;
+    static uint16_t param_overrides_len;
     static uint16_t num_read_only;
 
     // values filled into the EEPROM header
@@ -803,6 +870,8 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+
+    static bool eeprom_full;
 };
 
 namespace AP {

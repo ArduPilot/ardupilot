@@ -14,15 +14,15 @@ import os
 from pymavlink import mavextra
 from pymavlink import mavutil
 
-from common import AutoTest
-from common import NotAchievedException
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
 
-class AutoTestTracker(AutoTest):
+class AutoTestTracker(vehicle_test_suite.TestSuite):
 
     def log_name(self):
         return "AntennaTracker"
@@ -116,34 +116,36 @@ class AutoTestTracker(AutoTest):
                 self.set_rc(chan, pwm)
                 self.wait_servo_channel_value(chan, pwm)
 
-    def SERVOTEST(self):
+    def MAV_CMD_DO_SET_SERVO(self):
         '''Test SERVOTEST mode'''
         self.change_mode(0) # "MANUAL"
         # magically changes to SERVOTEST (3)
-        for value in 1900, 1200:
-            channel = 1
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
-                         channel,
-                         value,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         timeout=1)
-            self.wait_servo_channel_value(channel, value)
-        for value in 1300, 1670:
-            channel = 2
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
-                         channel,
-                         value,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         timeout=1)
-            self.wait_servo_channel_value(channel, value)
+        for method in self.run_cmd, self.run_cmd_int:
+            for value in 1900, 1200:
+                channel = 1
+                method(
+                    mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                    p1=channel,
+                    p2=value,
+                    timeout=1,
+                )
+                self.wait_servo_channel_value(channel, value)
+            for value in 1300, 1670:
+                channel = 2
+                method(
+                    mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+                    p1=channel,
+                    p2=value,
+                    timeout=1,
+                )
+                self.wait_servo_channel_value(channel, value)
+
+    def MAV_CMD_MISSION_START(self):
+        '''test MAV_CMD_MISSION_START mavlink command'''
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode(0)  # "MANUAL"
+            method(mavutil.mavlink.MAV_CMD_MISSION_START)
+            self.wait_mode("AUTO")
 
     def SCAN(self):
         '''Test SCAN mode'''
@@ -160,11 +162,36 @@ class AutoTestTracker(AutoTest):
                                           timeout=90,
                                           comparator=operator.le)
 
+    def BaseMessageSet(self):
+        '''ensure we're getting messages we expect'''
+        self.set_parameter('BATT_MONITOR', 4)
+        self.reboot_sitl()
+        for msg in 'BATTERY_STATUS', :
+            self.assert_receive_message(msg)
+
     def disabled_tests(self):
         return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
             "CPUFailsafe": " tracker doesn't have a CPU failsafe",
         }
+
+    def GPSForYaw(self):
+        '''Moving baseline GPS yaw'''
+        self.load_default_params_file("tracker-gps-for-yaw.parm")
+        self.reboot_sitl()
+
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 20:
+                break
+            m_gps_raw = self.assert_receive_message("GPS2_RAW", verbose=True)
+            m_sim = self.assert_receive_message("SIMSTATE", verbose=True)
+            gps_raw_hdg = m_gps_raw.yaw * 0.01
+            sim_hdg = mavextra.wrap_360(math.degrees(m_sim.yaw))
+            if abs(gps_raw_hdg - sim_hdg) > 5:
+                raise NotAchievedException("GPS_RAW not tracking simstate yaw")
+            self.progress(f"yaw match ({gps_raw_hdg} vs {sim_hdg}")
 
     def tests(self):
         '''return list of all tests'''
@@ -172,8 +199,11 @@ class AutoTestTracker(AutoTest):
         ret.extend([
             self.GUIDED,
             self.MANUAL,
-            self.SERVOTEST,
+            self.MAV_CMD_DO_SET_SERVO,
+            self.MAV_CMD_MISSION_START,
             self.NMEAOutput,
             self.SCAN,
+            self.BaseMessageSet,
+            self.GPSForYaw,
         ])
         return ret

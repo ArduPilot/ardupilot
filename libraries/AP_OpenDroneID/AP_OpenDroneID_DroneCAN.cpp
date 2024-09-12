@@ -36,41 +36,41 @@ static void handle_arm_status(AP_DroneCAN* ap_dronecan, const CanardRxTransfer &
 void AP_OpenDroneID::dronecan_init(AP_DroneCAN *uavcan)
 {
     const uint8_t driver_index = uavcan->get_driver_index();
-    const uint8_t driver_mask = 1U<<driver_index;
+    driver_mask = 1U<<driver_index;
     if (dronecan_done_init & driver_mask) {
         // already initialised
         return;
     }
 
-    dc_location[driver_index] = new Canard::Publisher<dronecan_remoteid_Location>(uavcan->get_canard_iface());
+    dc_location[driver_index] = NEW_NOTHROW Canard::Publisher<dronecan_remoteid_Location>(uavcan->get_canard_iface());
     if (dc_location[driver_index] == nullptr) {
         goto alloc_failed;
     }
     dc_location[driver_index]->set_timeout_ms(20);
     dc_location[driver_index]->set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 
-    dc_basic_id[driver_index] = new Canard::Publisher<dronecan_remoteid_BasicID>(uavcan->get_canard_iface());
+    dc_basic_id[driver_index] = NEW_NOTHROW Canard::Publisher<dronecan_remoteid_BasicID>(uavcan->get_canard_iface());
     if (dc_basic_id[driver_index] == nullptr) {
         goto alloc_failed;
     }
     dc_basic_id[driver_index]->set_timeout_ms(20);
     dc_basic_id[driver_index]->set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 
-    dc_self_id[driver_index] = new Canard::Publisher<dronecan_remoteid_SelfID>(uavcan->get_canard_iface());
+    dc_self_id[driver_index] = NEW_NOTHROW Canard::Publisher<dronecan_remoteid_SelfID>(uavcan->get_canard_iface());
     if (dc_self_id[driver_index] == nullptr) {
         goto alloc_failed;
     }
     dc_self_id[driver_index]->set_timeout_ms(20);
     dc_self_id[driver_index]->set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 
-    dc_system[driver_index] = new Canard::Publisher<dronecan_remoteid_System>(uavcan->get_canard_iface());
+    dc_system[driver_index] = NEW_NOTHROW Canard::Publisher<dronecan_remoteid_System>(uavcan->get_canard_iface());
     if (dc_system[driver_index] == nullptr) {
         goto alloc_failed;
     }
     dc_system[driver_index]->set_timeout_ms(20);
     dc_system[driver_index]->set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 
-    dc_operator_id[driver_index] = new Canard::Publisher<dronecan_remoteid_OperatorID>(uavcan->get_canard_iface());
+    dc_operator_id[driver_index] = NEW_NOTHROW Canard::Publisher<dronecan_remoteid_OperatorID>(uavcan->get_canard_iface());
     if (dc_operator_id[driver_index] == nullptr) {
         goto alloc_failed;
     }
@@ -95,14 +95,6 @@ alloc_failed:
  */
 void AP_OpenDroneID::dronecan_send(AP_DroneCAN *uavcan)
 {
-    const uint8_t driver_index = uavcan->get_driver_index();
-    const uint8_t driver_mask = 1U<<driver_index;
-
-    if (driver_index+1 != _can_driver) {
-        // not enabled for this CAN driver
-        return;
-    }
-
     dronecan_init(uavcan);
 
     if (dronecan_init_failed & driver_mask) {

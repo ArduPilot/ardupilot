@@ -131,7 +131,7 @@ float AP_Proximity_SITL::distance_min() const
 bool AP_Proximity_SITL::get_upward_distance(float &distance) const
 {
     // return distance to fence altitude
-    distance = MAX(0.0f, fence_alt_max->get() - sitl->height_agl);
+    distance = MAX(0.0f, fence_alt_max->get() - sitl->state.height_agl);
     return true;
 }
 

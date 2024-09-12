@@ -36,6 +36,14 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Camera_Backend);
 
+    // camera options parameter values
+    enum class Option : uint8_t {
+        RecordWhileArmed = (1 << 0U)
+    };
+    bool option_is_enabled(Option option) const {
+        return ((uint8_t)_params.options.get() & (uint8_t)option) != 0;
+    }
+
     // init - performs any required initialisation
     virtual void init() {};
 
@@ -51,6 +59,13 @@ public:
     // take a picture.  returns true on success
     bool take_picture();
 
+    // take multiple pictures, time_interval between two consecutive pictures is in miliseconds
+    // total_num is number of pictures to be taken, -1 means capture forever
+    void take_multiple_pictures(uint32_t time_interval_ms, int16_t total_num);
+
+    // stop capturing multiple image sequence
+    void stop_capture();
+
     // entry point to actually take a picture.  returns true on success
     virtual bool trigger_pic() = 0;
 
@@ -63,21 +78,33 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
+    virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
 
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
 
+    // set camera lens as a value from 0 to 5
+    virtual bool set_lens(uint8_t lens) { return false; }
+
+#if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
+    // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
+    virtual bool set_camera_source(AP_Camera::CameraSource primary_source, AP_Camera::CameraSource secondary_source) { return false; }
+#endif
+
+    // get camera image horizontal or vertical field of view in degrees.  returns 0 if unknown
+    float horizontal_fov() const { return MAX(0, _params.hfov); }
+    float vertical_fov() const { return MAX(0, _params.vfov); }
+
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
     // configure camera
-    virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time) {}
+    virtual void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time) {}
 
     // handle camera control
-    virtual void control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
+    virtual void control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id);
 
     // set camera trigger distance in meters
     void set_trigger_distance(float distance_m) { _params.trigg_dist.set(distance_m); }
@@ -85,10 +112,32 @@ public:
     // send camera feedback message to GCS
     void send_camera_feedback(mavlink_channel_t chan);
 
+    // send camera information message to GCS
+    virtual void send_camera_information(mavlink_channel_t chan) const;
+
+    // send camera settings message to GCS
+    virtual void send_camera_settings(mavlink_channel_t chan) const;
+
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    // send camera field of view status
+    void send_camera_fov_status(mavlink_channel_t chan) const;
+#endif
+
+    // send camera capture status message to GCS
+    virtual void send_camera_capture_status(mavlink_channel_t chan) const;
+
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    virtual void send_camera_thermal_range(mavlink_channel_t chan) const {};
+#endif
+
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     virtual bool get_state(AP_Camera::camera_state_t& cam_state) { return false; }
+
+    // change camera settings not normally used by autopilot
+    virtual bool change_setting(CameraSetting setting, float value) { return false; }
 #endif
 
 protected:
@@ -114,11 +163,23 @@ protected:
         uint32_t feedback_trigger_logged_count; // ID sequence number
     } camera_feedback;
 
+    // Picture settings
+    struct {
+        uint32_t time_interval_ms;     // time interval (in miliseconds) between two consecutive pictures
+        int16_t num_remaining;      // number of pictures still to be taken, -1 means take unlimited pictures
+    } time_interval_settings;
+
     // Logging Function
     void log_picture();
     void Write_Camera(uint64_t timestamp_us=0);
     void Write_Trigger();
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
+
+    // get corresponding mount instance for the camera
+    uint8_t get_mount_instance() const;
+
+    // get mavlink gimbal device id which is normally mount_instance+1
+    uint8_t get_gimbal_device_id() const;
 
     // internal members
     uint8_t _instance;      // this instance's number
@@ -129,9 +190,10 @@ protected:
     uint32_t feedback_trigger_timestamp_us; // system time (in microseconds) that timer detected the feedback pin changed
     uint32_t feedback_trigger_logged_count; // number of times the feedback has been logged
     bool trigger_pending;           // true if a call to take_pic() was delayed due to the minimum time interval time
-    uint32_t last_photo_time_ms;    // system time that photo was last taken
+    uint32_t last_picture_time_ms;    // system time that photo was last taken
     Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
+    bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
 };
 
 #endif // AP_CAMERA_ENABLED

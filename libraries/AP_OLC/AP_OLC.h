@@ -32,22 +32,22 @@ public:
     // olc_encodes the given coordinates in lat and lon (deg * OLC_DEG_MULTIPLIER)
     // as an OLC code of the given length. It returns the number of characters
     // written to buf.
-    static int olc_encode(int32_t lat, int32_t lon, size_t length, char *buf, size_t bufsize);
+    static uint32_t olc_encode(int32_t lat, int32_t lon, uint8_t length, char *buf, uint8_t bufsize);
 
 private:
-    static const int32_t initial_exponent;
+    static const int32_t INITIAL_EXPONENT;
     // Work out the enclosing resolution (in degrees) for the grid algorithm.
-    static const int32_t grid_size;
+    static const int32_t GRID_SIZE;
     // Work out the initial resolution
-    static const int32_t initial_resolution;
+    static const int32_t INITIAL_RESOLUTION;
 
     static constexpr char olc_alphabet[] = "23456789CFGHJMPQRVWX";
 
-    static float compute_precision_for_length(int length);
-    static int32_t adjust_latitude(int32_t lat, size_t code_len);
+    static float compute_precision_for_length(uint8_t length);
+    static int32_t adjust_latitude(int32_t lat, uint8_t code_len);
     static int32_t normalize_longitude(int32_t lon);
-    static unsigned encode_pairs(uint32_t lat, uint32_t lon, size_t length, char *buf, size_t bufsize);
-    static int encode_grid(uint32_t lat, uint32_t lon, size_t length, char *buf, size_t bufsize);
+    static uint32_t encode_pairs(uint32_t lat, uint32_t lon, uint8_t length, char *buf, uint8_t bufsize);
+    static int32_t encode_grid(uint32_t lat, uint32_t lon, uint8_t length, char *buf, uint8_t bufsize);
 
 };
 

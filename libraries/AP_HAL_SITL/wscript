@@ -1,0 +1,2 @@
+def configure(cfg):
+    cfg.env.DOUBLE_PRECISION_LIBRARIES['AP_HAL_SITL'] = True

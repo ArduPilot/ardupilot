@@ -1,3 +1,5 @@
+#include "AP_NavEKF3.h"
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF3_core.h"
@@ -25,7 +27,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -51,7 +53,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -77,7 +79,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -103,7 +105,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -165,7 +167,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: VEL_I_GATE
     // @DisplayName: GPS velocity innovation gate size
-    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted. If EK3_GLITCH_RAD set to 0 the velocity innovations will be clipped instead of rejected if they exceed the gate size and a smaller value of EK3_VEL_I_GATE not exceeding 300 is recommended to limit the effect of GPS transient errors.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
@@ -182,7 +184,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: POS_I_GATE
     // @DisplayName: GPS position measurement gate size
-    // @Description: This sets the percentage number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Description: This sets the percentage number of standard deviations applied to the GPS position measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted. If EK3_GLITCH_RAD has been set to 0 the horizontal position innovations will be clipped instead of rejected if they exceed the gate size so a smaller value of EK3_POS_I_GATE not exceeding 300 is recommended to limit the effect of GPS transient errors.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
@@ -190,7 +192,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: GLITCH_RAD
     // @DisplayName: GPS glitch radius gate size (m)
-    // @Description: This controls the maximum radial uncertainty in position between the value predicted by the filter and the value measured by the GPS before the filter position and velocity states are reset to the GPS. Making this value larger allows the filter to ignore larger GPS glitches but also means that non-GPS errors such as IMU and compass can create a larger error in position before the filter is forced back to the GPS position.
+    // @Description: This controls the maximum radial uncertainty in position between the value predicted by the filter and the value measured by the GPS before the filter position and velocity states are reset to the GPS. Making this value larger allows the filter to ignore larger GPS glitches but also means that non-GPS errors such as IMU and compass can create a larger error in position before the filter is forced back to the GPS position. If EK3_GLITCH_RAD set to 0 the GPS innovations will be clipped instead of rejected if they exceed the gate size set by EK3_VEL_I_GATE and EK3_POS_I_GATE which can be useful if poor quality sensor data is causing GPS rejection and loss of navigation but does make the EKF more susceptible to GPS glitches. If setting EK3_GLITCH_RAD to 0 it is recommended to reduce EK3_VEL_I_GATE and EK3_POS_I_GATE to 300.
     // @Range: 10 100
     // @Increment: 5
     // @User: Advanced
@@ -207,8 +209,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
-    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors.
-    // @Range: 0.1 10.0
+    // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors. A larger value for EK3_ALT_M_NSE may be required when operating with EK3_SRCx_POSZ = 0. This parameter also sets the noise for the 'synthetic' zero height measurement that is used when EK3_SRCx_POSZ = 0.
+    // @Range: 0.1 100.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
@@ -216,7 +218,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: HGT_I_GATE
     // @DisplayName: Height measurement gate size
-    // @Description: This sets the percentage number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Description: This sets the percentage number of standard deviations applied to the height measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.  If EK3_GLITCH_RAD set to 0 the vertical position innovations will be clipped instead of rejected if they exceed the gate size and a smaller value of EK3_HGT_I_GATE not exceeding 300 is recommended to limit the effect of height sensor transient errors.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
@@ -368,7 +370,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
     // @Description: This noise controls the growth of the vertical accelerometer delta velocity bias state error estimate. Increasing it makes accelerometer bias estimation faster and noisier.
-    // @Range: 0.00001 0.005
+    // @Range: 0.00001 0.02
     // @User: Advanced
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
@@ -734,10 +736,18 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Units: m
     AP_GROUPINFO("GPS_VACC_MAX", 10, NavEKF3, _gpsVAccThreshold, 0.0f),
 
+    // @Param: OPTIONS
+    // @DisplayName: Optional EKF behaviour
+    // @Description: This controls optional EKF behaviour. Setting JammingExpected will change the EKF nehaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad
+    // @Bitmask: 0:JammingExpected
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
+
     AP_GROUPEND
 };
 
-NavEKF3::NavEKF3()
+NavEKF3::NavEKF3() :
+    dal{AP::dal()}
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -750,11 +760,11 @@ bool NavEKF3::InitialiseFilter(void)
     if (_enable == 0 || _imuMask == 0) {
         return false;
     }
-    const auto &ins = AP::dal().ins();
+    const auto &ins = dal.ins();
 
-    AP::dal().start_frame(AP_DAL::FrameType::InitialiseFilterEKF3);
+    dal.start_frame(AP_DAL::FrameType::InitialiseFilterEKF3);
 
-    imuSampleTime_us = AP::dal().micros64();
+    imuSampleTime_us = dal.micros64();
 
     // remember expected frame time
     const float loop_rate = ins.get_loop_rate_hz();
@@ -781,7 +791,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // don't run multiple filters for 1 IMU
         uint8_t mask = (1U<<ins.get_accel_count())-1;
-        _imuMask.set(_imuMask.get() & mask);
+        _imuMask.set_and_default(_imuMask.get() & mask);
         
         // initialise the setup variables
         for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
@@ -800,7 +810,7 @@ bool NavEKF3::InitialiseFilter(void)
         }
 
         // check if there is enough memory to create the EKF cores
-        if (AP::dal().available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
+        if (dal.available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory");
             _enable.set(0);
             num_cores = 0;
@@ -808,7 +818,7 @@ bool NavEKF3::InitialiseFilter(void)
         }
 
         //try to allocate from CCM RAM, fallback to Normal RAM if not available or full
-        core = (NavEKF3_core*)AP::dal().malloc_type(sizeof(NavEKF3_core)*num_cores, AP::dal().MEM_FAST);
+        core = (NavEKF3_core*)dal.malloc_type(sizeof(NavEKF3_core)*num_cores, AP_DAL::MemoryType::FAST);
         if (core == nullptr) {
             _enable.set(0);
             num_cores = 0;
@@ -818,7 +828,7 @@ bool NavEKF3::InitialiseFilter(void)
 
         // Call constructors on all cores
         for (uint8_t i = 0; i < num_cores; i++) {
-            new (&core[i]) NavEKF3_core(this);
+            new (&core[i]) NavEKF3_core(this, dal);
         }
     }
 
@@ -898,13 +908,13 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
 */
 void NavEKF3::UpdateFilter(void)
 {
-    AP::dal().start_frame(AP_DAL::FrameType::UpdateFilterEKF3);
+    dal.start_frame(AP_DAL::FrameType::UpdateFilterEKF3);
 
     if (!core) {
         return;
     }
 
-    imuSampleTime_us = AP::dal().micros64();
+    imuSampleTime_us = dal.micros64();
 
     for (uint8_t i=0; i<num_cores; i++) {
         // if we have not overrun by more than 3 IMU frames, and we
@@ -913,7 +923,7 @@ void NavEKF3::UpdateFilter(void)
         // multiple EKF instances to cooperate on scheduling
         bool allow_state_prediction = true;
         if (core[i].getFramesSincePredict() < (_framesPerPrediction+3) &&
-            AP::dal().ekf_low_time_remaining(AP_DAL::EKFType::EKF3, i)) {
+            dal.ekf_low_time_remaining(AP_DAL::EKFType::EKF3, i)) {
             allow_state_prediction = false;
         }
         core[i].UpdateFilter(allow_state_prediction);
@@ -930,7 +940,7 @@ void NavEKF3::UpdateFilter(void)
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
 
-    const bool armed  = AP::dal().get_armed();
+    const bool armed  = dal.get_armed();
 
     // core selection is only available after the vehicle is armed, else forced to lane 0 if its healthy
     if (runCoreSelection && armed) {
@@ -983,7 +993,7 @@ void NavEKF3::UpdateFilter(void)
             resetCoreErrors();
             coreLastTimePrimary_us[primary] = imuSampleTime_us;
             primary = newPrimaryIndex;
-            lastLaneSwitch_ms = AP::dal().millis();
+            lastLaneSwitch_ms = dal.millis();
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
         }       
     }
@@ -1013,9 +1023,9 @@ void NavEKF3::UpdateFilter(void)
 */
 void NavEKF3::checkLaneSwitch(void)
 {
-    AP::dal().log_event3(AP_DAL::Event::checkLaneSwitch);
+    dal.log_event3(AP_DAL::Event::checkLaneSwitch);
 
-    uint32_t now = AP::dal().millis();
+    uint32_t now = dal.millis();
     if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
         // don't switch twice in 5 seconds
         return;
@@ -1050,7 +1060,7 @@ void NavEKF3::checkLaneSwitch(void)
 
 void NavEKF3::requestYawReset(void)
 {
-    AP::dal().log_event3(AP_DAL::Event::requestYawReset);
+    dal.log_event3(AP_DAL::Event::requestYawReset);
 
     for (uint8_t i = 0; i < num_cores; i++) {
         core[i].EKFGSF_requestYawReset();
@@ -1100,9 +1110,9 @@ void NavEKF3::resetCoreErrors(void)
 void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
-        AP::dal().log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
+        dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
     }
-    sources.setPosVelYawSourceSet(source_set_idx);
+    sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx);
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -1128,21 +1138,21 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource();
     if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
         // yaw source is configured to use compass but MAG_CAL valid is deprecated
-        AP::dal().snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
+        dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
         return false;
     }
 
     if (!core) {
-        AP::dal().snprintf(failure_msg, failure_msg_len, "no EKF3 cores");
+        dal.snprintf(failure_msg, failure_msg_len, "no EKF3 cores");
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         if (!core[i].healthy()) {
             const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
-                AP::dal().snprintf(failure_msg, failure_msg_len, failure);
+                dal.snprintf(failure_msg, failure_msg_len, failure);
             } else {
-                AP::dal().snprintf(failure_msg, failure_msg_len, "EKF3 core %d unhealthy", (int)i);
+                dal.snprintf(failure_msg, failure_msg_len, "EKF3 core %d unhealthy", (int)i);
             }
             return false;
         }
@@ -1256,7 +1266,7 @@ uint8_t NavEKF3::get_active_source_set() const
 // reset body axis gyro bias estimates
 void NavEKF3::resetGyroBias(void)
 {
-    AP::dal().log_event3(AP_DAL::Event::resetGyroBias);
+    dal.log_event3(AP_DAL::Event::resetGyroBias);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1272,7 +1282,7 @@ void NavEKF3::resetGyroBias(void)
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF3::resetHeightDatum(void)
 {
-    AP::dal().log_event3(AP_DAL::Event::resetHeightDatum);
+    dal.log_event3(AP_DAL::Event::resetHeightDatum);
 
     bool status = true;
     if (core) {
@@ -1387,17 +1397,15 @@ bool NavEKF3::getOriginLLH(Location &loc) const
 // Returns false if the filter has rejected the attempt to set the origin
 bool NavEKF3::setOriginLLH(const Location &loc)
 {
-    AP::dal().log_SetOriginLLH3(loc);
+    dal.log_SetOriginLLH3(loc);
 
     if (!core) {
         return false;
     }
-    if ((sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) || common_origin_valid) {
-        // we don't allow setting of the EKF origin if using GPS
-        // or if the EKF origin has already been set.
-        // This is to prevent accidental setting of EKF origin with an
-        // invalid position or height or causing upsets from a shifting origin.
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 refusing set origin");
+    if (common_origin_valid) {
+        // we don't allow setting the EKF origin if it has already been set
+        // this is to prevent causing upsets from a shifting origin.
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3: origin already set");
         return false;
     }
     bool ret = false;
@@ -1407,6 +1415,26 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     // return true if any core accepts the new origin
     return ret;
 }
+
+bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+{
+#if EK3_FEATURE_POSITION_RESET
+    dal.log_SetLatLng(loc, posAccuracy, timestamp_ms);
+
+    if (!core) {
+        return false;
+    }
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setLatLng(loc, posAccuracy, timestamp_ms);
+    }
+    // return true if any core accepts the new origin
+    return ret;
+#else
+    return false;
+#endif // EK3_FEATURE_POSITION_RESET
+}
+
 
 // return estimated height above ground level
 // return false if ground height is not being estimated.
@@ -1526,9 +1554,10 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
 // posOffset is the XYZ flow sensor position in the body frame in m
 // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+#if EK3_FEATURE_OPTFLOW_FUSION
 void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
-    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
+    dal.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1546,11 +1575,12 @@ bool NavEKF3::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vecto
     }
     return false;
 }
+#endif  // EK3_FEATURE_OPTFLOW_FUSION
 
 // write yaw angle sensor measurements
 void NavEKF3::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
 {
-    AP::dal().log_writeEulerYawAngle(yawAngle, yawAngleErr, timeStamp_ms, type);
+    dal.log_writeEulerYawAngle(yawAngle, yawAngleErr, timeStamp_ms, type);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1573,7 +1603,7 @@ void NavEKF3::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t tim
 */
 void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
-    AP::dal().writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
+    dal.writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1590,7 +1620,7 @@ void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float
 */
 void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
-    AP::dal().writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+    dal.writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1613,7 +1643,7 @@ void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 */
 void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
-    AP::dal().writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, delay_ms, posOffset);
+    dal.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, delay_ms, posOffset);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1632,7 +1662,7 @@ void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Ve
 */
 void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
-    AP::dal().writeWheelOdom(delAng, delTime, timeStamp_ms, posOffset, radius);
+    dal.writeWheelOdom(delAng, delTime, timeStamp_ms, posOffset, radius);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1737,7 +1767,7 @@ void NavEKF3::convert_parameters()
 
     // if GPS and optical flow enabled set EK3_SRC2_VELXY to optical flow
     // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
-    if (AP::dal().opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
+    if (dal.opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
         AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
     }
 }
@@ -1749,9 +1779,9 @@ void NavEKF3::convert_parameters()
 void NavEKF3::setTerrainHgtStable(bool val)
 {
     if (val) {
-        AP::dal().log_event3(AP_DAL::Event::setTerrainHgtStable);
+        dal.log_event3(AP_DAL::Event::setTerrainHgtStable);
     } else {
-        AP::dal().log_event3(AP_DAL::Event::unsetTerrainHgtStable);
+        dal.log_event3(AP_DAL::Event::unsetTerrainHgtStable);
     }
 
     if (core) {
@@ -2018,12 +2048,15 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
 void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
-    AP::dal().log_writeDefaultAirSpeed3(airspeed, uncertainty);
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return;
+    }
 
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeDefaultAirSpeed(airspeed, uncertainty);
-        }
+    dal.log_writeDefaultAirSpeed3(airspeed, uncertainty);
+
+    for (uint8_t i=0; i<num_cores; i++) {
+        core[i].writeDefaultAirSpeed(airspeed, uncertainty);
     }
 }
 

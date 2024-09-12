@@ -65,8 +65,8 @@ void AP_Gripper_EPM::grab()
         // move the servo output to the grab position
         SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.grab_pwm);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbing");
-    AP::logger().Write_Event(LogEvent::GRIPPER_GRAB);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load grabbing");
+    LOGGER_WRITE_EVENT(LogEvent::GRIPPER_GRAB);
 }
 
 // release - move epm pwm output to the release position
@@ -89,8 +89,8 @@ void AP_Gripper_EPM::release()
         // move the servo to the release position
         SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.release_pwm);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Gripper load releasing");
-    AP::logger().Write_Event(LogEvent::GRIPPER_RELEASE);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load releasing");
+    LOGGER_WRITE_EVENT(LogEvent::GRIPPER_RELEASE);
 }
 
 // neutral - return the epm pwm output to the neutral position

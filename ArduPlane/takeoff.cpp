@@ -158,7 +158,7 @@ void Plane::takeoff_calc_roll(void)
         takeoff_roll_limit_cd = g.level_roll_limit * 100;
     } else {
         // lim1 - below altitude TKOFF_LVL_ALT, restrict roll to LEVEL_ROLL_LIMIT
-        // lim2 - above altitude (TKOFF_LVL_ALT * 3) allow full flight envelope of LIM_ROLL_CD
+        // lim2 - above altitude (TKOFF_LVL_ALT * 3) allow full flight envelope of ROLL_LIMIT_DEG
         // In between lim1 and lim2 use a scaled roll limit.
         // The *3 scheme should scale reasonably with both small and large aircraft
         const float lim1 = MAX(mode_takeoff.level_alt, 0);
@@ -185,7 +185,7 @@ void Plane::takeoff_calc_pitch(void)
         return;
     }
 
-    if (ahrs.airspeed_sensor_enabled()) {
+    if (ahrs.using_airspeed_sensor()) {
         int16_t takeoff_pitch_min_cd = get_takeoff_pitch_min_cd();
         calc_nav_pitch();
         if (nav_pitch_cd < takeoff_pitch_min_cd) {
@@ -194,7 +194,7 @@ void Plane::takeoff_calc_pitch(void)
     } else {
         if (g.takeoff_rotate_speed > 0) {
             // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
-            nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
+            nav_pitch_cd = (gps.ground_speed() / (float)aparm.airspeed_cruise) * auto_state.takeoff_pitch_cd;
             nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
         } else {
             // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss
@@ -219,7 +219,30 @@ void Plane::takeoff_calc_pitch(void)
 }
 
 /*
- * get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
+ * Set the throttle limits to run at during a takeoff.
+ */
+void Plane::takeoff_calc_throttle(const bool use_max_throttle) {
+    // This setting will take effect at the next run of TECS::update_pitch_throttle().
+
+    // Set the maximum throttle limit.
+    if (aparm.takeoff_throttle_max != 0) {
+        TECS_controller.set_throttle_max(0.01f*aparm.takeoff_throttle_max);
+    }
+
+    // Set the minimum throttle limit.
+    const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
+    if (!use_throttle_range || !ahrs.using_airspeed_sensor() || use_max_throttle) { // Traditional takeoff throttle limit.
+        float min_throttle = (aparm.takeoff_throttle_max != 0) ? 0.01f*aparm.takeoff_throttle_max : 0.01f*aparm.throttle_max;
+        TECS_controller.set_throttle_min(min_throttle);
+    } else { // TKOFF_MODE == 1, allow for a throttle range.
+        if (aparm.takeoff_throttle_min != 0) { // Override THR_MIN.
+            TECS_controller.set_throttle_min(0.01f*aparm.takeoff_throttle_min);
+        }
+    }
+    calc_throttle();
+}
+
+/* get the pitch min used during takeoff. This matches the mission pitch until near the end where it allows it to levels off
  */
 int16_t Plane::get_takeoff_pitch_min_cd(void)
 {
@@ -238,7 +261,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
             return auto_state.takeoff_pitch_cd * scalar;
         }
 
-        // are we entering the region where we want to start leveling off before we reach takeoff alt?
+        // are we entering the region where we want to start levelling off before we reach takeoff alt?
         if (auto_state.sink_rate < -0.1f) {
             float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
             if (sec_to_target > 0 &&
@@ -262,7 +285,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
  */
 int8_t Plane::takeoff_tail_hold(void)
 {
-    bool in_takeoff = ((control_mode == &mode_auto && !auto_state.takeoff_complete) ||
+    bool in_takeoff = ((plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
                        (control_mode == &mode_fbwa && auto_state.fbwa_tdrag_takeoff_mode));
     if (!in_takeoff) {
         // not in takeoff
@@ -305,3 +328,29 @@ void Plane::landing_gear_update(void)
     g2.landing_gear.update(relative_ground_altitude(g.rangefinder_landing));
 }
 #endif
+
+/*
+ check takeoff_timeout; checks time after the takeoff start time; returns true if timeout has occurred and disarms on timeout
+*/
+
+bool Plane::check_takeoff_timeout(void)
+{
+    if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
+        const float ground_speed = AP::gps().ground_speed();
+        const float takeoff_min_ground_speed = 4;
+        if (ground_speed >= takeoff_min_ground_speed) {
+            takeoff_state.start_time_ms = 0;
+            return false;
+        } else {
+            uint32_t now = AP_HAL::millis();
+            if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout: %.1f m/s speed < 4m/s", ground_speed);
+                arming.disarm(AP_Arming::Method::TAKEOFFTIMEOUT);
+                takeoff_state.start_time_ms = 0;
+                return true;
+            }
+        }
+     }
+     return false;
+}
+

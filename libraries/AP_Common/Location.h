@@ -15,9 +15,9 @@ public:
     uint8_t loiter_xtrack : 1;          // 0 to crosstrack from center of waypoint, 1 to crosstrack from tangent exit location
 
     // note that mission storage only stores 24 bits of altitude (~ +/- 83km)
-    int32_t alt;
-    int32_t lat;
-    int32_t lng;
+    int32_t alt; // in cm
+    int32_t lat; // in 1E7 degrees
+    int32_t lng; // in 1E7 degrees
 
     /// enumeration of possible altitude types
     enum class AltFrame {
@@ -42,6 +42,8 @@ public:
     // - above-home and home is not set
     // - above-origin and origin is not set
     bool get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const WARN_IF_UNUSED;
+    // same as get_alt_cm but in metres:
+    bool get_alt_m(AltFrame desired_frame, float &ret_alt) const WARN_IF_UNUSED;
 
     // get altitude frame
     AltFrame get_alt_frame() const;
@@ -53,12 +55,17 @@ public:
     // - above-origin and origin is not set
     bool change_alt_frame(AltFrame desired_frame);
 
-    // get position as a vector (in cm) from origin (x,y only or x,y,z)
-    // return false on failure to get the vector which can only
-    // happen if the EKF origin has not been set yet
-    // x, y and z are in centimetres
-    bool get_vector_xy_from_origin_NE(Vector2f &vec_ne) const WARN_IF_UNUSED;
-    bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
+    // get position as a vector (in cm) from origin (x,y only or
+    // x,y,z) return false on failure to get the vector which can only
+    // happen if the EKF origin has not been set yet x, y and z are in
+    // centimetres.  If this method returns false then vec_ne is
+    // unmodified.
+    template<typename T>
+    bool get_vector_xy_from_origin_NE(T &vec_ne) const WARN_IF_UNUSED;
+    // converts location to a vector from origin; if this method returns
+    // false then vec_neu is unmodified
+    template<typename T>
+    bool get_vector_from_origin_NEU(T &vec_neu) const WARN_IF_UNUSED;
 
     // return horizontal distance in meters between two locations
     ftype get_distance(const Location &loc2) const;
@@ -71,6 +78,9 @@ public:
     Vector3f get_distance_NED(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
 
+    // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2 considering alt frame, if altitude cannot be resolved down distance is 0
+    Vector3f get_distance_NED_alt_frame(const Location &loc2) const;
+
     // return the distance in meters in North/East plane as a N/E vector to loc2
     Vector2f get_distance_NE(const Location &loc2) const;
     Vector2d get_distance_NE_double(const Location &loc2) const;
@@ -79,6 +89,9 @@ public:
     // extrapolate latitude/longitude given distances (in meters) north and east
     static void offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east);
     void offset(ftype ofs_north, ftype ofs_east);
+    // extrapolate latitude/longitude given distances (in meters) north
+    // and east. Note that this is metres, *even for the altitude*.
+    void offset(const Vector3p &ofs_ned);
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);
@@ -148,7 +161,7 @@ public:
     // wrap longitude at -180e7 to 180e7
     static int32_t wrap_longitude(int64_t lon);
 
-    // limit lattitude to -90e7 to 90e7
+    // limit latitude to -90e7 to 90e7
     static int32_t limit_lattitude(int32_t lat);
     
     // get lon1-lon2, wrapping at -180e7 to 180e7

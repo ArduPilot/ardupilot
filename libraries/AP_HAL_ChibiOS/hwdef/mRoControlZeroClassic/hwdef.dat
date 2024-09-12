@@ -82,9 +82,6 @@ define HAL_I2C_INTERNAL_MASK 0
 
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART7 UART8 USART1 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 telem1
 PD3 USART2_CTS USART2
@@ -131,6 +128,9 @@ PB1 AUX_ADC2 ADC1 SCALE(1)
 
 # And the analog input for airspeed (rarely used these days).
 PC5 PRESSURE_SENS ADC1 SCALE(2)
+
+# Servo rail analog input
+PF13 FMU_SERVORAIL_VCC_SENS ADC2 SCALE(2) 
 
 # RSSI Analog Input
 PC0 RSSI_IN ADC1
@@ -258,10 +258,6 @@ SPIDEV icm20948 SPI1 DEVID1  ICM_20948_CS    MODE3  2*MHZ  4*MHZ
 SPIDEV dps310   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron  SPI2 DEVID10 FRAM_CS         MODE3  8*MHZ  8*MHZ
 
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
@@ -269,19 +265,16 @@ define HAL_HAVE_SAFETY_SWITCH 1
 define HAL_OS_FATFS_IO 1
 
 # Control Zero has a TriColor LED, Red, Green, Blue
-define HAL_HAVE_PIXRACER_LED
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # LED setup for PixracerLED driver
 PB4 LED_R OUTPUT HIGH GPIO(0)
 PB5 LED_G OUTPUT HIGH GPIO(1)
 PB3 LED_B OUTPUT HIGH GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # 3 IMUs
 IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_NONE

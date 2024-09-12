@@ -55,12 +55,8 @@ define HAL_USE_EMPTY_IO TRUE
 
 # avoid timer and RCIN threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_RCIN_THREAD
-
 
 define DMA_RESERVE_SIZE 0
-
-define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
 
@@ -71,9 +67,6 @@ PB2 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
 PB12 CAN2_RX CAN2
 PB13 CAN2_TX CAN2
 PA4 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
-
-define CAN_APP_NODE_NAME "org.ardupilot.HolybroGPS"
-
 
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600

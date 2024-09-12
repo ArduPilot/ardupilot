@@ -14,11 +14,16 @@ import re
 import pickle
 import struct
 import base64
+import subprocess
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
     bldnode = bld.bldnode.make_node('modules/ChibiOS')
-    tmp_str = bldnode.find_node('include_dirs').read()
+    include_dirs_node = bldnode.find_node('include_dirs')
+    if include_dirs_node is None:
+        _dynamic_env_data['include_dirs'] = []
+        return
+    tmp_str = include_dirs_node.read()
     tmp_str = tmp_str.replace(';\n','')
     tmp_str = tmp_str.replace('-I','')  #remove existing -I flags
     # split, coping with separator
@@ -31,7 +36,7 @@ def _load_dynamic_env_data(bld):
             # relative paths from the make build are relative to BUILDROOT
             d = os.path.join(bld.env.BUILDROOT, d)
         d = os.path.normpath(d)
-        if not d in idirs2:
+        if d not in idirs2:
             idirs2.append(d)
     _dynamic_env_data['include_dirs'] = idirs2
 
@@ -98,7 +103,7 @@ class upload_fw(Task.Task):
         except subprocess.CalledProcessError:
             #if where.exe can't find the file it returns a non-zero result which throws this exception
             where_python = ""
-        if not where_python or not "\Python\Python" in where_python or "python.exe" not in where_python:
+        if not where_python or "\Python\Python" not in where_python or "python.exe" not in where_python:
             print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
             return False
         return True
@@ -114,7 +119,7 @@ class upload_fw(Task.Task):
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
         
-        pip.exe install empy pyserial
+        pip.exe install empy==3.3.4 pyserial
         ****************************************
         ****************************************
         """ % error_msg)
@@ -233,8 +238,13 @@ def sign_firmware(image, private_keyfile):
     try:
         import monocypher
     except ImportError:
-        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher==3.1.3.2")
         return None
+
+    if monocypher.__version__ != "3.1.3.2":
+        Logs.error("must use monocypher 3.1.3.2, please run: python3 -m pip install pymonocypher==3.1.3.2")
+        return None
+
     try:
         key = open(private_keyfile, 'r').read()
     except Exception as ex:
@@ -263,12 +273,14 @@ class set_app_descriptor(Task.Task):
         else:
             descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
 
-        img = open(self.inputs[0].abspath(), 'rb').read()
+        elf_file = self.inputs[0].abspath()
+        bin_file = self.inputs[1].abspath()
+        img = open(bin_file, 'rb').read()
         offset = img.find(descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
             return
-        offset += 8
+        offset += len(descriptor)
         # next 8 bytes is 64 bit CRC. We set first 4 bytes to
         # CRC32 of image before descriptor and 2nd 4 bytes
         # to CRC32 of image after descriptor. This is very efficient
@@ -300,7 +312,19 @@ class set_app_descriptor(Task.Task):
             desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
         Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
-        open(self.inputs[0].abspath(), 'wb').write(img)
+        open(bin_file, 'wb').write(img)
+
+        elf_img = open(elf_file,'rb').read()
+        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
+        elf_ofs = elf_img.find(zero_descriptor)
+        if elf_ofs == -1:
+            Logs.info("No APP_DESCRIPTOR found in elf file")
+            return
+        elf_ofs += len(descriptor)
+        elf_img = elf_img[:elf_ofs] + desc + elf_img[elf_ofs+desc_len:]
+        Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
+        open(elf_file, 'wb').write(elf_img)
+
 
 class generate_apj(Task.Task):
     '''generate an apj firmware file'''
@@ -411,7 +435,10 @@ def chibios_firmware(self):
     bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
-            hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+            if int(self.bld.env.FLASH_RESERVE_START_KB) > 0:
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_with_bl.hex').name)
+            else:
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
             hex_task.set_run_after(cleanup_task)
         else:
@@ -425,7 +452,7 @@ def chibios_firmware(self):
 
     # we need to setup the app descriptor so the bootloader can validate the firmware
     if not self.bld.env.BOOTLOADER:
-        app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
+        app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output,bin_target[0]])
         app_descriptor_task.set_run_after(generate_bin_task)
         generate_apj_task.set_run_after(app_descriptor_task)
         if hex_task is not None:
@@ -437,6 +464,10 @@ def chibios_firmware(self):
         
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw', src=apj_target)
+        _upload_task.set_run_after(generate_apj_task)
+
+    if self.bld.options.upload_blueos:
+        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
         _upload_task.set_run_after(generate_apj_task)
 
 def setup_canmgr_build(cfg):
@@ -457,16 +488,21 @@ def setup_canmgr_build(cfg):
             'DRONECAN_CXX_WRAPPERS=1',
             'USE_USER_HELPERS=1',
             'CANARD_ENABLE_DEADLINE=1',
-            'CANARD_MULTI_IFACE=1'
+            'CANARD_MULTI_IFACE=1',
+            'CANARD_ALLOCATE_SEM=1'
             ]
-
-    if cfg.env.HAL_CANFD_SUPPORTED:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
-    else:
-        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
 
     cfg.get_board().with_can = True
 
+def setup_canperiph_build(cfg):
+    '''enable CAN build for peripherals'''
+    env = cfg.env
+    env.DEFINES += [
+        'CANARD_ENABLE_DEADLINE=1',
+        ]
+
+    cfg.get_board().with_can = True
+    
 def load_env_vars(env):
     '''optionally load extra environment variables from env.py in the build directory'''
     print("Checking for env.py")
@@ -494,6 +530,8 @@ def load_env_vars(env):
         else:
             env[k] = v
             print("env set %s=%s" % (k, v))
+    if env.DEBUG or env.DEBUG_SYMBOLS:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
     if env.ENABLE_ASSERTS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
     if env.ENABLE_MALLOC_GUARD:
@@ -575,6 +613,10 @@ def configure(cfg):
     load_env_vars(cfg.env)
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
+    if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and not env.BOOTLOADER:
+        setup_canperiph_build(cfg)
+    if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and int(env.HAL_NUM_CAN_IFACES)>1 and not env.BOOTLOADER:
+        env.DEFINES += [ 'CANARD_MULTI_IFACE=1' ]
     setup_optimization(cfg.env)
 
 def generate_hwdef_h(env):
@@ -649,13 +691,22 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CRASHCATCHER=${CC_ROOT_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CRASHCATCHER=${CC_ROOT_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
 
+    bld(
+        # create the file modules/ChibiOS/include_dirs
+        rule="echo // BUILD_FLAGS: ${BUILDDIR_REL} ${BUILDROOT} ${CC_ROOT_REL} ${CH_ROOT_REL} ${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} > chibios_flags.h",
+        group='dynamic_sources',
+        target=bld.bldnode.find_or_declare('chibios_flags.h')
+    )
+    
     common_src = [bld.bldnode.find_or_declare('hwdef.h'),
                   bld.bldnode.find_or_declare('hw.dat'),
+                  bld.bldnode.find_or_declare('ldscript.ld'),
+                  bld.bldnode.find_or_declare('common.ld'),
                   bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
@@ -667,7 +718,7 @@ def build(bld):
     if bld.env.ENABLE_CRASHDUMP:
         ch_task = bld(
             # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
             group='dynamic_sources',
             source=common_src,
             target=[bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'), bld.bldnode.find_or_declare('modules/ChibiOS/libcc.a')]
@@ -675,7 +726,7 @@ def build(bld):
     else:
         ch_task = bld(
             # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
             group='dynamic_sources',
             source=common_src,
             target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
@@ -696,15 +747,19 @@ def build(bld):
     if bld.env.ENABLE_CRASHDUMP:
         bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
     # list of functions that will be wrapped to move them out of libc into our
-    # own code note that we also include functions that we deliberately don't
-    # implement anywhere (the FILE* functions). This allows us to get link
-    # errors if we accidentially try to use one of those functions either
-    # directly or via another libc call
-    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf','vasprintf','asprintf','vprintf','scanf',
-                'fiprintf','printf',
-                'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
-                'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
-                'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock' ]
-    for w in wraplist:
+    # own code
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
+
+    # list of functions that we will give a link error for if they are
+    # used. This is to prevent accidential use of these functions
+    blacklist = ['_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r', 'ftell',
+                 'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
+                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
+                'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock']
+
+    # these functions use global state that is not thread safe
+    blacklist += ['gmtime']
+
+    for w in wraplist + blacklist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]

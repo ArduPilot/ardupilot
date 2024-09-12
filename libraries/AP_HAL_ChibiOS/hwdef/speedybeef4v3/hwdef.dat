@@ -24,7 +24,8 @@ SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6
 # LEDs
 PC8 LED_BLUE OUTPUT LOW GPIO(0)
 
-define HAL_GPIO_A_LED_PIN 0
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 0
 
 # buzzer
 PC5 BUZZER OUTPUT GPIO(80) LOW
@@ -102,9 +103,9 @@ PA12 OTG_FS_DP OTG1
 
 # PWM out pins. Note that channel order follows the ArduPilot motor
 # order conventions
-PB6  TIM4_CH1 TIM4 PWM(1) GPIO(50) BIDIR
+PB6  TIM4_CH1 TIM4 PWM(1) GPIO(50)
 PB7  TIM4_CH2 TIM4 PWM(2) GPIO(51)
-PB8  TIM4_CH3 TIM4 PWM(3) GPIO(52) BIDIR    # DMA channel shared with I2C2_TX, beware - no alternatives
+PB8  TIM4_CH3 TIM4 PWM(3) GPIO(52)
 PB9  TIM4_CH4 TIM4 PWM(4) GPIO(53)
 PB0  TIM3_CH3 TIM3 PWM(5) GPIO(54)
 PB1  TIM3_CH4 TIM3 PWM(6) GPIO(55)
@@ -145,8 +146,6 @@ SPIDEV sdcard    SPI2 DEVID2 SDCARD_CS  MODE0 400*KHZ 25*MHZ
 
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # setup for OSD
 define OSD_ENABLED 1
@@ -154,7 +153,9 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
-include ../include/minimal.inc
+include ../include/minimize_fpv_osd.inc
+include ../include/no_bootloader_DFU.inc
+undef AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
 define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
 
 define DEFAULT_NTF_LED_TYPES 257

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Scripting.h"
@@ -32,10 +36,13 @@ HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
 uint32_t lua_scripts::last_print_ms;
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal)
+uint32_t lua_scripts::loaded_checksum;
+uint32_t lua_scripts::running_checksum;
+HAL_Semaphore lua_scripts::crc_sem;
+
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options)
     : _vm_steps(vm_steps),
-      _debug_options(debug_options),
-     terminal(_terminal)
+      _debug_options(debug_options)
 {
     _heap.create(heap_size, 4);
 }
@@ -123,11 +130,12 @@ int lua_scripts::atpanic(lua_State *L) {
 void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem)
 {
     if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
-        gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
                                             (unsigned int)run_time,
                                             (int)total_mem,
                                             (int)run_mem);
     }
+#if HAL_LOGGING_ENABLED
     if ((_debug_options.get() & uint8_t(DebugLevel::LOG_RUNTIME)) != 0) {
         struct log_Scripting pkt {
             LOG_PACKET_HEADER_INIT(LOG_SCRIPTING_MSG),
@@ -145,6 +153,7 @@ void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_me
         }
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
+#endif // HAL_LOGGING_ENABLED
 }
 
 lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename) {
@@ -182,7 +191,8 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
 
 
     create_sandbox(L);
-    lua_setupvalue(L, -2, 1);
+    lua_pushvalue(L, -1); // duplicate environment for reference below
+    lua_setupvalue(L, -3, 1);
 
     const uint32_t loadEnd = AP_HAL::micros();
     const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
@@ -190,8 +200,22 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
     update_stats(filename, loadEnd-loadStart, endMem, loadMem);
 
     new_script->name = filename;
-    new_script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);   // cache the reference
+    new_script->env_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to script's environment
+    new_script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX); // store reference to function to run
     new_script->next_run_ms = AP_HAL::millis64() - 1; // force the script to be stale
+
+    // Get checksum of file
+    uint32_t crc = 0;
+    if (AP::FS().crc32(filename, crc)) {
+        // Record crc of this script
+        new_script->crc = crc;
+        {
+            // Apply crc to checksum of all scripts
+            WITH_SEMAPHORE(crc_sem);
+            loaded_checksum ^= crc;
+            running_checksum ^= crc;
+        }
+    }
 
     return new_script;
 }
@@ -231,10 +255,13 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
     if (dirname == nullptr) {
         return;
     }
-
     auto *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
+        // this disk_space check will return 0 if we don't have a real
+        // filesystem (ie. no Posix or FatFs).  Do not warn in this case.
+        if (AP::FS().disk_space(dirname) != 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Lua: open directory (%s) failed", dirname);
+        }
         return;
     }
 
@@ -246,8 +273,8 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
             continue;
         }
 
-        if (strncmp(&de->d_name[length-4], ".lua", 4)) {
-            // doesn't end in .lua
+        if ((de->d_name[0] == '.') || strncmp(&de->d_name[length-4], ".lua", 4)) {
+            // starts with . (hidden file) or doesn't end in .lua
             continue;
         }
 
@@ -303,15 +330,16 @@ void lua_scripts::run_next_script(lua_State *L) {
     int stack_top = lua_gettop(L);
 
     // pop the function to the top of the stack
-    lua_rawgeti(L, LUA_REGISTRYINDEX, script->lua_ref);
-    AP::scripting()->set_current_ref(script->lua_ref);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, script->run_ref);
+    // set current environment for other users
+    AP::scripting()->set_current_env_ref(script->env_ref);
 
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
         if (overtime) {
             // script has consumed an excessive amount of CPU time
             set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s exceeded time limit", script->name);
         } else {
-            set_and_print_new_error_message(MAV_SEVERITY_INFO, "%s", lua_tostring(L, -1));
+            set_and_print_new_error_message(MAV_SEVERITY_CRITICAL, "%s", lua_tostring(L, -1));
         }
         remove_script(L, script);
         lua_pop(L, 1);
@@ -342,8 +370,8 @@ void lua_scripts::run_next_script(lua_State *L) {
                     // types match the expectations, go ahead and reschedule
                     script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
                     lua_pop(L, 1);
-                    int old_ref = script->lua_ref;
-                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+                    int old_ref = script->run_ref;
+                    script->run_ref = luaL_ref(L, LUA_REGISTRYINDEX);
                     luaL_unref(L, LUA_REGISTRYINDEX, old_ref);
                     reschedule_script(script);
                     break;
@@ -379,9 +407,16 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
         }
     }
 
+    {
+        // Remove from running checksum
+        WITH_SEMAPHORE(crc_sem);
+        running_checksum ^= script->crc;
+    }
+    
     if (L != nullptr) {
         // state could be null if we are force killing all scripts
-        luaL_unref(L, LUA_REGISTRYINDEX, script->lua_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, script->env_ref);
+        luaL_unref(L, LUA_REGISTRYINDEX, script->run_ref);
     }
     _heap.deallocate(script->name);
     _heap.deallocate(script);
@@ -429,24 +464,11 @@ void *lua_scripts::alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
     return _heap.change_size(ptr, osize, nsize);
 }
 
-void lua_scripts::repl_cleanup (void) {
-    if (terminal.session) {
-        terminal.session = false;
-        if (terminal.output_fd != -1) {
-            AP::FS().close(terminal.output_fd);
-            terminal.output_fd = -1;
-            AP::FS().unlink(REPL_DIRECTORY "/in");
-            AP::FS().unlink(REPL_DIRECTORY "/out");
-            AP::FS().unlink(REPL_DIRECTORY);
-        }
-    }
-}
-
 void lua_scripts::run(void) {
     bool succeeded_initial_load = false;
 
     if (!_heap.available()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Lua: Unable to allocate a heap");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Unable to allocate a heap");
         return;
     }
 
@@ -464,14 +486,12 @@ void lua_scripts::run(void) {
         }
         scripts = nullptr;
         overtime = false;
-        // end any open REPL sessions
-        repl_cleanup();
     }
 
     lua_state = lua_newstate(alloc, NULL);
     lua_State *L = lua_state;
     if (L == nullptr) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
         return;
     }
 
@@ -481,6 +501,16 @@ void lua_scripts::run(void) {
 
     lua_atpanic(L, atpanic);
     load_generated_bindings(L);
+
+    // set up string metatable. we set up one for all scripts that no script has
+    // access to, as it's impossible to set up one per-script and we don't want
+    // any script to be able to mess with it.
+    lua_pushliteral(L, "");  /* dummy string */
+    lua_createtable(L, 0, 1);  /* table to be metatable for strings */
+    luaopen_string(L);  /* get string library */
+    lua_setfield(L, -2, "__index");  /* metatable.__index = string */
+    lua_setmetatable(L, -2);  /* set table as metatable for strings */
+    lua_pop(L, 1);  /* pop dummy string */
 
 #ifndef HAL_CONSOLE_DISABLED
     const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
@@ -495,12 +525,14 @@ void lua_scripts::run(void) {
         load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
         loaded = true;
     }
+#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_LUA
     if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::ROMFS)) == 0) {
         load_all_scripts_in_dir(L, "@ROMFS/scripts");
         loaded = true;
     }
+#endif
     if (!loaded) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
     }
 
 #ifndef __clang_analyzer__
@@ -508,12 +540,6 @@ void lua_scripts::run(void) {
 #endif // __clang_analyzer__
 
     while (AP_Scripting::get_singleton()->should_run()) {
-        // handle terminal data if we have any
-        if (terminal.session) {
-            doREPL(L);
-            continue;
-        }
-
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {
             AP_HAL::panic("Lua: Stack should be empty before running scripts");
@@ -539,10 +565,13 @@ void lua_scripts::run(void) {
             }
 
             if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
-            // copy name for logging, cant do it after as script reschedule moves the pointers
-            const char * script_name = scripts->name;
+            // take a copy of the script name for the purposes of
+            // logging statistics.  "scripts" may become invalid
+            // during the "run_next_script" call, below.
+            char script_name[128+1] {};
+            strncpy_noterm(script_name, scripts->name, 128);
 
 #if DISABLE_INTERRUPTS_FOR_SCRIPT_RUN
             void *istate = hal.scheduler->disable_interrupts_save();
@@ -551,6 +580,10 @@ void lua_scripts::run(void) {
             const int startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             const uint32_t loadEnd = AP_HAL::micros();
 
+            // NOTE!  the base pointer of our scripts linked list,
+            // *and all its contents* may become invalid as part of
+            // "run_next_script"!  So do *NOT* attempt to access
+            // anything that was in *scripts after this call.
             run_next_script(L);
 
             const uint32_t runEnd = AP_HAL::micros();
@@ -568,7 +601,7 @@ void lua_scripts::run(void) {
 
         } else {
             if ((_debug_options.get() & uint8_t(DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             }
             hal.scheduler->delay(1000);
         }
@@ -599,3 +632,18 @@ void lua_scripts::run(void) {
     }
     error_msg_buf_sem.give();
 }
+
+// Return the file checksums of running and loaded scripts
+uint32_t lua_scripts::get_loaded_checksum()
+{
+    WITH_SEMAPHORE(crc_sem);
+    return loaded_checksum;
+}
+
+uint32_t lua_scripts::get_running_checksum()
+{
+    WITH_SEMAPHORE(crc_sem);
+    return running_checksum;
+}
+
+#endif  // AP_SCRIPTING_ENABLED

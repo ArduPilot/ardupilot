@@ -30,8 +30,9 @@
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <time.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
 #include <AP_AHRS/AP_AHRS.h>
 #endif
 
@@ -95,25 +96,30 @@ void AP_NMEA_Output::update()
 
     // get time and date
     uint64_t time_usec;
+#if AP_RTC_ENABLED
     if (!AP::rtc().get_utc_usec(time_usec)) {
         return;
     }
+#else
+    time_usec = 0;
+#endif
 
     uint32_t space_required = 0;
 
     // not completely accurate, our time includes leap seconds and time_t should be without
     const time_t time_sec = time_usec / 1000000;
-    struct tm* tm = gmtime(&time_sec);
+    struct tm tmd {};
+    struct tm* tm = gmtime_r(&time_sec, &tmd);
 
     // format time string
-    char tstring[11];
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+    char tstring[10];
+    hal.util->snprintf(tstring, sizeof(tstring), "%02u%02u%05.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
 
     Location loc;
     const auto &gps = AP::gps();
     const AP_GPS::GPS_Status gps_status = gps.status();
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
     auto &ahrs = AP::ahrs();
     // NOTE: ahrs.get_location() always returns true after having GPS position once because it will be dead-reckoning
     const bool pos_valid = ahrs.get_location(loc);
@@ -126,7 +132,7 @@ void AP_NMEA_Output::update()
     char lat_string[13];
     double deg = fabs(loc.lat * 1.0e-7f);
     double min_dec = ((fabs(loc.lat) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f;
-    snprintf(lat_string,
+    hal.util->snprintf(lat_string,
             sizeof(lat_string),
             "%02u%08.5f,%c",
             (unsigned) deg,
@@ -137,7 +143,7 @@ void AP_NMEA_Output::update()
     char lng_string[14];
     deg = fabs(loc.lng * 1.0e-7f);
     min_dec = ((fabs(loc.lng) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f; 
-    snprintf(lng_string,
+    hal.util->snprintf(lng_string,
             sizeof(lng_string),
             "%03u%08.5f,%c",
             (unsigned) deg,
@@ -203,7 +209,7 @@ void AP_NMEA_Output::update()
                                     lng_string,
                                     fix_quality,
                                     gps.num_sats(),
-                                    gps.get_hdop(),
+                                    gps.get_hdop()*0.01,
                                     loc.alt * 0.01f);
 
         space_required += gga_length;
@@ -214,10 +220,10 @@ void AP_NMEA_Output::update()
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::GPRMC)) != 0) {
         // format date string
         char dstring[7];
-        snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
+        hal.util->snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
         // get speed
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
         const Vector2f speed = ahrs.groundspeed_vector();
         const float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
         const float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
@@ -242,7 +248,7 @@ void AP_NMEA_Output::update()
 
     uint16_t pashr_length = 0;
     char pashr[100];
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::PASHR)) != 0) {
         // get roll, pitch, yaw
         const float roll_deg = wrap_180(degrees(ahrs.get_roll()));

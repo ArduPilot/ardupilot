@@ -20,7 +20,7 @@ void Rover::crash_check()
     }
 
     // Crashed if pitch/roll > crash_angle
-    if ((g2.crash_angle != 0) && ((fabsf(ahrs.pitch) > radians(g2.crash_angle)) || (fabsf(ahrs.roll) > radians(g2.crash_angle)))) {
+    if ((g2.crash_angle != 0) && ((fabsf(ahrs.get_pitch()) > radians(g2.crash_angle)) || (fabsf(ahrs.get_roll()) > radians(g2.crash_angle)))) {
         crashed = true;
     }
 
@@ -45,8 +45,8 @@ void Rover::crash_check()
     }
 
     if (crashed) {
-        AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK,
-                                 LogErrorCode::CRASH_CHECK_CRASH);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK,
+                           LogErrorCode::CRASH_CHECK_CRASH);
 
         if (is_balancebot()) {
             // send message to gcs

@@ -5,14 +5,13 @@
  */
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 class AP_InertialNav
 {
 public:
     // Constructor
-    AP_InertialNav(AP_AHRS &ahrs) :
+    AP_InertialNav(class AP_AHRS &ahrs) :
         _ahrs_ekf(ahrs)
         {}
 

@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Backend_Serial.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -53,6 +57,7 @@ uint32_t AP_RangeFinder_Backend_Serial::initial_baudrate(const uint8_t serial_in
 void AP_RangeFinder_Backend_Serial::update(void)
 {
     if (get_reading(state.distance_m)) {
+        state.signal_quality_pct = get_signal_quality_pct();
         // update range_valid state based on distance measured
         state.last_reading_ms = AP_HAL::millis();
         update_status();
@@ -60,3 +65,5 @@ void AP_RangeFinder_Backend_Serial::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif  // AP_RANGEFINDER_ENABLED

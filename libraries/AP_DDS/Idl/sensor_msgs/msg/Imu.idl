@@ -1,0 +1,48 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from sensor_msgs/msg/Imu.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Quaternion.idl"
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module sensor_msgs {
+  module msg {
+    typedef double double__9[9];
+    @verbatim (language="comment", text=
+      "This is a message to hold data from an IMU (Inertial Measurement Unit)" "\n"
+      "" "\n"
+      "Accelerations should be in m/s^2 (not in g's), and rotational velocity should be in rad/sec" "\n"
+      "" "\n"
+      "If the covariance of the measurement is known, it should be filled in (if all you know is the" "\n"
+      "variance of each measurement, e.g. from the datasheet, just put those along the diagonal)" "\n"
+      "A covariance matrix of all zeros will be interpreted as \"covariance unknown\", and to use the" "\n"
+      "data a covariance will have to be assumed or gotten from some other source" "\n"
+      "" "\n"
+      "If you have no estimate for one of the data elements (e.g. your IMU doesn't produce an" "\n"
+      "orientation estimate), please set element 0 of the associated covariance matrix to -1" "\n"
+      "If you are interpreting this message, please check for a value of -1 in the first element of each" "\n"
+      "covariance matrix, and disregard the associated estimate.")
+    struct Imu {
+      std_msgs::msg::Header header;
+
+      geometry_msgs::msg::Quaternion orientation;
+
+      @verbatim (language="comment", text=
+        "Row major about x, y, z axes")
+      double__9 orientation_covariance;
+
+      geometry_msgs::msg::Vector3 angular_velocity;
+
+      @verbatim (language="comment", text=
+        "Row major about x, y, z axes")
+      double__9 angular_velocity_covariance;
+
+      geometry_msgs::msg::Vector3 linear_acceleration;
+
+      @verbatim (language="comment", text=
+        "Row major x, y z")
+      double__9 linear_acceleration_covariance;
+    };
+  };
+};

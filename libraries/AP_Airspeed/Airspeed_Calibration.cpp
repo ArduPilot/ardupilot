@@ -5,10 +5,14 @@
  *
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Baro/AP_Baro.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_Airspeed.h"
 
@@ -127,7 +131,7 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
 
     // calculate true airspeed, assuming a airspeed ratio of 1.0
     float dpress = MAX(get_differential_pressure(i), 0);
-    float true_airspeed = sqrtf(dpress) * AP::baro().get_EAS2TAS();
+    float true_airspeed = sqrtf(dpress) * AP::ahrs().get_EAS2TAS();
 
     float zratio = state[i].calibration.update(true_airspeed, vground, max_airspeed_allowed_during_cal);
 
@@ -164,6 +168,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 }
 
 
+#if HAL_GCS_ENABLED
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
@@ -172,7 +177,7 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
         vy: vground.y,
         vz: vground.z,
         diff_pressure: get_differential_pressure(primary),
-        EAS2TAS: AP::baro().get_EAS2TAS(),
+        EAS2TAS: AP::ahrs().get_EAS2TAS(),
         ratio: param[primary].ratio.get(),
         state_x: state[primary].calibration.state.x,
         state_y: state[primary].calibration.state.y,
@@ -185,3 +190,6 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
                                   (const char *)&packet);
 #endif // AP_AIRSPEED_AUTOCAL_ENABLE
 }
+#endif  // HAL_GCS_ENABLED
+
+#endif  // AP_AIRSPEED_ENABLED

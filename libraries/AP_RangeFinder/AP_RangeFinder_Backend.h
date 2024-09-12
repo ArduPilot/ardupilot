@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
@@ -36,9 +40,11 @@ public:
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
 
 #if AP_SCRIPTING_ENABLED
-    // Returns false if scripting backing hasn't been setup
-    // Get distance from lua script
-    virtual bool handle_script_msg(float dist_m) { return false; }
+    void get_state(RangeFinder::RangeFinder_State &state_arg);
+
+    // Returns false if scripting backing hasn't been setup.
+    virtual bool handle_script_msg(float dist_m) { return false; } // legacy interface
+    virtual bool handle_script_msg(const RangeFinder::RangeFinder_State &state_arg) { return false; }
 #endif
 
 #if HAL_MSP_RANGEFINDER_ENABLED
@@ -48,6 +54,7 @@ public:
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     float distance() const { return state.distance_m; }
     uint16_t distance_cm() const { return state.distance_m*100.0f; }
+    int8_t signal_quality_pct() const  WARN_IF_UNUSED { return state.signal_quality_pct; }
     uint16_t voltage_mv() const { return state.voltage_mv; }
     virtual int16_t max_distance_cm() const { return params.max_distance_cm; }
     virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
@@ -72,10 +79,6 @@ public:
     // get temperature reading in C.  returns true on success and populates temp argument
     virtual bool get_temp(float &temp) const { return false; }
 
-    // 0 is no return value, 100 is perfect.  false means signal
-    // quality is not available
-    virtual bool get_signal_quality_pct(uint8_t &quality_pct) const { return false; }
-
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.
     RangeFinder::Type allocated_type() const { return _backend_type; }
@@ -83,10 +86,12 @@ public:
 protected:
 
     // update status based on distance measurement
-    void update_status();
+    void update_status(RangeFinder::RangeFinder_State &state_arg) const;
+    void update_status() { update_status(state); }
 
     // set status and update valid_count
-    void set_status(RangeFinder::Status status);
+    static void set_status(RangeFinder::RangeFinder_State &state_arg, RangeFinder::Status status);
+    void set_status(RangeFinder::Status status) { set_status(state, status); }
 
     RangeFinder::RangeFinder_State &state;
     AP_RangeFinder_Params &params;
@@ -99,3 +104,5 @@ protected:
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
 };
+
+#endif  // AP_RANGEFINDER_ENABLED

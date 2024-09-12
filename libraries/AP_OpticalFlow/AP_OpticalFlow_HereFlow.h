@@ -21,7 +21,7 @@ public:
 
 private:
 
-    Vector2f flowRate, bodyRate;
+    Vector2f flow_integral, rate_gyro_integral;
     uint8_t surface_quality;
     float integral_time;
     bool new_data;

@@ -17,12 +17,20 @@
  */
 
 #include "ExpandingString.h"
-
 #include <AP_HAL/AP_HAL.h>
+
+#ifndef HAL_BOOTLOADER_BUILD
 
 extern const AP_HAL::HAL& hal;
 
 #define EXPAND_INCREMENT 512
+
+ExpandingString::ExpandingString(char* s, uint32_t total_len) : buf(0)
+{
+    set_buffer(s, total_len, 0);
+    memset(buf, 0, buflen);
+}
+
 
 /*
   expand the string buffer
@@ -127,3 +135,5 @@ void ExpandingString::set_buffer(char *s, uint32_t total_len, uint32_t used_len)
     allocation_failed = false;
     external_buffer = true;
 }
+
+#endif // HAL_BOOTLOADER_BUILD

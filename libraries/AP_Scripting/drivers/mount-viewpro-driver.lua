@@ -31,6 +31,9 @@
      n+2       checksum        XOR of byte3 to n+1 (inclusive)
 --]]
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- parameters
 local PARAM_TABLE_KEY = 39
 assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 6), "could not add param table")
@@ -379,7 +382,7 @@ function parse_byte(b)
             local servo_status = (parse_data_buff[24] & 0xF0 >> 4)
             local roll_deg = int16_value(parse_data_buff[24] & 0x0F, parse_data_buff[25]) * (180.0/4095.0) - 90.0
             local yaw_deg = int16_value(parse_data_buff[26], parse_data_buff[27]) * (360.0 / 65536.0)
-            local pitch_deg = int16_value(parse_data_buff[28], parse_data_buff[29]) * (360.0 / 65536.0)
+            local pitch_deg = -int16_value(parse_data_buff[28], parse_data_buff[29]) * (360.0 / 65536.0)
             mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
 
             if VIEP_DEBUG:get() > 0 then
@@ -594,7 +597,7 @@ function send_tracking_control2(tracking_command2, param1, param2)
   write_byte(HEADER2, 0)
   write_byte(HEADER3, 0)
   local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
-  checksum = write_byte(0x2E, checksum)             -- 0x1E: E1 FrameId
+  checksum = write_byte(0x2E, checksum)             -- 0x2E: E2 FrameId
   checksum = write_byte(tracking_command2 & 0xFF, checksum) -- tracking command2
   checksum = write_byte(highbyte(param1), checksum) -- param1 msb
   checksum = write_byte(lowbyte(param1), checksum)  -- param1 lsb

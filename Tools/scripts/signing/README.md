@@ -12,7 +12,7 @@ firmware doesn't match any of the public keys in the bootloader.
 To generate a public/private key pair, run the following command:
 
 ```
-  python3 -m pip install pymonocypher
+  python3 -m pip install pymonocypher==3.1.3.2
   Tools/scripts/signing/generate_keys.py NAME
 ```
 
@@ -131,7 +131,13 @@ This opens a secure command session using your private_key.dat file to allow the
   securecommand getpublickeys        will return the number of public keys...you will need this next
   securecommand removepublickeys 0 X   where X is the number of public keys...this removes them
 ```
-Re-run the 'getpublickeys' command again to verify that all keys have been removed.
+
+For example, if you have a standard firmware with the 3 ArduPilot
+public keys and one of your own public keys then X will be 4 in the
+above command.
+
+Re-run the 'getpublickeys' command again to verify that all keys have
+been removed.
 
 Now exit MAVProxy and build a firmware using the normal bootloader but still using the --signed-fw option:
 

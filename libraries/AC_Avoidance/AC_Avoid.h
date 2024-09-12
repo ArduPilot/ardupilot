@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AC_Avoidance_config.h"
+
+#if AP_AVOIDANCE_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -18,7 +22,7 @@
 #define AC_AVOID_NONGPS_DIST_MAX_DEFAULT    5.0f    // objects over 5m away are ignored (default value for DIST_MAX parameter)
 #define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
 
-#define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
+#define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happened in the last x ms
 #define AC_AVOID_ACCEL_TIMEOUT_MS           200     // stored velocity used to calculate acceleration will be reset if avoidance is active after this many ms
 
 /*
@@ -64,14 +68,7 @@ public:
 
     // adjust vertical climb rate so vehicle does not break the vertical fence
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt);
-    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt) {
-        float backup_speed = 0.0f;
-        adjust_velocity_z(kP, accel_cmss, climb_rate_cms, backup_speed, dt);
-        if (!is_zero(backup_speed)) {
-            climb_rate_cms = MIN(climb_rate_cms, backup_speed);
-        }
-    }
-    
+    void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
 
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in centi-degrees
@@ -207,14 +204,15 @@ private:
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
-    AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
-    AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
-    AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
-    AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
-    AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
-    AP_Float _accel_max;        // maximum accelration while simple avoidance is active
-    AP_Float _backup_deadzone;  // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
+    AP_Int16 _angle_max;           // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Float _dist_max;            // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
+    AP_Float _margin;              // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
+    AP_Int8 _behavior;             // avoidance behaviour (slide or stop)
+    AP_Float _backup_speed_xy_max; // Maximum speed that will be used to back away horizontally (in m/s)
+    AP_Float _backup_speed_z_max;  // Maximum speed that will be used to back away verticality (in m/s)
+    AP_Float _alt_min;             // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;           // maximum acceleration while simple avoidance is active
+    AP_Float _backup_deadzone;     // distance beyond AVOID_MARGIN parameter, after which vehicle will backaway from obstacles
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
@@ -228,3 +226,5 @@ private:
 namespace AP {
     AC_Avoid *ac_avoid();
 };
+
+#endif  // AP_AVOIDANCE_ENABLED

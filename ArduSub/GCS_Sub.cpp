@@ -30,12 +30,12 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
         MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
 
     switch (sub.control_mode) {
-    case ALT_HOLD:
-    case AUTO:
-    case GUIDED:
-    case CIRCLE:
-    case SURFACE:
-    case POSHOLD:
+    case Mode::Number::ALT_HOLD:
+    case Mode::Number::AUTO:
+    case Mode::Number::GUIDED:
+    case Mode::Number::CIRCLE:
+    case Mode::Number::SURFACE:
+    case Mode::Number::POSHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
@@ -73,7 +73,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     }
 #endif
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (sub.rangefinder_state.enabled) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;

@@ -316,10 +316,12 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         float swash3 = scaled_servos[2];
 
         float roll_rate = swash1 - swash2;
-        float pitch_rate = -((swash1+swash2) / 2.0f - swash3);
+        float pitch_rate = ((swash1+swash2) / 2.0f - swash3);
+        float col = (swash1 + swash2 + swash3) / 3.0;
 
         scaled_servos[0] = constrain_float(roll_rate + 0.5, 0, 1);
         scaled_servos[1] = constrain_float(pitch_rate + 0.5, 0, 1);
+        scaled_servos[2] = constrain_float(col, 0, 1);
     }
 
     const uint16_t channels = hal.scheduler->is_system_initialized()?4095:0;
@@ -556,7 +558,7 @@ void FlightAxis::update(const struct sitl_input &input)
     if (is_positive(dcm.c.z)) {
         rangefinder_m[0] = state.m_altitudeAGL_MTR / dcm.c.z;
     } else {
-        rangefinder_m[0] = -1;
+        rangefinder_m[0] = nanf("");
     }
 
     report_FPS();
@@ -590,12 +592,16 @@ void FlightAxis::socket_creator(void)
             pthread_cond_wait(&sockcond2, &sockmtx);
         }
         pthread_mutex_unlock(&sockmtx);
-        auto *sck = new SocketAPM(false);
+        auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
             usleep(500);
             continue;
         }
-        if (!sck->connect(controller_ip, controller_port)) {
+        /*
+          don't let the connection take more than 100ms (10Hz). Longer
+          than this and we are better off trying for a new socket
+         */
+        if (!sck->connect_timeout(controller_ip, controller_port, 100)) {
             ::printf("connect failed\n");
             delete sck;
             usleep(5000);

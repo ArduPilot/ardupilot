@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Baro/AP_Baro.h>
 
 #ifdef TELEM_DEBUG
 # define debug(fmt, args...)	hal.console->printf("Telem: " fmt "\n", ##args)
@@ -39,7 +40,7 @@ extern const AP_HAL::HAL& hal;
  */
 bool AP_RCTelemetry::init(void)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if HAL_GCS_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     // make telemetry available to GCS_MAVLINK (used to queue statustext messages from GCS_MAVLINK)
     // add firmware and frame info to message queue
     const char* _frame_string = gcs().frame_string();
@@ -283,7 +284,56 @@ uint32_t AP_RCTelemetry::sensor_status_flags() const
     uint32_t present;
     uint32_t enabled;
     uint32_t health;
+#if HAL_GCS_ENABLED
     gcs().get_sensor_status_flags(present, enabled, health);
+#else
+    present = 0;
+    enabled = 0;
+    health = 0;
+#endif
 
     return ~health & enabled & present;
+}
+
+/*
+ * get vertical speed from ahrs, if not available fall back to baro climbrate, units is m/s
+ */
+float AP_RCTelemetry::get_vspeed_ms(void)
+{
+    {
+        // release semaphore as soon as possible
+        AP_AHRS &_ahrs = AP::ahrs();
+        Vector3f v;
+        WITH_SEMAPHORE(_ahrs.get_semaphore());
+        if (_ahrs.get_velocity_NED(v)) {
+            return -v.z;
+        }
+    }
+    auto &_baro = AP::baro();
+    WITH_SEMAPHORE(_baro.get_semaphore());
+    return _baro.get_climb_rate();
+}
+
+/*
+ * prepare altitude between vehicle and home location data
+ */
+float AP_RCTelemetry::get_nav_alt_m(Location::AltFrame frame)
+{
+    Location loc;
+    float current_height = 0;
+
+    AP_AHRS &_ahrs = AP::ahrs();
+    WITH_SEMAPHORE(_ahrs.get_semaphore());
+
+    if (frame == Location::AltFrame::ABOVE_HOME) {
+        _ahrs.get_relative_position_D_home(current_height);
+        return -current_height;
+    }
+
+    if (_ahrs.get_location(loc)) {
+        if (!loc.get_alt_m(frame, current_height)) {
+            // ignore this error
+        }
+    }
+    return current_height;
 }

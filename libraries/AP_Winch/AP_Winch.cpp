@@ -2,6 +2,7 @@
 
 #if AP_WINCH_ENABLED
 
+#include <GCS_MAVLink/GCS.h>
 #include "AP_Winch_PWM.h"
 #include "AP_Winch_Daiwa.h"
 
@@ -31,6 +32,13 @@ const AP_Param::GroupInfo AP_Winch::var_info[] = {
     // @Range: 0.01 10.0
     // @User: Standard
     AP_GROUPINFO("_POS_P", 3, AP_Winch, config.pos_p, 1.0f),
+
+    // @Param: _OPTIONS
+    // @DisplayName: Winch options
+    // @Description: Winch options
+    // @Bitmask:  0:Spin freely on startup, 1:Verbose output, 2:Retry if stuck (Daiwa only)
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 4, AP_Winch, config.options, 7.0f),
 
     // 4 was _RATE_PID
 
@@ -70,17 +78,28 @@ void AP_Winch::init()
     switch ((WinchType)config.type.get()) {
     case WinchType::NONE:
         break;
+#if AP_WINCH_PWM_ENABLED
     case WinchType::PWM:
-        backend = new AP_Winch_PWM(config);
+        backend = NEW_NOTHROW AP_Winch_PWM(config);
         break;
+#endif
+#if AP_WINCH_DAIWA_ENABLED
     case WinchType::DAIWA:
-        backend = new AP_Winch_Daiwa(config);
+        backend = NEW_NOTHROW AP_Winch_Daiwa(config);
         break;
+#endif
     default:
         break;
     }
     if (backend != nullptr) {
         backend->init();
+
+        // initialise control mode
+        if (backend->option_enabled(Options::SpinFreelyOnStartup)) {
+            relax();
+        } else {
+            set_desired_rate(0);
+        }
     }
 }
 
@@ -92,6 +111,11 @@ void AP_Winch::release_length(float length)
     }
     config.length_desired = backend->get_current_length() + length;
     config.control_mode = ControlMode::POSITION;
+
+    // display verbose output to user
+    if (backend->option_enabled(Options::VerboseOutput)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Winch: %s %4.1fm to %4.1fm", is_negative(length) ? "raising" : "lowering", (double)fabsf(length), (double)config.length_desired);
+    }
 }
 
 // deploy line at specified speed in m/s (+ve deploys line, -ve retracts line, 0 stops)
@@ -139,7 +163,9 @@ bool AP_Winch::pre_arm_check(char *failmsg, uint8_t failmsg_len) const
     }
 
 PASS_TO_BACKEND(update)
+#if HAL_LOGGING_ENABLED
 PASS_TO_BACKEND(write_log)
+#endif
 
 #undef PASS_TO_BACKEND
 

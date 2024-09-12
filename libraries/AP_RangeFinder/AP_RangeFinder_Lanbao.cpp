@@ -46,10 +46,9 @@ bool AP_RangeFinder_Lanbao::get_reading(float &reading_m)
     // format is: [ 0xA5 | 0x5A | distance-MSB-mm | distance-LSB-mm | crc16 ]
 
     // read any available lines from the lidar
-    int16_t nbytes = uart->available();
-    while (nbytes-- > 0) {
-        int16_t b = uart->read();
-        if (b == -1) {
+    for (auto i=0; i<8192; i++) {
+        uint8_t b;
+        if (!uart->read(b)) {
             break;
         }
         if (buf_len == 0 && b != 0xA5) {

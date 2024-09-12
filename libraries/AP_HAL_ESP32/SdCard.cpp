@@ -32,6 +32,8 @@
 #include <sys/types.h>
 #include "SPIDevice.h"
 
+#include "soc/rtc_wdt.h"
+
 #ifdef HAL_ESP32_SDCARD
 
 #if CONFIG_IDF_TARGET_ESP32S2 ||CONFIG_IDF_TARGET_ESP32C3
@@ -164,7 +166,6 @@ void mount_sdcard_mmc()
     // production applications.
     sdmmc_card_t* card;
     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
-
 
     if (ret == ESP_OK) {
         mkdir("/SDCARD/APM", 0777);

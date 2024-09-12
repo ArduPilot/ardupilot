@@ -14,15 +14,6 @@ static void failsafe_check_static()
 
 void Blimp::init_ardupilot()
 {
-
-#if STATS_ENABLED == ENABLED
-    // initialise stats module
-    g2.stats.init();
-#endif
-
-    BoardConfig.init();
-
-
     // initialise notify system
     notify.init();
     notify_flight_mode();
@@ -30,22 +21,21 @@ void Blimp::init_ardupilot()
     // initialise battery monitor
     battery.init();
 
+#if AP_RSSI_ENABLED
     // Init RSSI
     rssi.init();
+#endif
 
     barometer.init();
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if LOGGING_ENABLED == ENABLED
-    log_init();
-#endif
-
     init_rc_in();               // sets up rc channels from radio
 
     // allocate the motors class
     allocate_motors();
+    loiter = NEW_NOTHROW Loiter(blimp.scheduler.get_loop_rate_hz());
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
@@ -58,7 +48,9 @@ void Blimp::init_ardupilot()
     // motors initialised so parameters can be sent
     ap.initialised_params = true;
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
@@ -68,7 +60,7 @@ void Blimp::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -78,19 +70,12 @@ void Blimp::init_ardupilot()
     barometer.set_log_baro_bit(MASK_LOG_IMU);
     barometer.calibrate();
 
+#if HAL_LOGGING_ENABLED
     // initialise AP_Logger library
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&blimp, &Blimp::Log_Write_Vehicle_Startup_Messages, void));
+#endif
 
     startup_INS_ground();
-
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we are
-    // ready to fly
-    serial_manager.set_blocking_writes_all(false);
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
@@ -226,18 +211,16 @@ void Blimp::update_auto_armed()
     }
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Blimp::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
     ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
-#else
-    return false;
-#endif
 }
+#endif
 
 // return MAV_TYPE corresponding to frame class
 MAV_TYPE Blimp::get_frame_mav_type()
@@ -259,7 +242,7 @@ void Blimp::allocate_motors(void)
     switch ((Fins::motor_frame_class)g2.frame_class.get()) {
     case Fins::MOTOR_FRAME_AIRFISH:
     default:
-        motors = new Fins(blimp.scheduler.get_loop_rate_hz());
+        motors = NEW_NOTHROW Fins(blimp.scheduler.get_loop_rate_hz());
         break;
     }
     if (motors == nullptr) {

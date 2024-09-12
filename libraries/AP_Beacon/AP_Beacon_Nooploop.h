@@ -33,7 +33,7 @@ private:
     // send setting_frame0 to tag. tag will ack setting_frame0 with anchor position filled
     void request_setting();
 
-    // pase node_frame2 to get tag position and distance
+    // parse node_frame2 to get tag position and distance
     void parse_node_frame2();
 
     // parse setting_frame0 to get anchor position

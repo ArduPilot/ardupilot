@@ -201,6 +201,15 @@ uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
     }
 }
 
+uint16_t SRV_Channel::pwm_from_scaled_value(float scaled_value) const
+{
+    if (type_angle) {
+        return pwm_from_angle(scaled_value);
+    } else {
+        return pwm_from_range(scaled_value);
+    }
+}
+
 void SRV_Channel::calc_pwm(float output_scaled)
 {
     if (have_pwm_mask & (1U<<ch_num)) {
@@ -221,11 +230,7 @@ void SRV_Channel::calc_pwm(float output_scaled)
         return;
     }
 
-    if (type_angle) {
-        output_pwm = pwm_from_angle(output_scaled);
-    } else {
-        output_pwm = pwm_from_range(output_scaled);
-    }
+    output_pwm = pwm_from_scaled_value(output_scaled);
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
@@ -240,11 +245,7 @@ void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
 void SRV_Channel::set_output_norm(float value)
 {
     // convert normalised value to pwm
-    if (type_angle) {
-        set_output_pwm(pwm_from_angle(value * high_out));
-    } else {
-        set_output_pwm(pwm_from_range(value * high_out));
-    }
+    set_output_pwm(pwm_from_scaled_value(value * high_out));
 }
 
 // set angular range of scaled output

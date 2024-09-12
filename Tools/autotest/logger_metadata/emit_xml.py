@@ -31,24 +31,37 @@ class XMLEmitter(emitter.Emitter):
 
             xml_fields = etree.SubElement(xml_logformat, 'fields')
             for f in docco.fields_order:
-                xml_field = etree.SubElement(xml_fields, 'field', name=f)
+                units = docco.fields[f]['units'] if "units" in docco.fields[f] else ""
+                fmt = docco.fields[f]['fmt'] if "fmt" in docco.fields[f] else ""
+                xml_field = etree.SubElement(xml_fields, 'field', name=f, units=units, type=fmt)
                 if "description" in docco.fields[f]:
                     xml_description2 = etree.SubElement(xml_field, 'description')
                     xml_description2.text = docco.fields[f]["description"]
+                # Check for enum/bitfield
+                fieldnamething = None
                 if "bitmaskenum" in docco.fields[f]:
-                    enum_name = docco.fields[f]["bitmaskenum"]
+                    fieldnamething = "bitmaskenum"
+                    xmlenumtag = "bitmask"
+                    xmlentrytag = "bit"
+                elif "valueenum" in docco.fields[f]:
+                    fieldnamething = "valueenum"
+                    xmlenumtag = "enum"
+                    xmlentrytag = "element"
+                # If an enum/bitmask is defined, include this in the XML
+                if fieldnamething is not None:
+                    enum_name = docco.fields[f][fieldnamething]
                     if enum_name not in enumerations:
                         raise Exception("Unknown enum (%s) (have %s)" %
                                         (enum_name, "\n".join(sorted(enumerations.keys()))))
-                    bit_mask = enumerations[enum_name]
-                    xml_bitmask = etree.SubElement(xml_field, 'bitmask')
-                    for bit in bit_mask.entries:
-                        xml_bitmask_bit = etree.SubElement(xml_bitmask, 'bit', name=bit.name)
-                        xml_bitmask_bit_value = etree.SubElement(xml_bitmask_bit, 'value')
-                        xml_bitmask_bit_value.text =  str(bit.value)
-                        if bit.comment is not None:
-                            xml_bitmask_bit_comment = etree.SubElement(xml_bitmask_bit, 'description')
-                            xml_bitmask_bit_comment.text = bit.comment
+                    enum = enumerations[enum_name]
+                    xml_enum = etree.SubElement(xml_field, xmlenumtag, name=enum_name)
+                    for entry in enum.entries:
+                        xml_enum_entry = etree.SubElement(xml_enum, xmlentrytag, name=entry.name)
+                        xml_enum_entry_value = etree.SubElement(xml_enum_entry, 'value')
+                        xml_enum_entry_value.text =  str(entry.value)
+                        if entry.comment is not None:
+                            xml_enum_entry_comment = etree.SubElement(xml_enum_entry, 'description')
+                            xml_enum_entry_comment.text = entry.comment
             if xml_fields.text is None and not len(xml_fields):
                 xml_fields.text = '\n'  # add </param> on next line in case of empty element.
         self.stop()

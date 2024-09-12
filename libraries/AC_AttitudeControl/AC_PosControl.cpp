@@ -204,6 +204,31 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
+    // @Param: _ACCZ_PDMX
+    // @DisplayName: Acceleration (vertical) controller PD sum maximum
+    // @Description: Acceleration (vertical) controller PD sum maximum.  The maximum/minimum value that the sum of the P and D term can output
+    // @Range: 0 1000
+    // @Units: d%
+
+    // @Param: _ACCZ_D_FF
+    // @DisplayName: Accel (vertical) Derivative FeedForward Gain
+    // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Range: 0 0.02
+    // @Increment: 0.0001
+    // @User: Advanced
+
+    // @Param: _ACCZ_NTF
+    // @DisplayName: Accel (vertical) Target notch filter index
+    // @Description: Accel (vertical) Target notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
+    // @Param: _ACCZ_NEF
+    // @DisplayName: Accel (vertical) Error notch filter index
+    // @Description: Accel (vertical) Error notch filter index
+    // @Range: 1 8
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
@@ -586,7 +611,7 @@ void AC_PosControl::stop_vel_xy_stabilisation()
     _pid_vel_xy.reset_I();
 }
 
-// is_active_xy - returns true if the xy position controller has bee n run in the previous 5 loop times
+// is_active_xy - returns true if the xy position controller has been run in the previous loop
 bool AC_PosControl::is_active_xy() const
 {
     const uint32_t dt_ticks = AP::scheduler().ticks32() - _last_update_xy_ticks;
@@ -618,7 +643,10 @@ void AC_PosControl::update_xy_controller()
     // Position Controller
 
     const Vector3f &curr_pos = _inav.get_position_neu_cm();
-    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos);
+    // determine the combined position of the actual position and the disturbance from system ID mode
+    Vector3f comb_pos = curr_pos;
+    comb_pos.xy() += _disturb_pos;
+    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos);
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ahrsControlScaleXY;
@@ -628,7 +656,10 @@ void AC_PosControl::update_xy_controller()
     // Velocity Controller
 
     const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
-    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), curr_vel, _dt, _limit_vector.xy());
+    // determine the combined velocity of the actual velocity and the disturbance from system ID mode
+    Vector2f comb_vel = curr_vel;
+    comb_vel += _disturb_vel;
+    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), comb_vel, _dt, _limit_vector.xy());
     
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ahrsControlScaleXY;
@@ -649,11 +680,21 @@ void AC_PosControl::update_xy_controller()
     if (!limit_accel_xy(_vel_desired.xy(), _accel_target.xy(), accel_max)) {
         // _accel_target was not limited so we can zero the xy limit vector
         _limit_vector.xy().zero();
+    } else {
+        // Check for pitch limiting in the forward direction
+        const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
+        const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
+        const float accel_fwd_limited = _accel_target.x * _ahrs.cos_yaw() + _accel_target.y * _ahrs.sin_yaw();
+        const float pitch_target_limited = accel_to_angle(- accel_fwd_limited * 0.01f) * 100;
+        _fwd_pitch_is_limited = is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
     }
 
     // update angle targets that will be passed to stabilize controller
     accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
     calculate_yaw_and_rate_yaw();
+
+    _disturb_pos.zero();
+    _disturb_vel.zero();
 }
 
 
@@ -901,7 +942,7 @@ void AC_PosControl::update_pos_offset_z(float pos_offset_z)
         _jerk_max_z_cmsss, _dt, false);
 }
 
-// is_active_z - returns true if the z position controller has been run in the previous 5 loop times
+// is_active_z - returns true if the z position controller has been run in the previous loop
 bool AC_PosControl::is_active_z() const
 {
     const uint32_t dt_ticks = AP::scheduler().ticks32() - _last_update_z_ticks;
@@ -954,7 +995,7 @@ void AC_PosControl::update_z_controller()
 
     // ensure imax is always large enough to overpower hover throttle
     if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
-        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+        _pid_accel_z.set_imax(_motors.get_throttle_hover() * 1000.0f);
     }
     float thr_out;
     if (_vibe_comp_enabled) {
@@ -1128,26 +1169,28 @@ void AC_PosControl::standby_xyz_reset()
     init_ekf_xy_reset();
 }
 
+#if HAL_LOGGING_ENABLED
 // write PSC and/or PSCZ logs
 void AC_PosControl::write_log()
 {
     if (is_active_xy()) {
         float accel_x, accel_y;
         lean_angles_to_accel_xy(accel_x, accel_y);
-        AP::logger().Write_PSCN(get_pos_target_cm().x, _inav.get_position_neu_cm().x,
+        Write_PSCN(get_pos_target_cm().x, _inav.get_position_neu_cm().x,
                                 get_vel_desired_cms().x, get_vel_target_cms().x, _inav.get_velocity_neu_cms().x,
                                 _accel_desired.x, get_accel_target_cmss().x, accel_x);
-        AP::logger().Write_PSCE(get_pos_target_cm().y, _inav.get_position_neu_cm().y,
+        Write_PSCE(get_pos_target_cm().y, _inav.get_position_neu_cm().y,
                                 get_vel_desired_cms().y, get_vel_target_cms().y, _inav.get_velocity_neu_cms().y,
                                 _accel_desired.y, get_accel_target_cmss().y, accel_y);
     }
 
     if (is_active_z()) {
-        AP::logger().Write_PSCD(-get_pos_target_cm().z, -_inav.get_position_z_up_cm(),
+        Write_PSCD(-get_pos_target_cm().z, -_inav.get_position_z_up_cm(),
                                 -get_vel_desired_cms().z, -get_vel_target_cms().z, -_inav.get_velocity_z_up_cms(),
                                 -_accel_desired.z, -get_accel_target_cmss().z, -get_z_accel_cmss());
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 /// crosstrack_error - returns horizontal error to the closest point to the current track
 float AC_PosControl::crosstrack_error() const
@@ -1197,7 +1240,7 @@ void AC_PosControl::lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_
 }
 
 // calculate_yaw_and_rate_yaw - update the calculated the vehicle yaw and rate of yaw.
-bool AC_PosControl::calculate_yaw_and_rate_yaw()
+void AC_PosControl::calculate_yaw_and_rate_yaw()
 {
     // Calculate the turn rate
     float turn_rate = 0.0f;
@@ -1216,9 +1259,12 @@ bool AC_PosControl::calculate_yaw_and_rate_yaw()
     if (vel_desired_xy_len > _vel_max_xy_cms * 0.05f) {
         _yaw_target = degrees(_vel_desired.xy().angle()) * 100.0f;
         _yaw_rate_target = turn_rate * degrees(100.0f);
-        return true;
+        return;
     }
-    return false;
+
+    // use the current attitude controller yaw target
+    _yaw_target = _attitude_control.get_att_target_euler_cd().z;
+    _yaw_rate_target = 0;
 }
 
 // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected

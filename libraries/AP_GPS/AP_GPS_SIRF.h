@@ -31,7 +31,7 @@
 
 class AP_GPS_SIRF : public AP_GPS_Backend {
 public:
-	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+	AP_GPS_SIRF(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
     bool read() override;
 

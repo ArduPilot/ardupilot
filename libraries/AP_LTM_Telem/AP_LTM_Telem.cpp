@@ -70,6 +70,7 @@ void AP_LTM_Telem::send_Gframe(void)
     int32_t lon = 0;                        // longtitude
     uint8_t gndspeed = 0;                   // gps ground speed (m/s)
     int32_t alt = 0;
+#if AP_AHRS_ENABLED
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -83,6 +84,7 @@ void AP_LTM_Telem::send_Gframe(void)
             gndspeed = (uint8_t) roundf(gps.ground_speed());
         }
     }
+#endif
 
     uint8_t lt_buff[LTM_GFRAME_SIZE];
     // protocol: START(2 bytes)FRAMEID(1byte)LAT(cm,4 bytes)LON(cm,4bytes)SPEED(m/s,1bytes)ALT(cm,4bytes)SATS(6bits)FIX(2bits)CRC(xor,1byte)
@@ -114,6 +116,7 @@ void AP_LTM_Telem::send_Gframe(void)
 // Sensors frame
 void AP_LTM_Telem::send_Sframe(void)
 {
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
     const uint16_t volt = (uint16_t) roundf(battery.voltage() * 1000.0f);              // battery voltage (expects value in mV)
     float current;
@@ -122,6 +125,10 @@ void AP_LTM_Telem::send_Sframe(void)
     }
     // note: max. current value we can send is 65.536 A
     const uint16_t amp = (uint16_t) roundf(current * 100.0f);                          // current sensor (expects value in hundredth of A)
+#else
+    const uint16_t volt = 0;
+    const uint16_t amp = 0;
+#endif
 
     // airspeed in m/s if available and enabled - even if not used - otherwise send 0
     uint8_t airspeed = 0; // airspeed sensor (m/s)
@@ -135,10 +142,12 @@ void AP_LTM_Telem::send_Sframe(void)
     const uint8_t flightmode = AP_Notify::flags.flight_mode; // flight mode
 
     uint8_t rssi = 0; // radio RSSI (%a)
+#if AP_RSSI_ENABLED
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
         rssi = ap_rssi->read_receiver_rssi_uint8();
     }
+#endif
 
     const uint8_t armstat = AP_Notify::flags.armed;                                     // 0: disarmed, 1: armed
     const uint8_t failsafe = AP_Notify::flags.failsafe_radio;                           // 0: normal,   1: failsafe
@@ -168,6 +177,7 @@ void AP_LTM_Telem::send_Aframe(void)
     int16_t pitch;
     int16_t roll;
     int16_t heading;
+#if AP_AHRS_ENABLED
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -175,6 +185,11 @@ void AP_LTM_Telem::send_Aframe(void)
         roll = roundf(ahrs.roll_sensor * 0.01);   // attitude roll in degrees
         heading = roundf(ahrs.yaw_sensor * 0.01); // heading in degrees
     }
+#else
+    pitch = 0;
+    roll = 0;
+    heading = 0;
+#endif
 
     uint8_t lt_buff[LTM_AFRAME_SIZE];
     // A Frame: $T(2 bytes)A(1byte)PITCH(2 bytes)ROLL(2bytes)HEADING(2bytes)CRC(xor,1byte)

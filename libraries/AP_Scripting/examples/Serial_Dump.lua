@@ -1,5 +1,8 @@
 -- this script reads data from a serial port and dumps it to a file
--- luacheck: only 0
+
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
 
 local file_name = 'raw serial dump.txt'
 local file_name_plain = 'serial dump.txt'
@@ -11,6 +14,7 @@ local port = assert(serial:find_serial(0),"Could not find Scripting Serial Port"
 
 -- make a file
 local file = assert(io.open(file_name, "w"),"Could not create file " .. file_name)
+file:close()
 file = assert(io.open(file_name_plain, "w"),"Could not create file " .. file_name)
 file:close()
 

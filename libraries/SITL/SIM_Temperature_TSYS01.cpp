@@ -193,9 +193,6 @@ float SITL::TSYS01::get_sim_temperature() const
     float sim_alt = AP::sitl()->state.altitude;
     sim_alt += 2 * rand_float();
 
-    float sigma, delta, theta;
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-
     // To Do: Add a sensor board temperature offset parameter
-    return (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
+    return AP_Baro::get_temperatureC_for_alt_amsl(sim_alt) + 25;
 }

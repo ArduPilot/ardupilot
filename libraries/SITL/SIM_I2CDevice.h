@@ -91,6 +91,11 @@ public:
 
 protected:
 
+    // this method is called by rdwr to store values into a register
+    virtual void rdwr_store_register_value(uint8_t reg, uint8_t value) {
+        byte[reg] = value;
+    }
+
     uint8_t byte[256];
 };
 

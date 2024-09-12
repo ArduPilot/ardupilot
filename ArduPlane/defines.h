@@ -102,6 +102,8 @@ enum log_messages {
     LOG_PIDG_MSG,
     LOG_AETR_MSG,
     LOG_OFG_MSG,
+    LOG_TSIT_MSG,
+    LOG_TILT_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -123,6 +125,7 @@ enum log_messages {
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ATTITUDE_FULLRATE      (1U<<20)
 #define MASK_LOG_VIDEO_STABILISATION    (1UL<<21)
+#define MASK_LOG_NOTCH_FULLRATE         (1UL<<22)
 
 enum {
     CRASH_DETECT_ACTION_BITMASK_DISABLED = 0,
@@ -159,12 +162,13 @@ enum FlightOptions {
     ACRO_YAW_DAMPER = (1 << 5),
     SURPRESS_TKOFF_SCALING = (1<<6),
     ENABLE_DEFAULT_AIRSPEED = (1<<7),
-    GCS_REMOVE_TRIM_PITCH_CD = (1 << 8),
-    OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
+    GCS_REMOVE_TRIM_PITCH = (1 << 8),
+    OSD_REMOVE_TRIM_PITCH = (1 << 9),
     CENTER_THROTTLE_TRIM = (1<<10),
     DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
     INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
+    IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
 };
 
 enum CrowFlapOptions {

@@ -77,7 +77,7 @@ static bool empty_1k(const uint8_t *data)
 AP_CheckFirmware::bl_data *AP_CheckFirmware::read_bootloader(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    struct bl_data *bld = new bl_data;
+    struct bl_data *bld = NEW_NOTHROW bl_data;
     if (bld == nullptr) {
         return nullptr;
     }
@@ -95,7 +95,7 @@ AP_CheckFirmware::bl_data *AP_CheckFirmware::read_bootloader(void)
         }
         bld->length1 += block_size;
     }
-    bld->data1 = new uint8_t[bld->length1];
+    bld->data1 = NEW_NOTHROW uint8_t[bld->length1];
     if (bld->data1 == nullptr) {
         delete bld;
         return nullptr;
@@ -118,7 +118,7 @@ AP_CheckFirmware::bl_data *AP_CheckFirmware::read_bootloader(void)
     if (num_blocks > 0) {
         // we have persistent data to save
         bld->length2 = num_blocks * block_size;
-        bld->data2 = new uint8_t[bld->length2];
+        bld->data2 = NEW_NOTHROW uint8_t[bld->length2];
         if (bld->data2 == nullptr) {
             delete bld;
             return nullptr;
@@ -365,7 +365,7 @@ void AP_CheckFirmware::handle_secure_command(mavlink_channel_t chan, const mavli
             reply.result = MAV_RESULT_FAILED;
             goto send_reply;
         }
-        uint8_t *data = new uint8_t[num_keys*AP_PUBLIC_KEY_LEN];
+        uint8_t *data = NEW_NOTHROW uint8_t[num_keys*AP_PUBLIC_KEY_LEN];
         if (data == nullptr) {
             reply.result = MAV_RESULT_FAILED;
             goto send_reply;

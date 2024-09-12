@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export PATH=$HOME/.local/bin:/usr/local/bin:$HOME/prefix/bin:$HOME/gcc/active/bin:$PATH
 export PYTHONUNBUFFERED=1
@@ -8,7 +8,7 @@ cd $HOME/APM || exit 1
 test -n "$FORCEBUILD" || {
 (cd APM && git fetch > /dev/null 2>&1)
 
-newtags=$(cd APM && git fetch --tags | wc -l)
+newtags=$(cd APM && git fetch --tags --force | wc -l)
 oldhash=$(cd APM && git rev-parse origin/master)
 newhash=$(cd APM && git rev-parse HEAD)
 
@@ -100,7 +100,7 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 72000 python3 APM/Tools/autotest/autotest.py --autotest-server --timeout=70000 > buildlogs/autotest-output.txt 2>&1
+timelimit 144000 python3 APM/Tools/autotest/autotest.py --autotest-server --timeout=143000 > buildlogs/autotest-output.txt 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 

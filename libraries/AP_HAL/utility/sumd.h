@@ -50,7 +50,7 @@
  *
  * @param byte current char to read
  * @param rssi pointer to a byte where the RSSI value is written back to
- * @param rx_count pointer to a byte where the receive count of packets signce last wireless frame is written back to
+ * @param rx_count pointer to a byte where the receive count of packets since last wireless frame is written back to
  * @param channels pointer to a datastructure of size max_chan_count where channel values (12 bit) are written back to
  * @param max_chan_count maximum channels to decode - if more channels are decoded, the last n are skipped and success (0) is returned
  * @return 0 for success (a decoded packet), 1 for no packet yet (accumulating), 2 for unknown packet, 3 for out of sync, 4 for checksum error

@@ -42,7 +42,7 @@ void ModeGuided::update()
         plane.nav_roll_cd = constrain_int32(plane.guided_state.forced_rpy_cd.x, -plane.roll_limit_cd, plane.roll_limit_cd);
         plane.update_load_factor();
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
     // This function is used in Guided and AvoidADSB, check for guided
     } else if ((plane.control_mode == &plane.mode_guided) && (plane.guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
@@ -52,7 +52,7 @@ void ModeGuided::update()
 
         float error = 0.0f;
         if (plane.guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().yaw);
+            error = wrap_PI(plane.guided_state.target_heading - AP::ahrs().get_yaw());
         } else {
             Vector2f groundspeed = AP::ahrs().groundspeed_vector();
             error = wrap_PI(plane.guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
@@ -61,39 +61,42 @@ void ModeGuided::update()
         float bank_limit = degrees(atanf(plane.guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
         bank_limit = MIN(bank_limit, plane.roll_limit_cd);
 
-        plane.g2.guidedHeading.update_error(error, delta); // push error into AC_PID , possible improvement is to use update_all instead.?
+        // push error into AC_PID
+        const float desired = plane.g2.guidedHeading.update_error(error, delta, plane.guided_state.target_heading_limit);
 
-        float i = plane.g2.guidedHeading.get_i(); // get integrator TODO
-        if (((is_negative(error) && !plane.guided_state.target_heading_limit_low) || (is_positive(error) && !plane.guided_state.target_heading_limit_high))) {
-            i = plane.g2.guidedHeading.get_i();
-        }
-
-        float desired = plane.g2.guidedHeading.get_p() + i + plane.g2.guidedHeading.get_d();
-        plane.guided_state.target_heading_limit_low = (desired <= -bank_limit);
-        plane.guided_state.target_heading_limit_high = (desired >= bank_limit);
+        // Check for output saturation
+        plane.guided_state.target_heading_limit = fabsf(desired) >= bank_limit;
 
         plane.nav_roll_cd = constrain_int32(desired, -bank_limit, bank_limit);
         plane.update_load_factor();
 
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     } else {
         plane.calc_nav_roll();
     }
 
     if (plane.guided_state.last_forced_rpy_ms.y > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
-        plane.nav_pitch_cd = constrain_int32(plane.guided_state.forced_rpy_cd.y, plane.pitch_limit_min_cd, plane.aparm.pitch_limit_max_cd.get());
+        plane.nav_pitch_cd = constrain_int32(plane.guided_state.forced_rpy_cd.y, plane.pitch_limit_min*100, plane.aparm.pitch_limit_max.get()*100);
     } else {
         plane.calc_nav_pitch();
     }
 
-    // Received an external msg that guides throttle in the last 3 seconds?
-    if (plane.aparm.throttle_cruise > 1 &&
+    // Throttle output
+    if (plane.guided_throttle_passthru) {
+        // manual passthrough of throttle in fence breach
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+
+    }  else if (plane.aparm.throttle_cruise > 1 &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
             millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
+        // Received an external msg that guides throttle in the last 3 seconds?
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
+
     } else {
+        // TECS control
         plane.calc_throttle();
+
     }
 
 }
@@ -125,7 +128,7 @@ void ModeGuided::set_radius_and_direction(const float radius, const bool directi
 
 void ModeGuided::update_target_altitude()
 {
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
@@ -144,9 +147,8 @@ void ModeGuided::update_target_altitude()
         }
         plane.guided_state.last_target_alt = temp.alt;
         plane.set_target_altitude_location(temp);
-        plane.altitude_error_cm = plane.calc_altitude_error_cm();
     } else 
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         {
         Mode::update_target_altitude();
     }

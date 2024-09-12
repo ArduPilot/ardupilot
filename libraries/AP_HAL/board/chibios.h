@@ -4,6 +4,10 @@
 
 #define HAL_BOARD_NAME "ChibiOS"
 
+#ifdef HAL_HAVE_PIXRACER_LED
+#error "use AP_NOTIFY_GPIO_LED_RGB_ENABLED in place of HAL_HAVE_PIXRACER_LED (and rename your pins!)"
+#endif
+
 #if HAL_MEMORY_TOTAL_KB >= 1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #elif HAL_MEMORY_TOTAL_KB >= 500
@@ -16,13 +20,6 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_64
 #else
 #define HAL_MEM_CLASS HAL_MEM_CLASS_20
-#endif
-
-#ifndef HAL_GPIO_LED_ON
-#define HAL_GPIO_LED_ON           0
-#endif
-#ifndef HAL_GPIO_LED_OFF
-#define HAL_GPIO_LED_OFF          1
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES
@@ -63,9 +60,7 @@
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
-
-#include <AP_HAL/EventHandle.h>
-#define HAL_EventHandle AP_HAL::EventHandle
+#define HAL_BinarySemaphore ChibiOS::BinarySemaphore
 #endif
 
 /* string names for well known SPI devices */

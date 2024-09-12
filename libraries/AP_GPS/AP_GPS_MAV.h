@@ -19,16 +19,15 @@
 //
 #pragma once
 
+#include "AP_GPS_config.h"
+
+#if AP_GPS_MAV_ENABLED
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#ifndef AP_GPS_MAV_ENABLED
-  #define AP_GPS_MAV_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
-#endif 
-
-#if AP_GPS_MAV_ENABLED
 class AP_GPS_MAV : public AP_GPS_Backend {
 public:
 
@@ -47,4 +46,5 @@ private:
     uint32_t first_week;
     JitterCorrection jitter{2000};
 };
-#endif
+
+#endif  // AP_GPS_MAV_ENABLED

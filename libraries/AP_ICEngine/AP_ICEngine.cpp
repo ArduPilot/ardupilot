@@ -24,6 +24,9 @@
 #include <AP_Notify/AP_Notify.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Parachute/AP_Parachute.h>
+#include <AP_Relay/AP_Relay.h>
+#include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,9 +44,11 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: START_CHAN
     // @DisplayName: Input channel for engine start
     // @Description: This is an RC input channel for requesting engine start. Engine will try to start when channel is at or above 1700. Engine will stop when channel is at or below 1300. Between 1301 and 1699 the engine will not change state unless a MAVLink command or mission item commands a state change, or the vehicle is disarmed. See ICE_STARTCHN_MIN parameter to change engine stop PWM value and/or to enable debouncing of the START_CH to avoid accidental engine kills due to noise on channel.
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Values: 0:None,1:Chan1,2:Chan2,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
-    AP_GROUPINFO("START_CHAN", 1, AP_ICEngine, start_chan, 0),
+
+    // 1 was START_CHAN
 
     // @Param: STARTER_TIME
     // @DisplayName: Time to run starter
@@ -61,47 +66,59 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Range: 1 10
     AP_GROUPINFO("START_DELAY", 3, AP_ICEngine, starter_delay, 2),
 
+#if AP_RPM_ENABLED
     // @Param: RPM_THRESH
     // @DisplayName: RPM threshold
     // @Description: This is the measured RPM above which the engine is considered to be running
     // @User: Standard
     // @Range: 100 100000
     AP_GROUPINFO("RPM_THRESH", 4, AP_ICEngine, rpm_threshold, 100),
+#endif
 
     // @Param: PWM_IGN_ON
     // @DisplayName: PWM value for ignition on
     // @Description: This is the value sent to the ignition channel when on
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_IGN_ON", 5, AP_ICEngine, pwm_ignition_on, 2000),
+
+    // 5 was PWM_IGN_ON
 
     // @Param: PWM_IGN_OFF
     // @DisplayName: PWM value for ignition off
     // @Description: This is the value sent to the ignition channel when off
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_IGN_OFF", 6, AP_ICEngine, pwm_ignition_off, 1000),
+
+    // 6 was PWM_IGN_OFF
 
     // @Param: PWM_STRT_ON
     // @DisplayName: PWM value for starter on
     // @Description: This is the value sent to the starter channel when on
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_STRT_ON", 7, AP_ICEngine, pwm_starter_on, 2000),
+
+    // 7 was PWM_STRT_ON
 
     // @Param: PWM_STRT_OFF
     // @DisplayName: PWM value for starter off
     // @Description: This is the value sent to the starter channel when off
+    // @Legacy: 4.5 param
     // @User: Standard
     // @Range: 1000 2000
-    AP_GROUPINFO("PWM_STRT_OFF", 8, AP_ICEngine, pwm_starter_off, 1000),
 
+    // 8 was PWM_STRT_OFF
+
+#if AP_RPM_ENABLED
     // @Param: RPM_CHAN
     // @DisplayName: RPM instance channel to use
     // @Description: This is which of the RPM instances to use for detecting the RPM of the engine
     // @User: Standard
     // @Values: 0:None,1:RPM1,2:RPM2
     AP_GROUPINFO("RPM_CHAN",  9, AP_ICEngine, rpm_instance, 0),
+#endif
 
     // @Param: START_PCT
     // @DisplayName: Throttle percentage for engine start
@@ -117,6 +134,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Range: 0 100
     AP_GROUPINFO("IDLE_PCT", 11, AP_ICEngine, idle_percent, 0),
 
+#if AP_RPM_ENABLED
     // @Param: IDLE_RPM
     // @DisplayName: RPM Setpoint for Idle Governor
     // @Description: This configures the RPM that will be commanded by the idle governor. Set to -1 to disable
@@ -132,20 +150,22 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @DisplayName: Slew Rate for idle control
     // @Description: This configures the slewrate used to adjust the idle setpoint in percentage points per second
     AP_GROUPINFO("IDLE_SLEW", 14, AP_ICEngine, idle_slew, 1),
+#endif
 
     // @Param: OPTIONS
     // @DisplayName: ICE options
-    // @Description: Options for ICE control. The DisableIgnitionRCFailsafe option will cause the ignition to be set off on any R/C failsafe. If ThrottleWhileDisarmed is set then throttle control will be allowed while disarmed for planes when in MANUAL mode.
-    // @Bitmask: 0:DisableIgnitionRCFailsafe,1:DisableRedineGovernor,2:ThrottleWhileDisarmed
+    // @Description: Options for ICE control. The Disable ignition in RC failsafe option will cause the ignition to be set off on any R/C failsafe. If Throttle while disarmed is set then throttle control will be allowed while disarmed for planes when in MANUAL mode. If disable while disarmed is set the engine will not start while the vehicle is disarmed unless overriden by the MAVLink DO_ENGINE_CONTROL command.
+    // @Bitmask: 0:Disable ignition in RC failsafe,1:Disable redline governor,2:Throttle while disarmed,3:Disable while disarmed,4:Crank direction Reverse
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
 
     // @Param: STARTCHN_MIN
     // @DisplayName: Input channel for engine start minimum PWM
-    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM below 1300 triggers an engine stop.
+    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM above 800 and below 1300 triggers an engine stop. To stop the engine start channel must above the larger of this value and 800 and below 1300.
     // @User: Standard
     // @Range: 0 1300
     AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
 
+#if AP_RPM_ENABLED
     // @Param: REDLINE_RPM
     // @DisplayName: RPM of the redline limit for the engine
     // @Description: Maximum RPM for the engine provided by the manufacturer. A value of 0 disables this feature. See ICE_OPTIONS to enable or disable the governor.
@@ -153,14 +173,19 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Range: 0 2000000
     // @Units: RPM
     AP_GROUPINFO("REDLINE_RPM", 17, AP_ICEngine, redline_rpm, 0),
+#endif
+
+    // 18 was IGNITION_RLY
+
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("FMT_VER", 19, AP_ICEngine, param_format_version, 0, AP_PARAM_FLAG_HIDDEN),
 
     AP_GROUPEND
 };
 
-
 // constructor
-AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
-    rpm(_rpm)
+AP_ICEngine::AP_ICEngine()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -169,8 +194,85 @@ AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
     }
     _singleton = this;
 
+#if AP_RPM_ENABLED
     // ICEngine runs at 10Hz
     _rpm_filter.set_cutoff_frequency(10, 0.5f);
+#endif
+}
+
+// One time init call
+void AP_ICEngine::init()
+{
+    // Configure starter and ignition outputs as range type
+    SRV_Channels::set_range(SRV_Channel::k_starter, 1);
+    SRV_Channels::set_range(SRV_Channel::k_ignition, 1);
+
+    // Set default PWM endpoints to 1000 to 2000
+    SRV_Channels::set_output_min_max_defaults(SRV_Channel::k_starter, 1000, 2000);
+    SRV_Channels::set_output_min_max_defaults(SRV_Channel::k_ignition, 1000, 2000);
+
+    // Convert params
+    param_conversion();
+}
+
+// PARAMETER_CONVERSION - Added: Aug 2024
+void AP_ICEngine::param_conversion()
+{
+    if (!enable || (param_format_version == 1)) {
+        // not enabled or conversion has already been done
+        return;
+    }
+
+    // Set format version so the conversion is not done again
+    param_format_version.set_and_save(1);
+
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_key_by_pointer(this, info.old_key)) {
+        return;
+    }
+
+    // Conversion table giving the old on and off pwm parameter indexes and the function for both starter and ignition
+    const struct convert_table {
+        uint32_t element[2];
+        SRV_Channel::Aux_servo_function_t fuction;
+    } conversion_table[] = {
+        { {450, 514}, SRV_Channel::k_starter },  // PWM_STRT_ON, PWM_STRT_OFF
+        { {322, 386}, SRV_Channel::k_ignition }, // PWM_IGN_ON, PWM_IGN_OFF
+    };
+
+    // All PWM values were int16
+    info.type = AP_PARAM_INT16;
+
+    for (const auto & elem : conversion_table) {
+        // Use the original default values if params are not saved
+        uint16_t pwm_on = 2000;
+        uint16_t pwm_off = 1000;
+
+        // Get param values if configured
+        AP_Int16 param_value;
+        info.old_group_element = elem.element[0];
+        if (AP_Param::find_old_parameter(&info, &param_value)) {
+            pwm_on = param_value;
+        }
+        info.old_group_element = elem.element[1];
+        if (AP_Param::find_old_parameter(&info, &param_value)) {
+            pwm_off = param_value;
+        }
+
+        // Save as servo endpoints, note that save_output_min_max will set reversed if needed
+        SRV_Channels::save_output_min_max(elem.fuction, pwm_off, pwm_on);
+    }
+
+    // Convert to new RC option
+    AP_Int8 start_chan;
+    info.type = AP_PARAM_INT8;
+    info.old_group_element = 66;
+    if (AP_Param::find_old_parameter(&info, &start_chan) && (start_chan > 0)) {
+        RC_Channel *chan = rc().channel(start_chan-1);
+        if (chan != nullptr) {
+            chan->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::ICE_START_STOP);
+        }
+    }
 }
 
 /*
@@ -183,7 +285,7 @@ void AP_ICEngine::update(void)
     }
 
     uint16_t cvalue = 1500;
-    RC_Channel *c = rc().channel(start_chan-1);
+    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
     if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         cvalue = c->get_radio_in();
@@ -228,6 +330,11 @@ void AP_ICEngine::update(void)
         should_run = true;
     } else if (start_chan_last_value <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
         should_run = false;
+
+        // clear the single start flag now that we will be stopping the engine
+        if (state != ICE_OFF) {
+            allow_single_start_while_disarmed = false;
+        }
     } else if (state != ICE_OFF) {
         should_run = true;
     }
@@ -237,10 +344,37 @@ void AP_ICEngine::update(void)
         should_run = false;
     }
 
-    float rpm_value;
+    if (option_set(Options::NO_RUNNING_WHILE_DISARMED)) {
+        if (hal.util->get_soft_armed()) {
+            // clear the disarmed start flag, as we are now armed, if we disarm again we expect the engine to stop
+            allow_single_start_while_disarmed = false;
+        } else {
+            // check if we are blocking disarmed starts
+            if (!allow_single_start_while_disarmed) {
+                should_run = false;
+            }
+        }
+    }
+
+#if HAL_PARACHUTE_ENABLED
+    // Stop on parachute deployment
+    AP_Parachute *parachute = AP::parachute();
+    if ((parachute != nullptr) && parachute->release_initiated()) {
+        should_run = false;
+    }
+#endif
+
+    // Stop on emergency stop
+    if (SRV_Channels::get_emergency_stop()) {
+        // Throttle is already forced to 0 in this case, ignition should also be stopped.
+        // Starter should not run.
+        should_run = false;
+    }
 
     // switch on current state to work out new state
     switch (state) {
+    case ICE_DISABLED:
+        return;
     case ICE_OFF:
         if (should_run) {
             state = ICE_START_DELAY;
@@ -256,7 +390,7 @@ void AP_ICEngine::update(void)
                 height_pending = false;
                 initial_height = -pos.z;
             } else if ((-pos.z) >= initial_height + height_required) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Starting height reached %.1f",
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting height reached %.1f",
                                                  (double)(-pos.z - initial_height));
                 state = ICE_STARTING;
             }
@@ -268,7 +402,7 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_last_run_ms >= starter_delay*1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Starting engine");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Starting engine");
             state = ICE_STARTING;
         }
         break;
@@ -277,7 +411,7 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_start_time_ms >= starter_time*1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Engine running");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine running");
             state = ICE_RUNNING;
         }
         break;
@@ -285,16 +419,20 @@ void AP_ICEngine::update(void)
     case ICE_RUNNING:
         if (!should_run) {
             state = ICE_OFF;
-            gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
-        } else if (rpm_instance > 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Stopped engine");
+        }
+#if AP_RPM_ENABLED
+        else if (rpm_instance > 0) {
             // check RPM to see if still running
-            if (!rpm.get_rpm(rpm_instance-1, rpm_value) ||
+            float rpm_value;
+            if (!AP::rpm()->get_rpm(rpm_instance-1, rpm_value) ||
                 rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
-                gcs().send_text(MAV_SEVERITY_INFO, "Uncommanded engine stop");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Uncommanded engine stop");
             }
         }
+#endif
         break;
     }
 
@@ -312,13 +450,15 @@ void AP_ICEngine::update(void)
         }
     }
 
+#if AP_RPM_ENABLED
     // check against redline RPM
-    if (rpm_instance > 0 && redline_rpm > 0 && rpm.get_rpm(rpm_instance-1, rpm_value)) {
+    float rpm_value;
+    if (rpm_instance > 0 && redline_rpm > 0 && AP::rpm()->get_rpm(rpm_instance-1, rpm_value)) {
         // update the filtered RPM value
         filtered_rpm_value =  _rpm_filter.apply(rpm_value);
         if (!redline.flag && filtered_rpm_value > redline_rpm) {
             // redline governor is off. rpm is too high. enable the governor
-            gcs().send_text(MAV_SEVERITY_INFO, "Engine: Above redline RPM");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: Above redline RPM");
             redline.flag = true;
         } else if (redline.flag && filtered_rpm_value < redline_rpm * 0.9f) {
             // redline governor is on. rpm is safely below. disable the governor
@@ -330,24 +470,28 @@ void AP_ICEngine::update(void)
     } else {
         redline.flag = false;
     }
+#endif // AP_RPM_ENABLED
 
     /* now set output channels */
     switch (state) {
+    case ICE_DISABLED:
+        return;
     case ICE_OFF:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        set_ignition(false);
+        set_starter(false);
         starter_start_time_ms = 0;
         break;
 
     case ICE_START_HEIGHT_DELAY:
     case ICE_START_DELAY:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        set_ignition(true);
+        set_starter(false);
         break;
 
     case ICE_STARTING:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);
+        set_ignition(true);
+        set_starter(true);
+
         if (starter_start_time_ms == 0) {
             starter_start_time_ms = now;
         }
@@ -355,8 +499,8 @@ void AP_ICEngine::update(void)
         break;
 
     case ICE_RUNNING:
-        SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
-        SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        set_ignition(true);
+        set_starter(false);
         starter_start_time_ms = 0;
         break;
     }
@@ -395,7 +539,8 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         percentage = 0;
         return true;
     }
-    
+
+#if AP_RPM_ENABLED
     if (redline.flag && !option_set(Options::DISABLE_REDLINE_GOVERNOR)) {
         // limit the throttle from increasing above what the current output is
         if (redline.throttle_percentage < 1.0f) {
@@ -419,6 +564,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         percentage = redline.throttle_percentage - redline.governor_integrator;
         return true;
     }
+#endif // AP_RPM_ENABLED
 
     // if THROTTLE_WHILE_DISARMED is set then we use the base_throttle, allowing the pilot to control throttle while disarmed
     if (option_set(Options::THROTTLE_WHILE_DISARMED) && !hal.util->get_soft_armed() &&
@@ -430,26 +576,32 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
     return false;
 }
 
-
 /*
   handle DO_ENGINE_CONTROL messages via MAVLink or mission
 */
-bool AP_ICEngine::engine_control(float start_control, float cold_start, float height_delay)
+bool AP_ICEngine::engine_control(float start_control, float cold_start, float height_delay, uint32_t flags)
 {
+    if (!enable) {
+        return false;
+    }
+
+    // always update the start while disarmed flag
+    allow_single_start_while_disarmed = (flags & ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED) != 0;
+
     if (start_control <= 0) {
         state = ICE_OFF;
         return true;
     }
     if (state == ICE_RUNNING || state == ICE_START_DELAY || state == ICE_STARTING) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Engine: already running");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: already running");
         return false;
     }
-    RC_Channel *c = rc().channel(start_chan-1);
+    RC_Channel *c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ICE_START_STOP);
     if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         uint16_t cvalue = c->get_radio_in();
         if (cvalue >= start_chan_min_pwm && cvalue <= RC_Channel::AUX_PWM_TRIGGER_LOW) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
     }
@@ -458,7 +610,7 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         initial_height = 0;
         height_required = height_delay;
         state = ICE_START_HEIGHT_DELAY;
-        gcs().send_text(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Takeoff height set to %.1fm", (double)height_delay);
         return true;
     }
     state = ICE_STARTING;
@@ -474,6 +626,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     if (!enable) {
         return;
     }
+#if AP_RPM_ENABLED
     const int8_t min_throttle_base = min_throttle;
 
     // Initialize idle point to min_throttle on the first run
@@ -525,7 +678,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     // Calculate the change per loop to achieve the desired slew rate of 1 percent per second
     static const float idle_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
 
-    // Update Integrator 
+    // Update Integrator
     if (underspeed) {
         idle_governor_integrator += idle_setpoint_step;
     } else {
@@ -535,8 +688,63 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     idle_governor_integrator = constrain_float(idle_governor_integrator, min_throttle_base, 40.0f);
 
     min_throttle = roundf(idle_governor_integrator);
+#endif // AP_RPM_ENABLED
 }
 
+/*
+  set ignition state
+ */
+void AP_ICEngine::set_ignition(bool on)
+{
+    SRV_Channels::set_output_scaled(SRV_Channel::k_ignition, on ? 1.0 : 0.0);
+
+#if AP_RELAY_ENABLED
+    AP_Relay *relay = AP::relay();
+    if (relay != nullptr) {
+        relay->set(AP_Relay_Params::FUNCTION::IGNITION, on);
+    }
+#endif // AP_RELAY_ENABLED
+
+}
+
+/*
+  set starter state
+ */
+void AP_ICEngine::set_starter(bool on)
+{
+    SRV_Channels::set_output_scaled(SRV_Channel::k_starter, on ? 1.0 : 0.0);
+
+#if AP_ICENGINE_TCA9554_STARTER_ENABLED
+    tca9554_starter.set_starter(on, option_set(Options::CRANK_DIR_REVERSE));
+#endif
+
+#if AP_RELAY_ENABLED
+    AP_Relay *relay = AP::relay();
+    if (relay != nullptr) {
+        relay->set(AP_Relay_Params::FUNCTION::ICE_STARTER, on);
+    }
+#endif // AP_RELAY_ENABLED
+}
+
+
+bool AP_ICEngine::allow_throttle_while_disarmed() const
+{
+    return option_set(Options::THROTTLE_WHILE_DISARMED) &&
+        hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+}
+
+#if AP_RELAY_ENABLED
+bool AP_ICEngine::get_legacy_ignition_relay_index(int8_t &num) 
+{
+    // PARAMETER_CONVERSION - Added: Dec-2023
+    if (!enable || !AP_Param::get_param_by_index(this, 18, AP_PARAM_INT8, &num)) {
+        return false;
+    }
+    // convert to zero indexed
+    num -= 1;
+    return true;
+}
+#endif
 
 // singleton instance. Should only ever be set in the constructor.
 AP_ICEngine *AP_ICEngine::_singleton;

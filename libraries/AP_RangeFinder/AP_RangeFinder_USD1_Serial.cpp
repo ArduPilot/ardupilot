@@ -39,11 +39,11 @@ bool AP_RangeFinder_USD1_Serial::detect_version(void)
     uint8_t count = 0;
 
     // read any available data from USD1_Serial
-    int16_t nbytes = uart->available();
-
-    while (nbytes-- > 0) {
-        uint8_t c = uart->read();
-        
+    for (auto i=0; i<8192; i++) {
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
+        }
         if (((c == USD1_HDR_V0) || (c == USD1_HDR)) && !hdr_found) {
             byte1 = c;
             hdr_found = true;
@@ -121,11 +121,11 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
     uint16_t count = 0;
     bool hdr_found = false;
 
-    int16_t nbytes = uart->available();
-
-    while (nbytes-- > 0) {
-        uint8_t c = uart->read();
-        
+    for (auto i=0; i<8192; i++) {
+        uint8_t c;
+        if (!uart->read(c)) {
+            break;
+        }
         if ((c == _header) && !hdr_found) {
             // located header byte
             _linebuf_len = 0;

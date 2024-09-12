@@ -24,19 +24,11 @@
 
 #include "AP_Filesystem.h"
 
-#if HAVE_FILESYSTEM_SUPPORT
+#if AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_ESP32_ENABLED || AP_FILESYSTEM_ROMFS_ENABLED
 
 #include "posix_compat.h"
 #include <stdarg.h>
 #include <AP_Math/AP_Math.h>
-
-struct apfs_file {
-    int fd;
-    bool error;
-    bool eof;
-    int16_t unget;
-    char *tmpfile_name;
-};
 
 #define CHECK_STREAM(stream, ret) while (stream == NULL || stream->fd < 0) { errno = EBADF; return ret; }
 
@@ -78,7 +70,7 @@ static int posix_fopen_modes_to_open(const char *mode)
 
 APFS_FILE *apfs_fopen(const char *pathname, const char *mode)
 {
-    APFS_FILE *f = new APFS_FILE;
+    APFS_FILE *f = NEW_NOTHROW APFS_FILE;
     if (!f) {
         return nullptr;
     }
@@ -170,7 +162,8 @@ int apfs_fseek(APFS_FILE *stream, long offset, int whence)
 {
     CHECK_STREAM(stream, EOF);
     stream->eof = false;
-    return AP::FS().lseek(stream->fd, offset, whence);
+    AP::FS().lseek(stream->fd, offset, whence);
+    return 0;
 }
 
 int apfs_ferror(APFS_FILE *stream)
@@ -268,4 +261,4 @@ int apfs_remove(const char *pathname)
     return AP::FS().unlink(pathname);
 }
 
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // AP_FILESYSTEM_POSIX_ENABLED

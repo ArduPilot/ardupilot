@@ -17,7 +17,7 @@
 #include "I2CDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <SITL/SITL.h>
 
@@ -67,7 +67,7 @@ int I2CBus::_ioctl(uint8_t ioctl_number, void *data)
 AP_HAL::Device::PeriodicHandle I2CBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
     // mostly swiped from ChibiOS:
-    I2CBus::callback_info *callback = new I2CBus::callback_info;
+    I2CBus::callback_info *callback = NEW_NOTHROW I2CBus::callback_info;
     if (callback == nullptr) {
         return nullptr;
     }
@@ -116,7 +116,7 @@ I2CDeviceManager::get_device(uint8_t bus,
     if (bus >= ARRAY_SIZE(buses)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(buses[bus], address));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(buses[bus], address));
     return dev;
 }
 
@@ -217,4 +217,4 @@ bool I2CDevice::adjust_periodic_callback(Device::PeriodicHandle h, uint32_t peri
     return false;
 }
 
-#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL

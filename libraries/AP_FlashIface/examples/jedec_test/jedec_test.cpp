@@ -56,7 +56,7 @@ static UNUSED_FUNCTION void test_page_program()
         hal.console->printf("Failed to allocate data for read");
     }
 
-    // fill program data with its own adress
+    // fill program data with its own address
     for (uint32_t i = 0; i < jedec_dev.get_page_size(); i++) {
         data[i] = i;
     }

@@ -12,7 +12,6 @@ USB_STRING_PRODUCT "%BOARD%"
 define CORE_CM7
 define SMPS_PWR
 
-define WATCHDOG_DISABLED
 
 # crystal frequency
 OSCILLATOR_HZ 25000000
@@ -21,9 +20,6 @@ OSCILLATOR_HZ 25000000
 APJ_BOARD_ID 146
 
 FLASH_SIZE_KB 2048
-
-# setup build for a peripheral firmware
-env AP_PERIPH 1
 
 EXT_FLASH_SIZE_MB 32
 
@@ -71,6 +67,4 @@ QSPIDEV       mt25q       QUADSPI1      MODE1       120*MHZ      24            8
 
 PB13 VBUS INPUT OPENDRAIN
 
-
-define CAN_APP_NODE_NAME "org.cubepilot.H757"
 define BOOTLOADER_DEBUG SD1

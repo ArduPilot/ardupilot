@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_ANALOG_ENABLED
+
 #include "AP_WindVane_Backend.h"
 
 class AP_WindVane_Analog : public AP_WindVane_Backend
@@ -35,3 +39,5 @@ private:
     float _cal_volt_min;
     float _cal_volt_max;
 };
+
+#endif  // AP_WINDVANE_ANALOG_ENABLED

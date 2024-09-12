@@ -29,11 +29,12 @@
 #include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
-    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
+    // @Description: RunCam device type used to determine OSD menu structure and shutter options.
     // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid/RunCam Thumb Pro, 5:Runcam 2 4k
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
@@ -263,7 +264,7 @@ void AP_RunCam::update_osd()
 {
     bool use_armed_state_machine = hal.util->get_soft_armed();
 #if OSD_ENABLED
-    // prevent runcam stick gestures interferring with osd stick gestures
+    // prevent runcam stick gestures interfering with osd stick gestures
     if (!use_armed_state_machine) {
         const AP_OSD* osd = AP::osd();
         if (osd != nullptr) {
@@ -579,7 +580,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
 
     case Event::IN_MENU_EXIT:
         // if we are in a sub-menu this will move us out, if we are in the root menu this will
-        // exit causing the state machine to get out of sync. the OSD menu hierachy is consistently
+        // exit causing the state machine to get out of sync. the OSD menu hierarchy is consistently
         // 2 deep so we can count and be reasonably confident of where we are.
         // the only exception is if someone hits save and exit on the root menu - then we are lost.
         if (_in_menu > 0) {
@@ -791,7 +792,6 @@ void AP_RunCam::start_uart()
     uart->configure_parity(0);
     uart->set_stop_bits(1);
     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    uart->set_blocking_writes(false);   // updates run in the main thread
     uart->set_options(uart->get_options() | AP_HAL::UARTDriver::OPTION_NODMA_TX | AP_HAL::UARTDriver::OPTION_NODMA_RX);
     uart->begin(115200, 10, 10);
     uart->discard_input();
@@ -958,11 +958,11 @@ void AP_RunCam::parse_device_info(const Request& request)
     }
     if (_features > 0) {
         _state = State::INITIALIZED;
-        gcs().send_text(MAV_SEVERITY_INFO, "RunCam initialized, features 0x%04X, %d-key OSD\n", _features.get(),
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RunCam initialized, features 0x%04X, %d-key OSD\n", _features.get(),
             has_5_key_OSD() ? 5 : has_2_key_OSD() ? 2 : 0);
     } else {
         // nothing as as nothing does
-        gcs().send_text(MAV_SEVERITY_WARNING, "RunCam device not found\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "RunCam device not found\n");
     }
     debug("RunCam: initialized state: video: %d, osd: %d, cam: %d\n", int(_video_recording), int(_osd_option), int(_cam_control_option));
 }

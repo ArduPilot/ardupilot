@@ -21,8 +21,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_Avoidance/AC_Avoid.h>
-
-extern const AP_HAL::HAL& hal;
+#include <AC_AttitudeControl/AC_PosControl.h>
 
 #define AR_POSCON_TIMEOUT_MS            100     // timeout after 0.1 sec
 #define AR_POSCON_POS_P                 0.2f    // default position P gain
@@ -34,6 +33,10 @@ extern const AP_HAL::HAL& hal;
 #define AR_POSCON_VEL_FILT              5.0f    // default velocity filter
 #define AR_POSCON_VEL_FILT_D            5.0f    // default velocity D term filter
 #define AR_POSCON_DT                    0.02f   // default dt for PID controllers
+
+extern const AP_HAL::HAL& hal;
+
+AR_PosControl *AR_PosControl::_singleton;
 
 const AP_Param::GroupInfo AR_PosControl::var_info[] = {
 
@@ -54,7 +57,7 @@ const AP_Param::GroupInfo AR_PosControl::var_info[] = {
     // @Param: _VEL_I
     // @DisplayName: Velocity (horizontal) I gain
     // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
+    // @Range: 0.00 1.00
     // @Increment: 0.01
     // @User: Advanced
 
@@ -103,6 +106,7 @@ AR_PosControl::AR_PosControl(AR_AttitudeControl& atc) :
     _p_pos(AR_POSCON_POS_P),
     _pid_vel(AR_POSCON_VEL_P, AR_POSCON_VEL_I, AR_POSCON_VEL_D, AR_POSCON_VEL_FF, AR_POSCON_VEL_IMAX, AR_POSCON_VEL_FILT, AR_POSCON_VEL_FILT_D)
 {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -138,9 +142,11 @@ void AR_PosControl::update(float dt)
     }
 
     // calculation velocity error
+    bool stopping = false;
     if (_vel_desired_valid) {
         // add target velocity to desired velocity from position error
         _vel_target += _vel_desired;
+        stopping = _vel_desired.is_zero();
     }
 
     // limit velocity to maximum speed
@@ -148,6 +154,7 @@ void AR_PosControl::update(float dt)
 
     // Limit the velocity to prevent fence violations
     bool backing_up = false;
+#if AP_AVOIDANCE_ENABLED
     AC_Avoid *avoid = AP::ac_avoid();
     if (avoid != nullptr) {
         Vector3f vel_3d_cms{_vel_target.x * 100.0f, _vel_target.y * 100.0f, 0.0f};
@@ -156,13 +163,25 @@ void AR_PosControl::update(float dt)
         _vel_target.x = vel_3d_cms.x * 0.01;
         _vel_target.y = vel_3d_cms.y * 0.01;
     }
+#endif  // AP_AVOIDANCE_ENABLED
+
+    // calculate limit vector based on steering limits
+    Vector2f steering_limit_vec;
+    if (_atc.steering_limit_left()) {
+        steering_limit_vec = AP::ahrs().body_to_earth2D(Vector2f{0, _reversed ? 1.0f : -1.0f});
+    } else if (_atc.steering_limit_right()) {
+        steering_limit_vec = AP::ahrs().body_to_earth2D(Vector2f{0, _reversed ? -1.0f : 1.0f});
+    }
 
     // calculate desired acceleration
-    // To-Do: fixup _limit_vel used below
-    _accel_target = _pid_vel.update_all(_vel_target, curr_vel_NED.xy(), dt, _limit_vel);
+    _accel_target = _pid_vel.update_all(_vel_target, curr_vel_NED.xy(), dt, steering_limit_vec);
     if (_accel_desired_valid) {
         _accel_target += _accel_desired;
     }
+    // velocity controller I-term zeroed in forward-back direction
+    const Vector2f lat_vec_ef = AP::ahrs().body_to_earth2D(Vector2f{0, 1});
+    const Vector2f vel_i = _pid_vel.get_i().projected(lat_vec_ef);
+    _pid_vel.set_integrator(vel_i);
 
     // convert desired acceleration to desired forward-back speed, desired lateral speed and desired turn rate
 
@@ -178,19 +197,21 @@ void AR_PosControl::update(float dt)
     const Vector2f vel_target_FR = AP::ahrs().earth_to_body2D(_vel_target);
 
     // desired speed is normally the forward component (only) of the target velocity
-    // but we do not let it fall below the minimum turn speed unless the vehicle is slowing down
-    const float abs_des_speed_min = MIN(_vel_target.length(), turn_speed_min);
-    float des_speed;
-    if (_reversed != backing_up) {
-        // if reversed or backing up desired speed will be negative
-        des_speed = MIN(-abs_des_speed_min, vel_target_FR.x);
-    } else {
-        des_speed = MAX(abs_des_speed_min, vel_target_FR.x);
+    float des_speed = vel_target_FR.x;
+    if (!stopping) {
+        // do not let target speed fall below the minimum turn speed unless the vehicle is slowing down
+        const float abs_des_speed_min = MIN(_vel_target.length(), turn_speed_min);
+        if (_reversed != backing_up) {
+            // if reversed or backing up desired speed will be negative
+            des_speed = MIN(-abs_des_speed_min, vel_target_FR.x);
+        } else {
+            des_speed = MAX(abs_des_speed_min, vel_target_FR.x);
+        }
     }
     _desired_speed = _atc.get_desired_speed_accel_limited(des_speed, dt);
 
     // calculate turn rate from desired lateral acceleration
-    _desired_lat_accel = accel_target_FR.y;
+    _desired_lat_accel = stopping ? 0 : accel_target_FR.y;
     _desired_turn_rate_rads = _atc.get_turn_rate_from_lat_accel(_desired_lat_accel, _desired_speed);
 }
 
@@ -252,17 +273,40 @@ bool AR_PosControl::init()
     return true;
 }
 
-// methods to adjust position, velocity and acceleration targets smoothly using input shaping
-// pos should be the target position as an offset from the EKF origin (in meters)
+// adjust position, velocity and acceleration targets smoothly using input shaping
+// pos is the target position as an offset from the EKF origin (in meters)
+// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
 // dt should be the update rate in seconds
+// init should be called once before starting to use these methods
 void AR_PosControl::input_pos_target(const Vector2p &pos, float dt)
+{
+    Vector2f vel;
+    Vector2f accel;
+    input_pos_vel_accel_target(pos, vel, accel, dt);
+}
+
+// adjust position, velocity and acceleration targets smoothly using input shaping
+// pos is the target position as an offset from the EKF origin (in meters)
+// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// dt should be the update rate in seconds
+// init should be called once before starting to use these methods
+void AR_PosControl::input_pos_vel_target(const Vector2p &pos, const Vector2f &vel, float dt)
+{
+    Vector2f accel;
+    input_pos_vel_accel_target(pos, vel, accel, dt);
+}
+
+// adjust position, velocity and acceleration targets smoothly using input shaping
+// pos is the target position as an offset from the EKF origin (in meters)
+// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// dt should be the update rate in seconds
+// init should be called once before starting to use these methods
+void AR_PosControl::input_pos_vel_accel_target(const Vector2p &pos, const Vector2f &vel, const Vector2f &accel, float dt)
 {
     // adjust target position, velocity and acceleration forward by dt
     update_pos_vel_accel_xy(_pos_target, _vel_desired, _accel_desired, dt, Vector2f(), Vector2f(), Vector2f());
 
     // call shape_pos_vel_accel_xy to pull target towards final destination
-    Vector2f vel;
-    Vector2f accel;
     const float accel_max = MIN(_accel_max, _lat_accel_max);
     shape_pos_vel_accel_xy(pos, vel, accel, _pos_target, _vel_desired, _accel_desired,
                            _speed_max, accel_max, _jerk_max, dt, false);
@@ -315,6 +359,14 @@ Vector2p AR_PosControl::get_pos_error() const
     return (_pos_target - curr_pos_NE.topostype());
 }
 
+// get the slew rate value for velocity.  used for oscillation detection in lua scripts
+void AR_PosControl::get_srate(float &velocity_srate)
+{
+    // slew rate is the same for x and y axis
+    velocity_srate = _pid_vel.get_pid_info_x().slew_rate;
+}
+
+#if HAL_LOGGING_ENABLED
 // write PSC logs
 void AR_PosControl::write_log()
 {
@@ -336,7 +388,8 @@ void AR_PosControl::write_log()
     // convert position to required format
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;
 
-    AP::logger().Write_PSCN(pos_target_2d_cm.x,     // position target
+    // reuse logging from AC_PosControl:
+    AC_PosControl::Write_PSCN(pos_target_2d_cm.x,     // position target
                             curr_pos_NED.x * 100.0, // position
                             _vel_desired.x * 100.0, // desired velocity
                             _vel_target.x * 100.0,  // target velocity
@@ -344,7 +397,7 @@ void AR_PosControl::write_log()
                             _accel_desired.x * 100.0,   // desired accel
                             _accel_target.x * 100.0,    // target accel
                             curr_accel_NED.x);      // accel
-    AP::logger().Write_PSCE(pos_target_2d_cm.y,     // position target
+    AC_PosControl::Write_PSCE(pos_target_2d_cm.y,     // position target
                             curr_pos_NED.y * 100.0, // position
                             _vel_desired.y * 100.0, // desired velocity
                             _vel_target.y * 100.0,  // target velocity
@@ -353,6 +406,7 @@ void AR_PosControl::write_log()
                             _accel_target.y * 100.0,    // target accel
                             curr_accel_NED.y);      // accel
 }
+#endif
 
 /// initialise ekf xy position reset check
 void AR_PosControl::init_ekf_xy_reset()

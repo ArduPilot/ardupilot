@@ -19,6 +19,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 #include <ch.h>
 
 extern const AP_HAL::HAL &hal;
@@ -38,6 +39,10 @@ enum ioevents {
     IOEVENT_SET_SAFETY_MASK,
     IOEVENT_MIXING,
     IOEVENT_GPIO,
+    IOEVENT_SET_OUTPUT_MODE,
+    IOEVENT_SET_DSHOT_PERIOD,
+    IOEVENT_SET_CHANNEL_MASK,
+    IOEVENT_DSHOT,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -72,15 +77,18 @@ void AP_IOMCU::init(void)
 {
     // uart runs at 1.5MBit
     uart.begin(1500*1000, 128, 128);
-    uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
+#if IOMCU_DEBUG_ENABLE
+    crc_is_ok = true;
+#else
     AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
     if ((!boardconfig || boardconfig->io_enabled() == 1) && !hal.util->was_watchdog_reset()) {
         check_crc();
     } else {
         crc_is_ok = true;
     }
+#endif
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
@@ -108,17 +116,25 @@ void AP_IOMCU::thread_main(void)
     chEvtSignal(thread_ctx, initial_event_mask);
 
     uart.begin(1500*1000, 128, 128);
-    uart.set_blocking_writes(true);
     uart.set_unbuffered_writes(true);
 
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
+    uint16_t erpm_period_ms = 10; // default 100Hz
+#if HAVE_AP_BLHELI_SUPPORT
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+    if (blh && blh->get_telemetry_rate() > 0) {
+        erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
+    }
+#endif
+#endif
     trigger_event(IOEVENT_INIT);
 
     while (!do_shutdown) {
         // check if we have lost contact with the IOMCU
         const uint32_t now_ms = AP_HAL::millis();
-        if (last_reg_read_ms != 0 && now_ms - last_reg_read_ms > 1000U) {
+        if (last_reg_access_ms != 0 && now_ms - last_reg_access_ms > 1000) {
             INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
-            last_reg_read_ms = 0;
+            last_reg_access_ms = 0;
         }
 
         eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
@@ -138,10 +154,11 @@ void AP_IOMCU::thread_main(void)
             is_chibios_backend = (config.protocol_version == IOMCU_PROTOCOL_VERSION &&
                                   config.protocol_version2 == IOMCU_PROTOCOL_VERSION2);
 
-            // set IO_ARM_OK and FMU_ARMED
-            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
+            DEV_PRINTF("IOMCU: 0x%lx\n", config.mcuid);
+
+            // set IO_ARM_OK and clear FMU_ARMED
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, P_SETUP_ARMING_FMU_ARMED,
                                  P_SETUP_ARMING_IO_ARM_OK |
-                                 P_SETUP_ARMING_FMU_ARMED |
                                  P_SETUP_ARMING_RC_HANDLING_DISABLED)) {
                 event_failed(mask);
                 continue;
@@ -216,6 +233,14 @@ void AP_IOMCU::thread_main(void)
         }
         mask &= ~EVENT_MASK(IOEVENT_SET_DEFAULT_RATE);
 
+        if (mask & EVENT_MASK(IOEVENT_SET_DSHOT_PERIOD)) {
+            if (!write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSHOT_PERIOD, sizeof(dshot_rate)/2, (const uint16_t *)&dshot_rate)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_SET_DSHOT_PERIOD);
+
         if (mask & EVENT_MASK(IOEVENT_SET_ONESHOT_ON)) {
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_ONESHOT)) {
                 event_failed(mask);
@@ -231,6 +256,22 @@ void AP_IOMCU::thread_main(void)
             }
         }
         mask &= ~EVENT_MASK(IOEVENT_SET_BRUSHED_ON);
+
+        if (mask & EVENT_MASK(IOEVENT_SET_OUTPUT_MODE)) {
+            if (!write_registers(PAGE_SETUP, PAGE_REG_SETUP_OUTPUT_MODE, sizeof(mode_out)/2, (const uint16_t *)&mode_out)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_SET_OUTPUT_MODE);
+
+        if (mask & EVENT_MASK(IOEVENT_SET_CHANNEL_MASK)) {
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_CHANNEL_MASK, pwm_out.channel_mask)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_SET_CHANNEL_MASK);
 
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
@@ -249,6 +290,15 @@ void AP_IOMCU::thread_main(void)
             }
             mask &= ~EVENT_MASK(IOEVENT_GPIO);
         }
+
+        if (mask & EVENT_MASK(IOEVENT_DSHOT)) {
+            page_dshot dshot;
+            if (!dshot_command_queue.pop(dshot) || !write_registers(PAGE_DSHOT, 0, sizeof(dshot)/sizeof(uint16_t), (const uint16_t*)&dshot)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_DSHOT);
 
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
@@ -270,8 +320,25 @@ void AP_IOMCU::thread_main(void)
             read_servo();
             last_servo_read_ms = AP_HAL::millis();
         }
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
+        if (AP_BoardConfig::io_dshot() && now - last_erpm_read_ms > erpm_period_ms) {
+            // read erpm at configured rate. A more efficient scheme might be to 
+            // send erpm info back with the response from a PWM send, but that would
+            // require a reworking of the registers model
+            read_erpm();
+            last_erpm_read_ms = AP_HAL::millis();
+        }
 
-        if (now - last_safety_option_check_ms > 1000) {
+        if (AP_BoardConfig::io_dshot() && now - last_telem_read_ms > 100) {
+            // read dshot telemetry at 10Hz
+            // needs to be at least 4Hz since each ESC updates at ~1Hz and we
+            // are reading 4 at a time
+            read_telem();
+            last_telem_read_ms = AP_HAL::millis();
+        }
+#endif
+        // update options at the same rate that the iomcu updates the state
+        if (now - last_safety_option_check_ms > 100) {
             update_safety_options();
             last_safety_option_check_ms = now;
         }
@@ -279,7 +346,7 @@ void AP_IOMCU::thread_main(void)
         // update failsafe pwm
         if (pwm_out.failsafe_pwm_set != pwm_out.failsafe_pwm_sent) {
             uint8_t set = pwm_out.failsafe_pwm_set;
-            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_CHANNELS, pwm_out.failsafe_pwm)) {
+            if (write_registers(PAGE_FAILSAFE_PWM, 0, IOMCU_MAX_RC_CHANNELS, pwm_out.failsafe_pwm)) {
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
@@ -305,11 +372,11 @@ void AP_IOMCU::send_servo_out()
         if (rate.sbus_rate_hz == 0) {
             n = MIN(n, 8);
         } else {
-            n = MIN(n, IOMCU_MAX_CHANNELS);
+            n = MIN(n, IOMCU_MAX_RC_CHANNELS);
         }
         uint32_t now = AP_HAL::micros();
-        if (now - last_servo_out_us >= 2000) {
-            // don't send data at more than 500Hz
+        if (now - last_servo_out_us >= 2000 || AP_BoardConfig::io_dshot()) {
+            // don't send data at more than 500Hz except when using dshot which is more timing sensitive
             if (write_registers(PAGE_DIRECT_PWM, 0, n, pwm_out.pwm)) {
                 last_servo_out_us = now;
             }
@@ -326,13 +393,77 @@ void AP_IOMCU::read_rc_input()
     if (!read_registers(PAGE_RAW_RCIN, 0, sizeof(rc_input)/2, r)) {
         return;
     }
-    if (rc_input.flags_failsafe && rc().ignore_rc_failsafe()) {
+    if (rc_input.flags_failsafe && rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
         rc_input.flags_failsafe = false;
     }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_last_input_ms = AP_HAL::millis();
     }
 }
+
+#if HAL_WITH_IO_MCU_BIDIR_DSHOT
+/*
+  read dshot erpm
+ */
+void AP_IOMCU::read_erpm()
+{
+    uint16_t *r = (uint16_t *)&dshot_erpm;
+    if (!read_registers(PAGE_RAW_DSHOT_ERPM, 0, sizeof(dshot_erpm)/2, r)) {
+        return;
+    }
+    uint8_t motor_poles = 14;
+#if HAVE_AP_BLHELI_SUPPORT
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+    if (blh) {
+        motor_poles = blh->get_motor_poles();
+    }
+#endif
+    for (uint8_t i = 0; i < IOMCU_MAX_TELEM_CHANNELS/4; i++) {
+        for (uint8_t j = 0; j < 4; j++) {
+            const uint8_t esc_id = (i * 4 + j);
+            if (dshot_erpm.update_mask & 1U<<esc_id) {
+                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] / 100.0);
+            }
+        }
+    }
+}
+
+/*
+  read dshot telemetry
+ */
+void AP_IOMCU::read_telem()
+{
+    struct page_dshot_telem* telem = &dshot_telem[esc_group];
+    uint16_t *r = (uint16_t *)telem;
+    iopage page = PAGE_RAW_DSHOT_TELEM_1_4;
+    switch (esc_group) {
+#if IOMCU_MAX_TELEM_CHANNELS > 4
+    case 1:
+        page = PAGE_RAW_DSHOT_TELEM_5_8;
+        break;
+#endif
+    default:
+        break;
+    }
+
+    if (!read_registers(page, 0, sizeof(page_dshot_telem)/2, r)) {
+        return;
+    }
+    for (uint i = 0; i<4; i++) {
+        TelemetryData t {
+            .temperature_cdeg = int16_t(telem->temperature_cdeg[i]),
+            .voltage = float(telem->voltage_cvolts[i]) * 0.01,
+            .current = float(telem->current_camps[i]) * 0.01,
+#if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+            .edt2_status = telem->edt2_status[i],
+            .edt2_stress = telem->edt2_stress[i],
+#endif
+        };
+        update_telem_data(esc_group * 4 + i, t, telem->types[i]);
+    }
+    esc_group = (esc_group + 1) % (IOMCU_MAX_TELEM_CHANNELS / 4);
+}
+#endif
 
 /*
   read status registers
@@ -382,6 +513,7 @@ void AP_IOMCU::write_log()
     uint32_t now = AP_HAL::millis();
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
+#if HAL_LOGGING_ENABLED
         if (AP_Logger::get_singleton()) {
 // @LoggerMessage: IOMC
 // @Description: IOMCU diagnostic information
@@ -403,14 +535,17 @@ void AP_IOMCU::write_log()
                                reg_status.num_errors,
                                num_delayed);
         }
+#endif  // HAL_LOGGING_ENABLED
 #if IOMCU_DEBUG_ENABLE
         static uint32_t last_io_print;
         if (now - last_io_print >= 5000) {
             last_io_print = now;
-            debug("t=%u num=%u mem=%u terr=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%u\n",
+            debug("t=%lu num=%lu mem=%u mstack=%u pstack=%u terr=%lu nerr=%lu crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%lu\n",
                   now,
                   reg_status.total_pkts,
                   reg_status.freemem,
+                  reg_status.freemstack,
+                  reg_status.freepstack,
                   total_errors,
                   reg_status.num_errors,
                   reg_status.err_crc,
@@ -423,6 +558,7 @@ void AP_IOMCU::write_log()
 #endif // IOMCU_DEBUG_ENABLE
     }
 }
+
 
 /*
   read servo output values
@@ -510,8 +646,8 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 
     // wait for the expected number of reply bytes or timeout
     if (!uart.wait_timeout(count*2+4, 10)) {
-        debug("t=%u timeout read page=%u offset=%u count=%u\n",
-              AP_HAL::millis(), page, offset, count);
+        debug("t=%lu timeout read page=%u offset=%u count=%u avail=%u\n",
+              AP_HAL::millis(), page, offset, count, uart.available());
         protocol_fail_count++;
         return false;
     }
@@ -519,12 +655,12 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     uint8_t *b = (uint8_t *)&pkt;
     uint8_t n = uart.available();
     if (n < offsetof(struct IOPacket, regs)) {
-        debug("t=%u small pkt %u\n", AP_HAL::millis(), n);
+        debug("t=%lu small pkt %u\n", AP_HAL::millis(), n);
         protocol_fail_count++;
         return false;
     }
     if (pkt.get_size() != n) {
-        debug("t=%u bad len %u %u\n", AP_HAL::millis(), n, pkt.get_size());
+        debug("t=%lu bad len %u %u\n", AP_HAL::millis(), n, pkt.get_size());
         protocol_fail_count++;
         return false;
     }
@@ -534,7 +670,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     pkt.crc = 0;
     uint8_t expected_crc = crc_crc8((const uint8_t *)&pkt, pkt.get_size());
     if (got_crc != expected_crc) {
-        debug("t=%u bad crc %02x should be %02x n=%u %u/%u/%u\n",
+        debug("t=%lu bad crc %02x should be %02x n=%u %u/%u/%u\n",
               AP_HAL::millis(), got_crc, expected_crc,
               n, page, offset, count);
         protocol_fail_count++;
@@ -558,7 +694,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
-    last_reg_read_ms = AP_HAL::millis();
+    last_reg_access_ms = AP_HAL::millis();
     return true;
 }
 
@@ -567,7 +703,10 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
 */
 bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs)
 {
-    while (count > PKT_MAX_REGS) {
+    // The use of offset is very, very evil - it can either be a command within the page
+    // or a genuine offset, offsets within PAGE_SETUP are assumed to be commands, otherwise to be an
+    // actual offset
+    while (page != PAGE_SETUP && count > PKT_MAX_REGS) {
         if (!write_registers(page, offset, PKT_MAX_REGS, regs)) {
             return false;
         }
@@ -634,6 +773,9 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
+
+    last_reg_access_ms = AP_HAL::millis();
+
     return true;
 }
 
@@ -653,7 +795,7 @@ bool AP_IOMCU::modify_register(uint8_t page, uint8_t offset, uint16_t clearbits,
 
 void AP_IOMCU::write_channel(uint8_t chan, uint16_t pwm)
 {
-    if (chan >= IOMCU_MAX_CHANNELS) {
+    if (chan >= IOMCU_MAX_RC_CHANNELS) {    // could be SBUS out
         return;
     }
     if (chan >= pwm_out.num_channels) {
@@ -753,7 +895,7 @@ bool AP_IOMCU::enable_sbus_out(uint16_t rate_hz)
 bool AP_IOMCU::check_rcinput(uint32_t &last_frame_us, uint8_t &num_channels, uint16_t *channels, uint8_t max_chan)
 {
     if (last_frame_us != uint32_t(rc_last_input_ms * 1000U)) {
-        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_CHANNELS), max_chan);
+        num_channels = MIN(MIN(rc_input.count, IOMCU_MAX_RC_CHANNELS), max_chan);
         memcpy(channels, rc_input.pwm, num_channels*2);
         last_frame_us = uint32_t(rc_last_input_ms * 1000U);
         return true;
@@ -791,6 +933,103 @@ void AP_IOMCU::set_brushed_mode(void)
     rate.brushed_enabled = true;
 }
 
+#if HAL_DSHOT_ENABLED
+// directly set the dshot rate - period_us is the dshot tick period_us and drate is the number
+// of dshot ticks per main loop cycle. These values are calculated by RCOutput::set_dshot_rate()
+// if the backend is free running then then period_us is fixed at 1000us and drate is 0
+void AP_IOMCU::set_dshot_period(uint16_t period_us, uint8_t drate)
+{
+    dshot_rate.period_us = period_us;
+    dshot_rate.rate = drate;
+    trigger_event(IOEVENT_SET_DSHOT_PERIOD);
+}
+
+// set the dshot esc_type
+void AP_IOMCU::set_dshot_esc_type(AP_HAL::RCOutput::DshotEscType dshot_esc_type)
+{
+    mode_out.esc_type = uint16_t(dshot_esc_type);
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// set output mode
+void AP_IOMCU::set_telem_request_mask(uint32_t mask)
+{
+    page_dshot dshot {
+        .telem_mask = uint16_t(mask)
+    };
+    dshot_command_queue.push(dshot);
+    trigger_event(IOEVENT_DSHOT);
+}
+
+void AP_IOMCU::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority)
+{
+    page_dshot dshot {
+        .command = command,
+        .chan = chan,
+        .command_timeout_ms = command_timeout_ms,
+        .repeat_count = uint8_t(repeat_count),
+        .priority = priority
+    };
+    dshot_command_queue.push(dshot);
+    trigger_event(IOEVENT_DSHOT);
+}
+#endif
+
+// set output mode
+void AP_IOMCU::set_output_mode(uint16_t mask, uint16_t mode)
+{
+    mode_out.mask = mask;
+    mode_out.mode = mode;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// set output mode
+void AP_IOMCU::set_bidir_dshot_mask(uint16_t mask)
+{
+    mode_out.bdmask = mask;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// set reversible mask
+void AP_IOMCU::set_reversible_mask(uint16_t mask)
+{
+    mode_out.reversible_mask = mask;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+AP_HAL::RCOutput::output_mode AP_IOMCU::get_output_mode(uint8_t& mask) const
+{
+    mask = reg_status.rcout_mask;
+    return AP_HAL::RCOutput::output_mode(reg_status.rcout_mode);
+}
+
+uint32_t AP_IOMCU::get_disabled_channels(uint32_t digital_mask) const
+{
+    uint32_t dig_out = reg_status.rcout_mask & (digital_mask & 0xFF);
+    if (dig_out > 0
+        && AP_HAL::RCOutput::is_dshot_protocol(AP_HAL::RCOutput::output_mode(reg_status.rcout_mode))) {
+        return ~dig_out & 0xFF;
+    }
+    return 0;
+}
+
+// setup channels
+void  AP_IOMCU::enable_ch(uint8_t ch)
+{
+    if (!(pwm_out.channel_mask & (1U << ch))) {
+        pwm_out.channel_mask |= (1U << ch);
+        trigger_event(IOEVENT_SET_CHANNEL_MASK);
+    }
+}
+
+void  AP_IOMCU::disable_ch(uint8_t ch)
+{
+    if (pwm_out.channel_mask & (1U << ch)) {
+        pwm_out.channel_mask &= ~(1U << ch);
+        trigger_event(IOEVENT_SET_CHANNEL_MASK);
+    }
+}
+
 // handling of BRD_SAFETYOPTION parameter
 void AP_IOMCU::update_safety_options(void)
 {
@@ -800,17 +1039,23 @@ void AP_IOMCU::update_safety_options(void)
     }
     uint16_t desired_options = 0;
     uint16_t options = boardconfig->get_safety_button_options();
+    bool armed = hal.util->get_soft_armed();
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_OFF;
     }
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_ON;
     }
-    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && AP::arming().is_armed()) {
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && armed) {
         desired_options |= (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
     }
+    // update armed state
+    if (armed) {
+        desired_options |= P_SETUP_ARMING_FMU_ARMED;
+    }
+
     if (last_safety_options != desired_options) {
-        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
+        uint16_t mask = (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF | P_SETUP_ARMING_FMU_ARMED);
         uint32_t bits_to_set = desired_options & mask;
         uint32_t bits_to_clear = (~desired_options) & mask;
         if (modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, bits_to_clear, bits_to_set)) {
@@ -838,10 +1083,12 @@ bool AP_IOMCU::check_crc(void)
 {
     // flash size minus 4k bootloader
 	const uint32_t flash_size = 0x10000 - 0x1000;
+    const char *path = AP_BoardConfig::io_dshot() ? dshot_fw_name : fw_name;
 
-    fw = AP_ROMFS::find_decompress(fw_name, fw_size);
+    fw = AP_ROMFS::find_decompress(path, fw_size);
+
     if (!fw) {
-        DEV_PRINTF("failed to find %s\n", fw_name);
+        DEV_PRINTF("failed to find %s\n", path);
         return false;
     }
     uint32_t crc = crc32_small(0, fw, fw_size);
@@ -873,7 +1120,7 @@ bool AP_IOMCU::check_crc(void)
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
 
     // avoid internal error on fw upload delay
-    last_reg_read_ms = 0;
+    last_reg_access_ms = 0;
 
     if (!upload_fw()) {
         AP_ROMFS::free(fw);
@@ -892,7 +1139,7 @@ bool AP_IOMCU::check_crc(void)
 void AP_IOMCU::set_failsafe_pwm(uint16_t chmask, uint16_t period_us)
 {
     bool changed = false;
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
         if (chmask & (1U<<i)) {
             if (pwm_out.failsafe_pwm[i] != period_us) {
                 pwm_out.failsafe_pwm[i] = period_us;
@@ -935,6 +1182,16 @@ void AP_IOMCU::shutdown(void)
 }
 
 /*
+  reboot IOMCU
+ */
+void AP_IOMCU::soft_reboot(void)
+{
+    const uint16_t magic = REBOOT_BL_MAGIC;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
+}
+
+
+/*
   request bind on a DSM radio
  */
 void AP_IOMCU::bind_dsm(uint8_t mode)
@@ -961,7 +1218,7 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
 #define MIX_UPDATE(a,b) do { if ((a) != (b)) { a = b; changed = true; }} while (0)
 
     // update mixing structure, checking for changes
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+    for (uint8_t i=0; i<IOMCU_MAX_RC_CHANNELS; i++) {
         const SRV_Channel *c = SRV_Channels::srv_channel(i);
         if (!c) {
             continue;
@@ -1050,7 +1307,7 @@ void AP_IOMCU::check_iomcu_reset(void)
 #endif
     // when we are in an expected delay allow for a larger time
     // delta. This copes with flash erase, such as bootloader update
-    const uint32_t max_delay = hal.scheduler->in_expected_delay()?5000:500;
+    const uint32_t max_delay = hal.scheduler->in_expected_delay()?8000:500;
     last_iocmu_timestamp_ms = reg_status.timestamp_ms;
 
     if (dt_ms < max_delay) {
@@ -1085,6 +1342,9 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    trigger_event(IOEVENT_SET_DSHOT_PERIOD);
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+    trigger_event(IOEVENT_SET_CHANNEL_MASK);
     if (rate.oneshot_enabled) {
         trigger_event(IOEVENT_SET_ONESHOT_ON);
     }
@@ -1132,6 +1392,12 @@ void AP_IOMCU::set_GPIO_mask(uint8_t mask)
     trigger_event(IOEVENT_GPIO);
 }
 
+// Get GPIO mask of channels setup for output
+uint8_t AP_IOMCU::get_GPIO_mask() const
+{
+    return GPIO.channel_mask;
+}
+
 // write to a output pin
 void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
 {
@@ -1147,6 +1413,17 @@ void AP_IOMCU::write_GPIO(uint8_t pin, bool value)
         GPIO.output_mask &= ~(1U << pin);
     }
     trigger_event(IOEVENT_GPIO);
+}
+
+// Read the last output value send to the GPIO pin
+// This is not a real read of the actual pin
+// This allows callers to check for state change
+uint8_t AP_IOMCU::read_virtual_GPIO(uint8_t pin) const
+{
+    if (!convert_pin_number(pin)) {
+        return 0;
+    }
+    return (GPIO.output_mask & (1U << pin)) != 0;
 }
 
 // toggle a output pin

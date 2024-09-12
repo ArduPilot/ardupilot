@@ -28,29 +28,33 @@
 #include "Storage.h"
 #include "AnalogIn.h"
 #include "Util.h"
+#if AP_SIM_ENABLED
+#include <AP_HAL/SIMState.h>
+#endif
 
 
-static Empty::UARTDriver uartADriver;
 static ESP32::UARTDriver cons(0);
-static ESP32::UARTDriver uartBDriver(1);
 #ifdef HAL_ESP32_WIFI
 #if HAL_ESP32_WIFI == 1
-static ESP32::WiFiDriver uartCDriver; //tcp, client should connect to 192.168.4.1 port 5760
+static ESP32::WiFiDriver serial1Driver; //tcp, client should connect to 192.168.4.1 port 5760
 #elif HAL_ESP32_WIFI == 2
-static ESP32::WiFiUdpDriver uartCDriver; //udp
+static ESP32::WiFiUdpDriver serial1Driver; //udp
 #endif
 #else
-static Empty::UARTDriver uartCDriver;
+static Empty::UARTDriver serial1Driver;
 #endif
-static ESP32::UARTDriver uartDDriver(2);
-static Empty::UARTDriver uartEDriver;
-static Empty::UARTDriver uartFDriver;
-static Empty::UARTDriver uartGDriver;
-static Empty::UARTDriver uartHDriver;
-static Empty::UARTDriver uartIDriver;
-static Empty::UARTDriver uartJDriver;
+static ESP32::UARTDriver serial2Driver(2);
+static ESP32::UARTDriver serial3Driver(1);
+static Empty::UARTDriver serial4Driver;
+static Empty::UARTDriver serial5Driver;
+static Empty::UARTDriver serial6Driver;
+static Empty::UARTDriver serial7Driver;
+static Empty::UARTDriver serial8Driver;
+static Empty::UARTDriver serial9Driver;
 
+#if HAL_WITH_DSP
 static Empty::DSP dspDriver;
+#endif
 
 static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
@@ -59,29 +63,41 @@ static ESP32::AnalogIn analogIn;
 #else
 static Empty::AnalogIn analogIn;
 #endif
+#ifdef HAL_USE_EMPTY_STORAGE
+static Empty::Storage storageDriver;
+#else
 static ESP32::Storage storageDriver;
+#endif
 static Empty::GPIO gpioDriver;
+#if AP_SIM_ENABLED
+static Empty::RCOutput rcoutDriver;
+#else
 static ESP32::RCOutput rcoutDriver;
+#endif
 static ESP32::RCInput rcinDriver;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
 static Empty::Flash flashDriver;
 
+#if AP_SIM_ENABLED
+static AP_HAL::SIMState xsimstate;
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 HAL_ESP32::HAL_ESP32() :
     AP_HAL::HAL(
         &cons, //Console/mavlink
-        &uartBDriver, //GPS 1
-        &uartCDriver, //Telem 1
-        &uartDDriver, //Telem 2
-        &uartEDriver, //GPS 2
-        &uartFDriver, //Extra 1
-        &uartGDriver, //Extra 2
-        &uartHDriver, //Extra 3
-        &uartIDriver, //Extra 4
-        &uartJDriver, //Extra 5
+        &serial1Driver, //Telem 1
+        &serial2Driver, //Telem 2
+        &serial3Driver, //GPS 1
+        &serial4Driver, //GPS 2
+        &serial5Driver, //Extra 1
+        &serial6Driver, //Extra 2
+        &serial7Driver, //Extra 3
+        &serial8Driver, //Extra 4
+        &serial9Driver, //Extra 5
         &i2cDeviceManager,
         &spiDeviceManager,
         nullptr,
@@ -95,7 +111,12 @@ HAL_ESP32::HAL_ESP32() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+#if AP_SIM_ENABLED
+        &xsimstate,
+#endif
+#if HAL_WITH_DSP
         &dspDriver,
+#endif
         nullptr
     )
 {}

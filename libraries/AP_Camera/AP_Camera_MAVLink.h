@@ -36,10 +36,10 @@ public:
     bool trigger_pic() override;
 
     // configure camera
-    void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time) override;
+    void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time) override;
 
     // handle camera control message
-    void control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id) override;
+    void control(float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id) override;
 };
 
 #endif // AP_CAMERA_MAVLINK_ENABLED
