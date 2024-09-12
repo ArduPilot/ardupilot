@@ -340,9 +340,21 @@ void AP_AHRS::reset_gyro_drift(void)
  */
 void AP_AHRS::update_state(void)
 {
+    const uint8_t primary_gyro = _get_primary_gyro_index();
+    const uint8_t primary_accel = _get_primary_accel_index();
+#if AP_INERTIALSENSOR_ENABLED
+    // tell the IMUS about primary changes
+    if (primary_gyro != state.primary_gyro) {
+        AP::ins().set_primary_gyro(primary_gyro);
+    }
+
+    if (primary_accel != state.primary_accel) {
+        AP::ins().set_primary_accel(primary_accel);
+    }
+#endif
     state.primary_IMU = _get_primary_IMU_index();
-    state.primary_gyro = _get_primary_gyro_index();
-    state.primary_accel = _get_primary_accel_index();
+    state.primary_gyro = primary_gyro;
+    state.primary_accel = primary_accel;
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = _wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
@@ -361,6 +373,7 @@ void AP_AHRS::update_state(void)
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
 }
 
+// update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
     // periodically checks to see if we should update the AHRS
