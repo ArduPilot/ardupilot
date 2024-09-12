@@ -65,7 +65,10 @@ singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 include AP_Airspeed/AP_Airspeed.h
 singleton AP_Airspeed depends AP_AIRSPEED_ENABLED
 singleton AP_Airspeed rename airspeed
+singleton AP_Airspeed method enabled boolean uint8_t'skip_check
+singleton AP_Airspeed method healthy boolean uint8_t'skip_check
 singleton AP_Airspeed method get_airspeed float uint8_t'skip_check
+singleton AP_Airspeed method get_raw_airspeed float uint8_t'skip_check
 
 include AP_Arming/AP_Arming.h
 
