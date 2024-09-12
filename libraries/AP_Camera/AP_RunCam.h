@@ -27,7 +27,6 @@
 
 #include <AP_Param/AP_Param.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_OSD/AP_OSD.h>
 
