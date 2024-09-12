@@ -57,6 +57,9 @@ public:
     bool idle(void);
     bool run(void);
 
+    // error code returns 0 if no error or the error code return function is not implemented
+    uint32_t get_errorcode(void);
+
     void send_generator_status(const class GCS_MAVLINK &channel);
 
     // Parameter block

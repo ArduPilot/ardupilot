@@ -52,6 +52,9 @@ public:
     // healthy returns true if the generator is not present, or it is
     // present, providing telemetry and not indicating an errors.
     bool healthy() const override;
+    
+    // Allow generator error code to pass up to fronten and export to LUA
+    uint32_t get_errorcode(void) override {return last_reading.errors;}
 
 private:
 

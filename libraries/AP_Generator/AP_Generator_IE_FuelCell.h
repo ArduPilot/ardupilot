@@ -26,6 +26,9 @@ public:
     // Update fuel cell, expected to be called at 20hz
     void update(void) override;
 
+    // Allow generator error code to pass up to frontend and export to LUA
+    uint32_t get_errorcode(void) override {return _err_code;}
+
 protected:
 
     // Pointer to serial uart
