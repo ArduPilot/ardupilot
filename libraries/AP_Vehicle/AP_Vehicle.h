@@ -74,6 +74,7 @@
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
+#include <AP_Motors/AP_Motors_config.h>
 
 #include <AP_Gripper/AP_Gripper_config.h>
 #if AP_GRIPPER_ENABLED
@@ -493,6 +494,18 @@ protected:
 
     // check for motor noise at a particular frequency
     void check_motor_noise();
+
+#if AP_MOTORS_ENABLED && HAL_WITH_ESC_TELEM
+    // code common to multiple vehicles which ensures ESC telemetry is
+    // reporting that all motors are performing.  It blocks transition
+    // to throttle-unlimited during takeoff if RPM requirements not met
+    void motors_takeoff_check(float rpm_min, float rpm_max, bool land_complete);
+    // state for takeoff_check:
+    struct {
+        uint32_t warning_ms;
+    } takeoff_check_state;
+
+#endif
 
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
