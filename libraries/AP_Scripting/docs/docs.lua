@@ -3643,7 +3643,6 @@ function networking:get_netmask_active() end
 function networking:get_ip_active() end
 
 -- visual odometry object
---@class visual_odom
 visual_odom = {}
 
 -- visual odometry health
@@ -3653,3 +3652,11 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+-- ADSB libary
+adsb = {}
+
+-- Set the callsign of this vehicle for ADSB transmission
+---@param callsign string -- upto 8 characters, valid characters are A-Z, 0-9, " " only
+function adsb:set_callsign(callsign) end
+

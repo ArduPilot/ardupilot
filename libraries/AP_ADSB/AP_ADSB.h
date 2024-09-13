@@ -224,6 +224,9 @@ public:
 
     AP_ADSB::Type get_type(uint8_t instance) const;
 
+    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
+    void set_callsign(const char* str, const bool append_icao);
+
 private:
     static AP_ADSB *_singleton;
 
@@ -246,9 +249,6 @@ private:
 
     // Generates pseudorandom ICAO from gps time, lat, and lon
     uint32_t genICAO(const Location &loc) const;
-
-    // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
-    void set_callsign(const char* str, const bool append_icao);
 
     // configure ADSB-out transceivers
     void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);

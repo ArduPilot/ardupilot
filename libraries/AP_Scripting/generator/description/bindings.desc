@@ -973,3 +973,10 @@ singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
 singleton AP_VisualOdom rename visual_odom
 singleton AP_VisualOdom method healthy boolean
 singleton AP_VisualOdom method quality int8_t
+
+include AP_ADSB/AP_ADSB.h depends (HAL_ADSB_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+include AP_ADSB/AP_ADSB_config.h
+singleton AP_ADSB scheduler-semaphore
+singleton AP_ADSB depends (HAL_ADSB_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+singleton AP_ADSB rename adsb
+singleton AP_ADSB method set_callsign void string false'literal
