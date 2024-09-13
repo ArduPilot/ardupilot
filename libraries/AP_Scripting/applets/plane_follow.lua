@@ -22,12 +22,12 @@
    FOLL_FAIL_MODE - the mode to switch to 
 --]]
 
-SCRIPT_VERSION = "4.6.0-018"
+SCRIPT_VERSION = "4.6.0-021"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
 REFRESH_RATE = 0.05   -- in seconds, so 20Hz
-LOST_TARGET_TIMEOUT = 5 / REFRESH_RATE -- 5 seconds
+LOST_TARGET_TIMEOUT = 10 / REFRESH_RATE -- 5 seconds
 AIRSPEED_GAIN = 1.2
 OVERSHOOT_ANGLE = 75.0
 TURNING_ANGLE = 60.0
@@ -93,7 +93,7 @@ FOLL_OFS_X = bind_param('FOLL_OFS_X')
   // @Description: Mode to switch to if the target is lost (no signal or > FOLL_DIST_MAX). 
   // @User: Standard
 --]]
-FOLL_FAIL_MODE = bind_add_param('FAIL_MODE', 7, FLIGHT_MODE.RTL)
+FOLL_FAIL_MODE = bind_add_param('FAIL_MODE', 7, FLIGHT_MODE.LOITER)
 
 --[[
   // @Param: FOLL_EXIT_MODE
@@ -325,8 +325,8 @@ local function follow_check()
          end
          -- Follow enabled - switch to guided mode
          vehicle:set_mode(FLIGHT_MODE.GUIDED)
-         -- Force Guided Mode to not loiter by setting a tiny loiter radius. Otherwise Guide Mode will try loiter around the target vehichle when it gets inside WP_LOITER_RAD
          follow_enabled = true
+         lost_target_countdown = LOST_TARGET_TIMEOUT
          gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": enabled")
       end
       -- Don't know what to do with the 3rd switch position right now.
@@ -407,20 +407,21 @@ local function update()
    if target_location == nil or target_velocity == nil or target_distance_offsets == nil or current_target == nil then
       lost_target_countdown = lost_target_countdown - 1
       if lost_target_countdown <= 0 then
+         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": follow: " .. FOLL_SYSID:get() .. " FAILED")
          if FOLL_FAIL_MODE:get() ~= nil then
             vehicle:set_mode(FOLL_FAIL_MODE:get())
          else
-            vehicle:set_mode(FLIGHT_MODE.RTL)
+            vehicle:set_mode(FLIGHT_MODE.LOITER)
          end
          follow_enabled = false
          return
       end
       if math.floor(now) ~= math.floor(now_lost_target) then
          now_lost_target = millis():tofloat() * 0.001
-         gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": lost target: " .. FOLL_SYSID:get())
+         gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": lost target: " .. FOLL_SYSID:get() .. " count: " .. lost_target_countdown)
       end
       -- if we have temporarily lost the target, maintain the heading of the target while we wait for LOST_TARGET_TIMEOUT seconds to re-aquire it
-      set_vehicle_heading({heading = target_heading})
+      -- set_vehicle_heading({heading = target_heading})
       return
    else
       -- have a good target so reset the countdown 
