@@ -741,7 +741,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     case AUX_FUNC::RUNCAM_CONTROL:
     case AUX_FUNC::RUNCAM_OSD_CONTROL:
 #endif
@@ -848,7 +848,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
     { AUX_FUNC::SAILBOAT_MOTOR_3POS,"SailboatMotor"},
     { AUX_FUNC::SURFACE_TRACKING,"SurfaceTracking"},
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     { AUX_FUNC::RUNCAM_CONTROL,"RunCamControl"},
     { AUX_FUNC::RUNCAM_OSD_CONTROL,"RunCamOSDControl"},
 #endif
@@ -1168,7 +1168,7 @@ bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
 }
 #endif // AP_CAMERA_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
     AP_RunCam *runcam = AP::runcam();
@@ -1473,7 +1473,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
 #endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 
-#if HAL_RUNCAM_ENABLED
+#if AP_CAMERA_RUNCAM_ENABLED
     case AUX_FUNC::RUNCAM_CONTROL:
         do_aux_function_runcam_control(ch_flag);
         break;
