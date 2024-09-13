@@ -13,7 +13,9 @@
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
+#if AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Imu.h"
+#endif // AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Joy.h"
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
@@ -65,7 +67,9 @@ private:
     geometry_msgs_msg_TwistStamped tx_local_velocity_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
+#if AP_DDS_IMU_PUB_ENABLED
     sensor_msgs_msg_Imu imu_topic;
+#endif // AP_DDS_IMU_PUB_ENABLED
     rosgraph_msgs_msg_Clock clock_topic;
     // incoming joystick data
     static sensor_msgs_msg_Joy rx_joy_topic;
@@ -91,7 +95,9 @@ private:
     static void update_topic(geometry_msgs_msg_PoseStamped& msg);
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
     static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
+#if AP_DDS_IMU_PUB_ENABLED
     static void update_topic(sensor_msgs_msg_Imu& msg);
+#endif // AP_DDS_IMU_PUB_ENABLED
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
     static void update_topic(geographic_msgs_msg_GeoPointStamped& msg);
 
@@ -117,8 +123,10 @@ private:
     uint64_t last_nav_sat_fix_time_ms;
     // The last ms timestamp AP_DDS wrote a BatteryState message
     uint64_t last_battery_state_time_ms;
+#if AP_DDS_IMU_PUB_ENABLED
     // The last ms timestamp AP_DDS wrote an IMU message
     uint64_t last_imu_time_ms;
+#endif // AP_DDS_IMU_PUB_ENABLED
     // The last ms timestamp AP_DDS wrote a Local Pose message
     uint64_t last_local_pose_time_ms;
     // The last ms timestamp AP_DDS wrote a Local Velocity message
@@ -197,8 +205,10 @@ public:
     void write_tx_local_velocity_topic();
     //! @brief Serialize the current geo_pose and publish to the IO stream(s)
     void write_geo_pose_topic();
+#if AP_DDS_IMU_PUB_ENABLED
     //! @brief Serialize the current IMU data and publish to the IO stream(s)
     void write_imu_topic();
+#endif // AP_DDS_IMU_PUB_ENABLED
     //! @brief Serialize the current clock and publish to the IO stream(s)
     void write_clock_topic();
     //! @brief Serialize the current gps global origin and publish to the IO stream(s)
