@@ -515,7 +515,7 @@ bool AP_InertialSensor_Invensensev3::accumulate_highres_samples(const FIFODataHi
 void AP_InertialSensor_Invensensev3::read_fifo()
 {
     bool need_reset = false;
-    uint16_t n_samples;
+    uint16_t n_samples = 0;
 
     uint8_t reg_counth;
     uint8_t reg_data;
@@ -540,44 +540,50 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 #else
     const uint8_t fifo_sample_size = INV3_SAMPLE_SIZE;
 #endif
-    if (!block_read(reg_counth, (uint8_t*)&n_samples, 2)) {
-        goto check_registers;
-    }
 
-    if (n_samples == 0) {
-        /* Not enough data in FIFO */
-        goto check_registers;
-    }
+    do {
+        uint8_t n;
+        void *fifo_result = nullptr;
+        if (n_samples == 0) {
+            if (!block_read(reg_counth, (uint8_t*)fifo_buffer, 2 + fifo_sample_size)) {
+                break;
+            }
+            n_samples = *(uint16_t*)fifo_buffer;
+            if (n_samples == 0) {
+                break;
+            }            
+            // adjust the periodic callback to be synchronous with the incoming data
+            // this means that we rarely run read_fifo() without updating the sensor data
+            dev->adjust_periodic_callback(periodic_handle, backend_period_us);
 
-    // adjust the periodic callback to be synchronous with the incoming data
-    // this means that we rarely run read_fifo() without updating the sensor data
-    dev->adjust_periodic_callback(periodic_handle, backend_period_us);
-
-    while (n_samples > 0) {
-        uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
-        if (!block_read(reg_data, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
-            goto check_registers;
+            fifo_result = ((uint8_t*)fifo_buffer) + 2;
+            n = 1;
+        } else {
+            n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
+            if (!block_read(reg_data, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
+                break;
+            }
+            fifo_result = fifo_buffer;
         }
 #if HAL_INS_HIGHRES_SAMPLE
         if (highres_sampling) {
-            if (!accumulate_highres_samples((FIFODataHighRes*)fifo_buffer, n)) {
+            if (!accumulate_highres_samples((FIFODataHighRes*)fifo_result, n)) {
                 need_reset = true;
                 break;
             }
         } else
 #endif
-        if (!accumulate_samples((FIFOData*)fifo_buffer, n)) {
+        if (!accumulate_samples((FIFOData*)fifo_result, n)) {
             need_reset = true;
             break;
         }
         n_samples -= n;
-    }
+    } while(n_samples > 0);
 
     if (need_reset) {
         fifo_reset();
     }
     
-check_registers:
     // check next register value for correctness
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     AP_HAL::Device::checkreg reg;
