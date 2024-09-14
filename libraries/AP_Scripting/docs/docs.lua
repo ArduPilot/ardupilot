@@ -3796,10 +3796,6 @@ function follow:have_target() end
 function follow:get_target_sysid() end
 singleton AP_Follow method get_target_sysid uint8_t
 
--- get horizontal distance to target (including offset) in meters (for reporting purposes)
----@return float
-function follow:get_distance_to_target() end
-
 -- get target's heading in degrees (0 = north, 90 = east)
 ---@return number|nil
 function follow:get_target_heading_deg() end
