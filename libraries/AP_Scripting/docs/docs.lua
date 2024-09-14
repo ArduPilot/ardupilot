@@ -3814,12 +3814,6 @@ function follow:get_target_location_and_velocity() end
 ---@return Vector3f_ud|nil -- velocity
 function follow:get_target_location_and_velocity_ofs() end
 
--- desc get distance vector to target (in meters) and target's velocity all in NED frame
----@return Vector3f_ud|nil
----@return Vector3f_ud|nil
----@return Vector3f_ud|nil
-function follow:get_target_dist_and_vel_ned() end
-
 -- desc
 ---@return uint32_t_ud
 function follow:get_last_update_ms() end
@@ -3827,6 +3821,17 @@ function follow:get_last_update_ms() end
 -- desc
 ---@return boolean
 function follow:have_target() end
+
+-- combo function returning all follow values calcuted in a cycle
+---@return Vector3f_ud|nil -- distance to the target
+---@return Vector3f_ud|nil -- distance to the target with offsets
+---@return Vector3f_ud|nil -- proposed velocity of the target
+---@return Vector3f_ud|nil -- proposed velocity of the target with offsets
+---@return Location_ud|nil -- location of the target
+---@return Location_ud|nil -- location of the target with offsets
+---@return number|nil -- distance to the target in meters
+---@return number|nil -- heading to the target with offsets in degrees
+function follow:get_target_info() end
 
 -- desc
 scripting = {}
