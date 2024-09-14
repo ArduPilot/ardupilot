@@ -516,7 +516,7 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
-    Vector2f vel;
+    Vector2f vel{0.0f, 0.0f};
 
     // throttle failsafe check
     if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
