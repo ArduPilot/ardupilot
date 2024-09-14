@@ -79,7 +79,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _SW_METHOD
     // @DisplayName: Screen switch method
     // @Description: This sets the method used to switch different OSD screens.
-    // @Values: 0: switch to next screen if channel value was changed, 1: select screen based on pwm ranges specified for each screen, 2: switch to next screen after low to high transition and every 1s while channel value is high
+    // @Values: 0: switch to next screen if channel value was changed, 1: select screen based on pwm ranges specified for each screen, 2: switch to next screen after low to high transition and every 1s while channel value is high, 3: switches to next screen if the sticks in the next position: roll - middle, pitch - high, throttle - middle, yaw - left. Keeps toggling to next screen every 1s while sticks in mentioned positions
     // @User: Standard
     AP_GROUPINFO("_SW_METHOD", 7, AP_OSD, sw_method, AP_OSD::TOGGLE),
 
