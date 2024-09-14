@@ -37,6 +37,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Camera/AP_RunCam.h>
 
 // macro for easy use of var_info2
 #define AP_SUBGROUPINFO2(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info2 }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
@@ -606,7 +607,7 @@ void AP_OSD::update_current_screen()
         }
         break;
     case STICKS_INPUT:
-        if (!AP_Notify::flags.armed) {
+        if (!AP_Notify::flags.armed && !AP::runcam()->in_menu()) {
             auto &rc_channels = rc();
             auto &roll = rc_channels.get_roll_channel();
             auto &pitch = rc_channels.get_pitch_channel();
