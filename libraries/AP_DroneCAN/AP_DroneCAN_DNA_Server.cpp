@@ -118,46 +118,26 @@ bool AP_DroneCAN_DNA_Server::Database::handle_node_info(uint8_t source_node_id, 
 }
 
 // handle the allocation message. returns the allocated node ID, or 0 if allocation failed
-uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, const uint8_t unique_id[])
+uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(const uint8_t unique_id[])
 {
     WITH_SEMAPHORE(sem);
 
     uint8_t resp_node_id = find_node_id(unique_id, 16);
     if (resp_node_id == 0) {
-        resp_node_id = find_free_node_id(node_id > MAX_NODE_ID ? 0 : node_id);
+        // find free node ID, starting at the max as prescribed by the standard
+        resp_node_id = MAX_NODE_ID;
+        while (resp_node_id > 0) {
+            if (!node_registered.get(resp_node_id)) {
+                break;
+            }
+            resp_node_id--;
+        }
+
         if (resp_node_id != 0) {
             create_registration(resp_node_id, unique_id, 16);
         }
     }
     return resp_node_id; // will be 0 if not found and not created
-}
-
-// search for a free node ID, starting at the preferred ID (which can be 0 if
-// none are preferred). returns 0 if none found. based on pseudocode in
-// uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
-uint8_t AP_DroneCAN_DNA_Server::Database::find_free_node_id(uint8_t preferred)
-{
-    if (preferred == 0) {
-        preferred = MAX_NODE_ID;
-    }
-    // search for an ID >= preferred
-    uint8_t candidate = preferred;
-    while (candidate <= MAX_NODE_ID) {
-        if (!node_registered.get(candidate)) {
-            return candidate;
-        }
-        candidate++;
-    }
-    // search for an ID <= preferred
-    candidate = preferred;
-    while (candidate > 0) {
-        if (!node_registered.get(candidate)) {
-            return candidate;
-        }
-        candidate--;
-    }
-    // no IDs free
-    return 0;
 }
 
 // retrieve node ID that matches the given unique ID. returns 0 if not found
@@ -491,7 +471,11 @@ void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer,
     rsp.unique_id.len = rcvd_unique_id_offset;
 
     if (rcvd_unique_id_offset == sizeof(rcvd_unique_id)) { // full unique ID received, allocate it!
-        rsp.node_id = db.handle_allocation(msg.node_id, rcvd_unique_id);
+        // we ignore the preferred node ID as it seems nobody uses the feature
+        // and we couldn't guarantee it anyway. we will always remember and
+        // re-assign node IDs consistently, so the node could send a status
+        // with a particular ID once then switch back to no preference for DNA
+        rsp.node_id = db.handle_allocation(rcvd_unique_id);
         rcvd_unique_id_offset = 0; // reset state for next allocation
         if (rsp.node_id == 0) { // allocation failed
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN DNA allocation failed; database full");

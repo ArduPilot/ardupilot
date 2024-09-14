@@ -60,14 +60,9 @@ class AP_DroneCAN_DNA_Server
         bool handle_node_info(uint8_t source_node_id, const uint8_t unique_id[]);
 
         // handle the allocation message. returns the allocated node ID, or 0 if allocation failed
-        uint8_t handle_allocation(uint8_t node_id, const uint8_t unique_id[]);
+        uint8_t handle_allocation(const uint8_t unique_id[]);
 
     private:
-        // search for a free node ID, starting at the preferred ID (which can be 0 if
-        // none are preferred). returns 0 if none found. based on pseudocode in
-        // uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
-        uint8_t find_free_node_id(uint8_t preferred);
-
         // retrieve node ID that matches the given unique ID. returns 0 if not found
         uint8_t find_node_id(const uint8_t unique_id[], uint8_t size);
 
