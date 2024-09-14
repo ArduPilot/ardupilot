@@ -6,10 +6,11 @@ Parameters are in-code defaults plus default_params/sub.parm
 
 AP_FLAKE8_CLEAN
 '''
-
+import math
 import os
 
 from pymavlink import mavutil, mavextra
+from pysim import util
 
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
@@ -463,6 +464,133 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # The mission ends at end_altitude. Do a check to ensure that the sub is at this altitude.
         self.wait_altitude(altitude_min=end_altitude-validation_delta/2, altitude_max=end_altitude+validation_delta/2,
                            relative=False, timeout=1)
+
+        self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()  # e.g. revert rangefinder configuration
+
+    def GuidedPosVel(self):
+        """Send SET_POSITION_TARGET_INT msgs at 10Hz with position and velocity targets"""
+
+        # GUIDED mode supports several sub-modes selected by the POSITION_TARGET_TYPE mask
+        # The Guided_PosVel sub-mode supports rapid updates and several altitude frames
+        posvel_mode = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                       mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                       mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                       mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+                       mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
+
+        # Everything in meters and meters/second unless noted
+        seafloor_depth = 50
+        speed = 0.5
+
+        # Generate a synthetic seafloor at -50m
+        self.context_push()
+        self.prepare_synthetic_seafloor_test(seafloor_depth, 10)  # rf_target is not used
+
+        # Guided_PosVel uses WPNAV_SPEED
+        self.set_parameter('WPNAV_SPEED', speed * 100.0)
+
+        # Dive to starting altitude
+        start_altitude = -15
+        pwm = 1300 if self.get_altitude(relative=True) > start_altitude else 1700
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(Joystick.Throttle, pwm)
+        self.wait_altitude(altitude_min=start_altitude-1, altitude_max=start_altitude, relative=False, timeout=120)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(1)
+
+        # Request GLOBAL_POSITION_INT at 20Hz, this will be our clock
+        self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 10)
+
+        # Run between 2 locations, 30m apart
+        distance = 30
+        timeout = distance / speed + 5  # Add a little time to accelerate, etc.
+
+        runs = [{
+            # Hold depth at -15m as the terrain rises 10m
+            'frame': mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            'bearing': 180,
+            'target_alt': -15,  # Altitude
+            'max_error_allowed': 1.0,
+        }, {
+            # Hold range at 25m as the terrain falls by 10m
+            'frame': mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            'bearing': 0,
+            'target_alt': 25,  # Distance above seafloor
+            'max_error_allowed': 1.0,
+        }, {
+            # Hold depth at -25m as the terrain rises 10m
+            'frame': mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            'bearing': 180,
+            'target_alt': -25,
+            'max_error_allowed': 1.0,
+        }, {
+            # Hold range at 15m as the terrain falls by 10m
+            'frame': mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            'bearing': 0,
+            'target_alt': 15,
+            'max_error_allowed': 1.0,
+        }]
+
+        # Stay in GUIDED mode for the duration
+        self.change_mode('GUIDED')
+
+        for run in runs:
+            msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            start_loc = (msg.lat * 1e-7, msg.lon * 1e-7)
+            dest_loc = util.gps_newpos(start_loc[0], start_loc[1], run['bearing'], distance)
+
+            # current_alt = range or altitude, depending on the frame
+            current_alt = None
+            max_error = 0.0
+
+            # Go!
+            start_time = self.get_sim_time()
+            while msg := self.mav.recv_match(type=['GLOBAL_POSITION_INT', 'STATUSTEXT'], blocking=True):
+                # Get ground truth (sans noise) from the terrain generator
+                if msg.get_type() == 'STATUSTEXT':
+                    if run['frame'] == mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT:
+                        idx_tr = msg.text.find('#TR#')
+                        if idx_tr > 0:
+                            current_alt = float(msg.text[(idx_tr + 4):(idx_tr + 12)])
+                    continue
+
+                current_loc = (msg.lat * 1e-7, msg.lon * 1e-7)
+                distance_remaining = util.gps_distance(
+                    dest_loc[0], dest_loc[1],
+                    current_loc[0], current_loc[1])
+
+                if run['frame'] == mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT:
+                    current_alt = msg.relative_alt * 0.001
+
+                if distance_remaining < 0.5:
+                    self.progress('Frame %u reached destination at time %f, max_error %f' %
+                                  (run['frame'], self.get_sim_time_cached() - start_time, max_error))
+                    break
+                elif self.get_sim_time_cached() - start_time > timeout:
+                    raise NotAchievedException('Frame %u took too long to reach the destination' % run['frame'])
+
+                if current_alt is None:
+                    continue
+
+                alt_error = abs(current_alt - run['target_alt'])
+                if alt_error > run['max_error_allowed']:
+                    raise NotAchievedException('Alt incorrect on frame %d: want %.2f (+/- %.2f) got=%.2f'
+                                               % (run['frame'], run['target_alt'], run['max_error_allowed'], current_alt))
+
+                if alt_error > max_error:
+                    max_error = alt_error
+
+                # Set the target 10m ahead of the current location
+                target_loc = util.gps_newpos(current_loc[0], current_loc[1], run['bearing'], 10)
+                target_vel = [speed * math.cos(math.radians(run['bearing'])), speed * math.sin(math.radians(run['bearing']))]
+
+                self.mav.mav.set_position_target_global_int_send(
+                    0, 1, 1, run['frame'], posvel_mode,
+                    int(target_loc[0] * 1e7), int(target_loc[1] * 1e7), run['target_alt'],
+                    target_vel[0], target_vel[1], 0, 0, 0, 0, 0, 0)
 
         self.disarm_vehicle()
         self.context_pop()
@@ -1255,6 +1383,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.Surftrak,
             self.SimTerrainSurftrak,
             self.SimTerrainMission,
+            self.GuidedPosVel,
             self.RngfndQuality,
             self.PositionHold,
             self.ModeChanges,
