@@ -254,9 +254,6 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     return true;
 }
 
-
-
-
 // get target's heading in degrees (0 = north, 90 = east)
 bool AP_Follow::get_target_heading_deg(float &heading) const
 {
@@ -568,6 +565,7 @@ bool AP_Follow::have_target(void) const
     return true;
 }
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // create a single method to retrieve all the relevant values in one shot for Lua
 /* replaces the following Lua calls
    target_distance, target_distance_offsets, target_velocity = follow:get_target_dist_and_vel_ned() -- THIS HAS TO BE FIRST
@@ -596,6 +594,7 @@ bool AP_Follow::get_target_info(Vector3f &dist_ned, Vector3f &dist_with_offs,
     target_heading_ofs_deg = _bearing_to_target;
     return true;
 }
+#endif
 
 namespace AP {
 
