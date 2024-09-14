@@ -3800,7 +3800,7 @@ singleton AP_Follow method get_target_sysid uint8_t
 ---@return float
 function follow:get_distance_to_target() end
 
--- desc
+-- get target's heading in degrees (0 = north, 90 = east)
 ---@return number|nil
 function follow:get_target_heading_deg() end
 
@@ -3823,14 +3823,14 @@ function follow:get_last_update_ms() end
 function follow:have_target() end
 
 -- combo function returning all follow values calcuted in a cycle
----@return Vector3f_ud|nil -- distance to the target
----@return Vector3f_ud|nil -- distance to the target with offsets
----@return Vector3f_ud|nil -- proposed velocity of the target
----@return Vector3f_ud|nil -- proposed velocity of the target with offsets
----@return Location_ud|nil -- location of the target
----@return Location_ud|nil -- location of the target with offsets
----@return number|nil -- distance to the target in meters
----@return number|nil -- heading to the target with offsets in degrees
+---@return dist_ned Vector3f_ud|nil -- distance to the target
+---@return dist_with_offs Vector3f_ud|nil -- distance to the target with offsets
+---@return target_vel_ned Vector3f_ud|nil -- proposed velocity of the target
+---@return target_vel_ned_ofs Vector3f_ud|nil -- proposed velocity of the target with offsets
+---@return target_loc Location_ud|nil -- location of the target
+---@return target_loc_ofs Location_ud|nil -- location of the target with offsets
+---@return target_dist_ofs number|nil -- distance to the target in meters
+---@return target_heading_ofs_deg number|nil -- heading to the target with offsets in degrees
 function follow:get_target_info() end
 
 -- desc
