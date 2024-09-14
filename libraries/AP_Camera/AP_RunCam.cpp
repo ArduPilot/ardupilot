@@ -244,7 +244,7 @@ bool AP_RunCam::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) 
     }
 
     // currently in the OSD menu, do not allow arming
-    if (is_arming_prevented()) {
+    if (in_menu()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "In OSD menu");
         return false;
     }
@@ -468,11 +468,11 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
         && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         // don't allow an action close to arming unless the user had configured it or arming is not possible
         // but don't prevent the 5-Key control actually working
-        && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
+        && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || in_menu())) {
         result = Event::EXIT_MENU;
     } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::HIGH
         && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
-        && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
+        && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || in_menu())) {
         result = Event::ENTER_MENU;
     } else if (roll == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_EXIT;

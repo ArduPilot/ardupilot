@@ -98,6 +98,8 @@ public:
     void update();
     // Check whether arming is allowed
     bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const;
+    // whether or not we can arm
+    bool in_menu() const { return _in_menu > _menu_enter_level; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -421,8 +423,6 @@ private:
         return !has_2_key_OSD() && has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE);
     }
 
-    // whether or not we can arm
-    bool is_arming_prevented() const { return _in_menu > _menu_enter_level; }
     // error handler for OSD simulation
     void simulation_OSD_cable_failed(const Request& request);
     // process pending request, retrying as necessary
