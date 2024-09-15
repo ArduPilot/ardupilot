@@ -37,25 +37,11 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (copter.flightmode->mode_number()) {
-    case Mode::Number::AUTO:
-    case Mode::Number::AUTO_RTL:
-    case Mode::Number::RTL:
-    case Mode::Number::LOITER:
-    case Mode::Number::AVOID_ADSB:
-    case Mode::Number::FOLLOW:
-    case Mode::Number::GUIDED:
-    case Mode::Number::CIRCLE:
-    case Mode::Number::POSHOLD:
-    case Mode::Number::BRAKE:
-    case Mode::Number::SMART_RTL:
+    if ((copter.pos_control != nullptr) && copter.pos_control->is_active_xy()) {
         _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
-        break;
-    default:
-        break;
     }
 
     // all modes except INITIALISING have some form of manual
