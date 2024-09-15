@@ -246,6 +246,9 @@ public:
     // returns true on success and control_value is set to a value in the range -1 to +1
     virtual bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) { return false; }
 
+    // Register a custom mode with given number and names
+    virtual bool register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) { return false; }
+
 #endif // AP_SCRIPTING_ENABLED
 
     // returns true if vehicle is in the process of landing
