@@ -93,6 +93,7 @@ void ModeGuided::guided_pos_control_start()
     sub.wp_nav.set_wp_destination(stopping_point, false);
 
     // initialise yaw
+    sub.yaw_rate_only = false;
     set_auto_yaw_mode(get_default_auto_yaw_mode(false));
 }
 
@@ -111,6 +112,7 @@ void ModeGuided::guided_vel_control_start()
     position_control->init_xy_controller();
 
     // pilot always controls yaw
+    sub.yaw_rate_only = false;
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
@@ -129,6 +131,7 @@ void ModeGuided::guided_posvel_control_start()
     position_control->init_xy_controller();
 
     // pilot always controls yaw
+    sub.yaw_rate_only = false;
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
@@ -153,6 +156,7 @@ void ModeGuided::guided_angle_control_start()
     guided_angle_state.climb_rate_cms = 0.0f;
 
     // pilot always controls yaw
+    sub.yaw_rate_only = false;
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
