@@ -1103,7 +1103,7 @@ void AP_ExternalAHRS_InertialLabs::get_filter_status(nav_filter_status &status) 
     status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_abs;
     status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs;
     status.flags.using_gps = (now - last_gps_ms < dt_limit_gps) &&
-        (state2.unit_status & (ILABS_UNIT_STATUS_GNSS_FAIL|ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
+        ((state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) | (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
     status.flags.gps_quality_good = (now - last_gps_ms < dt_limit_gps) &&
         (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) != 0 &&
         (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) == 0;
