@@ -2384,6 +2384,14 @@ function vehicle:get_circle_radius() end
 ---@return boolean
 function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms, use_yaw_rate, yaw_rate_degs) end
 
+-- Set vehicles roll, pitch, and yaw rates with throttle in guided mode
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true if successful
+function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
+
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
 ---@return boolean -- true on success
