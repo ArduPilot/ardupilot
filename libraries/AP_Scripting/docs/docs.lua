@@ -2826,6 +2826,13 @@ function vehicle:is_landing() end
 ---@return boolean -- true on success
 function vehicle:set_crosstrack_start(new_start_location) end
 
+-- Register a custom mode. This behaves like guided mode but will report with a custom number and name
+---@param number integer -- mode number to use, should be over 100
+---@param full_name string -- Full mode name
+---@param short_name string -- Short mode name upto 4 characters
+---@return boolean -- true if successful
+function vehicle:register_custom_mode(number, full_name, short_name) end
+
 -- desc
 onvif = {}
 
