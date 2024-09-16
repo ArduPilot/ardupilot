@@ -134,8 +134,8 @@ public:
     };
     
     union PACKED ILabsData {
-        uint32_t gps_time_ms; // ms since start of GPS week
-        uint16_t gps_week;
+        uint32_t gnss_time_ms; // ms since start of GNSS week
+        uint16_t gnss_week;
         vec3_32_t accel_data_hr; // g * 1e6
         vec3_32_t gyro_data_hr; // deg/s * 1e5
         struct PACKED {
