@@ -192,7 +192,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 87:Crow Select
     // @Values{Plane}: 88:Soaring Enable
     // @Values{Plane}: 89:Landing Flare
-    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF Pos Source
+    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF Source Set
     // @Values{Plane}: 91:Airspeed Ratio Calibration
     // @Values{Plane}: 92:FBWA Mode
     // @Values{Copter, Rover, Plane}: 94:VTX Power
