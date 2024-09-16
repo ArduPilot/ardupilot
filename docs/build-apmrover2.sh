@@ -7,7 +7,7 @@ cd $DIR/..
 
 if [ ! -f $DOCS_OUTPUT_BASE/tags/libraries ]; 
 then
-	echo "Must build libraries firsфt"
+	echo "Must build libraries firsффt"
 	exit 0
 fi
 
