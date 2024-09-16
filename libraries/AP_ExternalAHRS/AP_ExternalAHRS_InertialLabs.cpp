@@ -256,13 +256,13 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         switch (mtype) {
         case MessageType::GPS_INS_TIME_MS: {
             // this is the GPS tow timestamp in ms for when the IMU data was sampled
-            CHECK_SIZE(u.gps_time_ms);
-            gps_data.ms_tow = u.gps_time_ms;
+            CHECK_SIZE(u.gnss_time_ms);
+            gps_data.ms_tow = u.gnss_time_ms;
             break;
         }
         case MessageType::GPS_WEEK: {
-            CHECK_SIZE(u.gps_week);
-            gps_data.gps_week = u.gps_week;
+            CHECK_SIZE(u.gnss_week);
+            gps_data.gps_week = u.gnss_week;
             break;
         }
         case MessageType::ACCEL_DATA_HR: {
