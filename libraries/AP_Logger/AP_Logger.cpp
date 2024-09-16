@@ -1560,6 +1560,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
 #endif
         "@SYS/memory.txt",
         "@SYS/threads.txt",
+        "@SYS/tasks.txt",
         "@SYS/timers.txt",
         "@ROMFS/hwdef.dat",
         "@SYS/storage.bin",
