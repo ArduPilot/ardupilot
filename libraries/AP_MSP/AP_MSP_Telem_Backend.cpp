@@ -217,7 +217,7 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
         gps_state.lon = loc.lng;
         gps_state.alt_m = loc.alt/100; // 1m resolution
         gps_state.speed_cms = gps.ground_speed() * 100;
-        gps_state.ground_course_cd = gps.ground_course_cd();
+        gps_state.ground_course_dd = gps.ground_course_cd() / 10;
     }
 }
 #endif
