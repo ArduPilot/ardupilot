@@ -635,15 +635,22 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     // @Param: BARO_COUNT
     // @DisplayName: Baro count
-    // @Description: Total baro count
+    // @Description: Number of simulated baros to create in SITL
+    // @Range: 0 3
     AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
 
-    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, SIM::BaroParm),
+    // @Group: BARO_
+    // @Path: ./SITL_Baro.cpp
+    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, BaroParm),
 #if BARO_MAX_INSTANCES > 1
-    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, SIM::BaroParm),
+    // @Group: BAR2_
+    // @Path: ./SITL_Baro.cpp
+    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, BaroParm),
 #endif
 #if BARO_MAX_INSTANCES > 2
-    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
+    // @Group: BAR3_
+    // @Path: ./SITL_Baro.cpp
+    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, BaroParm),
 #endif
 
     // @Param: TIME_JITTER
@@ -748,29 +755,6 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPEND
 };
 
-// user settable parameters for the barometers
-const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
-    AP_GROUPINFO("RND",      1, SIM::BaroParm,  noise, 0.2f),
-    // @Param: BARO_DRIFT
-    // @DisplayName: Baro altitude drift
-    // @Description: Barometer altitude drifts at this rate
-    // @Units: m/s
-    // @User: Advanced
-    AP_GROUPINFO("DRIFT",    2, SIM::BaroParm,  drift, 0),
-    AP_GROUPINFO("DISABLE",  3, SIM::BaroParm,  disable, 0),
-    AP_GROUPINFO("GLITCH",   4, SIM::BaroParm,  glitch, 0),
-    AP_GROUPINFO("FREEZE",   5, SIM::BaroParm,  freeze, 0),
-    AP_GROUPINFO("DELAY",    6, SIM::BaroParm,  delay, 0),
-
-    // wind coeffients
-    AP_GROUPINFO("WCF_FWD", 7,  SIM::BaroParm, wcof_xp, 0.0),
-    AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
-    AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
-    AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
-    AP_GROUPINFO("WCF_UP",  11, SIM::BaroParm, wcof_zp, 0.0),
-    AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
-    AP_GROUPEND
-};
 
 #if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
