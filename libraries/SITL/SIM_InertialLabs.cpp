@@ -34,7 +34,7 @@ void InertialLabs::send_packet(void)
     const auto gps_tow = GPS_Backend::gps_time();
 
     // 0x01 GPS INS Time (round)
-    pkt.gps_ins_time_ms = gps_tow.ms;
+    pkt.gnss_ins_time_ms = gps_tow.ms;
 
     // 0x23 Accelerometer data HR
     pkt.accel_data_hr.x = (fdm.yAccel / GRAVITY_MSS) * 1.0e6;  // g*1.0e6
@@ -119,9 +119,9 @@ void InertialLabs::send_packet(void)
     pkt.ins_sol_status = 0; // INS solution is good
 
     pkt.gnss_new_data = 0;
-    if (packets_sent % gps_frequency == 0) {
+    if (packets_sent % gnss_frequency == 0) {
         // 0x3C GPS week
-        pkt.gps_week = gps_tow.week;
+        pkt.gnss_week = gps_tow.week;
 
         // 0x4A GNSS extended info
         pkt.gnss_extended_info.fix_type = 2; // 3D fix
@@ -131,9 +131,9 @@ void InertialLabs::send_packet(void)
         pkt.num_sats = 32;
 
         // 0x30 GNSS Position
-        pkt.gps_position.lat = fdm.latitude * 1e7;  // deg*1.0e7
-        pkt.gps_position.lon = fdm.longitude * 1e7; // deg*1.0e7
-        pkt.gps_position.alt = fdm.altitude * 1e2;  // m*100
+        pkt.gnss_position.lat = fdm.latitude * 1e7;  // deg*1.0e7
+        pkt.gnss_position.lon = fdm.longitude * 1e7; // deg*1.0e7
+        pkt.gnss_position.alt = fdm.altitude * 1e2;  // m*100
 
         // 0x32 GNSS Velocity, Track over ground
         Vector2d track{fdm.speedN,fdm.speedE};
