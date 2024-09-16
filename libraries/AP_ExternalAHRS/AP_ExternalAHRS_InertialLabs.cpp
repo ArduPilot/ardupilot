@@ -37,49 +37,6 @@
 
 extern const AP_HAL::HAL &hal;
 
-// unit status bits
-#define ILABS_UNIT_STATUS_ALIGNMENT_FAIL   0x0001
-#define ILABS_UNIT_STATUS_OPERATION_FAIL   0x0002
-#define ILABS_UNIT_STATUS_GYRO_FAIL        0x0004
-#define ILABS_UNIT_STATUS_ACCEL_FAIL       0x0008
-#define ILABS_UNIT_STATUS_MAG_FAIL         0x0010
-#define ILABS_UNIT_STATUS_ELECTRONICS_FAIL 0x0020
-#define ILABS_UNIT_STATUS_GNSS_FAIL        0x0040
-#define ILABS_UNIT_STATUS_RUNTIME_CAL      0x0080
-#define ILABS_UNIT_STATUS_VOLTAGE_LOW      0x0100
-#define ILABS_UNIT_STATUS_VOLTAGE_HIGH     0x0200
-#define ILABS_UNIT_STATUS_X_RATE_HIGH      0x0400
-#define ILABS_UNIT_STATUS_Y_RATE_HIGH      0x0800
-#define ILABS_UNIT_STATUS_Z_RATE_HIGH      0x1000
-#define ILABS_UNIT_STATUS_MAG_FIELD_HIGH   0x2000
-#define ILABS_UNIT_STATUS_TEMP_RANGE_ERR   0x4000
-#define ILABS_UNIT_STATUS_RUNTIME_CAL2     0x8000
-
-// unit status2 bits
-#define ILABS_UNIT_STATUS2_ACCEL_X_HIGH           0x0001
-#define ILABS_UNIT_STATUS2_ACCEL_Y_HIGH           0x0002
-#define ILABS_UNIT_STATUS2_ACCEL_Z_HIGH           0x0004
-#define ILABS_UNIT_STATUS2_BARO_FAIL              0x0008
-#define ILABS_UNIT_STATUS2_DIFF_PRESS_FAIL        0x0010
-#define ILABS_UNIT_STATUS2_MAGCAL_2D_ACT          0x0020
-#define ILABS_UNIT_STATUS2_MAGCAL_3D_ACT          0x0040
-#define ILABS_UNIT_STATUS2_GNSS_FUSION_OFF        0x0080
-#define ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF  0x0100
-#define ILABS_UNIT_STATUS2_MAG_FUSION_OFF         0x0200
-#define ILABS_UNIT_STATUS2_GNSS_POS_VALID         0x0400
-
-// air data status bits
-#define ILABS_AIRDATA_INIT_FAIL                   0x0001
-#define ILABS_AIRDATA_DIFF_PRESS_INIT_FAIL        0x0002
-#define ILABS_AIRDATA_STATIC_PRESS_FAIL           0x0004
-#define ILABS_AIRDATA_DIFF_PRESS_FAIL             0x0008
-#define ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR      0x0010
-#define ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR        0x0020
-#define ILABS_AIRDATA_PRESS_ALT_FAIL              0x0100
-#define ILABS_AIRDATA_AIRSPEED_FAIL               0x0200
-#define ILABS_AIRDATA_BELOW_THRESHOLD             0x0400
-
-
 // constructor
 AP_ExternalAHRS_InertialLabs::AP_ExternalAHRS_InertialLabs(AP_ExternalAHRS *_frontend,
                                                            AP_ExternalAHRS::state_t &_state) :
@@ -748,56 +705,56 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         (now_usw - last_critical_msg_ms > dt_critical_usw)) {
 
         // Critical USW message
-        if (state2.unit_status & ILABS_UNIT_STATUS_ALIGNMENT_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::ALIGNMENT_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Unsuccessful initial alignment");
         }
-        if (state2.unit_status & ILABS_UNIT_STATUS_OPERATION_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::OPERATION_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: IMU data are incorrect");
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_GYRO_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::GYRO_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Gyros failure");
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_ACCEL_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::ACCEL_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Accelerometers failure");
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_MAG_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::MAG_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Magnetometers failure");
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_ELECTRONICS_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::ELECTRONICS_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Electronics failure");
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::GNSS_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: GNSS receiver failure");
         }
 
         // Critical USW2 message
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_BARO_FAIL) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::BARO_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Baro altimeter failure");
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FAIL) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::DIFF_PRESS_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Diff. pressure sensor failure");
         }
 
         // Critical ADU message
-        if (state2.air_data_status & ILABS_AIRDATA_INIT_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::INIT_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Static pressure sensor unsuccessful initialization");
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_INIT_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::DIFF_PRESS_INIT_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Diff. pressure sensor unsuccessful initialization");
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_STATIC_PRESS_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::STATIC_PRESS_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ILAB: Static pressure sensor failure is detect");
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::DIFF_PRESS_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ILAB: Diff. pressure sensor failure is detect");
         }
 
@@ -805,67 +762,67 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
     }
 
     if (last_unit_status != state2.unit_status) {
-        if (state2.unit_status & ILABS_UNIT_STATUS_RUNTIME_CAL) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::RUNTIME_CAL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: On-the-fly calibration is in progress");
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_VOLTAGE_LOW) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::VOLTAGE_LOW)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Low input voltage");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_VOLTAGE_LOW) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::VOLTAGE_LOW)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Input voltage is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_VOLTAGE_HIGH) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::VOLTAGE_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: High input voltage");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_VOLTAGE_HIGH) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::VOLTAGE_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Input voltage is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_X_RATE_HIGH) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::X_RATE_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Y-axis angular rate is exceeded");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_X_RATE_HIGH) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::X_RATE_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Y-axis angular rate is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_Y_RATE_HIGH) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::Y_RATE_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: X-axis angular rate is exceeded");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_Y_RATE_HIGH) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::Y_RATE_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: X-axis angular rate is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_Z_RATE_HIGH) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::Z_RATE_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Z-axis angular rate is exceeded");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_Z_RATE_HIGH) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::Z_RATE_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Z-axis angular rate is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_MAG_FIELD_HIGH) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::MAG_FIELD_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Large total magnetic field");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_MAG_FIELD_HIGH) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::MAG_FIELD_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Total magnetic field is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_TEMP_RANGE_ERR) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::TEMP_RANGE_ERR)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Temperature is out of range");
         } else {
-            if (last_unit_status & ILABS_UNIT_STATUS_TEMP_RANGE_ERR) {
+            if (last_unit_status & static_cast<uint16_t>(UnitStatus::TEMP_RANGE_ERR)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Temperature is in range");
             }
         }
 
-        if (state2.unit_status & ILABS_UNIT_STATUS_RUNTIME_CAL2) {
+        if (state2.unit_status & static_cast<uint16_t>(UnitStatus::RUNTIME_CAL2)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: On-the-fly calibration successful");
         }
 
@@ -874,66 +831,66 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 
     // InertialLabs INS Unit Status Word 2 (USW2) messages to GCS
     if (last_unit_status2 != state2.unit_status2) {
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_ACCEL_X_HIGH) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::ACCEL_X_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Y-acceleration is out of range");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_ACCEL_X_HIGH) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::ACCEL_X_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Y-acceleration is in range");
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Y_HIGH) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::ACCEL_Y_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: X-acceleration is out of range");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Y_HIGH) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::ACCEL_Y_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: X-acceleration is in range");
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Z_HIGH) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::ACCEL_Z_HIGH)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Z-acceleration is out of range");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_ACCEL_Z_HIGH) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::ACCEL_Z_HIGH)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Z-acceleration is in range");
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAGCAL_2D_ACT) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::MAGCAL_2D_ACT)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Automatic 2D calibration is in progress");
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAGCAL_3D_ACT) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::MAGCAL_3D_ACT)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Automatic 3D calibration is in progress");
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::GNSS_FUSION_OFF)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS input switched off");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::GNSS_FUSION_OFF)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS input switched on");
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::DIFF_PRESS_FUSION_OFF)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure input switched off");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_DIFF_PRESS_FUSION_OFF) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::DIFF_PRESS_FUSION_OFF)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure input switched on");
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_MAG_FUSION_OFF) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::MAG_FUSION_OFF)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Magnetometer input switched off");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_MAG_FUSION_OFF) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::MAG_FUSION_OFF)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Magnetometer input switched on");
             }
         }
 
-        if (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) {
+        if (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::GNSS_POS_VALID)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Incorrect GNSS position");
         } else {
-            if (last_unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) {
+            if (last_unit_status2 & static_cast<uint16_t>(UnitStatus2::GNSS_POS_VALID)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS position is correct");
             }
         }
@@ -943,42 +900,42 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 
     // InertialLabs INS Air Data Unit (ADU) status messages to GCS
     if (last_air_data_status != state2.air_data_status) {
-        if (state2.air_data_status & ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::STATIC_PRESS_RANGE_ERR)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Static pressure is out of range");
         } else {
-            if (last_air_data_status & ILABS_AIRDATA_STATIC_PRESS_RANGE_ERR) {
+            if (last_air_data_status & static_cast<uint16_t>(AirDataStatus::STATIC_PRESS_RANGE_ERR)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Static pressure is in range");
             }
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::DIFF_PRESS_RANGE_ERR)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Diff. pressure is out of range");
         } else {
-            if (last_air_data_status & ILABS_AIRDATA_DIFF_PRESS_RANGE_ERR) {
+            if (last_air_data_status & static_cast<uint16_t>(AirDataStatus::DIFF_PRESS_RANGE_ERR)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Diff. pressure is in range");
             }
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_PRESS_ALT_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::PRESS_ALT_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Pressure altitude is incorrect");
         } else {
-            if (last_air_data_status & ILABS_AIRDATA_PRESS_ALT_FAIL) {
+            if (last_air_data_status & static_cast<uint16_t>(AirDataStatus::PRESS_ALT_FAIL)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Pressure altitude is correct");
             }
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::AIRSPEED_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Air speed is incorrect");
         } else {
-            if (last_air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+            if (last_air_data_status & static_cast<uint16_t>(AirDataStatus::AIRSPEED_FAIL)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Air speed is correct");
             }
         }
 
-        if (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+        if (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::AIRSPEED_FAIL)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Air speed is below the threshold");
         } else {
-            if (last_air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL) {
+            if (last_air_data_status & static_cast<uint16_t>(AirDataStatus::AIRSPEED_FAIL)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: Air speed is above the threshold");
             }
         }
@@ -1092,7 +1049,7 @@ void AP_ExternalAHRS_InertialLabs::get_filter_status(nav_filter_status &status) 
     const uint32_t dt_limit = 200;
     const uint32_t dt_limit_gps = 500;
     memset(&status, 0, sizeof(status));
-    const bool init_ok = (state2.unit_status & (ILABS_UNIT_STATUS_ALIGNMENT_FAIL|ILABS_UNIT_STATUS_OPERATION_FAIL))==0;
+    const bool init_ok = (state2.unit_status & (static_cast<uint16_t>(UnitStatus::ALIGNMENT_FAIL)|static_cast<uint16_t>(UnitStatus::OPERATION_FAIL)))==0;
     status.flags.initalized = init_ok;
     status.flags.attitude = init_ok && (now - last_att_ms < dt_limit) && init_ok;
     status.flags.vert_vel = init_ok && (now - last_vel_ms < dt_limit);
@@ -1103,11 +1060,11 @@ void AP_ExternalAHRS_InertialLabs::get_filter_status(nav_filter_status &status) 
     status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_abs;
     status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs;
     status.flags.using_gps = (now - last_gps_ms < dt_limit_gps) &&
-        (state2.unit_status & (ILABS_UNIT_STATUS_GNSS_FAIL|ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
+        (((state2.unit_status & (static_cast<uint16_t>(UnitStatus::GNSS_FAIL))) | (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::GNSS_FUSION_OFF)))) == 0;
     status.flags.gps_quality_good = (now - last_gps_ms < dt_limit_gps) &&
-        (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) != 0 &&
-        (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) == 0;
-    status.flags.rejecting_airspeed = (state2.air_data_status & ILABS_AIRDATA_AIRSPEED_FAIL);
+        (state2.unit_status2 & static_cast<uint16_t>(UnitStatus2::GNSS_POS_VALID)) != 0 &&
+        (state2.unit_status & static_cast<uint16_t>(UnitStatus::GNSS_FAIL)) == 0;
+    status.flags.rejecting_airspeed = (state2.air_data_status & static_cast<uint16_t>(AirDataStatus::AIRSPEED_FAIL));
 }
 
 // send an EKF_STATUS message to GCS

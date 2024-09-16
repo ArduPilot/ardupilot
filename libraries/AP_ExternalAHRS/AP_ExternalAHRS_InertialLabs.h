@@ -84,6 +84,54 @@ public:
         INS_SOLUTION_STATUS = 0x54,
     };
 
+    // unit status bits
+    enum class UnitStatus : uint16_t {
+        ALIGNMENT_FAIL = 0x0001,
+        OPERATION_FAIL = 0x0002,
+        GYRO_FAIL = 0x0004,
+        ACCEL_FAIL = 0x0008,
+        MAG_FAIL = 0x0010,
+        ELECTRONICS_FAIL = 0x0020,
+        GNSS_FAIL = 0x0040,
+        RUNTIME_CAL = 0x0080,
+        VOLTAGE_LOW = 0x0100,
+        VOLTAGE_HIGH = 0x0200,
+        X_RATE_HIGH = 0x0400,
+        Y_RATE_HIGH = 0x0800,
+        Z_RATE_HIGH = 0x1000,
+        MAG_FIELD_HIGH = 0x2000,
+        TEMP_RANGE_ERR = 0x4000,
+        RUNTIME_CAL2 = 0x8000
+    };
+
+    // unit status2 bits
+    enum class UnitStatus2 : uint16_t {
+        ACCEL_X_HIGH = 0x0001,
+        ACCEL_Y_HIGH = 0x0002,
+        ACCEL_Z_HIGH = 0x0004,
+        BARO_FAIL = 0x0008,
+        DIFF_PRESS_FAIL = 0x0010,
+        MAGCAL_2D_ACT = 0x0020,
+        MAGCAL_3D_ACT = 0x0040,
+        GNSS_FUSION_OFF = 0x0080,
+        DIFF_PRESS_FUSION_OFF = 0x0100,
+        MAG_FUSION_OFF = 0x0200,
+        GNSS_POS_VALID = 0x0400
+    };
+
+    // air data status bits
+    enum class AirDataStatus : uint16_t {
+        INIT_FAIL = 0x0001,
+        DIFF_PRESS_INIT_FAIL = 0x0002,
+        STATIC_PRESS_FAIL = 0x0004,
+        DIFF_PRESS_FAIL = 0x0008,
+        STATIC_PRESS_RANGE_ERR = 0x0010,
+        DIFF_PRESS_RANGE_ERR = 0x0020,
+        PRESS_ALT_FAIL = 0x0100,
+        AIRSPEED_FAIL = 0x0200,
+        BELOW_THRESHOLD = 0x0400
+    };
+
     /*
       packets consist of:
          ILabsHeader
