@@ -1116,6 +1116,53 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('FBWA')
         self.wait_servo_channel_value(3, 2000)
 
+        self.start_subtest("Testing automatic restart")
+        # Limit start attempts to 4
+        max_tries = 4
+        self.set_parameter("ICE_STRT_MX_RTRY", max_tries)
+        # Make the engine unable to run (by messing up the RPM sensor)
+        rpm_chan = self.get_parameter("ICE_RPM_CHAN")
+        self.set_parameter("ICE_RPM_CHAN", 120) # Set to a non-existent sensor
+        self.set_rc(rc_engine_start_chan, 2000)
+        self.wait_statustext("Uncommanded engine stop")
+        self.wait_statustext("Starting engine")
+        # Restore the engine
+        self.set_parameter("ICE_RPM_CHAN", rpm_chan)
+        # Make sure the engine continues to run for the next 30 seconds
+        try:
+            self.wait_statustext("Uncommanded engine stop", timeout=30)
+            # The desired result is for the wait_statustext raise AutoTestTimeoutException
+            raise NotAchievedException("Engine stopped unexpectedly")
+        except AutoTestTimeoutException:
+            pass
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.start_subtest("Testing automatic starter attempt limit")
+        # Try this test twice.
+        # For the first run, since the engine has been running successfully in
+        # the previous test for 30 seconds, the limit should reset. For the
+        # second run, after commanding an engine stop, the limit should reset.
+        for i in range(2):
+            self.context_collect("STATUSTEXT")
+            self.set_parameter("ICE_RPM_CHAN", 120) # Set to a non-existent sensor
+            self.set_rc(rc_engine_start_chan, 2000)
+            self.wait_statustext("Engine max crank attempts reached", check_context=True, timeout=30)
+            self.delay_sim_time(30) # wait for another 30 seconds to make sure the engine doesn't restart
+            messages = self.context_get().collections["STATUSTEXT"]
+            self.context_stop_collecting("STATUSTEXT")
+            # check for the exact number of starter attempts
+            attempts = 0
+            for m in messages:
+                if "Starting engine" == m.text:
+                    attempts += 1
+            if attempts != max_tries:
+                raise NotAchievedException(f"Run {i+1}: Expected {max_tries} attempts, got {attempts}")
+            # Command an engine stop
+            self.context_collect("STATUSTEXT")
+            self.set_rc(rc_engine_start_chan, 1000)
+            self.wait_statustext("ignition:0", check_context=True)
+            self.context_stop_collecting("STATUSTEXT")
+
     def ICEngineMission(self):
         '''Test ICE Engine Mission support'''
         rc_engine_start_chan = 11
