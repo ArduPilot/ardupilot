@@ -327,9 +327,9 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ "$t" == "CubeOrange-EKF2" ]; then
-        echo "Building CubeOrange with EKF2 enabled"
-        $waf configure --board CubeOrange --enable-EKF2
+    if [ "$t" == "CubeRed-EKF2" ]; then
+        echo "Building CubeRed with EKF2 enabled"
+        $waf configure --board CubeRedPrimary --enable-EKF2
         $waf clean
         $waf copter
         continue
