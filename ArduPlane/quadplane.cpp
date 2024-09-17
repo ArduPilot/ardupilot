@@ -3609,7 +3609,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
     float des_alt_m = 0.0f;
     int16_t target_climb_rate_cms = 0;
     if (plane.control_mode != &plane.mode_qstabilize) {
-        des_alt_m = pos_control->get_pos_target_z_cm() * 0.01f;
+        des_alt_m = pos_control->get_pos_desired_z_cm() * 0.01f;
         target_climb_rate_cms = pos_control->get_vel_target_z_cms();
     }
 
@@ -3902,7 +3902,7 @@ bool QuadPlane::guided_mode_enabled(void)
  */
 void QuadPlane::set_alt_target_current(void)
 {
-    pos_control->set_pos_target_z_cm(inertial_nav.get_position_z_up_cm());
+    pos_control->set_pos_desired_z_cm(inertial_nav.get_position_z_up_cm());
 }
 
 // user initiated takeoff for guided mode

@@ -48,7 +48,7 @@ void ModeQLoiter::run()
         // we have an active landing target override
         Vector2f rel_origin;
         if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
-            quadplane.pos_control->set_pos_target_xy_cm(rel_origin.x, rel_origin.y);
+            quadplane.pos_control->set_pos_desired_xy_cm(rel_origin);
             last_target_loc_set_ms = 0;
         }
     }
