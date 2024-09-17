@@ -77,6 +77,8 @@ extern const AP_HAL::HAL& hal;
 // velocity offset targets timeout if not updated within 3 seconds
 #define POSCONTROL_POSVELACCEL_OFFSET_TARGET_TIMEOUT_MS 3000
 
+AC_PosControl *AC_PosControl::_singleton;
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -348,6 +350,8 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    _singleton = this;
 }
 
 

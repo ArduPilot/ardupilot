@@ -44,7 +44,8 @@ public:
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-
+    // do not allow copying
+    CLASS_NO_COPY(AC_PosControl);
 
     /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
     ///   _dt should be set based on the time of the last IMU read used by these controllers
@@ -451,6 +452,9 @@ public:
     static void Write_PSOD(float pos_target_offset_cm, float pos_offset_cm, float vel_target_offset_cms, float vel_offset_cms, float accel_target_offset_cmss, float accel_offset_cmss);
     static void Write_PSOT(float pos_target_offset_cm, float pos_offset_cm, float vel_target_offset_cms, float vel_offset_cms, float accel_target_offset_cmss, float accel_offset_cmss);
 
+    // singleton
+    static AC_PosControl *get_singleton(void) { return _singleton; }
+
 protected:
 
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
@@ -587,4 +591,6 @@ private:
                            float vel_target_offset_cms, float vel_offset_cms,
                            float accel_target_offset_cmss, float accel_offset_cmss);
 
+    // singleton
+    static AC_PosControl *_singleton;
 };
