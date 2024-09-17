@@ -2331,7 +2331,7 @@ void GCS_MAVLINK::send_scaled_pressure3()
 }
 
 #if AP_AIRSPEED_ENABLED
-void GCS_MAVLINK::send_airspeed() 
+void GCS_MAVLINK::send_airspeed()
 {
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed == nullptr) {
@@ -2357,11 +2357,13 @@ void GCS_MAVLINK::send_airspeed()
             flags |= 1U << AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
         }
 
+#if AP_AHRS_ENABLED
         // Set using flag if the AHRS is using this sensor
         const AP_AHRS &ahrs = AP::ahrs();
         if (ahrs.using_airspeed_sensor() && (ahrs.get_active_airspeed_index() == index)) {
             flags |= 1U << AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_USING;
         }
+#endif
 
         // Assemble message and send
         const mavlink_airspeed_t msg {
@@ -2380,7 +2382,7 @@ void GCS_MAVLINK::send_airspeed()
     }
 
 }
-#endif
+#endif // AP_AIRSPEED_ENABLED
 
 #if AP_AHRS_ENABLED
 void GCS_MAVLINK::send_ahrs()
