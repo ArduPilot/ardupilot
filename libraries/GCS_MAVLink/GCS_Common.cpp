@@ -3212,13 +3212,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_comman
     }
 
     uint16_t interval_ms = 0;
-    if (!get_ap_message_interval(id, interval_ms)) {
+    if (!get_ap_message_interval(id, interval_ms) || interval_ms == 0) {
         // not streaming this message at the moment...
-        mavlink_msg_message_interval_send(chan, mavlink_id, -1); // disabled
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (interval_ms == 0) {
         mavlink_msg_message_interval_send(chan, mavlink_id, -1); // disabled
         return MAV_RESULT_ACCEPTED;
     }
