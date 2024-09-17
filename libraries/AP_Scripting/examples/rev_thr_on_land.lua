@@ -39,7 +39,7 @@ end
 -- add a parameter and bind it to a variable
 function bind_add_param(name, idx, default_value)
    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-   return bind_param(PARAM_TABLE_PREFIX .. name)
+   return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
 -- *****---PARAMS TO CHANGE---*****
