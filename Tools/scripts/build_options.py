@@ -430,6 +430,13 @@ BUILD_OPTIONS = [
     Feature('Networking', 'CAN MCAST', 'AP_NETWORKING_CAN_MCAST_ENABLED', 'Enable CAN multicast bridge', 0, None),
 
     Feature('DroneCAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
+
+    Feature('DDS', 'DDS', 'AP_DDS_ENABLED', 'Enables the MicroXRCE DDS interface', 0, None),
+    # TODO this needs to depend on networking being enabled.
+    Feature('DDS', 'DDS_UDP', 'AP_DDS_UDP_ENABLED', 'Enables the UDP interface for DDS', 0, 'DDS'),
+    Feature('DDS', 'DDS_VISUALODOM', 'AP_DDS_VISUALODOM_ENABLED', 'Enables the visual odometry interface for DDS', 0, 'DDS,VISUALODOM'),
+    Feature('DDS', 'DDS_EXPERIMENTAL', 'AP_DDS_EXPERIMENTAL_ENABLED', 'Enables the experimental interfaces for DDS', 0, 'DDS'),
+    Feature('DDS', 'DDS_IMU_PUB', 'AP_DDS_IMU_PUB_ENABLED', 'Enables the high rate IMU publisher over DDS', 0, 'DDS,DDS_EXPERIMENTAL'),
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
