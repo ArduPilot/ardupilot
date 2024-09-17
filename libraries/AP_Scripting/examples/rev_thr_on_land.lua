@@ -133,7 +133,7 @@ function ENGAGE_REV_THRUST()
     end
   end
 
-  if ((REV_THRUST_AUX_SW_:get_aux_switch_pos() == 2)
+  if ((rc:get_aux_cached(64) == 2)
     and (IS_THR_SUP_ == false)
     and (REV_THRUST_SW_ == true)) then
     TIME_SEC_ = millis():tofloat()
