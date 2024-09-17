@@ -100,7 +100,7 @@ void SOCKET_CLASS_NAME::make_sockaddr(const char *address, uint16_t port, struct
     sockaddr.sin_addr.s_addr = htonl(inet_str_to_addr(address));
 }
 
-#if !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD) || AP_NETWORKING_CAN_MCAST_ENABLED
 /*
   connect the socket
  */
@@ -187,7 +187,7 @@ fail_multi:
     fd_in = -1;
     return false;
 }
-#endif // HAL_BOOTLOADER_BUILD
+#endif // !defined(HAL_BOOTLOADER_BUILD) || AP_NETWORKING_CAN_MCAST_ENABLED
 
 /*
   connect the socket with a timeout

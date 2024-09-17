@@ -422,6 +422,6 @@ protected:
     void append_to_banner(char banner_msg[], uint8_t banner_msg_len, output_mode out_mode, uint8_t low_ch, uint8_t high_ch) const;
     const char* get_output_mode_string(enum output_mode out_mode) const;
 
-    uint16_t _esc_pwm_min;
-    uint16_t _esc_pwm_max;
+    uint16_t _esc_pwm_min = 1000;
+    uint16_t _esc_pwm_max = 2000;
 };

@@ -5,7 +5,8 @@
 #define LOG_IDS_FROM_AC_ATTITUDECONTROL \
     LOG_PSCN_MSG, \
     LOG_PSCE_MSG, \
-    LOG_PSCD_MSG
+    LOG_PSCD_MSG, \
+    LOG_ANG_MSG
 
 // @LoggerMessage: PSCN
 // @Description: Position Control North
@@ -92,6 +93,28 @@ struct PACKED log_Rate {
     float   throttle_slew;
 };
 
+// @LoggerMessage: ANG
+// @Description: Attitude control attitude
+// @Field: TimeUS: Timestamp of the current Attitude loop
+// @Field: DesRoll: vehicle desired roll
+// @Field: Roll: achieved vehicle roll
+// @Field: DesPitch: vehicle desired pitch
+// @Field: Pitch: achieved vehicle pitch
+// @Field: DesYaw: vehicle desired yaw
+// @Field: Yaw: achieved vehicle yaw
+// @Field: Dt: attitude delta time
+struct PACKED log_ANG {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float control_roll;
+    float roll;
+    float control_pitch;
+    float pitch;
+    float control_yaw;
+    float yaw;
+    float sensor_dt;
+};
+
 #define PSCx_FMT "Qffffffff"
 #define PSCx_UNITS "smmnnnooo"
 #define PSCx_MULTS "F00000000"
@@ -104,4 +127,6 @@ struct PACKED log_Rate {
     { LOG_PSCD_MSG, sizeof(log_PSCx), \
       "PSCD", PSCx_FMT, "TimeUS,TPD,PD,DVD,TVD,VD,DAD,TAD,AD", PSCx_UNITS, PSCx_MULTS }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }
+        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
+    { LOG_ANG_MSG, sizeof(log_ANG),\
+        "ANG", "Qfffffff", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,Dt", "sddddhhs", "F0000000" , true }

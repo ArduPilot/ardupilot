@@ -10225,7 +10225,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10)  # NFI why this is required
 
         self.check_dflog_message_rates(path, {
-            'ATT': 400,
+            'ANG': 400,
         })
 
     def BaseLoggingRates(self):
