@@ -113,7 +113,7 @@ end
 
 function DISENGAGE_REV_THRUST()
   THROT_CHANNEL_:set_override(REV_THRUST_IDLE_PWM_:get())
-  REV_THRUST_AUX_SW_:set_override(REV_THRUST_SW_LOW_PWM_)
+    rc:run_aux_function(64, 0)
   gcs:send_text(4, "Reverse Thrust Disengaged")
   IS_IN_REV_THRUST_ = false
 end
