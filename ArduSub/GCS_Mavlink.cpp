@@ -822,7 +822,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
          */
 
         if (!z_ignore && sub.control_mode == Mode::Number::ALT_HOLD) { // Control only target depth when in ALT_HOLD
-            sub.pos_control.set_pos_target_z_cm(packet.alt*100);
+            sub.pos_control.set_pos_desired_z_cm(packet.alt*100);
             break;
         }
 
