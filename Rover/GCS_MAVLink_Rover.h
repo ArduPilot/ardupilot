@@ -52,6 +52,10 @@ private:
 
     void send_servo_out();
 
+    // if we receive a message where the user has not masked out
+    // acceleration from the input packet we send a curt message
+    // informing them:
+    void send_acc_ignore_must_be_set_message(const char *msgname);
     uint8_t base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
 
