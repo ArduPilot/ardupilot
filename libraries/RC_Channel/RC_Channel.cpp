@@ -192,7 +192,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 87:Crow Select
     // @Values{Plane}: 88:Soaring Enable
     // @Values{Plane}: 89:Landing Flare
-    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF Pos Source
+    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF Source Set
     // @Values{Plane}: 91:Airspeed Ratio Calibration
     // @Values{Plane}: 92:FBWA Mode
     // @Values{Copter, Rover, Plane}: 94:VTX Power
@@ -670,7 +670,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::GENERATOR: // don't turn generator on or off initially
 #endif
 #if AP_AHRS_ENABLED
-    case AUX_FUNC::EKF_POS_SOURCE:
+    case AUX_FUNC::EKF_SOURCE_SET:
 #endif
 #if HAL_TORQEEDO_ENABLED
     case AUX_FUNC::TORQEEDO_CLEAR_ERR:
@@ -1626,7 +1626,7 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
 #endif
 
-    case AUX_FUNC::EKF_POS_SOURCE: {
+    case AUX_FUNC::EKF_SOURCE_SET: {
         AP_NavEKF_Source::SourceSetSelection source_set = AP_NavEKF_Source::SourceSetSelection::PRIMARY;
         switch (ch_flag) {
         case AuxSwitchPos::LOW:
