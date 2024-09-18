@@ -225,6 +225,20 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
+#if AP_SCHEDULER_ENABLED
+// cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
+uint16_t GCS_MAVLINK::cap_message_interval(uint16_t interval_ms) const
+{
+    if (interval_ms == 0) {
+        return 0;
+    }
+    if (interval_ms*800 < AP::scheduler().get_loop_period_us()) {
+        return AP::scheduler().get_loop_period_us()/800.0f;
+    }
+    return interval_ms;
+}
+#endif
+
 #if HAL_WITH_MCU_MONITORING
 // report MCU voltage/temperature status
 void GCS_MAVLINK::send_mcu_status(void)
@@ -1657,11 +1671,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
     }
 
 #if AP_SCHEDULER_ENABLED
-    // send messages out at most 80% of main loop rate
-    if (interval_ms != 0 &&
-        interval_ms*800 < AP::scheduler().get_loop_period_us()) {
-        interval_ms = AP::scheduler().get_loop_period_us()/800.0f;
-    }
+    interval_ms = cap_message_interval(interval_ms);
 #endif
 
     // check if it's a specially-handled message:
@@ -3143,6 +3153,12 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
     } else {
         interval_ms = interval_us / 1000;
     }
+#if AP_SCHEDULER_ENABLED
+    if (interval_ms != 0 && cap_message_interval(interval_ms) > interval_ms) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Requested rate for message ID %u too fast. Increase SCHED_LOOP_RATE", (unsigned int)msg_id);
+        return MAV_RESULT_DENIED;
+    }
+#endif
     if (set_ap_message_interval(id, interval_ms)) {
         return MAV_RESULT_ACCEPTED;
     }
