@@ -1711,6 +1711,26 @@ function gpio:write(pin_number, value) end
 ---@return boolean -- pin state
 function gpio:read(pin_number) end
 
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:set_mode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:get_mode(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:setPinFullMode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:getPinFullMode(pin_number) end
+
 
 -- desc
 Motors_6DoF = {}
