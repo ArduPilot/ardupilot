@@ -7,7 +7,7 @@
 #include "ap_version.h"
 
 
-#define THISFIRMWARE "MA V4.3.0.3"
+#define THISFIRMWARE "MA V4.3.0.5"
 
 
 // the following line is parsed by the autotest scripts
