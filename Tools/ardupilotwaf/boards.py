@@ -439,6 +439,13 @@ class Board:
                 env.CXXFLAGS += [
                     '-Werror=sizeof-pointer-div',
                 ]
+            if self.cc_version_gte(cfg, 13, 2):
+                env.CXXFLAGS += [
+                    '-Werror=use-after-free',
+                ]
+                env.CFLAGS += [
+                    '-Werror=use-after-free',
+                ]
 
         if cfg.options.Werror:
             errors = ['-Werror',
