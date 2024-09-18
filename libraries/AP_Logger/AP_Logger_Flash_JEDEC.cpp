@@ -56,6 +56,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_WINBOND_W25Q256       0xEF4019
 #define JEDEC_ID_WINBOND_W25Q128_2     0xEF7018
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
+#define JEDEC_ID_GIGA_GD25Q16E         0xC84015
 
 void AP_Logger_Flash_JEDEC::Init()
 {
@@ -121,6 +122,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     switch (id) {
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
+    case JEDEC_ID_GIGA_GD25Q16E:
         blocks = 32;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
