@@ -3140,6 +3140,14 @@ function BattMonitorScript_State_ud:voltage(value) end
 ---@param value boolean
 function BattMonitorScript_State_ud:healthy(value) end
 
+-- The temperature library provides access to information about the currently connected temperature sensors on the vehicle.
+temperature_sensor = {}
+
+-- Returns the temperature from this sensor in degrees Celsius
+---@param instance integer -- temperature instance
+---@return number|nil -- temperature if available
+function temperature_sensor:get_temperature(instance) end
+
 -- The battery library provides access to information about the currently connected batteries on the vehicle.
 battery = {}
 
