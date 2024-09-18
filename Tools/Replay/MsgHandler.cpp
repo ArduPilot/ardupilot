@@ -83,7 +83,6 @@ void MsgHandler::parse_format_fields()
 
     while ((next_label = strtok(arg, ",")) != NULL) {
         if (label_offset > strlen(format)) {
-            free(labels);
             printf("too few field times for labels %s (format=%s) (labels=%s)\n",
                    f.name, format, labels);
             exit(1);
