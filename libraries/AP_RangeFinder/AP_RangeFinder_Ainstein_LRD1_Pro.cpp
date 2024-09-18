@@ -45,11 +45,10 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
 {
     if (uart == nullptr)
     {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Serial Connection LRD1 Pro is NULL");
+        return false;
     }
     if (uart->available() == 0)
     {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "No Data from the LRD1Pro Radar (%f)", float(uart->available()));
         return false;
     }
 
