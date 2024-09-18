@@ -48,6 +48,7 @@ void led_off(unsigned led);
 void led_toggle(unsigned led);
 
 void thread_sleep_ms(uint32_t ms);
+void thread_sleep_us(uint32_t us);
 
 void custom_startup(void);
 

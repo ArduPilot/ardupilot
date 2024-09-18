@@ -27,6 +27,7 @@
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Arming/AP_Arming_config.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
 
 #include "ap_message.h"
 
@@ -360,6 +361,12 @@ public:
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
+#if AP_AIRSPEED_ENABLED
+    // Send per instance airspeed message
+    // last index is used to rotate through sensors
+    void send_airspeed();
+    uint8_t last_airspeed_idx;
+#endif
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();

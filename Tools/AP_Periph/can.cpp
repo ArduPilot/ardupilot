@@ -1055,6 +1055,7 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
                                     uint16_t payload_len,
                                     uint8_t iface_mask)
 {
+    WITH_SEMAPHORE(canard_broadcast_semaphore);
     const bool is_dna = data_type_id == UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID;
     if (!is_dna && canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
         return false;
@@ -1939,12 +1940,15 @@ void AP_Periph_FW::can_update()
         // allow for user enabling/disabling CANFD at runtime
         dronecan.canard.tao_disabled = g.can_fdmode == 1;
 #endif
-
-        processTx();
-        processRx();
+        {
+            WITH_SEMAPHORE(canard_broadcast_semaphore);
+            processTx();
+            processRx();
 #if HAL_PERIPH_CAN_MIRROR
-        processMirror();
+            processMirror();
 #endif // HAL_PERIPH_CAN_MIRROR
+
+        }
     }
 }
 

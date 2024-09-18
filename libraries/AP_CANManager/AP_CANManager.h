@@ -185,6 +185,7 @@ private:
         HAL_Semaphore sem;
         uint16_t num_filter_ids;
         uint16_t *filter_ids;
+        uint8_t callback_id;
     } can_forward;
 
     // buffer for MAVCAN frames
