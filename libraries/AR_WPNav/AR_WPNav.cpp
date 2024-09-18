@@ -256,6 +256,12 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
                                          AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
+                                         
+        const auto curr_speed = AP::ahrs().groundspeed_vector().length();
+        if (!is_zero(curr_speed)) {
+            // rebuild start of scurve if we have a non-zero origin speed
+            _scurve_this_leg.set_origin_speed_max(curr_speed);
+        }
     }
 
     // handle next destination
