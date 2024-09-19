@@ -11,7 +11,6 @@
 #if HAL_WITH_IO_MCU
 
 #include "iofirmware/ioprotocol.h"
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_HAL/RCOutput.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
@@ -151,7 +150,7 @@ public:
     void soft_reboot();
 
     // setup for FMU failsafe mixing
-    bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
+    bool setup_mixing(int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
 
     // Check if pin number is valid and configured for GPIO
