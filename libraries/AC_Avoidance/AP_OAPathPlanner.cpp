@@ -296,144 +296,144 @@ void AP_OAPathPlanner::handle_avoidance_requests()
 {
     const uint32_t now = AP_HAL::millis();
 
-        // pass requests to path planners
-        Location origin_new;
-        Location destination_new;
-        Location next_destination_new;
-        bool dest_to_next_dest_clear = false;
-        {
-            WITH_SEMAPHORE(_rsem);
-            if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
-                // this is a very old request, don't process it
-                return;
-            }
-
-            // copy request to avoid conflict with main thread
-            avoidance_request2 = avoidance_request;
-
-            // store passed in origin, destination and next_destination so we can return it if object avoidance is not required
-            origin_new = avoidance_request.origin;
-            destination_new = avoidance_request.destination;
-            next_destination_new = avoidance_request.next_destination;
+    // pass requests to path planners
+    Location origin_new;
+    Location destination_new;
+    Location next_destination_new;
+    bool dest_to_next_dest_clear = false;
+    {
+        WITH_SEMAPHORE(_rsem);
+        if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
+            // this is a very old request, don't process it
+            return;
         }
 
-        // run background task looking for best alternative destination
-        OA_RetState res = OA_NOT_REQUIRED;
-        OAPathPlannerUsed path_planner_used = OAPathPlannerUsed::None;
-        switch (_type) {
-        case OA_PATHPLAN_DISABLED:
-            return;
-        case OA_PATHPLAN_BENDYRULER: {
-            if (_oabendyruler == nullptr) {
-                return;
-            }
-            _oabendyruler->set_config(_margin_max);
+        // copy request to avoid conflict with main thread
+        avoidance_request2 = avoidance_request;
 
-            AP_OABendyRuler::OABendyType bendy_type;
-            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, false)) {
-                res = OA_SUCCESS;
-            }
+        // store passed in origin, destination and next_destination so we can return it if object avoidance is not required
+        origin_new = avoidance_request.origin;
+        destination_new = avoidance_request.destination;
+        next_destination_new = avoidance_request.next_destination;
+    }
+
+    // run background task looking for best alternative destination
+    OA_RetState res = OA_NOT_REQUIRED;
+    OAPathPlannerUsed path_planner_used = OAPathPlannerUsed::None;
+    switch (_type) {
+    case OA_PATHPLAN_DISABLED:
+        return;
+    case OA_PATHPLAN_BENDYRULER: {
+        if (_oabendyruler == nullptr) {
+            return;
+        }
+        _oabendyruler->set_config(_margin_max);
+
+        AP_OABendyRuler::OABendyType bendy_type;
+        if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, false)) {
+            res = OA_SUCCESS;
+        }
+        path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
+        break;
+    }
+
+    case OA_PATHPLAN_DIJKSTRA: {
+#if AP_FENCE_ENABLED
+        if (_oadijkstra == nullptr) {
+            return;
+        }
+        _oadijkstra->set_fence_margin(_margin_max);
+        const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
+                                                                                      avoidance_request2.destination,
+                                                                                      avoidance_request2.next_destination,
+                                                                                      origin_new,
+                                                                                      destination_new,
+                                                                                      next_destination_new,
+                                                                                      dest_to_next_dest_clear);
+        switch (dijkstra_state) {
+        case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
+            res = OA_NOT_REQUIRED;
+            break;
+        case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
+            res = OA_ERROR;
+            break;
+        case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
+            res = OA_SUCCESS;
+            break;
+        }
+        path_planner_used = OAPathPlannerUsed::Dijkstras;
+#endif
+        break;
+    }
+
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER: {
+        if ((_oabendyruler == nullptr) || _oadijkstra == nullptr) {
+            return;
+        } 
+        _oabendyruler->set_config(_margin_max);
+        AP_OABendyRuler::OABendyType bendy_type;
+        if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, proximity_only)) {
+            // detected a obstacle by vehicle's proximity sensor. Switch avoidance to BendyRuler till obstacle is out of the way
+            proximity_only = false;
+            res = OA_SUCCESS;
             path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
             break;
-        }
-
-        case OA_PATHPLAN_DIJKSTRA: {
+        } else {
+            // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  
 #if AP_FENCE_ENABLED
-            if (_oadijkstra == nullptr) {
-                return;
+            if (proximity_only == false) {
+                _oadijkstra->recalculate_path();
             }
-            _oadijkstra->set_fence_margin(_margin_max);
-            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
-                                                                                          avoidance_request2.destination,
-                                                                                          avoidance_request2.next_destination,
-                                                                                          origin_new,
-                                                                                          destination_new,
-                                                                                          next_destination_new,
-                                                                                          dest_to_next_dest_clear);
-            switch (dijkstra_state) {
-            case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
-                res = OA_NOT_REQUIRED;
-                break;
-            case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
-                res = OA_ERROR;
-                break;
-            case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
-                res = OA_SUCCESS;
-                break;
-            }
-            path_planner_used = OAPathPlannerUsed::Dijkstras;
 #endif
+            // only use proximity avoidance now for BendyRuler
+            proximity_only = true;
+        }
+#if AP_FENCE_ENABLED
+        _oadijkstra->set_fence_margin(_margin_max);
+        const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
+                                                                                      avoidance_request2.destination,
+                                                                                      avoidance_request2.next_destination,
+                                                                                      origin_new,
+                                                                                      destination_new,
+                                                                                      next_destination_new,
+                                                                                      dest_to_next_dest_clear);
+        switch (dijkstra_state) {
+        case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
+            res = OA_NOT_REQUIRED;
+            break;
+        case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
+            res = OA_ERROR;
+            break;
+        case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
+            res = OA_SUCCESS;
             break;
         }
-
-        case OA_PATHPLAN_DJIKSTRA_BENDYRULER: {
-            if ((_oabendyruler == nullptr) || _oadijkstra == nullptr) {
-                return;
-            } 
-            _oabendyruler->set_config(_margin_max);
-            AP_OABendyRuler::OABendyType bendy_type;
-            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, proximity_only)) {
-                // detected a obstacle by vehicle's proximity sensor. Switch avoidance to BendyRuler till obstacle is out of the way
-                proximity_only = false;
-                res = OA_SUCCESS;
-                path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
-                break;
-            } else {
-                // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  
-#if AP_FENCE_ENABLED
-                if (proximity_only == false) {
-                    _oadijkstra->recalculate_path();
-                }
+        path_planner_used = OAPathPlannerUsed::Dijkstras;
 #endif
-                // only use proximity avoidance now for BendyRuler
-                proximity_only = true;
-            }
-#if AP_FENCE_ENABLED
-            _oadijkstra->set_fence_margin(_margin_max);
-            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
-                                                                                          avoidance_request2.destination,
-                                                                                          avoidance_request2.next_destination,
-                                                                                          origin_new,
-                                                                                          destination_new,
-                                                                                          next_destination_new,
-                                                                                          dest_to_next_dest_clear);
-            switch (dijkstra_state) {
-            case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
-                res = OA_NOT_REQUIRED;
-                break;
-            case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
-                res = OA_ERROR;
-                break;
-            case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
-                res = OA_SUCCESS;
-                break;
-            }
-            path_planner_used = OAPathPlannerUsed::Dijkstras;
-#endif
-            break;
-        }
+        break;
+    }
 
-        } // switch
+    } // switch
 
-        {
-            // give the main thread the avoidance result
-            WITH_SEMAPHORE(_rsem);
+    {
+        // give the main thread the avoidance result
+        WITH_SEMAPHORE(_rsem);
 
-            // place the destination and next destination used into the result (used by the caller to verify the result matches their request)
-            avoidance_result.destination = avoidance_request2.destination;
-            avoidance_result.next_destination = avoidance_request2.next_destination;
-            avoidance_result.dest_to_next_dest_clear = dest_to_next_dest_clear;
+        // place the destination and next destination used into the result (used by the caller to verify the result matches their request)
+        avoidance_result.destination = avoidance_request2.destination;
+        avoidance_result.next_destination = avoidance_request2.next_destination;
+        avoidance_result.dest_to_next_dest_clear = dest_to_next_dest_clear;
 
-            // fill the result structure with the intermediate path
-            avoidance_result.origin_new = (res == OA_SUCCESS) ? origin_new : avoidance_result.origin_new;
-            avoidance_result.destination_new = (res == OA_SUCCESS) ? destination_new : avoidance_result.destination;
-            avoidance_result.next_destination_new = (res == OA_SUCCESS) ? next_destination_new : avoidance_result.next_destination;
+        // fill the result structure with the intermediate path
+        avoidance_result.origin_new = (res == OA_SUCCESS) ? origin_new : avoidance_result.origin_new;
+        avoidance_result.destination_new = (res == OA_SUCCESS) ? destination_new : avoidance_result.destination;
+        avoidance_result.next_destination_new = (res == OA_SUCCESS) ? next_destination_new : avoidance_result.next_destination;
 
-            // create new avoidance result.dest_to_next_dest_clear field.  fill in with results from dijkstras or leave as unknown
-            avoidance_result.result_time_ms = AP_HAL::millis();
-            avoidance_result.path_planner_used = path_planner_used;
-            avoidance_result.ret_state = res;
-        }
+        // create new avoidance result.dest_to_next_dest_clear field.  fill in with results from dijkstras or leave as unknown
+        avoidance_result.result_time_ms = AP_HAL::millis();
+        avoidance_result.path_planner_used = path_planner_used;
+        avoidance_result.ret_state = res;
+    }
 }
 
 // singleton instance
