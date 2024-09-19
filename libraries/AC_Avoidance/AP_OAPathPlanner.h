@@ -91,6 +91,9 @@ private:
     void avoidance_thread();
     bool start_thread();
 
+    // handle avoidance requests in the avoidance thread
+    void handle_avoidance_requests();
+
     // helper function to map OABendyType to OAPathPlannerUsed
     OAPathPlannerUsed map_bendytype_to_pathplannerused(AP_OABendyRuler::OABendyType bendy_type);
 

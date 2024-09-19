@@ -276,15 +276,27 @@ void AP_OAPathPlanner::avoidance_thread()
             hal.scheduler->delay(20);
         }
 
+        // limit updates to 1hz
         const uint32_t now = AP_HAL::millis();
         if (now - avoidance_latest_ms < OA_UPDATE_MS) {
             continue;
         }
         avoidance_latest_ms = now;
 
+        // update object database
         _oadatabase.update();
 
-        // values returned by path planners
+        // handle avoidance requests
+        handle_avoidance_requests();
+    }
+}
+
+// handle avoidance requests
+void AP_OAPathPlanner::handle_avoidance_requests()
+{
+    const uint32_t now = AP_HAL::millis();
+
+        // pass requests to path planners
         Location origin_new;
         Location destination_new;
         Location next_destination_new;
@@ -293,7 +305,7 @@ void AP_OAPathPlanner::avoidance_thread()
             WITH_SEMAPHORE(_rsem);
             if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
                 // this is a very old request, don't process it
-                continue;
+                return;
             }
 
             // copy request to avoid conflict with main thread
@@ -310,10 +322,10 @@ void AP_OAPathPlanner::avoidance_thread()
         OAPathPlannerUsed path_planner_used = OAPathPlannerUsed::None;
         switch (_type) {
         case OA_PATHPLAN_DISABLED:
-            continue;
+            return;
         case OA_PATHPLAN_BENDYRULER: {
             if (_oabendyruler == nullptr) {
-                continue;
+                return;
             }
             _oabendyruler->set_config(_margin_max);
 
@@ -328,7 +340,7 @@ void AP_OAPathPlanner::avoidance_thread()
         case OA_PATHPLAN_DIJKSTRA: {
 #if AP_FENCE_ENABLED
             if (_oadijkstra == nullptr) {
-                continue;
+                return;
             }
             _oadijkstra->set_fence_margin(_margin_max);
             const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
@@ -356,7 +368,7 @@ void AP_OAPathPlanner::avoidance_thread()
 
         case OA_PATHPLAN_DJIKSTRA_BENDYRULER: {
             if ((_oabendyruler == nullptr) || _oadijkstra == nullptr) {
-                continue;
+                return;
             } 
             _oabendyruler->set_config(_margin_max);
             AP_OABendyRuler::OABendyType bendy_type;
@@ -422,7 +434,6 @@ void AP_OAPathPlanner::avoidance_thread()
             avoidance_result.path_planner_used = path_planner_used;
             avoidance_result.ret_state = res;
         }
-    }
 }
 
 // singleton instance
