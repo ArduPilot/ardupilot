@@ -1049,6 +1049,24 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
+    def CopterTailsitter(self):
+        '''copter tailsitter test'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('quadplane-copter_tailsitter'),
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(60, mode='GUIDED')
+        self.context_collect("STATUSTEXT")
+        self.progress("Starting QLAND")
+        self.change_mode("QLAND")
+        self.wait_statustext("Rangefinder engaged")
+        self.wait_disarmed(timeout=100)
+
     def setup_ICEngine_vehicle(self):
         '''restarts SITL with an IC Engine setup'''
         model = "quadplane-ice"
@@ -1812,6 +1830,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QAssist,
             self.GyroFFT,
             self.Tailsitter,
+            self.CopterTailsitter,
             self.ICEngine,
             self.ICEngineMission,
             self.MAV_CMD_DO_ENGINE_CONTROL,

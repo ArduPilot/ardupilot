@@ -347,7 +347,8 @@ void AP_Scheduler::loop()
     _rsem.take_blocking();
     hal.util->persistent_data.scheduler_task = -1;
 
-    const uint32_t sample_time_us = AP_HAL::micros();
+    _loop_sample_time_us = AP_HAL::micros64();
+    const uint32_t sample_time_us = uint32_t(_loop_sample_time_us);
     
     if (_loop_timer_start_us == 0) {
         _loop_timer_start_us = sample_time_us;
