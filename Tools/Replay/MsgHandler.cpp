@@ -143,7 +143,7 @@ bool MsgHandler::field_value(uint8_t *msg, const char *label, Vector3f &ret)
             }
         }
         if (i == next_field) {
-            return 0; // not found
+            return false; // not found
         }
     }
 
