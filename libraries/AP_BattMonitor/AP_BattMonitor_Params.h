@@ -27,6 +27,7 @@ public:
         GCS_Resting_Voltage                 = (1U<<6),  // send resistance resting voltage to GCS
         AllowSplitAuxInfo                   = (1U<<7),  // allow different node to provide aux info for DroneCAN
         InternalUseOnly                     = (1U<<8),  // for use internally to ArduPilot, not to be (eg.) sent via MAVLink BATTERY_STATUS
+        Minimum_Voltage                     = (1U<<9),  // aggregate monitors report minimum voltage rather than average
     };
 
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }

@@ -57,6 +57,7 @@ void AP_BattMonitor_ESC::read(void)
     uint8_t voltage_escs = 0;     // number of ESCs with valid voltage
     uint8_t temperature_escs = 0; // number of ESCs with valid temperature
     float voltage_sum = 0;
+    float voltage_min = 0;
     float current_sum = 0;
     float temperature_sum = 0;
     float consumed_mah_sum = 0.0;
@@ -82,6 +83,9 @@ void AP_BattMonitor_ESC::read(void)
         }
 
         if (telem.get_voltage(i, voltage)) {
+            if (voltage_escs == 0 || voltage_min > voltage) {
+                voltage_min = voltage;
+            }
             voltage_sum += voltage;
             voltage_escs++;
         }
@@ -132,6 +136,12 @@ void AP_BattMonitor_ESC::read(void)
         // ESCs provide current but not consumed mah, integrate manually
         update_consumed(_state, dt_us);
 
+    }
+
+    // Check if we want to report the minimum voltage instead of the average
+    // (we do this after calculating consumed Wh so this doesn't affect that calculation)
+    if (option_is_set(AP_BattMonitor_Params::Options::Minimum_Voltage)) {
+        _state.voltage = voltage_min;
     }
 }
 

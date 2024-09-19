@@ -50,6 +50,7 @@ void
 AP_BattMonitor_Sum::read()
 {
     float voltage_sum = 0;
+    float voltage_min = 0;
     uint8_t voltage_count = 0;
     float current_sum = 0;
     uint8_t current_count = 0;
@@ -73,7 +74,11 @@ AP_BattMonitor_Sum::read()
         if (!_mon.healthy(i)) {
             continue;
         }
-        voltage_sum += _mon.voltage(i);
+        const float voltage = _mon.voltage(i);
+        if (voltage_count == 0 || voltage < voltage_min) {
+            voltage_min = voltage;
+        }
+        voltage_sum += voltage;
         voltage_count++;
         float current;
         if (_mon.current_amps(current, i)) {
@@ -102,6 +107,12 @@ AP_BattMonitor_Sum::read()
     }
 
     update_consumed(_state, dt_us);
+
+    // Check if we want to report the minimum voltage instead of the average
+    // (we do this after calculating consumed Wh so this doesn't affect that calculation
+    if (option_is_set(AP_BattMonitor_Params::Options::Minimum_Voltage)) {
+        _state.voltage = voltage_min;
+    }
 
     _has_current = (current_count > 0);
     _has_temperature = (temperature_count > 0);
