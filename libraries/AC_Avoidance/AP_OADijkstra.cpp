@@ -167,6 +167,20 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     return DIJKSTRA_STATE_NOT_REQUIRED;
 }
 
+// calculate the length of a path between origin and destination in meters
+// this calculation takes time and should only be run from a background thread
+// returns true on success and fills in path_length argument
+// called by AP_OAPathPlanner::get_path_length()
+bool AP_OADijkstra::get_path_length(const Location &origin, const Location& destination, float& path_length)
+{
+    AP_OADijkstra_Common::ErrorId error_id;
+    if (_calcpath.calc_shortest_path(origin, destination, _secondary_path, error_id)) {
+        path_length = _secondary_path.length_cm * 0.01;
+        return true;
+    }
+    return false;
+}
+
 #endif // AP_FENCE_ENABLED
 
 

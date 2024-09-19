@@ -51,10 +51,17 @@ public:
     // return the path length in meters
     float get_path_length() const { return _shortest_path_ok ? _shortest_path.length_cm * 0.01 : 0; }
 
+    // calculate the length of a path between origin and destination in meters
+    // this calculation takes time and should only be run from a background thread
+    // returns true on success and fills in path_length argument
+    // called by AP_OAPathPlanner::get_path_length()
+    bool get_path_length(const Location &origin, const Location& destination, float& path_length);
+
 private:
 
     bool _shortest_path_ok;                         // shortest path is up-to-date
     AP_OADijkstra_CalcPath::Path _shortest_path;    // shortest path from source to destination
+    AP_OADijkstra_CalcPath::Path _secondary_path;   // secondary path used to reply to get_path_length requests
 
     Location _destination_prev;     // destination of previous iterations (used to determine if path should be re-calculated)
     Location _next_destination_prev;// next_destination of previous iterations (used to determine if path should be re-calculated)
