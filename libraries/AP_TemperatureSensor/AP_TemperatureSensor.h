@@ -58,6 +58,7 @@ public:
     // Update the temperature for all temperature sensors
     void update();
 
+    // return temperature from sensor - in degrees Celsius
     bool get_temperature(float &temp, const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
 
     bool healthy(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
