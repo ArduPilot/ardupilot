@@ -555,9 +555,30 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
-        if (!block_read(reg_data, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
-            goto check_registers;
+
+        if (!dev->set_chip_select(true)) {
+            if (!block_read(reg_data, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
+                goto check_registers;
+            }
+        } else {
+            // we don't use read_registers() here to ensure that the fifo buffer that we have allocated
+            // gets passed all the way down to the SPI DMA handling. This involves one transfer to send 
+            // the register read and then another using the same buffer and length which is handled specially
+            // for the read
+            uint8_t reg = reg_data | BIT_READ_FLAG;
+            if (!dev->transfer(&reg, 1, nullptr, 0)) {
+                dev->set_chip_select(false);
+                goto check_registers;
+            }
+            // transfer will also be sending data, make sure that data is zero
+            memset((uint8_t*)fifo_buffer, 0, n * fifo_sample_size);
+            if (!dev->transfer((uint8_t*)fifo_buffer, n * fifo_sample_size, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
+                dev->set_chip_select(false);
+                goto check_registers;
+            }
+            dev->set_chip_select(false);
         }
+
 #if HAL_INS_HIGHRES_SAMPLE
         if (highres_sampling) {
             if (!accumulate_highres_samples((FIFODataHighRes*)fifo_buffer, n)) {
