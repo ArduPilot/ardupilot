@@ -176,7 +176,7 @@ void ModeSystemId::run()
         get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
 
         if (!motors->armed()) {
             // Motors should be Stopped

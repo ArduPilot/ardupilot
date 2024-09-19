@@ -163,7 +163,7 @@ public:
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
-    float get_pilot_desired_yaw_rate(float yaw_in);
+    float get_pilot_desired_yaw_rate() const;
     float get_pilot_desired_throttle() const;
 
     // returns climb target_rate reduced to avoid obstacles and
