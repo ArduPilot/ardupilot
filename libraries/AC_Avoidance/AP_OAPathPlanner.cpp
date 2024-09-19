@@ -253,6 +253,55 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
     return OA_PROCESSING;
 }
 
+// get path length to arbitrary Location using Dijkstra's algorithm
+// the request is processed in a background thread and returns OA_PROCESSING until the path length is calculated
+// returns OA_SUCCESS once the path length is calculated and fills in the path_length argument
+// only supports a single caller at a time
+AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::get_path_length(const Location &origin, const Location &destination, float &path_length)
+{
+    // access path length request structure
+    {
+        WITH_SEMAPHORE(path_length_request_sem);
+
+        // get system time
+        const uint32_t now_ms = AP_HAL::millis();
+
+        // copy path length request to buffer for background thread
+        path_length_request = {
+            origin : origin,
+            destination : destination,
+            request_time_ms : now_ms
+        };
+
+        // record the first time we made a path length request
+        if (path_length_first_ms == 0) {
+            path_length_first_ms = AP_HAL::millis();
+        }
+    }
+
+    // access path length reply structure
+    {
+        WITH_SEMAPHORE(path_length_reply_sem);
+
+        // get system time
+        const uint32_t now_ms = AP_HAL::millis();
+
+        // check results buffer for replies that match our request and has not timed out
+        const bool destination_matches = destination.same_latlon_as(path_length_reply.destination);
+        const bool timed_out = (now_ms - path_length_reply.result_time_ms > OA_TIMEOUT_MS) &&
+                               (now_ms - path_length_first_ms > OA_TIMEOUT_MS);
+
+        // return results from background thread's latest calculations
+        if (destination_matches && !timed_out) {
+            path_length = path_length_reply.path_length_m;
+            return path_length_reply.ret_state;
+        }
+    }
+
+    // background thread is still calculating the path length
+    return OA_PROCESSING;
+}
+
 // avoidance thread that continually updates the avoidance_result structure based on avoidance_request
 void AP_OAPathPlanner::avoidance_thread()
 {
@@ -288,6 +337,9 @@ void AP_OAPathPlanner::avoidance_thread()
 
         // handle avoidance requests
         handle_avoidance_requests();
+
+        // handle path length requests
+        handle_path_length_requests();
     }
 }
 
@@ -433,6 +485,42 @@ void AP_OAPathPlanner::handle_avoidance_requests()
         avoidance_result.result_time_ms = AP_HAL::millis();
         avoidance_result.path_planner_used = path_planner_used;
         avoidance_result.ret_state = res;
+    }
+}
+
+// handle path length requests in the avoidance thread
+void AP_OAPathPlanner::handle_path_length_requests()
+{
+    // return immediately if dijkstras is not enabled
+    if (_oadijkstra == nullptr) {
+        return;
+    }
+
+    // make a copy of the path_length_request
+    PathLengthRequest path_length_request_local;
+    {
+        WITH_SEMAPHORE(path_length_request_sem);
+        path_length_request_local = path_length_request;
+    }
+
+    // check if request is recent
+    if (AP_HAL::millis() - path_length_request.request_time_ms > OA_TIMEOUT_MS) {
+        return;
+    }
+
+    // ask dijkstras to calculate the path and path length
+    float path_length_m = 0;
+    bool ret = _oadijkstra->get_path_length(path_length_request_local.origin, path_length_request_local.destination, path_length_m);
+
+    // access reply buffer
+    {
+        WITH_SEMAPHORE(path_length_reply_sem);
+        path_length_reply = {
+            destination : path_length_request_local.destination,
+            ret_state : (ret ? OA_SUCCESS : OA_ERROR),
+            path_length_m : path_length_m,
+            result_time_ms : AP_HAL::millis()
+        };
     }
 }
 
