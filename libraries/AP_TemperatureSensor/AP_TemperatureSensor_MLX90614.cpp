@@ -48,7 +48,7 @@ void AP_TemperatureSensor_MLX90614::_timer()
     WITH_SEMAPHORE(_dev->get_semaphore());
         
     // temp * 0.02 - 273.15 = degrees, temp * 0.02 is temperature in kelvin
-    const float tmp = KELVIN_TO_C(_crude_value) * 0.02;
+    const float tmp = KELVIN_TO_C(_crude_value * 0.02);
     set_temperature(tmp);
 }
 
