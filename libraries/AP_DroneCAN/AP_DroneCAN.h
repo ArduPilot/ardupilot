@@ -231,9 +231,11 @@ private:
 
     uint32_t *mem_pool;
 
-    AP_DroneCAN_DNA_Server _dna_server;
-
     uint8_t _driver_index;
+
+    CanardInterface canard_iface;
+
+    AP_DroneCAN_DNA_Server _dna_server;
 
     char _thread_name[13];
     bool _initialized;
@@ -287,8 +289,6 @@ private:
         uint8_t last_index;
     } _relay;
 #endif
-
-    CanardInterface canard_iface;
 
 #if AP_DRONECAN_SERIAL_ENABLED
     AP_DroneCAN_Serial serial;
