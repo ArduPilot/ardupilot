@@ -50,8 +50,8 @@ public:
     }
 
     enum class MessageType : uint8_t {
-        GPS_INS_TIME_MS = 0x01,
-        GPS_WEEK = 0x3C,
+        GNSS_INS_TIME_MS = 0x01,
+        GNSS_WEEK = 0x3C,
         ACCEL_DATA_HR = 0x23,
         GYRO_DATA_HR = 0x21,
         BARO_DATA = 0x25,

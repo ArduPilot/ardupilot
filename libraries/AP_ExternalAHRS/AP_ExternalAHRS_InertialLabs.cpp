@@ -254,13 +254,13 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         msg_types.set(unsigned(mtype));
 
         switch (mtype) {
-        case MessageType::GPS_INS_TIME_MS: {
-            // this is the GPS tow timestamp in ms for when the IMU data was sampled
+        case MessageType::GNSS_INS_TIME_MS: {
+            // this is the GNSS tow timestamp in ms for when the IMU data was sampled
             CHECK_SIZE(u.gnss_time_ms);
             gps_data.ms_tow = u.gnss_time_ms;
             break;
         }
-        case MessageType::GPS_WEEK: {
+        case MessageType::GNSS_WEEK: {
             CHECK_SIZE(u.gnss_week);
             gps_data.gps_week = u.gnss_week;
             break;
@@ -505,7 +505,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 #endif // HAL_LOGGING_ENABLED
     }
 
-    if (GOT_MSG(GPS_INS_TIME_MS) &&
+    if (GOT_MSG(GNSS_INS_TIME_MS) &&
         GOT_MSG(NUM_SATS) &&
         GOT_MSG(GNSS_POSITION) &&
         GOT_MSG(GNSS_NEW_DATA) &&
