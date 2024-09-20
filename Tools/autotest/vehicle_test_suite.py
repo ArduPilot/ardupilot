@@ -10866,6 +10866,14 @@ Also, ignores heartbeats not from our target system'''
         if abs(original_rate*2 - round(self.get_message_rate_hz("VFR_HUD", run_cmd=self.run_cmd_int))) > 1:
             raise NotAchievedException("Did not set rate")
 
+        # Try setting a rate well beyond SCHED_LOOP_RATE
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+            p1=mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD,
+            p2=self.rate_to_interval_us(800),
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
         self.start_subtest("Use REQUEST_MESSAGE via COMMAND_INT")
         # 148 is AUTOPILOT_VERSION:
         self.context_collect('AUTOPILOT_VERSION')
