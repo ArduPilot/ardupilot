@@ -150,8 +150,38 @@ private:
     // parameters
     AP_Int8         _piro_comp_enabled;             // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _hover_roll_trim;               // Angle in centi-degrees used to counter tail rotor thrust in hover
-    AC_HELI_PID     _pid_rate_roll;
-    AC_HELI_PID     _pid_rate_pitch;
-    AC_HELI_PID     _pid_rate_yaw;
+
+    // Roll and Pitch rate PIDs share the same defaults:
+    const AC_PID::Defaults rp_defaults {
+        AC_PID::Defaults{
+            .p         = AC_ATC_HELI_RATE_RP_P,
+            .i         = AC_ATC_HELI_RATE_RP_I,
+            .d         = AC_ATC_HELI_RATE_RP_D,
+            .ff        = AC_ATC_HELI_RATE_RP_FF,
+            .imax      = AC_ATC_HELI_RATE_RP_IMAX,
+            .filt_T_hz = AC_ATTITUDE_HELI_RATE_RP_FF_FILTER,
+            .filt_E_hz = AC_ATC_HELI_RATE_RP_FILT_HZ,
+            .filt_D_hz = 0.0,
+            .srmax     = 0,
+            .srtau     = 1.0
+        }
+    };
+    AC_HELI_PID     _pid_rate_roll { rp_defaults };
+    AC_HELI_PID     _pid_rate_pitch { rp_defaults };
+
+    AC_HELI_PID     _pid_rate_yaw {
+        AC_PID::Defaults{
+            .p         = AC_ATC_HELI_RATE_YAW_P,
+            .i         = AC_ATC_HELI_RATE_YAW_I,
+            .d         = AC_ATC_HELI_RATE_YAW_D,
+            .ff        = AC_ATC_HELI_RATE_YAW_FF,
+            .imax      = AC_ATC_HELI_RATE_YAW_IMAX,
+            .filt_T_hz = AC_ATTITUDE_HELI_RATE_Y_FF_FILTER,
+            .filt_E_hz = AC_ATC_HELI_RATE_YAW_FILT_HZ,
+            .filt_D_hz = 0.0,
+            .srmax     = 0,
+            .srtau     = 1.0
+        }
+    };
     
 };
