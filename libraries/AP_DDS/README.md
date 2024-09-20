@@ -76,6 +76,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 | DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
 | SERIAL1_BAUD | The serial baud rate for DDS | 57 |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
+
 ```console
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
@@ -220,7 +221,7 @@ In order to consume the transforms, it's highly recommended to [create and run a
 
 ## Using ROS 2 services
 
-The `AP_DDS` library exposes services which are automatically mapped to ROS 2 
+The `AP_DDS` library exposes services which are automatically mapped to ROS 2
 services using appropriate naming conventions for topics and message and service
 types. An earlier version of `AP_DDS` required the use of the eProsima
 [Integration Service](https://github.com/eProsima/Integration-Service) to map
@@ -253,7 +254,32 @@ requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
 response:
 ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
 ```
- 
+
+## Commanding using ROS 2 Topics
+
+The following topic can be used to control the vehicle.
+
+- `/ap/joy` (type `sensor_msgs/msg/Joy`): overrides a maximum of 8 RC channels,
+at least 4 axes must be sent. Values are clamped between -1.0 and 1.0.
+Use `NaN` to disable the override of a single channel.
+A channel defaults back to RC after 1 second of not receiving commands.
+
+```bash
+ros2 topic pub /ap/joy sensor_msgs/msg/Joy "{axes: [0.0, 0.0, 0.0, 0.0]}"
+
+publisher: beginning loop
+publishing #1: sensor_msgs.msg.Joy(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), axes=[0.0, 0.0, 0.0, 0.0], buttons=[])
+```
+- `/ap/cmd_gps_pose` (type `ardupilot_msgs/msg/GlobalPosition`): sends
+a waypoint to head to when the selected mode is GUIDED.
+
+```bash
+ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34, longitude: 118, altitude: 1000}"
+
+publisher: beginning loop
+publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
+```
+
 ## Contributing to `AP_DDS` library
 
 ### Adding DDS messages to Ardupilot
@@ -296,7 +322,7 @@ topic and service tables.
 ROS 2 message and interface definitions are mangled by the `rosidl_adapter` when
 mapping from ROS 2 to DDS to avoid naming conflicts in the C/C++ libraries.
 The ROS 2 object `namespace::Struct` is mangled to `namespace::dds_::Struct_`
-for DDS. The table below provides some example mappings: 
+for DDS. The table below provides some example mappings:
 
 | ROS 2 | DDS |
 | --- | --- |
@@ -322,7 +348,7 @@ The request / response pair for services require an additional suffix.
 | parameter | rp/ | |
 | action | ra/ | |
 
-The table below provides example mappings for topics and services 
+The table below provides example mappings for topics and services
 
 | ROS 2 | DDS |
 | --- | --- |
