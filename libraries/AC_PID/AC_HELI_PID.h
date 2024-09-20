@@ -16,10 +16,14 @@ static const float AC_PID_LEAK_MIN = 0.1f;  // Default I-term Leak Minimum
 class AC_HELI_PID : public AC_PID {
 public:
 
-    /// Constructor for PID
-    AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dff_val=0);
-
     CLASS_NO_COPY(AC_HELI_PID);
+
+    /// Constructor for PID
+    AC_HELI_PID(const AC_PID::Defaults &defaults) :
+        AC_PID{defaults}
+    {
+        _last_requested_rate = 0;
+    }
 
     /// update_leaky_i - replacement for get_i but output is leaked at leak_rate
     void       update_leaky_i(float leak_rate);
