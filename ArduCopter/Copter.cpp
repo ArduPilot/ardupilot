@@ -851,16 +851,16 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
 Copter::Copter(void)
     :
     flight_modes(&g.flight_mode1),
+    pos_variance_filt(FS_EKF_FILT_DEFAULT),
+    vel_variance_filt(FS_EKF_FILT_DEFAULT),
+    hgt_variance_filt(FS_EKF_FILT_DEFAULT),
+    flightmode(&mode_stabilize),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     rc_throttle_control_in_filter(1.0f),
     inertial_nav(ahrs),
-    param_loader(var_info),
-    flightmode(&mode_stabilize),
-    pos_variance_filt(FS_EKF_FILT_DEFAULT),
-    vel_variance_filt(FS_EKF_FILT_DEFAULT),
-    hgt_variance_filt(FS_EKF_FILT_DEFAULT)
+    param_loader(var_info)
 {
 }
 
