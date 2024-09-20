@@ -229,7 +229,7 @@ void MsgHandler::field_not_found(uint8_t *msg, const char *label)
 {
     char all_labels[256];
     uint8_t type = msg[2];
-    string_for_labels(all_labels, 256);
+    string_for_labels(all_labels, ARRAY_SIZE(all_labels));
     ::printf("Field (%s) not found for id=%d; options are (%s)\n",
              label, type, all_labels);
     abort();
