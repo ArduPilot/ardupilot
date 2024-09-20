@@ -973,3 +973,15 @@ singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
 singleton AP_VisualOdom rename visual_odom
 singleton AP_VisualOdom method healthy boolean
 singleton AP_VisualOdom method quality int8_t
+
+include APM_Control/AP_PitchController.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton AP_PitchController rename PitchController
+singleton AP_PitchController depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton AP_PitchController method set_rate_sysid void float'skip_check
+singleton AP_PitchController method set_actuator_sysid void float'skip_check
+
+include APM_Control/AP_RollController.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton AP_RollController rename RollController
+singleton AP_RollController depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton AP_RollController method set_rate_sysid void float'skip_check
+singleton AP_RollController method set_actuator_sysid void float'skip_check

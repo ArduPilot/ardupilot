@@ -25,6 +25,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_RollController *AP_RollController::singleton;
+
 const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Param: 2SRV_TCONST
     // @DisplayName: Roll Time Constant
@@ -148,6 +150,10 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 AP_RollController::AP_RollController(const AP_FixedWing &parms)
     : aparm(parms)
 {
+    if (singleton != nullptr) {
+        AP_HAL::panic("AP_RollController must be singleton");
+    }
+    singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
 }
@@ -159,6 +165,9 @@ AP_RollController::AP_RollController(const AP_FixedWing &parms)
 float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
+
+    desired_rate += sysid.rate;
+    sysid.rate = 0;
 
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
@@ -220,6 +229,9 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     }
 
     // remember the last output to trigger the I limit
+    out += sysid.actuator;
+    sysid.actuator = 0;
+    
     _last_out = out;
 
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {

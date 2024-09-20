@@ -6,10 +6,7 @@
 -- Magnitude and duration of the doublet can also be controlled.
 -- It is suggested to allow the aircraft to trim for straight, level, unaccelerated flight (SLUF) in FBWB mode before
 -- starting a doublet
--- Charlie Johnson, Oklahoma State University 2020, modification by Astik Srivastava, Delhi Technological University 2024
-
----@diagnostic disable: param-type-mismatch
----@diagnostic disable: cast-local-type
+-- Charlie Johnson, Oklahoma State University 2020
 
 local DOUBLET_ACTION_CHANNEL = 6 -- RCIN channel to start a doublet when high (>1700)
 local DOUBLET_CHOICE_CHANNEL = 7 -- RCIN channel to choose elevator (low) or rudder (high)
@@ -18,13 +15,23 @@ local DOUBLET_FUCNTION = 1 -- which control surface (SERVOx_FUNCTION) number wil
 local DOUBLET_MAGNITUDE = 6 -- defined out of 45 deg used for set_output_scaled
 local DOUBLET_TIME = 2000 -- period of doublet signal in ms
 local start_time = -1
+local end_time = -1
 -- flight mode numbers for plane https://mavlink.io/en/messages/ardupilotmega.html
 local MODE_MANUAL = 0
+local MODE_STABILIZE = 2
 local MODE_FBWA = 5
 local K_AILERON = 4
 local K_ELEVATOR = 19
 local K_THROTTLE = 70
 local K_RUDDER = 21
+
+-- store timing information during doublet
+local start_time = -1
+local end_time = -1
+local now = -1
+
+-- store information about the doublet channel
+local pre_doublet_mode = vehicle:get_mode()
 
 function retry_set_mode(mode)
     if vehicle:set_mode(mode) then
@@ -40,6 +47,7 @@ end
 
 function doublet()
     local now = millis()
+    local pre_doublet_mode = vehicle:get_mode()
     local pre_doublet_elevator = SRV_Channels:get_output_pwm(K_ELEVATOR)
     local pre_doublet_aileron = SRV_Channels:get_output_pwm(K_AILERON)
     local pre_doublet_rudder = SRV_Channels:get_output_pwm(K_RUDDER)
@@ -48,32 +56,39 @@ function doublet()
     local callback_time = 100
     if arming:is_armed() == true and rc:get_pwm(DOUBLET_ACTION_CHANNEL) > 1700 then
         gcs:send_text(6, "in Doublet function")
+        local trim_funcs
+        local doublet_srv_trim = 1500
         -- choosing control actuator, 900 for elevator, 1100 for aileron, 1300 for rudder, 1500 for throttle 
         if doublet_choice_pwm < 1000 then
             DOUBLET_FUCNTION = K_ELEVATOR
             doublet_srv_trim = pre_doublet_elevator
+            trim_funcs = {K_AILERON, K_RUDDER, K_THROTTLE}
             DOUBLET_MAGNITUDE = 12
         elseif doublet_choice_pwm > 1000 and doublet_choice_pwm < 1200 then
             DOUBLET_FUCNTION = K_AILERON
             doublet_srv_trim = pre_doublet_aileron
+            trim_funcs = {K_ELEVATOR, K_RUDDER, K_THROTTLE}
             DOUBLET_MAGNITUDE = 15
         elseif doublet_choice_pwm > 1200 and doublet_choice_pwm < 1400 then
             DOUBLET_FUCNTION = K_RUDDER
             doublet_srv_trim = pre_doublet_rudder
+            trim_funcs = {K_ELEVATOR, K_AILERON, K_THROTTLE}
             DOUBLET_MAGNITUDE = 15
         elseif doublet_choice_pwm > 1400 and doublet_choice_pwm < 1600 then
             DOUBLET_FUCNTION = K_THROTTLE
             doublet_srv_trim = pre_doublet_throttle
+            trim_funcs = {K_ELEVATOR, K_AILERON, K_RUDDER}
             DOUBLET_MAGNITUDE = 12
         else
             DOUBLET_FUCNTION = K_ELEVATOR
             doublet_srv_trim = pre_doublet_elevator
+            trim_funcs = {K_THROTTLE, K_AILERON, K_RUDDER}
             DOUBLET_MAGNITUDE = 12
         end
         local doublet_srv_chan = SRV_Channels:find_channel(DOUBLET_FUCNTION)
         local doublet_srv_min = param:get("SERVO" .. doublet_srv_chan + 1 .. "_MIN")
         local doublet_srv_max = param:get("SERVO" .. doublet_srv_chan + 1 .. "_MAX")
-        local doublet_srv_trim = param:get("SERVO" .. doublet_srv_chan + 1 .. "_TRIM")
+        doublet_srv_trim = param:get("SERVO" .. doublet_srv_chan + 1 .. "_TRIM")
         if start_time == -1 then
             start_time = now
             gcs:send_text(6, "STARTING DOUBLET " .. doublet_srv_chan)
