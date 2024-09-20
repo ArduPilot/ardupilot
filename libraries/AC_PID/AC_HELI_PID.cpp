@@ -102,13 +102,6 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
     AP_GROUPEND
 };
 
-/// Constructor for PID
-AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dff_val) :
-    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz, dff_val)
-{
-    _last_requested_rate = 0;
-}
-
 // This is an integrator which tends to decay to zero naturally
 // if the error is zero.
 
