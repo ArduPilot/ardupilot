@@ -1024,13 +1024,13 @@ bool AP_RunCam::request_pending(uint32_t now)
 AP_RunCam::Request::Request(AP_RunCam* device, Command commandID, uint8_t param,
     uint32_t timeout, uint16_t maxRetryTimes, parse_func_t parserFunc)
     : _recv_buf(device->_recv_buf),
-    _command(commandID),
-    _max_retry_times(maxRetryTimes),
-    _timeout_ms(timeout),
     _device(device),
+    _command(commandID),
     _param(param),
-    _parser_func(parserFunc),
     _recv_response_length(0),
+    _timeout_ms(timeout),
+    _max_retry_times(maxRetryTimes),
+    _parser_func(parserFunc),
     _result(RequestStatus::PENDING)
 {
     _request_timestamp_ms = AP_HAL::millis();
