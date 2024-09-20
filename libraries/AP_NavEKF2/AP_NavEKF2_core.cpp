@@ -32,8 +32,8 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
-    frontend(_frontend),
-    dal(AP::dal())
+    dal(AP::dal()),
+    frontend(_frontend)
 {
 }
 
