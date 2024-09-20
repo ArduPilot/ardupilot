@@ -499,6 +499,11 @@ public:
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
 
+    // unused_integer simply exists so that the constructor for
+    // ParametersG2 can be created with a relatively easy syntax in
+    // the face of many #ifs:
+    uint8_t unused_integer;
+
     // button checking
 #if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
