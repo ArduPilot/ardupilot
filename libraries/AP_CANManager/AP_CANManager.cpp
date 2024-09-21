@@ -427,9 +427,13 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
     WITH_SEMAPHORE(can_forward.sem);
     const int8_t bus = int8_t(packet.param1)-1;
     if (bus == -1) {
+        /*
+          a request to stop forwarding
+         */
         for (auto can_iface : hal.can) {
             if (can_iface && can_forward.callback_id != 0) {
                 can_iface->unregister_frame_callback(can_forward.callback_id);
+                can_forward.callback_id = 0;
             }
         }
         return true;
@@ -451,6 +455,7 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
         if (i != bus && hal.can[i] != nullptr && can_forward.callback_id != 0) {
             hal.can[i]->unregister_frame_callback(can_forward.callback_id);
+            can_forward.callback_id = 0;
         }
     }
 
@@ -647,6 +652,7 @@ void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
         if (can_forward.callback_id != 0 &&
             AP_HAL::millis() - can_forward.last_callback_enable_ms > 5000) {
             hal.can[bus]->unregister_frame_callback(can_forward.callback_id);
+            can_forward.callback_id = 0;
             return;
         }
         can_forward.frame_counter = 0;
