@@ -9,10 +9,12 @@ extern const AP_HAL::HAL& hal;
  // default gains for Plane
  # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.2f    // Soft
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     5.0     // Min lean angle so that vehicle can maintain limited control
+ #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 0
 #else
  // default gains for Copter and Sub
  # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f   // Medium
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     10.0   // Min lean angle so that vehicle can maintain limited control
+ #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 1
 #endif
 
 AC_AttitudeControl *AC_AttitudeControl::_singleton;
@@ -185,11 +187,37 @@ float AC_AttitudeControl::get_slew_yaw_max_degs() const
     return MIN(_ang_vel_yaw_max, _slew_yaw * 0.01);
 }
 
+// get the latest gyro for the purposes of attitude control
+// Counter-inuitively the lowest latency for rate control is achieved by running rate control
+// *before* attitude control. This is because you want rate control to run as close as possible
+// to the time that a gyro sample was read to minimise jitter and control errors. Running rate
+// control after attitude control might makes sense logically, but the overhead of attitude
+// control calculations (and other updates) compromises the actual rate control.
+//
+// In the case of running rate control in a separate thread, the ordering between rate and attitude
+// updates is less important, except that gyro sample used should be the latest
+//
+// Currently quadplane runs rate control after attitude control, necessitating the following code
+// to minimise latency.
+// However this code can be removed once quadplane updates it's structure to run the rate loops before
+// the Attitude controller.
+const Vector3f AC_AttitudeControl::get_latest_gyro() const
+{
+#if AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL
+    // rate updates happen before attitude updates so the last gyro value is the last rate gyro value
+    // this also allows a separate rate thread to be the source of gyro data
+    return _rate_gyro;
+#else
+    // rate updates happen after attitude updates so the AHRS must be consulted for the last gyro value
+    return _ahrs.get_gyro_latest();
+#endif
+}
+
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
     // take a copy of the last gyro used by the rate controller before using it
-    Vector3f gyro = _rate_gyro;
+    Vector3f gyro = get_latest_gyro();
     // Initialize the attitude variables to the current attitude
     _ahrs.get_quat_body_to_ned(_attitude_target);
     _attitude_target.to_euler(_euler_angle_target);
@@ -562,7 +590,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
         _attitude_ang_error.from_axis_angle(attitude_error);
     }
 
-    Vector3f gyro_latest = _rate_gyro;
+    Vector3f gyro_latest = get_latest_gyro();
     attitude_ang_error_update_quat.from_axis_angle((_ang_vel_target - gyro_latest) * _dt);
     _attitude_ang_error = attitude_ang_error_update_quat * _attitude_ang_error;
     _attitude_ang_error.normalize();
@@ -828,7 +856,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // target angle velocity vector in the body frame
     Vector3f ang_vel_body_feedforward = rotation_target_to_body * _ang_vel_target;
-    Vector3f gyro = _rate_gyro;
+    Vector3f gyro = get_latest_gyro();
     // Correct the thrust vector and smoothly add feedforward and yaw input
     _feedforward_scalar = 1.0f;
     if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE * 2.0f) {
