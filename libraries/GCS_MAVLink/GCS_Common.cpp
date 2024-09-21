@@ -1060,7 +1060,10 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_CAMERA_SETTINGS,       MSG_CAMERA_SETTINGS},
         { MAVLINK_MSG_ID_CAMERA_FOV_STATUS,     MSG_CAMERA_FOV_STATUS},
         { MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, MSG_CAMERA_CAPTURE_STATUS},
-#endif
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+        { MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE,  MSG_CAMERA_THERMAL_RANGE},
+#endif // AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+#endif // AP_CAMERA_ENABLED
 #if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
         { MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE},
@@ -1122,6 +1125,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
         { MAVLINK_MSG_ID_RELAY_STATUS, MSG_RELAY_STATUS},
+#endif
+#if AP_AIRSPEED_ENABLED
+        { MAVLINK_MSG_ID_AIRSPEED, MSG_AIRSPEED},
 #endif
             };
 
@@ -2324,6 +2330,60 @@ void GCS_MAVLINK::send_scaled_pressure3()
     send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
 }
 
+#if AP_AIRSPEED_ENABLED
+void GCS_MAVLINK::send_airspeed()
+{
+    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed == nullptr) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        // Try and send the next sensor
+        const uint8_t index = (last_airspeed_idx + 1 + i) % AIRSPEED_MAX_SENSORS;
+        if (!airspeed->enabled(index)) {
+            continue;
+        }
+
+        float temperature_float;
+        int16_t temperature = INT16_MAX;
+        if (airspeed->get_temperature(index, temperature_float)) {
+            temperature = int16_t(temperature_float * 100);
+        }
+
+        uint8_t flags = 0;
+        // Set unhealthy flag
+        if (!airspeed->healthy(index)) {
+            flags |= 1U << AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
+        }
+
+#if AP_AHRS_ENABLED
+        // Set using flag if the AHRS is using this sensor
+        const AP_AHRS &ahrs = AP::ahrs();
+        if (ahrs.using_airspeed_sensor() && (ahrs.get_active_airspeed_index() == index)) {
+            flags |= 1U << AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_USING;
+        }
+#endif
+
+        // Assemble message and send
+        const mavlink_airspeed_t msg {
+            airspeed    : airspeed->get_airspeed(index),
+            raw_press   : airspeed->get_differential_pressure(index),
+            temperature : temperature,
+            id          : index,
+            flags       : flags
+        };
+
+        mavlink_msg_airspeed_send_struct(chan, &msg);
+
+        // Only send one msg per call
+        last_airspeed_idx = index;
+        return;
+    }
+
+}
+#endif // AP_AIRSPEED_ENABLED
+
 #if AP_AHRS_ENABLED
 void GCS_MAVLINK::send_ahrs()
 {
@@ -3029,6 +3089,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_aux_function(const mavlink_command_int
 
 MAV_RESULT GCS_MAVLINK::handle_command_set_message_interval(const mavlink_command_int_t &packet)
 {
+    if (!is_zero(packet.param3)) {
+        return MAV_RESULT_DENIED;
+    }
     return set_message_interval((uint32_t)packet.param1, (int32_t)packet.param2);
 }
 
@@ -3149,13 +3212,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_comman
     }
 
     uint16_t interval_ms = 0;
-    if (!get_ap_message_interval(id, interval_ms)) {
+    if (!get_ap_message_interval(id, interval_ms) || interval_ms == 0) {
         // not streaming this message at the moment...
-        mavlink_msg_message_interval_send(chan, mavlink_id, -1); // disabled
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    if (interval_ms == 0) {
         mavlink_msg_message_interval_send(chan, mavlink_id, -1); // disabled
         return MAV_RESULT_ACCEPTED;
     }
@@ -6128,6 +6186,9 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_CAMERA_FOV_STATUS:
 #endif
     case MSG_CAMERA_CAPTURE_STATUS:
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    case MSG_CAMERA_THERMAL_RANGE:
+#endif
         {
             AP_Camera *camera = AP::camera();
             if (camera == nullptr) {
@@ -6278,6 +6339,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
         send_scaled_pressure3();
         break;
+
+#if AP_AIRSPEED_ENABLED
+    case MSG_AIRSPEED:
+        CHECK_PAYLOAD_SIZE(AIRSPEED);
+        send_airspeed();
+        break;
+#endif
 
     case MSG_SERVO_OUTPUT_RAW:
         CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);

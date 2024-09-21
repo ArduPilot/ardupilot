@@ -191,7 +191,7 @@ public:
         CROW_SELECT =         87, // select CROW mode for diff spoilers;high disables,mid forces progressive
         SOARING =             88, // three-position switch to set soaring mode
         LANDING_FLARE =       89, // force flare, throttle forced idle, pitch to LAND_PITCH_DEG, tilts up
-        EKF_POS_SOURCE =      90, // change EKF position source between primary, secondary and tertiary sources
+        EKF_SOURCE_SET =      90, // change EKF data source set between primary, secondary and tertiary
         ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
         FBWA =                92, // Fly-By-Wire-A
         RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
@@ -612,6 +612,12 @@ public:
     // get failsafe timeout in milliseconds
     uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
 
+    // methods which return RC input channels used for various axes.
+    RC_Channel &get_roll_channel();
+    RC_Channel &get_pitch_channel();
+    RC_Channel &get_yaw_channel();
+    RC_Channel &get_throttle_channel();
+
 protected:
 
     void new_override_received() {
@@ -653,6 +659,9 @@ private:
 
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
+
+    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
+    RC_Channel dummy_rcchannel;
 };
 
 RC_Channels &rc();

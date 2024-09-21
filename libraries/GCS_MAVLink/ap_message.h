@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "GCS_config.h"
+
 #include <AP_AHRS/AP_AHRS_config.h>
 
 enum ap_message : uint8_t {
@@ -57,6 +59,7 @@ enum ap_message : uint8_t {
     MSG_CAMERA_SETTINGS,
     MSG_CAMERA_FOV_STATUS,
     MSG_CAMERA_CAPTURE_STATUS,
+    MSG_CAMERA_THERMAL_RANGE,
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
     MSG_GIMBAL_MANAGER_INFORMATION,
     MSG_GIMBAL_MANAGER_STATUS,
@@ -97,5 +100,6 @@ enum ap_message : uint8_t {
 #if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
     MSG_HIGHRES_IMU,
 #endif
+    MSG_AIRSPEED,
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };

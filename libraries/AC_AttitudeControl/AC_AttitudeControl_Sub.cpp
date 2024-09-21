@@ -423,10 +423,12 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
-    Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _dt, _motors.limit.roll));
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _dt, _motors.limit.pitch));
-    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _dt, _motors.limit.yaw));
+    _rate_gyro = _ahrs.get_gyro_latest();
+    _rate_gyro_time_us = AP_HAL::micros64();
+
+    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, _rate_gyro.x, _dt, _motors.limit.roll));
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, _rate_gyro.y, _dt, _motors.limit.pitch));
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, _rate_gyro.z, _dt, _motors.limit.yaw));
 
     control_monitor_update();
 }

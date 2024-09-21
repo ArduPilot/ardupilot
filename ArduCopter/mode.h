@@ -15,7 +15,7 @@ class _AutoTakeoff {
 public:
     void run();
     void start(float complete_alt_cm, bool terrain_alt);
-    bool get_position(Vector3p& completion_pos);
+    bool get_completion_pos(Vector3p& pos_neu_cm);
 
     bool complete;          // true when takeoff is complete
 

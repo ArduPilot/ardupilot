@@ -33,7 +33,6 @@
 
 #define ENGINE_RUNNING 4
 #define THROTTLE_POSITION_FACTOR 10
-#define CRANK_SHAFT_SENSOR_OK 0x0F
 #define INJECTION_TIME_RESOLUTION 0.8
 #define THROTTLE_POSITION_RESOLUTION 0.1
 #define VOLTAGE_RESOLUTION 0.0049       /* 5/1024 */
@@ -301,7 +300,6 @@ void AP_EFI_Serial_Hirth::decode_data()
 
         // EFI2 log
         internal_state.engine_state = (Engine_State)record1->engine_status;
-        internal_state.crankshaft_sensor_status = (record1->sensor_ok & CRANK_SHAFT_SENSOR_OK) ? Crankshaft_Sensor_Status::OK : Crankshaft_Sensor_Status::ERROR;
 
         // ECYL log
         internal_state.cylinder_status.injection_time_ms = record1->injection_time * INJECTION_TIME_RESOLUTION;

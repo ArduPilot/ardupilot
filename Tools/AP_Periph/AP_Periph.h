@@ -583,6 +583,8 @@ public:
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
 #endif
+
+    HAL_Semaphore canard_broadcast_semaphore;
 };
 
 #ifndef CAN_APP_NODE_NAME

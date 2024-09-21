@@ -79,6 +79,12 @@ void ModeAuto::update()
     }
 #endif
 
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    if (pullup.in_pullup()) {
+        return;
+    }
+#endif
+
     if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
         plane.takeoff_calc_roll();
@@ -166,6 +172,13 @@ bool ModeAuto::is_landing() const
 
 void ModeAuto::run()
 {
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    if (pullup.in_pullup()) {
+        pullup.stabilize_pullup();
+        return;
+    }
+#endif
+    
     if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_ALTITUDE_WAIT) {
 
         wiggle_servos();

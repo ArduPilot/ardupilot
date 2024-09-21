@@ -7,8 +7,8 @@
 // Write an attitude packet
 void Rover::Log_Write_Attitude()
 {
-    float desired_pitch_cd = degrees(g2.attitude_control.get_desired_pitch()) * 100.0f;
-    const Vector3f targets(0.0f, desired_pitch_cd, 0.0f);
+    float desired_pitch = degrees(g2.attitude_control.get_desired_pitch());
+    const Vector3f targets(0.0f, desired_pitch, 0.0f);
 
     ahrs.Write_Attitude(targets);
 

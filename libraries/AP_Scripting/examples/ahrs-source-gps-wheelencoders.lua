@@ -1,6 +1,6 @@
 -- This script helps vehicles move between GPS and Non-GPS environments using GPS and Wheel Encoders
 --
--- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=primary, middle=secondary, high=tertiary)
+-- setup RCx_OPTION = 90 (EKF Source Set) to select the source (low=primary, middle=secondary, high=tertiary)
 -- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
 -- setup EK3_SRCn_ parameters so that GPS is the primary source, WheelEncoders are the secondary
 --

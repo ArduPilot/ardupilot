@@ -252,16 +252,16 @@ void AP_EFI::log_status(void)
                                 "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,CHT2,EGT2,IDX",
                                 "s#dsOO-OO-",
                                 "F-0C000000",
-                                "QBfffffBff",
+                                "QBffffffff",
                                 AP_HAL::micros64(),
                                 0,
                                 state.cylinder_status.ignition_timing_deg,
                                 state.cylinder_status.injection_time_ms,
-                                state.cylinder_status.cylinder_head_temperature,
-                                state.cylinder_status.exhaust_gas_temperature,
+                                KELVIN_TO_C(state.cylinder_status.cylinder_head_temperature),
+                                KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature),
                                 state.cylinder_status.lambda_coefficient,
-                                state.cylinder_status.cylinder_head_temperature2,
-                                state.cylinder_status.exhaust_gas_temperature2,
+                                KELVIN_TO_C(state.cylinder_status.cylinder_head_temperature2),
+                                KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature2),
                                 state.ecu_index);
 }
 #endif // LOGGING_ENABLED

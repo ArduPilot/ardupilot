@@ -609,6 +609,9 @@ private:
         return (options.get() & int32_t(option)) != 0;
     }
 
+    // minimum distance to be from destination to use approach logic
+    AP_Float approach_distance;
+
     AP_Float takeoff_failure_scalar;
     AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;

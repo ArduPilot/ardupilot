@@ -5,10 +5,11 @@
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
 {
-    Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
-    targets.x = nav_roll_cd;
-    targets.y = nav_pitch_cd;
-    targets.z = 0; //Plane does not have the concept of navyaw. This is a placeholder.
+    Vector3f targets {       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
+        nav_roll_cd * 0.01f,
+        nav_pitch_cd * 0.01f,
+        0 //Plane does not have the concept of navyaw. This is a placeholder.
+    };
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.show_vtol_view()) {
@@ -18,8 +19,7 @@ void Plane::Log_Write_Attitude(void)
         // since Euler angles are not used and it is a waste of cpu to compute them at the loop rate.
         // Get them from the quaternion instead:
         quadplane.attitude_control->get_attitude_target_quat().to_euler(targets.x, targets.y, targets.z);
-        targets *= degrees(100.0f);
-        quadplane.ahrs_view->Write_AttitudeView(targets);
+        quadplane.ahrs_view->Write_AttitudeView(targets * RAD_TO_DEG);
     } else
 #endif
             {

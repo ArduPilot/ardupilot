@@ -1711,6 +1711,26 @@ function gpio:write(pin_number, value) end
 ---@return boolean -- pin state
 function gpio:read(pin_number) end
 
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:set_mode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:get_mode(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:setPinFullMode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:getPinFullMode(pin_number) end
+
 
 -- desc
 Motors_6DoF = {}
@@ -3250,6 +3270,13 @@ function arming:disarm() end
 -- The ahrs library represents the Attitude Heading Reference System computed by the autopilot. 
 -- It provides estimates for the vehicles attitude, and position.
 ahrs = {}
+
+-- supply an external position estimate to the AHRS (supported by EKF3)
+---@param location Location_ud -- estimated location, altitude is ignored
+---@param accuracy number -- 1-sigma accuracy in meters
+---@param timestamp_ms uint32_t_ud|integer|number -- timestamp of reading in ms since boot
+---@return boolean -- true if call was handled successfully
+function ahrs:handle_external_position_estimate(location, accuracy, timestamp_ms) end
 
 -- desc
 ---@return Quaternion_ud|nil

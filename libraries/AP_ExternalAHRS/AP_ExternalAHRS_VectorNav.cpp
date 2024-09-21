@@ -484,7 +484,7 @@ const char* AP_ExternalAHRS_VectorNav::get_name() const
 }
 
 // Input data struct for EAHA logging message, used by both AHRS mode and INS mode
-struct AP_ExternalAHRS_VectorNav::EAHA {
+struct AP_ExternalAHRS_VectorNav::VNAT {
     uint64_t timeUs;
     float quat[4];
     float ypr[3];
@@ -492,11 +492,11 @@ struct AP_ExternalAHRS_VectorNav::EAHA {
 };
 
 
-void AP_ExternalAHRS_VectorNav::write_eaha(const EAHA& data_to_log) const {
+void AP_ExternalAHRS_VectorNav::write_vnat(const VNAT& data_to_log) const {
 
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: EAHA
-    // @Description: External AHRS Attitude data
+    // @LoggerMessage: VNAT
+    // @Description: VectorNav Attitude data
     // @Field: TimeUS: Time since system startup
     // @Field: Q1: Attitude quaternion 1
     // @Field: Q2: Attitude quaternion 2
@@ -509,7 +509,7 @@ void AP_ExternalAHRS_VectorNav::write_eaha(const EAHA& data_to_log) const {
     // @Field: PU: Pitch uncertainty
     // @Field: RU: Roll uncertainty
 
-    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
+    AP::logger().WriteStreaming("VNAT", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
                        "s----dddddd", "F0000000000",
                        "Qffffffffff",
                        data_to_log.timeUs,
@@ -573,8 +573,8 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
     }
 
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: EAHI
-    // @Description: External AHRS IMU data
+    // @LoggerMessage: VNIM
+    // @Description: VectorNav IMU data
     // @Field: TimeUS: Time since system startup
     // @Field: Temp: Temprature
     // @Field: Pres: Pressure
@@ -588,7 +588,7 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
     // @Field: GY: Rotation rate Y-axis
     // @Field: GZ: Rotation rate Z-axis
 
-    AP::logger().WriteStreaming("EAHI", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
+    AP::logger().WriteStreaming("VNIM", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
                        "sdPGGGoooEEE", "F00000000000",
                        "Qfffffffffff",
                        AP_HAL::micros64(),
@@ -610,13 +610,13 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_ekf_packet(const uint8_t *b) {
     state.have_quaternion = true;
 
 #if HAL_LOGGING_ENABLED
-    EAHA data_to_log;
+    VNAT data_to_log;
     data_to_log.timeUs = AP_HAL::micros64();
     memcpy(data_to_log.quat, pkt.quaternion, sizeof(pkt.quaternion));
     memcpy(data_to_log.ypr, pkt.ypr, sizeof(pkt.ypr));
     memcpy(data_to_log.yprU, pkt.yprU, sizeof(pkt.yprU));
 
-    write_eaha(data_to_log);
+    write_vnat(data_to_log);
 #endif  // HAL_LOGGING_ENABLED
 }
 
@@ -638,16 +638,16 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     state.have_location           = true;
 
 #if HAL_LOGGING_ENABLED
-    EAHA data_to_log;
+    VNAT data_to_log;
     auto now =  AP_HAL::micros64();
     data_to_log.timeUs = now;
     memcpy(data_to_log.quat, pkt.quaternion, sizeof(pkt.quaternion));
     memcpy(data_to_log.ypr, pkt.ypr, sizeof(pkt.ypr));
     memcpy(data_to_log.yprU, pkt.yprU, sizeof(pkt.yprU));
-    write_eaha(data_to_log);
+    write_vnat(data_to_log);
 
-    // @LoggerMessage: EAHK
-    // @Description: External AHRS INS Kalman Filter data
+    // @LoggerMessage: VNKF
+    // @Description: VectorNav INS Kalman Filter data
     // @Field: TimeUS: Time since system startup
     // @Field: InsStatus: VectorNav INS health status
     // @Field: Lat: Latitude
@@ -659,7 +659,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     // @Field: PosU: Filter estimated position uncertainty
     // @Field: VelU: Filter estimated Velocity uncertainty
 
-    AP::logger().WriteStreaming("EAHK", "TimeUS,InsStatus,Lat,Lon,Alt,VelN,VelE,VelD,PosU,VelU",
+    AP::logger().WriteStreaming("VNKF", "TimeUS,InsStatus,Lat,Lon,Alt,VelN,VelE,VelD,PosU,VelU",
                        "s-ddmnnndn", "F000000000",
                        "QHdddfffff",
                        now,

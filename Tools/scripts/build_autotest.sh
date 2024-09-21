@@ -71,13 +71,13 @@ pushd MAVProxy
 git fetch origin
 git reset --hard origin/master
 git show
-python setup.py build install --user
+python3 -m pip install --user .
 popd
 
 echo "Updating pymavlink"
 pushd APM/modules/mavlink/pymavlink
 git show
-python setup.py build install --user
+python3 -m pip install --user .
 popd
 
 githash=$(cd APM && git rev-parse HEAD)

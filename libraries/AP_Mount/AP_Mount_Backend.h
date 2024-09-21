@@ -198,6 +198,11 @@ public:
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const {}
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal status message to GCS
+    virtual void send_camera_thermal_range(mavlink_channel_t chan) const {}
+#endif
+
     // change camera settings not normally used by autopilot
     virtual bool change_setting(CameraSetting setting, float value) { return false; }
 

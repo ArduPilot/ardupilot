@@ -14,7 +14,7 @@ This script is intended to help vehicles automatically switch between ExternalNa
 ## How to use
 
 Configure a downward facing lidar with a range of at least 5m
-Set RCx_OPTION = 90 (EKF Pos Source) to select the source (low=ExternalNav, middle=opticalflow, high=Not Used)
+Set RCx_OPTION = 90 (EKF Source Set) to select the source (low=ExternalNav, middle=opticalflow, high=Not Used)
 Set RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
 Set SRC_ENABLE = 1 (enable scripting)
 Set EK3_SRCn_ parameters so that ExternalNav is the primary source, opticalflow is secondary
