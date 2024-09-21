@@ -162,13 +162,13 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect python3-packaging python3-setuptools python3-wheel python3-lxml"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect python3-packaging python3-setuptools python3-wheel python3-lxml python3-pygame"
 PYTHON_PKGS="future pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    PYTHON_PKGS="$PYTHON_PKGS intelhex"
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
