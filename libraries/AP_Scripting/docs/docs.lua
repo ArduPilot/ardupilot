@@ -998,9 +998,9 @@ function Quaternion_ud:q1() end
 ---@param value number
 function Quaternion_ud:q1(value) end
 
--- Applies rotation to vector argument
+-- Convert from body-frame representation to earth-frame representation
 ---@param vec Vector3f_ud
-function Quaternion_ud:earth_to_body(vec) end
+function Quaternion_ud:body_to_earth(vec) end
 
 -- Returns inverse of quaternion
 ---@return Quaternion_ud

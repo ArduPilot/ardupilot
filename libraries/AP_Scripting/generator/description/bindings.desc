@@ -186,7 +186,7 @@ userdata Quaternion method get_euler_pitch float
 userdata Quaternion method get_euler_yaw float
 userdata Quaternion method from_euler void float'skip_check float'skip_check float'skip_check 
 userdata Quaternion method inverse Quaternion
-userdata Quaternion method earth_to_body void Vector3f
+userdata Quaternion method body_to_earth void Vector3f
 userdata Quaternion method to_axis_angle void Vector3f
 userdata Quaternion method from_axis_angle  void Vector3f float'skip_check
 userdata Quaternion method from_angular_velocity void Vector3f float'skip_check
