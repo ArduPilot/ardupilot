@@ -58,6 +58,7 @@ BUILD_OPTIONS = [
     Feature('Battery', 'BATTERY_INA2XX', 'AP_BATTERY_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
     Feature('Battery', 'BATTERY_SYNTHETIC_CURRENT', 'AP_BATTERY_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current Monitor', 0, None), # noqa: E501
     Feature('Battery', 'BATTERY_ESC_TELEM_OUT', 'AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', 'Enable ability to put battery monitor data in ESC telem stream', 0, None), # noqa: E501
+    Feature('Battery', 'BATTERY_SUM', 'AP_BATTERY_SUM_ENABLED', 'Enable synthetic sum-of-other-batteries backend', 0, None), # noqa: E501
     Feature('Battery', 'BATTERY_WATT_MAX', 'AP_BATTERY_WATT_MAX_ENABLED', 'Enable param BATT_WATT_MAX', 0, None), # noqa: E501
 
     Feature('Ident', 'ADSB', 'HAL_ADSB_ENABLED', 'Enable ADSB', 0, None),
