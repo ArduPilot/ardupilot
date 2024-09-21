@@ -30,26 +30,45 @@
 
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
+#if AP_DDS_TIME_PUB_ENABLED
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
+#endif // AP_DDS_TIME_PUB_ENABLED
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
 #endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_CLOCK_PUB_ENABLED
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
+#endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = 1000;
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
 // the AP_DDS_Client::on_topic frame size is exceeded.
+#if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
+#endif // AP_DDS_JOY_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
+#if AP_DDS_VEL_CTRL_ENABLED
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
+#endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
-
+#endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -107,6 +126,7 @@ AP_DDS_Client::~AP_DDS_Client()
     }
 }
 
+#if AP_DDS_TIME_PUB_ENABLED
 void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 {
     uint64_t utc_usec;
@@ -117,7 +137,9 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
     msg.nanosec = (utc_usec % 1000000ULL) * 1000UL;
 
 }
+#endif // AP_DDS_TIME_PUB_ENABLED
 
+#if AP_DDS_NAVSATFIX_PUB_ENABLED
 bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
 {
     // Add a lambda that takes in navsatfix msg and populates the cov
@@ -204,7 +226,9 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     return true;
 }
+#endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED
 void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
 {
     msg.transforms_size = 0;
@@ -246,7 +270,9 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
     }
 
 }
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance)
 {
     if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
@@ -311,7 +337,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
         }
     }
 }
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
 {
     update_topic(msg.header.stamp);
@@ -360,7 +388,9 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
         initialize(msg.pose.orientation);
     }
 }
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
 void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
 {
     update_topic(msg.header.stamp);
@@ -402,7 +432,9 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
     msg.twist.angular.y = -angular_velocity[1];
     msg.twist.angular.z = -angular_velocity[2];
 }
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 
+#if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 {
     update_topic(msg.header.stamp);
@@ -441,6 +473,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         initialize(msg.pose.orientation);
     }
 }
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
@@ -482,11 +515,14 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 }
 #endif // AP_DDS_IMU_PUB_ENABLED
 
+#if AP_DDS_CLOCK_PUB_ENABLED
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
     update_topic(msg.clock);
 }
+#endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
 {
     update_topic(msg.header.stamp);
@@ -504,6 +540,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
         msg.position.altitude = ekf_origin.alt * 0.01;
     }
 }
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
 /*
   start the DDS thread
@@ -546,6 +583,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
     (void) stream_id;
     (void) length;
     switch (object_id.id) {
+#if AP_DDS_JOY_SUB_ENABLED
     case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id: {
         const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, &rx_joy_topic);
 
@@ -562,6 +600,8 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
         break;
     }
+#endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_DYNAMIC_TF_SUB
     case topics[to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB)].dr_id.id: {
         const bool success = tf2_msgs_msg_TFMessage_deserialize_topic(ub, &rx_dynamic_transforms_topic);
         if (success == false) {
@@ -578,12 +618,13 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
         break;
     }
+#endif // AP_DDS_DYNAMIC_TF_SUB
+#if AP_DDS_VEL_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::VELOCITY_CONTROL_SUB)].dr_id.id: {
         const bool success = geometry_msgs_msg_TwistStamped_deserialize_topic(ub, &rx_velocity_control_topic);
         if (success == false) {
             break;
         }
-
 #if AP_EXTERNAL_CONTROL_ENABLED
         if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
             // TODO #23430 handle velocity control failure through rosout, throttled.
@@ -591,6 +632,8 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+#endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::GLOBAL_POSITION_SUB)].dr_id.id: {
         const bool success = ardupilot_msgs_msg_GlobalPosition_deserialize_topic(ub, &rx_global_position_control_topic);
         if (success == false) {
@@ -604,6 +647,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+#endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
     }
 
 }
@@ -714,8 +758,10 @@ void AP_DDS_Client::main_loop(void)
         connected = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED
         populate_static_transforms(tx_static_transforms_topic);
         write_static_transforms();
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
         uint64_t last_ping_ms{0};
         uint8_t num_pings_missed{0};
@@ -968,6 +1014,7 @@ void AP_DDS_Client::write_time_topic()
     }
 }
 
+#if AP_DDS_NAVSATFIX_PUB_ENABLED
 void AP_DDS_Client::write_nav_sat_fix_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -982,7 +1029,9 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
         }
     }
 }
+#endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED
 void AP_DDS_Client::write_static_transforms()
 {
     WITH_SEMAPHORE(csem);
@@ -997,7 +1046,9 @@ void AP_DDS_Client::write_static_transforms()
         }
     }
 }
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
 void AP_DDS_Client::write_battery_state_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1012,7 +1063,9 @@ void AP_DDS_Client::write_battery_state_topic()
         }
     }
 }
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
 void AP_DDS_Client::write_local_pose_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1027,7 +1080,9 @@ void AP_DDS_Client::write_local_pose_topic()
         }
     }
 }
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
 void AP_DDS_Client::write_tx_local_velocity_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1042,6 +1097,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
         }
     }
 }
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
@@ -1060,6 +1116,7 @@ void AP_DDS_Client::write_imu_topic()
 }
 #endif // AP_DDS_IMU_PUB_ENABLED
 
+#if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1074,7 +1131,9 @@ void AP_DDS_Client::write_geo_pose_topic()
         }
     }
 }
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
+#if AP_DDS_CLOCK_PUB_ENABLED
 void AP_DDS_Client::write_clock_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1089,7 +1148,9 @@ void AP_DDS_Client::write_clock_topic()
         }
     }
 }
+#endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 void AP_DDS_Client::write_gps_global_origin_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1103,66 +1164,76 @@ void AP_DDS_Client::write_gps_global_origin_topic()
         }
     }
 }
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
     const auto cur_time_ms = AP_HAL::millis64();
 
+#if AP_DDS_TIME_PUB_ENABLED
     if (cur_time_ms - last_time_time_ms > DELAY_TIME_TOPIC_MS) {
         update_topic(time_topic);
         last_time_time_ms = cur_time_ms;
         write_time_topic();
     }
-
+#endif // AP_DDS_TIME_PUB_ENABLED
+#if AP_DDS_NAVSATFIX_PUB_ENABLED
     constexpr uint8_t gps_instance = 0;
     if (update_topic(nav_sat_fix_topic, gps_instance)) {
         write_nav_sat_fix_topic();
     }
-
+#endif // AP_DDS_NAVSATFIX_PUB_ENABLED
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
     if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
         constexpr uint8_t battery_instance = 0;
         update_topic(battery_state_topic, battery_instance);
         last_battery_state_time_ms = cur_time_ms;
         write_battery_state_topic();
     }
-
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
     if (cur_time_ms - last_local_pose_time_ms > DELAY_LOCAL_POSE_TOPIC_MS) {
         update_topic(local_pose_topic);
         last_local_pose_time_ms = cur_time_ms;
         write_local_pose_topic();
     }
-
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
     if (cur_time_ms - last_local_velocity_time_ms > DELAY_LOCAL_VELOCITY_TOPIC_MS) {
         update_topic(tx_local_velocity_topic);
         last_local_velocity_time_ms = cur_time_ms;
         write_tx_local_velocity_topic();
     }
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
-#endif
-
+#endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_GEOPOSE_PUB_ENABLED
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
         write_geo_pose_topic();
     }
-
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_CLOCK_PUB_ENABLED
     if (cur_time_ms - last_clock_time_ms > DELAY_CLOCK_TOPIC_MS) {
         update_topic(clock_topic);
         last_clock_time_ms = cur_time_ms;
         write_clock_topic();
     }
-
+#endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
     if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
         update_topic(gps_global_origin_topic);
         last_gps_global_origin_time_ms = cur_time_ms;
         write_gps_global_origin_topic();
     }
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
