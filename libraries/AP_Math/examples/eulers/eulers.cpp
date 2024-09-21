@@ -222,19 +222,19 @@ void test_frame_transforms(void)
     m.from_euler(ToRad(45), ToRad(45), ToRad(45));
 
     v2 = v = Vector3f(0.0f, 0.0f, 1.0f);
-    q.earth_to_body(v2);
+    q.body_to_earth(v2);
     hal.console->printf("%f %f %f\n", (double)v2.x, (double)v2.y, (double)v2.z);
     v2 = m * v;
     hal.console->printf("%f %f %f\n\n", (double)v2.x, (double)v2.y, (double)v2.z);
 
     v2 = v = Vector3f(0.0f, 1.0f, 0.0f);
-    q.earth_to_body(v2);
+    q.body_to_earth(v2);
     hal.console->printf("%f %f %f\n", (double)v2.x, (double)v2.y, (double)v2.z);
     v2 = m * v;
     hal.console->printf("%f %f %f\n\n", (double)v2.x, (double)v2.y, (double)v2.z);
 
     v2 = v = Vector3f(1.0f, 0.0f, 0.0f);
-    q.earth_to_body(v2);
+    q.body_to_earth(v2);
     hal.console->printf("%f %f %f\n", (double)v2.x, (double)v2.y, (double)v2.z);
     v2 = m * v;
     hal.console->printf("%f %f %f\n", (double)v2.x, (double)v2.y, (double)v2.z);

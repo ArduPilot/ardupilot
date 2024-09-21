@@ -69,8 +69,8 @@ public:
     // rotate this quaternion by the given rotation
     void        rotate(enum Rotation rotation);
 
-    // convert a vector from earth to body frame
-    void        earth_to_body(Vector3<T> &v) const;
+    // convert a vector from body to earth frame
+    void        body_to_earth(Vector3<T> &v) const;
 
     // create a quaternion from Euler angles using 321 euler ordering
     void        from_euler(T roll, T pitch, T yaw);
@@ -202,6 +202,3 @@ public:
 
 typedef QuaternionT<float> Quaternion;
 typedef QuaternionT<double> QuaternionD;
-
-
-
