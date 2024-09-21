@@ -216,7 +216,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const char *vehicle_str = AP_BUILD_TARGET_NAME;
     _use_fg_view = false;
     char *autotest_dir = nullptr;
-    _fg_address = "127.0.0.1";
+    _fg_address = "172.26.192.1";
     const char* config = "";
 
     const int BASE_PORT = 5760;
