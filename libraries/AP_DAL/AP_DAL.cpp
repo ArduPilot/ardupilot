@@ -577,7 +577,9 @@ void AP_DAL::handle_message(const log_RRLT &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _RRLT = msg;
     Location loc{msg.lat, msg.lng, msg.alt, Location::AltFrame::ABSOLUTE};
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     ekf3.writeRangeToLocation(msg.range, msg.uncertainty, loc, msg.timeStamp_ms, msg.index);
+#endif
 }
 #endif // APM_BUILD_Replay
 
