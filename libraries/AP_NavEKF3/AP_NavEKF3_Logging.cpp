@@ -235,11 +235,6 @@ void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
 // logs beacon information, one beacon per call
 void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
 {
-    // if (core_index != frontend->primary) {
-    //     // log only primary instance for now
-    //     return;
-    // }
-
     if (!statesInitialised || rngBcn.N == 0 || rngBcn.fusionReport == nullptr) {
         return;
     }
