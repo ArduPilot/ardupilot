@@ -44,3 +44,12 @@
 //#define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz
 //#define USERHOOK_AUXSWITCH 1                        // for code to handle user aux switches
 //#define USER_PARAMS_ENABLED 1                       // to enable user parameters
+
+// Custom built modes
+#ifndef FIG_INF
+    # define FIG_INF        1
+#endif
+
+#ifndef MODE_FIGINF_ENABLED
+    # define MODE_FIGINF_ENABLED    1
+#endif
