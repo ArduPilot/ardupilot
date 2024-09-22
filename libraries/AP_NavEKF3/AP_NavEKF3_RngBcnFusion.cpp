@@ -49,8 +49,10 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     }
     posOffsetNED.zero();
     originEstInit = false;
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     verticalOffsetVariance = 0.0f;
     verticalOffset = 0.0f;
+#endif
 }
 
 /********************************************************
@@ -60,6 +62,7 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
 // select fusion of range beacon measurements
 void NavEKF3_core::SelectRngBcnFusion()
 {
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     // range to location data is being pushed externally to the EKF so we need to check the buffer
     if (rngBcn.usingRangeToLoc) {
         uint32_t new_data_mask = 0;
@@ -120,6 +123,7 @@ void NavEKF3_core::SelectRngBcnFusion()
         }
         return;
     }
+#endif  // EK3_FEATURE_WRITE_RANGE_TO_LOCATION
 
     // read range data from the sensor and check for new data in the buffer
     readRngBcnData();
@@ -514,7 +518,9 @@ void NavEKF3_core::PushRngBcn(const rng_bcn_elements &data)
     report.innovVar = rngBcn.varInnov;
     report.rng = data.rng;
     report.testRatio = rngBcn.testRatio;
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     report.vertOffset = rngBcn.verticalOffset;
+#endif
     rngBcn.newDataToLog[data.beacon_ID] = true;
 }
 
@@ -554,11 +560,14 @@ void NavEKF3_core::FuseRngBcn(rng_bcn_elements &data)
 
     const ftype R_BCN = sq(MAX(data.rngErr , 0.1f));
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     if (rngBcn.usingRangeToLoc) {
         data.beacon_posNED = EKF_origin.get_distance_NED_ftype(data.beacon_loc);
         // do not offset the beacon positions because they are absolute
         rngBcn.posOffsetNED.zero();
-    } else if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
+    } else
+#endif  // EK3_FEATURE_WRITE_RANGE_TO_LOCATION
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
         // calculate the vertical offset from EKF datum to beacon datum rngBcn.posOffsetNED.z
         CalcRangeBeaconPosDownOffset(data, R_BCN, stateStruct.position, false);
     } else {
@@ -570,7 +579,9 @@ void NavEKF3_core::FuseRngBcn(rng_bcn_elements &data)
     // predicted range accounting for vehicle and beacon vertical position offset
     Vector3F deltaPosNED = data.beacon_posNED - stateStruct.position;
     deltaPosNED.z += rngBcn.posOffsetNED.z;
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     deltaPosNED.z -= rngBcn.verticalOffset;
+#endif
     const ftype rngPred = deltaPosNED.length();
 
     // calculate measurement innovation
@@ -754,6 +765,7 @@ void NavEKF3_core::FuseRngBcn(rng_bcn_elements &data)
                 statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
             }
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
             // In this mode we are using range to beacons that are located at an absolute position
             // but the vehicle height source will be something else, eg baro, so the height inconsistency
             // needs to be handled. This is achieved by estimating an offset that is added to the vehicle
@@ -774,15 +786,18 @@ void NavEKF3_core::FuseRngBcn(rng_bcn_elements &data)
             } else {
                 rngBcn.verticalOffset = 0.0f;
             }
+#endif  // EK3_FEATURE_WRITE_RANGE_TO_LOCATION
 
             // record healthy fusion
             faultStatus.bad_rngbcn = false;
         }
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
         // Update the fusion report
         if (rngBcn.usingRangeToLoc) {
             PushRngBcn(data);
         }                
+#endif  // EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     }
 }
 

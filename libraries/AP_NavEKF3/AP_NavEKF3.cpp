@@ -2120,6 +2120,7 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
     }
 }
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
 // Write a range measurement and 1-sigma uncertainty in metres to a location.
 void NavEKF3::writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
 {
@@ -2139,6 +2140,7 @@ void NavEKF3::writeRangeToLocation(const float range, const float uncertainty, c
         core[i].writeRangeToLocation(range, uncertainty, loc, timeStamp_ms, index);
     }
 }
+#endif
 
 // returns true when the yaw angle has been aligned
 bool NavEKF3::yawAlignmentComplete(void) const

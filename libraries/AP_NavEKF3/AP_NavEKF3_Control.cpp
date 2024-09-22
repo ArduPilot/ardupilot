@@ -336,9 +336,13 @@ void NavEKF3_core::setAidingMode()
             // It is possible for the attitude and bias states to be degraded by badly conditioned range to location measurements.
             // If we have another observation source making those states observable, do not update the quaternion and bias states
             // using range to location measurements.
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
             const bool usingFlyForwardAirData = assume_zero_sideslip() && airSpdUsed;
             bool nonRngAttAidAvailable = posUsed || gpsVelUsed || optFlowUsed || usingFlyForwardAirData || dragUsed || bodyOdmUsed;
             rngBcn.notUsedForAttitude = rngBcn.usingRangeToLoc && ((frontend->_options & (int32_t)NavEKF3::Options::LimitRngToLocUpdate) || nonRngAttAidAvailable);
+#else
+            rngBcn.notUsedForAttitude = false;
+#endif
             // Check if range beacon data is being used and there are enough beacons to constrain drift
             const bool rngBcnUsed = (rngBcn.N > 1) && (imuSampleTime_ms - rngBcn.lastPassTime_ms <= minTestTime_ms);
             const bool rngBcnUsedForAtt = rngBcnUsed && !rngBcn.notUsedForAttitude;

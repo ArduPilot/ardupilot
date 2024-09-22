@@ -1464,10 +1464,12 @@ private:
         } *fusionReport;
         uint8_t fusionReport_length;
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
         bool usingRangeToLoc; // true when using single range to location measurements
-        bool newDataToLog[AP_BEACON_MAX_BEACONS]; // true when there has been a range measurement and new data to log
         ftype verticalOffset; // offset added to vehicle vertical position wrt origin before calculating range innovation (m)
         ftype verticalOffsetVariance; // variance of verticalOffset state estimate (m^2)
+#endif
+        bool newDataToLog[AP_BEACON_MAX_BEACONS]; // true when there has been a range measurement and new data to log
 
         // Variables requried for the least squares method used to initialise position using
         // 4 or more beacons to iterate across multiple frames. 
