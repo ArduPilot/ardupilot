@@ -421,7 +421,7 @@ bool NavEKF3_core::ResetPosToRngBcn()
         loc.alt = EKF_origin.alt;
         loc.offset(stateStruct.position.x,stateStruct.position.y);
         loc.alt -= (int32_t)(100.0f * stateStruct.position.z);
-        AP::logger().WriteStreaming("DBG2",
+        AP::logger().WriteStreaming("BCRS",  // BeaCon ReSet
                                     "TimeUS,C,Lat,Lng,N",  // labels
                                     "s#DU-",    // units
                                     "F----",    // mults
