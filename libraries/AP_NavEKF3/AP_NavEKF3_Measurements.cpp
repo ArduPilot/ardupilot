@@ -978,7 +978,9 @@ void NavEKF3_core::readRngBcnData()
             // Save data into the buffer to be fused when the fusion time horizon catches up with it
             rngBcn.storedRange[index].push(rngBcnDataNew);
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
             rngBcn.usingRangeToLoc = false;
+#endif
         }
     }
 
@@ -1032,6 +1034,7 @@ void NavEKF3_core::readRngBcnData()
 
 }
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
 void NavEKF3_core::writeRangeToLocation(const float range, const float uncertainty, const Location &loc, const uint32_t timeStamp_ms, const uint8_t index)
 {
     if (index >= ARRAY_SIZE(rngBcn.storedRange)) {
@@ -1059,6 +1062,7 @@ void NavEKF3_core::writeRangeToLocation(const float range, const float uncertain
 
     rngBcn.usingRangeToLoc = true;
 }
+#endif  // EK3_FEATURE_WRITE_RANGE_TO_LOCATION
 
 #endif  // EK3_FEATURE_BEACON_FUSION
 

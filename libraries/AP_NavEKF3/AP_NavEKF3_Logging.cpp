@@ -263,7 +263,11 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
     }
     const auto &report = rngBcn.fusionReport[rngBcn.fuseDataReportIndex];
 
+#if EK3_FEATURE_WRITE_RANGE_TO_LOCATION
     const ftype verticalOffset = rngBcn.usingRangeToLoc ? rngBcn.verticalOffset : rngBcn.receiverPos.z;
+#else
+    const ftype verticalOffset = rngBcn.receiverPos.z;
+#endif
 
     const struct log_XKF0 pkt10{
         LOG_PACKET_HEADER_INIT(LOG_XKF0_MSG),
