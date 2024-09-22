@@ -1,14 +1,15 @@
 #include "Plane.h"
 
 Mode::Mode() :
-    ahrs(plane.ahrs)
+    unused_integer{17},
 #if HAL_QUADPLANE_ENABLED
-    , quadplane(plane.quadplane),
     pos_control(plane.quadplane.pos_control),
     attitude_control(plane.quadplane.attitude_control),
     loiter_nav(plane.quadplane.loiter_nav),
-    poscontrol(plane.quadplane.poscontrol)
+    quadplane(plane.quadplane),
+    poscontrol(plane.quadplane.poscontrol),
 #endif
+    ahrs(plane.ahrs)
 {
 }
 
