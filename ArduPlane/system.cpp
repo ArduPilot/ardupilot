@@ -162,7 +162,9 @@ void Plane::init_ardupilot()
 #endif
 
 #if AC_PRECLAND_ENABLED
-    g2.precland.init(scheduler.get_loop_rate_hz());
+    // scheduler table specifies 400Hz, but we can call it no faster
+    // than the scheduler loop rate:
+    g2.precland.init(MIN(400, scheduler.get_loop_rate_hz()));
 #endif
 
 #if AP_ICENGINE_ENABLED
