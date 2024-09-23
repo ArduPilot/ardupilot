@@ -84,6 +84,25 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @User: Standard
     AP_GROUPINFO("_DOMAIN_ID", 4, AP_DDS_Client, domain_id, 0),
 
+    // @Param: _TIMEOUT_MS
+    // @DisplayName: DDS ping timeout
+    // @Description: The time in milliseconds the DDS client will wait for a response from the XRCE agent before reattempting.
+    // @Units: ms
+    // @Range: 1 10000
+    // @RebootRequired: True
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_TIMEOUT_MS", 5, AP_DDS_Client, ping_timeout_ms, 1000),
+
+    // @Param: _MAX_RETRY
+    // @DisplayName: DDS ping max attempts
+    // @Description: The maximum number of times the DDS client will attempt to ping the XRCE agent before exiting.
+    // @Range: 1 100
+    // @RebootRequired: True
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_MAX_RETRY", 6, AP_DDS_Client, ping_max_retry, 10),
+
     AP_GROUPEND
 };
 
@@ -699,9 +718,7 @@ void AP_DDS_Client::main_loop(void)
         }
 
         // check ping
-        const uint64_t ping_timeout_ms{1000};
-        const uint8_t ping_max_attempts{10};
-        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
+        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
             return;
         }
