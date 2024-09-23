@@ -217,7 +217,6 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
     const uint8_t model_name[32] {};
     const char cam_definition_uri[140] {};
     const uint32_t cap_flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
-    const float NaN = nanf("0x4152");
 
     // send CAMERA_INFORMATION message
     mavlink_msg_camera_information_send(
@@ -226,9 +225,9 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         model_name,             // model_name uint8_t[32]
         0,                      // firmware version uint32_t
-        NaN,                    // focal_length float (mm)
-        NaN,                    // sensor_size_h float (mm)
-        NaN,                    // sensor_size_v float (mm)
+        NaNf,                   // focal_length float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id, uint8_t
@@ -241,15 +240,13 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
 // send camera settings message to GCS
 void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
         CAMERA_MODE_IMAGE,  // camera mode (0:image, 1:video, 2:image survey)
-        NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
@@ -268,7 +265,6 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         return;
     }
     // send camera fov status message only if the last calculated values aren't stale
-    const float NaN = nanf("0x4152");
     const float quat_array[4] = {
         quat.q1,
         quat.q2,
@@ -285,8 +281,8 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         poi_loc.lng,
         poi_loc.alt * 10,
         quat_array,
-        horizontal_fov() > 0 ? horizontal_fov() : NaN,
-        vertical_fov() > 0 ? vertical_fov() : NaN
+        horizontal_fov() > 0 ? horizontal_fov() : NaNf,
+        vertical_fov() > 0 ? vertical_fov() : NaNf
     );
 }
 #endif
@@ -294,8 +290,6 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
 // send camera capture status message to GCS
 void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // Current status of image capturing (0: idle, 1: capture in progress, 2: interval set but idle, 3: interval set and capture in progress)
     const uint8_t image_status = (time_interval_settings.num_remaining > 0) ? 2 : 0;
 
@@ -307,7 +301,7 @@ void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
         0,                // current status of video capturing (0: idle, 1: capture in progress)
         static_cast<float>(time_interval_settings.time_interval_ms) / 1000.0, // image capture interval (s)
         0,                // elapsed time since recording started (ms)
-        NaN,              // available storage capacity (ms)
+        NaNf,             // available storage capacity (ms)
         image_index);     // total number of images captured
 }
 
