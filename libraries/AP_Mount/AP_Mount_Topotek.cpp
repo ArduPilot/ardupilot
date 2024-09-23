@@ -566,15 +566,13 @@ void AP_Mount_Topotek::send_camera_settings(mavlink_channel_t chan) const
         return;
     }
 
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
         _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
-        NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get rangefinder distance.  Returns true on success

@@ -940,8 +940,6 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
         return;
     }
 
-    const float NaN = nanf("0x4152");
-
     // convert zoom times (e.g. 1x ~ 20x) to target zoom level (e.g. 0 to 100)
     const float zoom_level = linear_interpolate(0, 100, _zoom_times, 1, AP_MOUNT_VIEWPRO_ZOOM_MAX);
 
@@ -951,7 +949,7 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         zoom_level,         // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get rangefinder distance.  Returns true on success

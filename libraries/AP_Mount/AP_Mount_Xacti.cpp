@@ -361,7 +361,6 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
     static const uint8_t vendor_name[32] = "Xacti";
     static uint8_t model_name[32] = "CX-GB100";
     const char cam_definition_uri[140] {};
-    const float NaN = nanf("0x4152");
 
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
@@ -375,9 +374,9 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         model_name,             // model_name uint8_t[32]
         _firmware_version.received ? _firmware_version.mav_ver : 0, // firmware version uint32_t
-        NaN,                    // focal_length float (mm)
-        NaN,                    // sensor_size_h float (mm)
-        NaN,                    // sensor_size_v float (mm)
+        NaNf,                   // focal_length float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
@@ -390,15 +389,13 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
 // send camera settings message to GCS
 void AP_Mount_Xacti::send_camera_settings(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
         _recording_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE,   // camera mode (0:image, 1:video, 2:image survey)
         0,                  // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get attitude as a quaternion.  returns true on success
