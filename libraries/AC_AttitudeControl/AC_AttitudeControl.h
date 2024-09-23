@@ -11,6 +11,7 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 #include <AP_Vehicle/AP_MultiCopter.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
@@ -244,7 +245,7 @@ public:
     virtual void rate_controller_target_reset() {}
 
     // optional variant to allow running with different dt
-    virtual void rate_controller_run_dt(float dt, const Vector3f& gyro) {}
+    virtual void rate_controller_run_dt(float dt, const Vector3f& gyro) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
     void euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
