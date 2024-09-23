@@ -124,6 +124,10 @@
 // maximum GPs ground course uncertainty allowed for yaw alignment (deg)
 #define GPS_VEL_YAW_ALIGN_MAX_ANG_ERR 15.0F
 
+#if EK3_FEATURE_POSITION_RESET
+#define WIND_SPD_UNCERTAINTY 0.5F
+#endif
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -237,6 +241,14 @@ public:
 
     // Popoluates the WMM data structure with the field at the given location
     void setEarthFieldFromLocation(const Location &loc);
+
+    // Set the EKF's wind velocity states using the supplied wind speed and direction.
+    // speed is true speed measured in m/s
+    // speed_accuracy is the 1-sigma wind speed uncertainty in m/s. Set to NaN if unknown and a default value wil be used internally.
+    // direction is the azimuth angle in degrees from true north that the wind is coming from
+    // direction_accuracy is the 1-sigma direction uncertainty in deg. Set to NaN if unknown and a default value will be used internally.
+    // Returns true if the set was successful.
+    bool setWind(float speed, float speed_accuracy, float direction, float direction_accuracy);
 
     // return estimated height above ground level
     // return false if ground height is not being estimated.
@@ -1495,6 +1507,10 @@ private:
     uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
 #endif // EK3_FEATURE_EXTERNAL_NAV
     bool useExtNavVel;                  // true if external nav velocity should be used
+
+#if EK3_FEATURE_SETWIND
+    uint32_t lastExtWindVelSet_ms;     // last system time the wind velocity states were set externally
+#endif // EK3_FEATURE_SETWIND
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {

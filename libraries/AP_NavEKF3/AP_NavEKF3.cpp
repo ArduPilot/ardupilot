@@ -1458,6 +1458,23 @@ bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timesta
 #endif // EK3_FEATURE_POSITION_RESET
 }
 
+#if EK3_FEATURE_SETWIND
+bool NavEKF3::setWind(float speed, float speed_accuracy, float direction, float direction_accuracy)
+{
+    if (!core) {
+        return false;
+    }
+
+    AP::dal().log_SetWind(speed, speed_accuracy, direction, direction_accuracy);
+
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setWind(speed, speed_accuracy, direction, direction_accuracy);
+    }
+    // return true if any core accepts the new wind speed
+    return ret;
+}
+#endif // EK3_FEATURE_SETWIND
 
 // return estimated height above ground level
 // return false if ground height is not being estimated.
