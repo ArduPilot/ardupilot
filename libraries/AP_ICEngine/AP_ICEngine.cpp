@@ -444,7 +444,7 @@ void AP_ICEngine::update(void)
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
-        } else if (idle_percent <= 0 && !option_set(Options::THROTTLE_WHILE_DISARMED)) {
+        } else if (idle_percent <= 0 && !allow_throttle_while_disarmed()) {
             // force ignition off when disarmed
             state = ICE_OFF;
         }
@@ -526,7 +526,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         idle_percent > percentage)
     {
         percentage = idle_percent;
-        if (option_set(Options::THROTTLE_WHILE_DISARMED) && !hal.util->get_soft_armed()) {
+        if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed()) {
             percentage = MAX(percentage, base_throttle);
         }
         return true;
@@ -567,7 +567,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
 #endif // AP_RPM_ENABLED
 
     // if THROTTLE_WHILE_DISARMED is set then we use the base_throttle, allowing the pilot to control throttle while disarmed
-    if (option_set(Options::THROTTLE_WHILE_DISARMED) && !hal.util->get_soft_armed() &&
+    if (allow_throttle_while_disarmed() && !hal.util->get_soft_armed() &&
         base_throttle > percentage) {
         percentage = base_throttle;
         return true;
