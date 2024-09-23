@@ -382,6 +382,17 @@ void AP_DAL::log_SetLatLng(const Location &loc, float posAccuracy, uint32_t time
     WRITE_REPLAY_BLOCK_IFCHANGED(RSLL, _RSLL, old);
 }
 
+void AP_DAL::log_SetWind(float speed, float speed_accuracy, float direction, float direction_accuracy)
+{
+    end_frame();
+    const log_RSWS old = _RSWS;
+    _RSWS.speed = speed;
+    _RSWS.speed_accuracy = speed_accuracy;
+    _RSWS.direction = direction;
+    _RSWS.direction_accuracy = direction_accuracy;
+    WRITE_REPLAY_BLOCK_IFCHANGED(RSWS, _RSWS, old);
+}
+
 // log external velocity data
 void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
@@ -527,6 +538,17 @@ void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
     // note that EKF2 does not support body frame odometry
     const Location loc {msg.lat, msg.lng, 0, Location::AltFrame::ABSOLUTE };
     ekf3.setLatLng(loc, msg.posAccSD, msg.timestamp_ms);
+}
+/*
+  handle wind speed and direction set
+ */
+void AP_DAL::handle_message(const log_RSWS &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _RSWS = msg;
+    // note that EKF2 does not support setting wind speed
+#if EK3_FEATURE_SETWIND
+    ekf3.setWind(msg.speed, msg.speed_accuracy, msg.direction, msg.direction_accuracy);
+#endif
 }
 #endif // APM_BUILD_Replay
 

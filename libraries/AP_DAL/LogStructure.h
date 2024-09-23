@@ -38,7 +38,8 @@
     LOG_RSLL_MSG, \
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
-    LOG_RBOH_MSG
+    LOG_RBOH_MSG, \
+    LOG_RSWS_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -350,6 +351,16 @@ struct log_RSLL {
     uint8_t _end;
 };
 
+// @LoggerMessage: RSWS
+// @Description: Replay set wind speed event
+struct log_RSWS {
+    float speed; // wind speed (m/s)
+    float speed_accuracy; // wind speed 1-sigma uncertainty (m/s)
+    float direction; // wind direction (deg)
+    float direction_accuracy; // wind direction 1-signma uncertainty (deg)
+    uint8_t _end;
+};
+
 // @LoggerMessage: REVH
 // @Description: Replay external position data
 struct log_REVH {
@@ -450,4 +461,6 @@ struct log_RBOH {
     { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \
       "RWOH", "ffIffff", "DA,DT,TS,PX,PY,PZ,R", "-------", "-------" }, \
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
-      "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" },
+      "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
+    { LOG_RSWS_MSG, RLOG_SIZE(RSWS),                         \
+      "RSWS", "ffff", "Spd,SpdErr,Dirn,DirnErr", "----", "----" },
