@@ -134,6 +134,7 @@ void ModeQLoiter::run()
     if (plane.control_mode == &plane.mode_qland) {
         if (poscontrol.get_state() < QuadPlane::QPOS_LAND_FINAL && quadplane.check_land_final()) {
             poscontrol.set_state(QuadPlane::QPOS_LAND_FINAL);
+            gcs().send_text(MAV_SEVERITY_INFO,"Land final started");
             quadplane.setup_target_position();
 #if AP_ICENGINE_ENABLED
             // cut IC engine if enabled
