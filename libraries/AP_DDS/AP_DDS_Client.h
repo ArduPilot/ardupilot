@@ -201,6 +201,18 @@ public:
     //! @brief ROS_DOMAIN_ID
     AP_Int32 domain_id;
 
+    //! @brief Timeout in milliseconds when pinging the XRCE agent
+    AP_Int32 ping_timeout_ms;
+
+    //! @brief Maximum number of attempts to ping the XRCE agent before exiting
+    AP_Int8 ping_max_retry;
+
+    //! @brief Enum used to mark a topic as a data reader or writer
+    enum class Topic_rw : uint8_t {
+        DataReader = 0,
+        DataWriter = 1,
+    };
+
     //! @brief Convenience grouping for a single "channel" of data
     struct Topic_table {
         const uint8_t topic_id;
