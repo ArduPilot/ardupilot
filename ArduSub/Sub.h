@@ -263,9 +263,6 @@ private:
     // Stores initial bearing when armed
     int32_t initial_armed_bearing;
 
-    // Throttle variables
-    int16_t desired_climb_rate;          // pilot desired climb rate - for logging purposes only
-
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
     uint32_t loiter_time;                    // How long have we been loitering - The start time in millis

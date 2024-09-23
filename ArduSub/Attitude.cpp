@@ -94,7 +94,6 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
         return 0.0f;
     }
 
-    float desired_rate = 0.0f;
     float mid_stick = channel_throttle->get_control_mid();
     float deadband_top = mid_stick + g.throttle_deadzone * gain;
     float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
@@ -108,19 +107,14 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
+        return get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate = g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        return g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     } else {
         // must be in the deadband
-        desired_rate = 0.0f;
+        return 0.0f;
     }
-
-    // desired climb rate for logging
-    desired_climb_rate = desired_rate;
-
-    return desired_rate;
 }
 
 // rotate vector from vehicle's perspective to North-East frame
