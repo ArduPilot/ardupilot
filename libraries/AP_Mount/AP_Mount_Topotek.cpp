@@ -547,8 +547,8 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
         model_name,             // model_name uint8_t[32]
         _firmware_ver,          // firmware version uint32_t
         0,                      // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
-        0,                      // sensor_size_v float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
