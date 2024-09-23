@@ -9,6 +9,7 @@ from __future__ import print_function
 import os
 import numpy
 import math
+import re
 
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
@@ -1811,6 +1812,60 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def DisarmDelay(self):
+        '''test quadplane disarm delay'''
+
+        self.set_parameters({
+            # enable ship simulator so we can use it to give a platform that will
+            # hold the plane above the ground that we can then lower
+            "SIM_SHIP_ENABLE" : 1,
+            "SIM_SHIP_SPEED" : 0,
+            "SIM_SHIP_DHEIGHT" : 15,
+            "SIM_TERRAIN" : 0,
+            "TERRAIN_ENABLE" : 0,
+            # use a longer disarm delay
+            "Q_LAND_DIS_DELAY" : 10,
+            "Q_LAND_FINAL_ALT" : 20,
+        })
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.takeoff(30, mode='GUIDED')
+        self.progress("Starting landing")
+
+        self.context_collect('STATUSTEXT')
+        # this test is timing sensitive, run more slowly in landing phase
+        self.set_parameter("SIM_SPEEDUP", 10)
+
+        self.change_mode("QLAND")
+        self.wait_statustext('Land final started', timeout=120, check_context=True)
+        self.wait_statustext('Land complete', timeout=60, check_context=True)
+        spin_arm_pwm = 1100
+        self.progress("Waiting for motors at %u" % spin_arm_pwm)
+        self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.le)
+        self.wait_servo_channel_value(6, spin_arm_pwm, comparator=operator.le)
+        self.wait_servo_channel_value(7, spin_arm_pwm, comparator=operator.le)
+        self.wait_servo_channel_value(8, spin_arm_pwm, comparator=operator.le)
+        self.progress("Lowering ship deck")
+        self.set_parameter("SIM_SHIP_DHEIGHT", 0)
+
+        self.wait_statustext("Land false completion, recovering", check_context=True)
+
+        # check motors spin up
+        self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.gt)
+        self.wait_servo_channel_value(6, spin_arm_pwm, comparator=operator.gt)
+        self.wait_servo_channel_value(7, spin_arm_pwm, comparator=operator.gt)
+        self.wait_servo_channel_value(8, spin_arm_pwm, comparator=operator.gt)
+
+        st = self.wait_statustext("SIM Hit ground", check_context=True)
+        m = re.match(r"SIM Hit ground at ([0-9.]+) m/s", st.text)
+        speed = float(m.group(1))
+        if speed > 0.7:
+            raise NotAchievedException("Hit ground too hard speed=%.2f" % speed)
+        self.wait_statustext('Land complete', timeout=60, check_context=True)
+        self.wait_statustext('Throttle disarmed', timeout=60, check_context=True)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1859,5 +1914,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DCMClimbRate,
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
+            self.DisarmDelay,
         ])
         return ret
