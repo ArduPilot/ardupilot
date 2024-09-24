@@ -439,7 +439,7 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
-void AC_AttitudeControl_Multi::rate_controller_run_dt(float dt, const Vector3f& gyro)
+void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, float dt)
 {
     // take a copy of the target so that it can't be changed from under us.
     Vector3f ang_vel_body = _ang_vel_body;
@@ -481,7 +481,7 @@ void AC_AttitudeControl_Multi::rate_controller_target_reset()
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    rate_controller_run_dt(_dt, gyro_latest);
+    rate_controller_run_dt(gyro_latest, _dt);
 }
 
 // sanity check parameters.  should be called once before takeoff
