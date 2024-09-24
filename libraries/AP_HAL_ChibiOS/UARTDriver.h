@@ -196,8 +196,8 @@ private:
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
 #endif
-    volatile bool _in_rx_timer;
-    volatile bool _in_tx_timer;
+    HAL_Semaphore tx_sem;
+    HAL_Semaphore rx_sem;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
