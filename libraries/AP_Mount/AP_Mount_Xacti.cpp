@@ -29,7 +29,12 @@ const char* AP_Mount_Xacti::sensor_mode_str[] = { "RGB", "IR", "PIP", "NDVI" };
 const char* AP_Mount_Xacti::_param_names[] = {"SingleShot", "Recording", "FocusMode",
                                               "SensorMode", "DigitalZoomMagnification",
                                               "FirmwareVersion", "Status", "DateTime",
-                                              "OpticalZoomMagnification"};
+                                              "OpticalZoomMagnification",
+                                              "IRThroughColorPalette", "IRTemperatureRange",
+                                              "IRTemperatureThreshold_S", "IRColorControl_S",
+                                              "IRColorInfo_S"};
+const char* AP_Mount_Xacti::_ir_temp_thresh_config_str = "96009600960096009600";    // IR temperature thresholds (5 thresholds all set to 150C)
+const char* AP_Mount_Xacti::_ir_color_control_config_str = "000100000100";          // IR color control config string
 
 // Constructor
 AP_Mount_Xacti::AP_Mount_Xacti(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
@@ -82,10 +87,17 @@ void AP_Mount_Xacti::update()
         if (set_datetime(now_ms)) {
             return;
         }
-         // request camera capabilities
+        // request camera capabilities
         if (request_capabilities(now_ms)) {
             return;
         }
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+        // configure CX-GB250 to take absolute thermal images
+        if (configure_cxgb250(now_ms)) {
+            return;
+        }
+#endif
     }
 
     // request status
@@ -644,7 +656,20 @@ bool AP_Mount_Xacti::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan,
         }
         return false;
     }
-    
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // IRThroughColorPalette
+    if (strcmp(name, get_param_name_str(Param::IRThroughColorPalette)) == 0) {
+        _thermal.ir_through_color_palette = value;
+        return false;
+    }
+    // IRTemperatureRange
+    if (strcmp(name, get_param_name_str(Param::IRTemperatureRange)) == 0) {
+        _thermal.ir_temperate_range = value;
+        return false;
+    }
+#endif
+
     // unhandled parameter get or set
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s get/set %s res:%ld", send_text_prefix, name, (long int)value);
     return false;
@@ -721,6 +746,14 @@ bool AP_Mount_Xacti::handle_param_get_set_response_string(AP_DroneCAN* ap_dronec
         _motor_error = _status.error_status & ((uint32_t)ErrorStatus::MOTOR_INIT_ERROR | (uint32_t)ErrorStatus::MOTOR_OPERATION_ERROR | (uint32_t)ErrorStatus::GIMBAL_CONTROL_ERROR);
         _camera_error = _status.error_status & ((uint32_t)ErrorStatus::LENS_ERROR | (uint32_t)ErrorStatus::MEDIA_ERROR);
         return false;
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    } else if (strcmp(name, get_param_name_str(Param::IRTemperatureThreshold_S)) == 0) {
+        // IRTemperatureThreshold_S, check for expected config
+        _thermal.got_ir_temp_thresh = true;
+        _thermal.ir_temp_thresh_ok = (strcmp((const char *)value.data, (const char *)_ir_temp_thresh_config_str) == 0);
+        return false;
+#endif
     }
 
     // unhandled parameter get or set
@@ -757,6 +790,22 @@ bool AP_Mount_Xacti::set_param_int32(Param param, int32_t param_value)
 
     // set param request added to queue to be sent.  throttling requests improves reliability
     return _set_param_int32_queue->push(SetParamQueueItem{param, param_value});
+}
+
+// helper function to set integer parameters
+bool AP_Mount_Xacti::get_param_int32(Param param)
+{
+    if (_detected_modules[_instance].ap_dronecan == nullptr) {
+        return false;
+    }
+
+    // convert param enum to param name string
+    const char* param_name_str = get_param_name_str(param);
+    if (_detected_modules[_instance].ap_dronecan->get_parameter_on_node(_detected_modules[_instance].node_id, param_name_str, &param_int_cb)) {
+        last_send_getset_param_ms = AP_HAL::millis();
+        return true;
+    }
+    return false;
 }
 
 // helper function to set string parameters
@@ -1028,6 +1077,106 @@ bool AP_Mount_Xacti::request_status(uint32_t now_ms)
     _status_report.last_request_ms = now_ms;
     return get_param_string(Param::Status);
 }
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+// configure CX-GB250 to take absolute thermal images
+// this is the main function to configure the camera for thermal imaging
+bool AP_Mount_Xacti::configure_cxgb250(uint32_t now_ms)
+{
+    // return immediately if configuration attempted within last 3 seconds
+    if (now_ms - _thermal.last_config_ms < 3000) {
+        return false;
+    }
+    _thermal.last_config_ms = now_ms;
+
+    // check IRThroughColorPalette is 10:Manual Radiometry Colorize
+    if (_thermal.ir_through_color_palette < 0) {
+        return get_param_int32(Param::IRThroughColorPalette);
+    } else if (_thermal.ir_through_color_palette != 10) {
+        // set IRThroughColorPalette to 10:Manual(Radiometry Colorize)
+        return set_param_int32(Param::IRThroughColorPalette, 10);
+    }
+
+    // check IRTemperatureRange is 0:HighGain
+    if (_thermal.ir_temperate_range < 0) {
+        return get_param_int32(Param::IRTemperatureRange);
+    } else if (_thermal.ir_temperate_range != 0) {
+        // set IRTemperatureRange to 0:HighGain
+        return set_param_int32(Param::IRTemperatureRange, 0);
+    }
+
+    // check IRTemperatureThreshold_S is set correctly
+    if (!_thermal.got_ir_temp_thresh) {
+        return get_param_string(Param::IRTemperatureThreshold_S);
+    }
+    if (!_thermal.ir_temp_thresh_ok) {
+        if (set_ir_temp_thesholds()) {
+            // re-fetch temp thresh
+            _thermal.got_ir_temp_thresh = false;
+            return true;
+        }
+        return false;
+    }
+
+    // send IRColorColor
+    if (!_thermal.sent_ir_color_control) {
+        _thermal.sent_ir_color_control = set_ir_color_control();
+        return _thermal.sent_ir_color_control;
+    }
+
+    // if we got this far then configuration is complete
+    if (!_thermal.config_complete_msg) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s CX-GB250 config complete", send_text_prefix);
+        _thermal.config_complete_msg = true;
+    }
+
+    return false;
+}
+
+// set IR temperature thresholds
+bool AP_Mount_Xacti::set_ir_temp_thesholds()
+{
+    // there are 5 temperature thresholds of 4 characters each
+    // these are hex numbers in Little Endian format (e.g. 150C = "9600") with the lowest threshold first
+    // with high gain the range is -50 ~ +150, with low gain the range is -50 ~ +550
+    AP_DroneCAN::string thresh_config_str {};
+    const int num_bytes = snprintf((char *)thresh_config_str.data, sizeof(AP_DroneCAN::string::data), "%s", _ir_temp_thresh_config_str);
+
+    // sanity check bytes to be sent
+    if (num_bytes != 20) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s IR temp thesholds bad len:%d", send_text_prefix, num_bytes);
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return false;
+    }
+    thresh_config_str.len = num_bytes;
+
+    return set_param_string(Param::IRTemperatureThreshold_S, thresh_config_str);
+}
+
+// set IR color control which controls the colours used for an "area" (aka temperature range)
+bool AP_Mount_Xacti::set_ir_color_control()
+{
+    // create IRColorControl_S parameter string using the below format
+    //  area number: '00' to '05'
+    //  color type: '00': color1 only, '01': graadation from color1 to color2
+    //  color1: '0000':White '0100':Black '0200':Dark Red '0300':Red '0400':Orange '0500':Yellow '0600':Light Green
+    //          '0700':Green '0800':Light Blue '0900':Blue '0A00':Dark Blue '0B00':Purple
+    //  color2: same as above
+    AP_DroneCAN::string ir_color_control_str {};
+    const int num_bytes = snprintf((char *)ir_color_control_str.data, sizeof(AP_DroneCAN::string::data), "%s", _ir_color_control_config_str);
+
+    // sanity check lenght of string
+    if (num_bytes != 12) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s color controls bad len:%d", send_text_prefix, num_bytes);
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return false;
+    }
+    ir_color_control_str.len = num_bytes;
+
+    // set IRColorControl_S parameter
+    return set_param_string(Param::IRColorControl_S, ir_color_control_str);
+}
+#endif
 
 // check if safe to send message (if messages sent too often camera will not respond)
 // now_ms should be current system time (reduces calls to AP_HAL::millis)
