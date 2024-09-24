@@ -726,6 +726,51 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
 
+    // @Param: EAGLE_F0
+    // @DisplayName: EAGLE_F0
+    // @Description: EAGLE_F0
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f0,         "EAGLE_F0",    0),
+
+    // @Param: EAGLE_F1
+    // @DisplayName: EAGLE_F1
+    // @Description: EAGLE_F1
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f1,         "EAGLE_F1",    0),
+
+    // @Param: EAGLE_F2
+    // @DisplayName: EAGLE_F2
+    // @Description: EAGLE_F2
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f2,         "EAGLE_F2",    0),
+
+    // @Param: EAGLE_I0
+    // @DisplayName: EAGLE_I0
+    // @Description: EAGLE_I0
+    // @Range: -10000 10000
+    // @User: Standard
+    GSCALAR(eagle_i0,         "EAGLE_I0",    0),
+
+    // @Param: EAGLE_I1
+    // @DisplayName: EAGLE_I1
+    // @Description: EAGLE_I1
+    // @Range: -10000 10000
+    // @User: Standard
+    GSCALAR(eagle_i1,         "EAGLE_I1",    0),
+
+    // @Param: EAGLE_I2
+    // @DisplayName: EAGLE_I2
+    // @Description: EAGLE_I2
+    // @Range: -10000 10000
+    // @User: Standard
+    GSCALAR(eagle_i2,         "EAGLE_I2",    0),
+
     // @Param: CRASH_DETECT
     // @DisplayName: Crash Detection
     // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for safety and to help against burning out ESC and motor. Set to 0 to disable crash detection.
