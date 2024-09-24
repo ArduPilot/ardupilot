@@ -510,16 +510,21 @@ void Plane::update_fly_forward(void)
     // wing aircraft. This helps the EKF produce better state
     // estimates as it can make stronger assumptions
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.available() &&
-        quadplane.tailsitter.is_in_fw_flight()) {
-        ahrs.set_fly_forward(true);
-        return;
-    }
+    if (quadplane.available()) {
+        if (quadplane.tailsitter.is_in_fw_flight()) {
+            ahrs.set_fly_forward(true);
+            return;
+        }
 
-    if (quadplane.in_vtol_mode() ||
-        quadplane.in_assisted_flight()) {
-        ahrs.set_fly_forward(false);
-        return;
+        if (quadplane.in_vtol_mode()) {
+            ahrs.set_fly_forward(false);
+            return;
+        }
+
+        if (quadplane.in_assisted_flight()) {
+            ahrs.set_fly_forward(false);
+            return;
+        }
     }
 #endif
 
