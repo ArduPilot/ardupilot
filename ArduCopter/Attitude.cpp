@@ -16,7 +16,7 @@ void Copter::run_rate_controller()
 
     // run low level rate controllers that only require IMU data
     attitude_control->rate_controller_run();
-     // reset sysid and other temporary inputs
+    // reset sysid and other temporary inputs
     attitude_control->rate_controller_target_reset();
 }
 
