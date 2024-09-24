@@ -1369,6 +1369,10 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
 
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
+    if (params[0].type == GPS_TYPE_NONE) {  // If none, do not send telemetry.
+        return;
+    }
+
     const Location &loc = location(0);
     float hacc = 0.0f;
     float vacc = 0.0f;
