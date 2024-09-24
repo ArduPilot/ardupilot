@@ -44,7 +44,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     }
 
     // always check motors
-    char failure_msg[50] {};
+    char failure_msg[100] {};
     if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
         check_failed(display_failure, "Motors: %s", failure_msg);
         passed = false;
@@ -224,7 +224,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 
         #if FRAME_CONFIG == HELI_FRAME
-        char fail_msg[50];
+        char fail_msg[100]{};
         // check input manager parameters
         if (!copter.input_manager.parameter_check(fail_msg, ARRAY_SIZE(fail_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "%s", fail_msg);
@@ -291,7 +291,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         // ensure controllers are OK with us arming:
-        char failure_msg[50] = {};
+        char failure_msg[100] = {};
         if (!copter.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
             return false;
@@ -308,7 +308,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 bool AP_Arming_Copter::oa_checks(bool display_failure)
 {
 #if AP_OAPATHPLANNER_ENABLED
-    char failure_msg[50] = {};
+    char failure_msg[100] = {};
     if (copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
         return true;
     }
@@ -439,7 +439,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 
     // always check if inertial nav has started and is ready
     const auto &ahrs = AP::ahrs();
-    char failure_msg[50] = {};
+    char failure_msg[100] = {};
     if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
@@ -528,7 +528,7 @@ bool AP_Arming_Copter::winch_checks(bool display_failure) const
     if (winch == nullptr) {
         return true;
     }
-    char failure_msg[50] = {};
+    char failure_msg[100] = {};
     if (!winch->pre_arm_check(failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "%s", failure_msg);
         return false;
