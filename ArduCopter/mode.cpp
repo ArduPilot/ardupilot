@@ -179,9 +179,9 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
-#if MODE_FIGINF_ENABLED
-        case Mode::Number::FIGINF:
-            ret = &mode_figinf;
+#if MODE_TARLAND_ENABLED
+        case Mode::Number::TARLAND:
+            ret = &mode_tarland;
             break;
 #endif
 

@@ -50,6 +50,7 @@
     # define FIG_INF        1
 #endif
 
-#ifndef MODE_FIGINF_ENABLED
-    # define MODE_FIGINF_ENABLED    1
+// TarLand - Land the vehicle in a moving target
+#ifndef MODE_TARLAND_ENABLED
+    # define MODE_TARLAND_ENABLED    1
 #endif

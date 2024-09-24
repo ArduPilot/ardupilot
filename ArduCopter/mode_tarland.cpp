@@ -1,11 +1,13 @@
 #include "Copter.h"
 
-#if MODE_FIGINF_ENABLED
+#if MODE_TARLAND_ENABLED
 
 #define CLIMB_SPEED 100 // cm/s
 
-bool ModeFigInf::init(bool ignore_checks)
+bool ModeTarLand::init(bool ignore_checks)
 {
+    hal.console->printf("TARGET LANDING init update\n");
+
     if(!ignore_checks){
         if(!AP::ahrs().home_is_set()){
             return false;
@@ -20,8 +22,9 @@ bool ModeFigInf::init(bool ignore_checks)
     return true;
 }
 
-void ModeFigInf::run()
+void ModeTarLand::run()
 {
+
     if(!motors->armed()){
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         return;
@@ -37,13 +40,13 @@ void ModeFigInf::run()
 
 }
 
-void ModeFigInf::climb_to_alt()
+void ModeTarLand::climb_to_alt()
 {
     float current_alt = pos_control->get_pos_target_z_cm();
 
     float alt_change = _target_alt_cm - current_alt;
     float slew_rate;
-    if(alt_change){
+    if(alt_change > 0){
         slew_rate = CLIMB_SPEED;
     }else {
         slew_rate = -get_pilot_speed_dn();
@@ -54,7 +57,7 @@ void ModeFigInf::climb_to_alt()
      float clamped_change = (alt_change > 0) ? MIN(alt_change, max_change) : MAX(alt_change, -max_change);
     float slew_alt = current_alt + clamped_change;
     
-    pos_control->set_alt_target_with_slew(_target_alt_cm);
+    pos_control->set_alt_target_with_slew(slew_alt);
 
     pos_control->set_vel_desired_z_cms(slew_rate);
 }

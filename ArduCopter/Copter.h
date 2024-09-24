@@ -1072,8 +1072,8 @@ private:
 #if MODE_TURTLE_ENABLED
     ModeTurtle mode_turtle;
 #endif
-#if MODE_FIGINF_ENABLED
-    ModeFigInf mode_figinf;
+#if MODE_TARLAND_ENABLED
+    ModeTarLand mode_tarland;
 #endif
 
     // mode.cpp

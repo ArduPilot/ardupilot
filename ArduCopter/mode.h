@@ -96,7 +96,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
-        FIGINF   =     29,  // Loiters in a figure 8 pattern
+        TARLAND   =     29,  // Lands on a moving target
 
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
@@ -1944,32 +1944,31 @@ private:
     bool is_suspended;              // true if zigzag auto is suspended
 };
 
-class ModeFigInf: public Mode {
+class ModeTarLand: public Mode {
     
 public:
     // inherit constructor
     using Mode::Mode;
-    Number mode_number() const override {return Number::FIGINF;};
+    Number mode_number() const override {return Number::TARLAND;};
 
     bool init(bool ignore_checks) override;
-    void exit() override;
     void run() override;
 
-    bool requires_GPS() const override;
+    bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(AP_Arming::Method method) const override;
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
     
     bool requires_terrain_failsafe() const override { return true; }
 
     // for reporting to GCS
-    bool get_wp(Location &loc) const override;
+    bool get_wp(Location &loc) const override {return false;};
 
-    bool use_pilot_yaw() const override;
+    bool use_pilot_yaw() const override {return true;};
 
-    bool set_speed_xy(float speed_xy_cms) override;
-    bool set_speed_up(float speed_up_cms) override;
-    bool set_speed_down(float speed_down_cms) override;
+    bool set_speed_xy(float speed_xy_cms) override {return true;};
+    bool set_speed_up(float speed_up_cms) override {return true;};
+    bool set_speed_down(float speed_down_cms) override {return true;};
 
     void climb_to_alt();
 
@@ -1984,8 +1983,8 @@ public:
     
 protected:
 
-    const char *name() const override { return "FIGURE 8"; }
-    const char *name4() const override { return "FIG8"; }
+    const char *name() const override { return "TARLAND"; }
+    const char *name4() const override { return "TLAN"; }
 
 private:
     
