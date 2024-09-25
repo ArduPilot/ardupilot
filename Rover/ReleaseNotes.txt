@@ -1,5 +1,28 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Release 4.5.7-beta1 26 Sep 2024
+
+Changes from 4.5.6
+
+1) Bug fixes and minor enhancements
+
+- VUAV-V7pro support
+- CUAV-7-Nano correction for LEDs and battery volt and current scaling
+- DroneCAN deadlock and saturation of CAN bus fixed
+- DroneCAN DNA server init fix (caused logging issues and spam on bus)
+- F4 boards with inverter support correctly uninvert RX/TX
+- Nanoradar M72 radar driver fix for object avoidance path planning
+- RC support for latest version of GHST
+- Septentrio GPS sat count correctly drops to zero when 255 received
+
+2) ROS2/DDS and other developer focused enhancements
+
+- AP quaternions normalised for ROS2 to avoid warnings
+- Dependencies fixed for easier installation
+- ROS2 SITL launch file enhancements including displaying console and map
+- ROS_DOMAIN_ID param added to support multiple vehicles or instances of ROS2
+- Python 3.12 support
+------------------------------------------------------------------
 Release 4.5.6 03 Sep 2024
 
 No changes from 4.5.6-beta1
