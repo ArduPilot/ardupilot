@@ -1515,10 +1515,25 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
         copter.g2.toy_mode.handle_message(msg);
         break;
 #endif
+    case MAVLINK_MSG_ID_GPS_INPUT:
+        handle_gps_input(msg);
+        break;
     default:
         GCS_MAVLINK::handle_message(msg);
         break;
     }
+}
+
+void GCS_MAVLINK::handle_gps_input(const mavlink_message_t &msg){
+
+    mavlink_gps_input_t packet;
+    mavlink_msg_gps_input_decode(&msg, &packet);
+
+    float lat = packet.lat;
+    float lon = packet.lon;
+    float alt = packet.alt;
+    
+    copter.update_gps_target(lat, lon, alt);
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_int_t &packet) {

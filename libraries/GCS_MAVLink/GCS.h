@@ -766,6 +766,9 @@ protected:
     // methods to extract a Location object from a command_int
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
+    // Method to get gps data from gps input mavlink command
+    void handle_gps_input(const mavlink_message_t &msg);
+
 private:
 
     // define the two objects used for parsing incoming messages:
