@@ -57,6 +57,7 @@ class Board:
         def srcpath(path):
             return cfg.srcnode.make_node(path).abspath()
         env.SRCROOT = srcpath('')
+
         self.configure_env(cfg, env)
 
         # Setup scripting:
@@ -1002,7 +1003,7 @@ class esp32(Board):
         )
 
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
-        
+
         # this makes sure we get the correct subtype
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
@@ -1017,6 +1018,9 @@ class esp32(Board):
             ]
         else:
             env.DEFINES.update(AP_SIM_ENABLED = 0)
+
+        # FreeRTOS component from esp-idf expects this define
+        env.DEFINES.update(ESP_PLATFORM = 1)
 
         env.AP_LIBRARIES += [
             'AP_HAL_ESP32',
