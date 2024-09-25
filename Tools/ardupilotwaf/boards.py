@@ -1430,6 +1430,17 @@ class navigator(linux):
             CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR',
         )
 
+class navigator64(linux):
+    toolchain = 'aarch64-linux-gnu'
+
+    def configure_env(self, cfg, env):
+        super(navigator64, self).configure_env(cfg, env)
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE='HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR',
+        )
+
+
 class erleboard(linux):
     toolchain = 'arm-linux-gnueabihf'
 
