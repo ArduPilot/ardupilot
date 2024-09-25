@@ -32,13 +32,14 @@
 #include <AP_HAL/SIMState.h>
 #endif
 
-
 static ESP32::UARTDriver cons(0);
 #ifdef HAL_ESP32_WIFI
 #if HAL_ESP32_WIFI == 1
 static ESP32::WiFiDriver serial1Driver; //tcp, client should connect to 192.168.4.1 port 5760
 #elif HAL_ESP32_WIFI == 2
 static ESP32::WiFiUdpDriver serial1Driver; //udp
+#else
+static Empty::UARTDriver serial1Driver;
 #endif
 #else
 static Empty::UARTDriver serial1Driver;

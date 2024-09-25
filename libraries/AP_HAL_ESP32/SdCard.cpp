@@ -32,8 +32,6 @@
 #include <sys/types.h>
 #include "SPIDevice.h"
 
-#include "soc/rtc_wdt.h"
-
 #ifdef HAL_ESP32_SDCARD
 
 #if CONFIG_IDF_TARGET_ESP32S2 ||CONFIG_IDF_TARGET_ESP32C3
@@ -254,8 +252,8 @@ void mount_sdcard()
 {
     mount_sdcard_spi();
 }
-#endif // end spi
 
+#endif // end spi
 
 bool sdcard_retry(void)
 {
@@ -265,15 +263,13 @@ bool sdcard_retry(void)
     return sdcard_running;
 }
 
-
 void unmount_sdcard()
 {
     if (card != nullptr) {
-        esp_vfs_fat_sdmmc_unmount();
+        esp_vfs_fat_sdcard_unmount( "/SDCARD", card);
     }
     sdcard_running = false;
 }
-
 
 #else
 // empty impl's

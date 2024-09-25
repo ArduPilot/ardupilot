@@ -14,11 +14,11 @@ or
 Tools/environment_install/install-prereqs-arch.sh
 ```
 
-3. install esp-idf python deps:
+2. install esp-idf python deps:
 
 ```
 # from: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html
-sudo apt-get install git wget flex bison gperf python-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+sudo apt-get install git wget flex bison gperf cmake ninja-build ccache libffi-dev libssl-dev dfu-util
 sudo apt-get install python3 python3-pip python3-setuptools
 sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
@@ -61,7 +61,7 @@ TIPS:
 
  -  we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc.
 https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
- (note we currently use https://github.com/espressif/esp-idf/tree/release/v4.0 )
+ (note we currently use https://github.com/espressif/esp-idf/tree/release/v5.3 )
 
 
  -   if you get compile error/s to do with CONFIG... such as
@@ -69,7 +69,12 @@ in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
 warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
 
 this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF.
-So double check you are using the correct IDF version ( buzz's branch uses v3.3 , sh83's probably does not.. and then if you are sure:
+
+You can simply remove sdkconfig file and idf build system will recreate it using sdkconfig.defaults, which should fix the problem.
+
+If you need to change sdkconfig, you can edit sdkconfig manually or to use ninja menuconfig: 
+
+So double check you are using the correct IDF version:
 ```
 cd build/esp32{BOARD}/esp-idf_build
 ninja menuconfig
@@ -81,11 +86,7 @@ press [tab] then enter on the [exit]  box to exit the app
 done.    the 'sdkconfig' file in this folder should have been updated
 cd ../../../..
 
-OR locate the 'libraries/AP_HAL_ESP32/targets/esp32/esp-idf/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
-
-'cd libraries/AP_HAL_ESP32/targets/esp32/esp-idf ; idf.py defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
-
-... try ./waf plane"
+If you want to make changes to sdkconfig (sdkconfig is in git ignore list) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or to use ninja save-defconfig tool after menuconfig.
 
 5. Recommanded way to flash the firmware :
 ```
@@ -113,9 +114,6 @@ ESPTOOL_BAUD=921600
 ```
 
 You can find more info here : [ESPTOOL](https://github.com/espressif/esptool)
-
-You can also find the cmake esp-idf project at `libraries/AP_HAL_ESP32/targets/esp32/esp-idf` for idf.py command. But see next section to understand how ardupilot is compiled on ESP32.
-
 
 For flashing from another machine you need the following files:
 ```
