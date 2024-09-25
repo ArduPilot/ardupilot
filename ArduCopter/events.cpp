@@ -84,15 +84,15 @@ void Copter::failsafe_radio_off_event()
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
-    gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
 }
 
 void Copter::announce_failsafe(const char *type, const char *action_undertaken)
 {
     if (action_undertaken != nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe - %s", type, action_undertaken);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe - %s", type, action_undertaken);
     } else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe", type);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe", type);
     }
 }
 
@@ -235,7 +235,7 @@ void Copter::failsafe_gcs_on_event(void)
 // failsafe_gcs_off_event - actions to take when GCS contact is restored
 void Copter::failsafe_gcs_off_event(void)
 {
-    gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
@@ -281,7 +281,7 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
@@ -307,10 +307,10 @@ void Copter::gpsglitch_check()
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
         } else {
             LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Glitch cleared");
         }
     }
 }
@@ -330,11 +330,11 @@ void Copter::failsafe_deadreckon_check()
         dead_reckoning.active = ekf_dead_reckoning;
         if (dead_reckoning.active) {
             dead_reckoning.start_ms = now_ms;
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s started", dr_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"%s started", dr_prefix_str);
         } else {
             dead_reckoning.start_ms = 0;
             dead_reckoning.timeout = false;
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s stopped", dr_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"%s stopped", dr_prefix_str);
         }
     }
 
@@ -343,7 +343,7 @@ void Copter::failsafe_deadreckon_check()
         const uint32_t dr_timeout_ms = uint32_t(constrain_float(g2.failsafe_dr_timeout * 1000.0f, 0.0f, UINT32_MAX));
         if (now_ms - dead_reckoning.start_ms > dr_timeout_ms) {
             dead_reckoning.timeout = true;
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s timeout", dr_prefix_str);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"%s timeout", dr_prefix_str);
         }
     }
 
