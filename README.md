@@ -1,7 +1,3 @@
-Here's an improved version of the installation instructions for the README file. I've made the instructions clearer, added the missing prerequisites, and ensured that all necessary steps are included.
-
----
-
 ## Installation Instructions
 
 Follow these steps to clone the ArduPilot repository, set up your environment, and configure it for the CubeOrangeXL-DID autopilot.
