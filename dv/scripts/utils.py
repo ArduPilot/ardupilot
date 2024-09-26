@@ -1,6 +1,17 @@
+import sys, os
 from pymavlink import mavutil
 
 import logging, coloredlogs
+
+if "BALENA_SERVICE_NAME" in os.environ:
+    sys.path.append("/app/ardupilot/Tools/scripts")
+    sys.path.append("/app/ardupilot/dv/scripts")
+    # sys.path.append("/data")
+else:
+    sys.path.append("/home/slovak/ardupilot/Tools/scripts")
+    sys.path.append("/home/slovak/ardupilot/dv/scripts")
+
+import uploader
 
 coloredlogs.install(
     level='DEBUG',
@@ -62,3 +73,21 @@ def get_serial_master(lport):
             return some_master
 
     return None
+
+def get_git_revision(some_master):
+    some_master.mav.command_long_send(
+        some_master.target_system, some_master.target_component,
+        mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 1,
+        *[mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_VERSION, 0, 0, 0, 0, 0, 0]
+    )
+
+    AUTOPILOT_VERSION = some_master.recv_match(type='AUTOPILOT_VERSION', blocking=True, timeout=10).to_dict()
+
+    if AUTOPILOT_VERSION is not None:
+        return "".join([chr(c) for c in AUTOPILOT_VERSION["flight_custom_version"]])
+    else:
+        return None
+
+def get_firmware_revision(apj_path="./build/CubeOrangePlus-dv/bin/arducopter.apj"):
+    fw = uploader.firmware(apj_path)
+    return fw.desc["git_identity"]
