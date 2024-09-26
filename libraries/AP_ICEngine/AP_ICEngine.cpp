@@ -419,7 +419,7 @@ void AP_ICEngine::update(void)
                 state = ICE_STARTING;
                 crank_retry_ct++;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Engine max crank attempts reached");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Engine max crank attempts reached");
                 // Mark the last run now so we don't send this message every loop
                 starter_last_run_ms = now;
             }
@@ -448,7 +448,7 @@ void AP_ICEngine::update(void)
                 rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Uncommanded engine stop");
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Uncommanded engine stop");
                 if (last_uncommanded_stop_ms != 0 &&
                         now - last_uncommanded_stop_ms > 3*(starter_time + starter_delay)*1000) {
                     // if it has been a long enough time since the last uncommanded stop
