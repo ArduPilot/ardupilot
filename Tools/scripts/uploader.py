@@ -340,7 +340,7 @@ class uploader(object):
         c = self.port.read(count)
         if len(c) < 1:
             raise RuntimeError("timeout waiting for data (%u bytes)" % count)
-        print("recv " + c.hex())
+        # print("recv " + c.hex())
         return c
 
     def __recv_int(self):
