@@ -62,6 +62,7 @@ class BoardList(object):
         self.boards = [
             Board("erlebrain2"),
             Board("navigator"),
+            Board("navigator64"),
             Board("navio"),
             Board("navio2"),
             Board("edge"),

@@ -395,6 +395,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "navigator64" ]; then
+        echo "Building navigator64"
+        $waf configure --board navigator64 --toolchain=aarch64-linux-gnu
+        $waf sub
+        ./Tools/scripts/firmware_version_decoder.py -f build/navigator64/bin/ardusub --expected-hash $GIT_VERSION
+        continue
+    fi
+
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board sitl --debug --disable-scripting
