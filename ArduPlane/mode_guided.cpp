@@ -2,7 +2,7 @@
 #include "Plane.h"
 
 // In the previous version this defaults to 3000 which limits Guided from doing timely updates
-#define LIMIT_ON_GUIDED_UPDATE_FREQUENCY 50
+#define LIMIT_ON_GUIDED_UPDATE_FREQUENCY 25
 
 bool ModeGuided::_enter()
 {
