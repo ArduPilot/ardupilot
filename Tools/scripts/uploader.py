@@ -68,6 +68,7 @@ import array
 import os
 import platform
 import re
+import traceback
 
 from sys import platform as _platform
 
@@ -1054,6 +1055,7 @@ def find_bootloader(up, port):
 
         except Exception as e:
             print(f"Cannot identify bootloader: {repr(e)}")
+            print(traceback.format_exc())
             pass
 
         reboot_sent = up.send_reboot()
