@@ -1,3 +1,78 @@
+Here's an improved version of the installation instructions for the README file. I've made the instructions clearer, added the missing prerequisites, and ensured that all necessary steps are included.
+
+---
+
+## Installation Instructions
+
+Follow these steps to clone the ArduPilot repository, set up your environment, and configure it for the CubeOrangeXL-DID autopilot.
+
+### Prerequisites
+
+Before proceeding, ensure that the following tools and libraries are installed on your system:
+
+1. **Git** (for cloning the repository):
+   ```bash
+   sudo apt update
+   sudo apt install git
+   ```
+
+2. **Python 3** (used by `waf` build system):
+   ```bash
+   sudo apt install python3 python3-pip
+   ```
+
+3. **ARM GCC Toolchain** (required to compile ArduPilot for ARM-based boards like CubeOrange):
+   ```bash
+   sudo apt install gcc-arm-none-eabi gdb-arm-none-eabi
+   ```
+
+4. **Symlink Python 3 to Python**:
+   Some scripts expect `python` to point to Python 3. Create a symlink to ensure compatibility:
+   ```bash
+   sudo ln -s /usr/bin/python3 /usr/bin/python
+   ```
+
+### Clone the Repository
+
+1. **Clone the repository with the required branch**:
+   Clone the `pt3.1-dcp` branch, including all submodules:
+   ```bash
+   git clone --branch pt3.1-dcp --recurse-submodules https://github.com/Reblade/ardupilot.git
+   ```
+
+2. **Change to the cloned directory**:
+   Navigate into the `ardupilot` directory:
+   ```bash
+   cd ardupilot
+   ```
+
+### Configure the Build
+
+1. **Configure the build system for the CubeOrangeXL-DID board**:
+   ```bash
+   ./waf configure --board CubeOrangeXL-DID
+   ```
+
+   This step will set up the environment and ensure that the build system is properly configured for the target autopilot board.
+
+### Build and Upload Firmware (Optional)
+
+Once configured, you can build and upload the firmware to the CubeOrangeXL autopilot:
+
+1. **Build the copter firmware**:
+   ```bash
+   ./waf copter
+   ```
+
+2. **Upload the firmware to the autopilot** (if connected via USB):
+   ```bash
+   ./waf copter --upload
+   ```
+
+Now you have successfully cloned, configured, and built the ArduPilot firmware for the CubeOrangeXL-DID autopilot.
+
+---
+
 # ArduPilot Project
 
 <a href="https://ardupilot.org/discord"><img src="https://img.shields.io/discord/674039678562861068.svg" alt="Discord">
