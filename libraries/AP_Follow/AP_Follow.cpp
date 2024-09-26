@@ -35,12 +35,14 @@ extern const AP_HAL::HAL& hal;
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
 
-#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default   
+#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // home relative altitude is used by default   
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AP_FOLLOW_ALT_TYPE_DEFAULT 0
+#define AP_FOLLOW_ALT_TYPE_DEFAULT       0
+#define AP_FOLLOW_ALTITUDE_TYPE_ORIGIN   2 // origin relative altitude
+#define AP_FOLLOW_ALTITUDE_TYPE_TERRAIN  3 // terrain relative altitude
 #else
 #define AP_FOLLOW_ALT_TYPE_DEFAULT AP_FOLLOW_ALTITUDE_TYPE_RELATIVE
 #endif
@@ -128,8 +130,8 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 #if !(APM_BUILD_TYPE(APM_BUILD_Rover)) 
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
-    // @Description: Follow altitude type
-    // @Values: 0:absolute, 1:relative
+    // @Description: Follow altitude type 
+    // @Values: 0:absolute, 1:relative, 2:origin (not used) 3:terrain (plane)
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
@@ -345,12 +347,10 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         _target_location.lng = packet.lon;
 
         // select altitude source based on FOLL_ALT_TYPE param 
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-            // above home alt
-            _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
-        } else {
-            // absolute altitude
+        if (_alt_type == AP_FOLLOW_ALT_TYPE_DEFAULT) {
             _target_location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
+        } else {
+            _target_location.set_alt_cm(packet.relative_alt / 10, static_cast<Location::AltFrame>((int)_alt_type));
         }
 
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
@@ -393,8 +393,8 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
 
         // FOLLOW_TARGET is always AMSL, change the provided alt to
         // above home if we are configured for relative alt
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE &&
-            !new_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
+        if (_alt_type != AP_FOLLOW_ALT_TYPE_DEFAULT &&
+            !new_loc.change_alt_frame(static_cast<Location::AltFrame>((int)_alt_type))) {
             return false;
         }
         _target_location = new_loc;
