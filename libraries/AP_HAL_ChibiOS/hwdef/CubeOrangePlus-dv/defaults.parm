@@ -1,3 +1,4 @@
+@include ../CubeOrangePlus/defaults.parm
 
 AHRS_EKF_TYPE,3
 AHRS_GPS_USE,2
