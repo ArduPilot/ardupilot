@@ -339,7 +339,7 @@ class uploader(object):
         c = self.port.read(count)
         if len(c) < 1:
             raise RuntimeError("timeout waiting for data (%u bytes)" % count)
-        # print("recv " + binascii.hexlify(c))
+        print("recv " + binascii.hexlify(c))
         return c
 
     def __recv_int(self):
@@ -726,8 +726,8 @@ class uploader(object):
         else:
             try:
                 self.extf_maxsize = self.__getInfo(uploader.INFO_EXTF_SIZE)
-            except Exception:
-                print("Could not get external flash size, assuming 0")
+            except Exception as e:
+                print(f"Could not get external flash size, assuming 0. {repr(e)}")
                 self.extf_maxsize = 0
                 self.__sync()
 
@@ -972,11 +972,13 @@ class uploader(object):
             self.__send(uploader.NSH_REBOOT)
             self.port.flush()
             self.port.baudrate = self.baudrate_bootloader
-        except Exception:
+        except Exception as e:
+            print(f"Cannot reboot using mavlik: {repr(e)}")
             try:
                 self.port.flush()
                 self.port.baudrate = self.baudrate_bootloader
-            except Exception:
+            except Exception as e:
+                print(f"Cannot flush port: {repr(e)}")
                 pass
 
         return True
@@ -1050,7 +1052,8 @@ def find_bootloader(up, port):
             print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
             return True
 
-        except Exception:
+        except Exception as e:
+            print(f"Cannot identify bootloader: {repr(e)}")
             pass
 
         reboot_sent = up.send_reboot()
