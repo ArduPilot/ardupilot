@@ -314,7 +314,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
     _pilot_yaw_rate_cds = 0.0;
     if (!copter.failsafe.radio && copter.flightmode->use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+        _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate();
         if (!is_zero(_pilot_yaw_rate_cds)) {
             auto_yaw.set_mode(AutoYaw::Mode::PILOT_RATE);
         }
@@ -323,7 +323,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
         auto_yaw.set_mode(AutoYaw::Mode::HOLD);
     }
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
     update_weathervane(_pilot_yaw_rate_cds);
 #endif
 
@@ -354,7 +354,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
 
 // handle the interface to the weathervane library
 // pilot_yaw can be an angle or a rate or rcin from yaw channel. It just needs to represent a pilot's request to yaw the vehicle to enable pilot overrides.
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
 void Mode::AutoYaw::update_weathervane(const int16_t pilot_yaw_cds)
 {
     if (!copter.flightmode->allows_weathervaning()) {
@@ -382,4 +382,4 @@ void Mode::AutoYaw::update_weathervane(const int16_t pilot_yaw_cds)
         }
     }
 }
-#endif // WEATHERVANE_ENABLED == ENABLED
+#endif // WEATHERVANE_ENABLED

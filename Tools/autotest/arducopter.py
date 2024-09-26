@@ -6011,6 +6011,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def hover_and_check_matched_frequency_with_fft_and_psd(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
                                                            reverse=None, takeoff=True, instance=0):
+        '''Takeoff and hover, checking the noise against the provided db level and returning psd'''
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
@@ -6041,6 +6042,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
                                                    reverse=None, takeoff=True, instance=0):
+        '''Takeoff and hover, checking the noise against the provided db level and returning peak db'''
         freq, hover_throttle, peakdb, psd = \
             self.hover_and_check_matched_frequency_with_fft_and_psd(dblevel, minhz,
                                                                     maxhz, peakhz, reverse, takeoff, instance)
@@ -6334,6 +6336,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.hover_and_check_matched_frequency_with_fft(dblevel=5, minhz=20, maxhz=350, reverse=True)
+
+    def StaticNotches(self):
+        """Use static harmonic notch to control motor noise."""
+        self.progress("Flying with Static notches")
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            "INS_LOG_BAT_MASK": 3,
+            "INS_LOG_BAT_OPT": 4,
+            "INS_GYRO_FILTER": 100, # set the gyro filter high so we can observe behaviour
+            "LOG_BITMASK": 65535,
+            "LOG_DISARMED": 0,
+            "SIM_VIB_FREQ_X": 120,  # roll
+            "SIM_VIB_FREQ_Y": 120,  # pitch
+            "SIM_VIB_FREQ_Z": 120,  # yaw
+            "SIM_VIB_MOT_MULT": 0,
+            "SIM_GYR1_RND": 5,
+            "INS_HNTCH_ENABLE": 1,
+            "INS_HNTCH_FREQ": 120,
+            "INS_HNTCH_REF": 1.0,
+            "INS_HNTCH_HMNCS": 3, # first and second harmonic
+            "INS_HNTCH_ATT": 50,
+            "INS_HNTCH_BW": 40,
+            "INS_HNTCH_MODE": 0, # static notch
+        })
+        self.reboot_sitl()
+
+        self.hover_and_check_matched_frequency_with_fft(dblevel=-15, minhz=20, maxhz=350, reverse=True, instance=2)
 
     def ThrottleGainBoost(self):
         """Use PD and Angle P boost for anti-gravity."""
@@ -8616,6 +8645,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def fly_rangefinder_sitl(self):
+        self.set_parameters({
+            "RNGFND1_TYPE": 100,
+        })
+        self.reboot_sitl()
+        self.fly_rangefinder_drivers_fly([("unused", "sitl")])
+        self.wait_disarmed()
+
     def RangeFinderDrivers(self):
         '''Test rangefinder drivers'''
         self.set_parameters({
@@ -8669,6 +8706,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.context_pop()
 
         self.fly_rangefinder_mavlink()
+        self.fly_rangefinder_sitl()  # i.e. type 100
 
         i2c_drivers = [
             ("maxbotixi2cxl", 2),
@@ -10187,7 +10225,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10)  # NFI why this is required
 
         self.check_dflog_message_rates(path, {
-            'ATT': 400,
+            'ANG': 400,
         })
 
     def BaseLoggingRates(self):
@@ -10592,6 +10630,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetpointBadVel,
              self.SplineTerrain,
              self.TakeoffCheck,
+             self.GainBackoffTakeoff,
         ])
         return ret
 
@@ -10728,6 +10767,126 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.takeoff(alt_min=20, mode='LOITER')
         self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def GainBackoffTakeoff(self):
+        '''test gain backoff on takeoff'''
+        self.context_push()
+        self.progress("Test gains are fully backed off")
+        self.set_parameters({
+            "ATC_LAND_R_MULT": 0.0,
+            "ATC_LAND_P_MULT": 0.0,
+            "ATC_LAND_Y_MULT": 0.0,
+            "GCS_PID_MASK" : 7,
+            "LOG_BITMASK": 180222,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('ALT_HOLD')
+
+        class ValidatePDZero(vehicle_test_suite.TestSuite.MessageHook):
+            '''asserts correct values in PID_TUNING'''
+
+            def __init__(self, suite, axis):
+                super(ValidatePDZero, self).__init__(suite)
+                self.pid_tuning_count = 0
+                self.p_sum = 0
+                self.d_sum = 0
+                self.i_sum = 0
+                self.axis = axis
+
+            def hook_removed(self):
+                if self.pid_tuning_count == 0:
+                    raise NotAchievedException("Did not get PID_TUNING")
+                if self.i_sum == 0:
+                    raise ValueError("I sum is zero")
+                print(f"ValidatePDZero: PID_TUNING count: {self.pid_tuning_count}")
+
+            def process(self, mav, m):
+                if m.get_type() != 'PID_TUNING' or m.axis != self.axis:
+                    return
+                self.pid_tuning_count += 1
+                self.p_sum += m.P
+                self.d_sum += m.D
+                self.i_sum += m.I
+                if self.p_sum > 0:
+                    raise ValueError("P sum is not zero")
+                if self.d_sum > 0:
+                    raise ValueError("D sum is not zero")
+
+        self.progress("Check that PD values are zero")
+        self.install_message_hook_context(ValidatePDZero(self, mavutil.mavlink.PID_TUNING_ROLL))
+        self.install_message_hook_context(ValidatePDZero(self, mavutil.mavlink.PID_TUNING_PITCH))
+        self.install_message_hook_context(ValidatePDZero(self, mavutil.mavlink.PID_TUNING_YAW))
+        # until the context pop happens, all received PID_TUNINGS will be verified as good
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.delay_sim_time(2)
+        self.set_rc(2, 1250)
+        self.delay_sim_time(5)
+        self.assert_receive_message('PID_TUNING', timeout=5)
+        self.set_rc_default()
+        self.zero_throttle()
+        self.disarm_vehicle()
+        self.context_pop()
+
+        self.context_push()
+        self.progress("Test gains are not backed off")
+        self.set_parameters({
+            "ATC_LAND_R_MULT": 1.0,
+            "ATC_LAND_P_MULT": 1.0,
+            "ATC_LAND_Y_MULT": 1.0,
+            "GCS_PID_MASK" : 7,
+            "LOG_BITMASK": 180222,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('ALT_HOLD')
+
+        class ValidatePDNonZero(vehicle_test_suite.TestSuite.MessageHook):
+            '''asserts correct values in PID_TUNING'''
+
+            def __init__(self, suite, axis):
+                super(ValidatePDNonZero, self).__init__(suite)
+                self.pid_tuning_count = 0
+                self.p_sum = 0
+                self.d_sum = 0
+                self.i_sum = 0
+                self.axis = axis
+
+            def hook_removed(self):
+                if self.pid_tuning_count == 0:
+                    raise NotAchievedException("Did not get PID_TUNING")
+                if self.p_sum == 0:
+                    raise ValueError("P sum is zero")
+                if self.i_sum == 0:
+                    raise ValueError("I sum is zero")
+                print(f"ValidatePDNonZero: PID_TUNING count: {self.pid_tuning_count}")
+
+            def process(self, mav, m):
+                if m.get_type() != 'PID_TUNING' or m.axis != self.axis:
+                    return
+                self.pid_tuning_count += 1
+                self.p_sum += m.P
+                self.d_sum += m.D
+                self.i_sum += m.I
+
+        self.progress("Check that PD values are non-zero")
+        self.install_message_hook_context(ValidatePDNonZero(self, mavutil.mavlink.PID_TUNING_ROLL))
+        self.install_message_hook_context(ValidatePDNonZero(self, mavutil.mavlink.PID_TUNING_PITCH))
+        self.install_message_hook_context(ValidatePDNonZero(self, mavutil.mavlink.PID_TUNING_YAW))
+        # until the context pop happens, all received PID_TUNINGS will be verified as good
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.delay_sim_time(2)
+        self.set_rc(2, 1250)
+        self.delay_sim_time(5)
+        self.assert_receive_message('PID_TUNING', timeout=5)
+        self.set_rc_default()
+        self.zero_throttle()
+        self.disarm_vehicle()
+
         self.context_pop()
         self.reboot_sitl()
 
@@ -11706,7 +11865,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,   0, 0, 10),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 10),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 10),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 60, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 120, 0, 10),
         ])
 
         self.takeoff(mode='LOITER')
@@ -11831,6 +11990,78 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
+    def ScriptingAHRSSource(self):
+        '''test ahrs-source.lua script'''
+        self.install_example_script_context("ahrs-source.lua")
+        self.set_parameters({
+            "RC10_OPTION": 90,
+            "SCR_ENABLE": 1,
+            "SCR_USER1": 10,    # something else
+            "SCR_USER2": 10,    # GPS something
+            "SCR_USER3": 0.2,   # ExtNav innovation
+        })
+        self.set_rc(10, 2000)
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(10, 1000)
+        self.wait_statustext('Using EKF Source Set 1', check_context=True)
+        self.set_rc(10, 1500)
+        self.wait_statustext('Using EKF Source Set 2', check_context=True)
+        self.set_rc(10, 2000)
+        self.wait_statustext('Using EKF Source Set 3', check_context=True)
+
+    def CommonOrigin(self):
+        """Test common origin between EKF2 and EKF3"""
+        self.context_push()
+
+        # start on EKF2
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 2,
+            'EK2_ENABLE': 1,
+            'EK3_CHECK_SCALE': 1, # make EK3 slow to get origin
+        })
+        self.reboot_sitl()
+
+        self.context_collect('STATUSTEXT')
+
+        self.wait_statustext("EKF2 IMU0 origin set", timeout=60, check_context=True)
+        self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
+        self.wait_statustext("EKF2 active", timeout=60, check_context=True)
+
+        self.context_collect('GPS_GLOBAL_ORIGIN')
+
+        # get EKF2 origin
+        self.run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
+        ek2_origin = self.assert_receive_message('GPS_GLOBAL_ORIGIN', check_context=True)
+
+        # switch to EKF3
+        self.set_parameters({
+            'SIM_GPS_GLITCH_X' : 0.001, # about 100m
+            'EK3_CHECK_SCALE' : 100,
+            'AHRS_EKF_TYPE'   : 3})
+
+        self.wait_statustext("EKF3 IMU0 is using GPS", timeout=60, check_context=True)
+        self.wait_statustext("EKF3 active", timeout=60, check_context=True)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
+        ek3_origin = self.assert_receive_message('GPS_GLOBAL_ORIGIN', check_context=True)
+
+        self.progress("Checking origins")
+        if ek2_origin.time_usec == ek3_origin.time_usec:
+            raise NotAchievedException("Did not get a new GPS_GLOBAL_ORIGIN message")
+
+        print(ek2_origin, ek3_origin)
+
+        if (ek2_origin.latitude != ek3_origin.latitude or
+                ek2_origin.longitude != ek3_origin.longitude or
+                ek2_origin.altitude != ek3_origin.altitude):
+            raise NotAchievedException("Did not get matching EK2 and EK3 origins")
+
+        self.context_pop()
+
+        # restart GPS driver
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -11839,6 +12070,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.PositionWhenGPSIsZero,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.PIDNotches,
+            self.StaticNotches,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
@@ -11932,6 +12164,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MissionRTLYawBehaviour,
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
+            self.ScriptingAHRSSource,
+            self.CommonOrigin,
         ])
         return ret
 

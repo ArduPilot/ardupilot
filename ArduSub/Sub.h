@@ -78,7 +78,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
 // libraries which are dependent on #defines in defines.h and/or config.h
-#if RCMAP_ENABLED == ENABLED
+#if RCMAP_ENABLED
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #endif
 
@@ -88,7 +88,7 @@
 #include <AP_RPM/AP_RPM.h>
 #endif
 
-#if AVOIDANCE_ENABLED == ENABLED
+#if AVOIDANCE_ENABLED
 #include <AC_Avoidance/AC_Avoid.h>           // Stop at fence library
 #endif
 
@@ -206,7 +206,7 @@ private:
 
     Mode::Number prev_control_mode;
 
-#if RCMAP_ENABLED == ENABLED
+#if RCMAP_ENABLED
     RCMapper rcmap;
 #endif
 
@@ -355,7 +355,7 @@ private:
     AP_Mount camera_mount;
 #endif
 
-#if AVOIDANCE_ENABLED == ENABLED
+#if AVOIDANCE_ENABLED
     AC_Avoid avoid;
 #endif
 
@@ -514,7 +514,7 @@ private:
     void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
 #endif
@@ -531,7 +531,7 @@ private:
     bool verify_surface(const AP_Mission::Mission_Command& cmd);
     bool verify_RTL(void);
     bool verify_circle(const AP_Mission::Mission_Command& cmd);
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);

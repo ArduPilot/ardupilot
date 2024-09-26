@@ -109,6 +109,7 @@ public:
     bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
     bool get_origin(Location &loc);
+    bool set_origin(const Location &loc);
     bool get_location(Location &loc);
     Vector2f get_groundspeed_vector();
     bool get_velocity_NED(Vector3f &vel);
@@ -136,7 +137,7 @@ public:
     } mag_data_message_t;
 
     typedef struct {
-        uint16_t gps_week;                   // GPS week, 0xFFFF if not available
+        uint16_t gps_week;
         uint32_t ms_tow;
         uint8_t  fix_type;
         uint8_t  satellites_in_view;

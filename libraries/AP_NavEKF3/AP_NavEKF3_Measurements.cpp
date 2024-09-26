@@ -1,6 +1,7 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF3_core.h"
+
+#include "AP_NavEKF3.h"
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
@@ -167,6 +168,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
+#if EK3_FEATURE_OPTFLOW_FUSION
 // write the raw optical flow measurements
 // this needs to be called externally.
 void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
@@ -235,6 +237,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         storedOF.push(ofDataNew);
     }
 }
+#endif  // EK3_FEATURE_OPTFLOW_FUSION
 
 
 /********************************************************

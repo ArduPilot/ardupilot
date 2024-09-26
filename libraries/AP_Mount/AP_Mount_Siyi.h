@@ -82,6 +82,17 @@ public:
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan) const override;
+#endif
+
+    // change camera settings not normally used by autopilot
+    // THERMAL_PALETTE: 0:WhiteHot, 2:Sepia, 3:IronBow, 4:Rainbow, 5:Night, 6:Aurora, 7:RedHot, 8:Jungle, 9:Medical, 10:BlackHot, 11:GloryHot
+    // THERMAL_GAIN: 0:Low gain (50C ~ 550C), 1:High gain (-20C ~ 150C)
+    // THERMAL_RAW_DATA: 0:Disable Raw Data (30fps), 1:Enable Raw Data (25fps)
+    bool change_setting(CameraSetting setting, float value) override;
+
     //
     // rangefinder
     //
@@ -117,9 +128,13 @@ private:
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
+        GET_TEMP_FULL_IMAGE = 0x14,
         READ_RANGEFINDER = 0x15,
+        SET_THERMAL_PALETTE = 0x1B,
         EXTERNAL_ATTITUDE = 0x22,
         SET_TIME = 0x30,
+        SET_THERMAL_RAW_DATA = 0x34,
+        SET_THERMAL_GAIN = 0x38,
         POSITION_DATA = 0x3e,
     };
 
@@ -291,6 +306,11 @@ private:
     // Checks that the firmware version on the Gimbal meets the minimum supported version.
     void check_firmware_version() const;
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // get thermal min/max if available at 5hz
+    void request_thermal_minmax();
+#endif
+
     // internal variables
     bool _got_hardware_id;                          // true once hardware id ha been received
 
@@ -344,6 +364,18 @@ private:
         const char* model_name;
     };
     static const HWInfo hardware_lookup_table[];
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // thermal variables
+    struct {
+        uint32_t last_req_ms;       // system time of last request for thermal min/max temperatures
+        uint32_t last_update_ms;    // system time of last update of thermal min/max temperatures
+        float max_C;                // thermal max temp in C
+        float min_C;                // thermal min temp in C
+        Vector2ui max_pos;          // thermal max temp position on image in pixels. x=0 is left, y=0 is top
+        Vector2ui min_pos;          // thermal min temp position on image in pixels. x=0 is left, y=0 is top
+    } _thermal;
+#endif
 
     // count of SET_TIME packets, we send 5 times to cope with packet loss
     uint8_t sent_time_count;

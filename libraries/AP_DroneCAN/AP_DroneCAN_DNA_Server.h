@@ -54,25 +54,23 @@ class AP_DroneCAN_DNA_Server
         }
 
         // handle initializing the server with its own node ID and unique ID
-        void init_server(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
+        void init_server(uint8_t own_node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len);
 
         // handle processing the node info message. returns true if from a duplicate node
         bool handle_node_info(uint8_t source_node_id, const uint8_t unique_id[]);
 
         // handle the allocation message. returns the allocated node ID, or 0 if allocation failed
-        uint8_t handle_allocation(uint8_t node_id, const uint8_t unique_id[]);
+        uint8_t handle_allocation(const uint8_t unique_id[]);
 
     private:
-        // search for a free node ID, starting at the preferred ID (which can be 0 if
-        // none are preferred). returns 0 if none found. based on pseudocode in
-        // uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
-        uint8_t find_free_node_id(uint8_t preferred);
-
         // retrieve node ID that matches the given unique ID. returns 0 if not found
         uint8_t find_node_id(const uint8_t unique_id[], uint8_t size);
 
         // fill the given record with the hash of the given unique ID
         void compute_uid_hash(NodeRecord &record, const uint8_t unique_id[], uint8_t size) const;
+
+        // register a given unique ID to a given node ID, deleting any existing registration for the unique ID
+        void register_uid(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
 
         // create the registration for the given node ID and set its record's unique ID
         void create_registration(uint8_t node_id, const uint8_t unique_id[], uint8_t size);
@@ -123,7 +121,7 @@ class AP_DroneCAN_DNA_Server
     char fault_node_name[15];
 
 
-    //Allocation params
+    // dynamic node ID allocation state variables
     uint8_t rcvd_unique_id[16];
     uint8_t rcvd_unique_id_offset;
     uint32_t last_alloc_msg_ms;
@@ -133,7 +131,7 @@ class AP_DroneCAN_DNA_Server
 
     Canard::Publisher<uavcan_protocol_dynamic_node_id_Allocation> allocation_pub{_canard_iface};
 
-    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_dynamic_node_id_Allocation> allocation_cb{this, &AP_DroneCAN_DNA_Server::handleAllocation};
+    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_dynamic_node_id_Allocation> allocation_cb{this, &AP_DroneCAN_DNA_Server::handle_allocation};
     Canard::Subscriber<uavcan_protocol_dynamic_node_id_Allocation> allocation_sub;
 
     Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_NodeStatus> node_status_cb{this, &AP_DroneCAN_DNA_Server::handleNodeStatus};
@@ -159,8 +157,8 @@ public:
     //report the server state, along with failure message if any
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
-    //Callbacks
-    void handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg);
+    // canard message handler callbacks
+    void handle_allocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg);
     void handleNodeStatus(const CanardRxTransfer& transfer, const uavcan_protocol_NodeStatus& msg);
     void handleNodeInfo(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoResponse& rsp);
 

@@ -53,7 +53,7 @@ singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
 singleton AP_AHRS method get_EAS2TAS float
 singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
-singleton AP_AHRS method set_posvelyaw_source_set void uint8_t 0 2
+singleton AP_AHRS method set_posvelyaw_source_set void AP_NavEKF_Source::SourceSetSelection'enum AP_NavEKF_Source::SourceSetSelection::PRIMARY AP_NavEKF_Source::SourceSetSelection::TERTIARY
 singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
 singleton AP_AHRS method set_home boolean Location
 singleton AP_AHRS method get_origin boolean Location'Null
@@ -61,6 +61,7 @@ singleton AP_AHRS method set_origin boolean Location
 singleton AP_AHRS method initialised boolean
 singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
+singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
 
 include AP_Arming/AP_Arming.h
 
@@ -328,6 +329,7 @@ singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float'skip_check boolean float'skip_check
+singleton AP_Vehicle method set_target_rate_and_throttle boolean float'skip_check float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method get_circle_radius boolean float'Null
 singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
@@ -350,6 +352,7 @@ singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
+
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
@@ -630,6 +633,10 @@ singleton hal.gpio method read boolean uint8_t'skip_check
 singleton hal.gpio method write void uint8_t'skip_check uint8_t 0 1
 singleton hal.gpio method toggle void uint8_t'skip_check
 singleton hal.gpio method pinMode void uint8_t'skip_check uint8_t 0 1
+singleton hal.gpio method get_mode boolean uint8_t'skip_check uint32_t'Null
+singleton hal.gpio method get_mode alias getPinFullMode
+singleton hal.gpio method set_mode void uint8_t'skip_check uint32_t'skip_check
+singleton hal.gpio method set_mode alias setPinFullMode
 
 singleton hal.analogin depends !defined(HAL_DISABLE_ADC_DRIVER)
 singleton hal.analogin rename analog
@@ -789,6 +796,7 @@ userdata AP_Camera::camera_state_t field tracking_type uint8_t'skip_check read
 userdata AP_Camera::camera_state_t field tracking_p1 Vector2f read
 userdata AP_Camera::camera_state_t field tracking_p2 Vector2f read
 singleton AP_Camera method get_state boolean uint8_t'skip_check AP_Camera::camera_state_t'Null
+singleton AP_Camera method change_setting boolean uint8_t'skip_check CameraSetting'enum CameraSetting::THERMAL_PALETTE CameraSetting::THERMAL_RAW_DATA float'skip_check
 
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI
@@ -971,3 +979,9 @@ singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
 singleton AP_VisualOdom rename visual_odom
 singleton AP_VisualOdom method healthy boolean
 singleton AP_VisualOdom method quality int8_t
+
+-- ----AP_TemperatureSensor Library----
+include AP_TemperatureSensor/AP_TemperatureSensor.h
+singleton AP_TemperatureSensor depends AP_TEMPERATURE_SENSOR_ENABLED
+singleton AP_TemperatureSensor rename temperature_sensor
+singleton AP_TemperatureSensor method get_temperature boolean float'Null uint8_t'skip_check

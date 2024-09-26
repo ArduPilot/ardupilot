@@ -103,8 +103,8 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
-serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
+serial_num(_serial_num),
 _baudrate(57600)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many SERIALn drivers");

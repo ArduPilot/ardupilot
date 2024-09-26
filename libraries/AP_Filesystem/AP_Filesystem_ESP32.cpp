@@ -42,7 +42,7 @@ int AP_Filesystem_ESP32::close(int fd)
     return ::close(fd);
 }
 
-ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_ESP32::read(int fd, void *buf, uint32_t count)
 {
 #if FSDEBUG
     printf("DO read \n");
@@ -50,7 +50,7 @@ ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
     return ::read(fd, buf, count);
 }
 
-ssize_t AP_Filesystem_ESP32::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_ESP32::write(int fd, const void *buf, uint32_t count)
 {
 #if FSDEBUG
     printf("DO write \n");

@@ -154,3 +154,4 @@ define HAL_FRAME_TYPE_DEFAULT 12
 
 # reduce flash usage
 include ../include/minimize_fpv_osd.inc
+undef AP_OPTICALFLOW_ENABLED

@@ -191,6 +191,11 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
     NotchFilter<T>::calculate_A_and_Q(center_freq_hz, bandwidth_hz / _composite_notches, attenuation_dB, _A, _Q);
 
     _initialised = true;
+
+    // ensure static notches are allocated and working
+    if (params->tracking_mode() == HarmonicNotchDynamicMode::Fixed) {
+        update(center_freq_hz);
+    }
 }
 
 /*

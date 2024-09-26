@@ -58,7 +58,6 @@ long apfs_ftell(APFS_FILE *stream);
 APFS_FILE *apfs_freopen(const char *pathname, const char *mode, APFS_FILE *stream);
 int apfs_remove(const char *pathname);
 int apfs_rename(const char *oldpath, const char *newpath);
-char *tmpnam(char s[L_tmpnam]);
 
 #undef stdin
 #undef stdout

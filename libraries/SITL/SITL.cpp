@@ -65,8 +65,14 @@ SIM *SIM::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SIM::var_info[] = {
-    
+
+    // @Param: DRIFT_SPEED
+    // @DisplayName: Gyro drift speed
+    // @Description: Gyro drift rate of change in degrees/second/minute
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
+    // @Param: DRIFT_TIME
+    // @DisplayName: Gyro drift time
+    // @Description: Gyro drift duration of one full drift cycle (period in minutes)
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     // @Param: ENGINE_MUL
     // @DisplayName: Engine failure thrust scaler
@@ -104,6 +110,9 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Path: ./ServoModel.cpp
     AP_SUBGROUPINFO(servo, "SERVO_", 16, SIM, ServoParams),
 
+    // @Param: SONAR_ROT
+    // @DisplayName: Sonar rotation
+    // @Description: Sonar rotation from rotations enumeration
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery voltage
@@ -111,8 +120,22 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: V
     // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
+    // @Param: BATT_CAP_AH
+    // @DisplayName: Simulated battery capacity
+    // @Description: Simulated battery capacity
+    // @Units: Ah
+    // @User: Advanced
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
+    // @Param: SONAR_GLITCH
+    // @DisplayName: Sonar glitch probablility
+    // @Description: Probablility a sonar glitch would happen
+    // @Range: 0 1
+    // @User: Advanced
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
+    // @Param: SONAR_RND
+    // @DisplayName: Sonar noise factor
+    // @Description: Scaling factor for simulated sonar noise
+    // @User: Advanced
     AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
     // @Param: RC_FAIL
     // @DisplayName: Simulated RC signal failure
@@ -151,12 +174,20 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("CAN_TYPE2", 31, SIM,  can_transport[1], uint8_t(CANTransport::MulticastUDP)),
 #endif
 
+    // @Param: SONAR_SCALE
+    // @DisplayName: Sonar conversion scale
+    // @Description: Sonar conversion scale from distance to voltage
+    // @Units: m/V
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
     // @Param: FLOW_ENABLE
     // @DisplayName: Opflow Enable
     // @Description: Enable simulated Optical Flow sensor
     // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
+    // @Param: TERRAIN
+    // @DisplayName: Terrain Enable
+    // @Description: Enable using terrain for height
+    // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
     // @Param: FLOW_RATE
     // @DisplayName: Opflow Rate
@@ -168,10 +199,28 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Opflow data delay
     // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
+    // @Param: ADSB_COUNT
+    // @DisplayName: Number of ADSB aircrafts
+    // @Description: Total number of ADSB simulated aircraft
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
+    // @Param: ADSB_RADIUS
+    // @DisplayName: ADSB radius stddev of another aircraft
+    // @Description: Simulated standard deviation of radius in ADSB of another aircraft
+    // @Units: m
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
+    // @Param: ADSB_ALT
+    // @DisplayName: ADSB altitude of another aircraft
+    // @Description: Simulated ADSB altitude of another aircraft
+    // @Units: m
     AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
+    // @Param: PIN_MASK
+    // @DisplayName: GPIO emulation
+    // @Description: SITL GPIO emulation
     AP_GROUPINFO("PIN_MASK",      50, SIM,  pin_mask, 0),
+    // @Param: ADSB_TX
+    // @DisplayName: ADSB transmit enable
+    // @Description: ADSB transceiever enable and disable
+    // @Values: 0:Transceiever disable, 1:Transceiever enable
     AP_GROUPINFO("ADSB_TX",       51, SIM,  adsb_tx, 0),
     // @Param: SPEEDUP
     // @DisplayName: Sim Speedup
@@ -210,11 +259,30 @@ const AP_Param::GroupInfo SIM::var_info[] = {
 
 // second table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info2[] = {
+    // @Param: TEMP_START
+    // @DisplayName: Start temperature
+    // @Description: Baro start temperature
+    // @Units: degC
+    // @User: Advanced
     AP_GROUPINFO("TEMP_START",   1, SIM,  temp_start,  25),
+    // @Param: TEMP_BRD_OFF
+    // @DisplayName: Baro temperature offset
+    // @Description: Barometer board temperature offset from atmospheric temperature
+    // @Units: degC
+    // @User: Advanced
     AP_GROUPINFO("TEMP_BRD_OFF", 2, SIM,  temp_board_offset, 20),
+    // @Param: TEMP_TCONST
+    // @DisplayName: Warmup time constant
+    // @Description: Barometer warmup temperature time constant
+    // @Units: degC
+    // @User: Advanced
     AP_GROUPINFO("TEMP_TCONST",  3, SIM,  temp_tconst, 30),
-    AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
+    // @Param: TEMP_BFACTOR
+    // @DisplayName: Baro temperature factor
+    // @Description: A pressure change with temperature that closely matches what has been observed with a ICM-20789
+    // @User: Advanced
+    AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
     // @Param: WIND_DIR_Z
     // @DisplayName: Simulated wind vertical direction
     // @Description: Allows you to set vertical wind direction (true deg) in sim. 0 means pure horizontal wind. 90 means pure updraft.
@@ -238,6 +306,9 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Description: For linear wind profile,wind is reduced by (Altitude-WIND_T_ALT) x this value
     // @User: Advanced
     AP_GROUPINFO("WIND_T_COEF", 17, SIM,  wind_type_coef, 0.01f),
+    // @Param: RC_CHANCOUNT
+    // @DisplayName: RC channel count
+    // @Description: SITL RC channel count
     AP_GROUPINFO("RC_CHANCOUNT",21, SIM,  rc_chancount, 16),
     // @Group: SPR_
     // @Path: ./SIM_Sprayer.cpp
@@ -261,39 +332,104 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Path: ./SIM_Parachute.cpp
     AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SIM, Parachute),
 
-    // enable bandwidth limitting on telemetry ports:
+    // @Param: BAUDLIMIT_EN
+    // @DisplayName: Telemetry bandwidth limitting
+    // @Description: SITL enable bandwidth limitting on telemetry ports with non-zero values
     AP_GROUPINFO("BAUDLIMIT_EN",   28, SIM,  telem_baudlimit_enable, 0),
 
     // @Group: PLD_
     // @Path: ./SIM_Precland.cpp
     AP_SUBGROUPINFO(precland_sim, "PLD_", 29, SIM, SIM_Precland),
 
-    // apply a force to the vehicle over a period of time:
+    // @Param: SHOVE_X
+    // @DisplayName: Acceleration of shove x
+    // @Description: Acceleration of shove to vehicle in x axis
+    // @Units: m/s/s
     AP_GROUPINFO("SHOVE_X",     30, SIM,  shove.x, 0),
+    // @Param: SHOVE_Y
+    // @DisplayName: Acceleration of shove y
+    // @Description: Acceleration of shove to vehicle in y axis
+    // @Units: m/s/s
     AP_GROUPINFO("SHOVE_Y",     31, SIM,  shove.y, 0),
+    // @Param: SHOVE_Z
+    // @DisplayName: Acceleration of shove z
+    // @Description: Acceleration of shove to vehicle in z axis
+    // @Units: m/s/s
     AP_GROUPINFO("SHOVE_Z",     32, SIM,  shove.z, 0),
+    // @Param: SHOVE_TIME
+    // @DisplayName: Time length for shove
+    // @Description: Force to the vehicle over a period of time
+    // @Units: ms
     AP_GROUPINFO("SHOVE_TIME",  33, SIM,  shove.t, 0),
     
-    // optical flow sensor measurement noise in rad/sec
     // @Param: FLOW_RND
     // @DisplayName: Opflow noise
-    // @Description: Optical Flow sensor measurement noise in rad/sec
+    // @Description: Optical Flow sensor measurement noise
+    // @Units: rad/s
     AP_GROUPINFO("FLOW_RND",   34, SIM,  flow_noise,  0.05f),
 
+    // @Param: TWIST_X
+    // @DisplayName: Twist x
+    // @Description: Rotational acceleration of twist x axis
+    // @Units: rad/s/s
     AP_GROUPINFO("TWIST_X",     37, SIM,  twist.x, 0),
+    // @Param: TWIST_Y
+    // @DisplayName: Twist y
+    // @Description: Rotational acceleration of twist y axis
+    // @Units: rad/s/s
     AP_GROUPINFO("TWIST_Y",     38, SIM,  twist.y, 0),
+    // @Param: TWIST_Z
+    // @DisplayName: Twist z
+    // @Description: Rotational acceleration of twist z axis
+    // @Units: rad/s/s
     AP_GROUPINFO("TWIST_Z",     39, SIM,  twist.z, 0),
+    // @Param: TWIST_TIME
+    // @DisplayName: Twist time
+    // @Description: Time that twist is applied on the vehicle
+    // @Units: ms
     AP_GROUPINFO("TWIST_TIME",  40, SIM,  twist.t, 0),
 
+    // @Param: GND_BEHAV
+    // @DisplayName: Ground behavior
+    // @Description: Ground behavior of aircraft (tailsitter, no movement, forward only)
     AP_GROUPINFO("GND_BEHAV",   41, SIM,  gnd_behav, -1),
 
     // sailboat wave and tide simulation parameters
+
+    // @Param: WAVE_ENABLE
+    // @DisplayName: Wave enable
+    // @Description: Wave enable and modes
+    // @Values: 0:disabled, 1: roll and pitch, 2: roll and pitch and heave
     AP_GROUPINFO("WAVE_ENABLE", 44, SIM,  wave.enable, 0.0f),
+    // @Param: WAVE_LENGTH
+    // @DisplayName: Wave length
+    // @Description: Wave length in SITL
+    // @Units: m
     AP_GROUPINFO("WAVE_LENGTH", 45, SIM,  wave.length, 10.0f),
+    // @Param: WAVE_AMP
+    // @DisplayName: Wave amplitude
+    // @Description: Wave amplitude in SITL
+    // @Units: m
     AP_GROUPINFO("WAVE_AMP",    46, SIM,  wave.amp, 0.5f),
+    // @Param: WAVE_DIR
+    // @DisplayName: Wave direction
+    // @Description: Direction wave is coming from
+    // @Units: deg
     AP_GROUPINFO("WAVE_DIR",    47, SIM,  wave.direction, 0.0f),
+    // @Param: WAVE_SPEED
+    // @DisplayName: Wave speed
+    // @Description: Wave speed in SITL
+    // @Units: m/s
     AP_GROUPINFO("WAVE_SPEED",  48, SIM,  wave.speed, 0.5f),
+    // @Param: TIDE_DIR
+    // @DisplayName: Tide direction
+    // @Description: Tide direction wave is coming from
+    // @Units: deg
     AP_GROUPINFO("TIDE_DIR",    49, SIM,  tide.direction, 0.0f),
+    // @Param: TIDE_SPEED
+    // @DisplayName: Tide speed
+    // @Description: Tide speed in simulation
+    // @Units: m/s
     AP_GROUPINFO("TIDE_SPEED",  50, SIM,  tide.speed, 0.0f),
 
     // the following coordinates are for CMAC, in Canberra
@@ -317,8 +453,10 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Description: Specifies vehicle's startup heading (0-360)
     // @User: Advanced
     AP_GROUPINFO("OPOS_HDG",    54, SIM,  opos.hdg, 353.0f),
-
-    // extra delay per main loop
+    // @Param: LOOP_DELAY
+    // @DisplayName: Extra delay per main loop
+    // @Description: Extra time delay per main loop
+    // @Units: us
     AP_GROUPINFO("LOOP_DELAY",  55, SIM,  loop_delay, 0),
 
     // @Path: ./SIM_Buzzer.cpp
@@ -327,21 +465,34 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Path: ./SIM_ToneAlarm.cpp
     AP_SUBGROUPINFO(tonealarm_sim, "TA_", 57, SIM, ToneAlarm),
 
+    // @Param: EFI_TYPE
+    // @DisplayName: Type of Electronic Fuel Injection
+    // @Description: Different types of Electronic Fuel Injection (EFI) systems
+    // @Values: 0:None,1:MegaSquirt EFI system, 2:Löweheiser EFI system, 8:Hirth engines
     AP_GROUPINFO("EFI_TYPE",    58, SIM,  efi_type,  SIM::EFI_TYPE_NONE),
 
     // 59 was SAFETY_STATE
 
-    // motor harmonics
+    // @Param: VIB_MOT_HMNC
+    // @DisplayName: Motor harmonics
+    // @Description: Motor harmonics generated in SITL
     AP_GROUPINFO("VIB_MOT_HMNC", 60, SIM,  vibe_motor_harmonics, 1),
-
-    // motor mask, allowing external simulators to mark motors
+    // @Param: VIB_MOT_MASK
+    // @DisplayName: Motor mask
+    // @Description: Motor mask, allowing external simulators to mark motors
     AP_GROUPINFO("VIB_MOT_MASK", 5, SIM,  vibe_motor_mask, 0),
-    
-    // max motor vibration frequency
+    // @Param: VIB_MOT_MAX
+    // @DisplayName: Max motor vibration frequency
+    // @Description: Max frequency to use as baseline for adding motor noise for the gyros and accels
+    // @Units: Hz
     AP_GROUPINFO("VIB_MOT_MAX", 61, SIM,  vibe_motor, 0.0f),
-    // minimum throttle for simulated ins noise
+    // @Param: INS_THR_MIN
+    // @DisplayName: Minimum throttle INS noise
+    // @Description: Minimum throttle for simulated ins noise
     AP_GROUPINFO("INS_THR_MIN", 62, SIM,  ins_noise_throttle_min, 0.1f),
-    // amplitude scaling of motor noise relative to gyro/accel noise
+    // @Param: VIB_MOT_MULT
+    // @DisplayName: Vibration motor scale
+    // @Description: Amplitude scaling of motor noise relative to gyro/accel noise
     AP_GROUPINFO("VIB_MOT_MULT", 63, SIM,  vibe_motor_scale, 1.0f),
 
 
@@ -351,11 +502,20 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
 // third table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info3[] = {
+    // @Param: ODOM_ENABLE
+    // @DisplayName: Odometry enable
+    // @Description: SITL odometry enabl
+    // @Values: 0:Disable, 1:Enable
     AP_GROUPINFO("ODOM_ENABLE",   1, SIM,  odom_enable, 0),
 
+    // @Param: LED_LAYOUT
+    // @DisplayName: LED layout
+    // @Description: LED layout config value
     AP_GROUPINFO("LED_LAYOUT",    11, SIM, led_layout, 0),
 
-    // Scenario for thermalling simulation, for soaring
+    // @Param: THML_SCENARI
+    // @DisplayName: Thermal scenarios
+    // @Description: Scenario for thermalling simulation, for soaring
     AP_GROUPINFO("THML_SCENARI",  12, SIM,  thermal_scenario, 0),
 
     // @Param: VICON_POS_X
@@ -451,6 +611,10 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
+    // @Param: RATE_HZ
+    // @DisplayName: Loop rate
+    // @Description: SITL Loop rate
+    // @Units: Hz
     AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, SIM_RATE_HZ_DEFAULT),
 
     // @Param: IMU_COUNT
@@ -468,16 +632,32 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SIM, IntelligentEnergy24),
 
     // user settable barometer parameters
+
+    // @Param: BARO_COUNT
+    // @DisplayName: Baro count
+    // @Description: Number of simulated baros to create in SITL
+    // @Range: 0 3
     AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
 
-    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, SIM::BaroParm),
+    // @Group: BARO_
+    // @Path: ./SITL_Baro.cpp
+    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, BaroParm),
 #if BARO_MAX_INSTANCES > 1
-    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, SIM::BaroParm),
+    // @Group: BAR2_
+    // @Path: ./SITL_Baro.cpp
+    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, BaroParm),
 #endif
 #if BARO_MAX_INSTANCES > 2
-    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
+    // @Group: BAR3_
+    // @Path: ./SITL_Baro.cpp
+    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, BaroParm),
 #endif
 
+    // @Param: TIME_JITTER
+    // @DisplayName: Loop time jitter
+    // @Description: Upper limit of random jitter in loop time
+    // @Units: us
+    // @User: Advanced
     AP_GROUPINFO("TIME_JITTER",  37, SIM,  loop_time_jitter_us, 0),
 
     // user settable parameters for the 1st barometer
@@ -525,6 +705,10 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
+    // @Param: ESC_ARM_RPM
+    // @DisplayName: ESC RPM when armed
+    // @Description: Simulated RPM when motors are armed
+    // @User: Advanced
     AP_GROUPINFO("ESC_ARM_RPM", 41, SIM,  esc_rpm_armed, 0.0f),
 
     // @Param: UART_LOSS
@@ -571,29 +755,6 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPEND
 };
 
-// user settable parameters for the barometers
-const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
-    AP_GROUPINFO("RND",      1, SIM::BaroParm,  noise, 0.2f),
-    // @Param: BARO_DRIFT
-    // @DisplayName: Baro altitude drift
-    // @Description: Barometer altitude drifts at this rate
-    // @Units: m/s
-    // @User: Advanced
-    AP_GROUPINFO("DRIFT",    2, SIM::BaroParm,  drift, 0),
-    AP_GROUPINFO("DISABLE",  3, SIM::BaroParm,  disable, 0),
-    AP_GROUPINFO("GLITCH",   4, SIM::BaroParm,  glitch, 0),
-    AP_GROUPINFO("FREEZE",   5, SIM::BaroParm,  freeze, 0),
-    AP_GROUPINFO("DELAY",    6, SIM::BaroParm,  delay, 0),
-
-    // wind coeffients
-    AP_GROUPINFO("WCF_FWD", 7,  SIM::BaroParm, wcof_xp, 0.0),
-    AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
-    AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
-    AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
-    AP_GROUPINFO("WCF_UP",  11, SIM::BaroParm, wcof_zp, 0.0),
-    AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
-    AP_GROUPEND
-};
 
 #if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
@@ -805,38 +966,88 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
 
 // Mag SITL parameters
 const AP_Param::GroupInfo SIM::var_mag[] = {
+    // @Param: MAG_RND
+    // @DisplayName: Mag motor noise factor
+    // @Description: Scaling factor for simulated vibration from motors
+    // @User: Advanced
     AP_GROUPINFO("MAG_RND",        1, SIM,  mag_noise,   0),
     AP_GROUPINFO("MAG_MOT",        2, SIM,  mag_mot, 0),
+    // @Param: MAG_DELAY
+    // @DisplayName: Mag measurement delay
+    // @Description: Magnetometer measurement delay
+    // @Units: ms
+    // @User: Advanced
     AP_GROUPINFO("MAG_DELAY",      3, SIM,  mag_delay, 0),
     AP_GROUPINFO("MAG1_OFS",        4, SIM,  mag_ofs[0], 0),
     AP_GROUPINFO("MAG_ALY",        5, SIM,  mag_anomaly_ned, 0),
+    // @Param: MAG_ALY_HGT
+    // @DisplayName: Magnetic anomaly height
+    // @Description: Height above ground where anomally strength has decayed to 1/8 of the ground level value
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("MAG_ALY_HGT",    6, SIM,  mag_anomaly_hgt, 1.0f),
     AP_GROUPINFO("MAG1_DIA",        7, SIM,  mag_diag[0], 0),
     AP_GROUPINFO("MAG1_ODI",        8, SIM,  mag_offdiag[0], 0),
+    // @Param: MAG1_ORIENT
+    // @DisplayName: MAG1 Orientation
+    // @Description: MAG1 external compass orientation
+    // @User: Advanced
     AP_GROUPINFO("MAG1_ORIENT",     9, SIM,  mag_orient[0], 0),
+    // @Param: MAG1_SCALING
+    // @DisplayName: MAG1 Scaling factor
+    // @Description: Scale the compass 1 to simulate sensor scale factor errors
+    // @User: Advanced
     AP_GROUPINFO("MAG1_SCALING",  10, SIM,  mag_scaling[0], 1),
     // @Param: MAG1_DEVID
     // @DisplayName: MAG1 Device ID
     // @Description: Device ID of simulated compass 1
     // @User: Advanced
     AP_GROUPINFO("MAG1_DEVID",    11, SIM,  mag_devid[0], 97539),
+    // @Param: MAG2_DEVID
+    // @DisplayName: MAG2 Device ID
+    // @Description: Device ID of simulated compass 2
+    // @User: Advanced
     AP_GROUPINFO("MAG2_DEVID",    12, SIM,  mag_devid[1], 131874),
 #if MAX_CONNECTED_MAGS > 2
+    // @Param: MAG3_DEVID
+    // @DisplayName: MAG3 Device ID
+    // @Description: Device ID of simulated compass 3
+    // @User: Advanced
     AP_GROUPINFO("MAG3_DEVID",    13, SIM,  mag_devid[2], 263178),
 #endif
 #if MAX_CONNECTED_MAGS > 3
+    // @Param: MAG4_DEVID
+    // @DisplayName: MAG2 Device ID
+    // @Description: Device ID of simulated compass 4
+    // @User: Advanced
     AP_GROUPINFO("MAG4_DEVID",    14, SIM,  mag_devid[3], 97283),
 #endif
 #if MAX_CONNECTED_MAGS > 4
+    // @Param: MAG5_DEVID
+    // @DisplayName: MAG5 Device ID
+    // @Description: Device ID of simulated compass 5
+    // @User: Advanced
     AP_GROUPINFO("MAG5_DEVID",    15, SIM,  mag_devid[4], 97795),
 #endif
 #if MAX_CONNECTED_MAGS > 5
+    // @Param: MAG6_DEVID
+    // @DisplayName: MAG6 Device ID
+    // @Description: Device ID of simulated compass 6
+    // @User: Advanced
     AP_GROUPINFO("MAG6_DEVID",    16, SIM,  mag_devid[5], 98051),
 #endif
 #if MAX_CONNECTED_MAGS > 6
+    // @Param: MAG7_DEVID
+    // @DisplayName: MAG7 Device ID
+    // @Description: Device ID of simulated compass 7
+    // @User: Advanced
     AP_GROUPINFO("MAG7_DEVID",    17, SIM,  mag_devid[6], 0),
 #endif
 #if MAX_CONNECTED_MAGS > 7
+    // @Param: MAG8_DEVID
+    // @DisplayName: MAG8 Device ID
+    // @Description: Device ID of simulated compass 8
+    // @User: Advanced
     AP_GROUPINFO("MAG8_DEVID",    18, SIM,  mag_devid[7], 0),
 #endif
     // @Param: MAG1_FAIL
@@ -849,6 +1060,10 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG2_OFS",      19, SIM,  mag_ofs[1], 0),
     AP_GROUPINFO("MAG2_DIA",      20, SIM,  mag_diag[1], 0),
     AP_GROUPINFO("MAG2_ODI",      21, SIM,  mag_offdiag[1], 0),
+    // @Param: MAG2_ORIENT
+    // @DisplayName: MAG2 Orientation
+    // @Description: MAG2 external compass orientation
+    // @User: Advanced
     AP_GROUPINFO("MAG2_ORIENT",   22, SIM,  mag_orient[1], 0),
     // @Param: MAG2_FAIL
     // @DisplayName: MAG2 Failure
@@ -856,6 +1071,10 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Values: 0:Disabled, 1:MAG2 Failure
     // @User: Advanced
     AP_GROUPINFO("MAG2_FAIL",     27, SIM,  mag_fail[1], 0),
+    // @Param: MAG2_SCALING
+    // @DisplayName: MAG2 Scaling factor
+    // @Description: Scale the compass 2 to simulate sensor scale factor errors
+    // @User: Advanced
     AP_GROUPINFO("MAG2_SCALING",  28, SIM,  mag_scaling[1], 1),
 #endif
 #if HAL_COMPASS_MAX_SENSORS > 2
@@ -868,7 +1087,15 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     // @Values: 0:Disabled, 1:MAG3 Failure
     // @User: Advanced
     AP_GROUPINFO("MAG3_FAIL",     29, SIM,  mag_fail[2], 0),
+    // @Param: MAG3_SCALING
+    // @DisplayName: MAG3 Scaling factor
+    // @Description: Scale the compass 3 to simulate sensor scale factor errors
+    // @User: Advanced
     AP_GROUPINFO("MAG3_SCALING",  30, SIM,  mag_scaling[2], 1),
+    // @Param: MAG3_ORIENT
+    // @DisplayName: MAG3 Orientation
+    // @Description: MAG3 external compass orientation
+    // @User: Advanced
     AP_GROUPINFO("MAG3_ORIENT",   36, SIM,  mag_orient[2], 0),
 #endif
 
@@ -900,9 +1127,21 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
+    // @Param: IMUT_START
+    // @DisplayName: IMU temperature start
+    // @Description: Starting IMU temperature of a curve
     AP_GROUPINFO("IMUT_START",    1, SIM, imu_temp_start,  25),
+    // @Param: IMUT_END
+    // @DisplayName: IMU temperature end
+    // @Description: Ending IMU temperature of a curve
     AP_GROUPINFO("IMUT_END",      2, SIM, imu_temp_end, 45),
+    // @Param: IMUT_TCONST
+    // @DisplayName: IMU temperature time constant
+    // @Description: IMU temperature time constant of the curve
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
+    // @Param: IMUT_FIXED
+    // @DisplayName: IMU fixed temperature
+    // @Description: IMU fixed temperature by user
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
 #endif
     // @Param: ACC1_BIAS
@@ -925,11 +1164,21 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC3_BIAS",     7, SIM, accel_bias[2], 0),
 #endif
+    // @Param: GYR1_RND
+    // @DisplayName: Gyro 1 motor noise factor
+    // @Description: scaling factor for simulated vibration from motors
+    // @User: Advanced
     AP_GROUPINFO("GYR1_RND",      8, SIM, gyro_noise[0],  0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: GYR2_RND
+    // @DisplayName: Gyro 2 motor noise factor
+    // @CopyFieldsFrom: SIM_GYR1_RND
     AP_GROUPINFO("GYR2_RND",      9, SIM, gyro_noise[1],  0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: GYR3_RND
+    // @DisplayName: Gyro 3 motor noise factor
+    // @CopyFieldsFrom: SIM_GYR1_RND
     AP_GROUPINFO("GYR3_RND",     10, SIM, gyro_noise[2],  0),
 #endif
     // @Param: ACC1_RND
@@ -991,7 +1240,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @User: Advanced
     AP_GROUPINFO("ACCEL3_FAIL",  19, SIM, accel_fail[2],  0),
 #endif
-    // @Param: GYRO_FAIL_MSK
+    // @Param: GYR_FAIL_MSK
     // @DisplayName: Gyro Failure Mask
     // @Description: Determines if the gyro reading updates are stopped when for an IMU simulated failure by ACCELx_FAIL params
     // @Values: 0:Disabled, 1:Readings stopped
@@ -1043,8 +1292,16 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: channels which are passed through to actual hardware when running sim on actual hardware
     AP_GROUPINFO("OH_MASK",     28, SIM, on_hardware_output_enable_mask, 0),
 #if AP_SIM_INS_FILE_ENABLED
-    // read and write IMU data to/from files
+
+    // @Param: GYR_FILE_RW
+    // @DisplayName: Gyro data to/from files
+    // @Description: Read and write gyro data to/from files
+    // @Values: 0:Stop writing data, 1:Read data from file, 2:Write data to a file, 3: Read data from file and stop on EOF
     AP_GROUPINFO("GYR_FILE_RW", 29, SIM, gyro_file_rw, INSFileMode::INS_FILE_NONE),
+    // @Param: ACC_FILE_RW
+    // @DisplayName: Accelerometer data to/from files
+    // @Description: Read and write accelerometer data to/from files
+    // @Values: 0:Stop writing data, 1:Read data from file, 2:Write data to a file, 3: Read data from file and stop on EOF
     AP_GROUPINFO("ACC_FILE_RW", 30, SIM, accel_file_rw, INSFileMode::INS_FILE_NONE),
 #endif
 
@@ -1129,6 +1386,9 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @CopyFieldsFrom: SIM_ACC1_RND
     AP_GROUPINFO("ACC4_RND",     37, SIM, accel_noise[3], 0),
 
+    // @Param: GYR4_RND
+    // @DisplayName: Gyro 4 motor noise factor
+    // @CopyFieldsFrom: SIM_GYR1_RND
     AP_GROUPINFO("GYR4_RND",     38, SIM, gyro_noise[3],  0),
 
     // @Param: ACC4_BIAS
@@ -1182,6 +1442,9 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @CopyFieldsFrom: SIM_ACC1_RND
     AP_GROUPINFO("ACC5_RND",     44, SIM, accel_noise[4], 0),
 
+    // @Param: GYR5_RND
+    // @DisplayName: Gyro 5 motor noise factor
+    // @CopyFieldsFrom: SIM_GYR1_RND
     AP_GROUPINFO("GYR5_RND",     45, SIM, gyro_noise[4],  0),
 
     // @Param: ACC5_BIAS

@@ -538,6 +538,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("BCK_PIT_LIM", 38, QuadPlane, q_bck_pitch_lim, 10.0f),
 
+    // @Param: APPROACH_DIST
+    // @DisplayName: Q mode approach distance
+    // @Description: The minimum distance from the destination to use the fixed wing airbrake and approach code for landing approach. This is useful if you don't want the fixed wing approach logic to be used when you are close to the destination. Set to zero to always use fixed wing approach.
+    // @Units: m
+    // @Range: 0.0 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("APPROACH_DIST", 39, QuadPlane, approach_distance, 0),
+    
     AP_GROUPEND
 };
 
@@ -1763,8 +1772,12 @@ void QuadPlane::update(void)
     if (motors->armed()) {
         const bool motors_active = in_vtol_mode() || assisted_flight;
         if (motors_active && (motors->get_spool_state() != AP_Motors::SpoolState::SHUT_DOWN)) {
+            // log ANG at main loop rate
+            if (show_vtol_view()) {
+                attitude_control->Write_ANG();
+            }
             // log RATE at main loop rate
-            ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
+            attitude_control->Write_Rate(*pos_control);
 
             // log CTRL and MOTB at 10 Hz
             if (now - last_ctrl_log_ms > 100) {
@@ -2160,7 +2173,8 @@ void QuadPlane::run_xy_controller(float accel_limit)
 void QuadPlane::poscontrol_init_approach(void)
 {
     const float dist = plane.current_loc.get_distance(plane.next_WP_loc);
-    if (option_is_set(QuadPlane::OPTION::DISABLE_APPROACH)) {
+    if (option_is_set(QuadPlane::OPTION::DISABLE_APPROACH) ||
+        (is_positive(approach_distance) && dist < approach_distance)) {
         // go straight to QPOS_POSITION1
         poscontrol.set_state(QPOS_POSITION1);
         gcs().send_text(MAV_SEVERITY_INFO,"VTOL Position1 d=%.1f", dist);
@@ -3752,7 +3766,7 @@ float QuadPlane::forward_throttle_pct()
         vel_forward.last_pct = vel_forward.integrator;
     } else if ((in_vtol_land_final() && motors->limit.throttle_lower) ||
 #if AP_RANGEFINDER_ENABLED
-              (plane.g.rangefinder_landing && (plane.rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow))) {
+              (plane.g.rangefinder_landing && (plane.rangefinder.status_orient(plane.rangefinder_orientation()) == RangeFinder::Status::OutOfRangeLow))) {
 #else
               false) {
 #endif

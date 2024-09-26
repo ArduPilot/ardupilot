@@ -1,6 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AP_NavEKF2.h"
 
 #include "AP_NavEKF2_core.h"
+
+#include <AP_DAL/AP_DAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -675,7 +678,7 @@ bool NavEKF2::InitialiseFilter(void)
         }
 
         // try to allocate from CCM RAM, fallback to Normal RAM if not available or full
-        core = (NavEKF2_core*)AP::dal().malloc_type(sizeof(NavEKF2_core)*num_cores, AP_DAL::MEM_FAST);
+        core = (NavEKF2_core*)AP::dal().malloc_type(sizeof(NavEKF2_core)*num_cores, AP_DAL::MemoryType::FAST);
         if (core == nullptr) {
             initFailure = InitFailures::NO_MEM;
             core_malloc_failed = true;
@@ -695,7 +698,7 @@ bool NavEKF2::InitialiseFilter(void)
             if (_imuMask & (1U<<i)) {
                 if(!core[num_cores].setup_core(i, num_cores)) {
                     // if any core setup fails, free memory, zero the core pointer and abort
-                    hal.util->free_type(core, sizeof(NavEKF2_core)*num_cores, AP_HAL::Util::MEM_FAST);
+                    AP::dal().free_type(core, sizeof(NavEKF2_core)*num_cores, AP_DAL::MemoryType::FAST);
                     core = nullptr;
                     initFailure = InitFailures::NO_SETUP;
                     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NavEKF2: core %d setup failed", num_cores);
@@ -1096,6 +1099,10 @@ bool NavEKF2::getOriginLLH(Location &loc) const
     if (!core) {
         return false;
     }
+    if (common_origin_valid) {
+        loc = common_EKF_origin;
+        return true;
+    }
     return core[primary].getOriginLLH(loc);
 }
 
@@ -1110,11 +1117,9 @@ bool NavEKF2::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (_fusionModeGPS != 3 || common_origin_valid) {
-        // we don't allow setting of the EKF origin if using GPS
-        // or if the EKF origin has already been set.
-        // This is to prevent accidental setting of EKF origin with an
-        // invalid position or height or causing upsets from a shifting origin.
+    if (common_origin_valid) {
+        // we don't allow setting of the EKF origin if the EKF origin
+        // has already been set.
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 refusing set origin");
         return false;
     }

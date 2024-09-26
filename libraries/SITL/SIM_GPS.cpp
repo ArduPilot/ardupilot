@@ -38,9 +38,9 @@ extern const AP_HAL::HAL& hal;
 using namespace SITL;
 
 // ensure the backend we have allocated matches the one that's configured:
-GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance)
-    : front{_front},
-      instance{_instance}
+GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance) :
+    instance{_instance},
+    front{_front}
 {
     _sitl = AP::sitl();
 }

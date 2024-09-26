@@ -131,6 +131,12 @@ public:
 #endif
     }
 
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+    void set_external_wind_estimate(float speed, float direction) {
+        dcm.set_external_wind_estimate(speed, direction);
+    }
+#endif
+
     // return the parameter AHRS_WIND_MAX in metres per second
     uint8_t get_max_wind() const {
         return _wind_max;
@@ -411,7 +417,7 @@ public:
     void request_yaw_reset(void);
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void set_posvelyaw_source_set(uint8_t source_set_idx);
+    void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
 
     //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
     uint8_t get_posvelyaw_source_set() const;
@@ -1018,6 +1024,9 @@ private:
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
     }
+
+    // true when we have completed the common origin setup
+    bool done_common_origin;
 };
 
 namespace AP {

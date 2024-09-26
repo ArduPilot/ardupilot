@@ -107,14 +107,28 @@ AP_AHRS_DCM::update()
     if (now_ms - last_log_ms >= 100) {
         // log DCM at 10Hz
         last_log_ms = now_ms;
-        AP::logger().WriteStreaming("DCM", "TimeUS,Roll,Pitch,Yaw",
-                                    "sddd",
-                                    "F000",
-                                    "Qfff",
-                                    AP_HAL::micros64(),
-                                    degrees(roll),
-                                    degrees(pitch),
-                                    wrap_360(degrees(yaw)));
+
+// @LoggerMessage: DCM
+// @Description: DCM Estimator Data
+// @Field: TimeUS: Time since system startup
+// @Field: Roll: estimated roll
+// @Field: Pitch: estimated pitch
+// @Field: Yaw: estimated yaw
+// @Field: ErrRP: lowest estimated gyro drift error
+// @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
+        AP::logger().WriteStreaming(
+            "DCM",
+            "TimeUS," "Roll," "Pitch," "Yaw," "ErrRP," "ErrYaw",
+            "s"       "d"     "d"      "d"    "d"      "h",
+            "F"       "0"     "0"      "0"    "0"      "0",
+            "Q"       "f"     "f"      "f"    "f"      "f",
+            AP_HAL::micros64(),
+            degrees(roll),
+            degrees(pitch),
+            wrap_360(degrees(yaw)),
+            get_error_rp(),
+            get_error_yaw()
+       );
     }
 #endif // HAL_LOGGING_ENABLED
 }
@@ -1028,6 +1042,13 @@ void AP_AHRS_DCM::estimate_wind(void)
 #endif
 }
 
+#ifdef AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
+    _wind.x = -cosf(radians(direction)) * speed;
+    _wind.y = -sinf(radians(direction)) * speed;
+    _wind.z = 0;
+}
+#endif
 
 // return our current position estimate using
 // dead-reckoning or GPS

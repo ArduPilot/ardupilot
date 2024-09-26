@@ -4,6 +4,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "GyroFrame.h"
 
 #if HAL_WITH_DSP

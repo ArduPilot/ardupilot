@@ -472,13 +472,17 @@ class WaitAndMaintain(object):
                  minimum_duration=None,
                  progress_print_interval=1,
                  timeout=30,
+                 epsilon=None,
+                 comparator=None,
                  ):
         self.test_suite = test_suite
         self.minimum_duration = minimum_duration
         self.achieving_duration_start = None
         self.timeout = timeout
+        self.epsilon = epsilon
         self.last_progress_print = 0
         self.progress_print_interval = progress_print_interval
+        self.comparator = comparator
 
     def run(self):
         self.announce_test_start()
@@ -533,7 +537,14 @@ class WaitAndMaintain(object):
         return f"want={self.get_target_value()} got={value}"
 
     def validate_value(self, value):
-        return value == self.get_target_value()
+        target_value = self.get_target_value()
+        if self.comparator is not None:
+            return self.comparator(value, target_value)
+
+        if self.epsilon is not None:
+            return (abs(value - target_value) <= self.epsilon)
+
+        return value == target_value
 
     def timeoutexception(self):
         return AutoTestTimeoutException("Failed to attain or maintain value")
@@ -673,6 +684,35 @@ class WaitAndMaintainArmed(WaitAndMaintain):
 
     def announce_start_text(self):
         return "Ensuring vehicle remains armed"
+
+
+class WaitAndMaintainServoChannelValue(WaitAndMaintain):
+    def __init__(self, test_suite, channel, value, **kwargs):
+        super(WaitAndMaintainServoChannelValue, self).__init__(test_suite, **kwargs)
+        self.channel = channel
+        self.value = value
+
+    def announce_start_text(self):
+        str_operator = ""
+        if self.comparator == operator.lt:
+            str_operator = "less than "
+        elif self.comparator == operator.gt:
+            str_operator = "more than "
+
+        return f"Waiting for SERVO_OUTPUT_RAW.servo{self.channel}_value value {str_operator}{self.value}"
+
+    def get_target_value(self):
+        return self.value
+
+    def get_current_value(self):
+        m = self.test_suite.assert_receive_message('SERVO_OUTPUT_RAW', timeout=10)
+        channel_field = "servo%u_raw" % self.channel
+        m_value = getattr(m, channel_field, None)
+        if m_value is None:
+            raise ValueError(f"message ({str(m)}) has no field {channel_field}")
+
+        self.last_SERVO_OUTPUT_RAW = m
+        return m_value
 
 
 class MSP_Generic(Telem):
@@ -1865,6 +1905,7 @@ class TestSuite(ABC):
                  num_aux_imus=0,
                  dronecan_tests=False,
                  generate_junit=False,
+                 enable_fgview=False,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1931,6 +1972,7 @@ class TestSuite(ABC):
         self.last_heartbeat_time_wc_s = 0
         self.in_drain_mav = False
         self.tlog = None
+        self.enable_fgview = enable_fgview
 
         self.rc_thread = None
         self.rc_thread_should_quit = False
@@ -2517,64 +2559,15 @@ class TestSuite(ABC):
     def get_sim_parameter_documentation_get_whitelist(self):
         # common parameters
         ret = set([
-            "SIM_ACC_FILE_RW",
             "SIM_ACC_TRIM_X",
             "SIM_ACC_TRIM_Y",
             "SIM_ACC_TRIM_Z",
-            "SIM_ADSB_ALT",
-            "SIM_ADSB_COUNT",
-            "SIM_ADSB_RADIUS",
-            "SIM_ADSB_TX",
             "SIM_ARSPD2_OFS",
             "SIM_ARSPD2_RND",
             "SIM_ARSPD_OFS",
             "SIM_ARSPD_RND",
-            "SIM_BAR2_DELAY",
-            "SIM_BAR2_DISABLE",
-            "SIM_BAR2_DRIFT",
-            "SIM_BAR2_FREEZE",
-            "SIM_BAR2_WCF_BAK",
-            "SIM_BAR2_WCF_DN",
-            "SIM_BAR2_WCF_FWD",
-            "SIM_BAR2_WCF_LFT",
-            "SIM_BAR2_WCF_RGT",
-            "SIM_BAR2_WCF_UP",
-            "SIM_BAR3_DELAY",
-            "SIM_BAR3_DISABLE",
-            "SIM_BAR3_DRIFT",
-            "SIM_BAR3_FREEZE",
-            "SIM_BAR3_WCF_BAK",
-            "SIM_BAR3_WCF_DN",
-            "SIM_BAR3_WCF_FWD",
-            "SIM_BAR3_WCF_LFT",
-            "SIM_BAR3_WCF_RGT",
-            "SIM_BAR3_WCF_UP",
-            "SIM_BARO_COUNT",
-            "SIM_BARO_DELAY",
-            "SIM_BARO_DISABLE",
-            "SIM_BARO_FREEZE",
-            "SIM_BARO_WCF_BAK",
-            "SIM_BARO_WCF_DN",
-            "SIM_BARO_WCF_FWD",
-            "SIM_BARO_WCF_LFT",
-            "SIM_BARO_WCF_RGT",
-            "SIM_BARO_WCF_UP",
-            "SIM_BATT_CAP_AH",
-            "SIM_BAUDLIMIT_EN",
-            "SIM_DRIFT_SPEED",
-            "SIM_DRIFT_TIME",
-            "SIM_EFI_TYPE",
-            "SIM_ESC_ARM_RPM",
             "SIM_FTOWESC_ENA",
             "SIM_FTOWESC_POW",
-            "SIM_GND_BEHAV",
-            "SIM_GYR1_RND",
-            "SIM_GYR2_RND",
-            "SIM_GYR3_RND",
-            "SIM_GYR4_RND",
-            "SIM_GYR5_RND",
-            "SIM_GYR_FAIL_MSK",
-            "SIM_GYR_FILE_RW",
             "SIM_IE24_ENABLE",
             "SIM_IE24_ERROR",
             "SIM_IE24_STATE",
@@ -2683,15 +2676,6 @@ class TestSuite(ABC):
             "SIM_IMUT5_GYR3_Z",
             "SIM_IMUT5_TMAX",
             "SIM_IMUT5_TMIN",
-            "SIM_IMUT_END",
-            "SIM_IMUT_FIXED",
-            "SIM_IMUT_START",
-            "SIM_IMUT_TCONST",
-            "SIM_INS_THR_MIN",
-            "SIM_LED_LAYOUT",
-            "SIM_LOOP_DELAY",
-            "SIM_MAG1_SCALING",
-            "SIM_MAG2_DEVID",
             "SIM_MAG2_DIA_X",
             "SIM_MAG2_DIA_Y",
             "SIM_MAG2_DIA_Z",
@@ -2701,9 +2685,6 @@ class TestSuite(ABC):
             "SIM_MAG2_OFS_X",
             "SIM_MAG2_OFS_Y",
             "SIM_MAG2_OFS_Z",
-            "SIM_MAG2_ORIENT",
-            "SIM_MAG2_SCALING",
-            "SIM_MAG3_DEVID",
             "SIM_MAG3_DIA_X",
             "SIM_MAG3_DIA_Y",
             "SIM_MAG3_DIA_Z",
@@ -2713,18 +2694,9 @@ class TestSuite(ABC):
             "SIM_MAG3_OFS_X",
             "SIM_MAG3_OFS_Y",
             "SIM_MAG3_OFS_Z",
-            "SIM_MAG3_ORIENT",
-            "SIM_MAG3_SCALING",
-            "SIM_MAG4_DEVID",
-            "SIM_MAG5_DEVID",
-            "SIM_MAG6_DEVID",
-            "SIM_MAG7_DEVID",
-            "SIM_MAG8_DEVID",
-            "SIM_MAG_ALY_HGT",
             "SIM_MAG_ALY_X",
             "SIM_MAG_ALY_Y",
             "SIM_MAG_ALY_Z",
-            "SIM_MAG_DELAY",
             "SIM_MAG1_DIA_X",
             "SIM_MAG1_DIA_Y",
             "SIM_MAG1_DIA_Z",
@@ -2737,16 +2709,10 @@ class TestSuite(ABC):
             "SIM_MAG1_OFS_X",
             "SIM_MAG1_OFS_Y",
             "SIM_MAG1_OFS_Z",
-            "SIM_MAG1_ORIENT",
-            "SIM_MAG_RND",
-            "SIM_ODOM_ENABLE",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
-            "SIM_PIN_MASK",
             "SIM_PLD_ALT_LMT",
             "SIM_PLD_DIST_LMT",
-            "SIM_RATE_HZ",
-            "SIM_RC_CHANCOUNT",
             "SIM_RICH_CTRL",
             "SIM_RICH_ENABLE",
             "SIM_SHIP_DSIZE",
@@ -2757,43 +2723,13 @@ class TestSuite(ABC):
             "SIM_SHIP_PSIZE",
             "SIM_SHIP_SPEED",
             "SIM_SHIP_SYSID",
-            "SIM_SHOVE_TIME",
-            "SIM_SHOVE_X",
-            "SIM_SHOVE_Y",
-            "SIM_SHOVE_Z",
-            "SIM_SONAR_GLITCH",
             "SIM_SONAR_POS_X",
             "SIM_SONAR_POS_Y",
             "SIM_SONAR_POS_Z",
-            "SIM_SONAR_RND",
-            "SIM_SONAR_ROT",
-            "SIM_SONAR_SCALE",
             "SIM_TA_ENABLE",
-            "SIM_TEMP_BFACTOR",
-            "SIM_TEMP_BRD_OFF",
-            "SIM_TEMP_START",
-            "SIM_TEMP_TCONST",
-            "SIM_TERRAIN",
-            "SIM_THML_SCENARI",
-            "SIM_TIDE_DIR",
-            "SIM_TIDE_SPEED",
-            "SIM_TIME_JITTER",
-            "SIM_TWIST_TIME",
-            "SIM_TWIST_X",
-            "SIM_TWIST_Y",
-            "SIM_TWIST_Z",
             "SIM_VIB_FREQ_X",
             "SIM_VIB_FREQ_Y",
             "SIM_VIB_FREQ_Z",
-            "SIM_VIB_MOT_HMNC",
-            "SIM_VIB_MOT_MASK",
-            "SIM_VIB_MOT_MAX",
-            "SIM_VIB_MOT_MULT",
-            "SIM_WAVE_AMP",
-            "SIM_WAVE_DIR",
-            "SIM_WAVE_ENABLE",
-            "SIM_WAVE_LENGTH",
-            "SIM_WAVE_SPEED",
         ])
 
         vinfo_key = self.vehicleinfo_key()
@@ -3876,7 +3812,7 @@ class TestSuite(ABC):
                     raise NotAchievedException("Sequence not increasing")
                 if m.num_logs != num_logs:
                     raise NotAchievedException("Number of logs changed")
-                if m.time_utc < 1000:
+                if m.time_utc < 1000 and m.id != m.num_logs:
                     raise NotAchievedException("Bad timestamp")
                 if m.id != m.last_log_num:
                     if m.size == 0:
@@ -4176,6 +4112,55 @@ class TestSuite(ABC):
         # if len(actual_bytes) != len(backwards_data_downloaded):
         #     raise NotAchievedException("Size delta: actual=%u vs downloaded=%u" %
         #                                (len(actual_bytes), len(backwards_data_downloaded)))
+
+    def download_log(self, log_id, timeout=360):
+        tstart = self.get_sim_time()
+        data_downloaded = []
+        bytes_read = 0
+        last_print = 0
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not download log in good time")
+            self.mav.mav.log_request_data_send(
+                self.sysid_thismav(),
+                1, # target component
+                log_id,
+                bytes_read,
+                90
+            )
+            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            if m.ofs != bytes_read:
+                raise NotAchievedException(f"Unexpected offset {bytes_read=} {self.dump_message_verbose(m)}")
+            if m.id != log_id:
+                raise NotAchievedException(f"Unexpected id {log_id=} {self.dump_message_verbose(m)}")
+            data_downloaded.extend(m.data[0:m.count])
+            bytes_read += m.count
+            if m.count < 90:  # FIXME: constant
+                break
+            # self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
+            if time.time() - last_print > 10:
+                last_print = time.time()
+                self.progress(f"{bytes_read=}")
+        return data_downloaded
+
+    def TestLogDownloadLogRestart(self):
+        '''test logging restarts after log download'''
+#        self.delay_sim_time(30)
+        self.set_parameters({
+            "LOG_FILE_RATEMAX": 1,
+        })
+        self.reboot_sitl()
+        number = self.current_onboard_log_number()
+        content = self.download_log(number)
+        print(f"Content is of length {len(content)}")
+        # current_log_filepath = self.current_onboard_log_filepath()
+        self.delay_sim_time(5)
+        new_number = self.current_onboard_log_number()
+        if number == new_number:
+            raise NotAchievedException("Did not start logging again")
+        new_content = self.download_log(new_number)
+        if len(new_content) == 0:
+            raise NotAchievedException(f"Unexpected length {len(new_content)=}")
 
     #################################################
     # SIM UTILITIES
@@ -7191,6 +7176,10 @@ class TestSuite(ABC):
                 altitude_source = "GLOBAL_POSITION_INT.relative_alt"
             else:
                 altitude_source = "GLOBAL_POSITION_INT.alt"
+        if altitude_source == "TERRAIN_REPORT.current_height":
+            terrain = self.assert_receive_message('TERRAIN_REPORT')
+            return terrain.current_height
+
         (msg, field) = altitude_source.split('.')
         msg = self.poll_message(msg, quiet=True)
         divisor = 1000.0  # mm is pretty common in mavlink
@@ -9051,6 +9040,7 @@ Also, ignores heartbeats not from our target system'''
             "valgrind": self.valgrind,
             "callgrind": self.callgrind,
             "wipe": True,
+            "enable_fgview": self.enable_fgview,
         }
         start_sitl_args.update(**sitl_args)
         if ("defaults_filepath" not in start_sitl_args or
@@ -9212,8 +9202,7 @@ Also, ignores heartbeats not from our target system'''
                         m.mission_type == 0):
                     # this is just MAVProxy trying to screw us up
                     continue
-                else:
-                    raise NotAchievedException("Received unexpected mission ack %s" % str(m))
+                raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
             self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
             self.progress("Item (%s)" % str(items[m.seq]))
@@ -12156,6 +12145,10 @@ switch value'''
             mavproxy.expect("Unloaded module log")
         self.stop_mavproxy(mavproxy)
         return num_log
+
+    def current_onboard_log_number(self):
+        logs = self.download_full_log_list(print_logs=False)
+        return sorted(logs.keys())[-1]
 
     def current_onboard_log_filepath(self):
         '''return filepath to currently open dataflash log.  We assume that's

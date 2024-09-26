@@ -106,12 +106,12 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     default_ki(initial_i),
     default_kd(initial_d),
     default_kff(initial_ff),
+    default_kdff(initial_dff),
     default_kimax(initial_imax),
     default_filt_T_hz(initial_filt_T_hz),
     default_filt_E_hz(initial_filt_E_hz),
     default_filt_D_hz(initial_filt_D_hz),
-    default_slew_rate_max(initial_srmax),
-    default_kdff(initial_dff)
+    default_slew_rate_max(initial_srmax)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);

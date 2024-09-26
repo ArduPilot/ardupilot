@@ -4,7 +4,7 @@
   autotune mode is a wrapper around the AC_AutoTune library
  */
 
-#if AUTOTUNE_ENABLED == ENABLED
+#if AUTOTUNE_ENABLED
 
 bool AutoTune::init()
 {
@@ -75,7 +75,7 @@ void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitc
 {
     copter.mode_autotune.get_pilot_desired_lean_angles(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
                                                        copter.attitude_control->get_althold_lean_angle_max_cd());
-    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate();
 }
 
 /*
@@ -123,4 +123,4 @@ void ModeAutoTune::exit()
     autotune.stop();
 }
 
-#endif  // AUTOTUNE_ENABLED == ENABLED
+#endif  // AUTOTUNE_ENABLED

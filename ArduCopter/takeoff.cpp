@@ -239,15 +239,15 @@ void _AutoTakeoff::start(float _complete_alt_cm, bool _terrain_alt)
     }
 }
 
-// return takeoff final position if takeoff has completed successfully
-bool _AutoTakeoff::get_position(Vector3p& _complete_pos)
+// return takeoff final target position in cm from the EKF origin if takeoff has completed successfully
+bool _AutoTakeoff::get_completion_pos(Vector3p& pos_neu_cm)
 {
     // only provide location if takeoff has completed
     if (!complete) {
         return false;
     }
 
-    complete_pos = _complete_pos;
+    pos_neu_cm = complete_pos;
     return true;
 }
 

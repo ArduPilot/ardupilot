@@ -35,13 +35,14 @@
 
 #if !defined(AP_GPS_BLENDED_ENABLED) && defined(GPS_MAX_INSTANCES)
 #define AP_GPS_BLENDED_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED && GPS_MAX_INSTANCES > GPS_MAX_RECEIVERS
-#if AP_GPS_BLENDED_ENABLED
-#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
-#endif
 #endif
 
 #ifndef AP_GPS_BLENDED_ENABLED
 #define AP_GPS_BLENDED_ENABLED 0
+#endif
+
+#if AP_GPS_BLENDED_ENABLED
+#define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #endif
 
 #ifndef AP_GPS_DRONECAN_ENABLED

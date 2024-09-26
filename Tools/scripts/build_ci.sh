@@ -40,7 +40,7 @@ function install_pymavlink() {
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive --depth 1
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        (cd modules/mavlink/pymavlink && python3 -m pip install --user .)
         pymavlink_installed=1
     fi
 }
@@ -51,7 +51,7 @@ function install_mavproxy() {
         pushd /tmp
           git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
-            python setup.py build install --user --force
+            python3 -m pip install --user --force .
           popd
         popd
         mavproxy_installed=1
@@ -321,7 +321,15 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "CubeOrange-PPP" ]; then
         echo "Building CubeOrange-PPP"
-        $waf configure --board CubeOrange --enable-ppp
+        $waf configure --board CubeOrange --enable-PPP
+        $waf clean
+        $waf copter
+        continue
+    fi
+
+    if [ "$t" == "CubeRed-EKF2" ]; then
+        echo "Building CubeRed with EKF2 enabled"
+        $waf configure --board CubeRedPrimary --enable-EKF2
         $waf clean
         $waf copter
         continue

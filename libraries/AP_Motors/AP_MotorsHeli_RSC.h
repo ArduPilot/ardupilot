@@ -4,7 +4,7 @@
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Logger/AP_Logger.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 // default main rotor speed (ch8 out) as a number from 0 ~ 100
 #define AP_MOTORS_HELI_RSC_SETPOINT             70
@@ -49,9 +49,9 @@ public:
     AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel,
                       uint8_t inst) :
+        _instance(inst),
         _aux_fn(aux_fn),
-        _default_channel(default_channel),
-        _instance(inst)
+        _default_channel(default_channel)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };

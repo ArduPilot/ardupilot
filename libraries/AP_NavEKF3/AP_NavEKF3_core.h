@@ -32,7 +32,7 @@
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/EKF_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_DAL/AP_DAL.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -128,7 +128,7 @@ class NavEKF3_core : public NavEKF_core_common
 {
 public:
     // Constructor
-    NavEKF3_core(class NavEKF3 *_frontend);
+    NavEKF3_core(class NavEKF3 *_frontend, class AP_DAL &dal);
 
     // setup this core backend
     bool setup_core(uint8_t _imu_index, uint8_t _core_index);
@@ -868,8 +868,10 @@ private:
     // Calculate weighting that is applied to IMU1 accel data to blend data from IMU's 1 and 2
     void calcIMU_Weighting(ftype K1, ftype K2);
 
+#if EK3_FEATURE_OPTFLOW_FUSION
     // return true if the filter is ready to start using optical flow measurements for position and velocity estimation
     bool readyToUseOptFlow(void) const;
+#endif
 
     // return true if the filter is ready to start using body frame odometry measurements
     bool readyToUseBodyOdm(void) const;
@@ -880,8 +882,10 @@ private:
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
 
+#if EK3_FEATURE_OPTFLOW_FUSION
     // determine when to perform fusion of optical flow measurements
     void SelectFlowFusion();
+#endif
 
     // determine when to perform fusion of body frame odometry measurements
     void SelectBodyOdomFusion();
@@ -889,9 +893,11 @@ private:
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
+#if EK3_FEATURE_OPTFLOW_FUSION
     // fuse optical flow measurements into the main filter
     // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
     void FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse);
+#endif
 
     // Control filter mode changes
     void controlFilterModes();
@@ -934,8 +940,10 @@ private:
     // Apply a median filter to range finder data
     void readRangeFinder();
 
+#if EK3_FEATURE_OPTFLOW_FUSION
     // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
     void detectOptFlowTakeoff(void);
+#endif
 
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
@@ -1106,7 +1114,7 @@ private:
     uint32_t lastBaroReceived_ms;   // time last time we received baro height data
     uint16_t hgtRetryTime_ms;       // time allowed without use of height measurements before a height timeout is declared
     uint32_t lastVelPassTime_ms;    // time stamp when GPS velocity measurement last passed innovation consistency check (msec)
-    uint32_t lastPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
+    uint32_t lastGpsPosPassTime_ms;    // time stamp when GPS position measurement last passed innovation consistency check (msec)
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint32_t lastTasFailTime_ms;    // time stamp when airspeed measurement last failed innovation consistency check (msec)
@@ -1182,7 +1190,9 @@ private:
     bool motorsArmed;               // true when the motors have been armed
     bool prevMotorsArmed;           // value of motorsArmed from previous frame
     bool posVelFusionDelayed;       // true when the position and velocity fusion has been delayed
+#if EK3_FEATURE_OPTFLOW_FUSION
     bool optFlowFusionDelayed;      // true when the optical flow fusion has been delayed
+#endif
     bool airSpdFusionDelayed;       // true when the air speed fusion has been delayed
     bool sideSlipFusionDelayed;     // true when the sideslip fusion has been delayed
     bool airDataFusionWindOnly;     // true when  sideslip and airspeed fusion is only allowed to modify the wind states
@@ -1249,7 +1259,7 @@ private:
     bool gpsAccuracyGoodForAltitude; // true when the GPS accuracy is considered to be good enough to use it as an altitude source.
     Vector3F gpsVelInnov;           // gps velocity innovations
     Vector3F gpsVelVarInnov;        // gps velocity innovation variances
-    uint32_t gpsVelInnovTime_ms;    // system time that gps velocity innovations were recorded (to detect timeouts)
+    uint32_t gpsRetrieveTime_ms;    // system time that GPS data was retrieved from the buffer (to detect timeouts)
 
     // variables added for optical flow fusion
     EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
@@ -1262,7 +1272,9 @@ private:
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
     Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
+#if EK3_FEATURE_OPTFLOW_FUSION
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
+#endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
     ftype prevPosE;                 // east position at last measurement
@@ -1344,6 +1356,10 @@ private:
 #if EK3_FEATURE_BEACON_FUSION
     class BeaconFusion {
     public:
+        BeaconFusion(AP_DAL &_dal) :
+            dal{_dal}
+            {}
+
         void InitialiseVariables();
 
         EKF_obs_buffer_t<rng_bcn_elements> storedRange; // Beacon range buffer
@@ -1394,7 +1410,9 @@ private:
             Vector3F beaconPosNED; // beacon NED position
         } *fusionReport;
         uint8_t numFusionReports;
-    } rngBcn;
+
+        AP_DAL &dal;
+    } rngBcn{dal};
 #endif  // if EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_DRAG_FUSION

@@ -30,7 +30,7 @@ void Copter::set_home_to_current_location_inflight() {
             return;
         }
         // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
         g2.smart_rtl.set_home(true);
 #endif
     }
@@ -45,7 +45,7 @@ bool Copter::set_home_to_current_location(bool lock) {
             return false;
         }
         // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
         g2.smart_rtl.set_home(true);
 #endif
         return true;

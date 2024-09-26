@@ -204,7 +204,7 @@ void RCOutput::bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel)
     // we need to switch every output on the same input channel to avoid
     // spurious line changes
     for (uint8_t i = 0; i<4; i++) {
-        if (group.chan[i] == CHAN_DISABLED) {
+        if (!group.is_chan_enabled(i)) {
             continue;
         }
         if (group.bdshot.telem_tim_ch[telem_channel] == group.bdshot.telem_tim_ch[i]) {
@@ -250,7 +250,7 @@ void RCOutput::bdshot_receive_pulses_DMAR_f1(pwm_group* group)
     // we need to switch every input on the same input channel to allow
     // the ESCs to drive the lines
     for (uint8_t i = 0; i<4; i++) {
-        if (group->chan[i] == CHAN_DISABLED) {
+        if (!group->is_chan_enabled(i)) {
             continue;
         }
         if (group->bdshot.telem_tim_ch[curr_ch] == group->bdshot.telem_tim_ch[i]) {

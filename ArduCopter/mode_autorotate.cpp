@@ -11,7 +11,7 @@
 
 #include <utility>
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
+#if MODE_AUTOROTATE_ENABLED
 
 #define AUTOROTATE_ENTRY_TIME          2.0f    // (s) number of seconds that the entry phase operates for
 #define BAILOUT_MOTOR_RAMP_TIME        1.0f    // (s) time set on bailout ramp up timer for motors - See AC_MotorsHeli_Single
@@ -282,7 +282,7 @@ void ModeAutorotate::run()
             get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
             // Get pilot's desired yaw rate
-            float pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+            float pilot_yaw_rate = get_pilot_desired_yaw_rate();
 
             // Pitch target is calculated in autorotation phase switch above
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pilot_roll, _pitch_target, pilot_yaw_rate);

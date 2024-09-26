@@ -1,8 +1,10 @@
+#include "AP_NavEKF2_core.h"
+
 #include <AP_HAL/AP_HAL.h>
+#include <AP_DAL/AP_DAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_NavEKF2.h"
-#include "AP_NavEKF2_core.h"
-#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -30,8 +32,8 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 NavEKF2_core::NavEKF2_core(NavEKF2 *_frontend) :
-    frontend(_frontend),
-    dal(AP::dal())
+    dal(AP::dal()),
+    frontend(_frontend)
 {
 }
 

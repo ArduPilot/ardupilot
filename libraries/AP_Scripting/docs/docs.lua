@@ -1409,6 +1409,16 @@ function AP_Camera__camera_state_t_ud:take_pic_incr() end
 ---@return AP_Camera__camera_state_t_ud|nil
 function camera:get_state(instance) end
 
+-- Change a camera setting to a given value
+---@param instance integer
+---@param setting integer
+---| '0' # THERMAL_PALETTE
+---| '1' # THERMAL_GAIN
+---| '2' # THERMAL_RAW_DATA
+---@param value number
+---@return boolean
+function camera:change_setting(instance, setting, value) end
+
 -- desc
 mount = {}
 
@@ -1700,6 +1710,26 @@ function gpio:write(pin_number, value) end
 ---@param pin_number integer
 ---@return boolean -- pin state
 function gpio:read(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:set_mode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:get_mode(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:setPinFullMode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:getPinFullMode(pin_number) end
 
 
 -- desc
@@ -2353,6 +2383,14 @@ function vehicle:get_circle_radius() end
 ---@param yaw_rate_degs number
 ---@return boolean
 function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms, use_yaw_rate, yaw_rate_degs) end
+
+-- Set vehicles roll, pitch, and yaw rates with throttle in guided mode
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true if successful
+function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
 
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
@@ -3110,6 +3148,14 @@ function BattMonitorScript_State_ud:voltage(value) end
 ---@param value boolean
 function BattMonitorScript_State_ud:healthy(value) end
 
+-- The temperature library provides access to information about the currently connected temperature sensors on the vehicle.
+temperature_sensor = {}
+
+-- Returns the temperature from this sensor in degrees Celsius
+---@param instance integer -- temperature instance
+---@return number|nil -- temperature if available
+function temperature_sensor:get_temperature(instance) end
+
 -- The battery library provides access to information about the currently connected batteries on the vehicle.
 battery = {}
 
@@ -3241,6 +3287,13 @@ function arming:disarm() end
 -- It provides estimates for the vehicles attitude, and position.
 ahrs = {}
 
+-- supply an external position estimate to the AHRS (supported by EKF3)
+---@param location Location_ud -- estimated location, altitude is ignored
+---@param accuracy number -- 1-sigma accuracy in meters
+---@param timestamp_ms uint32_t_ud|integer|number -- timestamp of reading in ms since boot
+---@return boolean -- true if call was handled successfully
+function ahrs:handle_external_position_estimate(location, accuracy, timestamp_ms) end
+
 -- desc
 ---@return Quaternion_ud|nil
 function ahrs:get_quaternion() end
@@ -3275,6 +3328,9 @@ function ahrs:get_vel_innovations_and_variances_for_source(source) end
 
 -- desc
 ---@param source_set_idx integer
+---| '0' # PRIMARY
+---| '1' # SECONDARY
+---| '2' # TERTIARY
 function ahrs:set_posvelyaw_source_set(source_set_idx) end
 
 -- desc
@@ -3506,7 +3562,7 @@ function mavlink:receive_chan() end
 ---@return boolean -- success
 function mavlink:send_chan(chan, msgid, message) end
 
--- Block a given MAV_CMD from being procceced by ArduPilot
+-- Block a given MAV_CMD from being processed by ArduPilot
 ---@param comand_id integer
 ---@return boolean
 function mavlink:block_command(comand_id) end

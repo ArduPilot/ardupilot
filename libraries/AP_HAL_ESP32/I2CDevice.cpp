@@ -59,9 +59,9 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
+    bus(I2CDeviceManager::businfo[busnum]),
     _retries(10),
-    _address(address),
-    bus(I2CDeviceManager::businfo[busnum])
+    _address(address)
 {
     set_device_bus(busnum);
     set_device_address(address);

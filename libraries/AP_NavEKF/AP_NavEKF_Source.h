@@ -51,6 +51,12 @@ public:
         ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW = (1 << 1)  // align position of inactive sources to ahrs when using optical flow
     };
 
+    enum class SourceSetSelection : uint8_t {
+        PRIMARY = 0,
+        SECONDARY = 1,
+        TERTIARY = 2,
+    };
+
     // initialisation
     void init();
 
@@ -59,7 +65,7 @@ public:
     SourceZ getPosZSource() const;
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(uint8_t source_set_idx);
+    void setPosVelYawSourceSet(SourceSetSelection source_set_idx);
     uint8_t getPosVelYawSourceSet() const { return active_source_set; }
 
     // get/set velocity source

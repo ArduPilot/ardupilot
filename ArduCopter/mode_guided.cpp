@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 
 /*
  * Init and run calls for guided flight mode
@@ -114,7 +114,7 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return option_is_enabled(Option::AllowArmingFromTX);
 };
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
     return option_is_enabled(Option::AllowWeatherVaning);
@@ -652,6 +652,9 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
         angle_control_start();
+    } else if (!use_thrust && guided_angle_state.use_thrust) {
+        // Already angle control but changing from thrust to climb rate
+        pos_control->init_z_controller();
     }
 
     guided_angle_state.attitude_quat = attitude_quat;

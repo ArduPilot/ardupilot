@@ -155,7 +155,7 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
 
 void GCS_MAVLINK_Copter::send_position_target_local_ned()
 {
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
     if (!copter.flightmode->in_guided_mode()) {
         return;
     }
@@ -396,7 +396,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
-    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, and SCALED_PRESSURE3
+    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED
     // @Units: Hz
     // @Range: 0 50
     // @Increment: 1
@@ -503,6 +503,9 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+#if AP_AIRSPEED_ENABLED
+    MSG_AIRSPEED,
+#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
@@ -621,7 +624,7 @@ MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission)
 
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     return copter.mode_auto.do_guided(cmd);
 #else
     return false;
@@ -638,7 +641,7 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
         copter.avoidance_adsb.handle_msg(msg);
     }
 #endif
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     // pass message to follow library
     copter.g2.follow.handle_msg(msg);
 #endif
@@ -719,7 +722,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_preflight_reboot(const mavlink_command_int
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
 {
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
     const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
     if (!copter.flightmode->in_guided_mode() && !change_modes) {
         return MAV_RESULT_DENIED;
@@ -771,7 +774,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     case MAV_CMD_DO_CHANGE_SPEED:
         return handle_MAV_CMD_DO_CHANGE_SPEED(packet);
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     case MAV_CMD_DO_FOLLOW:
         // param1: sysid of target to follow
         if ((packet.param1 > 0) && (packet.param1 <= 255)) {
@@ -812,7 +815,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         return handle_MAV_CMD_SOLO_BTN_FLY_CLICK(packet);
 #endif
 
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     case MAV_CMD_MISSION_START:
         return handle_MAV_CMD_MISSION_START(packet);
 #endif
@@ -841,7 +844,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         }
         return MAV_RESULT_ACCEPTED;
 
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     case MAV_CMD_DO_RETURN_PATH_START:
         if (copter.mode_auto.return_path_start_auto_RTL(ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
@@ -957,7 +960,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_comm
         return MAV_RESULT_FAILED;
 }
 
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
 {
         if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
@@ -1090,7 +1093,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink
                 bool shot_mode = (!is_zero(packet.param1) && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS));
 
                 if (!shot_mode) {
-#if MODE_BRAKE_ENABLED == ENABLED
+#if MODE_BRAKE_ENABLED
                     if (copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
                         copter.mode_brake.timeout_to_loiter_ms(2500);
                     } else {
@@ -1178,7 +1181,7 @@ bool GCS_MAVLINK_Copter::sane_vel_or_acc_vector(const Vector3f &vec) const
     return true;
 }
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
     // for mavlink SET_POSITION_TARGET messages
     constexpr uint32_t MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE =
         POSITION_TARGET_TYPEMASK_X_IGNORE |
@@ -1203,7 +1206,7 @@ bool GCS_MAVLINK_Copter::sane_vel_or_acc_vector(const Vector3f &vec) const
         POSITION_TARGET_TYPEMASK_FORCE_SET;
 #endif
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 void GCS_MAVLINK_Copter::handle_message_set_attitude_target(const mavlink_message_t &msg)
 {
         // decode packet
@@ -1486,13 +1489,13 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
             copter.mode_guided.init(true);
         }
 }
-#endif  // MODE_GUIDED_ENABLED == ENABLED
+#endif  // MODE_GUIDED_ENABLED
 
 void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
 {
 
     switch (msg.msgid) {
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
         handle_message_set_attitude_target(msg);
         break;
@@ -1509,7 +1512,7 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
         copter.terrain.handle_data(chan, msg);
         break;
 #endif
-#if TOY_MODE_ENABLED == ENABLED
+#if TOY_MODE_ENABLED
     case MAVLINK_MSG_ID_NAMED_VALUE_INT:
         copter.g2.toy_mode.handle_message(msg);
         break;
@@ -1521,7 +1524,7 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_int_t &packet) {
-#if ADVANCED_FAILSAFE == ENABLED
+#if ADVANCED_FAILSAFE
     if (GCS_MAVLINK::handle_flight_termination(packet) == MAV_RESULT_ACCEPTED) {
         return MAV_RESULT_ACCEPTED;
     }

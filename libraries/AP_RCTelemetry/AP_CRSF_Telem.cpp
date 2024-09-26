@@ -1288,8 +1288,13 @@ void AP_CRSF_Telem::calc_parameter() {
 class BufferChunker {
 public:
     BufferChunker(uint8_t* buf, uint16_t chunk_size, uint16_t start_chunk) :
-        _buf(buf), _idx(0), _start_chunk(start_chunk), _chunk_size(chunk_size), _chunk(0), _bytes(0) {
-    }
+        _buf(buf),
+        _idx(0),
+        _bytes(0),
+        _chunk(0),
+        _start_chunk(start_chunk),
+        _chunk_size(chunk_size)
+    { }
 
     // accumulate a string, writing to the underlying buffer as required
     void put_string(const char* str, uint16_t str_len) {

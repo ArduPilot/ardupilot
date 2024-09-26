@@ -16,6 +16,7 @@ _board = None
 # modify our search path:
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
 import chibios_hwdef
+import build_options
 
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
@@ -159,8 +160,16 @@ class Board:
             )
             cfg.msg("Enabled custom controller", 'no', color='YELLOW')
 
-        if cfg.options.enable_ppp:
-            env.CXXFLAGS += ['-DAP_NETWORKING_BACKEND_PPP=1']
+        # support enabling any option in build_options.py
+        for opt in build_options.BUILD_OPTIONS:
+            enable_option = opt.config_option().replace("-","_")
+            disable_option = "disable_" + enable_option[len("enable-"):]
+            if getattr(cfg.options, enable_option, False):
+                env.CXXFLAGS += ['-D%s=1' % opt.define]
+                cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
+            elif getattr(cfg.options, disable_option, False):
+                env.CXXFLAGS += ['-D%s=0' % opt.define]
+                cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
 
         if cfg.options.disable_networking:
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=0']
@@ -430,6 +439,13 @@ class Board:
                 env.CXXFLAGS += [
                     '-Werror=sizeof-pointer-div',
                 ]
+            if self.cc_version_gte(cfg, 13, 2):
+                env.CXXFLAGS += [
+                    '-Werror=use-after-free',
+                ]
+                env.CFLAGS += [
+                    '-Werror=use-after-free',
+                ]
 
         if cfg.options.Werror:
             errors = ['-Werror',
@@ -486,12 +502,6 @@ class Board:
 
         # We always want to use PRI format macros
         cfg.define('__STDC_FORMAT_MACROS', 1)
-
-        if cfg.options.enable_ekf2:
-            env.CXXFLAGS += ['-DHAL_NAVEKF2_AVAILABLE=1']
-
-        if cfg.options.disable_ekf3:
-            env.CXXFLAGS += ['-DHAL_NAVEKF3_AVAILABLE=0']
 
         if cfg.options.postype_single:
             env.CXXFLAGS += ['-DHAL_WITH_POSTYPE_DOUBLE=0']

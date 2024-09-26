@@ -3,6 +3,8 @@
 
 #if EK3_FEATURE_BEACON_FUSION
 
+#include <AP_DAL/AP_DAL.h>
+
 // initialise state:
 void NavEKF3_core::BeaconFusion::InitialiseVariables()
 {
@@ -40,7 +42,7 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     delete[] fusionReport;
     fusionReport = nullptr;
     numFusionReports = 0;
-    auto *beacon = AP::dal().beacon();
+    auto *beacon = dal.beacon();
     if (beacon != nullptr) {
         const uint8_t count = beacon->count();
         fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];

@@ -591,6 +591,7 @@ private:
     void handle_log_request_data(class GCS_MAVLINK &, const mavlink_message_t &msg);
     void handle_log_request_erase(class GCS_MAVLINK &, const mavlink_message_t &msg);
     void handle_log_request_end(class GCS_MAVLINK &, const mavlink_message_t &msg);
+    void end_log_transfer();
     void handle_log_send_listing(); // handle LISTING state
     void handle_log_sending(); // handle SENDING state
     bool handle_log_send_data(); // send data chunk to client

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_ACRO_ENABLED == ENABLED
+#if MODE_ACRO_ENABLED
 
 #if FRAME_CONFIG == HELI_FRAME
 /*
@@ -111,7 +111,7 @@ void ModeAcro_Heli::run()
             // if there is no external gyro then run the usual
             // ACRO_YAW_P gain on the input control, including
             // deadzone
-            yaw_in = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+            yaw_in = get_pilot_desired_yaw_rate();
         }
 
         // run attitude controller
@@ -153,4 +153,4 @@ void ModeAcro_Heli::virtual_flybar( float &roll_out, float &pitch_out, float &ya
 
 }
 #endif  //HELI_FRAME
-#endif  //MODE_ACRO_ENABLED == ENABLED
+#endif  //MODE_ACRO_ENABLED

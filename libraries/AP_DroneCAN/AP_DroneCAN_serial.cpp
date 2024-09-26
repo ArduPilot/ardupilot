@@ -86,7 +86,20 @@ void AP_DroneCAN_Serial::update(void)
             }
             n = MIN(avail, sizeof(pkt.buffer.data));
             pkt.target_node = p.node;
-            pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_UNDEFINED;
+            switch (p.state.protocol) {
+                case AP_SerialManager::SerialProtocol_MAVLink:
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_MAVLINK;
+                    break;
+                case AP_SerialManager::SerialProtocol_MAVLink2:
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_MAVLINK2;
+                    break;
+                case AP_SerialManager::SerialProtocol_GPS:
+                case AP_SerialManager::SerialProtocol_GPS2: // is not in SERIAL1_PROTOCOL option list, but could be entered by user
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_GPS_GENERIC;
+                    break;
+                default:
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_UNDEFINED;
+            }
             pkt.buffer.len = n;
             pkt.baudrate = p.baudrate;
             pkt.serial_id = p.idx;

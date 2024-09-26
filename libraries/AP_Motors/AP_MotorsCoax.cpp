@@ -224,27 +224,17 @@ void AP_MotorsCoax::_output_test_seq(uint8_t motor_seq, int16_t pwm)
     switch (motor_seq) {
         case 1:
             // flap servo 1
-            rc_write(AP_MOTORS_MOT_1, pwm);
-            break;
         case 2:
             // flap servo 2
-            rc_write(AP_MOTORS_MOT_2, pwm);
-            break;
         case 3:
             // flap servo 3
-            rc_write(AP_MOTORS_MOT_3, pwm);
-            break;
         case 4:
             // flap servo 4
-            rc_write(AP_MOTORS_MOT_4, pwm);
-            break;
         case 5:
             // motor 1
-            rc_write(AP_MOTORS_MOT_5, pwm);
-            break;
         case 6:
             // motor 2
-            rc_write(AP_MOTORS_MOT_6, pwm);
+            rc_write(motor_seq - 1u, pwm);
             break;
         default:
             // do nothing

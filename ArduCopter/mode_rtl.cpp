@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
 
 /*
  * Init and run calls for RTL flight mode
@@ -52,11 +52,11 @@ ModeRTL::RTLAltType ModeRTL::get_alt_type() const
 {
     // sanity check parameter
     switch ((ModeRTL::RTLAltType)g.rtl_alt_type) {
-    case RTLAltType::RTL_ALTTYPE_RELATIVE ... RTLAltType::RTL_ALTTYPE_TERRAIN:
+    case RTLAltType::RELATIVE ... RTLAltType::TERRAIN:
         return g.rtl_alt_type;
     }
     // user has an invalid value
-    return RTLAltType::RTL_ALTTYPE_RELATIVE;
+    return RTLAltType::RELATIVE;
 }
 
 // rtl_run - runs the return-to-launch controller
@@ -410,7 +410,7 @@ void ModeRTL::compute_return_target()
 
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
-    if (terrain_following_allowed && (get_alt_type() == RTLAltType::RTL_ALTTYPE_TERRAIN)) {
+    if (terrain_following_allowed && (get_alt_type() == RTLAltType::TERRAIN)) {
         // convert RTL_ALT_TYPE and WPNAV_RFNG_USE parameters to ReturnTargetAltType
         switch (wp_nav->get_terrain_source()) {
         case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:

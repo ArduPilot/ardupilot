@@ -9,7 +9,8 @@
 
 #if AP_SCRIPTING_ENABLED
     #include <AP_Filesystem/AP_Filesystem_config.h>
-    #if !AP_FILESYSTEM_FILE_READING_ENABLED
+    // enumerate all of the possible places we can read a script from.
+    #if !AP_FILESYSTEM_POSIX_ENABLED && !AP_FILESYSTEM_FATFS_ENABLED && !AP_FILESYSTEM_ESP32_ENABLED && !AP_FILESYSTEM_ROMFS_ENABLED
         #error "Scripting requires a filesystem"
     #endif
 #endif

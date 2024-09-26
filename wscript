@@ -10,10 +10,12 @@ import subprocess
 import json
 import fnmatch
 sys.path.insert(0, 'Tools/ardupilotwaf/')
+sys.path.insert(0, 'Tools/scripts/')
 
 import ardupilotwaf
 import boards
 import shutil
+import build_options
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -204,11 +206,6 @@ def options(opt):
         default=False,
         help='enable OS level thread statistics.')
 
-    g.add_option('--enable-ppp',
-        action='store_true',
-        default=False,
-        help='enable PPP networking.')
-    
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -388,16 +385,6 @@ configuration in order to save typing.
         default=False,
         help='Use flash storage emulation.')
 
-    g.add_option('--enable-ekf2',
-        action='store_true',
-        default=False,
-        help='Configure with EKF2.')
-
-    g.add_option('--disable-ekf3',
-        action='store_true',
-        default=False,
-        help='Configure without EKF3.')
-
     g.add_option('--ekf-double',
         action='store_true',
         default=False,
@@ -446,6 +433,24 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='enables checking of new to ensure NEW_NOTHROW is used')
+
+    # support enabling any option in build_options.py
+    for opt in build_options.BUILD_OPTIONS:
+        enable_option = "--" + opt.config_option()
+        disable_option = enable_option.replace("--enable", "--disable")
+        enable_description = opt.description
+        if not enable_description.lower().startswith("enable"):
+            enable_description = "Enable " + enable_description
+        disable_description = "Disable " + enable_description[len("Enable "):]
+        g.add_option(enable_option,
+                     action='store_true',
+                     default=False,
+                     help=enable_description)
+        g.add_option(disable_option,
+                     action='store_true',
+                     default=False,
+                     help=disable_description)
+    
     
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
