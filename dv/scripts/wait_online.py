@@ -5,10 +5,14 @@ import sys, os
 import serial
 
 if __name__ == '__main__':
+    port = "/dev/ttyTHS1"
+    if len(sys.argv) > 1:
+        port = sys.argv[1]
+
     while True:
-        print(f"Waiting for ardupilot to become online at {sys.argv[1]}")
+        print(f"Waiting for ardupilot to become online at {port}")
         try:
-            some_master = get_serial_master(sys.argv[1])
+            some_master = get_serial_master(port)
             if some_master is not None:
                 break
         except Exception as e:

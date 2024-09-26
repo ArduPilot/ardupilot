@@ -2,8 +2,7 @@
 
 set -ex
 
-# PORT=/dev/ttyTHS1
-PORT=/dev/ttyACM0
+PORT=/dev/ttyTHS1
 
 ./dv/scripts/wait_online.py "${PORT}"
 ./dv/scripts/reboot_autopilot.py "${PORT}"
