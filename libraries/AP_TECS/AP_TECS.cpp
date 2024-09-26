@@ -1053,6 +1053,9 @@ void AP_TECS::_update_pitch(void)
         _pitch_dem_unc += (_TAS_dem_adj - _pitch_ff_v0) * _pitch_ff_k;
     }
 
+    // Constrain pitch demand
+    _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
+
     // Rate limit the pitch demand to comply with specified vertical
     // acceleration limit
     float ptchRateIncr = _DT * _vertAccLim / _TAS_state;
@@ -1062,9 +1065,6 @@ void AP_TECS::_update_pitch(void)
     } else if ((_pitch_dem - _last_pitch_dem) < -ptchRateIncr) {
         _pitch_dem = _last_pitch_dem - ptchRateIncr;
     }
-
-    // Constrain pitch demand
-    _pitch_dem = constrain_float(_pitch_dem_unc, _PITCHminf, _PITCHmaxf);
 
     _last_pitch_dem = _pitch_dem;
 
