@@ -25,7 +25,7 @@
    ZPR_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.6.0-022"
+SCRIPT_VERSION = "4.6.0-029"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -44,12 +44,17 @@ FLIGHT_MODE = {AUTO=10, RTL=11, LOITER=12, GUIDED=15, QHOVER=18, QLOITER=19, QRT
 DISTANCE_LOOKAHEAD_SECONDS = 5
 
 local current_location = ahrs:get_location()
+local ahrs_eas2tas = ahrs:get_EAS2TAS()
+local windspeed_vector = ahrs:wind_estimate()
+
 local now = millis():tofloat() * 0.001
 local now_too_close = now
 local now_overshot = now
+local now_target_distance = now
 local now_distance = now
 local now_results = now
 local now_airspeed = now
+local now_target_airspeed = now
 local now_lost_target = now
 local now_target_heading = now
 local follow_enabled = false
@@ -58,11 +63,7 @@ local lost_target_countdown = LOST_TARGET_TIMEOUT
 local save_target_heading = {0.0, 0.0, 0.0}
 local save_target_heading1 = -400.0
 local save_target_heading2 = -400.0
-
--- bind a parameter to a variable
-local function bind_param(name) 
-   return Parameter(name)
-end
+local tight_turn = false
 
 local PARAM_TABLE_KEY = 100
 local PARAM_TABLE_PREFIX = "ZPF_"
@@ -70,7 +71,7 @@ local PARAM_TABLE_PREFIX = "ZPF_"
 -- add a parameter and bind it to a variable
 local function bind_add_param(name, idx, default_value)
    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-   return bind_param(PARAM_TABLE_PREFIX .. name)
+   return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
 -- setup follow mode specific parameters
@@ -81,10 +82,13 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 10), 'could not add 
 -- is no need to access them in the scriot
 
 -- we need these existing FOLL_ parametrs
-FOLL_ALT_TYPE = bind_param('FOLL_ALT_TYPE')
-FOLL_SYSID = bind_param('FOLL_SYSID')
-FOLL_OFS_Y = bind_param('FOLL_OFS_Y')
-FOLL_OFS_X = bind_param('FOLL_OFS_X')
+FOLL_ALT_TYPE = Parameter('FOLL_ALT_TYPE')
+FOLL_SYSID = Parameter('FOLL_SYSID')
+FOLL_OFS_Y = Parameter('FOLL_OFS_Y')
+local foll_sysid = FOLL_SYSID:get() or -1
+local foll_ofs_y = FOLL_OFS_Y:get() or 0
+local foll_alt_type = FOLL_ALT_TYPE:get() or ALT_FRAME.GLOBAL
+
 
 -- Add these ZPF_ parameters specifically for this script
 --[[
@@ -136,7 +140,7 @@ ZPF_OVRSHT_DEG = bind_add_param("OVRSHT_DEG", 5, 75)
     // @Range: 0 180
     // @Units: degrees
 --]]
-ZPF_TURN_DEG = bind_add_param("TURN_DEG", 6, 60)
+ZPF_TURN_DEG = bind_add_param("TURN_DEG", 6, 15)
 
 --[[
     // @Param: ZPF_DIST_CLOSE
@@ -147,19 +151,39 @@ ZPF_TURN_DEG = bind_add_param("TURN_DEG", 6, 60)
 --]]
 ZPF_DIST_CLOSE = bind_add_param("DIST_CLOSE", 7, 40)
 
+--[[
+    // @Param: ZPF_WIDE_TURNS
+    // @DisplayName: Plane Follow Scripting Wide Turns
+    // @Description: Use wide turns when following a turning target. Alternative is "cutting the corner"
+    // @Range: 0 1
+    // @Units: boolean
+--]]
+ZPF_WIDE_TURNS = bind_add_param("WIDE_TURNS", 8, 1)
+
+--[[
+    // @Param: ZPF_ALT
+    // @DisplayName: Plane Follow Scripting Altitude Override
+    // @Description: When non zero, this altitude value (in FOLL_ALT_TYPE frame) overrides the value sent by the target vehicle
+    // @Range: 0 1000
+    // @Units: meters
+--]]
+ZPF_ALT_OVR = bind_add_param("ALT_OVR", 9, 0)
+
 REFRESH_RATE = 0.05   -- in seconds, so 20Hz
 LOST_TARGET_TIMEOUT = (ZPF_TIMEOUT:get() or 10) / REFRESH_RATE
 OVERSHOOT_ANGLE = ZPF_OVRSHT_DEG:get() or 75.0
 TURNING_ANGLE = ZPF_TURN_DEG:get() or 20.0
 
-AIRSPEED_MIN = bind_param('AIRSPEED_MIN')
-AIRSPEED_MAX = bind_param('AIRSPEED_MAX')
-AIRSPEED_CRUISE = bind_param('AIRSPEED_CRUISE')
-WP_LOITER_RAD = bind_param('WP_LOITER_RAD')
+AIRSPEED_MIN = Parameter('AIRSPEED_MIN')
+AIRSPEED_MAX = Parameter('AIRSPEED_MAX')
+AIRSPEED_CRUISE = Parameter('AIRSPEED_CRUISE')
+WP_LOITER_RAD = Parameter('WP_LOITER_RAD')
+WINDSPEED_MAX = Parameter('AHRS_WIND_MAX')
 
 local airspeed_max = AIRSPEED_MAX:get() or 25.0
 local airspeed_min = AIRSPEED_MIN:get() or 12.0
 local airspeed_cruise = AIRSPEED_CRUISE:get() or 18.0
+local windspeed_max = WINDSPEED_MAX:get() or 100.0
 
 --[[
 create a NaN value
@@ -178,7 +202,10 @@ local function constrain(v, vmin, vmax)
 end
 
 local speedpi = require("speedpi")
-local speed_controller = speedpi.speed_controller(0.1, 0.1, 5.0, airspeed_min, airspeed_max)
+local speed_controller = speedpi.speed_controller(0.2, 0.2, 5.0, airspeed_min, airspeed_max)
+
+local mavlink_attitude = require("mavlink_attitude")
+local mavlink_attitude_receiver = mavlink_attitude.mavlink_attitude_receiver()
 
 local function follow_frame_to_mavlink(follow_frame)
    local mavlink_frame = MAV_FRAME.GLOBAL;
@@ -191,24 +218,14 @@ local function follow_frame_to_mavlink(follow_frame)
    return mavlink_frame
 end
 
-local now_altitude = millis():tofloat() * 0.001
--- target.alt = new target altitude in meters
 -- set_vehicle_target_altitude() Parameters
+-- target.alt = new target altitude in meters
 -- target.frame = Altitude frame MAV_FRAME, it's very important to get this right!
 -- target.alt = altitude in meters to acheive
--- target.accel = z acceleration to altitude (1000.0 = max)
+-- target.speed = z speed of change to altitude (1000.0 = max)
 local function set_vehicle_target_altitude(target)
    local home_location = ahrs:get_home()
-   local acceleration = target.accel or 1000.0 -- default to maximum z acceleration
-   if math.floor(now) ~= math.floor(now_altitude) then
-      now_altitude = millis():tofloat() * 0.001
-      --[[
-      gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(": set heading alt: %.1f", target.alt) )
-      if home_location ~= nil then
-         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(" set location :  alt home relative: %.1f", (target.alt - (home_location:alt() * 0.01))))
-      end
-      --]]
-   end
+   local speed = target.speed or 1000.0 -- default to maximum z acceleration
    if target.alt == nil then
       gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": set_vehicle_target_altitude no altiude")
       return
@@ -216,13 +233,12 @@ local function set_vehicle_target_altitude(target)
    -- GUIDED_CHANGE_ALTITUDE takes altitude in meters
    if not gcs:run_command_int(MAV_CMD_INT.GUIDED_CHANGE_ALTITUDE, {
                               frame = follow_frame_to_mavlink(target.frame),
-                              p3 = acceleration,
+                              p3 = speed,
                               z = target.alt }) then
       gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": MAVLink CHANGE_ALTITUDE returned false")
    end
 end
 
-local now_heading = millis():tofloat() * 0.001
 -- set_vehicle_heading() Parameters
 -- heading.heading_type = MAV_HEADING_TYPE (defaults to HEADING)
 -- heading.heading = the target heading in degrees
@@ -231,10 +247,6 @@ local function set_vehicle_heading(heading)
    local heading_type = heading.type or MAV_HEADING_TYPE.HEADING
    local heading_heading = heading.heading or 0
    local heading_accel = heading.accel or 0.0
-
-   if heading_type ~= MAV_HEADING_TYPE.DEFAULT and math.floor(now) ~= math.floor(now_heading) then
-      now_heading = millis():tofloat() * 0.001
-   end
 
    if not gcs:run_command_int(MAV_CMD_INT.GUIDED_CHANGE_HEADING, { frame = MAV_FRAME.GLOBAL,
                                  p1 = heading_type, 
@@ -286,16 +298,8 @@ local function set_vehicle_target_location(target)
    local angle = target.turning_angle or 0
    local yaw = target.yaw or 1
    -- If we are on the right side of the vehicle make sure any loitering is CCW (moves away from the other plane)
-   if FOLL_OFS_Y:get() > 0 or angle < 0 then
+   if foll_ofs_y > 0 or angle < 0 then
       yaw = -yaw
-   end
-
-   if math.floor(now) ~= math.floor(now_altitude) then
-      now_altitude = millis():tofloat() * 0.001
-      if home_location ~= nil then
-         --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. string.format(" set location :  alt home relative: %.1f", (target.alt - (home_location:alt() * 0.01))))
-      end
-      --gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. string.format(" set location :  alt: %.1f", target.alt))
    end
 
    -- if we were in HEADING mode, need to switch out of it so that REPOSITION will work
@@ -391,6 +395,7 @@ local function wrap_180(angle)
     return res
 end
 
+--[[ probably not required
 -- calculate difference between the target heading and the following vehicle heading
 local function follow_target_angle(target_heading_follow, target_location_follow)
 
@@ -398,21 +403,32 @@ local function follow_target_angle(target_heading_follow, target_location_follow
    local follow_heading = math.deg(current_location:get_bearing(target_location_follow))
 
    local angle_target_return = wrap_180(target_heading_follow - follow_heading)
-   --[[
-   if follow_heading > vehicle_heading then
-      angle_target_return = target_heading - vehicle_heading
-   end
-   angle_target_return = wrap_180(angle_target_return)
-   --]]
+   
+   --if follow_heading > vehicle_heading then
+   --   angle_target_return = target_heading - vehicle_heading
+   --end
+   --angle_target_return = wrap_180(angle_target_return)
+   
    return angle_target_return
 end
+--]]
 
-local pre_target_heading = 0.0
+local function calculate_airspeed_from_groundspeed(velocity_vector)
+   local airspeed_vector = velocity_vector - windspeed_vector
+   local airspeed = airspeed_vector:length()
+   airspeed = airspeed * ahrs_eas2tas
+   airspeed = constrain(airspeed, airspeed - windspeed_max, airspeed + windspeed_max)
+   airspeed = airspeed / ahrs_eas2tas
+
+   return airspeed
+end
 
 -- main update function
 local function update()
    now = millis():tofloat() * 0.001
    current_location = ahrs:get_location()
+   ahrs_eas2tas = ahrs:get_EAS2TAS()
+   windspeed_vector = ahrs:wind_estimate()
 
    follow_check()
    if not follow_active() then
@@ -420,30 +436,32 @@ local function update()
    end
 
    -- set the target frame as per user set parameter - this is fundamental to this working correctly
-   local altitude_frame = FOLL_ALT_TYPE:get() or ALT_FRAME.GLOBAL
    local wp_loiter_rad = WP_LOITER_RAD:get()
    local close_distance = ZPF_DIST_CLOSE:get() or airspeed_cruise * 2.0
+   local long_distance = close_distance * 4.0
    local fail_mode = ZPF_FAIL_MODE:get() or FLIGHT_MODE.QRTL
    local exit_mode = ZPF_EXIT_MODE:get() or FLIGHT_MODE.LOITER
+   local use_wide_turns = ZPF_WIDE_TURNS:get() or 1
+   local altitude_override = ZPF_ALT_OVR:get() or 0
 
    LOST_TARGET_TIMEOUT = (ZPF_TIMEOUT:get() or 10) / REFRESH_RATE
    OVERSHOOT_ANGLE = ZPF_OVRSHT_DEG:get() or 75.0
    TURNING_ANGLE = ZPF_TURN_DEG:get() or 20.0
+   foll_ofs_y = FOLL_OFS_Y:get() or 0
+   foll_alt_type = FOLL_ALT_TYPE:get() or ALT_FRAME.GLOBAL
 
    --[[
       get the current navigation target. 
    --]]
    local target_location -- = Location()     of the target
-   local target_location_offset
-   local target_velocity -- = Vector3f()     -- velocity of lead vehicle
-   local target_velocity_offset
-   --local target_velocity_offset -- = Vector3f()     -- velocity of lead vehicle
+   local target_location_offset -- Location  of the target with FOLL_OFS_* offsets applied
+   local target_velocity -- = Vector3f()     -- current velocity of lead vehicle
+   local target_velocity_offset -- Vector3f  -- velocity to the offset target_location_offset
    local target_distance -- = Vector3f()     -- vector to lead vehicle
-   --local target_offsets -- = Vector3f()      -- vector to lead vehicle + offsets
-   local target_distance_offsets  -- vector to the target taking offsets into account
-   local xy_dist = 0.0
-   local target_heading = 0.0    -- heading of the target vehicle
-   local heading_to_target       -- heading of the follow vehicle to the target with offsets
+   local target_distance_offsets             -- vector to the target taking offsets into account
+   local xy_dist = 0.0                       -- distance to target with offsets in meters
+   local target_heading = 0.0                -- heading of the target vehicle
+   local heading_to_target                   -- heading of the follow vehicle to the target with offsets
 
    local vehicle_airspeed = ahrs:airspeed_estimate()
    local current_target = vehicle:get_target_location()
@@ -466,65 +484,71 @@ local function update()
       target_location, target_location_offset, 
       xy_dist, heading_to_target = follow:get_target_info()
    target_heading = follow:get_target_heading_deg() or -400
-   --Vector3f &dist_ned, Vector3f &dist_with_offs, 
-   --Vector3f &target_vel_ned, Vector3f &target_vel_ned_ofs,
-   --Location &target_loc, Location &target_loc_ofs, 
-   --float &target_dist_ofs, 
-   --float &target_heading_ofs_deg
-   --)
 
+   -- if we lose the target wait for LOST_TARGET_TIMEOUT seconds to try to reaquire it
    if target_location == nil or target_velocity == nil or target_distance_offsets == nil or current_target == nil then
       lost_target_countdown = lost_target_countdown - 1
       if lost_target_countdown <= 0 then
-         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": follow: " .. FOLL_SYSID:get() .. " FAILED")
-         vehicle:set_mode(fail_mode)
          follow_enabled = false
+         vehicle:set_mode(fail_mode)
+         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": follow: " .. FOLL_SYSID:get() .. " FAILED")
          return
       end
       if math.floor(now) ~= math.floor(now_lost_target) then
          now_lost_target = millis():tofloat() * 0.001
          gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": lost target: " .. FOLL_SYSID:get() .. " count: " .. lost_target_countdown)
       end
-      -- if we have temporarily lost the target, maintain the heading of the target while we wait for LOST_TARGET_TIMEOUT seconds to re-aquire it
-      -- set_vehicle_heading({heading = target_heading})
       return
    else
       -- have a good target so reset the countdown 
       lost_target_countdown = LOST_TARGET_TIMEOUT
    end
 
+   -- target_velocity from MAVLink (via AP_Follow) is groundspeed, need to convert to airspeed, 
+   -- we can only assume the windspeed for the target is the same as the chase plane
+   --[[ 
+   This is the code from AHRS.cpp    
+   Vector3f true_airspeed_vec = nav_vel - wind_vel;
+
+   This is the c++ code from AP_AHRS_DCM.cpp and also from AP_AHRS.cpp
+   float true_airspeed = airspeed_ret * get_EAS2TAS();
+        true_airspeed = constrain_float(true_airspeed,
+                                        gnd_speed - _wind_max,
+                                        gnd_speed + _wind_max);
+        airspeed_ret = true_airspeed / get_EAS2TAS(
+   --]]
+   local target_airspeed = calculate_airspeed_from_groundspeed(target_velocity)
+
    --[[
-   gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": tgt hdg:%.0f", target_heading))
-   if pre_target_heading ~- nil then
-      gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": PRE tgt hdg:%.0f", pre_target_heading))
-      if pre_target_heading ~- target_heading then
-         gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": DIFFERENT tgt hdg:%.0f pre hdg: %.0f", target_heading, pre_target_heading))
-         pre_target_heading = target_heading
-      end
+   if math.floor(now) ~= math.floor(now_target_airspeed) then
+      now_target_airspeed = millis():tofloat() * 0.001
+      gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": wind %.1f target vel: %.1f asp: %.1f", windspeed_vector:length(), target_velocity:length(), target_airspeed) )
    end
-   pre_target_heading = target_heading
    --]]
 
    -- target_angle is the difference between the current heading of the target vehicle and the follow vehicle heading to the target_location
    -- local target_angle = follow_target_angle(target_heading, target_location)
    -- offset_angle is the difference between the current heading of the follow vehicle and the target_location (with offsets)
    --local vehicle_heading = math.deg(current_location:get_bearing(target_location))
-   local vehicle_heading = math.deg(ahrs:get_yaw())
+   local vehicle_heading = math.abs(wrap_360(math.deg(ahrs:get_yaw())))
    local follow_heading = heading_to_target -- math.deg(current_location:get_bearing(target_location_offset))
    local offset_angle = wrap_180(vehicle_heading - follow_heading)
 
---   local offset_angle = follow_target_angle(vehicle_heading, target_location_offset)
-
+   -- rotate the target_distance_offsets in NED to the same direction has the follow vehicle, we use this below
+   target_distance_offsets:rotate_xy(math.rad(vehicle_heading))
+   --[[
+   if math.floor(now_target_distance) ~= math.floor(now) then
+      gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": distance %.0f y %.0f ", target_distance_offsets:length(), target_distance_offsets:y()))
+      now_target_distance = millis():tofloat() * 0.001
+   end
+   --]]
+   
    -- default the desired heading to the current heading - we might change this below
-   local desired_heading = vehicle_heading
+   local desired_heading = target_heading
 
    -- target angle is the difference between the heading of the target and what its heading was 2 seconds ago
    local target_angle = 0.0
-   if target_heading ~= nil then
-      --if math.abs(save_target_heading1 - target_heading ) > 10.0 or math.abs( save_target_heading2- target_heading ) > 10.0  then
-      --   gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": DIFFERENT tgt hdg:%.0f pre hdg1: %.0f", target_heading, save_target_heading1))
-      --   gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": DIFFERENT tgt hdg:%.0f pre hdg2: %.0f", target_heading, save_target_heading2))
-      --end
+   if target_heading ~= nil and target_heading > -400 then
       -- want the greatest angle of we might have turned
       local angle_diff1 = wrap_180(math.abs(save_target_heading1 - target_heading))
       local angle_diff2 = wrap_180(math.abs(save_target_heading2 - target_heading))
@@ -544,30 +568,63 @@ local function update()
       end
    end
 
-   local target_airspeed = target_velocity:length()
+   -- if the target vehicle is starting to roll we need to pre-empt a turn is coming
+   -- this is fairly simplistic and could probably be improved
+   -- got the code from Mission Planner - this is how it calculates the turn radius
+   --[[
+   public float radius
+        {
+            get
+            {
+                if (_groundspeed <= 1) return 0;
+                return (float)toDistDisplayUnit(_groundspeed * _groundspeed / (9.80665 * Math.Tan(roll * MathHelper.deg2rad)));
+            }
+        }
+   --]]
+   local target_attitude = mavlink_attitude_receiver.get_attitude(foll_sysid)
+   if target_attitude ~= nil then
+      if math.abs(target_attitude.roll) > 0.1 or math.abs(target_attitude.rollspeed) > 1 then
+         local turn_radius = vehicle_airspeed * vehicle_airspeed / (9.80665 * math.tan(target_attitude.roll))
+         local angle_adjustment = 60 * target_attitude.roll
+         -- predict the roll in 1s from now and use that.
+         -- this is wrong - this is the roll angle not the turn angle
+         -- need some more maths to convert a roll angle into a turn angle
+         turn_radius = vehicle_airspeed * vehicle_airspeed / (9.80665 * math.tan(target_attitude.roll + target_attitude.rollspeed))
+         local tangent_angle = wrap_360(math.deg(math.pi/2.0 - vehicle_airspeed / turn_radius))
+         --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": Att roll:%.2f rollspd: %.2f rad %.2f tan %.2f", target_attitude.roll, target_attitude.rollspeed, turn_radius, tangent_angle))
+
+         angle_adjustment = tangent_angle
+         target_angle = wrap_360(target_angle + angle_adjustment)
+         target_heading = wrap_360(target_heading + angle_adjustment)
+         -- gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": adjust:%.2f angle: %.2f heading %.2f", angle_adjustment, target_angle, target_heading))
+         -- push the target heading back because it hasn't figured out we are turning yet
+         save_target_heading1 = save_target_heading2
+      end
+      -- if the roll direction is the same as the y offset, then we are turning on the "inside" (a tight turn) but
+      -- if rollspeed direction is not the same as roll direction it means we are comming out of the turn
+      if (target_attitude.roll < 0 and target_attitude.rollspeed <=0 and foll_ofs_y < 0) or
+         (target_attitude.roll > 0 and target_attitude.rollspeed >=0 and foll_ofs_y > 0) then
+         tight_turn = true
+      else
+         tight_turn = false
+      end
+   end
+
    local desired_airspeed = target_airspeed
    local airspeed_difference = vehicle_airspeed - target_airspeed
 
    -- distance seem to be out by about 1s at approximately current airspeed just eyeballing it.
    xy_dist = math.abs(xy_dist) - vehicle_airspeed * 0.92
    -- xy_dist will always be a positive value. To get -v to represent overshoot, use the offset_angle
-   -- to decide if the target is behind. 
-   if (math.abs(xy_dist) < wp_loiter_rad) and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
+   -- to decide if the target is behind
+   if (math.abs(xy_dist) < long_distance) and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
       xy_dist = -xy_dist
    end
- 
+
+   -- projected_distance is how far off the target we expect to be if we maintain the current airspeed for DISTANCE_LOOKAHEAD_SECONDS
    local projected_distance = xy_dist - airspeed_difference * DISTANCE_LOOKAHEAD_SECONDS
 
-   -- next we try to match the airspeed of the target vehicle, calculating if we
-   -- need to speed up if too far behind, or slow down if too close
-
-   -- if the current velocity will not catch up to the target then we need to speed up 
-   -- use DISTANCE_LOOKAHEAD_SECONDS seconds as a reasonable time to try to catch up
-   -- first figure out how far away we will be from the required location in DISTANCE_LOOKAHEAD_SECONDS seconds if we maintain the current vehicle and target airspeeds
-   -- There is nothing magic about 12, it is just "what works" 
- 
-   -- don't count it as close if the heading is diverging (i.e. the target plane is turning)
-   --local too_close = (xy_dist > 0) and (math.abs(xy_dist) < close_distance) and (offset_angle < OVERSHOOT_ANGLE)
+   -- don't count it as close if the heading is diverging (i.e. the target plane has overshot the target so extremely that it's pointing in the wrong direction)
    local too_close = (projected_distance > 0) and (math.abs(projected_distance) < close_distance) and (offset_angle < OVERSHOOT_ANGLE)
    if too_close then
       if math.floor(now_too_close) ~= math.floor(now) then
@@ -579,9 +636,13 @@ local function update()
 
    -- we've overshot if 
    -- the distance to the target location is not too_close but will be hit in DISTANCE_LOOKAHEAD_SECONDS (projected_distance)
-   -- or the distance to the target location is already negative AND
-   -- the target is very close OR the angle to the target plane is effectively backwards 
-   local overshot = not too_close and (projected_distance < 0 or xy_dist < 0) and (math.abs(xy_dist) < airspeed_max * 2.0)
+   -- or the distance to the target location is already negative AND the target is very close OR 
+   -- the angle to the target plane is effectively backwards 
+   local overshot = not too_close and ((projected_distance < 0 or xy_dist < 0) and (math.abs(xy_dist) < close_distance) 
+                                       or offset_angle > OVERSHOOT_ANGLE
+                                       )
+
+   --[[
    if overshot then
       if math.floor(now_overshot) ~= math.floor(now) then
          now_overshot = millis():tofloat() * 0.001
@@ -594,52 +655,45 @@ local function update()
          --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": OVERSHOT reason distance: %.0f project %0.f close: %.0f", xy_dist, projected_distance, close_distance * 2))
       end
    end
-   -- xy 25 proj 20 = 5
-   -- xy -25 proj -20 = 5
-   -- xy -5 proj 5 = 10
-   -- xy 5 proj -5 = 10
-   -- xy 23 proj 34 = 10
-   local distance = math.abs(xy_dist - projected_distance)
+   --]]
+
    local distance_error = constrain(math.abs(projected_distance) / (close_distance * DISTANCE_LOOKAHEAD_SECONDS), 0.0, 1.0)
+   local speed_factor = 8.0 -- how agressively to scale the speed 1.0 - 8.0 least to most -ve means go slower
    if overshot or too_close or too_close_follow_up > 0 then
-      -- special cases if we have overshot or are just about to hit the target,
-      -- if we are too close the target_angle will likely be wrong 
       desired_heading = target_heading
 
-      if too_close_follow_up > 0 then
-         --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": TOO CLOSE follow up: %d", too_close_follow_up) )
-      end
       -- now calculate what airspeed we will need to fly for a few seconds to catch up the projected distance
       -- need to slow down dramatically. First we try to match the TARGET airspeed unless special cases kick in
       if overshot then
-         -- if we aren't going fast enough speed up, otherwise stay the course
-      
-         --if math.abs(projected_distance) < X_FUDGE then -- ignore it, close enough
-         --   desired_airspeed = target_airspeed
-         --else
-         if projected_distance < 0 then -- going too fast - slow down
-            desired_airspeed = vehicle_airspeed - (((vehicle_airspeed - airspeed_min) * distance_error) / 2.0)
-         else -- project that we are going too slow - speed up a bit but not too much
-            desired_airspeed = vehicle_airspeed - (((airspeed_max - vehicle_airspeed) * distance_error) / 8.0)
+         -- either we have actually overshot or we are likely to overshot (projected) very soon
+         -- but if we have overshot actual xy_dist, but projected is not overshot then we are already recovering
+         if xy_dist < 0 and projected_distance < 0 then -- actual and projected overshoot
+            speed_factor = -3.0
+         elseif xy_dist > 0 and projected_distance < 0 then -- actual ok, but projected overshoot
+            speed_factor = -1.5
+         elseif xy_dist < 0 and projected_distance > 0 then -- we are probably recovering
+            speed_factor = -1.0
+         else -- we get here if we used the OVERSHOOT_ANGLE to decide we overshot. The distances are fine, so don't change speed
+            speed_factor = 0.0
          end
          if math.floor(now_airspeed) ~= math.floor(now) then
             now_airspeed = millis():tofloat() * 0.001
-            gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": OVERSHOT airspeed projected %.0f desired speed: %.1f error: %.3f", projected_distance, desired_airspeed, distance_error) )
+            --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": OVERSHOT airspeed projected %.0f desired speed: %.1f error: %.3f", projected_distance, desired_airspeed, distance_error) )
          end
-   
       else
          too_close = true
          -- slow down so we don't overshoot
-         if -xy_dist < -projected_distance or xy_dist < 0 or projected_distance < 0 then -- slow down a bit more than, we are going too fast
-            desired_airspeed = vehicle_airspeed - (((vehicle_airspeed - airspeed_min) * distance_error) / 4.0)
-         else
-            desired_airspeed = vehicle_airspeed + (((vehicle_airspeed - airspeed_min) * distance_error) / 8.0)
+         if xy_dist < 0 or projected_distance < 0 then -- slow down a bit more than, we are going too fast
+            speed_factor = -2.0
+         elseif xy_dist < projected_distance then -- getting further away need to speed up a bit
+               speed_factor = 3.0
+         else -- this is good - we are catching up - "just right"
+            speed_factor = 1.0
          end
          if math.floor(now_airspeed) ~= math.floor(now) then
             now_airspeed = millis():tofloat() * 0.001
-            gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": TOOCLOSE dst %.0f prj %0.f asp new: %.1f err: %.3f", xy_dist, projected_distance, desired_airspeed, distance_error) )
+            --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": TOOCLOSE dst %.0f prj %0.f asp new: %.1f err: %.3f", xy_dist, projected_distance, desired_airspeed, distance_error) )
          end
-         --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": TOO CLOSE desired speed: %.1f", desired_airspeed) )
       end
       if too_close_follow_up > 0 then
          too_close_follow_up = too_close_follow_up - 1
@@ -655,6 +709,13 @@ local function update()
          --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": %s target %.1f desired airspeed %.1f", where, target_airspeed, desired_airspeed))
          now_distance = millis():tofloat() * 0.001
       end
+      if speed_factor == 0 then
+         desired_airspeed = vehicle_airspeed
+      elseif speed_factor < 0 then -- go slower - down to airspeed_min 
+         desired_airspeed = vehicle_airspeed + (((vehicle_airspeed - airspeed_min) * distance_error) / speed_factor) * 8.0
+      else -- go faster - up to airspeed_max
+         desired_airspeed = vehicle_airspeed + (((airspeed_max - vehicle_airspeed) * distance_error) / speed_factor) * 8.0
+      end
    else
       too_close_follow_up = 0
       -- AP_Follow doesn't speed up enough if wa are a long way from the target
@@ -663,18 +724,17 @@ local function update()
       if projected_distance > 0 then
          local incremental_speed = projected_distance / DISTANCE_LOOKAHEAD_SECONDS
          desired_airspeed = constrain(target_airspeed + incremental_speed, airspeed_min, airspeed_max)
-         -- desired_airspeed = target_airspeed + (airspeed_max - target_airspeed) * (projected_distance - xy_dist) /xy_dist * AIRSPEED_GAIN
-         -- gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(": LONG LONG projected %.0f target %.1f desired %.1f", projected_distance, target_airspeed, desired_airspeed))
       else
          desired_airspeed = target_airspeed + 2
       end
-      --distance_error = constrain(math.abs((-xy_dist + projected_distance)) / airspeed_cruise * DISTANCE_LOOKAHEAD_SECONDS / 2.0, 0.0, 1.0)
-      desired_airspeed = vehicle_airspeed + ((airspeed_max - vehicle_airspeed) * distance_error)
+      --desired_airspeed = vehicle_airspeed + ((airspeed_max - vehicle_airspeed) * distance_error)
+      --[[
       if math.floor(now_distance) ~= math.floor(now) then
          --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": LONG distance %.0f projected %.0f close %.0f", xy_dist, projected_distance, close_distance))
          --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": LONG target %.1f desired airspeed %.1f", target_airspeed, desired_airspeed))
          now_distance = millis():tofloat() * 0.001
       end
+      --]]
    end
 
    local old_location = ahrs:get_location()
@@ -686,20 +746,46 @@ local function update()
    local new_target_location = old_location:copy()
    local target_altitude = 0.0
 
-   target_altitude = target_location_offset:alt() * 0.01
+   if altitude_override ~= 0 then
+      target_altitude = altitude_override
+   else
+      -- change the incoming altitude frame from the target_vehicle to the frame this vehicle wants
+      target_location_offset:change_alt_frame(foll_alt_type)
+      target_altitude = target_location_offset:alt() * 0.01
+   end
    new_target_location:lat(target_location_offset:lat())
    new_target_location:lng(target_location_offset:lng())
    new_target_location:alt(target_location_offset:alt()) -- location uses cm for altitude
-   -- if we are < close_distance we always use heading, unless the target is turning otherwise
-   -- if we are > close_distance and < wp_loiter_rad and the target is not turning then we use heading
-   -- if we are > close_distance and < wp_loiter_rad and the target is not overshot then we use heading
-   -- otherwise of > wp_loiter_rad if the target is turning or we are a fair way away from the target then we use location, 
-   -- otherwise we use heading
+
    local mechanism = 1 -- for logging 1: position/location 2:heading
    local normalized_distance = math.abs(projected_distance)
-   if (normalized_distance > close_distance and
-         ((math.abs(target_angle) > TURNING_ANGLE and normalized_distance < wp_loiter_rad) or 
-         normalized_distance > wp_loiter_rad or math.abs(offset_angle) < OVERSHOOT_ANGLE)) then
+   local turning = normalized_distance < long_distance and math.abs(target_angle) > TURNING_ANGLE
+   local too_wide = math.abs(target_distance_offsets:y()) > (close_distance/3) and not turning
+   local wide_turn = not tight_turn
+
+   -- xy_dist < 3.0 is a special case because mode_guided will try to loiter around the target location if within 2m
+   if (turning and (tight_turn or (wide_turn and not use_wide_turns) or foll_ofs_y == 0)) or
+      (too_close and not too_wide) or overshot or
+      math.abs(xy_dist) < 3.0 then
+      set_vehicle_heading({heading = desired_heading})
+      set_vehicle_target_altitude({alt = target_altitude, frame = foll_alt_type}) -- pass altitude in meters (location has it in cm)
+      mechanism = 2 -- heading - for logging
+   else
+      set_vehicle_target_location({lat = target_location_offset:lat(),
+                                    lng = target_location_offset:lng(),
+                                    alt = target_altitude,
+                                    frame = foll_alt_type,
+                                    turning_angle = target_angle})
+      mechanism = 1  -- position/location - for logging
+   end
+
+   --[[
+   if too_wide or
+      (not turning and
+         (normalized_distance > close_distance and 
+            (turning or
+            normalized_distance > wp_loiter_rad or 
+            math.abs(offset_angle) < OVERSHOOT_ANGLE))) then
 --   (math.abs(xy_dist) <= wp_loiter_rad and math.abs(target_angle) < TURNING_ANGLE)
 --      or math.abs(xy_dist) > close_distance then
       set_vehicle_target_location({lat = target_location_offset:lat(),
@@ -710,49 +796,68 @@ local function update()
       --if normalized_distance > wp_loiter_rad then
       --   gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" normalized: %.0f projected %.0f angle target %.1f offset %.1f", normalized_distance, projected_distance, target_angle, offset_angle))
       --end
-      if math.abs(target_angle) > TURNING_ANGLE then
-         gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" TURNING position: %.0f save heading %.0f angle target %.1f offset %.1f", target_heading, save_target_heading1, target_angle, offset_angle))
-      end
-      mechanism = 1  -- position/location
+      --if math.abs(target_angle) > TURNING_ANGLE then
+      --   gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" TURNING position: %.0f save heading %.0f angle target %.1f offset %.1f", target_heading, save_target_heading1, target_angle, offset_angle))
+      --end
+      mechanism = 1  -- position/location - for logging
    else
-      if math.abs(target_angle) > TURNING_ANGLE then
-         desired_heading = target_heading
-         gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" TURNING heading: %.0f save heading %.0f angle target %.1f offset %.1f", target_heading, save_target_heading1, target_angle, offset_angle))
-      end
+      --if math.abs(target_angle) > TURNING_ANGLE then
+      --   desired_heading = target_heading
+         --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" TURNING heading: %.0f save heading %.0f angle target %.1f offset %.1f", target_heading, save_target_heading1, target_angle, offset_angle))
+      --end
       set_vehicle_heading({heading = desired_heading})
       set_vehicle_target_altitude({alt = target_altitude, frame = altitude_frame}) -- pass altitude in meters (location has it in cm)
-      mechanism = 2 -- heading
+      mechanism = 2 -- heading - for logging
    end
+   ]]--
    local airspeed_new = speed_controller.update(vehicle_airspeed, desired_airspeed - vehicle_airspeed)
    if math.floor(now_results) ~= math.floor(now) then
       --gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format("vehicle x %.1f y %.1f length %.1f", vehicle_vector:x(), vehicle_vector:y(), vehicle_vector:length()))
       --gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format("target x %.1f y %.1f length %.1f", target_vector:x(), target_vector:y(), target_vector:length()))
       --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format("normalized: %.0f projected %.0f angle target %.1f offset %.1f", normalized_distance, projected_distance, target_angle, offset_angle))
       --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": dst %.1f prj %.1f diff %.0f err %.3f ", xy_dist, projected_distance, distance, distance_error))
-      -- gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": dst %.1f prj %.1f asp %.1f NEW %.1f ", xy_dist, projected_distance, desired_airspeed, airspeed_new))
-      --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": tgt hdg:%.0f veh hdg: %.0f ang off %.0f ang tar %.0f", target_heading, vehicle_heading, offset_angle, target_angle ))
-      --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": target alt: %.1f", target_location:alt() * 0.01 ))
+      --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": dst %.1f prj %.1f asp %.1f NEW %.1f fac %.1f ", xy_dist, projected_distance, desired_airspeed, airspeed_new, speed_factor))
+      --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": tgt hdg:%.0f veh hdg: %.0f des hdg %.0f ang tar %.0f", target_heading, vehicle_heading, desired_heading, target_angle ))
+      gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": target alt: %.1f desired alt %.1f frame %d", target_location:alt() * 0.01, target_altitude, foll_alt_type ))
+      --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": distance %.0f y %.0f ", target_distance_offsets:length(), target_distance_offsets:y()))
       if math.abs(xy_dist) < wp_loiter_rad and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
          --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" REVERSE: distance %.1f offset_angle %.1f ", xy_dist, offset_angle ))
       end
       now_results = millis():tofloat() * 0.001
    end
-   --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": distance %f speed %s heading:%f alt: %f", xy_dist, desired_airspeed, target_heading, target_location:alt() ))
+
    set_vehicle_speed({speed = constrain(airspeed_new, airspeed_min, airspeed_max)})
 
-   logger.write("ZPFL",'Dst,DstP,AspT,Asp,AspO,Hdg,AngT,AngO,Alt,AltT,Mech','ffffffffffB',
+   local log_too_close = 0
+   local log_too_close_follow_up = 0
+   local log_overshot = 0
+   if too_close then
+         log_too_close = 1
+   end
+   if too_close_follow_up then 
+      log_too_close_follow_up = 1
+   end
+   if overshot then
+      log_overshot = 1
+   end
+   logger.write("ZPF1",'Dst,DstP,DstE,AspT,Asp,AspO,Mech,Cls,ClsF,OSht','ffffffBBBB',
                   xy_dist,
                   projected_distance,
+                  distance_error,
                   target_airspeed,
                   vehicle_airspeed,
-                  desired_airspeed,
-                  target_heading,
-                  target_angle,
-                  offset_angle,
-                  current_altitude,
-                  target_altitude,
-                  mechanism
+                  airspeed_new,
+                  mechanism, log_too_close, log_too_close_follow_up, log_overshot
                )
+      logger.write("ZPF2",'AngT,AngO,Alt,AltT,HdgT,Hdg,HdgO','fffffff',
+               target_angle,
+               offset_angle,
+               current_altitude,
+               target_altitude,
+               target_heading,
+               vehicle_heading,
+               desired_heading
+            )
 end
 
 -- wrapper around update(). This calls update() at 20Hz,
@@ -773,4 +878,3 @@ gcs:send_text(MAV_SEVERITY.NOTICE, string.format("%s %s script loaded", SCRIPT_N
 
 -- start running update loop
 return protected_wrapper()
-
