@@ -1026,6 +1026,16 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
             continue;
         }
 
+#if !AP_BATTERY_SUM_ENABLED
+        // CONVERSION - Added Sep 2024 for ArduPilot 4.6 as we are
+        // removing the SUM backend on 1MB boards.  Give a
+        // more-specific error for the sum backend:
+        if (expected_type == Type::Sum) {
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, "feature BATTERY_SUM not available");
+            return false;
+        }
+#endif
+
         if (drivers[i] == nullptr || allocated_type(i) != expected_type) {
             hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, "unhealthy");
             return false;
