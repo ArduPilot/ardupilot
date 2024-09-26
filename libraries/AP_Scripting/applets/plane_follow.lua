@@ -818,7 +818,7 @@ local function update()
       --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": dst %.1f prj %.1f diff %.0f err %.3f ", xy_dist, projected_distance, distance, distance_error))
       --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": dst %.1f prj %.1f asp %.1f NEW %.1f fac %.1f ", xy_dist, projected_distance, desired_airspeed, airspeed_new, speed_factor))
       --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": tgt hdg:%.0f veh hdg: %.0f des hdg %.0f ang tar %.0f", target_heading, vehicle_heading, desired_heading, target_angle ))
-      gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": target alt: %.1f desired alt %.1f frame %d", target_location:alt() * 0.01, target_altitude, foll_alt_type ))
+      --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": target alt: %.1f desired alt %.1f frame %d", target_location:alt() * 0.01, target_altitude, foll_alt_type ))
       --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": distance %.0f y %.0f ", target_distance_offsets:length(), target_distance_offsets:y()))
       if math.abs(xy_dist) < wp_loiter_rad and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
          --gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(" REVERSE: distance %.1f offset_angle %.1f ", xy_dist, offset_angle ))
