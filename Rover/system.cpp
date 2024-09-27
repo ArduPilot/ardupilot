@@ -125,6 +125,9 @@ void Rover::init_ardupilot()
 #if AP_MISSION_ENABLED
     // initialise mission library
     mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 #endif
 
     // initialise AP_Logger library
