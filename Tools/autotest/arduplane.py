@@ -6180,6 +6180,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "SERVO6_FUNCTION": 0, # balloon lift
             "SERVO10_FUNCTION": 156, # lift release
             "EK3_IMU_MASK": 1, # lane switches just make log harder to read
+            "FLIGHT_OPTIONS": 32768 # Do not build glideslope.
         })
 
         self.set_servo(6, 1000)
