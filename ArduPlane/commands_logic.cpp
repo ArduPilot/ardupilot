@@ -12,13 +12,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
-#if HAL_LOGGING_ENABLED
-    // log when new commands start
-    if (should_log(MASK_LOG_CMD)) {
-        logger.Write_Mission_Cmd(mission, cmd);
-    }
-#endif
-
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
         // set takeoff_complete to true so we don't add extra elevator
