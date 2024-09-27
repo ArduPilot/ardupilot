@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel_config.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -400,6 +401,15 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
+    if (log_start_mission_item_bit != (uint32_t)-1) {
+        auto &logger = AP::logger();
+        if (logger.should_log(log_start_mission_item_bit)) {
+            logger.Write_MISE(*this, cmd);
+        }
+    }
+#endif
+
     // check for landing related commands and set flags
     if (is_landing_type_cmd(cmd.id) || cmd.id == MAV_CMD_DO_LAND_START) {
         _flags.in_landing_sequence = true;
