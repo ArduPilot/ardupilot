@@ -230,11 +230,6 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::check_radar_reading(float &reading_m)
         reading_m = MIN(656, reading_m);
         return false;
     }
-    // We want to provide the reading for lower value
-    if(reading_m < 0.3)
-    {
-        reading_m = 0.3; 
-    }
     return true;
 }
 
