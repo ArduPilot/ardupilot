@@ -1860,14 +1860,25 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         bool parsed_packet = false;
 
         // Try to get a new message
-        if (mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status) == MAVLINK_FRAMING_OK) {
+        const uint8_t framing = mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status);
+        if (framing == MAVLINK_FRAMING_OK) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
             packetReceived(status, msg);
             parsed_packet = true;
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
             hal.util->persistent_data.last_mavlink_msgid = 0;
+
         }
+#if AP_SCRIPTING_ENABLED
+        else if (framing == MAVLINK_FRAMING_BAD_CRC) {
+            // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
+            AP_Scripting *scripting = AP_Scripting::get_singleton();
+            if (scripting != nullptr) {
+                scripting->handle_message(msg, chan);
+            }
+        }
+#endif // AP_SCRIPTING_ENABLED
 
         if (parsed_packet || i % 100 == 0) {
             // make sure we don't spend too much time parsing mavlink messages
