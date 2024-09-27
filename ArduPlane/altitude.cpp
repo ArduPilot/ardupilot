@@ -87,6 +87,11 @@ void Plane::setup_glide_slope(void)
             reset_offset_altitude();
             break;
         }
+        //descend without doing glide slope if option is enabled
+        if (above_location_current(next_WP_loc) && plane.flight_option_enabled(FlightOptions::IMMEDIATE_DESCEND_IN_AUTO)) {
+            reset_offset_altitude();
+            break;
+        }
 
         // we only do glide slide handling in AUTO when above 20m or
         // when descending. The 20 meter threshold is arbitrary, and

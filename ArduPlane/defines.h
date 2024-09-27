@@ -169,6 +169,7 @@ enum FlightOptions {
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
     INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
     IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
+    IMMEDIATE_DESCEND_IN_AUTO = (1<<15),
 };
 
 enum CrowFlapOptions {
