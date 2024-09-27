@@ -1755,7 +1755,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             post_location.offset(x*10+3, y*10+2);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (postfile != nullptr) {
-                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm*0.01);
             }
 #endif
             Vector2f post_position_cm;
@@ -1769,8 +1769,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                 if (intersectionsfile != nullptr) {
                     Location intersection_point = location;
-                    intersection_point.offset(intersection_point_cm.x/100.0,
-                                              intersection_point_cm.y/100.0);
+                    intersection_point.offset(intersection_point_cm.x*0.01,
+                                              intersection_point_cm.y*0.01);
                     ::fprintf(intersectionsfile,
                               "map icon %f %f barrell\n",
                               intersection_point.lat*1e-7,
@@ -1792,8 +1792,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     }
 #endif
 
-    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
-    return min_dist_cm / 100.0f;
+    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm*0.01f);
+    return min_dist_cm * 0.01f;
 }
 
 } // namespace SITL
