@@ -17,7 +17,7 @@ function guided_moniter()
        or not (vehicle_mode == MODE_GUIDED)
        or rc:has_valid_input()
        or millis() - gcs:last_seen() < last_seen_threshold then
-        detected = 0
+        detected = uint32_t(0)
         return guided_moniter, 100
     end
     
