@@ -79,12 +79,12 @@ void AP_Frsky_Backend::calc_gps_position(void)
     Location loc;
 
     if (_ahrs.get_location(loc)) {
-        float lat = format_gps(fabsf(loc.lat/10000000.0f));
+        float lat = format_gps(fabsf(loc.lat * 1e-7f));
         _SPort_data.latdddmm = lat;
         _SPort_data.latmmmm = (lat - _SPort_data.latdddmm) * 10000;
         _SPort_data.lat_ns = (loc.lat < 0) ? 'S' : 'N';
 
-        float lon = format_gps(fabsf(loc.lng/10000000.0f));
+        float lon = format_gps(fabsf(loc.lng * 1e-7f));
         _SPort_data.londddmm = lon;
         _SPort_data.lonmmmm = (lon - _SPort_data.londddmm) * 10000;
         _SPort_data.lon_ew = (loc.lng < 0) ? 'W' : 'E';
