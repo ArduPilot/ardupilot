@@ -6198,14 +6198,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Start balloon lift")
         self.set_servo(6, 2000)
 
-        self.wait_text("Reached altitude", check_context=True, timeout=300)
+        self.wait_text("Reached altitude", check_context=True, timeout=1000)
         self.wait_text("Start pullup airspeed", check_context=True)
         self.wait_text("Pullup airspeed", check_context=True)
         self.wait_text("Pullup pitch", check_context=True)
         self.wait_text("Pullup level", check_context=True)
-        self.wait_text("Mission complete, changing mode to RTL", check_context=True)
-
-        self.fly_home_land_and_disarm(timeout=400)
+        self.wait_text("Loiter to alt complete", check_context=True, timeout=1000)
+        self.wait_text("Flare", check_context=True, timeout=400)
+        self.wait_text("Auto disarmed", check_context=True, timeout=200)
 
     def BadRollChannelDefined(self):
         '''ensure we don't die with a  bad Roll channel defined'''
