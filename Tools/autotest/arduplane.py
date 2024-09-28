@@ -6175,11 +6175,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             defaults_filepath="Tools/autotest/default_params/glider.parm",
             wipe=True)
 
+        self.set_parameter('LOG_DISARMED', 1)
+
         self.set_parameters({
             "PUP_ENABLE": 1,
             "SERVO6_FUNCTION": 0, # balloon lift
             "SERVO10_FUNCTION": 156, # lift release
             "EK3_IMU_MASK": 1, # lane switches just make log harder to read
+            "AHRS_OPTIONS": 4, # don't disable airspeed based on EKF checks
+            "ARSPD_OPTIONS": 0, # don't disable airspeed
+            "ARSPD_WIND_GATE": 0,
         })
 
         self.set_servo(6, 1000)
