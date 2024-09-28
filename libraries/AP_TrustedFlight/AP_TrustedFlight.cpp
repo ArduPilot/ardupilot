@@ -24,6 +24,7 @@
 #include <AP_ROMFS/AP_ROMFS.h>
 #include "AP_TrustedFlight.h"
 #include "LogStructure.h"
+#include "AP_JWT.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -125,8 +126,49 @@ bool AP_TrustedFlight::is_trusted(char *buffer, size_t buflen)
         return false;
     }
     
-    log_message("Token is valid.");
-    return true;
+    AP_Jwt jwt(token, token_length);
+    switch (jwt.validate(public_key, token_issuer, token_issuer_length))
+    {
+        case AP_Jwt::TOKEN_VALID:
+            log_message("Token is valid");
+            return true;
+        case AP_Jwt::INVALID_TYP_CLAIM:
+            hal.util->snprintf(buffer, buflen, "Invalid token type");
+            log_message("Invalid token type");
+            return false;
+        case AP_Jwt::INVALID_ALG_CLAIM:
+            hal.util->snprintf(buffer, buflen, "Invalid token algorithm");
+            log_message("Invalid token algorithm");
+            return false;
+        case AP_Jwt::INVALID_ISS_CLAIM:
+            hal.util->snprintf(buffer, buflen, "Invalid token issuer");
+            log_message("Invalid token issuer");
+            return false;
+        case AP_Jwt::INVALID_FORMAT:
+            hal.util->snprintf(buffer, buflen, "Invalid token format");
+            log_message("Invalid token format");
+            return false;
+        case AP_Jwt::INVALID_IAT_CLAIM:
+            hal.util->snprintf(buffer, buflen, "Invalid token iat claim");
+            log_message("Invalid token iat claim.");
+            return false;
+        case AP_Jwt::INVALID_EXP_CLAIM:
+            hal.util->snprintf(buffer, buflen, "Invalid token exp claim");
+            log_message("Invalid token exp claim. Token is probably expired");
+            return false;
+        case AP_Jwt::INVALID_NBF_CLAIM:
+            hal.util->snprintf(buffer, buflen, "Invalid token nbf claims");
+            log_message("Invalid token nbf claim.");
+            return false;
+        case AP_Jwt::INVALID_SIGNATURE:
+            hal.util->snprintf(buffer, buflen, "Invalid token signature");
+            log_message("Invalid token signature.");
+            return false;
+        default:
+            hal.util->snprintf(buffer, buflen, "Invalid JWT token");
+            log_message("Invalid token, unknown error");
+            return false;
+    }
 }
 
 // read file contents

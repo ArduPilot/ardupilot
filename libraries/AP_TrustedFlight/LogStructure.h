@@ -7,4 +7,4 @@
 
 #define LOG_STRUCTURE_FROM_TRUSTED_FLIGHT \
     { LOG_TRUSTED_FLIGHT_MSG, sizeof(log_Message), \
-      "ATF", "QZ", "TimeUS,Message", "s-", "F-" },
+      "TFL", "QZ", "TimeUS,Message", "s-", "F-" },
