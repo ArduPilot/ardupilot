@@ -683,7 +683,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
     // get ToW in milliseconds
     gps.gps_week           = pkt.timeGps / (AP_MSEC_PER_WEEK * 1000000ULL);
     gps.ms_tow             = (pkt.timeGps / 1000000ULL) % (60 * 60 * 24 * 7 * 1000ULL);
-    gps.fix_type           = pkt.fix1;
+    gps.fix_type           = AP_GPS_FixType(pkt.fix1);
     gps.satellites_in_view = pkt.numSats1;
 
     gps.horizontal_pos_accuracy = pkt.posU1[0];
@@ -701,7 +701,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
     gps.ned_vel_east  = pkt.velNed1[1];
     gps.ned_vel_down  = pkt.velNed1[2];
 
-    if (!state.have_origin && gps.fix_type >= 3) {
+    if (!state.have_origin && gps.fix_type >= AP_GPS_FixType::FIX_3D) {
         WITH_SEMAPHORE(state.sem);
         state.origin = Location{int32_t(pkt.posLla1[0] * 1.0e7), int32_t(pkt.posLla1[1] * 1.0e7),
                                 int32_t(pkt.posLla1[2] * 1.0e2), Location::AltFrame::ABSOLUTE};

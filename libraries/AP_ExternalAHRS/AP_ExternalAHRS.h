@@ -26,6 +26,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
+#include <AP_GPS/AP_GPS_FixType.h>
 
 class AP_ExternalAHRS_backend;
 
@@ -139,7 +140,7 @@ public:
     typedef struct {
         uint16_t gps_week;
         uint32_t ms_tow;
-        uint8_t  fix_type;
+        AP_GPS_FixType  fix_type;
         uint8_t  satellites_in_view;
         float horizontal_pos_accuracy;
         float vertical_pos_accuracy;
