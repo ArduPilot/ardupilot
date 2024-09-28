@@ -8,7 +8,7 @@ local last_seen_threshold = 60000
 -- Trigger threshold
 local trigger_threashold = 60
 
-local detected = 0
+local detected = uint32_t(0)
 
 function guided_moniter()
     local vehicle_mode = vehicle:get_mode()
