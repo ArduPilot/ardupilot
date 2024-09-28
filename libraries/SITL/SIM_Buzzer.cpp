@@ -91,7 +91,7 @@ void Buzzer::update(const struct sitl_input &input)
         tone.dEndFrequency = frequency;
         tone.dAmplitude = 1;
 
-        xenvelope.dSustainTime = duration_ms/1000.0f;
+        xenvelope.dSustainTime = duration_ms * 0.001f;
 
         BuzzerSynth::Synth::generate(&xsoundBuffer, xenvelope, tone, 20000, 44100);
         xdemoSound.setBuffer(xsoundBuffer);
