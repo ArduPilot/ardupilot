@@ -4580,14 +4580,14 @@ int decodeESC_TelltaleValuesPacketStructure(const void* _pg_pkt, ESC_TelltaleVal
 
     // Maximum recorded battery current
     // Range of maxBatteryCurrent is -3276.7f to 3276.7f.
-    _pg_user->maxBatteryCurrent = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/10.0f);
+    _pg_user->maxBatteryCurrent = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 0.1f);
 
     if(_pg_byteindex + 2 > _pg_numbytes)
         return 1;
 
     // Maximum recorded regen current
     // Range of maxRegenCurrent is -3276.7f to 3276.7f.
-    _pg_user->maxRegenCurrent = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/10.0f);
+    _pg_user->maxRegenCurrent = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 0.1f);
 
     if(_pg_byteindex + 2 > _pg_numbytes)
         return 1;
@@ -4764,14 +4764,14 @@ int decodeESC_TelltaleValuesPacket(const void* _pg_pkt, uint8_t* maxTemperature,
 
     // Maximum recorded battery current
     // Range of maxBatteryCurrent is -3276.7f to 3276.7f.
-    (*maxBatteryCurrent) = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/10.0f);
+    (*maxBatteryCurrent) = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 0.1f);
 
     if(_pg_byteindex + 2 > _pg_numbytes)
         return 1;
 
     // Maximum recorded regen current
     // Range of maxRegenCurrent is -3276.7f to 3276.7f.
-    (*maxRegenCurrent) = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/10.0f);
+    (*maxRegenCurrent) = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 0.1f);
 
     if(_pg_byteindex + 2 > _pg_numbytes)
         return 1;
