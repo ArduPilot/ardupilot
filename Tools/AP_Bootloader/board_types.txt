@@ -284,7 +284,6 @@ AP_HW_3DR-ASAUAV                     1165
 AP_HW_MicoAir743                     1166
 AP_HW_BlitzH7Wing                    1168
 AP_HW_SDMODELH7V2                    1167
-
 AP_HW_JHEMCUF405WING                 1169
 AP_HW_MatekG474                      1170
 AP_HW_PhenixH7_lite                  1171
@@ -401,6 +400,7 @@ AP_HW_CUAV-7-NANO                    7000
 AP_HW_VUAV-V7pro                     7100
 
 # please fill gaps in the above ranges rather than adding past ID #7109
+
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
