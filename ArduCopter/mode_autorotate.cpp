@@ -98,7 +98,7 @@ void ModeAutorotate::run()
     // Timer from entry phase to progress to glide phase
     if (phase_switch == Autorotation_Phase::ENTRY){
 
-        if ((now - _entry_time_start_ms)/1000.0f > AUTOROTATE_ENTRY_TIME) {
+        if ((now - _entry_time_start_ms) * 0.001f > AUTOROTATE_ENTRY_TIME) {
             // Flight phase can be progressed to steady state glide
             phase_switch = Autorotation_Phase::SS_GLIDE;
         }
@@ -246,7 +246,7 @@ void ModeAutorotate::run()
                 _flags.bail_out_initial = false;
             }
 
-        if ((now - _bail_time_start_ms)/1000.0f >= BAILOUT_MOTOR_RAMP_TIME) {
+        if ((now - _bail_time_start_ms) * 0.001f >= BAILOUT_MOTOR_RAMP_TIME) {
             // Update desired vertical speed and pitch target after the bailout motor ramp timer has completed
             _desired_v_z -= _target_climb_rate_adjust*G_Dt;
             _pitch_target -= _target_pitch_adjust*G_Dt;
@@ -257,7 +257,7 @@ void ModeAutorotate::run()
         // Update controllers
         pos_control->update_z_controller();
 
-        if ((now - _bail_time_start_ms)/1000.0f >= _bail_time) {
+        if ((now - _bail_time_start_ms) * 0.001f >= _bail_time) {
             // Bail out timer complete.  Change flight mode. Do not revert back to auto. Prevent aircraft
             // from continuing mission and potentially flying further away after a power failure.
             if (copter.prev_control_mode == Mode::Number::AUTO) {
