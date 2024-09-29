@@ -422,7 +422,9 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         break;
 
     default:
+#if 0  // enable to send mission commands
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+#endif
         break;
 
     }
