@@ -9354,6 +9354,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test replay correctness'''
         self.progress("Building Replay")
         util.build_SITL('tool/Replay', clean=False, configure=False)
+        self.set_parameters({
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        })
 
         bits = [
             ('GPS', self.test_replay_gps_bit),
@@ -10208,6 +10212,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameters({
                 "LOG_BITMASK": new,
                 "LOG_DISARMED": 1,
+                "LOG_DARM_RATEMAX": 0,
+                "LOG_FILE_RATEMAX": 0,
             })
             path = self.generate_rate_sample_log()
 
@@ -10230,6 +10236,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def BaseLoggingRates(self):
         '''ensure messages come out at specific rates'''
+        self.set_parameters({
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        })
         path = self.generate_rate_sample_log()
         self.delay_sim_time(10)  # NFI why this is required
         self.check_dflog_message_rates(path, {
