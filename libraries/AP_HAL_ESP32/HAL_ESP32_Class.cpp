@@ -25,6 +25,7 @@
 #include "WiFiUdpDriver.h"
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "GPIO.h"
 #include "Storage.h"
 #include "AnalogIn.h"
 #include "Util.h"
@@ -68,7 +69,7 @@ static Empty::Storage storageDriver;
 #else
 static ESP32::Storage storageDriver;
 #endif
-static Empty::GPIO gpioDriver;
+static ESP32::GPIO gpioDriver;
 #if AP_SIM_ENABLED
 static Empty::RCOutput rcoutDriver;
 #else
