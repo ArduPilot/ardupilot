@@ -24,6 +24,8 @@ int SocketAPM_recv(lua_State *L);
 int SocketAPM_accept(lua_State *L);
 int SocketAPM_close(lua_State *L);
 int SocketAPM_sendfile(lua_State *L);
+int SocketAPM_ipv4_addr_to_string(lua_State *L);
+int SocketAPM_string_to_ipv4_addr(lua_State *L);
 int lua_mavlink_init(lua_State *L);
 int lua_mavlink_receive_chan(lua_State *L);
 int lua_mavlink_register_rx_msgid(lua_State *L);
