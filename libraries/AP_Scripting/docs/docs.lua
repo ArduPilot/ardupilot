@@ -517,9 +517,19 @@ function motor_factor_table_ud:roll(index, value) end
 local SocketAPM_ud = {}
 
 -- Get a new socket
----@param datagram boolean
+---@param datagram integer -- set to 1 for UDP, 0 for TCP
 ---@return SocketAPM_ud
 function Socket(datagram) end
+
+-- return an IPv4 address given a string
+---@param str_address string -- ipv4 address as string
+---@return uint32_t_ud -- ipv4 address
+function string_to_ipv4_addr(str_address) end
+
+-- return a string representation of ipv4 address
+---@param addr uint32_t_ud|integer|number -- ipv4 address
+---@return string -- string representation of address
+function ipv4_addr_to_string(addr) end
 
 -- return true if a socket is connected
 ---@return boolean
@@ -540,6 +550,14 @@ function SocketAPM_ud:listen(backlog) end
 ---@param len uint32_t_ud|integer|number
 ---@return integer
 function SocketAPM_ud:send(str, len) end
+
+-- send a lua string to a specified address. May contain binary data
+---@param str string
+---@param len uint32_t_ud|integer|number
+---@param ipaddr uint32_t_ud|integer|number -- ipv4 address
+---@param port integer -- ipv4 port
+---@return integer
+function SocketAPM_ud:sendto(str, len, ipaddr, port) end
 
 -- bind to an address. Use "0.0.0.0" for wildcard bind
 ---@param IP_address string
@@ -562,6 +580,8 @@ function SocketAPM_ud:accept() end
 -- receive data from a socket
 ---@param length integer
 ---@return string|nil
+---@return uint32_t_ud|nil -- source IP
+---@return integer|nil -- source port
 function SocketAPM_ud:recv(length) end
 
 -- check for available input
