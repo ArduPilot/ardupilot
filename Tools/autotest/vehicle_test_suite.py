@@ -7308,13 +7308,13 @@ class TestSuite(ABC):
 
         self.wait_and_maintain(
             value_name="Altitude",
-            target=altitude_min,
+            target=(altitude_min + altitude_max)*0.5,
             current_value_getter=lambda: self.get_altitude(
                 relative=relative,
                 timeout=timeout,
                 altitude_source=altitude_source,
             ),
-            accuracy=(altitude_max - altitude_min),
+            accuracy=(altitude_max - altitude_min)*0.5,
             validator=lambda value2, target2: validator(value2, target2),
             timeout=timeout,
             **kwargs
@@ -7439,8 +7439,8 @@ class TestSuite(ABC):
             )
         return self.wait_and_maintain_range(
             value_name,
-            minimum=target - accuracy/2,
-            maximum=target + accuracy/2,
+            minimum=target - accuracy,
+            maximum=target + accuracy,
             current_value_getter=current_value_getter,
             validator=validator,
             timeout=timeout,
