@@ -100,7 +100,10 @@
 }
 
 //LED
-#define DEFAULT_NTF_LED_TYPES Notify_LED_None
+//#define DEFAULT_NTF_LED_TYPES Notify_LED_None
+#define HAL_GPIO_LED_ON 1
+#define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+#define AP_NOTIFY_GPIO_LED_1_PIN 2
 
 //RMT pin number
 #define HAL_ESP32_RMT_RX_PIN_NUMBER 4
