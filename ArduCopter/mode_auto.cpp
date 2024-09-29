@@ -2230,7 +2230,9 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
         }
+#if 0  // enable to send reached commands
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
+#endif
         return true;
     }
     return false;
