@@ -63,8 +63,8 @@ AP_Compass_MMC5XX3::AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
                                        enum Rotation _rotation)
     : dev(std::move(_dev))
     , force_external(_force_external)
-    , rotation(_rotation)
     , have_initial_offset(false)
+    , rotation(_rotation)
 {
 }
 

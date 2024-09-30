@@ -614,7 +614,9 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+#if AP_AIRSPEED_ENABLED
     MSG_AIRSPEED,
+#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
@@ -930,48 +932,25 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
             return MAV_RESULT_DENIED;
         }
 
-         // the requested alt data might be relative or absolute
-        float new_target_alt = packet.z * 100;
-        float new_target_alt_rel = packet.z * 100 + plane.home.alt;
-
-         // only global/relative/terrain frames are supported
-        switch(packet.frame) {
-            case MAV_FRAME_GLOBAL_RELATIVE_ALT: {
-                if   (is_equal(plane.guided_state.target_alt,new_target_alt_rel) ) { // compare two floats as near-enough
-                    // no need to process any new packet/s with the same ALT any further, if we are already doing it.
-                    return MAV_RESULT_ACCEPTED;
-                }
-                plane.guided_state.target_alt = new_target_alt_rel;
-                break;
-            }
-            case MAV_FRAME_GLOBAL: {
-                if   (is_equal(plane.guided_state.target_alt,new_target_alt) ) {  // compare two floats as near-enough
-                    // no need to process any new packet/s with the same ALT any further, if we are already doing it.
-                    return MAV_RESULT_ACCEPTED;
-                }
-                plane.guided_state.target_alt = new_target_alt;
-                break;
-            }
-            default:
-                //  MAV_RESULT_DENIED  means Command is invalid (is supported but has invalid parameters).
-                return MAV_RESULT_DENIED;
+        Location::AltFrame new_target_alt_frame;
+        if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, new_target_alt_frame)) {
+            return MAV_RESULT_DENIED;
         }
+        // keep a copy of what came in via MAVLink - this is needed for logging, but not for anything else
+        plane.guided_state.target_mav_frame = packet.frame;
 
-        plane.guided_state.target_alt_frame = packet.frame;
-        plane.guided_state.last_target_alt = plane.current_loc.alt; // FIXME: Reference frame is not corrected for here
+        const int32_t new_target_alt_cm = packet.z * 100;
+        plane.guided_state.target_location.set_alt_cm(new_target_alt_cm, new_target_alt_frame); 
         plane.guided_state.target_alt_time_ms = AP_HAL::millis();
 
+        // param3 contains the desired vertical velocity (not acceleration)
         if (is_zero(packet.param3)) {
-            // the user wanted /maximum acceleration, pick a large value as close enough
-            plane.guided_state.target_alt_accel = 1000.0;
+            // the user wanted /maximum altitude change rate, pick a large value as close enough
+            plane.guided_state.target_alt_rate = 1000.0;
         } else {
-            plane.guided_state.target_alt_accel = fabsf(packet.param3);
+            plane.guided_state.target_alt_rate = fabsf(packet.param3);
         }
 
-         // assign an acceleration direction
-        if (plane.guided_state.target_alt < plane.current_loc.alt) {
-            plane.guided_state.target_alt_accel *= -1.0f;
-        }
         return MAV_RESULT_ACCEPTED;
     }
 

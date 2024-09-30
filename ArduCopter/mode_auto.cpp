@@ -778,10 +778,12 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_roi(cmd);
         break;
 
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
+#endif
 
 #if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
@@ -998,10 +1000,18 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI:
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif
+#if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:
+#endif
+#if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
+#endif
+#if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:
+#endif
     case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
         cmd_complete = true;
@@ -1957,10 +1967,10 @@ void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
     auto_yaw.set_roi(cmd.content.location);
 }
 
+#if HAL_MOUNT_ENABLED
 // point the camera to a specified angle
 void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_MOUNT_ENABLED
     // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
     if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
         !copter.camera_mount.has_pan_control()) {
@@ -1968,8 +1978,8 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
     }
     // pass the target angles to the camera mount
     copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
-#endif
 }
+#endif  // HAL_MOUNT_ENABLED
 
 #if AP_WINCH_ENABLED
 // control winch based on mission command

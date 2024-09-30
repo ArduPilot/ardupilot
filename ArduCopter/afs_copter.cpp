@@ -55,17 +55,7 @@ void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
  */
 AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
 {
-    switch (copter.flightmode->mode_number()) {
-    case Mode::Number::AUTO:
-    case Mode::Number::AUTO_RTL:
-    case Mode::Number::GUIDED:
-    case Mode::Number::RTL:
-    case Mode::Number::LAND:
-        return AP_AdvancedFailsafe::AFS_AUTO;
-    default:
-        break;
-    }
-    return AP_AdvancedFailsafe::AFS_STABILIZED;
+    return copter.flightmode->afs_mode();
 }
 
 //to force entering auto mode when datalink loss 

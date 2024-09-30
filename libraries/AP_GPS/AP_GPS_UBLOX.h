@@ -778,13 +778,13 @@ private:
     uint32_t        _last_config_time;
     uint32_t        _f9_config_time;
     uint16_t        _delay_time;
-    uint8_t         _next_message;
-    uint8_t         _ublox_port;
+    uint8_t         _next_message { STEP_PVT };
+    uint8_t         _ublox_port { 255 };
     bool            _have_version;
     struct ubx_mon_ver _version;
     char            _module[UBLOX_MODULE_LEN];
-    uint32_t        _unconfigured_messages;
-    uint8_t         _hardware_generation;
+    uint32_t        _unconfigured_messages {CONFIG_ALL};
+    uint8_t         _hardware_generation { UBLOX_UNKNOWN_HARDWARE_GENERATION };
     uint8_t         _hardware_variant;
     uint32_t        _last_pvt_itow;
     uint32_t        _last_relposned_itow;
@@ -804,11 +804,11 @@ private:
     bool        _parse_gps();
 
     // used to update fix between status and position packets
-    AP_GPS::GPS_Status next_fix;
+    AP_GPS::GPS_Status next_fix { AP_GPS::NO_FIX };
 
     bool _cfg_needs_save;
 
-    bool noReceivedHdop;
+    bool noReceivedHdop { true };
     
     bool havePvtMsg;
 

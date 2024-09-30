@@ -397,6 +397,8 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
 
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/$SHELL_LOGIN
+    else
+        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
 

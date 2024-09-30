@@ -314,7 +314,7 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
     _pilot_yaw_rate_cds = 0.0;
     if (!copter.failsafe.radio && copter.flightmode->use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+        _pilot_yaw_rate_cds = copter.flightmode->get_pilot_desired_yaw_rate();
         if (!is_zero(_pilot_yaw_rate_cds)) {
             auto_yaw.set_mode(AutoYaw::Mode::PILOT_RATE);
         }

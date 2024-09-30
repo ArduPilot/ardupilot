@@ -334,9 +334,7 @@ bool AP_Compass_HMC5843::_check_whoami()
         // can't talk on bus
         return false;        
     }
-    if (id[0] != 'H' ||
-        id[1] != '4' ||
-        id[2] != '3') {
+    if (memcmp(id, "H43", 3) != 0) {
         // not a HMC5x83 device
         return false;
     }

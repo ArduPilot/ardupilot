@@ -384,10 +384,10 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     , _dev_accel(std::move(dev_accel))
     , _drdy_pin_num_a(drdy_pin_num_a)
     , _drdy_pin_num_g(drdy_pin_num_g)
+    , _temp_filter(400, 1)
     , _rotation_a(rotation_a)
     , _rotation_g(rotation_g)
     , _rotation_gH(rotation_gH)
-    , _temp_filter(400, 1)
 {
 }
 

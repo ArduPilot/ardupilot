@@ -376,6 +376,7 @@ bool Copter::set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f&
     return true;
 }
 
+// set target roll pitch and yaw angles with throttle (for use by scripting)
 bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
@@ -387,6 +388,27 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
 
     mode_guided.set_angle(q, Vector3f{}, climb_rate_ms*100, false);
+    return true;
+}
+
+// set target roll pitch and yaw rates with throttle (for use by scripting)
+bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    // Zero quaternion indicates rate control
+    Quaternion q;
+    q.zero();
+
+    // Convert from degrees per second to radians per second
+    Vector3f ang_vel_body { roll_rate_dps, pitch_rate_dps, yaw_rate_dps };
+    ang_vel_body *= DEG_TO_RAD;
+
+    // Pass to guided mode
+    mode_guided.set_angle(q, ang_vel_body, throttle, true);
     return true;
 }
 #endif
@@ -851,16 +873,16 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
 Copter::Copter(void)
     :
     flight_modes(&g.flight_mode1),
+    pos_variance_filt(FS_EKF_FILT_DEFAULT),
+    vel_variance_filt(FS_EKF_FILT_DEFAULT),
+    hgt_variance_filt(FS_EKF_FILT_DEFAULT),
+    flightmode(&mode_stabilize),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     rc_throttle_control_in_filter(1.0f),
     inertial_nav(ahrs),
-    param_loader(var_info),
-    flightmode(&mode_stabilize),
-    pos_variance_filt(FS_EKF_FILT_DEFAULT),
-    vel_variance_filt(FS_EKF_FILT_DEFAULT),
-    hgt_variance_filt(FS_EKF_FILT_DEFAULT)
+    param_loader(var_info)
 {
 }
 

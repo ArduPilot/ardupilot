@@ -1968,6 +1968,8 @@ void QuadPlane::motors_output(bool run_rate_controller)
         attitude_control->set_dt(last_loop_time_s);
         pos_control->set_dt(last_loop_time_s);
         attitude_control->rate_controller_run();
+        // reset sysid and other temporary inputs
+        attitude_control->rate_controller_target_reset();
         last_att_control_ms = now;
     }
 

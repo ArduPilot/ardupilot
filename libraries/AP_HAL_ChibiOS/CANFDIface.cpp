@@ -167,9 +167,9 @@ static inline void handleCANInterrupt(uint8_t phys_index, uint8_t line_index)
 uint32_t CANIface::FDCANMessageRAMOffset_ = 0;
 
 CANIface::CANIface(uint8_t index) :
-    self_index_(index),
     rx_bytebuffer_((uint8_t*)rx_buffer, sizeof(rx_buffer)),
-    rx_queue_(&rx_bytebuffer_)
+    rx_queue_(&rx_bytebuffer_),
+    self_index_(index)
 {
     if (index >= HAL_NUM_CAN_IFACES) {
          AP_HAL::panic("Bad CANIface index.");

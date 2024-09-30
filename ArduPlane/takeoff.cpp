@@ -57,7 +57,7 @@ bool Plane::auto_takeoff_check(void)
     bool do_takeoff_attitude_check = !(flight_option_enabled(FlightOptions::DISABLE_TOFF_ATTITUDE_CHK));
 #if HAL_QUADPLANE_ENABLED
     // disable attitude check on tailsitters
-    do_takeoff_attitude_check = !quadplane.tailsitter.enabled();
+    do_takeoff_attitude_check &= !quadplane.tailsitter.enabled();
 #endif
 
     if (!takeoff_state.launchTimerStarted && !is_zero(g.takeoff_throttle_min_accel)) {
