@@ -239,6 +239,7 @@ void ModeSystemId::run()
     waveform_sample = chirp_input.update(waveform_time - SYSTEM_ID_DELAY, waveform_magnitude);
     waveform_freq_rads = chirp_input.get_frequency_rads();
     Vector2f disturb_state;
+    const char *strStoped = "SystemID Stopped";
     switch (systemid_state) {
         case SystemIDModeState::SYSTEMID_STATE_STOPPED:
             attitude_control->bf_feedforward(att_bf_feedforward);
@@ -247,12 +248,12 @@ void ModeSystemId::run()
 
             if (copter.ap.land_complete) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: Landed", strStoped);
                 break;
             }
             if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: lean=%f max=%f", strStoped, (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
                 break;
             }
             if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
@@ -264,7 +265,7 @@ void ModeSystemId::run()
             switch ((AxisType)axis.get()) {
                 case AxisType::NONE:
                     systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                    gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s: axis = 0", strStoped);
                     break;
                 case AxisType::INPUT_ROLL:
                     target_roll += waveform_sample*100.0f;
