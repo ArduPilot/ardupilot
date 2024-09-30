@@ -75,6 +75,8 @@ EXT_HW_RADIOLINK_MINI_PIX               3
 # if you want to reserve a block of IDs, please limit that allocation
 #  to 10 IDs at a time.
 
+# please fill gaps rather than adding past ID #7109
+
 # values starting with AP_ are implemented in the ArduPilot bootloader
 # https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
 # the values come from the APJ_BOARD_ID in the hwdef files here:
@@ -278,6 +280,7 @@ AP_HW_MicoAir405Mini                 1161
 AP_HW_BlitzH7Pro                     1162
 AP_HW_BlitzF7Mini                    1163
 AP_HW_BlitzF7                        1164
+AP_HW_3DR-ASAUAV                     1165
 AP_HW_MicoAir743                     1166
 AP_HW_BlitzH7Wing                    1168
 AP_HW_SDMODELH7V2                    1167
@@ -287,6 +290,7 @@ AP_HW_MatekG474                      1170
 AP_HW_PhenixH7_lite                  1171
 AP_HW_PhenixH7_Pro                   1172
 AP_HW_2RAWH743                       1173
+AP_HW_X-MAV-AP-H743V2                1174
 
 AP_HW_FlywooF405HD_AIOv2             1180
 AP_HW_FlywooH743Pro                  1181
@@ -294,9 +298,13 @@ AP_HW_FlywooH743Pro                  1181
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
+AP_HW_MUPilot                        1222
+
 AP_HW_CBUnmanned-CM405-FC            1301
 
 AP_HW_KHA_ETH                        1315
+
+AP_HW_FlysparkF4                     1361
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -391,6 +399,8 @@ AP_HW_CUAV-7-NANO                    7000
 
 # IDs 7100-7109 reserved for VIEWPRO
 AP_HW_VUAV-V7pro                     7100
+
+# please fill gaps in the above ranges rather than adding past ID #7109
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140

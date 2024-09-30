@@ -189,8 +189,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional AHRS behaviour
-    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. 
-    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL
+    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency
+    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
     
@@ -915,7 +915,8 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
         return false;
     }
     nav_filter_status filter_status;
-    if (fly_forward &&
+    if (!option_set(Options::DISABLE_AIRSPEED_EKF_CHECK) &&
+        fly_forward &&
         hal.util->get_soft_armed() &&
         get_filter_status(filter_status) &&
         (filter_status.flags.rejecting_airspeed && !filter_status.flags.dead_reckoning)) {

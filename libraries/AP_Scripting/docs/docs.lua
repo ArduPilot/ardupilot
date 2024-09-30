@@ -1711,6 +1711,26 @@ function gpio:write(pin_number, value) end
 ---@return boolean -- pin state
 function gpio:read(pin_number) end
 
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:set_mode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:get_mode(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:setPinFullMode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:getPinFullMode(pin_number) end
+
 
 -- desc
 Motors_6DoF = {}
@@ -2363,6 +2383,14 @@ function vehicle:get_circle_radius() end
 ---@param yaw_rate_degs number
 ---@return boolean
 function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms, use_yaw_rate, yaw_rate_degs) end
+
+-- Set vehicles roll, pitch, and yaw rates with throttle in guided mode
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true if successful
+function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
 
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
@@ -3119,6 +3147,14 @@ function BattMonitorScript_State_ud:voltage(value) end
 -- set field
 ---@param value boolean
 function BattMonitorScript_State_ud:healthy(value) end
+
+-- The temperature library provides access to information about the currently connected temperature sensors on the vehicle.
+temperature_sensor = {}
+
+-- Returns the temperature from this sensor in degrees Celsius
+---@param instance integer -- temperature instance
+---@return number|nil -- temperature if available
+function temperature_sensor:get_temperature(instance) end
 
 -- The battery library provides access to information about the currently connected batteries on the vehicle.
 battery = {}

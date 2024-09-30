@@ -58,6 +58,8 @@ void Plane::set_control_channels(void)
         // setup correct scaling for ESCs like the UAVCAN ESCs which
         // take a proportion of speed. For quadplanes we use AP_Motors
         // scaling
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttleLeft);
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttleRight);
         g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
     }
 }

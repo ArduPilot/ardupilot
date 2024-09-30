@@ -256,13 +256,13 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         switch (mtype) {
         case MessageType::GPS_INS_TIME_MS: {
             // this is the GPS tow timestamp in ms for when the IMU data was sampled
-            CHECK_SIZE(u.gps_time_ms);
-            gps_data.ms_tow = u.gps_time_ms;
+            CHECK_SIZE(u.gnss_time_ms);
+            gps_data.ms_tow = u.gnss_time_ms;
             break;
         }
         case MessageType::GPS_WEEK: {
-            CHECK_SIZE(u.gps_week);
-            gps_data.gps_week = u.gps_week;
+            CHECK_SIZE(u.gnss_week);
+            gps_data.gps_week = u.gnss_week;
             break;
         }
         case MessageType::ACCEL_DATA_HR: {
@@ -1103,7 +1103,7 @@ void AP_ExternalAHRS_InertialLabs::get_filter_status(nav_filter_status &status) 
     status.flags.pred_horiz_pos_rel = status.flags.horiz_pos_abs;
     status.flags.pred_horiz_pos_abs = status.flags.horiz_pos_abs;
     status.flags.using_gps = (now - last_gps_ms < dt_limit_gps) &&
-        (state2.unit_status & (ILABS_UNIT_STATUS_GNSS_FAIL|ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
+        ((state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) | (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_FUSION_OFF)) == 0;
     status.flags.gps_quality_good = (now - last_gps_ms < dt_limit_gps) &&
         (state2.unit_status2 & ILABS_UNIT_STATUS2_GNSS_POS_VALID) != 0 &&
         (state2.unit_status & ILABS_UNIT_STATUS_GNSS_FAIL) == 0;

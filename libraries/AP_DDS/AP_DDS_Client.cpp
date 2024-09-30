@@ -32,7 +32,9 @@
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+#if AP_DDS_IMU_PUB_ENABLED
 static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
+#endif // AP_DDS_IMU_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
@@ -81,6 +83,25 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_DOMAIN_ID", 4, AP_DDS_Client, domain_id, 0),
+
+    // @Param: _TIMEOUT_MS
+    // @DisplayName: DDS ping timeout
+    // @Description: The time in milliseconds the DDS client will wait for a response from the XRCE agent before reattempting.
+    // @Units: ms
+    // @Range: 1 10000
+    // @RebootRequired: True
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_TIMEOUT_MS", 5, AP_DDS_Client, ping_timeout_ms, 1000),
+
+    // @Param: _MAX_RETRY
+    // @DisplayName: DDS ping max attempts
+    // @Description: The maximum number of times the DDS client will attempt to ping the XRCE agent before exiting.
+    // @Range: 1 100
+    // @RebootRequired: True
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_MAX_RETRY", 6, AP_DDS_Client, ping_max_retry, 10),
 
     AP_GROUPEND
 };
@@ -440,6 +461,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     }
 }
 
+#if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 {
     update_topic(msg.header.stamp);
@@ -477,6 +499,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity_covariance[0] = -1;
     msg.linear_acceleration_covariance[0] = -1;
 }
+#endif // AP_DDS_IMU_PUB_ENABLED
 
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
@@ -695,9 +718,7 @@ void AP_DDS_Client::main_loop(void)
         }
 
         // check ping
-        const uint64_t ping_timeout_ms{1000};
-        const uint8_t ping_max_attempts{10};
-        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
+        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
             return;
         }
@@ -1039,6 +1060,7 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 
+#if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1053,6 +1075,7 @@ void AP_DDS_Client::write_imu_topic()
         }
     }
 }
+#endif // AP_DDS_IMU_PUB_ENABLED
 
 void AP_DDS_Client::write_geo_pose_topic()
 {
@@ -1132,12 +1155,13 @@ void AP_DDS_Client::update()
         last_local_velocity_time_ms = cur_time_ms;
         write_tx_local_velocity_topic();
     }
-
+#if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
+#endif
 
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);

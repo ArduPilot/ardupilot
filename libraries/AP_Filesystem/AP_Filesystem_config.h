@@ -2,8 +2,6 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#include <AP_Mission/AP_Mission_config.h>
-
 // backends:
 
 #ifndef AP_FILESYSTEM_ESP32_ENABLED
@@ -12,10 +10,6 @@
 
 #ifndef AP_FILESYSTEM_FATFS_ENABLED
 #define AP_FILESYSTEM_FATFS_ENABLED HAL_OS_FATFS_IO
-#endif
-
-#ifndef AP_FILESYSTEM_MISSION_ENABLED
-#define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
 
 #ifndef AP_FILESYSTEM_PARAM_ENABLED
@@ -61,4 +55,9 @@
 
 #ifndef AP_FILESYSTEM_HAVE_DIRENT_DTYPE
 #define AP_FILESYSTEM_HAVE_DIRENT_DTYPE 1
+#endif
+
+#ifndef AP_FILESYSTEM_MISSION_ENABLED
+#include <AP_Mission/AP_Mission_config.h>
+#define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif

@@ -372,7 +372,7 @@ public:
     void handle_log_send();
     bool in_log_download() const;
 
-    float quiet_nanf() const { return nanf("0x4152"); } // "AR"
+    float quiet_nanf() const { return NaNf; } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
 
     // returns true if msg_type is associated with a message

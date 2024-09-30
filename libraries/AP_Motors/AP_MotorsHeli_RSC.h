@@ -49,9 +49,9 @@ public:
     AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
                       uint8_t default_channel,
                       uint8_t inst) :
+        _instance(inst),
         _aux_fn(aux_fn),
-        _default_channel(default_channel),
-        _instance(inst)
+        _default_channel(default_channel)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };

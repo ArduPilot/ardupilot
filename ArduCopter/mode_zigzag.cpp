@@ -264,7 +264,7 @@ void ModeZigZag::auto_control()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
     }
 
     // set motors to full range
@@ -305,7 +305,7 @@ void ModeZigZag::manual_control()
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());

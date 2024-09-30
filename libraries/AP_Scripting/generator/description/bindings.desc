@@ -329,6 +329,7 @@ singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float'skip_check boolean float'skip_check
+singleton AP_Vehicle method set_target_rate_and_throttle boolean float'skip_check float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method get_circle_radius boolean float'Null
 singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
@@ -351,6 +352,7 @@ singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
+
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
@@ -631,6 +633,10 @@ singleton hal.gpio method read boolean uint8_t'skip_check
 singleton hal.gpio method write void uint8_t'skip_check uint8_t 0 1
 singleton hal.gpio method toggle void uint8_t'skip_check
 singleton hal.gpio method pinMode void uint8_t'skip_check uint8_t 0 1
+singleton hal.gpio method get_mode boolean uint8_t'skip_check uint32_t'Null
+singleton hal.gpio method get_mode alias getPinFullMode
+singleton hal.gpio method set_mode void uint8_t'skip_check uint32_t'skip_check
+singleton hal.gpio method set_mode alias setPinFullMode
 
 singleton hal.analogin depends !defined(HAL_DISABLE_ADC_DRIVER)
 singleton hal.analogin rename analog
@@ -973,3 +979,9 @@ singleton AP_VisualOdom depends HAL_VISUALODOM_ENABLED
 singleton AP_VisualOdom rename visual_odom
 singleton AP_VisualOdom method healthy boolean
 singleton AP_VisualOdom method quality int8_t
+
+-- ----AP_TemperatureSensor Library----
+include AP_TemperatureSensor/AP_TemperatureSensor.h
+singleton AP_TemperatureSensor depends AP_TEMPERATURE_SENSOR_ENABLED
+singleton AP_TemperatureSensor rename temperature_sensor
+singleton AP_TemperatureSensor method get_temperature boolean float'Null uint8_t'skip_check

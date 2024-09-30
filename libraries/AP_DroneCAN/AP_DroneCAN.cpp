@@ -521,6 +521,10 @@ void AP_DroneCAN::loop(void)
             continue;
         }
 
+        // ensure that the DroneCAN thread cannot completely saturate
+        // the CPU, preventing low priority threads from running
+        hal.scheduler->delay_microseconds(100);
+
         canard_iface.process(1);
 
         safety_state_send();
@@ -709,14 +713,17 @@ void AP_DroneCAN::handle_node_info_request(const CanardRxTransfer& transfer, con
 
 int16_t AP_DroneCAN::scale_esc_output(uint8_t idx){
     static const int16_t cmd_max = ((1<<13)-1);
-    float scaled = 0;
-
+    float scaled = hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse);
+    // Prevent invalid values (from misconfigured scaling parameters) from sending non-zero commands
+    if (!isfinite(scaled)) {
+        return 0;
+    }
+    scaled = constrain_float(scaled, -1, 1);
     //Check if this channel has a reversible ESC. If it does, we can send negative commands.
     if ((((uint32_t) 1) << idx) & _esc_rv) {
-        scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse));
+        scaled *= cmd_max;
     } else {
-        scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse) + 1.0) / 2.0;
-        scaled = constrain_float(scaled, 0, cmd_max);
+        scaled = cmd_max * (scaled + 1.0) / 2.0;
     }
 
     return static_cast<int16_t>(scaled);

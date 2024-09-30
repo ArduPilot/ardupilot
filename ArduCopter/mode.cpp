@@ -1035,12 +1035,15 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
 // transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Mode::get_pilot_desired_yaw_rate(float yaw_in)
+float Mode::get_pilot_desired_yaw_rate() const
 {
     // throttle failsafe check
     if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return 0.0f;
     }
+
+    // Get yaw input
+    const float yaw_in = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
     return g2.command_model_pilot.get_rate() * 100.0 * input_expo(yaw_in, g2.command_model_pilot.get_expo());

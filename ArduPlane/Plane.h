@@ -577,11 +577,10 @@ private:
         uint32_t target_airspeed_time_ms;
 
         // altitude adjustments
-        float target_alt = -1;   // don't default to zero here, as zero is a valid alt.
-        uint32_t last_target_alt = 0;
-        float target_alt_accel;
+        Location target_location;
+        float target_alt_rate;
         uint32_t target_alt_time_ms = 0;
-        uint8_t target_alt_frame = 0;
+        uint8_t target_mav_frame = -1;
 
         // heading track
         float target_heading = -4; // don't default to zero or -1 here, as both are valid headings in radians

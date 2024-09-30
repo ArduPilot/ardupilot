@@ -58,9 +58,8 @@ bool Mode::enter()
     plane.guided_state.target_heading = -4; // radians here are in range -3.14 to 3.14, so a default value needs to be outside that range
     plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
     plane.guided_state.target_airspeed_cm = -1; // same as above, although an airspeed of -1 is rare on plane.
-    plane.guided_state.target_alt = -1; // same as above, although a target alt of -1 is rare on plane.
     plane.guided_state.target_alt_time_ms = 0;
-    plane.guided_state.last_target_alt = 0;
+    plane.guided_state.target_location.set_alt_cm(-1, Location::AltFrame::ABSOLUTE); 
 #endif
 
 #if AP_CAMERA_ENABLED
