@@ -778,6 +778,11 @@ public:
     }
 #endif
 
+    ///     returns true if found, false if not found
+    ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
+    ///     accounts for do_jump commands but never increments the jump's num_times_run (get_next_nav_cmd is responsible for this)
+    bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
+
 private:
     static AP_Mission *_singleton;
 
@@ -832,11 +837,6 @@ private:
     bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
-    ///     returns true if found, false if not found
-    ///     stops and returns false if it hits another navigation command before it finds the first do or conditional command
-    ///     accounts for do_jump commands but never increments the jump's num_times_run (get_next_nav_cmd is responsible for this)
-    bool get_next_do_cmd(uint16_t start_index, Mission_Command& cmd);
-
     ///
     /// jump handling methods
     ///

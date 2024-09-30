@@ -770,6 +770,10 @@ private:
         float up;     // desired speed upwards in m/s. 0 if unset
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override;
+
+    // method to process do_change_speed before we calculate SCurve:
+    void do_change_speed_lookahead(uint16_t index);
+
 };
 
 #if AUTOTUNE_ENABLED

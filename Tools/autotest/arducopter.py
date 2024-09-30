@@ -10121,6 +10121,71 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
+    def DO_CHANGE_SPEED_SCurve(self):
+        '''make sure speed is honoured quickly'''
+        alt = 10
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, alt),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=1.5),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.context_push()
+        self.progress("Installing hook to watch maximum speed")
+        lg = vehicle_test_suite.TestSuite.ValidateGroundSpeed(self, 0, 3)
+        self.install_message_hook_context(lg)
+        self.arm_vehicle()
+        self.progress("Wait for vehicle to start moving")
+        self.wait_groundspeed(0.75, 10)
+        self.progress("Ensuring vehicle does not slow back down again")
+        mg = vehicle_test_suite.TestSuite.ValidateGroundSpeed(self, 0.5, 1.75)
+        self.install_message_hook_context(mg)
+
+        # RTL speeds up, so we stop watching the speed when we are entering it
+        self.wait_current_waypoint(2, timeout=10)
+        self.wait_distance_to_nav_target(10, 20, timeout=300)
+        self.context_pop()
+        self.wait_current_waypoint(4, timeout=300)
+
+        self.wait_disarmed(timeout=300)
+
+    def DO_CHANGE_SPEED_SCurveNext(self):
+        '''make sure speed is honoured quickly for waypoint past first'''
+        alt = 10
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 80, 0, alt),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=1.5),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 180, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.context_push()
+        self.arm_vehicle()
+        # this is the 0-40m segment:
+        self.wait_groundspeed(6, 8)
+        self.progress("Ensuring vehicle does not slow back down again")
+        mg = vehicle_test_suite.TestSuite.ValidateGroundSpeed(self, 0.5, 10)
+        self.install_message_hook_context(mg)
+
+        # this is the 80-180m segment:
+        self.wait_groundspeed(1.4, 1.6)
+        self.assert_current_waypoint(3)
+
+        # RTL speeds up, so we stop watching the speed when we are entering it
+        self.wait_distance_to_nav_target(10, 20, timeout=300)
+        self.context_pop()
+
+        self.wait_disarmed(timeout=300)
+
     def AUTO_LAND_TO_BRAKE(self):
         '''ensure terrain altitude is taken into account when braking'''
         self.set_parameters({
@@ -12114,6 +12179,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
             self.DO_CHANGE_SPEED,
+            self.DO_CHANGE_SPEED_SCurve,
+            self.DO_CHANGE_SPEED_SCurveNext,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
             self.WPNAV_SPEED,

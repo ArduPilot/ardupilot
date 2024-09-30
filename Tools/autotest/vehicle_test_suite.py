@@ -3461,6 +3461,37 @@ class TestSuite(ABC):
         def __init__(self, suite, **kwargs):
             super(TestSuite.ValidateAHRS3AgainstSimState, self).__init__(suite, 'AHRS3', **kwargs)
 
+    class ValidateRange(MessageHook):
+        '''monitors vehicle Groundspeed and snure it stays between limits'''
+        def __init__(self, suite, minimum_value, maximum_value):
+            super(TestSuite.ValidateRange, self).__init__(suite)
+            self.minimum_value = minimum_value
+            self.maximum_value = maximum_value
+            self.last_print = 0
+            self.min_print_interval = 1  # seconds
+
+        def process_value(self, value):
+            if time.time() - self.last_print > self.min_print_interval:
+                self.progress(f"{self.progress_prefix()}: groundspeed (min={self.minimum_value} <= current={value} <= {self.maximum_value})")  # noqa:501
+                self.last_print = time.time()
+
+            if value < self.minimum_value:
+                raise NotAchievedException(f"Value {value} below minimum {self.minimum_value}")
+            if value > self.maximum_value:
+                raise NotAchievedException(f"Value {value} above maximum {self.maximum_value}")
+
+        def hook_removed(self):
+            self.progress("groundspeed was maintained")
+
+    class ValidateGroundSpeed(ValidateRange):
+        def process(self, mav, m):
+            if m.get_type() != "VFR_HUD":
+                return
+            self.process_value(m.groundspeed)
+
+        def progress_prefix(self):
+            return "VGS: "
+
     def message_hook(self, mav, msg):
         """Called as each mavlink msg is received."""
 #        print("msg: %s" % str(msg))
