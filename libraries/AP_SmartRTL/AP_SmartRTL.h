@@ -240,4 +240,6 @@ private:
 
     // returns true if the two loops overlap (used within add_loop to determine which loops to keep or throw away)
     bool loops_overlap(const prune_loop_t& loop1, const prune_loop_t& loop2) const;
+
+    const char *flightMode = "SmartRTL";
 };
