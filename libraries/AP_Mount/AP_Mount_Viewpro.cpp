@@ -801,9 +801,9 @@ SetFocusResult AP_Mount_Viewpro::set_focus(FocusType focus_type, float focus_val
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
-// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
 {
     // exit immediately if not initialised
     if (!_initialised) {
@@ -816,13 +816,13 @@ bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& 
         break;
     case TrackingType::TRK_POINT: {
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_POINT, (top_left.x - 0.5) * 960, (top_left.y - 0.5) * 540));
         break;
     }
     case TrackingType::TRK_RECTANGLE:
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 960, (p2.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (top_left.x - 0.5) * 960, (top_left.y - 0.5) * 540) &&
+                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (bottom_right.x - 0.5) * 960, (bottom_right.y - 0.5) * 540));
         break;
     }
 

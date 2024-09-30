@@ -138,11 +138,13 @@ public:
     SetFocusResult set_focus(FocusType focus_type, float focus_value);
     SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
+#if AP_CAMERA_TRACKING_ENABLED
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-    bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
-    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+    bool set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right);
+#endif
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     // set camera lens as a value from 0 to 5, instance starts from 0

@@ -103,6 +103,27 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_VFOV", 13, AP_Camera_Params, vfov, 0),
 
+#if AP_CAMERA_TRACKING_ENABLED
+    // @Param: _TRK_ENABLE
+    // @DisplayName: Companion based tracking enable or disable
+    // @Description: This enables tracking functionality by using companion as the tracking device
+    // @Values: 0:Disabled, 1:MAVLink (or maybe Companion Computer)
+    // @User: Standard
+    AP_GROUPINFO("_TRK_ENABLE", 14, AP_Camera_Params, track_enable, 0),
+
+    // @Param: _TRK_SYSID
+    // @DisplayName: Tracking device sysid
+    // @Description: This is the system id for the tracking device or companion
+    // @User: Standard
+    AP_GROUPINFO("_TRK_SYSID", 15, AP_Camera_Params, track_sysid, 0),
+
+    // @Param: _TRK_COMPID
+    // @DisplayName: Tracking device compid
+    // @Description: This is the component id for the tracking device or companion
+    // @User: Standard
+    AP_GROUPINFO("_TRK_COMPID", 16, AP_Camera_Params, track_compid, 0),
+#endif
+
     AP_GROUPEND
 
 };

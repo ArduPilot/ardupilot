@@ -37,16 +37,18 @@ SetFocusResult AP_Camera_Scripting::set_focus(FocusType focus_type, float focus_
     return SetFocusResult::ACCEPTED;
 }
 
+#if AP_CAMERA_TRACKING_ENABLED
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
-// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Camera_Scripting::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera_Scripting::set_tracking_internal(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
 {
     _cam_state.tracking_type = (uint8_t)tracking_type;
-    _cam_state.tracking_p1 = p1;
-    _cam_state.tracking_p2 = p2;
+    _cam_state.tracking_p1 = top_left;
+    _cam_state.tracking_p2 = bottom_right;
     return true;
 }
+#endif
 
 // access for scripting backend to retrieve state
 // returns true on success and cam_state is filled in

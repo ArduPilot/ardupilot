@@ -128,6 +128,9 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
 {
     // exit immediately if this is not our message
     if (msg.sysid != _sysid || msg.compid != _compid) {
+        // if its not from the camera device maybe its from the tracking device
+        // so call backends default handle message function
+        AP_Camera_Backend::handle_message(chan, msg);
         return;
     }
 
@@ -151,6 +154,7 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
 
         _got_camera_info = true;
     }
+
 }
 
 // send camera information message to GCS

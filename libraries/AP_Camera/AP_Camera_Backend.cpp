@@ -18,6 +18,17 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
     _instance(instance)
 {}
 
+// init - performs any required initialisation
+void AP_Camera_Backend::init()
+{
+#if AP_CAMERA_TRACKING_ENABLED
+    // initialise the tracking object
+    if (_params.track_enable == 1) {
+        tracker = NEW_NOTHROW AP_Camera_Tracking();
+    }
+#endif
+}
+
 // update - should be called at 50hz
 void AP_Camera_Backend::update()
 {
@@ -409,5 +420,67 @@ void AP_Camera_Backend::log_picture()
     }
 }
 #endif
+
+#if AP_CAMERA_TRACKING_ENABLED
+// set tracking to none, point or rectangle (see TrackingType enum)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera_Backend::set_tracking_external(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
+{
+    if (tracker == nullptr) {
+        return false;
+    }
+    return tracker->set_tracking(tracking_type, top_left, bottom_right, _params.track_sysid, _params.track_compid, camera_settings._cam_info);
+}
+
+// start object tracking
+bool AP_Camera_Backend::set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
+{
+    if (_params.track_enable == 1) {
+        return set_tracking_external(tracking_type, top_left, bottom_right);
+    }
+    return set_tracking_internal(tracking_type, top_left, bottom_right);
+}
+#endif
+
+// handle camera information message
+void AP_Camera_Backend::handle_message_camera_information(mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    // accept the camera information only if its coming either from camera or from external tracking system
+    if (msg.sysid != _params.track_sysid || msg.compid != _params.track_compid) {
+        return;
+    }
+
+    mavlink_msg_camera_information_decode(&msg, &camera_settings._cam_info);
+
+    const uint8_t fw_ver_major = camera_settings._cam_info.firmware_version & 0x000000FF;
+    const uint8_t fw_ver_minor = (camera_settings._cam_info.firmware_version & 0x0000FF00) >> 8;
+    const uint8_t fw_ver_revision = (camera_settings._cam_info.firmware_version & 0x00FF0000) >> 16;
+    const uint8_t fw_ver_build = (camera_settings._cam_info.firmware_version & 0xFF000000) >> 24;
+
+    // display camera info to user
+    gcs().send_text(MAV_SEVERITY_INFO, "Camera: %s.32 %s.32 fw:%u.%u.%u.%u",
+            camera_settings._cam_info.vendor_name,
+            camera_settings._cam_info.model_name,
+            (unsigned)fw_ver_major,
+            (unsigned)fw_ver_minor,
+            (unsigned)fw_ver_revision,
+            (unsigned)fw_ver_build);
+
+    camera_settings._got_camera_info = true;
+}
+
+// handle MAVLink messages from the camera
+void AP_Camera_Backend::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    // handle CAMERA_INFORMATION
+    switch (msg.msgid) {
+        case MAVLINK_MSG_ID_CAMERA_INFORMATION:
+            handle_message_camera_information(chan,msg);
+            break;
+        default:
+            break;
+    }
+}
 
 #endif // AP_CAMERA_ENABLED

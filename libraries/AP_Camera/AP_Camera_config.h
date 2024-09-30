@@ -58,3 +58,8 @@
 #ifndef HAL_RUNCAM_ENABLED
 #define HAL_RUNCAM_ENABLED 1
 #endif
+
+// enable camera tracking all cameras
+#ifndef AP_CAMERA_TRACKING_ENABLED
+#define AP_CAMERA_TRACKING_ENABLED AP_CAMERA_BACKEND_DEFAULT_ENABLED
+#endif

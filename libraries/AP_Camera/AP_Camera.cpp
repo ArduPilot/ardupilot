@@ -394,19 +394,25 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_POINT:
+#if AP_CAMERA_TRACKING_ENABLED
         if (set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
         }
+#endif
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_RECTANGLE:
+#if AP_CAMERA_TRACKING_ENABLED
         if (set_tracking(TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
             return MAV_RESULT_ACCEPTED;
         }
+#endif
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_STOP_TRACKING:
+#if AP_CAMERA_TRACKING_ENABLED
         if (set_tracking(TrackingType::TRK_NONE, Vector2f{}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
         }
+#endif
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
@@ -719,23 +725,24 @@ SetFocusResult AP_Camera::set_focus(uint8_t instance, FocusType focus_type, floa
     return backend->set_focus(focus_type, focus_value);
 }
 
+#if AP_CAMERA_TRACKING_ENABLED
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
-// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Camera::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera::set_tracking(TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
 {
     WITH_SEMAPHORE(_rsem);
 
     if (primary == nullptr) {
         return false;
     }
-    return primary->set_tracking(tracking_type, p1, p2);
+    return primary->set_tracking(tracking_type, top_left, bottom_right);
 }
 
 // set tracking to none, point or rectangle (see TrackingType enum)
-// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
-// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
-bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+// if POINT only then top_left is the point
+// top_left,bottom_right are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& top_left, const Vector2f& bottom_right)
 {
     WITH_SEMAPHORE(_rsem);
 
@@ -745,8 +752,9 @@ bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const
     }
 
     // call each instance
-    return backend->set_tracking(tracking_type, p1, p2);
+    return backend->set_tracking(tracking_type, top_left, bottom_right);
 }
+#endif
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
 // set camera lens as a value from 0 to 5
