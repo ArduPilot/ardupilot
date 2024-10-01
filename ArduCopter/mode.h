@@ -335,6 +335,8 @@ public:
 
         void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
 
+        void set_yaw_angle_offset(const float yaw_angle_offset_d);
+
         bool reached_fixed_yaw_target();
 
 #if WEATHERVANE_ENABLED
