@@ -54,10 +54,11 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[6] = vd*SH_TAS[0];
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
-        // calculate Kalman gains
-        ftype temp = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
-        if (temp >= tasDataDelayed.tasVariance) {
-            SK_TAS[0] = 1.0f / temp;
+
+        // calculate innovation variance
+        varInnovVtas = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        if (varInnovVtas >= tasDataDelayed.tasVariance) {
+            SK_TAS[0] = 1.0f / varInnovVtas;
             faultStatus.bad_airspeed = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
@@ -66,6 +67,32 @@ void NavEKF3_core::FuseAirspeed()
             faultStatus.bad_airspeed = true;
             return;
         }
+
+        // Calculate the innovation consistency test ratio.
+        // When dead reckoning, scale up innovation variance if innovations are larger than the gate
+        // and do not reject the observation to reduce the impact of bad airspeed data or sudden
+        // wind speed changes on the ability to continue dead reckoning navigation.
+        const bool doingAirDataDeadReckoning = posTimeout || (PV_AidingMode != AID_ABSOLUTE);
+        // Use a smaller gate when dead reckoning to prevent rapid changes to velocity states
+        // due to gusts or airspeed errors.
+        const ftype gateStdDev = doingAirDataDeadReckoning ? 1.0f : MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f);
+        tasTestRatio = sq(innovVtas) / (sq(gateStdDev) * varInnovVtas);
+        if (doingAirDataDeadReckoning && tasTestRatio > 1.0f) {
+            // Adjust the Kalman gains equivalent to increasing the observation noise variance to the
+            // smallest value that would result in the observation being accepted.
+            SK_TAS[0] /= tasTestRatio;
+        }
+
+        // Reject the observation if the test ratio is > 1, but don't fail if bad IMU data or doing air data dead reckoning
+        const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata || doingAirDataDeadReckoning;
+        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
+        if (!isConsistent) {
+            lastTasFailTime_ms = imuSampleTime_ms;
+        } else {
+            lastTasFailTime_ms = 0;
+        }
+
+        // Calculate Kalman gains
         SK_TAS[1] = SH_TAS[1];
 
         if (tasDataDelayed.allowFusion && !airDataFusionWindOnly) {
@@ -126,21 +153,6 @@ void NavEKF3_core::FuseAirspeed()
         } else {
             // zero indexes 22 to 23 = 2
             zero_range(&Kfusion[0], 22, 23);
-        }
-
-        // calculate measurement innovation variance
-        varInnovVtas = 1.0f/SK_TAS[0];
-
-        // calculate the innovation consistency test ratio
-        tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
-
-        // fail if the ratio is > 1, but don't fail if bad IMU data
-        const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
-        if (!isConsistent) {
-            lastTasFailTime_ms = imuSampleTime_ms;
-        } else {
-            lastTasFailTime_ms = 0;
         }
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
