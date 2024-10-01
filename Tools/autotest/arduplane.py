@@ -5847,18 +5847,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
         ])
 
+        # Set initial conditions for servo wiggle testing
+        servo_wiggled = {1: False, 2: False, 4: False}
+
         def look_for_wiggle(mav, m):
             if m.get_type() == 'SERVO_OUTPUT_RAW':
                 # Throttle must be zero
                 if m.servo3_raw != 1000:
                     raise NotAchievedException(
                         "Throttle must be 0 in altitude wait, got %f" % m.servo3_raw)
-                # Aileron, elevator and rudder must all be the same
-                # However, aileron is revered, so we must un-reverse it
-                value = 1500 - (m.servo1_raw - 1500)
-                if (m.servo2_raw != value) or (m.servo4_raw != value):
-                    raise NotAchievedException(
-                        "Aileron, elevator and rudder must be the same")
+
+                # Check if all servos wiggle
+                if m.servo1_raw != 1500:
+                    servo_wiggled[1] = True
+                if m.servo2_raw != 1500:
+                    servo_wiggled[2] = True
+                if m.servo4_raw != 1500:
+                    servo_wiggled[4] = True
 
         # Start mission
         self.change_mode('AUTO')
@@ -5877,6 +5882,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # If the mission item completes as there is no other waypoints we will end up in RTL
         if not self.mode_is('AUTO'):
             raise NotAchievedException("Must still be in AUTO")
+
+        # Raise error if not all servos have wiggled
+        if not all(servo_wiggled.values()):
+            raise NotAchievedException("Not all servos have moved within the test frame")
 
         self.disarm_vehicle()
 
