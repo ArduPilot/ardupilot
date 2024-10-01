@@ -917,7 +917,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             p5=12345, # lat* 1e7
             p6=12345, # lon* 1e7
-            p7=100    # alt
+            p7=100,   # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
         )
         self.delay_sim_time(10)
         self.progress("Ensuring initial speed is known and relatively constant")
@@ -3442,6 +3443,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 p5=int(loc.lat * 1e7),
                 p6=int(loc.lng * 1e7),
                 p7=50,    # alt
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
             )
             self.delay_sim_time(5)
             # create an airspeed sensor error by freezing to the
