@@ -240,7 +240,7 @@ bool AC_Circle::update(float climb_rate_cms)
 void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
 {
     // return center if radius is zero
-    if (_radius <= 0) {
+    if (!is_positive(_radius)) {
         result = _center.tofloat();
         return;
     }
