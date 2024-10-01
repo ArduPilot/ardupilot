@@ -3794,7 +3794,6 @@ function follow:have_target() end
 -- get the SYSID_THISMAV of the target
 ---@return uint8_t_ud
 function follow:get_target_sysid() end
-singleton AP_Follow method get_target_sysid uint8_t
 
 -- get target's heading in degrees (0 = north, 90 = east)
 ---@return number|nil
