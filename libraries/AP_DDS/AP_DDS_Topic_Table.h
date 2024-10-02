@@ -132,7 +132,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "rt/ap/battery/battery0",
+        .topic_name = "rt/ap/battery",
         .type_name = "sensor_msgs::msg::dds_::BatteryState_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
