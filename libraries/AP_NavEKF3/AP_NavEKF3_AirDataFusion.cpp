@@ -753,8 +753,8 @@ bool NavEKF3_core::setWind(float speed, float speed_accuracy, float direction, f
     zeroCols(P,22,23);
 
     // set the wind state variances
-    if (is_positive(speed_accuracy)) {
-        if (is_positive(direction_accuracy)) {
+    if (!isnan(speed_accuracy) && is_positive(speed_accuracy)) {
+        if (!isnan(direction_accuracy) && is_positive(direction_accuracy)) {
             const ftype spdVar = sq(speed_accuracy);
             const ftype dirnVar = sq(radians(direction_accuracy));
 
