@@ -213,7 +213,8 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            sitltest-plane,
+            sitltest-plane-tests1a,
+            sitltest-plane-tests1b,
             sitltest-quadplane,
         ]
 
