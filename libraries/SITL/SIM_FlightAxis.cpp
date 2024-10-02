@@ -18,7 +18,7 @@
 
 #include "SIM_FlightAxis.h"
 
-#if HAL_SIM_FLIGHTAXIS_ENABLED
+#if AP_SIM_FLIGHTAXIS_ENABLED
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -35,6 +35,17 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
+
+const AP_Param::GroupInfo FlightAxis::var_info[] = {
+    // @Param: OPTS
+    // @DisplayName: FlightAxis options
+    // @Description: Bitmask of FlightAxis options
+    // @Bitmask: 1: Swap first 4 and last 4 servos (for quadplane testing)
+    // @Bitmask: 2: Demix heli servos and send roll/pitch/collective/yaw
+    // @User: Advanced
+    AP_GROUPINFO("OPTS", 1, FlightAxis, _options, 0),
+    AP_GROUPEND
+};
 
 /*
   we use a thread for socket creation to reduce the impact of socket
@@ -108,10 +119,18 @@ static double timestamp_sec()
 FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
+    AP::sitl()->models.flightaxis_ptr = this;
+    AP_Param::setup_object_defaults(this, var_info);
+
     use_time_sync = false;
     rate_hz = 250 / target_speedup;
-    heli_demix = strstr(frame_str, "helidemix") != nullptr;
-    rev4_servos = strstr(frame_str, "rev4") != nullptr;
+    if(strstr(frame_str, "helidemix") != nullptr) {
+        _options.set(_options | uint32_t(Option::HeliDemix));
+    }
+    if(strstr(frame_str, "rev4") != nullptr) {
+        _options.set(_options | uint32_t(Option::Rev4Servos));
+    }
+
     const char *colon = strchr(frame_str, ':');
     if (colon) {
         controller_ip = colon+1;
@@ -301,7 +320,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
     }
 
-    if (rev4_servos) {
+    if (option_is_set(Option::Rev4Servos)) {
         // swap first 4 and last 4 servos, for quadplane testing
         float saved[4];
         memcpy(saved, &scaled_servos[0], sizeof(saved));
@@ -309,7 +328,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         memcpy(&scaled_servos[4], saved, sizeof(saved));
     }
 
-    if (heli_demix) {
+    if (option_is_set(Option::HeliDemix)) {
         // FlightAxis expects "roll/pitch/collective/yaw" input
         float swash1 = scaled_servos[0];
         float swash2 = scaled_servos[1];
@@ -615,4 +634,4 @@ void FlightAxis::socket_creator(void)
     }
 }
 
-#endif // HAL_SIM_FLIGHTAXIS_ENABLED
+#endif // AP_SIM_FLIGHTAXIS_ENABLED
