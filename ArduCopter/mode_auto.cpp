@@ -1251,7 +1251,6 @@ void PayloadPlace::run()
 
     auto &g2 = copter.g2;
     const auto &g = copter.g;
-    auto &inertial_nav = copter.inertial_nav;
     auto *attitude_control = copter.attitude_control;
     const auto &pos_control = copter.pos_control;
     const auto &wp_nav = copter.wp_nav;
@@ -1293,7 +1292,7 @@ void PayloadPlace::run()
         case State::Descent_Start:
             gcs().send_text(MAV_SEVERITY_INFO, "%s Abort: Gripper Open", prefix_str);
             // Descent_Start has not run so we must also initalise descent_start_altitude_cm
-            descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
+            descent_start_altitude_cm = pos_control->get_pos_desired_z_cm();
             state = State::Done;
             break;
         case State::Descent:
@@ -1320,7 +1319,7 @@ void PayloadPlace::run()
 
     case State::Descent_Start:
         descent_established_time_ms = now_ms;
-        descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
+        descent_start_altitude_cm = pos_control->get_pos_desired_z_cm();
         // limiting the decent rate to the limit set in wp_nav is not necessary but done for safety
         descent_speed_cms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms * 100.0 : abs(g.land_speed), wp_nav->get_default_speed_down());
         descent_thrust_level = 1.0;
@@ -1330,7 +1329,7 @@ void PayloadPlace::run()
     case State::Descent:
         // check maximum decent distance
         if (!is_zero(descent_max_cm) &&
-            descent_start_altitude_cm - inertial_nav.get_position_z_up_cm() > descent_max_cm) {
+            descent_start_altitude_cm - pos_control->get_pos_desired_z_cm() > descent_max_cm) {
             state = State::Ascent_Start;
             gcs().send_text(MAV_SEVERITY_WARNING, "%s Reached maximum descent", prefix_str);
             break;
@@ -1419,7 +1418,7 @@ void PayloadPlace::run()
         // vel_threshold_fraction * max velocity
         const float vel_threshold_fraction = 0.1;
         const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_z_cmss();
-        bool reached_altitude = copter.pos_control->get_pos_desired_z_cm() >= descent_start_altitude_cm - stop_distance;
+        bool reached_altitude = pos_control->get_pos_desired_z_cm() >= descent_start_altitude_cm - stop_distance;
         if (reached_altitude) {
             state = State::Done;
         }
