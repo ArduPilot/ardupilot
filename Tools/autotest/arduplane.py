@@ -6737,6 +6737,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
 
     def _MAV_CMD_EXTERNAL_WIND_ESTIMATE(self, command):
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,
+            "LOG_FILE_RATEMAX": 0,
+            "LOG_DARM_RATEMAX": 0,
+        })
         self.reboot_sitl()
 
         def cmp_with_variance(a, b, p):
