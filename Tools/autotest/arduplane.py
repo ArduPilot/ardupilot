@@ -6736,6 +6736,26 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
 
+    def MAV_CMD_EXTERNAL_WIND_ESTIMATE_nans(self):
+        '''test supplying MAV_CMD_EXTERNAL_WIND_ESTIMATE with nans'''
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,
+            "LOG_FILE_RATEMAX": 0,
+            "LOG_DARM_RATEMAX": 0,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
+            p1=5,             # speed
+            p2=float("NaN"),  # speed accuracy
+            p3=90,            # direction
+            p4=float("NaN"),  # direction accuracy
+        )
+        self.delay_sim_time(10)
+
     def _MAV_CMD_EXTERNAL_WIND_ESTIMATE(self, command):
         self.set_parameters({
             "LOG_DISARMED": 1,
@@ -7394,6 +7414,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.SetHomeAltChange3,
             self.ForceArm,
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
+            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE_nans,
             self.GliderPullup,
             self.BadRollChannelDefined,
             self.VolzMission,
