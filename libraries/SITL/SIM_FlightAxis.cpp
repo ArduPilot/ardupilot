@@ -43,6 +43,7 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     // @Bitmask: 0: Reset position on startup
     // @Bitmask: 1: Swap first 4 and last 4 servos (for quadplane testing)
     // @Bitmask: 2: Demix heli servos and send roll/pitch/collective/yaw
+    // @Bitmask: 3: Don't print frame rate stats
     // @User: Advanced
     AP_GROUPINFO("OPTS", 1, FlightAxis, _options, uint32_t(Option::ResetPosition)),
     AP_GROUPEND
@@ -603,8 +604,10 @@ void FlightAxis::report_FPS(void)
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
-            printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
-                   frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
+            if(!option_is_set(Option::SilenceFPS)) {
+                printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
+                    frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
+            }
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
