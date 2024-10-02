@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 '''
 Extracts parameter default values from an ArduPilot .bin log file.
