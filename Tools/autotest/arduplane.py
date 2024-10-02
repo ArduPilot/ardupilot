@@ -6290,6 +6290,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def tests(self):
         '''return list of all tests'''
+        ret = []
+        ret.extend(self.tests1a())
+        ret.extend(self.tests1b())
+        return ret
+
+    def tests1a(self):
+        ret = []
         ret = super(AutoTestPlane, self).tests()
         ret.extend([
             self.AuxModeSwitch,
@@ -6347,6 +6354,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.Soaring,
             self.Terrain,
             self.TerrainMission,
+        ])
+        return ret
+
+    def tests1b(self):
+        return [
             self.TerrainLoiter,
             self.VectorNavEAHRS,
             self.MicroStrainEAHRS5,
@@ -6424,8 +6436,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
             self.BadRollChannelDefined,
-        ])
-        return ret
+        ]
 
     def disabled_tests(self):
         return {
@@ -6434,3 +6445,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SetHomeAltChange": "https://github.com/ArduPilot/ardupilot/issues/5672",
         }
+
+
+class AutoTestPlaneTests1a(AutoTestPlane):
+    def tests(self):
+        return self.tests1a()
+
+
+class AutoTestPlaneTests1b(AutoTestPlane):
+    def tests(self):
+        return self.tests1b()
