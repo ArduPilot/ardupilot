@@ -301,8 +301,11 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
         return;
     }
+    static_assert(AP_BATT_MONITOR_MAX_INSTANCES <= 99, "AP_BATT_MONITOR_MAX_INSTANCES is greater than 99");
 
     update_topic(msg.header.stamp);
+    hal.util->snprintf(msg.header.frame_id, 2, "%u", instance);
+
     auto &battery = AP::battery();
 
     if (!battery.healthy(instance)) {
@@ -1262,10 +1265,13 @@ void AP_DDS_Client::update()
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
     if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
-        constexpr uint8_t battery_instance = 0;
-        update_topic(battery_state_topic, battery_instance);
+        for (uint8_t battery_instance = 0; battery_instance < AP_BATT_MONITOR_MAX_INSTANCES; battery_instance++) {
+            update_topic(battery_state_topic, battery_instance);
+            if (battery_state_topic.present) {
+                write_battery_state_topic();
+            }
+        }
         last_battery_state_time_ms = cur_time_ms;
-        write_battery_state_topic();
     }
 #endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
