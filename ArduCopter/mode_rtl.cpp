@@ -52,7 +52,7 @@ ModeRTL::RTLAltType ModeRTL::get_alt_type() const
 {
     // sanity check parameter
     switch ((ModeRTL::RTLAltType)g.rtl_alt_type) {
-    case RTLAltType::RELATIVE ... RTLAltType::TERRAIN:
+    case RTLAltType::RELATIVE ... RTLAltType::ABSOLUTE:
         return g.rtl_alt_type;
     }
     // user has an invalid value
@@ -374,6 +374,20 @@ void ModeRTL::land_run(bool disarm_on_land)
     land_run_normal_or_precland();
 }
 
+Location::AltFrame ModeRTL::convert_ReturnTargetAltType_to_AltFrame(ModeRTL::ReturnTargetAltType alt_type) {
+    switch (alt_type) {
+    case ReturnTargetAltType::ABSOLUTE:
+        return Location::AltFrame::ABSOLUTE;
+    case ReturnTargetAltType::RELATIVE:
+        return Location::AltFrame::ABOVE_HOME;
+    case ReturnTargetAltType::RANGEFINDER:
+    case ReturnTargetAltType::TERRAINDATABASE:
+        return Location::AltFrame::ABOVE_TERRAIN;
+    }
+    // we should never reach here but just in case
+    return Location::AltFrame::ABOVE_HOME;
+}
+
 void ModeRTL::build_path()
 {
     // origin point is our stopping point
@@ -405,11 +419,27 @@ void ModeRTL::compute_return_target()
     rtl_path.return_target = ahrs.get_home();
 #endif
 
-    // curr_alt is current altitude above home or above terrain depending upon use_terrain
+    // curr_alt is current altitude which can be above home, above terrain or absolute
     int32_t curr_alt = copter.current_loc.alt;
-
+    // alt of cone vertex
+    int32_t cone_offset = rtl_path.return_target.alt;
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
+    // horizontal distance between return target and origin point 
+    const float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
+    // height of inverted cone with its vertex at the point we would return to
+    float rtl_cone_height = rtl_return_dist_cm*g.rtl_cone_slope; 
+
+    if (get_alt_type() == RTLAltType::ABSOLUTE) {
+        if (!copter.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, curr_alt) ||
+            !rtl_path.return_target.get_alt_cm(Location::AltFrame::ABSOLUTE, cone_offset)) {
+            // just in case we fail to get current altitude in ABSOLUTE frame
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
+        alt_type = ReturnTargetAltType::ABSOLUTE;
+        rtl_cone_height += cone_offset;
+    }
+
     if (terrain_following_allowed && (get_alt_type() == RTLAltType::TERRAIN)) {
         // convert RTL_ALT_TYPE and WPNAV_RFNG_USE parameters to ReturnTargetAltType
         switch (wp_nav->get_terrain_source()) {
@@ -447,8 +477,10 @@ void ModeRTL::compute_return_target()
         //   Note: the return_target may be a rally point with the alt set above the terrain alt (like the top of a building)
         int32_t curr_terr_alt;
         if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt) &&
-            rtl_path.return_target.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN)) {
+            rtl_path.return_target.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN) &&
+            rtl_path.return_target.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, cone_offset)) {
             curr_alt = curr_terr_alt;
+            rtl_cone_height += cone_offset;
         } else {
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
@@ -476,14 +508,14 @@ void ModeRTL::compute_return_target()
     target_alt = MAX(target_alt, MAX(g.rtl_altitude, min_rtl_alt));
 
     // reduce climb if close to return target
-    float rtl_return_dist_cm = rtl_path.return_target.get_distance(rtl_path.origin_point) * 100.0f;
-    // don't allow really shallow slopes
+    // but don't allow really shallow slopes
     if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
-        target_alt = MIN(target_alt, MAX(rtl_return_dist_cm * g.rtl_cone_slope, min_rtl_alt));
+        target_alt = MAX(target_alt, MIN(target_alt, MAX(rtl_cone_height, min_rtl_alt)));
     }
 
-    // set returned target alt to new target_alt (don't change altitude type)
-    rtl_path.return_target.set_alt_cm(target_alt, (alt_type == ReturnTargetAltType::RELATIVE) ? Location::AltFrame::ABOVE_HOME : Location::AltFrame::ABOVE_TERRAIN);
+    Location::AltFrame target_alt_frame = convert_ReturnTargetAltType_to_AltFrame(alt_type);
+    // set returned target alt to new target_alt (with correct alt type)
+    rtl_path.return_target.set_alt_cm(target_alt, target_alt_frame);
 
 #if AP_FENCE_ENABLED
     // ensure not above fence altitude if alt fence is enabled

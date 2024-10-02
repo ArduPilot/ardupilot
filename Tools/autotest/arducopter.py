@@ -177,7 +177,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_altitude((desiredAlt-5), desiredAlt, relative=True)
         self.hover()
 
-    # Takeoff, climb to given altitude, and fly east for 10 seconds
+    # Takeoff, climb to given altitude, and fly east for given distance
     def takeoffAndMoveAway(self, dAlt=50, dDist=50):
         self.progress("Centering sticks")
         self.set_rc_from_map({
@@ -196,10 +196,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Fly eastbound away from home")
         self.set_rc(2, 1800)
-        self.delay_sim_time(10)
+        self.wait_distance(dDist, timeout=60)
         self.set_rc(2, 1500)
         self.hover()
-        self.progress("Copter staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
+        self.progress("Copter staging %.2f meters east of home at %.2f meters altitude In mode Alt Hold" % (dAlt, dDist))
 
     # loiter - fly south west, then loiter within 5m position and altitude
     def ModeLoiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
@@ -3733,6 +3733,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
         self.monitor_groundspeed(wpnav_speed_ms, tolerance=0.6, timeout=5)
         self.do_RTL()
+
+    def fly_rtl_alt_type_ascend(self, rtl_alt_m, rtl_alt_type=0):
+        """Test vehicle ascend phase in rtl mode for a given rtl type"""
+        takeoff_alt = 15                # in m
+        self.set_parameters({
+            'RTL_ALT_TYPE': rtl_alt_type,
+            'RTL_ALT': rtl_alt_m * 100,   # m -> cm
+        })
+        self.takeoffAndMoveAway(takeoff_alt, 180)
+        self.change_mode('RTL')
+        self.wait_altitude(rtl_alt_m - 1, rtl_alt_m + 1, relative=(rtl_alt_type != 2))
+        self.wait_rtl_complete()
+
+    def RTLAltType(self):
+        """Test RTL Alt Type parameter"""
+        rtl_alt_rel = 25 # in m
+        self.fly_rtl_alt_type_ascend(rtl_alt_rel, rtl_alt_type=0)    # test ascend with above-home alt type
+        current_loc = self.mav.location()
+        rtl_alt_abs = current_loc.alt + rtl_alt_rel                  # calculate abs rtl alt
+        self.fly_rtl_alt_type_ascend(rtl_alt_abs, rtl_alt_type=2)    # test ascend with above-sea alt type
+
+        # testing ascend with rtl_alt_type terrain to make sure it doesn't do anything stupid
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RC9_OPTION", 10)
+        self.set_rc(9, 2000)
+        self.reboot_sitl()
+        self.fly_rtl_alt_type_ascend(rtl_alt_rel, rtl_alt_type=1)
 
     def NavDelay(self):
         """Fly a simple mission that has a delay in it."""
@@ -10724,6 +10751,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
              self.MAV_CMD_NAV_VTOL_LAND,
              self.clear_roi,
+             self.RTLAltType,
         ])
         return ret
 
