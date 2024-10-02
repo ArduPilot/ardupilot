@@ -40,10 +40,11 @@ const AP_Param::GroupInfo FlightAxis::var_info[] = {
     // @Param: OPTS
     // @DisplayName: FlightAxis options
     // @Description: Bitmask of FlightAxis options
+    // @Bitmask: 0: Reset position on startup
     // @Bitmask: 1: Swap first 4 and last 4 servos (for quadplane testing)
     // @Bitmask: 2: Demix heli servos and send roll/pitch/collective/yaw
     // @User: Advanced
-    AP_GROUPINFO("OPTS", 1, FlightAxis, _options, 0),
+    AP_GROUPINFO("OPTS", 1, FlightAxis, _options, uint32_t(Option::ResetPosition)),
     AP_GROUPEND
 };
 
@@ -303,6 +304,15 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 </soap:Body>
 </soap:Envelope>)");
         soap_request_end(1000);
+        if(option_is_set(Option::ResetPosition)) {
+            soap_request_start("ResetAircraft", R"(<?xml version='1.0' encoding='UTF-8'?>
+<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+<soap:Body>
+<ResetAircraft><a>1</a><b>2</b></ResetAircraft>
+</soap:Body>
+</soap:Envelope>)");
+            soap_request_end(1000);
+        }
         soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>

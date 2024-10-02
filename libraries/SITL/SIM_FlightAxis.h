@@ -177,6 +177,7 @@ private:
     AP_Int32 _options;
 
     enum class Option : uint32_t{
+        ResetPosition = (1U<<0),
         Rev4Servos    = (1U<<1),
         HeliDemix     = (1U<<2),
     };
