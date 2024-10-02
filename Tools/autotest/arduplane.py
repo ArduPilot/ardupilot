@@ -2924,6 +2924,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def TerrainLoiter(self):
         '''Test terrain following in loiter'''
         self.context_push()
+        self.install_terrain_handlers_context()
         self.set_parameters({
             "TERRAIN_FOLLOW": 1, # enable terrain following in loiter
             "WP_LOITER_RAD": 2000, # set very large loiter rad to get some terrain changes
