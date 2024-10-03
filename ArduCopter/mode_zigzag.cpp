@@ -161,7 +161,7 @@ void ModeZigZag::run()
 void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
     // get current position as an offset from EKF origin
-    const Vector2f curr_pos {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos = pos_control->get_pos_desired_cm().xy().tofloat();
 
     // handle state machine changes
     switch (stage) {
@@ -431,7 +431,7 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     }
 
     // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
     Vector2f veh_to_start_pos = curr_pos2d - start_pos;
 
     // lengthen AB_diff so that it is at least as long as vehicle is from start point
@@ -499,7 +499,7 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
     float scalar = constrain_float(_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
 
     // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
     next_dest.xy() = curr_pos2d + (AB_side * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
