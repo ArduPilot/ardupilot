@@ -295,6 +295,10 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 
         // ensure _idle_throttle not set to invalid value
         _idle_throttle = get_idle_output();
+
+        // reset fast idle timer
+        _fast_idle_timer = 0.0;
+
         break;
 
     case RotorControlState::IDLE:
@@ -331,14 +335,11 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                     _starting = false;
                 }
             } else {
-                if (_cooldown_time > 0) {
-                    _idle_throttle = get_idle_output() * 1.5f;
-                    _fast_idle_timer += dt;
-                    if (_fast_idle_timer > (float)_cooldown_time) {
-                        _fast_idle_timer = 0.0f;
-                    }
-                } else {
-                    _idle_throttle = get_idle_output();
+                _idle_throttle = get_idle_output();
+                if (_fast_idle_timer > 0.0) {
+                    // running at fast idle for engine cool down
+                    _idle_throttle *= 1.5;
+                    _fast_idle_timer -= dt;
                 }
             }
             // this resets the bailout feature if the aircraft has landed.
@@ -352,6 +353,11 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
     case RotorControlState::ACTIVE:
         // set main rotor ramp to increase to full speed
         update_rotor_ramp(1.0f, dt);
+
+        // set fast idle timer so next time RSC goes to idle, the cooldown timer starts
+        if (_cooldown_time.get() > 0) {
+            _fast_idle_timer = _cooldown_time.get();
+        }
 
         // ensure _idle_throttle not set to invalid value due to premature switch out of turbine start
         if (_starting) {
