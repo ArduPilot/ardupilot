@@ -750,6 +750,62 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(eagle_f2,         "EAGLE_F2",    0),
 
+    // @Param: EAGLE_F3
+    // @DisplayName: EAGLE_F3
+    // @Description: EAGLE_F3
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f3,         "EAGLE_F3",    0),
+
+    // @Param: EAGLE_F4
+    // @DisplayName: EAGLE_F4
+    // @Description: EAGLE_F4
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f4,         "EAGLE_F4",    0),
+
+    // @Param: EAGLE_F5
+    // @DisplayName: EAGLE_F5
+    // @Description: EAGLE_F5
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f5,         "EAGLE_F5",    0),
+
+    // @Param: EAGLE_F6
+    // @DisplayName: EAGLE_F6
+    // @Description: EAGLE_F6
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f6,         "EAGLE_F6",    0),
+
+    // @Param: EAGLE_F7
+    // @DisplayName: EAGLE_F7
+    // @Description: EAGLE_F7
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f7,         "EAGLE_F7",    0),
+
+    // @Param: EAGLE_F8
+    // @DisplayName: EAGLE_F8
+    // @Description: EAGLE_F8
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f8,         "EAGLE_F8",    0),
+
+    // @Param: EAGLE_F9
+    // @DisplayName: EAGLE_F9
+    // @Description: EAGLE_F9
+    // @Range: -100 100
+    // @Increment: 0.01
+    // @User: Standard
+    GSCALAR(eagle_f9,         "EAGLE_F9",    0),
+
     // @Param: EAGLE_I0
     // @DisplayName: EAGLE_I0
     // @Description: EAGLE_I0
@@ -770,6 +826,27 @@ const AP_Param::Info Plane::var_info[] = {
     // @Range: -10000 10000
     // @User: Standard
     GSCALAR(eagle_i2,         "EAGLE_I2",    0),
+
+    // @Param: EAGLE_I3
+    // @DisplayName: EAGLE_I3
+    // @Description: EAGLE_I3
+    // @Range: -10000 10000
+    // @User: Standard
+    GSCALAR(eagle_i3,         "EAGLE_I3",    0),
+
+    // @Param: EAGLE_I4
+    // @DisplayName: EAGLE_I4
+    // @Description: EAGLE_I4
+    // @Range: -10000 10000
+    // @User: Standard
+    GSCALAR(eagle_i4,         "EAGLE_I4",    0),
+
+    // @Param: EAGLE_I5
+    // @DisplayName: EAGLE_I5
+    // @Description: EAGLE_I5
+    // @Range: -10000 10000
+    // @User: Standard
+    GSCALAR(eagle_i5,         "EAGLE_I5",    0),
 
     // @Param: CRASH_DETECT
     // @DisplayName: Crash Detection
