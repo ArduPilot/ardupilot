@@ -46,6 +46,14 @@
 #if AP_DDS_CLOCK_PUB_ENABLED
 #include "rosgraph_msgs/msg/Clock.h"
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_PARAMETER_SERVER_ENABLED
+#include "rcl_interfaces/srv/SetParameters.h"
+#include "rcl_interfaces/msg/Parameter.h"
+#include "rcl_interfaces/msg/SetParametersResult.h"
+#include "rcl_interfaces/msg/ParameterValue.h"
+#include "rcl_interfaces/msg/ParameterType.h"
+#include "rcl_interfaces/srv/GetParameters.h"
+#endif //AP_DDS_PARAMETER_SERVER_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -200,6 +208,14 @@ private:
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
     HAL_Semaphore csem;
+
+#if AP_DDS_PARAMETER_SERVER_ENABLED
+    static rcl_interfaces_srv_SetParameters_Request set_parameter_request;
+    static rcl_interfaces_srv_SetParameters_Response set_parameter_response;
+    static rcl_interfaces_srv_GetParameters_Request get_parameters_request;
+    static rcl_interfaces_srv_GetParameters_Response get_parameters_response;
+    static rcl_interfaces_msg_Parameter param;
+#endif
 
     // connection parametrics
     bool status_ok{false};

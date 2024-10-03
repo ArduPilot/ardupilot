@@ -126,6 +126,10 @@
 #define AP_DDS_MODE_SWITCH_SERVER_ENABLED 1
 #endif
 
+#ifndef AP_DDS_PARAMETER_SERVER_ENABLED
+#define AP_DDS_PARAMETER_SERVER_ENABLED 1
+#endif
+
 // Whether to include Twist support
 #define AP_DDS_NEEDS_TWIST AP_DDS_VEL_CTRL_ENABLED || AP_DDS_LOCAL_VEL_PUB_ENABLED
 
@@ -138,4 +142,8 @@
 #else
 #define AP_DDS_DEFAULT_UDP_IP_ADDR "127.0.0.1"
 #endif
+#endif
+
+#ifndef AP_DDS_PARTICIPANT_NAME
+#define AP_DDS_PARTICIPANT_NAME "ap"
 #endif
