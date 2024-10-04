@@ -1513,6 +1513,7 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
+// return the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
 Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const
 {
     Location ret(cmd.content.location);
