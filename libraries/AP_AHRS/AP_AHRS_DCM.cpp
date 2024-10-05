@@ -1001,11 +1001,10 @@ void AP_AHRS_DCM::estimate_wind(void)
     if (diff_length > 0.2f) {
         // when turning, use the attitude response to estimate
         // wind speed
-        float V;
         const Vector3f velocityDiff = velocity - _last_vel;
 
         // estimate airspeed it using equation 6
-        V = velocityDiff.length() / diff_length;
+        const float V = velocityDiff.length() / diff_length;
 
         const Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
         const Vector3f velocitySum = velocity + _last_vel;
@@ -1017,10 +1016,11 @@ void AP_AHRS_DCM::estimate_wind(void)
         const float sintheta = sinf(theta);
         const float costheta = cosf(theta);
 
-        Vector3f wind = Vector3f();
-        wind.x = velocitySum.x - V * (costheta * fuselageDirectionSum.x - sintheta * fuselageDirectionSum.y);
-        wind.y = velocitySum.y - V * (sintheta * fuselageDirectionSum.x + costheta * fuselageDirectionSum.y);
-        wind.z = velocitySum.z - V * fuselageDirectionSum.z;
+        Vector3f wind{
+            velocitySum.x - V * (costheta * fuselageDirectionSum.x - sintheta * fuselageDirectionSum.y),
+            velocitySum.y - V * (sintheta * fuselageDirectionSum.x + costheta * fuselageDirectionSum.y),
+            velocitySum.z - V * fuselageDirectionSum.z
+        };
         wind *= 0.5f;
 
         if (wind.length() < _wind.length() + 20) {
