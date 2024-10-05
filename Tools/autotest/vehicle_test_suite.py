@@ -7383,12 +7383,14 @@ class TestSuite(ABC):
             **kwargs
         )
 
-    def wait_roll(self, roll, accuracy, timeout=30, **kwargs):
+    def wait_roll(self, roll, accuracy, timeout=30, absolute_value=False, **kwargs):
         """Wait for a given roll in degrees."""
         def get_roll(timeout2):
             msg = self.assert_receive_message('ATTITUDE', timeout=timeout2)
             p = math.degrees(msg.pitch)
             r = math.degrees(msg.roll)
+            if absolute_value:
+                r = abs(r)
             self.progress("Roll %d Pitch %d" % (r, p))
             return r
 
