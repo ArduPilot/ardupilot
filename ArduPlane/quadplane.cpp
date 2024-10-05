@@ -1961,6 +1961,18 @@ void QuadPlane::motors_output(bool run_rate_controller)
         if (now - last_att_control_ms > 100) {
             // relax if have been inactive
             relax_attitude_control();
+            /*
+              when starting the motors apply a limit to the target
+              thrust angle to allow us to rapidly recover from an
+              upset attitude.
+              We add 10% past our limit so we don't trigger this
+              recovery code too often for normal fixed wing flight
+             */
+            const float angle_limit_cd = MAX(plane.aparm.roll_limit*100, aparm.angle_max)*1.1;
+            const bool needed_limiting = attitude_control->limit_target_thrust_angle(angle_limit_cd);
+            if (needed_limiting) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Fast attitude recovery");
+            }
         }
         // run low level rate controllers that only require IMU data and set loop time
         const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
