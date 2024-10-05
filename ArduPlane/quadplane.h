@@ -443,13 +443,13 @@ private:
     Transition *transition = nullptr;
 
     // true when waiting for pilot throttle
-    bool throttle_wait:1;
+    bool throttle_wait;
 
     // true when quad is assisting a fixed wing mode
-    bool assisted_flight:1;
+    bool assisted_flight;
 
     // are we in a guided takeoff?
-    bool guided_takeoff:1;
+    bool guided_takeoff;
 
     /* if we arm in guided mode when we arm then go into a "waiting
        for takeoff command" state. In this state we are waiting for
