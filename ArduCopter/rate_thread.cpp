@@ -152,7 +152,7 @@
 
 uint8_t Copter::calc_gyro_decimation(uint8_t gyro_decimation, uint16_t rate_hz)
 {
-    return uint8_t(DIV_ROUND_INT(ins.get_raw_gyro_rate_hz() / gyro_decimation, rate_hz));
+    return MAX(uint8_t(DIV_ROUND_INT(ins.get_raw_gyro_rate_hz() / gyro_decimation, rate_hz)), 1U);
 }
 
 static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& decimation_count)
