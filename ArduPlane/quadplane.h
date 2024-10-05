@@ -631,6 +631,9 @@ private:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
     bool delay_arming;
 
+    // should we force use of fixed wing controller for attitude upset recovery?
+    bool force_fw_control_recovery;
+
     /*
       return true if current mission item is a vtol takeoff
      */
