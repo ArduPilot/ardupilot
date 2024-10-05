@@ -86,7 +86,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("WIND_SPD",       9, SIM,  wind_speed,  0),
     // @Param: WIND_DIR
-    // @DisplayName: Simulated Wind direction
+    // @DisplayName: Direction simulated wind is coming from
     // @Description: Allows you to set wind direction (true deg) in sim
     // @Units: deg
     // @User: Advanced
