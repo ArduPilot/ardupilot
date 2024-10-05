@@ -104,8 +104,8 @@ struct PACKED log_XKF1 {
 // @Field: AX: Estimated accelerometer X bias
 // @Field: AY: Estimated accelerometer Y bias
 // @Field: AZ: Estimated accelerometer Z bias
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
+// @Field: VWN: Estimated wind velocity (moving-to-North component)
+// @Field: VWE: Estimated wind velocity (moving-to-East component)
 // @Field: MN: Magnetic field strength (North component)
 // @Field: ME: Magnetic field strength (East component)
 // @Field: MD: Magnetic field strength (Down component)
