@@ -2213,6 +2213,46 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.context_pop()
 
+    def FastInvertedRecovery(self):
+        '''test recovery from inverted flight is fast'''
+
+        self.set_parameters({
+            "Q_A_ACCEL_R_MAX": 20000,
+            "Q_A_ACCEL_P_MAX": 20000,
+            "Q_A_ACCEL_Y_MAX": 20000,
+            "Q_A_RATE_R_MAX": 50,
+            "Q_A_RATE_P_MAX": 50,
+            "Q_A_RATE_Y_MAX": 50,
+        })
+
+        self.wait_ready_to_arm()
+        self.takeoff(60, mode='GUIDED', timeout=100)
+
+        self.context_collect('STATUSTEXT')
+        self.set_rc(3, 1500)
+        self.change_mode('CRUISE')
+        self.wait_statustext("Transition done", check_context=True)
+
+        self.progress("Go to inverted flight")
+        self.run_auxfunc(43, 2)
+        self.wait_roll(180, 3, absolute_value=True)
+        self.delay_sim_time(10)
+
+        initial_altitude = self.get_altitude(relative=True, timeout=2)
+        self.change_mode('QHOVER')
+
+        self.wait_roll(0, 3, absolute_value=True)
+
+        recovery_altitude = self.get_altitude(relative=True, timeout=2)
+        alt_change = initial_altitude - recovery_altitude
+
+        self.progress("Recovery AltChange %.1fm" % alt_change)
+
+        max_alt_change = 3
+        if alt_change > max_alt_change:
+            raise NotAchievedException("Recovery AltChange too high %.1f > %.1f" % (alt_change, max_alt_change))
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2266,5 +2306,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
             self.QLoiterRecovery,
+            self.FastInvertedRecovery,
         ])
         return ret
