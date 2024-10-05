@@ -10,6 +10,7 @@ import numpy
 import math
 import copy
 
+from pymavlink import mavextra
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
@@ -2632,6 +2633,73 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.mav.motors_disarmed_wait()
         self.reset_SITL_commandline()
 
+    def MAV_CMD_EXTERNAL_WIND_ESTIMATE_direction(self):
+        '''ensure MAV_CMD_EXTERNAL_WIND_ESTIMATE direction aligns with ArduPilot's conventions'''
+        wind_from_dir = 270  # wind from the West
+        wind_speed = 5
+        wind_direction_accuracy = 30
+        wind_speed_accuracy = 1
+
+        self.set_parameters({
+            "SIM_WIND_DIR": wind_from_dir,
+            "SIM_WIND_SPD": wind_speed,
+            # "ARSPD_USE": 0,  # we instantly nuke our wind estimate if we have one of these
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
+            p1=wind_speed,               # speed
+            p2=wind_speed_accuracy  ,    # speed accuracy
+            p3=wind_from_dir,            # direction
+            p4=wind_direction_accuracy,  # direction accuracy
+        )
+
+        class ValidateWindSpeedDir(vehicle_test_suite.TestSuite.MessageHook):
+            '''asserts wind is from a direction and at a speed'''
+
+            def __init__(self, suite, speed, direction, epsilon_speed=1, epsilon_direction=30):
+                super(ValidateWindSpeedDir, self).__init__(suite)
+                self.speed = speed
+                self.direction = direction
+                self.epsilon_speed = epsilon_speed
+                self.epsilon_direction = epsilon_direction
+
+            def hook_removed(self):
+                pass
+
+            def process(self, mav, m):
+                if m.get_type() != 'WIND':
+                    return
+                # check speed
+                self.suite.assert_message_field_values(m, {
+                    "speed": self.speed
+                }, epsilon=self.epsilon_direction)
+                # check direction
+                self.suite.assert_message_field_values(m, {
+                    "direction": mavextra.wrap_180(self.direction),
+                }, epsilon=self.epsilon_direction)
+
+        # self.install_message_hook_context(ValidateWindSpeedDir(self, wind_speed, wind_from_dir))
+
+        self.arm_vehicle()
+        self.change_mode('QHOVER')
+        self.set_rc(3, 1800)
+        self.delay_sim_time(30)
+        # self.send_debug_trap()
+        self.change_mode('FBWA')
+        self.delay_sim_time(30)
+        self.change_mode('LOITER')
+        self.delay_sim_time(30)
+
+        self.disarm_vehicle(force=True)
+
+        # there's an implicit reboot at end of test as we've done a
+        # reboot in here.
+
     def tests(self):
         '''return list of all tests'''
 
@@ -2646,6 +2714,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
+            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE_direction,
             self.Mission,
             self.Weathervane,
             self.QAssist,
