@@ -50,8 +50,8 @@ void ModeBrake::run()
     }
 
     // use position controller to stop
-    Vector2f vel;
-    Vector2f accel;
+    Vector2f vel{};
+    Vector2f accel{};
     pos_control->input_vel_accel_xy(vel, accel);
     pos_control->update_xy_controller();
 
