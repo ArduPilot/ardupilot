@@ -28,7 +28,9 @@ class CameraTrackingScript:
         self.connection = None
         self.udp_ip = "127.0.0.1"  # Localhost
         self.udp_port = 14580      # Port to send to
+        self.udp_port2 = 14590
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.resh = resh
         self.resv = resv
 
@@ -114,6 +116,10 @@ class CameraTrackingScript:
             )
             time.sleep(1)
 
+    def handle_camera_stop_tracking(self,msg):
+        self.sock2.sendto(struct.pack('!?', False), (self.udp_ip, self.udp_port2))
+        print("stop tracking sent to main script")
+
     def run(self):
         self.connect_to_mavlink()
         self.send_camera_information()
@@ -131,6 +137,8 @@ class CameraTrackingScript:
                         self.handle_camera_track_point(msg)
                     elif msg.command == mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE:
                         self.handle_camera_track_rectangle(msg)
+                    elif msg.command == mavutil.mavlink.MAV_CMD_CAMERA_STOP_TRACKING:
+                        self.handle_camera_stop_tracking(msg)
                 else:
                     print("Received but not for us")
 
