@@ -152,6 +152,14 @@
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
 #endif
 
+// HAL_PROGRAM_SIZE_LIMIT_KB is the amount of space we have for
+// instructions.  on ChibiOS this is the sum of onboard and external
+// flash.  BOARD_FLASH_SIZE is reserved for use in the HAL backends
+// (usually only ChibiOS) and should not be used in general code.
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#error HAL_PROGRAM_SIZE_LIMIT_KB must be defined
+#endif
+
 #ifndef HAL_OS_SOCKETS
 #define HAL_OS_SOCKETS 0
 #endif
@@ -201,12 +209,8 @@
 #define AP_EXTENDED_DSHOT_TELEM_V2_ENABLED HAL_REQUIRES_BDSHOT_SUPPORT
 #endif
 
-#ifndef BOARD_FLASH_SIZE
-#define BOARD_FLASH_SIZE 2048
-#endif
-
 #ifndef HAL_GYROFFT_ENABLED
-#define HAL_GYROFFT_ENABLED (BOARD_FLASH_SIZE > 1024)
+#define HAL_GYROFFT_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
 #endif
 
 // enable AP_GyroFFT library only if required:
@@ -391,7 +395,7 @@
 
 
 #ifndef HAL_ENABLE_SENDING_STATS
-#define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
+#define HAL_ENABLE_SENDING_STATS HAL_PROGRAM_SIZE_LIMIT_KB >= 256
 #endif
 
 #ifndef HAL_GPIO_LED_ON
@@ -405,7 +409,7 @@
 #endif
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
-#define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
+#define HAL_WITH_POSTYPE_DOUBLE HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 #ifndef HAL_INS_RATE_LOOP
