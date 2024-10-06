@@ -129,7 +129,8 @@ bool AP_Baro_BMP388::init()
 }
 
 
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
 //  accumulate a new sensor reading
 void AP_Baro_BMP388::timer(void)
 {
@@ -150,6 +151,7 @@ void AP_Baro_BMP388::timer(void)
 
     dev->check_next_register();
 }
+#pragma GCC diagnostic pop
 
 // transfer data to the frontend
 void AP_Baro_BMP388::update(void)
