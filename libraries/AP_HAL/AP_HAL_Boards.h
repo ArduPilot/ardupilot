@@ -7,12 +7,12 @@
 #pragma once
 
 #define HAL_BOARD_SITL     3
-#define HAL_BOARD_SMACCM   4  // unused
-#define HAL_BOARD_PX4      5  // unused
+// #define HAL_BOARD_SMACCM   4  // unused
+// #define HAL_BOARD_PX4      5  // unused
 #define HAL_BOARD_LINUX    7
-#define HAL_BOARD_VRBRAIN  8
+// #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
-#define HAL_BOARD_F4LIGHT  11 // reserved
+// #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
 #define HAL_BOARD_EMPTY    99
