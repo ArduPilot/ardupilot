@@ -105,9 +105,6 @@ void ModeRTL::run(bool disarm_on_land)
         FALLTHROUGH;
 
     case SubMode::INITIAL_CLIMB:
-        climb_return_run();
-        break;
-
     case SubMode::RETURN_HOME:
         climb_return_run();
         break;
