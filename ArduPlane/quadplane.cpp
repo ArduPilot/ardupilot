@@ -4374,7 +4374,9 @@ bool SLT_Transition::allow_update_throttle_mix() const
 
 bool SLT_Transition::active_frwd() const
 {
-    return quadplane.assisted_flight && ((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER));
+    return quadplane.assisted_flight && // We need to be in assisted flight...
+        ((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER)) // ... and a transition must be active...
+        && !quadplane.in_vtol_airbrake(); // ... but not executing an QPOS_AIRBRAKE maneuver during an automated landing.
 }
 
 /*
