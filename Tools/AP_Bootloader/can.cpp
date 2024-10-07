@@ -429,7 +429,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         // The allocator has confirmed part of unique ID, switching to the next stage and updating the timeout.
         node_id_allocation_unique_id_offset = msg.unique_id.len;
         send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
-    } else {
+    } else if (msg.node_id != CANARD_BROADCAST_NODE_ID) { // new ID valid? (if not we will time out and start over)
         // Allocation complete - copying the allocated node ID from the message
         canardSetLocalNodeID(ins, msg.node_id);
     }
