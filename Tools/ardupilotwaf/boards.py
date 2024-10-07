@@ -948,12 +948,15 @@ class sitl_periph_universal(sitl_periph):
             HAL_PERIPH_ENABLE_RC_OUT = 1,
             HAL_PERIPH_ENABLE_ADSB = 1,
             HAL_PERIPH_ENABLE_SERIAL_OPTIONS = 1,
+            HAL_PERIPH_ENABLE_OPTICALFLOW = 1,
             AP_AIRSPEED_ENABLED = 1,
             AP_BATTERY_ESC_ENABLED = 1,
             HAL_PWM_COUNT = 32,
             HAL_WITH_ESC_TELEM = 1,
             AP_EXTENDED_ESC_TELEM_ENABLED = 1,
             AP_TERRAIN_AVAILABLE = 1,
+            AP_INERTIALSENSOR_ENABLED = 1,
+            HAL_GYROFFT_ENABLED = 0,
         )
 
 class sitl_periph_gps(sitl_periph):

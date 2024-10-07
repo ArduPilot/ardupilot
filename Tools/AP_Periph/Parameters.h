@@ -97,6 +97,7 @@ public:
         k_param_rpm_msg_rate,
         k_param_esc_rate,
         k_param_esc_extended_telem_rate,
+        k_param_of,
     };
 
     AP_Int16 format_version;

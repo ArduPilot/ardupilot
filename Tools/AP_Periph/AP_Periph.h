@@ -45,6 +45,7 @@
 #include <SITL/SITL.h>
 #endif
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
 #ifdef HAL_PERIPH_ENABLE_RELAY
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
@@ -432,6 +433,19 @@ public:
     AP_Relay relay;
 #endif
 
+#if AP_INERTIALSENSOR_ENABLED
+    AP_InertialSensor ins;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_OPTICALFLOW
+    void of_init();
+    void of_update();
+    void of_send_can();
+    AP_OpticalFlow of;
+    struct {
+        uint32_t last_update_ms; // timestamp of last data from OF lib
+    } of_state;
+#endif
     // setup the var_info table
     AP_Param param_loader{var_info};
 

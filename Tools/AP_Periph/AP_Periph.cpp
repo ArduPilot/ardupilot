@@ -302,6 +302,15 @@ void AP_Periph_FW::init()
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif
+
+#if AP_INERTIALSENSOR_ENABLED
+    ins.init(100);  // the loop rate here, 100,  is completely made up
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_OPTICALFLOW
+    of_init();
+#endif
+
     start_ms = AP_HAL::millis();
 }
 
@@ -399,6 +408,11 @@ void AP_Periph_FW::show_stack_free()
 
 void AP_Periph_FW::update()
 {
+#if AP_INERTIALSENSOR_ENABLED
+    // NOTE!  this *does* wait for a sample from the sensors!
+    ins.update();
+#endif
+
 #if AP_STATS_ENABLED
     node_stats.update();
 #endif
@@ -522,6 +536,10 @@ void AP_Periph_FW::update()
 
 #if HAL_LOGGING_ENABLED
     logger.periodic_tasks();
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_OPTICALFLOW
+    of_update();
 #endif
 
     can_update();
