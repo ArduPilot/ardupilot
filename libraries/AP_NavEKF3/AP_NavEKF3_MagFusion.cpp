@@ -154,6 +154,15 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no previous yaw alignment, we declare the magnetic yaw as bad
         bool badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
 
+        // get yaw variance from GPS speed uncertainty
+        const ftype gpsVelAcc = fmaxF(gpsSpdAccuracy, ftype(frontend->_gpsHorizVelNoise));
+        const ftype gps_yaw_variance = sq(asinF(constrain_float(gpsVelAcc/gpsDataDelayed.vel.xy().length(), -1.0F, 1.0F)));
+        if (gps_yaw_variance < sq(radians(GPS_VEL_YAW_ALIGN_MAX_ANG_ERR))) {
+            yawAlignGpsValidCount++;
+        } else {
+            yawAlignGpsValidCount = 0;
+        }
+
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
             // attempt to use EKF-GSF estimate if available as it is more robust to GPS glitches
@@ -161,16 +170,6 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
             const bool useGSF = !assume_zero_sideslip() || (yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF);
             if (useGSF && EKFGSF_resetMainFilterYaw(emergency_reset)) {
                 return;
-            }
-
-            // get yaw variance from GPS speed uncertainty
-            const ftype gpsVelAcc = fmaxF(gpsSpdAccuracy, ftype(frontend->_gpsHorizVelNoise));
-            const ftype gps_yaw_variance = sq(asinF(constrain_float(gpsVelAcc/gpsDataDelayed.vel.xy().length(), -1.0F, 1.0F)));
-
-            if (gps_yaw_variance < sq(radians(GPS_VEL_YAW_ALIGN_MAX_ANG_ERR))) {
-                yawAlignGpsValidCount++;
-            } else {
-                yawAlignGpsValidCount = 0;
             }
 
             if (yawAlignGpsValidCount >= GPS_VEL_YAW_ALIGN_COUNT_THRESHOLD) {
@@ -194,6 +193,10 @@ void NavEKF3_core::realignYawGPS(bool emergency_reset)
                     allMagSensorsFailed = false;
                 }
             }
+        } else if (yawAlignGpsValidCount >= GPS_VEL_YAW_ALIGN_COUNT_THRESHOLD) {
+                // There is no need to do a yaw reset
+                yawAlignGpsValidCount = 0;
+                recordYawResetsCompleted();
         }
     } else {
         yawAlignGpsValidCount = 0;
@@ -642,7 +645,7 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             // zero Kalman gains to inhibit wind state estimation
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = SK_MX[0]*(P[22][19] + P[22][1]*SH_MAG[0] - P[22][2]*SH_MAG[1] + P[22][3]*SH_MAG[2] + P[22][0]*SK_MX[2] - P[22][16]*SK_MX[1] + P[22][17]*SK_MX[4] - P[22][18]*SK_MX[3]);
                 Kfusion[23] = SK_MX[0]*(P[23][19] + P[23][1]*SH_MAG[0] - P[23][2]*SH_MAG[1] + P[23][3]*SH_MAG[2] + P[23][0]*SK_MX[2] - P[23][16]*SK_MX[1] + P[23][17]*SK_MX[4] - P[23][18]*SK_MX[3]);
             } else {
@@ -725,7 +728,7 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             // zero Kalman gains to inhibit wind state estimation
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = SK_MY[0]*(P[22][20] + P[22][0]*SH_MAG[2] + P[22][1]*SH_MAG[1] + P[22][2]*SH_MAG[0] - P[22][3]*SK_MY[2] - P[22][17]*SK_MY[1] - P[22][16]*SK_MY[3] + P[22][18]*SK_MY[4]);
                 Kfusion[23] = SK_MY[0]*(P[23][20] + P[23][0]*SH_MAG[2] + P[23][1]*SH_MAG[1] + P[23][2]*SH_MAG[0] - P[23][3]*SK_MY[2] - P[23][17]*SK_MY[1] - P[23][16]*SK_MY[3] + P[23][18]*SK_MY[4]);
             } else {
@@ -809,7 +812,7 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             // zero Kalman gains to inhibit wind state estimation
-            if (!inhibitWindStates) {
+            if (!inhibitWindStates && !treatWindStatesAsTruth) {
                 Kfusion[22] = SK_MZ[0]*(P[22][21] + P[22][0]*SH_MAG[1] - P[22][1]*SH_MAG[2] + P[22][3]*SH_MAG[0] + P[22][2]*SK_MZ[2] + P[22][18]*SK_MZ[1] + P[22][16]*SK_MZ[4] - P[22][17]*SK_MZ[3]);
                 Kfusion[23] = SK_MZ[0]*(P[23][21] + P[23][0]*SH_MAG[1] - P[23][1]*SH_MAG[2] + P[23][3]*SH_MAG[0] + P[23][2]*SK_MZ[2] + P[23][18]*SK_MZ[1] + P[23][16]*SK_MZ[4] - P[23][17]*SK_MZ[3]);
             } else {
@@ -1345,7 +1348,7 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
         zero_range(&Kfusion[0], 16, 21);
     }
 
-    if (!inhibitWindStates) {
+    if (!inhibitWindStates && !treatWindStatesAsTruth) {
         Kfusion[22] = -t4*t13*(P[22][16]*magE-P[22][17]*magN);
         Kfusion[23] = -t4*t13*(P[23][16]*magE-P[23][17]*magN);
     } else {
@@ -1579,7 +1582,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw(bool emergency_reset)
         }
 
         // record the yaw reset event
-        recordYawReset();
+        recordYawResetsCompleted();
 
         // reset velocity and position states to GPS - if yaw is fixed then the filter should start to operate correctly
         ResetVelocity(resetDataSource::DEFAULT);
@@ -1655,10 +1658,5 @@ void NavEKF3_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationO
     lastYawReset_ms = imuSampleTime_ms;
 
     // record the yaw reset event
-    recordYawReset();
-
-    // clear all pending yaw reset requests
-    gpsYawResetRequest = false;
-    magYawResetRequest = false;
-    
+    recordYawResetsCompleted();
 }

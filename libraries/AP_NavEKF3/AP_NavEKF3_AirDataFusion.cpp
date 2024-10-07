@@ -120,7 +120,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 16, 21);
         }
 
-        if (tasDataDelayed.allowFusion && !inhibitWindStates) {
+        if (tasDataDelayed.allowFusion && !inhibitWindStates && !treatWindStatesAsTruth) {
             Kfusion[22] = SK_TAS[0]*(P[22][4]*SH_TAS[2] - P[22][22]*SH_TAS[2] + P[22][5]*SK_TAS[1] - P[22][23]*SK_TAS[1] + P[22][6]*vd*SH_TAS[0]);
             Kfusion[23] = SK_TAS[0]*(P[23][4]*SH_TAS[2] - P[23][22]*SH_TAS[2] + P[23][5]*SK_TAS[1] - P[23][23]*SK_TAS[1] + P[23][6]*vd*SH_TAS[0]);
         } else {
@@ -212,8 +212,10 @@ void NavEKF3_core::SelectTasFusion()
     readAirSpdData();
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
+
     if (tasDataToFuse && statesInitialised && !inhibitWindStates) {
         FuseAirspeed();
+        tasDataToFuse = false;
         prevTasStep_ms = imuSampleTime_ms;
     }
 }
@@ -255,10 +257,6 @@ void NavEKF3_core::SelectBetaDragFusion()
         } else {
             // we are required to correct only wind states
             airDataFusionWindOnly = true;
-        }
-        // Fuse estimated airspeed to aid wind estimation
-        if (usingDefaultAirspeed) {
-            FuseAirspeed();
         }
         FuseSideslip();
         prevBetaDragStep_ms = imuSampleTime_ms;
@@ -424,7 +422,7 @@ void NavEKF3_core::FuseSideslip()
             zero_range(&Kfusion[0], 16, 21);
         }
 
-        if (!inhibitWindStates) {
+        if (!inhibitWindStates && !treatWindStatesAsTruth) {
             Kfusion[22] = SK_BETA[0]*(P[22][0]*SK_BETA[5] + P[22][1]*SK_BETA[4] - P[22][4]*SK_BETA[1] + P[22][5]*SK_BETA[2] + P[22][2]*SK_BETA[6] + P[22][6]*SK_BETA[3] - P[22][3]*SK_BETA[7] + P[22][22]*SK_BETA[1] - P[22][23]*SK_BETA[2]);
             Kfusion[23] = SK_BETA[0]*(P[23][0]*SK_BETA[5] + P[23][1]*SK_BETA[4] - P[23][4]*SK_BETA[1] + P[23][5]*SK_BETA[2] + P[23][2]*SK_BETA[6] + P[23][6]*SK_BETA[3] - P[23][3]*SK_BETA[7] + P[23][22]*SK_BETA[1] - P[23][23]*SK_BETA[2]);
         } else {
