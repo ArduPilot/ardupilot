@@ -522,7 +522,7 @@ local function update()
    local target_velocity_offset -- Vector3f  -- velocity to the offset target_location_offset
    local target_distance -- = Vector3f()     -- vector to lead vehicle
    local target_distance_offsets             -- vector to the target taking offsets into account
-   local xy_dist = 0.0                       -- distance to target with offsets in meters
+   local xy_dist                             -- distance to target with offsets in meters
    local target_heading = 0.0                -- heading of the target vehicle
    local heading_to_target                   -- heading of the follow vehicle to the target with offsets
 
@@ -579,11 +579,13 @@ local function update()
    local airspeed_difference = vehicle_airspeed - target_airspeed
 
    -- distance seem to be out by about 1s at approximately current airspeed just eyeballing it.
-   xy_dist = math.abs(xy_dist) - vehicle_airspeed * 0.92
-   -- xy_dist will always be a positive value. To get -v to represent overshoot, use the offset_angle
-   -- to decide if the target is behind
-   if (math.abs(xy_dist) < long_distance) and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
-      xy_dist = -xy_dist
+   if xy_dist ~= nil then
+      xy_dist = math.abs(xy_dist) - vehicle_airspeed * 0.92
+      -- xy_dist will always be a positive value. To get -v to represent overshoot, use the offset_angle
+      -- to decide if the target is behind
+      if (math.abs(xy_dist) < long_distance) and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
+         xy_dist = -xy_dist
+      end
    end
 
    -- projected_distance is how far off the target we expect to be if we maintain the current airspeed for DISTANCE_LOOKAHEAD_SECONDS
@@ -672,7 +674,7 @@ local function update()
    -- the angle to the target plane is effectively backwards 
    local overshot = not too_close and (
                      (projected_distance < 0 or xy_dist < 0) and
-                     (math.abs(xy_dist) < close_distance)
+                     (math.abs(xy_dist or 0.0) < close_distance)
                                        or offset_angle > OVERSHOOT_ANGLE
                                        )
 
@@ -694,21 +696,21 @@ local function update()
       current_altitude = old_location:alt() * 0.01
    end
 
-   local new_target_location = old_location:copy()
+   --local new_target_location = old_location:copy()
    local target_altitude = 0.0
    local frame_type_log = foll_alt_type
 
    if altitude_override ~= 0 then
       target_altitude = altitude_override
       frame_type_log = -1
-   else
+   elseif target_location_offset ~= nil then
       -- change the incoming altitude frame from the target_vehicle to the frame this vehicle wants
       target_location_offset:change_alt_frame(foll_alt_type)
       target_altitude = target_location_offset:alt() * 0.01
    end
-   new_target_location:lat(target_location_offset:lat())
-   new_target_location:lng(target_location_offset:lng())
-   new_target_location:alt(target_location_offset:alt()) -- location uses cm for altitude
+   --new_target_location:lat(target_location_offset:lat())
+   --new_target_location:lng(target_location_offset:lng())
+   --new_target_location:alt(target_location_offset:alt()) -- location uses cm for altitude
 
    local mechanism = 1 -- for logging 1: position/location 2:heading
    local normalized_distance = math.abs(projected_distance)
@@ -717,7 +719,7 @@ local function update()
 
    -- xy_dist < 3.0 is a special case because mode_guided will try to loiter around the target location if within 2m
    -- target_heading - vehicle_heading catches the circumstance where the target vehicle is heaidng in completely the opposite direction
-   if math.abs(xy_dist) < 3.0 or
+   if math.abs(xy_dist or 0.0) < 3.0 or
          ((turning and ((tight_turn and turn_starting) or use_wide_turns or foll_ofs_y == 0)) or -- turning 
          ((close or overshot) and not too_wide) -- we are very close to the target
          --math.abs(target_heading - vehicle_heading) > 135) -- the target is going the other way
@@ -725,7 +727,7 @@ local function update()
       set_vehicle_heading({heading = desired_heading})
       set_vehicle_target_altitude({alt = target_altitude, frame = foll_alt_type}) -- pass altitude in meters (location has it in cm)
       mechanism = 2 -- heading - for logging
-   else
+   elseif target_location_offset ~= nil then
       set_vehicle_target_location({lat = target_location_offset:lat(),
                                     lng = target_location_offset:lng(),
                                     alt = target_altitude,
@@ -733,6 +735,8 @@ local function update()
                                     yaw = foll_ofs_y,
                                     angle = vehicle_heading - target_heading})
       mechanism = 1  -- position/location - for logging
+   else 
+      mechanism = 0
    end
    -- dv = interim delta velocity based on the pid controller using projected_distance as the error (we want distance == 0)
    local dv = pid_controller_distance.update(target_airspeed - vehicle_airspeed, projected_distance)
