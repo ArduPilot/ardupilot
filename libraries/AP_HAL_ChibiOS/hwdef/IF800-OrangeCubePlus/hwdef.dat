@@ -1,0 +1,8 @@
+include ../CubeOrangePlus/hwdef.dat
+
+# use a different board ID, so vehicles with this installed are prevented from loading
+# the firmware without OpenDroneID enabled
+define AP_CUSTOM_FIRMWARE_STRING "IF800 4.5.6"
+
+# enable and enforce OpenDroneID
+define AP_OPENDRONEID_ENABLED 1
