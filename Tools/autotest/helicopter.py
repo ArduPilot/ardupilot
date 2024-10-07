@@ -700,25 +700,27 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def TurbineCoolDown(self, timeout=200):
         """Check Turbine Cool Down Feature"""
+        self.context_push()
         # set option for Turbine
         RAMP_TIME = 4
         SETPOINT = 66
         IDLE = 15
         COOLDOWN_TIME = 5
-        self.set_parameter("RC6_OPTION", 161)
-        self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
-        self.set_parameter("H_RSC_SETPOINT", SETPOINT)
-        self.set_parameter("H_RSC_IDLE", IDLE)
-        self.set_parameter("H_RSC_CLDWN_TIME", COOLDOWN_TIME)
+        self.set_parameters({"RC6_OPTION": 161,
+                             "H_RSC_RAMP_TIME": RAMP_TIME,
+                             "H_RSC_SETPOINT": SETPOINT,
+                             "H_RSC_IDLE": IDLE,
+                             "H_RSC_CLDWN_TIME": COOLDOWN_TIME})
         self.set_rc(3, 1000)
         self.set_rc(8, 1000)
 
         self.progress("Starting turbine")
         self.wait_ready_to_arm()
+        self.context_collect("STATUSTEXT")
         self.arm_vehicle()
 
         self.set_rc(6, 2000)
-        self.wait_statustext('Turbine startup')
+        self.wait_statustext('Turbine startup', check_context=True)
 
         # Engage interlock to run up to head speed
         self.set_rc(8, 2000)
@@ -743,6 +745,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.set_rc(6, 1000)
         self.wait_disarmed(timeout=20)
+        self.context_pop()
 
     def TurbineStart(self, timeout=200):
         """Check Turbine Start Feature"""
