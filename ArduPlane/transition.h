@@ -58,6 +58,8 @@ public:
 
     virtual bool allow_stick_mixing() const { return true; }
 
+    virtual bool in_fwd_transition() const = 0;
+
 protected:
 
     // refences for convenience
@@ -100,6 +102,8 @@ public:
     bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) override;
 
     void set_last_fw_pitch(void) override;
+
+    bool in_fwd_transition() const override;
 
 protected:
 
