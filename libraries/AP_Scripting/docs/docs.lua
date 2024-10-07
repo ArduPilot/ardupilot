@@ -1180,9 +1180,8 @@ function Location_ud:get_distance(loc) end
 -- Given a Location this calculates the north and east distance between the two locations in meters.
 ---@param loc1 Location_ud -- 1st location 
 ---@param loc2 Location_ud -- 1st location 
----@return float -- proportion the current location is between loc1 and loc2
+---@return number -- proportion the current location is between loc1 and loc2
 function Location_ud:line_path_proportion(loc1, loc2) end
-
 
 -- desc
 ---@class (exact) AP_EFI_Backend_ud
@@ -3792,7 +3791,7 @@ follow = {}
 function follow:have_target() end
 
 -- get the SYSID_THISMAV of the target
----@return uint8_t_ud
+---@return uint32_t_ud
 function follow:get_target_sysid() end
 
 -- get target's heading in degrees (0 = north, 90 = east)
@@ -3818,14 +3817,14 @@ function follow:get_last_update_ms() end
 function follow:have_target() end
 
 -- combo function returning all follow values calcuted in a cycle
----@return dist_ned Vector3f_ud|nil -- distance to the target
----@return dist_with_offs Vector3f_ud|nil -- distance to the target with offsets
----@return target_vel_ned Vector3f_ud|nil -- proposed velocity of the target
----@return target_vel_ned_ofs Vector3f_ud|nil -- proposed velocity of the target with offsets
----@return target_loc Location_ud|nil -- location of the target
----@return target_loc_ofs Location_ud|nil -- location of the target with offsets
----@return target_dist_ofs number|nil -- distance to the target in meters
----@return target_heading_ofs_deg number|nil -- heading to the target with offsets in degrees
+---@return Vector3f_ud|nil -- dist_ned - distance to the target
+---@return Vector3f_ud|nil -- dist_with_offs - distance to the target with offsets
+---@return Vector3f_ud|nil -- target_vel_ned - proposed velocity of the target
+---@return Vector3f_ud|nil -- target_vel_ned_ofs - proposed velocity of the target with offsets
+---@return Location_ud|nil -- target_loc - location of the target
+---@return Location_ud|nil -- target_loc_ofs - location of the target with offsets
+---@return number|nil -- target_dist_ofs - distance to the target in meters
+---@return number|nil -- target_heading_ofs_deg - heading to the target with offsets in degrees
 function follow:get_target_info() end
 
 -- desc
