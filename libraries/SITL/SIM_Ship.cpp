@@ -34,12 +34,57 @@ using namespace SITL;
 
 // SITL Ship parameters
 const AP_Param::GroupInfo ShipSim::var_info[] = {
+    // @Param: ENABLE
+    // @DisplayName: ship enable
+    // @Description: Enable simulated ship landing platform
+    // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("ENABLE",    1, ShipSim,  enable, 0),
+
+    // @Param: SPEED
+    // @DisplayName: ship speed
+    // @Description: speed of ship on path of radius SIM_SHIP_PSIZE
+    // @Units: m/s
     AP_GROUPINFO("SPEED",     2, ShipSim,  speed, 3),
+
+    // @Param: PSIZE
+    // @DisplayName: ship path radius
+    // @Description: radius of circular path for ship
+    // @Units: m
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
+
+    // @Param: SYSID
+    // @DisplayName: ship mavlink system ID
+    // @Description: ship mavlink system ID
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
+
+    // @Param: DSIZE
+    // @DisplayName: ship deck radius
+    // @Description: ship deck radius
+    // @Units: m
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
+
+    // @Param: OFS_X
+    // @DisplayName: ship offset north
+    // @Description: initial ship offset from vehicle origin
+    // @Units: m
+
+    // @Param: OFS_X
+    // @DisplayName: ship offset east
+    // @Description: initial ship offset from vehicle origin
+    // @Units: m
+
+    // @Param: OFS_Z
+    // @DisplayName: ship offset down
+    // @Description: initial ship offset from vehicle origin
+    // @Units: m
     AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
+
+    // @Param: DHEIGHT
+    // @DisplayName: ship deck height
+    // @Description: ship deck height
+    // @Units: m
+    AP_GROUPINFO("DHEIGHT",   8, ShipSim,  deck_height, 0),
+
     AP_GROUPEND
 };
 
@@ -162,6 +207,19 @@ void ShipSim::update(void)
         last_report_ms = now_ms;
         send_report();
     }
+}
+
+// adjust ground level when vehicle above the ship
+float ShipSim::ground_level_adjustment(const Location &loc) const
+{
+    Location shiploc;
+    if (!get_location(shiploc)) {
+        return 0;
+    }
+    if (loc.get_distance(shiploc) < deck_size) {
+        return deck_height;
+    }
+    return 0;
 }
 
 /*

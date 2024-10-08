@@ -546,6 +546,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("APPROACH_DIST", 39, QuadPlane, approach_distance, 0),
+
+    // @Param: LAND_DIS_DELAY
+    // @DisplayName: auto landing disarm delay
+    // @Description: A delay after automatic landing before a full disarm. During this time the motors will spin at the Q_M_SPIN_ARM level, and the landing detector will continue to run. If the landing detector detects a height change then a false landing is detected and the motors are spun up again. This delay is meant to ensure that in high wind conditions if the lift on the wings cause a false landing detection that the false landing is detected and the vehicle is able to recover.
+    // @Units: s
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("LAND_DIS_DELAY", 40, QuadPlane, landing_detect.disarm_delay, 1),
     
     AP_GROUPEND
 };
@@ -2744,6 +2753,7 @@ void QuadPlane::vtol_position_controller(void)
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
 
+    case QPOS_LAND_DISARM_PENDING:
     case QPOS_LAND_COMPLETE:
         // nothing to do
         break;
@@ -2841,6 +2851,7 @@ void QuadPlane::vtol_position_controller(void)
         break;
     }
 
+    case QPOS_LAND_DISARM_PENDING:
     case QPOS_LAND_COMPLETE:
         break;
     }
@@ -3464,31 +3475,73 @@ bool QuadPlane::land_detector(uint32_t timeout_ms)
  */
 bool QuadPlane::check_land_complete(void)
 {
-    if (poscontrol.get_state() != QPOS_LAND_FINAL) {
-        // only apply to final landing phase
+    if (poscontrol.get_state() != QPOS_LAND_FINAL &&
+        poscontrol.get_state() != QPOS_LAND_DISARM_PENDING) {
+        // only apply to final landing phase and disarm pending state
         return false;
     }
-    if (land_detector(4000)) {
-        poscontrol.set_state(QPOS_LAND_COMPLETE);
-        gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
+    bool land_detected = land_detector(4000);
 
-        if (plane.in_auto_mission_id(MAV_CMD_NAV_PAYLOAD_PLACE)) {
-            // for payload place with full landing we shutdown motors
-            // and wait for the lua script to trigger a climb (using
-            // landing abort) or disarm
-            set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+    if (poscontrol.get_state() == QPOS_LAND_DISARM_PENDING) {
+        if (!land_detected) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Land false completion, recovering");
+            set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+            poscontrol.set_state(QPOS_LAND_FINAL);
             return false;
         }
-
-        if (plane.control_mode != &plane.mode_auto ||
-            !plane.mission.continue_after_land()) {
-            // disarm on land unless we have MIS_OPTIONS setup to
-            // continue after land in AUTO
-            plane.arming.disarm(AP_Arming::Method::LANDED);
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - landing_detect.disarm_delay_start_ms < landing_detect.disarm_delay*1000) {
+            return false;
         }
+        plane.arming.disarm(AP_Arming::Method::LANDED);
         return true;
     }
-    return false;
+
+    if (!land_detected) {
+        return false;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
+
+    if (plane.in_auto_mission_id(MAV_CMD_NAV_PAYLOAD_PLACE)) {
+        // for payload place with full landing we shutdown motors
+        // and wait for the lua script to trigger a climb (using
+        // landing abort) or disarm
+        set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+        poscontrol.set_state(QPOS_LAND_COMPLETE);
+        return false;
+    }
+
+    const bool should_disarm = plane.control_mode != &plane.mode_auto || !plane.mission.continue_after_land();
+
+    if (should_disarm) {
+        if (landing_detect.disarm_delay > 0) {
+            // start disarm delay timer
+            landing_detect.disarm_delay_start_ms = AP_HAL::millis();
+            poscontrol.set_state(QPOS_LAND_DISARM_PENDING);
+            set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+            /*
+              set the landing detector start height to the current
+              height. This should lower the number of times we detect
+              a false landing when we have actually had a good
+              landing. When we go to ground idle the pressure change
+              from rotor downwash is likely to change barometric
+              readings, leading to a height estimate change. This
+              gives us the full range of the landing detectors height
+              change before we declare a false landing.
+             */
+            const float height = inertial_nav.get_position_z_up_cm() * 0.01;
+            landing_detect.vpos_start_m = height;
+            return false;
+        }
+        // no disarm delay, disarm now
+        plane.arming.disarm(AP_Arming::Method::LANDED);
+    }
+
+    // landing is complete, but we are not in a state where
+    // we auto disarm
+    poscontrol.set_state(QPOS_LAND_COMPLETE);
+    return true;
 }
 
 

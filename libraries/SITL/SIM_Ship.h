@@ -63,12 +63,16 @@ public:
 
     bool get_location(Location &loc) const;
 
+    // adjust ground level when vehicle above the ship
+    float ground_level_adjustment(const Location &loc) const;
+    
 private:
 
     AP_Int8 enable;
     AP_Float speed;
     AP_Float path_size;
     AP_Float deck_size;
+    AP_Float deck_height;
     AP_Int8 sys_id;
     AP_Vector3f offset;
 

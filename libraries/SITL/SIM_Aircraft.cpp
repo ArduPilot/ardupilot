@@ -107,6 +107,12 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
 */
 float Aircraft::ground_height_difference() const
 {
+    float local_ground_level = 0;
+
+#if AP_SIM_SHIP_ENABLED
+    local_ground_level += sitl->models.shipsim.ground_level_adjustment(location);
+#endif
+
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain *terrain = AP::terrain();
     float h1, h2;
@@ -115,7 +121,6 @@ float Aircraft::ground_height_difference() const
         sitl->terrain_enable &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
-        h2 += local_ground_level;
         return h2 - h1;
     }
 #endif
@@ -654,7 +659,6 @@ void Aircraft::update_home()
 
 void Aircraft::update_model(const struct sitl_input &input)
 {
-    local_ground_level = 0.0f;
     if (sitl != nullptr) {
         update(input);
     } else {
@@ -1092,9 +1096,6 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 
     if (precland && precland->is_enabled()) {
         precland->update(get_location());
-        if (precland->_over_precland_base) {
-            local_ground_level += precland->_device_height;
-        }
     }
 
     // update RichenPower generator

@@ -483,6 +483,11 @@ private:
 
         // landing detection threshold in meters
         AP_Float detect_alt_change;
+
+        // delay before actual disarm
+        AP_Float disarm_delay;
+        
+        uint32_t disarm_delay_start_ms;
     } landing_detect;
 
     // throttle mix acceleration filter
@@ -500,6 +505,7 @@ private:
         QPOS_LAND_DESCEND,
         QPOS_LAND_ABORT,
         QPOS_LAND_FINAL,
+        QPOS_LAND_DISARM_PENDING,
         QPOS_LAND_COMPLETE
     };
     class PosControlState {
