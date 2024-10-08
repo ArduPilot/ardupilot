@@ -323,6 +323,15 @@ void AP_Vehicle::setup()
     AP_Param::check_var_info();
     load_parameters();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // at boot, set uart packet loss and delay to zero to prevent accidentally
+    // making the autopilot permanently unreachable
+    for (uint8_t i=0; i<9; i++) {
+        AP::sitl()->uart_pkt_loss_pct[i].set_and_save(0);
+        AP::sitl()->uart_pkt_delay[i].set_and_save(0);
+    }
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
         // user wants the SDcard slower, we need to remount
