@@ -2,6 +2,8 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#include "defines.h"
+
 class GCS_MAVLINK_Tracker : public GCS_MAVLINK
 {
 
@@ -29,6 +31,10 @@ protected:
 
     void send_nav_controller_output() const override;
     void send_pid_tuning() override;
+
+#if HAL_LOGGING_ENABLED
+    uint32_t log_radio_bit() const override { return MASK_LOG_RADIO; }
+#endif
 
 private:
 
