@@ -32,158 +32,141 @@ PayloadPlace Mode::payload_place;
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {
-    Mode *ret = nullptr;
 
     switch (mode) {
 #if MODE_ACRO_ENABLED
         case Mode::Number::ACRO:
-            ret = &mode_acro;
-            break;
+            return &mode_acro;
 #endif
 
         case Mode::Number::STABILIZE:
-            ret = &mode_stabilize;
-            break;
+            return &mode_stabilize;
 
         case Mode::Number::ALT_HOLD:
-            ret = &mode_althold;
-            break;
+            return &mode_althold;
 
 #if MODE_AUTO_ENABLED
         case Mode::Number::AUTO:
-            ret = &mode_auto;
-            break;
+            return &mode_auto;
 #endif
 
 #if MODE_CIRCLE_ENABLED
         case Mode::Number::CIRCLE:
-            ret = &mode_circle;
-            break;
+            return &mode_circle;
 #endif
 
 #if MODE_LOITER_ENABLED
         case Mode::Number::LOITER:
-            ret = &mode_loiter;
-            break;
+            return &mode_loiter;
 #endif
 
 #if MODE_GUIDED_ENABLED
         case Mode::Number::GUIDED:
-            ret = &mode_guided;
-            break;
+            return &mode_guided;
 #endif
 
         case Mode::Number::LAND:
-            ret = &mode_land;
-            break;
+            return &mode_land;
 
 #if MODE_RTL_ENABLED
         case Mode::Number::RTL:
-            ret = &mode_rtl;
-            break;
+            return &mode_rtl;
 #endif
 
 #if MODE_DRIFT_ENABLED
         case Mode::Number::DRIFT:
-            ret = &mode_drift;
-            break;
+            return &mode_drift;
 #endif
 
 #if MODE_SPORT_ENABLED
         case Mode::Number::SPORT:
-            ret = &mode_sport;
-            break;
+            return &mode_sport;
 #endif
 
 #if MODE_FLIP_ENABLED
         case Mode::Number::FLIP:
-            ret = &mode_flip;
-            break;
+            return &mode_flip;
 #endif
 
 #if AUTOTUNE_ENABLED
         case Mode::Number::AUTOTUNE:
-            ret = &mode_autotune;
-            break;
+            return &mode_autotune;
 #endif
 
 #if MODE_POSHOLD_ENABLED
         case Mode::Number::POSHOLD:
-            ret = &mode_poshold;
-            break;
+            return &mode_poshold;
 #endif
 
 #if MODE_BRAKE_ENABLED
         case Mode::Number::BRAKE:
-            ret = &mode_brake;
-            break;
+            return &mode_brake;
 #endif
 
 #if MODE_THROW_ENABLED
         case Mode::Number::THROW:
-            ret = &mode_throw;
-            break;
+            return &mode_throw;
 #endif
 
 #if HAL_ADSB_ENABLED
         case Mode::Number::AVOID_ADSB:
-            ret = &mode_avoid_adsb;
-            break;
+            return &mode_avoid_adsb;
 #endif
 
 #if MODE_GUIDED_NOGPS_ENABLED
         case Mode::Number::GUIDED_NOGPS:
-            ret = &mode_guided_nogps;
-            break;
+            return &mode_guided_nogps;
 #endif
 
 #if MODE_SMARTRTL_ENABLED
         case Mode::Number::SMART_RTL:
-            ret = &mode_smartrtl;
-            break;
+            return &mode_smartrtl;
 #endif
 
 #if MODE_FLOWHOLD_ENABLED
         case Mode::Number::FLOWHOLD:
-            ret = (Mode *)g2.mode_flowhold_ptr;
-            break;
+            return (Mode *)g2.mode_flowhold_ptr;
 #endif
 
 #if MODE_FOLLOW_ENABLED
         case Mode::Number::FOLLOW:
-            ret = &mode_follow;
-            break;
+            return &mode_follow;
 #endif
 
 #if MODE_ZIGZAG_ENABLED
         case Mode::Number::ZIGZAG:
-            ret = &mode_zigzag;
-            break;
+            return &mode_zigzag;
 #endif
 
 #if MODE_SYSTEMID_ENABLED
         case Mode::Number::SYSTEMID:
-            ret = (Mode *)g2.mode_systemid_ptr;
-            break;
+            return (Mode *)g2.mode_systemid_ptr;
 #endif
 
 #if MODE_AUTOROTATE_ENABLED
         case Mode::Number::AUTOROTATE:
-            ret = &mode_autorotate;
-            break;
+            return &mode_autorotate;
 #endif
 
 #if MODE_TURTLE_ENABLED
         case Mode::Number::TURTLE:
-            ret = &mode_turtle;
-            break;
+            return &mode_turtle;
 #endif
 
         default:
             break;
     }
 
-    return ret;
+#if MODE_GUIDED_ENABLED && AP_SCRIPTING_ENABLED
+    // Check registered custom modes
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if ((mode_guided_custom[i] != nullptr) && (mode_guided_custom[i]->mode_number() == mode)) {
+            return mode_guided_custom[i];
+        }
+    }
+#endif
+
+    return nullptr;
 }
 
 

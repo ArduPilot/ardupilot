@@ -683,6 +683,8 @@ private:
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) override;
 
+    // Register a custom mode with given number and names
+    bool register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) override;
 #endif
 #if MODE_CIRCLE_ENABLED
     bool get_circle_radius(float &radius_m) override;
@@ -1028,6 +1030,10 @@ private:
 #endif
 #if MODE_GUIDED_ENABLED
     ModeGuided mode_guided;
+#if AP_SCRIPTING_ENABLED
+    // Custom modes registered at runtime
+    Mode *mode_guided_custom[5];
+#endif
 #endif
     ModeLand mode_land;
 #if MODE_LOITER_ENABLED
