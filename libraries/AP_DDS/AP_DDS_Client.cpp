@@ -29,6 +29,9 @@
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
 
+static constexpr double lat_lon_scale_factor = 1e-7;
+static constexpr double alt_scale_factor = 0.01;
+
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 #if AP_DDS_TIME_PUB_ENABLED
@@ -52,6 +55,9 @@ static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = 33;
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+static constexpr uint16_t DELAY_GOAL_TOPIC_MS = 200;
+#endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
 #endif // AP_DDS_CLOCK_PUB_ENABLED
@@ -525,6 +531,19 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     }
 }
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+
+#if AP_DDS_GOAL_PUB_ENABLED
+void AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
+{
+    const auto &vehicle = AP::vehicle();
+    update_topic(msg.header.stamp);
+    Location target_loc;
+    vehicle->get_target_location(target_loc);
+    msg.position.latitude = target_loc.lat * lat_lon_scale_factor;
+    msg.position.longitude = target_loc.lng * lat_lon_scale_factor;
+    msg.position.altitude = target_loc.alt * alt_scale_factor;
+}
+#endif // AP_DDS_GOAL_PUB_ENABLED
 
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
@@ -1242,6 +1261,22 @@ void AP_DDS_Client::write_gps_global_origin_topic()
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
+#if AP_DDS_GOAL_PUB_ENABLED
+void AP_DDS_Client::write_goal_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&goal_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GOAL_PUB)].dw_id, &ub, topic_size);
+        const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &goal_topic);
+        if (!success) {
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_GOAL_PUB_ENABLED
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1318,6 +1353,13 @@ void AP_DDS_Client::update()
         write_gps_global_origin_topic();
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+    if (cur_time_ms - last_goal_time_ms > DELAY_GOAL_TOPIC_MS) {
+        update_topic_goal(goal_topic);
+        last_goal_time_ms = cur_time_ms;
+        write_goal_topic();
+    }
+#endif // AP_DDS_GOAL_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
