@@ -175,11 +175,11 @@ void AP_Generator_RichenPower::update_heat()
     const uint32_t time_delta_ms = now - last_heat_update_ms;
     last_heat_update_ms = now;
 
-    heat += rpm * time_delta_ms * (1/1000.0f);
+    heat += rpm * time_delta_ms * 0.001f;
     // cap the heat of the motor:
     heat = MIN(heat, 60 * RUN_RPM); // so cap heat at 60 seconds at run-speed
     // now lose some heat to the environment
-    heat -= (heat * heat_environment_loss_factor * (time_delta_ms * (1/1000.0f)));  // lose some % of heat per second
+    heat -= (heat * heat_environment_loss_factor * (time_delta_ms * 0.001f));  // lose some % of heat per second
 }
 
 // returns true if the generator should be allowed to move into

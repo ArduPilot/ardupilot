@@ -184,16 +184,16 @@ void DroneCANDevice::update_compass() {
 
     static Canard::Publisher<uavcan_equipment_ahrs_MagneticFieldStrength> mag_pub{CanardInterface::get_test_iface()};
     uavcan_equipment_ahrs_MagneticFieldStrength mag_msg {};
-    mag_msg.magnetic_field_ga[0] = f.x/1000.0f;
-    mag_msg.magnetic_field_ga[1] = f.y/1000.0f;
-    mag_msg.magnetic_field_ga[2] = f.z/1000.0f;
+    mag_msg.magnetic_field_ga[0] = f.x * 0.001f;
+    mag_msg.magnetic_field_ga[1] = f.y * 0.001f;
+    mag_msg.magnetic_field_ga[2] = f.z * 0.001f;
     mag_msg.magnetic_field_covariance.len = 0;
     mag_pub.broadcast(mag_msg);
     static Canard::Publisher<uavcan_equipment_ahrs_MagneticFieldStrength2> mag2_pub{CanardInterface::get_test_iface()};
     uavcan_equipment_ahrs_MagneticFieldStrength2 mag2_msg;
-    mag2_msg.magnetic_field_ga[0] = f.x/1000.0f;
-    mag2_msg.magnetic_field_ga[1] = f.y/1000.0f;
-    mag2_msg.magnetic_field_ga[2] = f.z/1000.0f;
+    mag2_msg.magnetic_field_ga[0] = f.x * 0.001f;
+    mag2_msg.magnetic_field_ga[1] = f.y * 0.001f;
+    mag2_msg.magnetic_field_ga[2] = f.z * 0.001f;
     mag2_msg.sensor_id = 0;
     mag2_msg.magnetic_field_covariance.len = 0;
     mag2_pub.broadcast(mag2_msg);

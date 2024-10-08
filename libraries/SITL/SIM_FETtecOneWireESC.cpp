@@ -493,7 +493,7 @@ void FETtecOneWireESC::send_esc_telemetry(const Aircraft &aircraft)
 
         // FIXME: the vehicle models should be supplying this RPM!
         const uint16_t Kv = 1000;
-        const float p = (esc.pwm-1000)/1000.0;
+        const float p = (esc.pwm-1000) * 0.001;
         int16_t rpm = aircraft.get_battery_voltage() * Kv * p;
 
         const uint16_t consumption_mah = 0;

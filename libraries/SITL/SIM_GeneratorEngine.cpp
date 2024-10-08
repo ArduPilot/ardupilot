@@ -37,11 +37,11 @@ void SIM_GeneratorEngine::update()
     constexpr float heat_environment_loss_factor = 0.15f;
 
     const float factor = 0.0035;
-    temperature += (current_rpm * time_delta_ms * (1/1000.0f) * factor);
+    temperature += (current_rpm * time_delta_ms * 0.001f * factor);
     // cap the heat of the motor:
     temperature = MIN(temperature, 150);
     // now lose some heat to the environment
-    const float heat_loss = ((temperature * heat_environment_loss_factor * (time_delta_ms * (1/1000.0f))));  // lose some % of heat per second
+    const float heat_loss = ((temperature * heat_environment_loss_factor * (time_delta_ms * 0.001f)));  // lose some % of heat per second
     // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "heat=%f loss=%f", temperature, heat_loss);
     temperature -= heat_loss;
 

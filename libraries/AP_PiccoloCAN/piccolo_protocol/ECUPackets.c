@@ -603,7 +603,7 @@ int decodeECU_TelemetrySlow1PacketStructure(const void* _pg_pkt, ECU_TelemetrySl
 
     // Input voltage in Volts
     // Range of voltage is 0.0f to 25.5f.
-    _pg_user->voltage = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10.0f);
+    _pg_user->voltage = float32ScaledFrom1UnsignedBytes(_pg_data, &_pg_byteindex, 0.0f, 0.1f);
 
     // Operational mode of the governor
     _pg_user->governorMode = (ECUGovernorMode)((_pg_data[_pg_byteindex]) & 0x7);
@@ -690,7 +690,7 @@ int decodeECU_TelemetrySlow2PacketStructure(const void* _pg_pkt, ECU_TelemetrySl
 
     // Injector duty cycle in percent
     // Range of injectorDuty is 0.0f to 6553.5f.
-    _pg_user->injectorDuty = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10.0f);
+    _pg_user->injectorDuty = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.1f);
 
     // First ignition advance angle in degrees
     // Range of ignAngle1 is 0.0f to 127.5f.
@@ -1119,15 +1119,15 @@ int decodeECU_PumpDebugPacketStructure(const void* _pg_pkt, ECU_PumpDebug_t* _pg
 
     // Proportional term of the pump feedback control in percent
     // Range of pTerm is -3276.7f to 3276.7f.
-    _pg_user->pTerm = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/10.0f);
+    _pg_user->pTerm = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 0.1f);
 
     // Integral term of the pump feedback control in percent
     // Range of iTerm is -3276.7f to 3276.7f.
-    _pg_user->iTerm = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 1.0f/10.0f);
+    _pg_user->iTerm = float32ScaledFrom2SignedBeBytes(_pg_data, &_pg_byteindex, 0.1f);
 
     // Pump duty cycle in percent
     // Range of dutyCycle is 0.0f to 6553.5f.
-    _pg_user->dutyCycle = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10.0f);
+    _pg_user->dutyCycle = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.1f);
 
     // Fuel pressure in kilo-Pascals
     // Range of fuelPressure is 0.0f to 1310.7f.
@@ -1444,15 +1444,15 @@ int decodeECU_CHTLoopSettingsPacketStructure(const void* _pg_pkt, ECU_CHTLoopSet
 
     // Proportaional gain Kp
     // Range of Kp is 0.0f to 65.535f.
-    _pg_user->Kp = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    _pg_user->Kp = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     // Proportaional gain Ki
     // Range of Ki is 0.0f to 65.535f.
-    _pg_user->Ki = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    _pg_user->Ki = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     // Proportaional gain Kd
     // Range of Kd is 0.0f to 65.535f.
-    _pg_user->Kd = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    _pg_user->Kd = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     return 1;
 
@@ -1546,15 +1546,15 @@ int decodeECU_CHTLoopSettingsPacket(const void* _pg_pkt, uint8_t* dTermFilter, b
 
     // Proportaional gain Kp
     // Range of Kp is 0.0f to 65.535f.
-    (*Kp) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    (*Kp) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     // Proportaional gain Ki
     // Range of Ki is 0.0f to 65.535f.
-    (*Ki) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    (*Ki) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     // Proportaional gain Kd
     // Range of Kd is 0.0f to 65.535f.
-    (*Kd) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    (*Kd) = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     return 1;
 
@@ -2136,15 +2136,15 @@ int decodeECU_RPMLoopCalibrationPacketStructure(const void* _pg_pkt, ECU_Governo
 
     // Proportaional feedback gain from normalized RPM error to throttle fraction
     // Range of pGain is 0.0f to 6.5535f.
-    _pg_user->pGain = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10000.0f);
+    _pg_user->pGain = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1e-4f);
 
     // Integral feedback gain from normalized RPM error to throttle fraction
     // Range of iGain is 0.0f to 6.5535f.
-    _pg_user->iGain = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10000.0f);
+    _pg_user->iGain = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1e-4f);
 
     // Derivative feedback gain from normalized RPM error to throttle fraction
     // Range of dGain is 0.0f to 6.5535f.
-    _pg_user->dGain = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/10000.0f);
+    _pg_user->dGain = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1e-4f);
 
     // Gain scaler power, positive numbers increase gain with RPM, and vice versa. User 0 to disable gain scaling
     // Range of scalePower is -2.54f to 2.54f.
@@ -2627,7 +2627,7 @@ int decodeECU_Pump2ConfigPacketStructure(const void* _pg_pkt, ECU_PumpSettings_t
 
     // Fuel pump integral gain
     // Range of ki is 0.0f to 65.535f.
-    _pg_user->ki = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 1.0f/1000.0f);
+    _pg_user->ki = float32ScaledFrom2UnsignedBeBytes(_pg_data, &_pg_byteindex, 0.0f, 0.001f);
 
     // Minimum duty cycle in percent (250 = 100%)
     // Range of minimumPWM is 0 to 255.
