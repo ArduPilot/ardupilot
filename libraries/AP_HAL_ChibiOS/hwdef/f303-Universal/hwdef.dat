@@ -5,7 +5,7 @@ include ../f303-periph/hwdef.inc
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 # enable all features
-define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_GPS 1
 define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_AIRSPEED

@@ -224,7 +224,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
     // GPS driver
     // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp

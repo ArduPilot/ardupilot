@@ -114,7 +114,7 @@ singleton AP_BattMonitor method handle_scripting depends AP_BATTERY_SCRIPTING_EN
 
 include AP_GPS/AP_GPS.h
 
-singleton AP_GPS depends (AP_GPS_ENABLED && (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)))
+singleton AP_GPS depends AP_GPS_ENABLED
 singleton AP_GPS rename gps
 singleton AP_GPS enum NO_GPS NO_FIX GPS_OK_FIX_2D GPS_OK_FIX_3D GPS_OK_FIX_3D_DGPS GPS_OK_FIX_3D_RTK_FLOAT GPS_OK_FIX_3D_RTK_FIXED
 singleton AP_GPS method num_sensors uint8_t
