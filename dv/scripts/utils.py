@@ -3,13 +3,17 @@ from pymavlink import mavutil
 
 import logging, coloredlogs
 
-if "BALENA_SERVICE_NAME" in os.environ:
-    sys.path.append("/app/ardupilot/Tools/scripts")
-    sys.path.append("/app/ardupilot/dv/scripts")
-    # sys.path.append("/data")
-else:
-    sys.path.append("/home/slovak/ardupilot/Tools/scripts")
-    sys.path.append("/home/slovak/ardupilot/dv/scripts")
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../', 'Tools/scripts')))
+
+# if "BALENA_SERVICE_NAME" in os.environ:
+#     sys.path.append("/app/ardupilot/Tools/scripts")
+#     sys.path.append("/app/ardupilot/dv/scripts")
+#     # sys.path.append("/data")
+# else:
+#     os.path.dirname(os.path.realpath(__file__))
+#     sys.path.append("/home/slovak/ardupilot/Tools/scripts")
+#     sys.path.append("/home/slovak/ardupilot/dv/scripts")
 
 import uploader
 
