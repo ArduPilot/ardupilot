@@ -102,6 +102,10 @@ SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("mpu9250",    0, 1, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
     SPIDesc("ms5611",     0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  10*MHZ, 10*MHZ),
 };
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PILOTPI
+SPIDesc SPIDeviceManager::_device[] = {
+    SPIDesc("icm42605",   0, 0, SPI_MODE_0, 8, SPI_CS_KERNEL,  1*MHZ, 24*MHZ),
+};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
 SPIDesc SPIDeviceManager::_device[] = {
     SPIDesc("mpu9250",    2, 0, SPI_MODE_3, 8, SPI_CS_KERNEL,  1*MHZ, 11*MHZ),
