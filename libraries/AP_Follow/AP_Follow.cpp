@@ -35,12 +35,14 @@ extern const AP_HAL::HAL& hal;
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
 
-#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default   
+#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // home relative altitude is used by default   
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AP_FOLLOW_ALT_TYPE_DEFAULT 0
+#define AP_FOLLOW_ALT_TYPE_DEFAULT       0 // absolute/AMSL altitude
+#define AP_FOLLOW_ALTITUDE_TYPE_ORIGIN   2 // origin relative altitude
+#define AP_FOLLOW_ALTITUDE_TYPE_TERRAIN  3 // terrain relative altitude
 #else
 #define AP_FOLLOW_ALT_TYPE_DEFAULT AP_FOLLOW_ALTITUDE_TYPE_RELATIVE
 #endif
@@ -128,8 +130,8 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 #if !(APM_BUILD_TYPE(APM_BUILD_Rover)) 
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
-    // @Description: Follow altitude type
-    // @Values: 0:absolute, 1:relative
+    // @Description: Follow altitude type 
+    // @Values: 0:absolute, 1:relative, 2:origin (not used) 3:terrain (plane)
     // @User: Standard
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
@@ -345,6 +347,27 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
         _target_location.lng = packet.lon;
 
         // select altitude source based on FOLL_ALT_TYPE param 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        switch(_alt_type) {
+            case AP_FOLLOW_ALT_TYPE_DEFAULT:
+                _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
+                break;
+            case AP_FOLLOW_ALTITUDE_TYPE_RELATIVE:
+            case AP_FOLLOW_ALTITUDE_TYPE_ORIGIN:
+                _target_location.set_alt_cm(packet.relative_alt * 0.1, static_cast<Location::AltFrame>((int)_alt_type));
+                break;
+            case AP_FOLLOW_ALTITUDE_TYPE_TERRAIN: {
+                /// Altitude comes in AMSL
+                int32_t terrain_altitude_cm;
+                _target_location.set_alt_cm(packet.alt * 0.1, Location::AltFrame::ABSOLUTE);
+                // convert the incoming altitude to terrain altitude
+                if(_target_location.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terrain_altitude_cm)) {
+                    _target_location.set_alt_cm(terrain_altitude_cm, Location::AltFrame::ABOVE_TERRAIN);
+                }
+                break;
+            }
+        }
+#else
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // above home alt
             _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
@@ -352,7 +375,7 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
             // absolute altitude
             _target_location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
         }
-
+#endif
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
         _target_velocity_ned.y = packet.vy * 0.01f; // velocity east
         _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
@@ -393,8 +416,8 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
 
         // FOLLOW_TARGET is always AMSL, change the provided alt to
         // above home if we are configured for relative alt
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE &&
-            !new_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
+        if (_alt_type != AP_FOLLOW_ALT_TYPE_DEFAULT &&
+            !new_loc.change_alt_frame(static_cast<Location::AltFrame>((int)_alt_type))) {
             return false;
         }
         _target_location = new_loc;
@@ -564,6 +587,37 @@ bool AP_Follow::have_target(void) const
     }
     return true;
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+// create a single method to retrieve all the relevant values in one shot for Lua
+/* replaces the following Lua calls
+   target_distance, target_distance_offsets, target_velocity = follow:get_target_dist_and_vel_ned() -- THIS HAS TO BE FIRST
+   target_location, target_velocity = follow:get_target_location_and_velocity()
+   target_location_offset, target_velocity = follow:get_target_location_and_velocity_ofs()
+   local xy_dist = follow:get_distance_to_target() -- this value is set by get_target_dist_and_vel_ned() - why do I have to know this?
+   local target_heading = follow:get_target_heading_deg()
+*/
+bool AP_Follow::get_target_info(Vector3f &dist_ned, Vector3f &dist_with_offs, 
+                                Vector3f &target_vel_ned, Vector3f &target_vel_ned_ofs,
+                                Location &target_loc, Location &target_loc_ofs, 
+                                float &target_dist_ofs, 
+                                float &target_heading_ofs_deg
+                                )
+{
+    if(!get_target_dist_and_vel_ned(dist_ned, dist_with_offs, target_vel_ned)) {
+        return false;
+    }
+    if(!get_target_location_and_velocity(target_loc,target_vel_ned)) {
+        return false;
+    }   
+    if(!get_target_location_and_velocity_ofs(target_loc_ofs, target_vel_ned_ofs)) {
+        return false;
+    }
+    target_dist_ofs = _dist_to_target;
+    target_heading_ofs_deg = _bearing_to_target;
+    return true;
+}
+#endif
 
 namespace AP {
 

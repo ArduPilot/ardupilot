@@ -26,6 +26,8 @@
 #include <AC_PID/AC_P.h>
 #include <AP_RTC/JitterCorrection.h>
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 class AP_Follow
 {
 
@@ -111,6 +113,19 @@ public:
 
     // returns true if a follow option enabled
     bool option_is_enabled(Option option) const { return (_options.get() & (uint16_t)option) != 0; }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    //
+    // Lua binding combo function
+    //
+    // try to get all the values from a single cycle and return them in a single call to Lua
+    bool get_target_info(Vector3f &dist_ned, Vector3f &dist_with_offs, 
+                                Vector3f &target_vel_ned, Vector3f &target_vel_ned_ofs,
+                                Location &target_loc, Location &target_loc_ofs, 
+                                float &target_dist_ofs, 
+                                float &target_heading_ofs_deg
+                                );
+#endif
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
