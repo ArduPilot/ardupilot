@@ -140,6 +140,14 @@ bool Mode::enter()
 
         // Make sure the flight stage is correct for the new mode
         plane.update_flight_stage();
+
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.enabled()) {
+            float aspeed;
+            bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+            quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
+        }
+#endif
     }
 
     return enter_result;
