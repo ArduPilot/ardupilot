@@ -12,6 +12,7 @@ struct AP_FixedWing {
     AP_Int8 throttle_cruise;
     AP_Int8 takeoff_throttle_max;
     AP_Int8 takeoff_throttle_min;
+    AP_Int8 takeoff_throttle_idle;
     AP_Int32 takeoff_options;
     AP_Int16 airspeed_min;
     AP_Int16 airspeed_max;
@@ -55,5 +56,6 @@ struct AP_FixedWing {
     // Bitfields of TKOFF_OPTIONS
     enum class TakeoffOption {
         THROTTLE_RANGE          = (1U << 0), // Unset: Max throttle. Set: Throttle range.
+        IDLE_THROTTLE_EN        = (1U << 1), // Set: Run idle throttle before takeoff.
     };
 };
