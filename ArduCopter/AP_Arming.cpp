@@ -386,6 +386,13 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
         return false;
     }
 
+    // warn about hacc separately - to prevent user confusion with no gps lock
+    if ((copter.gps.num_sensors() > 0) && (copter.gps.get_hacc_cm() > 0) && (copter.gps.get_hacc_cm() > copter.g.gps_hacc_good)) {
+        check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HACC %d>%d cm", copter.gps.get_hacc_cm(), uint16_t(copter.g.gps_hacc_good));
+        AP_Notify::flags.pre_arm_gps_check = false;
+        return false;
+    }
+
     // if we got here all must be ok
     AP_Notify::flags.pre_arm_gps_check = true;
     return true;

@@ -171,6 +171,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
 
+    // @Param: GPS_HACC_GOOD
+    // @DisplayName: GPS Hacc Good
+    // @Description: GPS Hacc value at or below this value represent a good position.  Used for pre-arm checks
+    // @Units: cm
+    // @Range: 0 250
+    // @User: Advanced
+    GSCALAR(gps_hacc_good, "GPS_HACC_GOOD", GPS_HACC_GOOD_DEFAULT),
+
     // @Param: SUPER_SIMPLE
     // @DisplayName: Super Simple Mode
     // @Description: Bitmask to enable Super Simple mode for some flight modes. Setting this to Disabled(0) will disable Super Simple Mode. The bitmask is for flight mode switch positions

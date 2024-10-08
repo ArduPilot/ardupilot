@@ -87,6 +87,11 @@
  # define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
 #endif
 
+// prearm GPS hacc check
+#ifndef GPS_HACC_GOOD_DEFAULT
+ # define GPS_HACC_GOOD_DEFAULT         250     // minimum hacc that represents a good position.  used during pre-arm checks if fence is enabled
+#endif
+
 // missing terrain data failsafe
 #ifndef FS_TERRAIN_TIMEOUT_MS
  #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
