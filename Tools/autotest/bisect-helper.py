@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''A helper script for bisecting common problems when working with ArduPilot
 
