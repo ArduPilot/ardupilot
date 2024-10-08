@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <ctype.h>
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
@@ -127,3 +128,5 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 // kg/m^3 to g/cm^3
 #define KG_PER_M3_TO_G_PER_CM3(x) (0.001 * x)
+
+#define ishexa(c)     (isdigit(c) || ((c) >= 'A' && (c) <= 'F') || ((c) >= 'a' && (c) <= 'f'))

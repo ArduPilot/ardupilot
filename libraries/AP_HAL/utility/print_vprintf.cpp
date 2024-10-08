@@ -39,6 +39,7 @@
 #include "print_vprintf.h"
 
 #include <cmath>
+#include <ctype.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -126,7 +127,7 @@ void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap)
                 }
 
                 if (flags < FL_LONG) {
-                    if (c >= '0' && c <= '9') {
+                    if (isdigit(c)) {
                         c -= '0';
                         if (flags & FL_PREC) {
                             prec = 10*prec + c;

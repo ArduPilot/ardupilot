@@ -22,6 +22,7 @@
 #if AP_CAN_SLCAN_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 
 #include "AP_CANManager.h"
 
