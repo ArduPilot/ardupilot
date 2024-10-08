@@ -318,7 +318,7 @@ protected:
         return (HAL_INS_HIGHRES_SAMPLE & (1U<<instance)) != 0;
     }
 
-    // if fast sampling is enabled, the rate to use in kHz
+    // if fast sampling is enabled, the base rate multiplier to use
     uint8_t get_fast_sampling_rate() const {
         return (1 << uint8_t(_imu._fast_sampling_rate));
     }
