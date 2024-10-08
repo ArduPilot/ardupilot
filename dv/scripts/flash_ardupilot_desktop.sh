@@ -16,4 +16,7 @@ python3 ./Tools/scripts/uploader.py --port "${PORT}" --baud-flightstack 921600,1
 
 ./dv/scripts/wait_online.py "${PORT}"
 ./dv/scripts/request_default_params.py "${PORT}"
+
+sleep 5 # This prevents renaming of the port from ttyACM0 to ttyACM1 for example.
+
 ./dv/scripts/wait_online.py "${PORT}"
