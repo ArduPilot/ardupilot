@@ -139,7 +139,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 9_
     // @Path: AP_TemperatureSensor_Analog.cpp
-    AP_SUBGROUPVARPTR(drivers[8], "9_", 26, AP_TemperatureSensor, backend_var_info[8]),
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 27, AP_TemperatureSensor, backend_var_info[8]),
 #endif
 
     AP_GROUPEND
