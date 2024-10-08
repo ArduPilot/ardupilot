@@ -10,6 +10,7 @@ import os
 import numpy
 import math
 
+from pymavlink import mavextra
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
@@ -1858,6 +1859,119 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_EXTERNAL_WIND_ESTIMATE_direction(self):
+        '''ensure MAV_CMD_EXTERNAL_WIND_ESTIMATE direction aligns with ArduPilot's conventions'''
+        wind_from_dir = 270  # wind from the West
+        wind_speed = 5
+        wind_direction_accuracy = 30
+        wind_speed_accuracy = 1
+
+        self.set_parameters({
+            "SIM_WIND_DIR": wind_from_dir,
+            "SIM_WIND_SPD": wind_speed,
+            # "ARSPD_USE": 0,  # we instantly nuke our wind estimate if we have one of these
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
+            p1=wind_speed,               # speed
+            p2=wind_speed_accuracy  ,    # speed accuracy
+            p3=wind_from_dir,            # direction
+            p4=wind_direction_accuracy,  # direction accuracy
+        )
+
+        class ValidateWindSpeedDir(vehicle_test_suite.TestSuite.MessageHook):
+            '''asserts wind is from a direction and at a speed'''
+
+            def __init__(self, suite, speed, direction, epsilon_speed=1, epsilon_direction=30):
+                super(ValidateWindSpeedDir, self).__init__(suite)
+                self.speed = speed
+                self.direction = direction
+                self.epsilon_speed = epsilon_speed
+                self.epsilon_direction = epsilon_direction
+
+            def hook_removed(self):
+                pass
+
+            def process(self, mav, m):
+                if m.get_type() != 'WIND':
+                    return
+                # check speed
+                self.suite.assert_message_field_values(m, {
+                    "speed": self.speed
+                }, epsilon=self.epsilon_direction)
+                # check direction
+                self.suite.assert_message_field_values(m, {
+                    "direction": mavextra.wrap_180(self.direction),
+                }, epsilon=self.epsilon_direction)
+
+        # self.install_message_hook_context(ValidateWindSpeedDir(self, wind_speed, wind_from_dir))
+
+        self.arm_vehicle()
+        self.change_mode('QHOVER')
+        self.set_rc(3, 1800)
+        self.delay_sim_time(30)
+        # self.send_debug_trap()
+        self.change_mode('FBWA')
+        self.delay_sim_time(30)
+        self.fly_home_land_and_disarm(timeout=600)
+
+    def WindEstimateConsistency(self):
+        '''test that DCM and EKF3 roughly agree on wind speed and direction'''
+        self.set_parameters({
+            'SIM_WIND_SPD': 10,   # metres/second
+            'SIM_WIND_DIR': 315,  # from the North-West
+        })
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(180)
+        mlog = self.dfreader_for_current_onboard_log()
+        self.fly_home_land_and_disarm()
+
+        self.progress("Inspecting dataflash log")
+        match_start_time = None
+        dcm = None
+        xkf2 = None
+        while True:
+            m = mlog.recv_match(
+                type=['DCM', 'XKF2'],
+                blocking=True,
+            )
+            if m is None:
+                raise NotAchievedException("Did not see wind estimates match")
+
+            m_type = m.get_type()
+            if m_type == 'DCM':
+                dcm = m
+            else:
+                xkf2 = m
+            if dcm is None or xkf2 is None:
+                continue
+
+            now = m.TimeUS * 1e-6
+
+            matches_east = abs(dcm.VWE-xkf2.VWE) < 1.5
+            matches_north = abs(dcm.VWN-xkf2.VWN) < 1.5
+
+            matches = matches_east and matches_north
+
+            if not matches:
+                match_start_time = None
+                continue
+
+            if match_start_time is None:
+                match_start_time = now
+                continue
+
+            if now - match_start_time > 60:
+                self.progress("Wind estimates correlated")
+                break
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1872,6 +1986,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
+            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE_direction,
             self.Mission,
             self.Weathervane,
             self.QAssist,
@@ -1885,6 +2000,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.GUIDEDToAUTO,
             self.BootInAUTO,
             self.Ship,
+            self.WindEstimateConsistency,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
             self.VTOLLandSpiral,

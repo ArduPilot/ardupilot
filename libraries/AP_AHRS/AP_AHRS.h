@@ -132,10 +132,17 @@ public:
     }
 
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
-    void set_external_wind_estimate(float speed, float direction) {
+    bool set_external_wind_estimate(float speed, float speed_accuracy, float direction, float direction_accuracy) {
+#if AP_AHRS_DCM_ENABLED
         dcm.set_external_wind_estimate(speed, direction);
-    }
 #endif
+#if HAL_NAVEKF3_AVAILABLE
+        EKF3.setWind(speed, speed_accuracy, direction, direction_accuracy);
+#endif
+        // should this method return true/false based on result from current estimator?  configured estimator?
+        return true;
+    }
+#endif  // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
 
     // return the parameter AHRS_WIND_MAX in metres per second
     uint8_t get_max_wind() const {
