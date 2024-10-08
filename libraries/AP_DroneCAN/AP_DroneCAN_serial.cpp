@@ -129,7 +129,9 @@ void AP_DroneCAN_Serial::handle_tunnel_targetted(AP_DroneCAN *dronecan,
     }
     auto &s = *serial[driver_index];
     for (auto &p : s.ports) {
-        if (p.idx == msg.serial_id && transfer.source_node_id == p.node) {
+        if (p.idx == msg.serial_id &&
+            transfer.source_node_id == p.node &&
+            (msg.serial_id == p.idx || p.idx == -1)) {
             WITH_SEMAPHORE(p.sem);
             if (p.readbuffer != nullptr) {
                 p.readbuffer->write(msg.buffer.data, msg.buffer.len);
