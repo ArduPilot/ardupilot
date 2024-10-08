@@ -29,7 +29,6 @@ uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
     {
         ret += data[i];
     }
-    // 
     return ret;
 }
 
