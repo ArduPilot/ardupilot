@@ -158,6 +158,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    0),
 
+    // @Param: TKOFF_THR_IDLE
+    // @DisplayName: Takeoff idle throttle
+    // @Description: The idle throttle to hold after arming and before a takeoff. Applicable in TAKEOFF and AUTO modes.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(takeoff_throttle_idle,       "TKOFF_THR_IDLE",    0),
+
     // @Param: TKOFF_OPTIONS
     // @DisplayName: Takeoff options
     // @Description: This selects the mode of the takeoff in AUTO and TAKEOFF flight modes. 
