@@ -153,6 +153,7 @@ bool AP_Camera_Backend::take_picture()
     if (trigger_pic()) {
         image_index++;
         last_picture_time_ms = now_ms;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CamTrig(%d) %d at %u", _instance, image_index, last_picture_time_ms);
         IGNORE_RETURN(AP::ahrs().get_location(last_location));
 #if HAL_LOGGING_ENABLED
         log_picture();
