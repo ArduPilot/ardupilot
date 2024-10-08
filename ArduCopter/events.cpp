@@ -400,8 +400,9 @@ void Copter::set_mode_SmartRTL_or_land_with_pause(ModeReason reason)
         AP_Notify::events.failsafe_mode_change = 1;
         return;
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
 #endif
-    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Using Land Mode");
+
     set_mode_land_with_pause(reason);
 }
 
@@ -416,8 +417,9 @@ void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
         AP_Notify::events.failsafe_mode_change = 1;
         return;
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
 #endif
-    gcs().send_text(MAV_SEVERITY_WARNING, "SmartRTL Unavailable, Trying RTL Mode");
+
     set_mode_RTL_or_land_with_pause(reason);
 }
 
@@ -430,9 +432,9 @@ void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
         AP_Notify::events.failsafe_mode_change = 1;
         return;
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AutoRTL Unavailable, Trying RTL Mode");
 #endif
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Trying RTL Mode");
     set_mode_RTL_or_land_with_pause(reason);
 }
 
@@ -445,9 +447,9 @@ void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
         AP_Notify::events.failsafe_mode_change = 1;
         return;
     }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Brake Unavailable, Trying Land Mode");
 #endif
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "Trying Land Mode");
     set_mode_land_with_pause(reason);
 }
 
@@ -513,4 +515,3 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
     }
 #endif
 }
-
