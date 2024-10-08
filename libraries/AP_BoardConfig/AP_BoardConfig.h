@@ -11,6 +11,8 @@
 #include <AP_Radio/AP_Radio.h>
 #endif
 
+#include <AP_IOMCU/AP_IOMCU.h>
+
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
@@ -158,7 +160,8 @@ public:
         WRITE_PROTECT_FLASH = (1<<5),
         WRITE_PROTECT_BOOTLOADER = (1<<6),
         SKIP_BOARD_VALIDATION = (1<<7),
-        DISABLE_ARMING_GPIO = (1<<8)
+        DISABLE_ARMING_GPIO = (1<<8),
+        IO_SAFETY_PINS_AS_PROFILED = (1<<9),
     };
 
     //return true if arming gpio output is disabled
@@ -226,6 +229,12 @@ public:
     // return number of kb of fence storage to use on microSD
     static uint16_t get_sdcard_fence_kb(void) {
         return _singleton? _singleton->sdcard_storage.fence_kb.get() : 0;
+    }
+#endif
+
+#if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    bool use_safety_as_led() {
+        return _singleton? (_singleton->_options & IO_SAFETY_PINS_AS_PROFILED) : false;
     }
 #endif
 

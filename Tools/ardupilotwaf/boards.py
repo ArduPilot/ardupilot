@@ -177,7 +177,10 @@ class Board:
 
         if cfg.options.enable_networking_tests:
             env.CXXFLAGS += ['-DAP_NETWORKING_TESTS_ENABLED=1']
-            
+
+        if cfg.options.enable_iomcu_profiled_support:
+            env.CXXFLAGS += ['-DAP_IOMCU_PROFILED_SUPPORT_ENABLED=1']
+
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
