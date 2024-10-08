@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     lsb-release \
     sudo \
     tzdata \
+    git \
+    default-jre \
     bash-completion
 
 COPY Tools/environment_install/install-prereqs-ubuntu.sh /ardupilot/Tools/environment_install/
@@ -44,6 +46,13 @@ RUN git config --global --add safe.directory $PWD
 
 # Check that local/bin are in PATH for pip --user installed package
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
+
+# Clone & install Micro-XRCE-DDS-Gen dependancy
+RUN git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
+    && cd /home/${USER_NAME}/Micro-XRCE-DDS-Gen \
+    && ./gradlew assemble \
+    && export AP_ENV_LOC="/home/${USER_NAME}/.ardupilot_env" \
+    && echo "export PATH=\$PATH:$PWD/scripts" >> $AP_ENV_LOC
 
 # Create entrypoint as docker cannot do shell substitution correctly
 RUN export ARDUPILOT_ENTRYPOINT="/home/${USER_NAME}/ardupilot_entrypoint.sh" \
