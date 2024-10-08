@@ -2816,6 +2816,13 @@ void QuadPlane::vtol_position_controller(void)
             loc2.change_alt_frame(Location::AltFrame::ABOVE_ORIGIN);
             float target_z = loc2.alt;
             float zero = 0;
+#if AP_TERRAIN_AVAILABLE
+            float terrain_altitude_offset;
+            if (plane.terrain_enabled_in_current_mode() && plane.terrain.height_terrain_difference_home(terrain_altitude_offset, true)) {
+                // Climb if current terrain is above home, target_altitude_cm is reltive to home
+                target_z += MAX(terrain_altitude_offset*100,0);
+            }
+#endif
             pos_control->input_pos_vel_accel_z(target_z, zero, 0);
         } else {
             set_climb_rate_cms(0);
