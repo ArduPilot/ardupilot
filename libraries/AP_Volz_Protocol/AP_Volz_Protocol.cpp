@@ -14,7 +14,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#define SET_EXTENDED_POSITION_CMD      0xDC
+#include <AP_Logger/AP_Logger.h>
 
 // Extended Position Data Format defines -100 as 0x0080 decimal 128, we map this to a PWM of 1000 (if range is default)
 #define PWM_POSITION_MIN               1000
@@ -77,12 +77,48 @@ void AP_Volz_Protocol::init(void)
     }
 }
 
+#if HAL_LOGGING_ENABLED
+// Request telem data, cycling through each servo and telem item
+void AP_Volz_Protocol::request_telem()
+{
+    // Request the queued item, making sure the servo is enabled
+    if ((uint32_t(bitmask.get()) & (1U<<telem.actuator_id)) != 0) {
+        // Assemble command
+        CMD cmd {};
+        cmd.ID = telem.types[telem.request_type];
+        cmd.actuator_id = telem.actuator_id + 1;
+        send_command(cmd);
+
+        // Increment the request type
+        telem.request_type++;
+        if (telem.request_type < ARRAY_SIZE(telem.types)) {
+            // Request the next telem type from the same actuators on the next call
+            return;
+        }
+    }
+
+    // Requested all items from a id or invalid id.
+    // start again with a new id
+    telem.request_type = 0;
+
+    // Same logic as `send_position_cmd`
+    for (uint8_t i=0; i<ARRAY_SIZE(telem.data); i++) {
+        const uint8_t index = (telem.actuator_id + 1 + i) % ARRAY_SIZE(telem.data);
+        if ((uint32_t(bitmask.get()) & (1U<<index)) == 0) {
+            continue;
+        }
+        telem.actuator_id = index;
+        break;
+    }
+}
+#endif
+
 void AP_Volz_Protocol::loop()
 {
     const uint32_t baudrate = 115200;
+    port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_RTS_DE);
     port->begin(baudrate, UART_BUFSIZE_RX, UART_BUFSIZE_TX);
     port->set_unbuffered_writes(true);
-    port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 
     // Calculate the amount of time it should take to send a command
     // Multiply by 10 to convert from bit rate to byte rate (8 data bits + start and stop bits)
@@ -93,8 +129,10 @@ void AP_Volz_Protocol::loop()
     // receive packet is same length as sent, double to allow some time for the servo respond
     const uint16_t receive_us = send_us * 2;
 
-    // This gives a total time of 1560ms, message rate of 641 Hz.
+    // This gives a total time of 1560us, message rate of 641 Hz.
     // One servo at 641Hz, two at 320.5 each, three at 213.7 each ect...
+    // Note that we send a telem request every time servo sending is complete. This is like a extra servo.
+    // So for a single servo position commands are at 320.5Hz and telem at 320.5Hz.
 
     while (port != nullptr) {
 
@@ -106,45 +144,211 @@ void AP_Volz_Protocol::loop()
             hal.scheduler->delay_microseconds(100);
         }
 
-        // loop for all channels
-        for (uint8_t i=0; i<ARRAY_SIZE(servo_pwm); i++) {
-            // Send each channels in turn
-            const uint8_t index = (last_sent_index + 1 + i) % ARRAY_SIZE(servo_pwm);
-            if ((uint32_t(bitmask.get()) & (1U<<index)) == 0) {
-                // Not configured to send
-                continue;
-            }
-            last_sent_index = index;
+#if HAL_LOGGING_ENABLED
+        // Send a command for each servo, then one telem request
+        const uint8_t num_servos = __builtin_popcount(bitmask.get());
+        if (sent_count < num_servos) {
+            send_position_cmd();
+            sent_count++;
 
-            // Get PWM from saved array
-            const uint16_t pwm = servo_pwm[index];
-            if (pwm == 0) {
-                // Never use zero PWM, the check in update should ensure this never happens
-                // If we were to use zero the range extrapolation would result in a -100 deg angle request
-                continue;
-            }
-
-            // Map PWM to angle, this is a un-constrained interpolation
-            // ratio = 0 at PWM_POSITION_MIN to 1 at PWM_POSITION_MAX
-            const float ratio = (float(pwm) - PWM_POSITION_MIN) / (PWM_POSITION_MAX - PWM_POSITION_MIN);
-            // Convert ratio to +-0.5 and multiply by stroke
-            const float angle = (ratio - 0.5) * constrain_float(range, 0.0, 200.0);
-
-            // Map angle to command out of full range, add 0.5 so that float to int truncation rounds correctly
-            const uint16_t value = linear_interpolate(EXTENDED_POSITION_MIN, EXTENDED_POSITION_MAX, angle, ANGLE_POSITION_MIN, ANGLE_POSITION_MAX) + 0.5;
-
-            // prepare Volz protocol data.
-            CMD cmd;
-            cmd.ID = SET_EXTENDED_POSITION_CMD;
-            cmd.actuator_id = index + 1; // send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
-            cmd.arg1 = HIGHBYTE(value);
-            cmd.arg2 = LOWBYTE(value);
-
-            send_command(cmd);
-            break;
+        } else {
+            request_telem();
+            sent_count = 0;
         }
+
+        {
+            // Read in telem data if available
+            WITH_SEMAPHORE(telem.sem);
+            read_telem();
+        }
+
+#else // No logging, send only
+        send_position_cmd();
+#endif
     }
 }
+
+// Send postion commands from PWM, cycle through each servo
+void AP_Volz_Protocol::send_position_cmd()
+{
+
+    // loop for all channels
+    for (uint8_t i=0; i<ARRAY_SIZE(servo_pwm); i++) {
+        // Send each channels in turn
+        const uint8_t index = (last_sent_index + 1 + i) % ARRAY_SIZE(servo_pwm);
+        if ((uint32_t(bitmask.get()) & (1U<<index)) == 0) {
+            // Not configured to send
+            continue;
+        }
+        last_sent_index = index;
+
+        // Get PWM from saved array
+        const uint16_t pwm = servo_pwm[index];
+        if (pwm == 0) {
+            // Never use zero PWM, the check in update should ensure this never happens
+            // If we were to use zero the range extrapolation would result in a -100 deg angle request
+            continue;
+        }
+
+        // Map PWM to angle, this is a un-constrained interpolation
+        // ratio = 0 at PWM_POSITION_MIN to 1 at PWM_POSITION_MAX
+        const float ratio = (float(pwm) - PWM_POSITION_MIN) / (PWM_POSITION_MAX - PWM_POSITION_MIN);
+        // Convert ratio to +-0.5 and multiply by stroke
+        const float angle = (ratio - 0.5) * constrain_float(range, 0.0, 200.0);
+
+        // Map angle to command out of full range, add 0.5 so that float to int truncation rounds correctly
+        const uint16_t value = linear_interpolate(EXTENDED_POSITION_MIN, EXTENDED_POSITION_MAX, angle, ANGLE_POSITION_MIN, ANGLE_POSITION_MAX) + 0.5;
+
+        // prepare Volz protocol data.
+        CMD cmd;
+        cmd.ID = CMD_ID::SET_EXTENDED_POSITION;
+        cmd.actuator_id = index + 1; // send actuator id as 1 based index so ch1 will have id 1, ch2 will have id 2 ....
+        cmd.arg1 = HIGHBYTE(value);
+        cmd.arg2 = LOWBYTE(value);
+
+        send_command(cmd);
+
+#if HAL_LOGGING_ENABLED
+        {
+            // Update the commanded angle
+            WITH_SEMAPHORE(telem.sem);
+            static_assert(ARRAY_SIZE(servo_pwm) == ARRAY_SIZE(telem.data), "actuator index invalid for telem data array");
+            telem.data[index].desired_angle = angle;
+        }
+#endif
+
+        break;
+    }
+}
+
+#if HAL_LOGGING_ENABLED
+void AP_Volz_Protocol::process_response(const CMD &cmd)
+{
+    // Convert to 0 indexed
+    const uint8_t index = cmd.actuator_id - 1;
+    if (index >= ARRAY_SIZE(telem.data)) {
+        // Invalid ID
+        return;
+    }
+
+    switch (cmd.ID) {
+    case CMD_ID::EXTENDED_POSITION_RESPONSE:
+        // Map back to angle
+        telem.data[index].angle = linear_interpolate(ANGLE_POSITION_MIN, ANGLE_POSITION_MAX, UINT16_VALUE(cmd.arg1, cmd.arg2), EXTENDED_POSITION_MIN, EXTENDED_POSITION_MAX);
+        break;
+
+    case CMD_ID::CURRENT_RESPONSE:
+        // Current is reported in 20mA increments (0.02A)
+        telem.data[index].primary_current = cmd.arg1 * 0.02;
+        telem.data[index].secondary_current = cmd.arg2 * 0.02;
+        break;
+
+    case CMD_ID::VOLTAGE_RESPONSE:
+        // Voltage is reported in 200mv increments (0.2v)
+        telem.data[index].primary_voltage = cmd.arg1 * 0.2;
+        telem.data[index].secondary_voltage = cmd.arg2 * 0.2;
+        break;
+
+    case CMD_ID::TEMPERATURE_RESPONSE:
+        // Temperature is reported relative to -50 deg C
+        telem.data[index].motor_temp_deg = -50 + cmd.arg1;
+        telem.data[index].pcb_temp_deg = -50 + cmd.arg2;
+        break;
+
+    default:
+        // This should never happen
+        return;
+    }
+
+    telem.data[index].last_response_ms = AP_HAL::millis();
+}
+
+// Return true if the given ID is a valid response
+bool AP_Volz_Protocol::is_response(uint8_t ID) const
+{
+    switch(ID) {
+    case (uint8_t)CMD_ID::EXTENDED_POSITION_RESPONSE:
+    case (uint8_t)CMD_ID::CURRENT_RESPONSE:
+    case (uint8_t)CMD_ID::VOLTAGE_RESPONSE:
+    case (uint8_t)CMD_ID::TEMPERATURE_RESPONSE:
+        return true;
+
+    default:
+        break;
+    }
+
+    return false;
+}
+
+void AP_Volz_Protocol::read_telem()
+{
+    // Try and read data a few times, this could be a while loop, using a for loop gives a upper bound to run time
+    for (uint8_t attempts = 0; attempts < sizeof(telem.cmd_buffer) * 4; attempts++) {
+
+        uint32_t n = port->available();
+        if (n == 0) {
+            // No data available
+            return;
+        }
+        if (telem.buffer_offset < sizeof(telem.cmd_buffer)) {
+            // Read enough bytes to fill buffer
+            ssize_t nread = port->read(&telem.cmd_buffer.data[telem.buffer_offset], MIN(n, unsigned(sizeof(telem.cmd_buffer)-telem.buffer_offset)));
+            if (nread <= 0) {
+                // Read failed
+                return;
+            }
+            telem.buffer_offset += nread;
+        }
+
+        // Check for valid response start byte
+        if (!is_response(telem.cmd_buffer.data[0])) {
+
+            // Search for a valid response start byte
+            uint8_t cmd_start;
+            for (cmd_start = 1; cmd_start < telem.buffer_offset; cmd_start++) {
+                if (is_response(telem.cmd_buffer.data[cmd_start])) {
+                    // Found one
+                    break;
+                }
+            }
+
+            // Shift buffer to put start on valid byte, or if no valid byte was found clear
+            const uint8_t n_move = telem.buffer_offset - cmd_start;
+            if (n_move > 0) {
+                // No need to move 0 bytes
+                memmove(&telem.cmd_buffer.data[0], &telem.cmd_buffer.data[cmd_start], n_move);
+            }
+            telem.buffer_offset = 0;
+
+            // Since the buffer is the same length as a full command, we can never get a valid packet after shifting
+            // Always need to read in some more data
+            continue;
+        }
+
+        if (telem.buffer_offset < sizeof(telem.cmd_buffer)) {
+            // Not enough data to make up packet
+            continue;
+        }
+
+        // Have valid ID and enough data, check crc
+        if (UINT16_VALUE(telem.cmd_buffer.crc1, telem.cmd_buffer.crc2) != calculate_crc(telem.cmd_buffer)) {
+            // Probably lost sync shift by one and try again
+            memmove(&telem.cmd_buffer.data[0], &telem.cmd_buffer.data[1], telem.buffer_offset - 1);
+            telem.buffer_offset -= 1;
+            continue;
+        }
+
+        // Valid packet passed crc check
+        process_response(telem.cmd_buffer);
+
+        // zero offset and continue
+        telem.buffer_offset = 0;
+    }
+
+    // Used up all attempts without running out of data.
+    // Really should not end up here
+}
+#endif // HAL_LOGGING_ENABLED
 
 // Called each time the servo outputs are sent
 void AP_Volz_Protocol::update()
@@ -171,10 +375,55 @@ void AP_Volz_Protocol::update()
         const uint16_t pwm = c->get_output_pwm();
         servo_pwm[i] = (pwm == 0) ? c->get_trim() : pwm;
     }
+
+#if HAL_LOGGING_ENABLED
+    // take semaphore and log all channels at 5 Hz
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - telem.last_log_ms) > 200) {
+        telem.last_log_ms = now_ms;
+
+        WITH_SEMAPHORE(telem.sem);
+        for (uint8_t i=0; i<ARRAY_SIZE(telem.data); i++) {
+            if ((telem.data[i].last_response_ms == 0) || ((now_ms - telem.data[i].last_response_ms) > 5000)) {
+                // Never seen telem, or not had a response for more than 5 seconds
+                continue;
+            }
+
+            // @LoggerMessage: VOLZ
+            // @Description: Volz servo data
+            // @Field: TimeUS: Time since system startup
+            // @Field: I: Instance
+            // @Field: Dang: desired angle
+            // @Field: ang: reported angle
+            // @Field: pc: primary supply current
+            // @Field: sc: secondary supply current
+            // @Field: pv: primary supply voltage
+            // @Field: sv: secondary supply voltage
+            // @Field: mt: motor temperature
+            // @Field: pt: pcb temperature
+            AP::logger().WriteStreaming("VOLZ",
+                "TimeUS,I,Dang,ang,pc,sc,pv,sv,mt,pt",
+                "s#ddAAvvOO",
+                "F000000000",
+                "QBffffffHH",
+                AP_HAL::micros64(),
+                i + 1, // convert to 1 indexed to match actuator IDs and SERVOx numbering
+                telem.data[i].desired_angle,
+                telem.data[i].angle,
+                telem.data[i].primary_current,
+                telem.data[i].secondary_current,
+                telem.data[i].primary_voltage,
+                telem.data[i].secondary_voltage,
+                telem.data[i].motor_temp_deg,
+                telem.data[i].pcb_temp_deg
+            );
+        }
+    }
+#endif // HAL_LOGGING_ENABLED
 }
 
-// calculate CRC for volz serial protocol and send the data.
-void AP_Volz_Protocol::send_command(CMD &cmd)
+// Return the crc for a given command packet
+uint16_t AP_Volz_Protocol::calculate_crc(const CMD &cmd) const
 {
     uint16_t crc = 0xFFFF;
 
@@ -191,6 +440,14 @@ void AP_Volz_Protocol::send_command(CMD &cmd)
             }
         }
     }
+
+    return crc;
+}
+
+// calculate CRC for volz serial protocol and send the data.
+void AP_Volz_Protocol::send_command(CMD &cmd)
+{
+    const uint16_t crc = calculate_crc(cmd);
 
     // add CRC result to the message
     cmd.crc1 = HIGHBYTE(crc);
