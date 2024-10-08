@@ -135,8 +135,12 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
         continue
     fi
-    if [ "$t" == "sitltest-plane" ]; then
-        run_autotest "Plane" "build.Plane" "test.Plane"
+    if [ "$t" == "sitltest-plane-tests1a" ]; then
+        run_autotest "Plane" "build.Plane" "test.PlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-plane-tests1b" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
     if [ "$t" == "sitltest-quadplane" ]; then
@@ -406,6 +410,14 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board navigator --toolchain=arm-linux-musleabihf
         $waf sub --static
         ./Tools/scripts/firmware_version_decoder.py -f build/navigator/bin/ardusub --expected-hash $GIT_VERSION
+        continue
+    fi
+
+    if [ "$t" == "navigator64" ]; then
+        echo "Building navigator64"
+        $waf configure --board navigator64 --toolchain=aarch64-linux-gnu
+        $waf sub
+        ./Tools/scripts/firmware_version_decoder.py -f build/navigator64/bin/ardusub --expected-hash $GIT_VERSION
         continue
     fi
 

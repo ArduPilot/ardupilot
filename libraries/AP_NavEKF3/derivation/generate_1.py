@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
+from sympy import __version__ as __sympy__version__
 from sympy import *
 from code_gen import *
 import numpy as np
+
+# version required to generate the exact code currently present in ArduPilot.
+# sympy version upgrades must ensure generated code doesn't pose any problems
+# and must not have any other changes to the generator.
+assert __sympy__version__ == "1.9", "expected sympy version 1.9, not "+__sympy__version__
 
 # q: quaternion describing rotation from frame 1 to frame 2
 # returns a rotation matrix derived form q which describes the same
@@ -672,29 +678,29 @@ def generate_code():
 
 
     # derive autocode for other methods
-    print('Computing tilt error covariance matrix ...')
-    quaternion_error_propagation()
-    print('Generating heading observation code ...')
-    yaw_observation(P,state,R_to_earth)
-    print('Generating gps heading observation code ...')
-    gps_yaw_observation(P,state,R_to_body)
-    print('Generating mag observation code ...')
-    mag_observation_variance(P,state,R_to_body,i,ib)
-    mag_observation(P,state,R_to_body,i,ib)
-    print('Generating declination observation code ...')
-    declination_observation(P,state,ix,iy)
-    print('Generating airspeed observation code ...')
-    tas_observation(P,state,vx,vy,vz,wx,wy)
-    print('Generating sideslip observation code ...')
-    beta_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
-    print('Generating optical flow observation code ...')
-    optical_flow_observation(P,state,R_to_body,vx,vy,vz)
-    print('Generating body frame velocity observation code ...')
-    body_frame_velocity_observation(P,state,R_to_body,vx,vy,vz)
-    print('Generating body frame acceleration observation code ...')
-    body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
-    print('Generating yaw estimator code ...')
-    yaw_estimator()
+    # print('Computing tilt error covariance matrix ...')
+    # quaternion_error_propagation()
+    # print('Generating heading observation code ...')
+    # yaw_observation(P,state,R_to_earth)
+    # print('Generating gps heading observation code ...')
+    # gps_yaw_observation(P,state,R_to_body)
+    # print('Generating mag observation code ...')
+    # mag_observation_variance(P,state,R_to_body,i,ib)
+    # mag_observation(P,state,R_to_body,i,ib)
+    # print('Generating declination observation code ...')
+    # declination_observation(P,state,ix,iy)
+    # print('Generating airspeed observation code ...')
+    # tas_observation(P,state,vx,vy,vz,wx,wy)
+    # print('Generating sideslip observation code ...')
+    # beta_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
+    # print('Generating optical flow observation code ...')
+    # optical_flow_observation(P,state,R_to_body,vx,vy,vz)
+    # print('Generating body frame velocity observation code ...')
+    # body_frame_velocity_observation(P,state,R_to_body,vx,vy,vz)
+    # print('Generating body frame acceleration observation code ...')
+    # body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
+    # print('Generating yaw estimator code ...')
+    # yaw_estimator()
     print('Code generation finished!')
 
 

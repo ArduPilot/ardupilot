@@ -914,7 +914,7 @@ void NavEKF3_core::FuseMagnetometer()
 
 /*
  * Fuse direct yaw measurements using explicit algebraic equations auto-generated from
- * /AP_NavEKF3/derivation/main.py with output recorded in /AP_NavEKF3/derivation/generated/yaw_generated.cpp
+ * derivation/generate_2.py with output recorded in derivation/generated/yaw_generated.cpp
  * Returns true if the fusion was successful
 */
 bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
@@ -1018,7 +1018,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
         if (canUseA && (!canUseB || fabsF(SA5_inv) >= fabsF(SB5_inv))) {
             const ftype SA5 = 1.0F/SA5_inv;
-            const ftype SA6 = 1.0F/SA3;
+            const ftype SA6 = 1.0F/(SA3);
             const ftype SA7 = SA2*SA4;
             const ftype SA8 = 2*SA7;
             const ftype SA9 = 2*SA6;
@@ -1029,7 +1029,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
             H_YAW[3] = SA5*(SA0*SA7 + SA9*q0);
         } else if (canUseB && (!canUseA || fabsF(SB5_inv) > fabsF(SA5_inv))) {
             const ftype SB5 = 1.0F/SB5_inv;
-            const ftype SB6 = 1.0F/SB2;
+            const ftype SB6 = 1.0F/(SB2);
             const ftype SB7 = SB3*SB4;
             const ftype SB8 = 2*SB7;
             const ftype SB9 = 2*SB6;
@@ -1078,7 +1078,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
         if (canUseA && (!canUseB || fabsF(SA5_inv) >= fabsF(SB5_inv))) {
             const ftype SA5 = 1.0F/SA5_inv;
-            const ftype SA6 = 1.0F/SA3;
+            const ftype SA6 = 1.0F/(SA3);
             const ftype SA7 = SA2*SA4;
             const ftype SA8 = 2*SA7;
             const ftype SA9 = 2*SA6;
@@ -1089,7 +1089,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
             H_YAW[3] = SA5*(SA0*SA7 + SA9*q0);
         } else if (canUseB && (!canUseA || fabsF(SB5_inv) > fabsF(SA5_inv))) {
             const ftype SB5 = 1.0F/SB5_inv;
-            const ftype SB6 = 1.0F/SB2;
+            const ftype SB6 = 1.0F/(SB2);
             const ftype SB7 = SB3*SB4;
             const ftype SB8 = 2*SB7;
             const ftype SB9 = 2*SB6;

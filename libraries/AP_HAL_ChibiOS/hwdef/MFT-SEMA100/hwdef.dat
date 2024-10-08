@@ -11,8 +11,8 @@ APJ_BOARD_ID 2000
 
 FLASH_SIZE_KB 2048
 
-# with 2M flash we can afford to optimize for speed
-env OPTIMIZE -O2
+# 
+env OPTIMIZE -Os
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2

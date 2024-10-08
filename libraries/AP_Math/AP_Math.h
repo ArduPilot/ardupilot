@@ -20,6 +20,8 @@
 #include "location.h"
 #include "control.h"
 
+static const float NaNf = nanf("0x4152");
+
 #if HAL_WITH_EKF_DOUBLE
 typedef Vector2<double> Vector2F;
 typedef Vector3<double> Vector3F;

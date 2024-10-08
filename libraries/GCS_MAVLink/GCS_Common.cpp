@@ -225,6 +225,20 @@ void GCS_MAVLINK::send_power_status(void)
                                   hal.analogin->power_status_flags());
 }
 
+#if AP_SCHEDULER_ENABLED
+// cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
+uint16_t GCS_MAVLINK::cap_message_interval(uint16_t interval_ms) const
+{
+    if (interval_ms == 0) {
+        return 0;
+    }
+    if (interval_ms*800 < AP::scheduler().get_loop_period_us()) {
+        return AP::scheduler().get_loop_period_us()/800.0f;
+    }
+    return interval_ms;
+}
+#endif
+
 #if HAL_WITH_MCU_MONITORING
 // report MCU voltage/temperature status
 void GCS_MAVLINK::send_mcu_status(void)
@@ -1049,8 +1063,10 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
 #endif
         { MAVLINK_MSG_ID_DISTANCE_SENSOR,       MSG_DISTANCE_SENSOR},
-            // request also does report:
-        { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN},
+#if AP_TERRAIN_AVAILABLE
+        { MAVLINK_MSG_ID_TERRAIN_REQUEST,       MSG_TERRAIN_REQUEST},
+        { MAVLINK_MSG_ID_TERRAIN_REPORT,        MSG_TERRAIN_REPORT},
+#endif
 #if AP_MAVLINK_BATTERY2_ENABLED
         { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
 #endif
@@ -1063,6 +1079,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
         { MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE,  MSG_CAMERA_THERMAL_RANGE},
 #endif // AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+        { MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION, MSG_VIDEO_STREAM_INFORMATION},
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 #endif // AP_CAMERA_ENABLED
 #if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
@@ -1652,11 +1671,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
     }
 
 #if AP_SCHEDULER_ENABLED
-    // send messages out at most 80% of main loop rate
-    if (interval_ms != 0 &&
-        interval_ms*800 < AP::scheduler().get_loop_period_us()) {
-        interval_ms = AP::scheduler().get_loop_period_us()/800.0f;
-    }
+    interval_ms = cap_message_interval(interval_ms);
 #endif
 
     // check if it's a specially-handled message:
@@ -1860,14 +1875,25 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         bool parsed_packet = false;
 
         // Try to get a new message
-        if (mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status) == MAVLINK_FRAMING_OK) {
+        const uint8_t framing = mavlink_frame_char_buffer(channel_buffer(), channel_status(), c, &msg, &status);
+        if (framing == MAVLINK_FRAMING_OK) {
             hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
             packetReceived(status, msg);
             parsed_packet = true;
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
             hal.util->persistent_data.last_mavlink_msgid = 0;
+
         }
+#if AP_SCRIPTING_ENABLED
+        else if (framing == MAVLINK_FRAMING_BAD_CRC) {
+            // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
+            AP_Scripting *scripting = AP_Scripting::get_singleton();
+            if (scripting != nullptr) {
+                scripting->handle_message(msg, chan);
+            }
+        }
+#endif // AP_SCRIPTING_ENABLED
 
         if (parsed_packet || i % 100 == 0) {
             // make sure we don't spend too much time parsing mavlink messages
@@ -3127,6 +3153,12 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
     } else {
         interval_ms = interval_us / 1000;
     }
+#if AP_SCHEDULER_ENABLED
+    if (interval_ms != 0 && cap_message_interval(interval_ms) > interval_ms) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Requested rate for message ID %u too fast. Increase SCHED_LOOP_RATE", (unsigned int)msg_id);
+        return MAV_RESULT_DENIED;
+    }
+#endif
     if (set_ap_message_interval(id, interval_ms)) {
         return MAV_RESULT_ACCEPTED;
     }
@@ -6189,6 +6221,9 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
     case MSG_CAMERA_THERMAL_RANGE:
 #endif
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    case MSG_VIDEO_STREAM_INFORMATION:
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
         {
             AP_Camera *camera = AP::camera();
             if (camera == nullptr) {

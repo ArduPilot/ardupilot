@@ -329,6 +329,7 @@ singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float'skip_check boolean float'skip_check
+singleton AP_Vehicle method set_target_rate_and_throttle boolean float'skip_check float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method get_circle_radius boolean float'Null
 singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
@@ -351,6 +352,7 @@ singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
+
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
@@ -597,11 +599,14 @@ ap_object AP_HAL::I2CDevice method set_address void uint8_t'skip_check
 
 include AP_HAL/utility/Socket.h depends (AP_NETWORKING_ENABLED==1)
 global manual Socket lua_get_SocketAPM 1 1 depends (AP_NETWORKING_ENABLED==1)
+global manual ipv4_addr_to_string SocketAPM_ipv4_addr_to_string 1 1 depends (AP_NETWORKING_ENABLED==1)
+global manual string_to_ipv4_addr SocketAPM_string_to_ipv4_addr 1 1 depends (AP_NETWORKING_ENABLED==1)
 
 ap_object SocketAPM depends (AP_NETWORKING_ENABLED==1)
 ap_object SocketAPM method connect boolean string uint16_t'skip_check
 ap_object SocketAPM method bind boolean string uint16_t'skip_check
 ap_object SocketAPM method send int32_t string uint32_t'skip_check
+ap_object SocketAPM method sendto int32_t string uint32_t'skip_check uint32_t'skip_check uint16_t'skip_check
 ap_object SocketAPM method listen boolean uint8_t'skip_check
 ap_object SocketAPM method set_blocking boolean boolean
 ap_object SocketAPM method is_connected boolean
@@ -610,7 +615,7 @@ ap_object SocketAPM method pollin boolean uint32_t'skip_check
 ap_object SocketAPM method reuseaddress boolean
 ap_object SocketAPM manual sendfile SocketAPM_sendfile 1 1
 ap_object SocketAPM manual close SocketAPM_close 0 0
-ap_object SocketAPM manual recv SocketAPM_recv 1 1
+ap_object SocketAPM manual recv SocketAPM_recv 1 3
 ap_object SocketAPM manual accept SocketAPM_accept 0 1
 
 ap_object AP_HAL::AnalogSource depends !defined(HAL_DISABLE_ADC_DRIVER)
@@ -754,6 +759,12 @@ include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
 
+include AC_AttitudeControl/AC_PosControl.h depends APM_BUILD_COPTER_OR_HELI
+singleton AC_PosControl depends APM_BUILD_COPTER_OR_HELI
+singleton AC_PosControl rename poscontrol
+singleton AC_PosControl method set_posvelaccel_offset boolean Vector3f Vector3f Vector3f
+singleton AC_PosControl method get_posvelaccel_offset boolean Vector3f'Null Vector3f'Null Vector3f'Null
+
 include APM_Control/AR_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_Rover)
 singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
@@ -776,6 +787,36 @@ singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
 singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
 
+userdata mavlink_camera_information_t depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+userdata mavlink_camera_information_t field time_boot_ms uint32_t'skip_check read write
+userdata mavlink_camera_information_t field firmware_version uint32_t'skip_check read write
+userdata mavlink_camera_information_t field focal_length float'skip_check read write
+userdata mavlink_camera_information_t field sensor_size_h float'skip_check read write
+userdata mavlink_camera_information_t field sensor_size_v float'skip_check read write
+userdata mavlink_camera_information_t field flags uint32_t'skip_check read write
+userdata mavlink_camera_information_t field resolution_h uint16_t'skip_check read write
+userdata mavlink_camera_information_t field resolution_v uint16_t'skip_check read write
+userdata mavlink_camera_information_t field cam_definition_version uint16_t'skip_check read write
+userdata mavlink_camera_information_t field vendor_name'array 32 uint8_t'skip_check read write
+userdata mavlink_camera_information_t field model_name'array 32 uint8_t'skip_check read write
+userdata mavlink_camera_information_t field lens_id uint8_t'skip_check read write
+userdata mavlink_camera_information_t field cam_definition_uri'array 140 uint8_t'skip_check read write
+userdata mavlink_camera_information_t field gimbal_device_id uint8_t'skip_check read write
+
+userdata mavlink_video_stream_information_t depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+userdata mavlink_video_stream_information_t field framerate float'skip_check read write
+userdata mavlink_video_stream_information_t field bitrate uint32_t'skip_check read write
+userdata mavlink_video_stream_information_t field flags uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field resolution_h uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field resolution_v uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field rotation uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field hfov uint16_t'skip_check read write
+userdata mavlink_video_stream_information_t field stream_id uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field count uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field type uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field name'array 32 uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field uri'array 160 uint8_t'skip_check read write
+
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED && (AP_CAMERA_SCRIPTING_ENABLED == 1)
 singleton AP_Camera rename camera
@@ -795,6 +836,10 @@ userdata AP_Camera::camera_state_t field tracking_p1 Vector2f read
 userdata AP_Camera::camera_state_t field tracking_p2 Vector2f read
 singleton AP_Camera method get_state boolean uint8_t'skip_check AP_Camera::camera_state_t'Null
 singleton AP_Camera method change_setting boolean uint8_t'skip_check CameraSetting'enum CameraSetting::THERMAL_PALETTE CameraSetting::THERMAL_RAW_DATA float'skip_check
+singleton AP_Camera method set_camera_information void uint8_t'skip_check mavlink_camera_information_t
+singleton AP_Camera method set_camera_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+singleton AP_Camera method set_stream_information void uint8_t'skip_check mavlink_video_stream_information_t
+singleton AP_Camera method set_stream_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI

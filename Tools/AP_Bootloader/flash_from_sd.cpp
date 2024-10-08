@@ -30,7 +30,7 @@ static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOA
  * @param[in] a Hexadecimal character 
  * @return  Returns a binary value
  */
-int16_t char_to_hex(char a)
+uint8_t char_to_hex(char a)
 {
     if (a >= 'A' && a <= 'F')
         return a - 'A' + 10;

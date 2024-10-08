@@ -415,6 +415,10 @@ void AP_Notify::add_backends(void)
     ADD_BACKEND(NEW_NOTHROW AP_ToneAlarm());
 #endif
 
+// ESP32 noise makers
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    ADD_BACKEND(NEW_NOTHROW Buzzer());
+
 // Linux noise makers
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO || \

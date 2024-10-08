@@ -484,8 +484,8 @@ void NavEKF3_core::FuseSideslip()
 #if EK3_FEATURE_DRAG_FUSION
 /*
  * Fuse X and Y body axis specific forces using explicit algebraic equations generated with SymPy.
- * See AP_NavEKF3/derivation/main.py for derivation
- * Output for change reference: AP_NavEKF3/derivation/generated/acc_bf_generated.cpp
+ * See derivation/generate_2.py for derivation
+ * Output for change reference: derivation/generated/acc_bf_generated.cpp
 */
 void NavEKF3_core::FuseDragForces()
 {
@@ -538,20 +538,20 @@ void NavEKF3_core::FuseDragForces()
         if (axis_index == 0) {
             // drag can be modelled as an arbitrary  combination of bluff body drag that proportional to
             // speed squared, and rotor momentum drag that is proportional to speed.
-            ftype Kacc; // Derivative of specific force wrt airspeed
+            ftype Kaccx; // Derivative of specific force wrt airspeed
             if (using_mcoef && using_bcoef_x) {
                 // mixed bluff body and propeller momentum drag
                 const ftype airSpd = (bcoef_x / rho) * (- mcoef + sqrtF(sq(mcoef) + 2.0f * (rho / bcoef_x) * fabsF(mea_acc)));
-                Kacc = fmaxF(1e-1f, (rho / bcoef_x) * airSpd + mcoef * density_ratio);
+                Kaccx = fmaxF(1e-1f, (rho / bcoef_x) * airSpd + mcoef * density_ratio);
                 predAccel = (0.5f / bcoef_x) * rho * sq(rel_wind_body[0]) * dragForceSign - rel_wind_body[0] * mcoef * density_ratio;
             } else if (using_mcoef) {
                 // propeller momentum drag only
-                Kacc = fmaxF(1e-1f, mcoef * density_ratio);
+                Kaccx = fmaxF(1e-1f, mcoef * density_ratio);
                 predAccel = - rel_wind_body[0] * mcoef * density_ratio;
             } else if (using_bcoef_x) {
                 // bluff body drag only
                 const ftype airSpd = sqrtF((2.0f * bcoef_x * fabsF(mea_acc)) / rho);
-                Kacc = fmaxF(1e-1f, (rho / bcoef_x) * airSpd);
+                Kaccx = fmaxF(1e-1f, (rho / bcoef_x) * airSpd);
                 predAccel = (0.5f / bcoef_x) * rho * sq(rel_wind_body[0]) * dragForceSign;
             } else {
                 // skip this axis
@@ -562,12 +562,12 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK0 = vn - vwn;
             const ftype HK1 = ve - vwe;
             const ftype HK2 = HK0*q0 + HK1*q3 - q2*vd;
-            const ftype HK3 = 2*Kacc;
+            const ftype HK3 = 2*Kaccx;
             const ftype HK4 = HK0*q1 + HK1*q2 + q3*vd;
             const ftype HK5 = HK0*q2 - HK1*q1 + q0*vd;
             const ftype HK6 = -HK0*q3 + HK1*q0 + q1*vd;
             const ftype HK7 = sq(q0) + sq(q1) - sq(q2) - sq(q3);
-            const ftype HK8 = HK7*Kacc;
+            const ftype HK8 = HK7*Kaccx;
             const ftype HK9 = q0*q3 + q1*q2;
             const ftype HK10 = HK3*HK9;
             const ftype HK11 = q0*q2 - q1*q3;
@@ -580,7 +580,7 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK18 = -HK12*P[0][23] + HK12*P[0][5] - HK13*P[0][6] + HK14*P[0][1] + HK15*P[0][0] - HK16*P[0][2] + HK17*P[0][3] - HK7*P[0][22] + HK7*P[0][4];
             const ftype HK19 = HK12*P[5][23];
             const ftype HK20 = -HK12*P[23][23] - HK13*P[6][23] + HK14*P[1][23] + HK15*P[0][23] - HK16*P[2][23] + HK17*P[3][23] + HK19 - HK7*P[22][23] + HK7*P[4][23];
-            const ftype HK21 = sq(Kacc);
+            const ftype HK21 = sq(Kaccx);
             const ftype HK22 = HK12*HK21;
             const ftype HK23 = HK12*P[5][5] - HK13*P[5][6] + HK14*P[1][5] + HK15*P[0][5] - HK16*P[2][5] + HK17*P[3][5] - HK19 + HK7*P[4][5] - HK7*P[5][22];
             const ftype HK24 = HK12*P[5][6] - HK12*P[6][23] - HK13*P[6][6] + HK14*P[1][6] + HK15*P[0][6] - HK16*P[2][6] + HK17*P[3][6] + HK7*P[4][6] - HK7*P[6][22];
@@ -591,14 +591,14 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK29 = -HK12*P[1][23] + HK12*P[1][5] - HK13*P[1][6] + HK14*P[1][1] + HK15*P[0][1] - HK16*P[1][2] + HK17*P[1][3] - HK7*P[1][22] + HK7*P[1][4];
             const ftype HK30 = -HK12*P[2][23] + HK12*P[2][5] - HK13*P[2][6] + HK14*P[1][2] + HK15*P[0][2] - HK16*P[2][2] + HK17*P[2][3] - HK7*P[2][22] + HK7*P[2][4];
             const ftype HK31 = -HK12*P[3][23] + HK12*P[3][5] - HK13*P[3][6] + HK14*P[1][3] + HK15*P[0][3] - HK16*P[2][3] + HK17*P[3][3] - HK7*P[3][22] + HK7*P[3][4];
-            // const ftype HK32 = Kacc/(-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
+            // const ftype HK32 = Kaccx/(-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
 
             // calculate innovation variance and exit if badly conditioned
             innovDragVar.x = (-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
             if (innovDragVar.x < R_ACC) {
                 return;
             }
-            const ftype HK32 = Kacc / innovDragVar.x;
+            const ftype HK32 = Kaccx / innovDragVar.x;
 
             // Observation Jacobians
             Hfusion[0] = -HK2*HK3;
@@ -613,7 +613,7 @@ void NavEKF3_core::FuseDragForces()
 
             // Kalman gains
             // Don't allow modification of any states other than wind velocity - we only need a wind estimate.
-            // See AP_NavEKF3/derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
+            // See derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
             Kfusion[22] = -HK28*HK32;
             Kfusion[23] = -HK20*HK32;
 
@@ -621,20 +621,20 @@ void NavEKF3_core::FuseDragForces()
         } else if (axis_index == 1) {
             // drag can be modelled as an arbitrary combination of bluff body drag that proportional to
             // speed squared, and rotor momentum drag that is proportional to speed.
-            ftype Kacc; // Derivative of specific force wrt airspeed
+            ftype Kaccy; // Derivative of specific force wrt airspeed
             if (using_mcoef && using_bcoef_y) {
                 // mixed bluff body and propeller momentum drag
                 const ftype airSpd = (bcoef_y / rho) * (- mcoef + sqrtF(sq(mcoef) + 2.0f * (rho / bcoef_y) * fabsF(mea_acc)));
-                Kacc = fmaxF(1e-1f, (rho / bcoef_y) * airSpd + mcoef * density_ratio);
+                Kaccy = fmaxF(1e-1f, (rho / bcoef_y) * airSpd + mcoef * density_ratio);
                 predAccel = (0.5f / bcoef_y) * rho * sq(rel_wind_body[1]) * dragForceSign - rel_wind_body[1] * mcoef * density_ratio;
             } else if (using_mcoef) {
                 // propeller momentum drag only
-                Kacc = fmaxF(1e-1f, mcoef * density_ratio);
+                Kaccy = fmaxF(1e-1f, mcoef * density_ratio);
                 predAccel = - rel_wind_body[1] * mcoef * density_ratio;
             } else if (using_bcoef_y) {
                 // bluff body drag only
                 const ftype airSpd = sqrtF((2.0f * bcoef_y * fabsF(mea_acc)) / rho);
-                Kacc = fmaxF(1e-1f, (rho / bcoef_y) * airSpd);
+                Kaccy = fmaxF(1e-1f, (rho / bcoef_y) * airSpd);
                 predAccel = (0.5f / bcoef_y) * rho * sq(rel_wind_body[1]) * dragForceSign;
             } else {
                 // nothing more to do
@@ -645,14 +645,14 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK0 = ve - vwe;
             const ftype HK1 = vn - vwn;
             const ftype HK2 = HK0*q0 - HK1*q3 + q1*vd;
-            const ftype HK3 = 2*Kacc;
+            const ftype HK3 = 2*Kaccy;
             const ftype HK4 = -HK0*q1 + HK1*q2 + q0*vd;
             const ftype HK5 = HK0*q2 + HK1*q1 + q3*vd;
             const ftype HK6 = HK0*q3 + HK1*q0 - q2*vd;
             const ftype HK7 = q0*q3 - q1*q2;
             const ftype HK8 = HK3*HK7;
             const ftype HK9 = sq(q0) - sq(q1) + sq(q2) - sq(q3);
-            const ftype HK10 = HK9*Kacc;
+            const ftype HK10 = HK9*Kaccy;
             const ftype HK11 = q0*q1 + q2*q3;
             const ftype HK12 = 2*HK11;
             const ftype HK13 = 2*HK7;
@@ -661,7 +661,7 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK16 = 2*HK4;
             const ftype HK17 = 2*HK6;
             const ftype HK18 = HK12*P[0][6] + HK13*P[0][22] - HK13*P[0][4] + HK14*P[0][2] + HK15*P[0][0] + HK16*P[0][1] - HK17*P[0][3] - HK9*P[0][23] + HK9*P[0][5];
-            const ftype HK19 = sq(Kacc);
+            const ftype HK19 = sq(Kaccy);
             const ftype HK20 = HK12*P[6][6] - HK13*P[4][6] + HK13*P[6][22] + HK14*P[2][6] + HK15*P[0][6] + HK16*P[1][6] - HK17*P[3][6] + HK9*P[5][6] - HK9*P[6][23];
             const ftype HK21 = HK13*P[4][22];
             const ftype HK22 = HK12*P[6][22] + HK13*P[22][22] + HK14*P[2][22] + HK15*P[0][22] + HK16*P[1][22] - HK17*P[3][22] - HK21 - HK9*P[22][23] + HK9*P[5][22];
@@ -681,7 +681,7 @@ void NavEKF3_core::FuseDragForces()
                 // calculation is badly conditioned
                 return;
             }
-            const ftype HK32 = Kacc / innovDragVar.y;
+            const ftype HK32 = Kaccy / innovDragVar.y;
 
             // Observation Jacobians
             Hfusion[0] = -HK2*HK3;
@@ -696,7 +696,7 @@ void NavEKF3_core::FuseDragForces()
 
             // Kalman gains
             // Don't allow modification of any states other than wind velocity at this stage of development - we only need a wind estimate.
-            // See AP_NavEKF3/derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
+            // See derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
             Kfusion[22] = -HK22*HK32;
             Kfusion[23] = -HK28*HK32;
         }

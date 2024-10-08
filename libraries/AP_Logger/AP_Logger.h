@@ -273,8 +273,15 @@ public:
                        uint8_t source_component,
                        MAV_RESULT result,
                        bool was_command_long=false);
+    void Write_MISE(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
+        Write_Mission_Cmd(mission, cmd, LOG_MISE_MSG);
+    }
+    void Write_CMD(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
+        Write_Mission_Cmd(mission, cmd, LOG_CMD_MSG);
+    }
     void Write_Mission_Cmd(const AP_Mission &mission,
-                               const AP_Mission::Mission_Command &cmd);
+                           const AP_Mission::Mission_Command &cmd,
+                           LogMessages id);
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const class RallyLocation &rally_point);
@@ -372,7 +379,7 @@ public:
     void handle_log_send();
     bool in_log_download() const;
 
-    float quiet_nanf() const { return nanf("0x4152"); } // "AR"
+    float quiet_nanf() const { return NaNf; } // "AR"
     double quiet_nan() const { return nan("0x4152445550490a"); } // "ARDUPI"
 
     // returns true if msg_type is associated with a message

@@ -50,12 +50,16 @@ void
 AP_BattMonitor_Sum::read()
 {
     float voltage_sum = 0;
+    float voltage_min = 0;
     uint8_t voltage_count = 0;
     float current_sum = 0;
     uint8_t current_count = 0;
 
     float temperature_sum = 0.0;
     uint8_t temperature_count = 0;
+
+    float consumed_mah_sum = 0;
+    float consumed_wh_sum = 0;
 
     for (uint8_t i=0; i<_mon.num_instances(); i++) {
         if (i == _instance) {
@@ -73,7 +77,11 @@ AP_BattMonitor_Sum::read()
         if (!_mon.healthy(i)) {
             continue;
         }
-        voltage_sum += _mon.voltage(i);
+        const float voltage = _mon.voltage(i);
+        if (voltage_count == 0 || voltage < voltage_min) {
+            voltage_min = voltage;
+        }
+        voltage_sum += voltage;
         voltage_count++;
         float current;
         if (_mon.current_amps(current, i)) {
@@ -86,22 +94,35 @@ AP_BattMonitor_Sum::read()
             temperature_sum += temperature;
             temperature_count++;
         }
+
+        float consumed_mah;
+        if (_mon.consumed_mah(consumed_mah, i)) {
+            consumed_mah_sum += consumed_mah;
+        }
+
+        float consumed_wh;
+        if (_mon.consumed_wh(consumed_wh, i)) {
+            consumed_wh_sum += consumed_wh;
+        }
     }
     const uint32_t tnow_us = AP_HAL::micros();
-    const uint32_t dt_us = tnow_us - _state.last_time_micros;
 
     if (voltage_count > 0) {
-        _state.voltage = voltage_sum / voltage_count;
+        if (option_is_set(AP_BattMonitor_Params::Options::Minimum_Voltage)) {
+            _state.voltage = voltage_min;
+        } else {
+            _state.voltage = voltage_sum / voltage_count;
+        }
     }
     if (current_count > 0) {
         _state.current_amps = current_sum;
+        _state.consumed_mah = consumed_mah_sum;
+        _state.consumed_wh = consumed_wh_sum;
     }
     if (temperature_count > 0) {
         _state.temperature =  temperature_sum / temperature_count;
         _state.temperature_time = AP_HAL::millis();
     }
-
-    update_consumed(_state, dt_us);
 
     _has_current = (current_count > 0);
     _has_temperature = (temperature_count > 0);

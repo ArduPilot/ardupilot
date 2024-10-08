@@ -159,6 +159,10 @@ jobs:
             toolchain: armhf-musl
           - config: linux
             toolchain: base # GCC
+          - config: navigator64
+            toolchain: aarch64
+          - config: linux
+            toolchain: base # GCC
         exclude:
           - config: navigator
             toolchain: armhf

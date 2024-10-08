@@ -267,6 +267,9 @@ public:
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
+    // cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
+    uint16_t cap_message_interval(uint16_t interval_ms) const;
+
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 

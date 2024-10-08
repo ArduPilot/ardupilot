@@ -75,10 +75,10 @@ public:
 
     // get_closest_point_on_circle - returns closest point on the circle
     //  circle's center should already have been set
-    //  closest point on the circle will be placed in result
+    //  closest point on the circle will be placed in result, dist_cm will be updated with the distance to the center
     //  result's altitude (i.e. z) will be set to the circle_center's altitude
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-    void get_closest_point_on_circle(Vector3f &result) const;
+    void get_closest_point_on_circle(Vector3f& result, float& dist_cm) const;
 
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }

@@ -169,7 +169,7 @@ bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an asc
 size_t strncpy_noterm(char *dest, const char *src, size_t n);
 
 // return the numeric value of an ascii hex character
-int16_t char_to_hex(char a);
+uint8_t char_to_hex(char a);
 
 /*
   Bit manipulation

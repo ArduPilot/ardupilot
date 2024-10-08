@@ -811,7 +811,7 @@ float ModeGuided::get_auto_heading()
         float track_bearing = get_bearing_cd(sub.wp_nav.get_wp_origin().xy(), sub.wp_nav.get_wp_destination().xy());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        const Vector2f target_vel_xy{position_control->get_vel_target_cms().x, position_control->get_vel_target_cms().y};
+        const Vector2f target_vel_xy = position_control->get_vel_target_cms().xy();
         float angle_error = 0.0f;
         if (target_vel_xy.length() >= position_control->get_max_speed_xy_cms() * 0.1f) {
             const float desired_angle_cd = degrees(target_vel_xy.angle()) * 100.0f;

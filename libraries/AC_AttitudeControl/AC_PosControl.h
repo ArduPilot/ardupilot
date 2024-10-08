@@ -11,6 +11,7 @@
 #include <AC_PID/AC_PID_Basic.h>    // PID library (1-axis)
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
+#include <AP_Scripting/AP_Scripting_config.h>
 #include "AC_AttitudeControl.h"     // Attitude control library
 
 #include <AP_Logger/LogStructure.h>
@@ -43,7 +44,8 @@ public:
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-
+    // do not allow copying
+    CLASS_NO_COPY(AC_PosControl);
 
     /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
     ///   _dt should be set based on the time of the last IMU read used by these controllers
@@ -52,7 +54,7 @@ public:
     float get_dt() const { return _dt; }
 
     /// get_shaping_jerk_xy_cmsss - gets the jerk limit of the xy kinematic path generation in cm/s/s/s
-    float get_shaping_jerk_xy_cmsss() const { return _shaping_jerk_xy*100.0; }
+    float get_shaping_jerk_xy_cmsss() const { return _shaping_jerk_xy * 100.0; }
 
 
     ///
@@ -62,7 +64,7 @@ public:
     /// input_pos_xyz - calculate a jerk limited path from the current position, velocity and acceleration to an input position.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_xy.
-    void input_pos_xyz(const Vector3p& pos, float pos_offset_z, float pos_offset_z_buffer);
+    void input_pos_xyz(const Vector3p& pos, float pos_terrain_target, float terrain_buffer);
 
     /// pos_offset_z_scaler - calculates a multiplier used to reduce the horizontal velocity to allow the z position controller to stay within the provided buffer range
     float pos_offset_z_scaler(float pos_offset_z, float pos_offset_z_buffer) const;
@@ -225,9 +227,6 @@ public:
     ///     using the default position control kinematic path.
     void set_alt_target_with_slew(float pos);
 
-    /// update_pos_offset_z - updates the vertical offsets used by terrain following
-    void update_pos_offset_z(float pos_offset);
-
     // is_active_z - returns true if the z position controller has been run in the previous 5 loop times
     bool is_active_z() const;
 
@@ -250,17 +249,26 @@ public:
 
     /// Position
 
-    /// set_pos_target_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin
-    void set_pos_target_xy_cm(float pos_x, float pos_y) { _pos_target.x = pos_x; _pos_target.y = pos_y; }
-
     /// get_pos_target_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_cm() const { return _pos_target; }
 
-    /// set_pos_target_z_cm - set altitude target in cm above the EKF origin
-    void set_pos_target_z_cm(float pos_target) { _pos_target.z = pos_target; }
+    /// set_pos_desired_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin
+    void set_pos_desired_xy_cm(const Vector2f& pos) { _pos_desired.xy() = pos.topostype(); }
+
+    /// get_pos_desired_cm - returns the position desired, frame NEU in cm relative to the EKF origin
+    const Vector3p& get_pos_desired_cm() const { return _pos_desired; }
 
     /// get_pos_target_z_cm - get target altitude (in cm above the EKF origin)
     float get_pos_target_z_cm() const { return _pos_target.z; }
+
+    /// set_pos_desired_z_cm - set altitude target in cm above the EKF origin
+    void set_pos_desired_z_cm(float pos_z) { _pos_desired.z = pos_z; }
+
+    /// get_pos_desired_z_cm - get target altitude (in cm above the EKF origin)
+    float get_pos_desired_z_cm() const { return _pos_desired.z; }
+
+
+    /// Stopping Point
 
     /// get_stopping_point_xy_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
     void get_stopping_point_xy_cm(Vector2p &stopping_point) const;
@@ -268,14 +276,17 @@ public:
     /// get_stopping_point_z_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
     void get_stopping_point_z_cm(postype_t &stopping_point) const;
 
+
+    /// Position Error
+
     /// get_pos_error_cm - get position error vector between the current and target position
-    const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position_neu_cm().topostype()).tofloat(); }
+    const Vector3f get_pos_error_cm() const { return Vector3f(_p_pos_xy.get_error().x, _p_pos_xy.get_error().y, _p_pos_z.get_error()); }
 
     /// get_pos_error_xy_cm - get the length of the position error vector in the xy plane
-    float get_pos_error_xy_cm() const { return get_horizontal_distance_cm(_inav.get_position_xy_cm().topostype(), _pos_target.xy()); }
+    float get_pos_error_xy_cm() const { return _p_pos_xy.get_error().length(); }
 
     /// get_pos_error_z_cm - returns altitude error in cm
-    float get_pos_error_z_cm() const { return (_pos_target.z - _inav.get_position_z_up_cm()); }
+    float get_pos_error_z_cm() const { return _p_pos_z.get_error(); }
 
 
     /// Velocity
@@ -286,7 +297,7 @@ public:
     /// set_vel_desired_xy_cms - sets horizontal desired velocity in NEU cm/s
     void set_vel_desired_xy_cms(const Vector2f &vel) {_vel_desired.xy() = vel; }
 
-    /// get_vel_desired_cms - returns desired velocity (i.e. feed forward) in cm/s in NEU
+    /// get_vel_desired_cms - returns desired velocity in cm/s in NEU
     const Vector3f& get_vel_desired_cms() { return _vel_desired; }
 
     // get_vel_target_cms - returns the target velocity in NEU cm/s
@@ -301,30 +312,56 @@ public:
 
     /// Acceleration
 
-    // set_accel_desired_xy_cmss set desired acceleration in cm/s in xy axis
+    // set_accel_desired_xy_cmss - set desired acceleration in cm/s in xy axis
     void set_accel_desired_xy_cmss(const Vector2f &accel_cms) { _accel_desired.xy() = accel_cms; }
 
     // get_accel_target_cmss - returns the target acceleration in NEU cm/s/s
     const Vector3f& get_accel_target_cmss() const { return _accel_target; }
 
 
+    /// Terrain
+
+    // set_pos_terrain_target_cm - set target terrain altitude in cm
+    void set_pos_terrain_target_cm(float pos_terrain_target) {_pos_terrain_target = pos_terrain_target;}
+
+    // init_pos_terrain_cm - initialises the current terrain altitude and target altitude to pos_offset_terrain_cm
+    void init_pos_terrain_cm(float pos_offset_terrain_cm);
+
+    // get_pos_terrain_cm - returns the current terrain altitude in cm
+    float get_pos_terrain_cm() { return _pos_terrain; }
+
+
     /// Offset
 
-    /// set_pos_offset_target_z_cm - set altitude offset target in cm above the EKF origin
-    void set_pos_offset_target_z_cm(float pos_offset_target_z) { _pos_offset_target_z = pos_offset_target_z; }
+#if AP_SCRIPTING_ENABLED
+    // position, velocity and acceleration offset target (only used by scripting)
+    // gets or sets an additional offset to the vehicle's target position, velocity and acceleration
+    // units are m, m/s and m/s/s in NED frame
+    bool set_posvelaccel_offset(const Vector3f &pos_offset_NED, const Vector3f &vel_offset_NED, const Vector3f &accel_offset_NED);
+    bool get_posvelaccel_offset(Vector3f &pos_offset_NED, Vector3f &vel_offset_NED, Vector3f &accel_offset_NED);
+#endif
+
+    /// set the horizontal position, velocity and acceleration offset targets in cm, cms and cm/s/s from EKF origin in NE frame
+    /// these must be set every 3 seconds (or less) or they will timeout and return to zero
+    void set_posvelaccel_offset_target_xy_cm(const Vector2p& pos_offset_target_xy_cm, const Vector2f& vel_offset_target_xy_cms, const Vector2f& accel_offset_target_xy_cmss);
+    void set_posvelaccel_offset_target_z_cm(float pos_offset_target_z_cm, float vel_offset_target_z_cms, float accel_offset_target_z_cmss);
+
+    /// get the position, velocity or acceleration offets in cm from EKF origin in NEU frame
+    const Vector3p& get_pos_offset_cm() const { return _pos_offset; }
+    const Vector3f& get_vel_offset_cms() const { return _vel_offset; }
+    const Vector3f& get_accel_offset_cmss() const { return _accel_offset; }
 
     /// set_pos_offset_z_cm - set altitude offset in cm above the EKF origin
-    void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset_z = pos_offset_z; }
+    void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset.z = pos_offset_z; }
 
     /// get_pos_offset_z_cm - returns altitude offset in cm above the EKF origin
-    float get_pos_offset_z_cm() const { return _pos_offset_z; }
+    float get_pos_offset_z_cm() const { return _pos_offset.z; }
 
     /// get_vel_offset_z_cm - returns current vertical offset speed in cm/s
-    float get_vel_offset_z_cms() const { return _vel_offset_z; }
+    float get_vel_offset_z_cms() const { return _vel_offset.z; }
 
     /// get_accel_offset_z_cm - returns current vertical offset acceleration in cm/s/s
-    float get_accel_offset_z_cmss() const { return _accel_offset_z; }
-
+    float get_accel_offset_z_cmss() const { return _accel_offset.z; }
 
     /// Outputs
 
@@ -407,9 +444,16 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    static void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
-    static void Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
-    static void Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCN(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCE(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCD(float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSON(float pos_target_offset_cm, float pos_offset_cm, float vel_target_offset_cms, float vel_offset_cms, float accel_target_offset_cmss, float accel_offset_cmss);
+    static void Write_PSOE(float pos_target_offset_cm, float pos_offset_cm, float vel_target_offset_cms, float vel_offset_cms, float accel_target_offset_cmss, float accel_offset_cmss);
+    static void Write_PSOD(float pos_target_offset_cm, float pos_offset_cm, float vel_target_offset_cms, float vel_offset_cms, float accel_target_offset_cmss, float accel_offset_cmss);
+    static void Write_PSOT(float pos_target_offset_cm, float pos_offset_cm, float vel_target_offset_cms, float vel_offset_cms, float accel_target_offset_cmss, float accel_offset_cmss);
+
+    // singleton
+    static AC_PosControl *get_singleton(void) { return _singleton; }
 
 protected:
 
@@ -427,6 +471,32 @@ protected:
 
     // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
     float calculate_overspeed_gain();
+
+
+    /// Terrain Following
+
+    /// set the position, velocity and acceleration offsets in cm, cms and cm/s/s from EKF origin in NE frame
+    /// this is used to initiate the offsets when initialise the position controller or do an offset reset
+    /// note that this sets the actual offsets, not the offset targets
+    void init_terrain();
+
+    /// update_terrain - updates the terrain position, velocity and acceleration estimation
+    /// this moves the estimated terrain position _pos_terrain towards the target _pos_terrain_target
+    void update_terrain();
+
+
+    /// Offsets
+
+    /// init_offsets - set the position, velocity and acceleration offsets in cm, cms and cm/s/s from EKF origin in NE frame
+    /// this is used to initiate the offsets when initialise the position controller or do an offset reset
+    /// note that this sets the actual offsets, not the offset targets
+    void init_offsets_xy();
+    void init_offsets_z();
+
+    /// update_offsets - update the position and velocity offsets
+    /// this moves the offsets (e.g _pos_offset, _vel_offset, _accel_offset) towards the targets (e.g. _pos_offset_target or _vel_offset_target)
+    void update_offsets_xy();
+    void update_offsets_z();
 
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
@@ -472,7 +542,8 @@ protected:
     float       _yaw_rate_target;       // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
-    Vector3p    _pos_target;            // target location, frame NEU in cm relative to the EKF origin
+    Vector3p    _pos_desired;           // desired location, frame NEU in cm relative to the EKF origin.  This is equal to the _pos_target minus offsets
+    Vector3p    _pos_target;            // target location, frame NEU in cm relative to the EKF origin.  This is equal to the _pos_desired plus offsets
     Vector3f    _vel_desired;           // desired velocity in NEU cm/s
     Vector3f    _vel_target;            // velocity target in NEU cm/s calculated by pos_to_rate step
     Vector3f    _accel_desired;         // desired acceleration in NEU cm/s/s (feed forward)
@@ -481,10 +552,21 @@ protected:
 
     bool        _fwd_pitch_is_limited;     // true when the forward pitch demand is being limited to meet acceleration limits
 
-    float       _pos_offset_target_z;   // vertical position offset target, frame NEU in cm relative to the EKF origin
-    float       _pos_offset_z;          // vertical position offset, frame NEU in cm relative to the EKF origin
-    float       _vel_offset_z;          // vertical velocity offset in NEU cm/s calculated by pos_to_rate step
-    float       _accel_offset_z;        // vertical acceleration offset in NEU cm/s/s
+    // terrain handling variables
+    float    _pos_terrain_target;       // position terrain target in cm relative to the EKF origin in NEU frame
+    float    _pos_terrain;              // position terrain in cm from the EKF origin in NEU frame.  this terrain moves towards _pos_terrain_target
+    float    _vel_terrain;              // velocity terrain in NEU cm/s calculated by pos_to_rate step.  this terrain moves towards _vel_terrain_target
+    float    _accel_terrain;            // acceleration terrain in NEU cm/s/s
+
+    // offset handling variables
+    Vector3p    _pos_offset_target;     // position offset target in cm relative to the EKF origin in NEU frame
+    Vector3p    _pos_offset;            // position offset in cm from the EKF origin in NEU frame.  this offset moves towards _pos_offset_target
+    Vector3f    _vel_offset_target;     // velocity offset target in cm/s in NEU frame
+    Vector3f    _vel_offset;            // velocity offset in NEU cm/s calculated by pos_to_rate step.  this offset moves towards _vel_offset_target
+    Vector3f    _accel_offset_target;   // acceleration offset target in cm/s/s in NEU frame
+    Vector3f    _accel_offset;          // acceleration offset in NEU cm/s/s
+    uint32_t    _posvelaccel_offset_target_xy_ms;   // system time that pos, vel, accel targets were set (used to implement timeouts)
+    uint32_t    _posvelaccel_offset_target_z_ms;    // system time that pos, vel, accel targets were set (used to implement timeouts)
 
     // ekf reset handling
     uint32_t    _ekf_xy_reset_ms;       // system time of last recorded ekf xy position reset
@@ -502,6 +584,13 @@ protected:
 private:
     // convenience method for writing out the identical PSCE, PSCN, PSCD - and
     // to save bytes
-    static void Write_PSCx(LogMessages ID, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+    static void Write_PSCx(LogMessages ID, float pos_desired, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
 
+    // a convenience function for writing out the position controller offsets
+    static void Write_PSOx(LogMessages id, float pos_target_offset_cm, float pos_offset_cm,
+                           float vel_target_offset_cms, float vel_offset_cms,
+                           float accel_target_offset_cmss, float accel_offset_cmss);
+
+    // singleton
+    static AC_PosControl *_singleton;
 };

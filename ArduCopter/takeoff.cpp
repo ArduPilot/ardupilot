@@ -52,7 +52,7 @@ void Mode::_TakeOff::start(float alt_cm)
 {
     // initialise takeoff state
     _running = true;
-    take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
+    take_off_start_alt = copter.pos_control->get_pos_desired_z_cm();
     take_off_complete_alt  = take_off_start_alt + alt_cm;
 }
 
@@ -87,7 +87,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
             (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
             (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
-            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
+            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_desired_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity && commanded climb rate
@@ -104,7 +104,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 
         // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
         if (is_negative(pilot_climb_rate_cm) ||
-            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
+            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_desired_z_cm() - take_off_start_alt) {
             stop();
         }
     }
@@ -210,13 +210,13 @@ void _AutoTakeoff::run()
     const float vel_threshold_fraction = 0.1;
     // stopping distance from vel_threshold_fraction * max velocity
     const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_z_cmss();
-    bool reached_altitude = copter.pos_control->get_pos_target_z_cm() >= pos_z - stop_distance;
+    bool reached_altitude = copter.pos_control->get_pos_desired_z_cm() >= pos_z - stop_distance;
     bool reached_climb_rate = copter.pos_control->get_vel_desired_cms().z < copter.pos_control->get_max_speed_up_cms() * vel_threshold_fraction;
     complete = reached_altitude && reached_climb_rate;
 
     // calculate completion for location in case it is needed for a smooth transition to wp_nav
     if (complete) {
-        const Vector3p& _complete_pos = copter.pos_control->get_pos_target_cm();
+        const Vector3p& _complete_pos = copter.pos_control->get_pos_desired_cm();
         complete_pos = Vector3p{_complete_pos.x, _complete_pos.y, pos_z};
     }
 }

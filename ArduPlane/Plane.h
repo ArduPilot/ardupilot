@@ -446,6 +446,10 @@ private:
         uint32_t accel_event_ms;
         uint32_t start_time_ms;
         bool waiting_for_rudder_neutral;
+        float throttle_lim_max;
+        float throttle_lim_min;
+        uint32_t throttle_max_timer_ms;
+        // Good candidate for keeping the initial time for TKOFF_THR_MAX_T.
     } takeoff_state;
 
     // ground steering controller state
@@ -1131,7 +1135,7 @@ private:
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);
-    void takeoff_calc_throttle(const bool use_max_throttle=false);
+    void takeoff_calc_throttle();
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);

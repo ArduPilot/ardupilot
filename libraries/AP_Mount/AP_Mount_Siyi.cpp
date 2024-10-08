@@ -1092,8 +1092,8 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
         model_name,             // model_name uint8_t[32]
         fw_version,             // firmware version uint32_t
         focal_length_mm,        // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
-        0,                      // sensor_size_v float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
         0,                      // lens_id uint8_t
@@ -1107,7 +1107,6 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
 void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
 {
     const uint8_t mode_id = (_config_info.record_status == RecordingStatus::ON) ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE;
-    const float NaN = nanf("0x4152");
     const float zoom_mult_max = get_zoom_mult_max();
     float zoom_pct = 0.0;
     if (is_positive(zoom_mult_max)) {
@@ -1120,14 +1119,13 @@ void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         mode_id,            // camera mode (0:image, 1:video, 2:image survey)
         zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
 void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
 {
-    const float NaN = nanf("0x4152");
     const uint32_t now_ms = AP_HAL::millis();
     bool timeout = now_ms - _thermal.last_update_ms > AP_MOUNT_SIYI_THERM_TIMEOUT_MS;
 
@@ -1137,12 +1135,12 @@ void AP_Mount_Siyi::send_camera_thermal_range(mavlink_channel_t chan) const
         now_ms,             // time_boot_ms
         _instance + 1,      // video stream id (assume one-to-one mapping with camera id)
         _instance + 1,      // camera device id
-        timeout ? NaN : _thermal.max_C,     // max in degC
-        timeout ? NaN : _thermal.max_pos.x, // max x position
-        timeout ? NaN : _thermal.max_pos.y, // max y position
-        timeout ? NaN : _thermal.min_C,     // min in degC
-        timeout ? NaN : _thermal.min_pos.x, // min x position
-        timeout ? NaN : _thermal.min_pos.y);// min y position
+        timeout ? NaNf : _thermal.max_C,     // max in degC
+        timeout ? NaNf : _thermal.max_pos.x, // max x position
+        timeout ? NaNf : _thermal.max_pos.y, // max y position
+        timeout ? NaNf : _thermal.min_C,     // min in degC
+        timeout ? NaNf : _thermal.min_pos.x, // min x position
+        timeout ? NaNf : _thermal.min_pos.y);// min y position
 }
 #endif
 

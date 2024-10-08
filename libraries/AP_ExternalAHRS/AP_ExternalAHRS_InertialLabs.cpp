@@ -341,7 +341,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::GNSS_EXTENDED_INFO: {
             CHECK_SIZE(u.gnss_extended_info);
-            gps_data.fix_type = u.gnss_extended_info.fix_type+1;
+            gps_data.fix_type = AP_GPS_FixType(u.gnss_extended_info.fix_type+1);
             gnss_data.spoof_status = u.gnss_extended_info.spoofing_status;
             break;
         }

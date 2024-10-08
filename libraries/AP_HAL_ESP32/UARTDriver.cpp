@@ -55,7 +55,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                          uart_desc[uart_num].rx,
                          UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
             //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
-            uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
+            uart_driver_install(p, 2*UART_HW_FIFO_LEN(p), 0, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
 

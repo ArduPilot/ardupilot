@@ -2,8 +2,6 @@
    example script to test lua socket API
 --]]
 
----@diagnostic disable: param-type-mismatch
-
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 PARAM_TABLE_KEY = 46
@@ -103,9 +101,12 @@ local function test_server(name, sock)
       sock = sock_tcp_in2
    end
 
-   local r = sock:recv(1024)
+   local r, ip, port = sock:recv(1024)
    if r and #r > 0 then
       gcs:send_text(MAV_SEVERITY.ERROR, string.format("test_server(%s): got input '%s'", name, r))
+   end
+   if ip then
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("packet from %s:%u", ipv4_addr_to_string(ip), port))
    end
 end
 

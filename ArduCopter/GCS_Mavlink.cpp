@@ -37,25 +37,11 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (copter.flightmode->mode_number()) {
-    case Mode::Number::AUTO:
-    case Mode::Number::AUTO_RTL:
-    case Mode::Number::RTL:
-    case Mode::Number::LOITER:
-    case Mode::Number::AVOID_ADSB:
-    case Mode::Number::FOLLOW:
-    case Mode::Number::GUIDED:
-    case Mode::Number::CIRCLE:
-    case Mode::Number::POSHOLD:
-    case Mode::Number::BRAKE:
-    case Mode::Number::SMART_RTL:
+    if ((copter.pos_control != nullptr) && copter.pos_control->is_active_xy()) {
         _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
         // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
         // APM does in any mode, as that is defined as "system finds its own goal
         // positions", which APM does not currently do
-        break;
-    default:
-        break;
     }
 
     // all modes except INITIALISING have some form of manual
@@ -350,12 +336,16 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     switch(id) {
 
-    case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN_REQUEST:
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         copter.terrain.send_request(chan);
-#endif
         break;
+    case MSG_TERRAIN_REPORT:
+        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
+        copter.terrain.send_report(chan);
+        break;
+#endif
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
@@ -465,7 +455,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
 
     // @Param: EXTRA3
     // @DisplayName: Extra data type 3 stream rate
-    // @Description: MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS
+    // @Description: MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY_STATUS, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, RPM, ESC TELEMETRY,GENERATOR_STATUS, and WINCH_STATUS
 
     // @Units: Hz
     // @Range: 0 50
@@ -558,7 +548,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #endif
     MSG_DISTANCE_SENSOR,
 #if AP_TERRAIN_AVAILABLE
-    MSG_TERRAIN,
+    MSG_TERRAIN_REQUEST,
+    MSG_TERRAIN_REPORT,
 #endif
 #if AP_BATTERY_ENABLED
     MSG_BATTERY_STATUS,
@@ -869,9 +860,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
     switch (packet.command) {
     case MAV_CMD_DO_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
-        if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
+        if (((MAV_MOUNT_MODE)packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
+            (copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
             !copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_yaw_angle_rate((float)packet.param3, 0.0f);
+            // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
+            // equivalent to an offset to the current yaw demand.
+            copter.flightmode->auto_yaw.set_yaw_angle_offset(packet.param3);
         }
         break;
     default:
@@ -1140,11 +1134,12 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
+            (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING) &&
             !copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_yaw_angle_rate(
-                mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
-                0.0f);
-
+            // Per the handler in AP_Mount, MOUNT_CONTROL yaw angle is in body frame, which is
+            // equivalent to an offset to the current yaw demand.
+            const float yaw_offset_d = mavlink_msg_mount_control_get_input_c(&msg) * 0.01f;
+            copter.flightmode->auto_yaw.set_yaw_angle_offset(yaw_offset_d);
             break;
         }
     }

@@ -86,7 +86,7 @@ void AC_Circle::init()
     _pos_control.init_z_controller_stopping_point();
 
     // get stopping point
-    const Vector3p& stopping_point = _pos_control.get_pos_target_cm();
+    const Vector3p& stopping_point = _pos_control.get_pos_desired_cm();
 
     // set circle center to circle_radius ahead of stopping point
     _center = stopping_point;
@@ -185,7 +185,7 @@ bool AC_Circle::update(float climb_rate_cms)
     if (_terrain_alt) {
         target_z_cm = _center.z + terr_offset;
     } else {
-        target_z_cm = _pos_control.get_pos_target_z_cm();
+        target_z_cm = _pos_control.get_pos_desired_z_cm();
     }
 
     // if the circle_radius is zero we are doing panorama so no need to update loiter target
@@ -200,7 +200,7 @@ bool AC_Circle::update(float climb_rate_cms)
         target.y += - _radius * sinf(-_angle);
 
         // heading is from vehicle to center of circle
-        _yaw = get_bearing_cd(_inav.get_position_xy_cm(), _center.tofloat().xy());
+        _yaw = get_bearing_cd(_pos_control.get_pos_desired_cm().xy().tofloat(), _center.tofloat().xy());
 
         if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
             _yaw += is_positive(_rate)?-9000.0f:9000.0f;
@@ -234,27 +234,28 @@ bool AC_Circle::update(float climb_rate_cms)
 
 // get_closest_point_on_circle - returns closest point on the circle
 //  circle's center should already have been set
-//  closest point on the circle will be placed in result
+//  closest point on the circle will be placed in result, dist_cm will be updated with the 3D distance to the center
 //  result's altitude (i.e. z) will be set to the circle_center's altitude
 //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
+void AC_Circle::get_closest_point_on_circle(Vector3f& result, float& dist_cm) const
 {
+    // get current position
+    Vector3p stopping_point;
+    _pos_control.get_stopping_point_xy_cm(stopping_point.xy());
+    _pos_control.get_stopping_point_z_cm(stopping_point.z);
+
+    // calc vector from stopping point to circle center
+    Vector3f vec = (stopping_point - _center).tofloat();
+    dist_cm = vec.length();
+
     // return center if radius is zero
-    if (_radius <= 0) {
+    if (!is_positive(_radius)) {
         result = _center.tofloat();
         return;
     }
 
-    // get current position
-    Vector2p stopping_point;
-    _pos_control.get_stopping_point_xy_cm(stopping_point);
-
-    // calc vector from stopping point to circle center
-    Vector2f vec = (stopping_point - _center.xy()).tofloat();
-    float dist = vec.length();
-
     // if current location is exactly at the center of the circle return edge directly behind vehicle
-    if (is_zero(dist)) {
+    if (is_zero(dist_cm)) {
         result.x = _center.x - _radius * _ahrs.cos_yaw();
         result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;
@@ -262,8 +263,8 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result) const
     }
 
     // calculate closest point on edge of circle
-    result.x = _center.x + vec.x / dist * _radius;
-    result.y = _center.y + vec.y / dist * _radius;
+    result.x = _center.x + vec.x / dist_cm * _radius;
+    result.y = _center.y + vec.y / dist_cm * _radius;
     result.z = _center.z;
 }
 
@@ -313,12 +314,13 @@ void AC_Circle::init_start_angle(bool use_heading)
         _angle = wrap_PI(_ahrs.yaw-M_PI);
     } else {
         // if we are exactly at the center of the circle, init angle to directly behind vehicle (so vehicle will backup but not change heading)
-        const Vector3f &curr_pos = _inav.get_position_neu_cm();
-        if (is_equal(curr_pos.x,float(_center.x)) && is_equal(curr_pos.y,float(_center.y))) {
+        // curr_pos_desired is the position before we add offsets and terrain
+        const Vector3f &curr_pos_desired= _pos_control.get_pos_desired_cm().tofloat();
+        if (is_equal(curr_pos_desired.x,float(_center.x)) && is_equal(curr_pos_desired.y,float(_center.y))) {
             _angle = wrap_PI(_ahrs.yaw-M_PI);
         } else {
             // get bearing from circle center to vehicle in radians
-            float bearing_rad = atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x);
+            float bearing_rad = atan2f(curr_pos_desired.y-_center.y, curr_pos_desired.x-_center.x);
             _angle = wrap_PI(bearing_rad);
         }
     }

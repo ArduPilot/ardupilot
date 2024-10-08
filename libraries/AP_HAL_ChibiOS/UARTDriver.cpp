@@ -295,9 +295,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
-    while (_in_rx_timer) {
-        hal.scheduler->delay(1);
-    }
+    WITH_SEMAPHORE(rx_sem);
     if (rxS != _readbuf.get_size()) {
         _rx_initialised = false;
         _readbuf.set_size_best(rxS);
@@ -359,9 +357,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
-    while (_in_tx_timer) {
-        hal.scheduler->delay(1);
-    }
+    WITH_SEMAPHORE(tx_sem);
     if (txS != _writebuf.get_size()) {
         _tx_initialised = false;
         _writebuf.set_size_best(txS);
@@ -640,9 +636,9 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 
 void UARTDriver::_end()
 {
-    while (_in_rx_timer) hal.scheduler->delay(1);
+    WITH_SEMAPHORE(rx_sem);
+    WITH_SEMAPHORE(tx_sem);
     _rx_initialised = false;
-    while (_in_tx_timer) hal.scheduler->delay(1);
     _tx_initialised = false;
 
     if (sdef.is_usb) {
@@ -911,6 +907,9 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
         dmaStreamEnable(txdma);
         uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
+        // prevent very long timeouts at low baudrates which could cause another thread
+        // using begin() to block
+        timeout_us = MIN(timeout_us, 100000UL);
         chSysUnlock();
         // wait for the completion or timeout handlers to signal that we are done
         eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_DMA_COMPLETE, chTimeUS2I(timeout_us));
@@ -1109,7 +1108,7 @@ void UARTDriver::_rx_timer_tick(void)
         return;
     }
 
-    _in_rx_timer = true;
+    WITH_SEMAPHORE(rx_sem);
 
 #if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
     if (!sdef.is_usb) {
@@ -1162,7 +1161,6 @@ void UARTDriver::_rx_timer_tick(void)
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            _in_rx_timer = false;
             return;
         }
 #endif
@@ -1186,7 +1184,6 @@ void UARTDriver::_rx_timer_tick(void)
         fwd_otg2_serial();
     }
 #endif
-    _in_rx_timer = false;
 }
 
 // forward data from a serial port to the USB
@@ -1305,14 +1302,13 @@ void UARTDriver::_tx_timer_tick(void)
         return;
     }
 
-    _in_tx_timer = true;
-
     if (hd_tx_active) {
+        WITH_SEMAPHORE(tx_sem);
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
         if (!hd_tx_active) {
             /*
-                half-duplex transmit has finished. We now re-enable the
-                HDSEL bit for receive
+              half-duplex transmit has finished. We now re-enable the
+              HDSEL bit for receive
             */
             SerialDriver *sd = (SerialDriver*)(sdef.serial);
             sdStop(sd);
@@ -1325,7 +1321,6 @@ void UARTDriver::_tx_timer_tick(void)
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            _in_tx_timer = false;
             return;
         }
 #endif
@@ -1338,18 +1333,16 @@ void UARTDriver::_tx_timer_tick(void)
 
     // half duplex we do reads in the write thread
     if (half_duplex) {
-        _in_rx_timer = true;
+        WITH_SEMAPHORE(rx_sem);
         read_bytes_NODMA();
         if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
             chEvtSignal(_wait.thread_ctx, EVT_DATA);
         }
-        _in_rx_timer = false;
     }
 
     // now do the write
+    WITH_SEMAPHORE(tx_sem);
     write_pending_bytes();
-
-    _in_tx_timer = false;
 }
 
 /*

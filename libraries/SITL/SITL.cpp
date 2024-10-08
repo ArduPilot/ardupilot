@@ -660,45 +660,6 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("TIME_JITTER",  37, SIM,  loop_time_jitter_us, 0),
 
-    // user settable parameters for the 1st barometer
-    // @Param: BARO_RND
-    // @DisplayName: Baro Noise
-    // @Description: Amount of (evenly-distributed) noise injected into the 1st baro
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: BARO_GLITCH
-    // @DisplayName: Baro Glitch
-    // @Description: Glitch for 1st baro
-    // @Units: m
-    // @User: Advanced
-
-    // user settable parameters for the 2nd barometer
-    // @Param: BAR2_RND
-    // @DisplayName: Baro2 Noise
-    // @Description: Amount of (evenly-distributed) noise injected into the 2nd baro
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: BAR2_GLITCH
-    // @DisplayName: Baro2 Glitch
-    // @Description: Glitch for 2nd baro
-    // @Units: m
-    // @User: Advanced
-
-    // user settable parameters for the 3rd barometer
-    // @Param: BAR3_RND
-    // @DisplayName: Baro3 Noise
-    // @Description: Amount of (evenly-distributed) noise injected into the 3rd baro
-    // @Units: m
-    // @User: Advanced
-
-    // @Param: BAR3_GLITCH
-    // @DisplayName: Baro3 Glitch
-    // @Description: Glitch for 2nd baro
-    // @Units: m
-    // @User: Advanced
-
     // @Param: ESC_TELEM
     // @DisplayName: Simulated ESC Telemetry
     // @Description: enable perfect simulated ESC telemetry
@@ -1755,7 +1716,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             post_location.offset(x*10+3, y*10+2);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (postfile != nullptr) {
-                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm*0.01);
             }
 #endif
             Vector2f post_position_cm;
@@ -1769,8 +1730,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                 if (intersectionsfile != nullptr) {
                     Location intersection_point = location;
-                    intersection_point.offset(intersection_point_cm.x/100.0,
-                                              intersection_point_cm.y/100.0);
+                    intersection_point.offset(intersection_point_cm.x*0.01,
+                                              intersection_point_cm.y*0.01);
                     ::fprintf(intersectionsfile,
                               "map icon %f %f barrell\n",
                               intersection_point.lat*1e-7,
@@ -1792,8 +1753,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     }
 #endif
 
-    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
-    return min_dist_cm / 100.0f;
+    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm*0.01f);
+    return min_dist_cm * 0.01f;
 }
 
 } // namespace SITL

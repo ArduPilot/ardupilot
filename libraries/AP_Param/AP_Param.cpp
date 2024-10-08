@@ -2945,14 +2945,14 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
     ParamToken token;
     AP_Param *ap;
     enum ap_var_type type;
-    float default_value = nanf("0x4152");  // from logger quiet_nanf
+    float default_value = NaNf;  // from logger quiet_nanf
 
     for (ap=AP_Param::first(&token, &type, &default_value);
          ap;
          ap=AP_Param::next_scalar(&token, &type, &default_value)) {
         if (showKeyValues) {
             ::printf("Key %u: Index %u: GroupElement %u : Default %f  :", (unsigned)var_info(token.key).key, (unsigned)token.idx, (unsigned)token.group_element, default_value);
-            default_value = nanf("0x4152");
+            default_value = NaNf;
         }
         show(ap, token, type, port);
         hal.scheduler->delay(1);

@@ -437,7 +437,7 @@ void LoggerMessageWriter_WriteEntireMission::process() {
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
             if (_mission->read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_logger_backend->Write_Mission_Cmd(*_mission, cmd)) {
+                if (!_logger_backend->Write_Mission_Cmd(*_mission, cmd, LOG_CMD_MSG)) {
                     return; // call me again
                 }
             }

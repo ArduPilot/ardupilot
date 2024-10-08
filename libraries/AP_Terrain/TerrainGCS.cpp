@@ -115,16 +115,11 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
 
     Location loc;
     if (!AP::ahrs().get_location(loc)) {
-        // we don't know where we are. Send a report and request any cached blocks.
+        // we don't know where we are. Request any cached blocks.
         // this allows for download of mission items when we have no GPS lock
-        loc = {};
-        send_terrain_report(chan, loc, true);
         send_cache_request(chan);
         return;
     }
-
-    // always send a terrain report
-    send_terrain_report(chan, loc, true);
 
     // did we request recently?
     if (AP_HAL::millis() - last_request_time_ms[chan] < 2000) {
@@ -207,6 +202,18 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &ms
     }
 }
 
+/*
+   send a TERRAIN_REPORT for the current location
+ */
+void AP_Terrain::send_report(mavlink_channel_t chan)
+{
+    Location loc;
+    if (!AP::ahrs().get_location(loc)) {
+        loc = {};
+    }
+
+    send_terrain_report(chan, loc, true);
+}
 
 /* 
    send a TERRAIN_REPORT for a location

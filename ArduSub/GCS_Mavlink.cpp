@@ -248,12 +248,16 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_info();
         break;
 
-    case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN_REQUEST:
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         sub.terrain.send_request(chan);
-#endif
         break;
+    case MSG_TERRAIN_REPORT:
+        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
+        sub.terrain.send_report(chan);
+        break;
+#endif
 
     default:
         return GCS_MAVLINK::try_send_message(id);
@@ -407,7 +411,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #endif
     MSG_DISTANCE_SENSOR,
 #if AP_TERRAIN_AVAILABLE
-    MSG_TERRAIN,
+    MSG_TERRAIN_REQUEST,
+    MSG_TERRAIN_REPORT,
 #endif
 #if AP_BATTERY_ENABLED
     MSG_BATTERY_STATUS,
@@ -817,7 +822,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
          */
 
         if (!z_ignore && sub.control_mode == Mode::Number::ALT_HOLD) { // Control only target depth when in ALT_HOLD
-            sub.pos_control.set_pos_target_z_cm(packet.alt*100);
+            sub.pos_control.set_pos_desired_z_cm(packet.alt*100);
             break;
         }
 

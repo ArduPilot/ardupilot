@@ -139,6 +139,9 @@ public:
     virtual AP_AdvancedFailsafe_Copter::control_mode afs_mode() const { return AP_AdvancedFailsafe_Copter::control_mode::AFS_STABILIZED; }
 #endif
 
+    // Return true if the throttle high arming check can be skipped when arming from GCS or Scripting
+    virtual bool allows_GCS_or_SCR_arming_with_throttle_high() const { return false; }
+
 #if FRAME_CONFIG == HELI_FRAME
     virtual bool allows_inverted() const { return false; };
 #endif
@@ -178,12 +181,6 @@ public:
     // returns climb target_rate reduced to avoid obstacles and
     // altitude fence
     float get_avoidance_adjusted_climbrate(float target_rate);
-
-    const Vector3f& get_vel_desired_cms() {
-        // note that position control isn't used in every mode, so
-        // this may return bogus data:
-        return pos_control->get_vel_desired_cms();
-    }
 
     // send output to the motors, can be overridden by subclasses
     virtual void output_to_motors();
@@ -337,6 +334,8 @@ public:
                            bool relative_angle);
 
         void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
+
+        void set_yaw_angle_offset(const float yaw_angle_offset_d);
 
         bool reached_fixed_yaw_target();
 
@@ -523,6 +522,9 @@ public:
     AP_AdvancedFailsafe_Copter::control_mode afs_mode() const override { return AP_AdvancedFailsafe_Copter::control_mode::AFS_AUTO; }
 #endif
 
+    // Return true if the throttle high arming check can be skipped when arming from GCS or Scripting
+    bool allows_GCS_or_SCR_arming_with_throttle_high() const override { return true; }
+
     // Auto modes
     enum class SubMode : uint8_t {
         TAKEOFF,
@@ -639,11 +641,16 @@ private:
     void loiter_to_alt_run();
     void nav_attitude_time_run();
 
+    // return the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
     bool shift_alt_to_current_alt(Location& target_loc) const;
+
+    // subtract position controller offsets from target location
+    // should be used when the location will be used as a target for the position controller
+    void subtract_pos_offsets(Location& target_loc) const;
 
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
@@ -1065,6 +1072,9 @@ public:
     // Return the type of this mode for use by advanced failsafe
     AP_AdvancedFailsafe_Copter::control_mode afs_mode() const override { return AP_AdvancedFailsafe_Copter::control_mode::AFS_AUTO; }
 #endif
+
+    // Return true if the throttle high arming check can be skipped when arming from GCS or Scripting
+    bool allows_GCS_or_SCR_arming_with_throttle_high() const override { return true; }
 
     // Sets guided's angular target submode: Using a rotation quaternion, angular velocity, and climbrate or thrust (depends on user option)
     // attitude_quat: IF zero: ang_vel (angular velocity) must be provided even if all zeroes

@@ -31,6 +31,38 @@ class XmlEmit(Emit):
     def start_libraries(self):
         self.current_element = self.libraries
 
+    def add_xml_subtree_for_param_field(self, param, xml_param, field, new_element_name, item_name):
+        '''assumes that "field" is a comma-separated list of items,
+        creates a subtree with those elements within'''
+        xml_values = etree.SubElement(xml_param, new_element_name)
+        values = (param.__dict__[field]).split(',')
+        nv_unsorted = {}
+        for value in values:
+            v = value.split(':')
+            if len(v) != 2:
+                raise ValueError("Bad value (%s)" % v)
+            # i.e. numeric value, string label
+            if v[0] in nv_unsorted:
+                raise ValueError("%s already exists" % v[0])
+            nv_unsorted[v[0]] = v[1]
+
+        all_keys = nv_unsorted.keys()
+        if hasattr(param, 'SortValues'):
+            sort = getattr(param, 'SortValues').lower()
+            zero_at_top = False
+            if sort == 'alphabeticalzeroattop':
+                zero_at_top = True
+            else:
+                raise ValueError("Unknown sort (%s)" % sort)
+
+            all_keys = self.sorted_Values_keys(nv_unsorted, zero_at_top=zero_at_top)
+
+        for key in all_keys:
+            value = nv_unsorted[key].strip()
+            code = key.rstrip().strip()
+            xml_value = etree.SubElement(xml_values, item_name, code=code)
+            xml_value.text = value
+
     def sorted_Values_keys(self, nv_pairs, zero_at_top=False):
         '''sorts name/value pairs derived from items in @Values.  Sorts by
         value, with special attention paid to common "Do nothing" values'''
@@ -66,35 +98,28 @@ class XmlEmit(Emit):
                 if not self.should_emit_field(param, field):
                     continue
                 if field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues'] and field in known_param_fields:
+                    # we emit Bitmask as both a sub-element (so that
+                    # consumers don't need to parse the Bimask list),
+                    # but also as a text so we don't break existing
+                    # implementations.  Contrast with "values", which
+                    # is only emitted as a sub-element.
+                    if field == 'Bitmask':
+                        self.add_xml_subtree_for_param_field(
+                            param,
+                            xml_param,
+                            field='Bitmask',
+                            new_element_name='bitmask',
+                            item_name='bit',
+                        )
+
                     if field == 'Values' and Emit.prog_values_field.match(param.__dict__[field]):
-                        xml_values = etree.SubElement(xml_param, 'values')
-                        values = (param.__dict__[field]).split(',')
-                        nv_unsorted = {}
-                        for value in values:
-                            v = value.split(':')
-                            if len(v) != 2:
-                                raise ValueError("Bad value (%s)" % v)
-                            # i.e. numeric value, string label
-                            if v[0] in nv_unsorted:
-                                raise ValueError("%s already exists" % v[0])
-                            nv_unsorted[v[0]] = v[1]
-
-                        all_keys = nv_unsorted.keys()
-                        if hasattr(param, 'SortValues'):
-                            sort = getattr(param, 'SortValues').lower()
-                            zero_at_top = False
-                            if sort == 'alphabeticalzeroattop':
-                                zero_at_top = True
-                            else:
-                                raise ValueError("Unknown sort (%s)" % sort)
-
-                            all_keys = self.sorted_Values_keys(nv_unsorted, zero_at_top=zero_at_top)
-
-                        for key in all_keys:
-                            value = nv_unsorted[key]
-
-                            xml_value = etree.SubElement(xml_values, 'value', code=key)
-                            xml_value.text = value
+                        self.add_xml_subtree_for_param_field(
+                            param,
+                            xml_param,
+                            field='Values',
+                            new_element_name='values',
+                            item_name='value',
+                        )
 
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]

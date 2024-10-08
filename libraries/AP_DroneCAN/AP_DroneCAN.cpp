@@ -521,6 +521,10 @@ void AP_DroneCAN::loop(void)
             continue;
         }
 
+        // ensure that the DroneCAN thread cannot completely saturate
+        // the CPU, preventing low priority threads from running
+        hal.scheduler->delay_microseconds(100);
+
         canard_iface.process(1);
 
         safety_state_send();

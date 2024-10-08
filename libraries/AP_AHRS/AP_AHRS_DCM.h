@@ -268,8 +268,6 @@ private:
     // estimated wind in m/s
     Vector3f _wind;
 
-    float _imu1_weight{0.5f};
-
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;
 

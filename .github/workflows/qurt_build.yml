@@ -159,7 +159,7 @@ jobs:
           cp -a build/QURT/bin/ardurover build/QURT/ArduPilot_Rover.so
 
       - name: Archive build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qurt-binaries
           path: |
