@@ -687,26 +687,26 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
 /**
  * Determine if a servo is present on the CAN bus (has telemetry data been received)
  */
-bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint64_t timeout_ms)
+bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint32_t timeout_us)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_SERVO) {
         return false;
     }
 
-    return _servos[chan].is_connected(timeout_ms);
+    return _servos[chan].is_connected(timeout_us);
 }
 
 
 /**
  * Determine if an ESC is present on the CAN bus (has telemetry data been received)
  */
-bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
+bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint32_t timeout_us)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
         return false;
     }
 
-    return _escs[chan].is_connected(timeout_ms);
+    return _escs[chan].is_connected(timeout_us);
 }
 
 

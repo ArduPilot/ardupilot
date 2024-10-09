@@ -63,10 +63,10 @@ public:
     bool is_esc_channel_active(uint8_t chan);
 
     // return true if a particular servo has been detected on the CAN interface
-    bool is_servo_present(uint8_t chan, uint64_t timeout_ms = 2000);
+    bool is_servo_present(uint8_t chan, uint32_t timeout_us = 2000000);
 
     // return true if a particular ESC has been detected on the CAN interface
-    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
+    bool is_esc_present(uint8_t chan, uint32_t timeout_us = 2000000);
 
     // return true if a particular servo is enabled
     bool is_servo_enabled(uint8_t chan);
