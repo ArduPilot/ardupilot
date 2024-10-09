@@ -688,12 +688,29 @@ void Copter::three_hz_loop()
     low_alt_avoidance();
 }
 
+// ap_value calculates a 32-bit bitmask representing various pieces of
+// state about the Copter.  It replaces a global variable which was
+// used to track this state.
+uint32_t Copter::ap_value() const
+{
+    uint32_t ret = 0;
+
+    const bool *b = (const bool *)&ap;
+    for (uint8_t i=0; i<sizeof(ap); i++) {
+        if (b[i]) {
+            ret |= 1U<<i;
+        }
+    }
+
+    return ret;
+}
+
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(LogDataID::AP_STATE, ap.value);
+        Log_Write_Data(LogDataID::AP_STATE, ap_value());
     }
 #endif
 
