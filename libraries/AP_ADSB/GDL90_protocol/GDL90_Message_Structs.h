@@ -103,10 +103,8 @@ typedef struct __attribute__((__packed__))
 } GDL90_TRANSPONDER_CONTROL_MSG;
 #endif
 
-#define GDL90_TRANSPONDER_STATUS_VERSION (1) // Version 1 is the correct UCP format; version 3 is half-duplex and not used by the ping200x
 #define GDL90_STATUS_MAX_ALTITUDE_FT (101338)
 #define GDL90_STATUS_MIN_ALTITUDE_FT (-1000)
-#if GDL90_TRANSPONDER_STATUS_VERSION == 1
 typedef struct __attribute__((__packed__))
 {
   GDL90_MESSAGE_ID              messageId;
@@ -122,9 +120,9 @@ typedef struct __attribute__((__packed__))
   uint16_t                      modecRepliesPerSecond;
   uint16_t                      modeSRepliesPerSecond;
   uint16_t                      squawkCode;
+  uint16_t                      crc;
 } GDL90_TRANSPONDER_STATUS_MSG;
-#endif
-#if GDL90_TRANSPONDER_STATUS_VERSION == 3
+
 typedef struct __attribute__((__packed__))
 {
   GDL90_MESSAGE_ID              messageId;
@@ -147,8 +145,7 @@ typedef struct __attribute__((__packed__))
   uint8_t                       NACp                  : 4;
   uint8_t                       temperature;
   uint16_t                      crc;
-} GDL90_TRANSPONDER_STATUS_MSG;
-#endif
+} GDL90_TRANSPONDER_STATUS_MSG_V3;
 
 
 typedef struct __attribute__((__packed__))
