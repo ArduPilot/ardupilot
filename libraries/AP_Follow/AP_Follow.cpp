@@ -591,7 +591,7 @@ bool AP_Follow::have_target(void) const
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // create a single method to retrieve all the relevant values in one shot for Lua
 /* replaces the following Lua calls
-   target_distance, target_distance_offsets, target_velocity = follow:get_target_dist_and_vel_ned() -- THIS HAS TO BE FIRST
+   target_distance, target_distance_offsets, target_velocity = follow:get_target_dist_and_vel_ned()
    target_location, target_velocity = follow:get_target_location_and_velocity()
    target_location_offset, target_velocity = follow:get_target_location_and_velocity_ofs()
    local xy_dist = follow:get_distance_to_target() -- this value is set by get_target_dist_and_vel_ned() - why do I have to know this?
@@ -600,10 +600,10 @@ bool AP_Follow::have_target(void) const
 bool AP_Follow::get_target_info(Vector3f &dist_ned, Vector3f &dist_with_offs, 
                                 Vector3f &target_vel_ned, Vector3f &target_vel_ned_ofs,
                                 Location &target_loc, Location &target_loc_ofs, 
-                                float &target_dist_ofs, 
-                                float &target_heading_ofs_deg
+                                float &target_dist_ofs
                                 )
 {
+    // The order here is VERY important. This needs to called first because it updates a lot of internal variables
     if(!get_target_dist_and_vel_ned(dist_ned, dist_with_offs, target_vel_ned)) {
         return false;
     }
@@ -614,7 +614,6 @@ bool AP_Follow::get_target_info(Vector3f &dist_ned, Vector3f &dist_with_offs,
         return false;
     }
     target_dist_ofs = _dist_to_target;
-    target_heading_ofs_deg = _bearing_to_target;
     return true;
 }
 #endif

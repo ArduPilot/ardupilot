@@ -122,8 +122,7 @@ public:
     bool get_target_info(Vector3f &dist_ned, Vector3f &dist_with_offs, 
                                 Vector3f &target_vel_ned, Vector3f &target_vel_ned_ofs,
                                 Location &target_loc, Location &target_loc_ofs, 
-                                float &target_dist_ofs, 
-                                float &target_heading_ofs_deg
+                                float &target_dist_ofs
                                 );
 #endif
 
