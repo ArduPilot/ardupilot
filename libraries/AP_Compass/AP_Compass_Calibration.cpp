@@ -458,34 +458,45 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
   get mag field with the effects of offsets, diagonals and
   off-diagonals removed
  */
-bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
+bool Compass::compute_offsets(uint8_t instance, const Vector3f& truth_field, Vector3f &new_offsets) const
 {
+    // uncorrected_field = inv(mat)*corrected_field*1/scale-offsets
+    // new_offsets = inv(mat)*truth_field*1/scale-uncorrected_field
+    
     // get corrected field
-    field = get_field(instance);
+    Vector3f uncorrected_field = get_field(instance);
 
+    float scale = get_scale_factor(instance);
+    Matrix3f mat_inv;
+    mat_inv.identity();
+    
 #if AP_COMPASS_DIAGONALS_ENABLED
     // form elliptical correction matrix and invert it. This is
     // needed to remove the effects of the elliptical correction
     // when calculating new offsets
     const Vector3f &diagonals = get_diagonals(instance);
+    
+
     if (!diagonals.is_zero()) {
         const Vector3f &offdiagonals = get_offdiagonals(instance);
-        Matrix3f mat {
+        mat_inv = Matrix3f(
             diagonals.x, offdiagonals.x, offdiagonals.y,
             offdiagonals.x,    diagonals.y, offdiagonals.z,
             offdiagonals.y, offdiagonals.z,    diagonals.z
-        };
-        if (!mat.invert()) {
+        );
+        if (!mat_inv.invert()) {
             return false;
         }
 
-        // remove impact of diagonals and off-diagonals
-        field = mat * field;
+        // remove impact of scale, diagonals, and off-diagonals
+        uncorrected_field = mat_inv * uncorrected_field * 1.0f/scale;
     }
 #endif
 
     // remove impact of offsets
-    field -= get_offsets(instance);
+    uncorrected_field -= get_offsets(instance);
+    
+    new_offsets = mat_inv*truth_field*1.0f/scale - uncorrected_field;
 
     return true;
 }
@@ -532,16 +543,16 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     }
 
     // create a field vector and rotate to the required orientation
-    Vector3f field(1e3f * intensity, 0.0f, 0.0f);
+    Vector3f truth_field(1e3f * intensity, 0.0f, 0.0f);
     Matrix3f R;
     R.from_euler(0.0f, -ToRad(inclination), ToRad(declination));
-    field = R * field;
+    truth_field = R * truth_field;
 
     Matrix3f dcm;
     dcm.from_euler(AP::ahrs().get_roll(), AP::ahrs().get_pitch(), radians(yaw_deg));
 
     // Rotate into body frame using provided yaw
-    field = dcm.transposed() * field;
+    truth_field = dcm.transposed() * truth_field;
 
     for (uint8_t i=0; i<get_count(); i++) {
         if (compass_mask != 0 && ((1U<<i) & compass_mask) == 0) {
@@ -556,20 +567,12 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             return false;
         }
 
-        Vector3f measurement;
-        if (!get_uncorrected_field(i, measurement)) {
+        Vector3f new_offsets;
+        if (!compute_offsets(i, truth_field, new_offsets)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: bad uncorrected field", i);
             return false;
         }
-
-        Vector3f offsets = field - measurement;
-        set_and_save_offsets(i, offsets);
-#if AP_COMPASS_DIAGONALS_ENABLED
-        Vector3f one{1,1,1};
-        set_and_save_diagonals(i, one);
-        Vector3f zero{0,0,0};
-        set_and_save_offdiagonals(i, zero);
-#endif
+        set_and_save_offsets(i, new_offsets);
     }
 
     return true;
