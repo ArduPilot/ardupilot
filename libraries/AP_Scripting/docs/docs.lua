@@ -3824,7 +3824,6 @@ function follow:have_target() end
 ---@return Location_ud|nil -- target_loc - location of the target
 ---@return Location_ud|nil -- target_loc_ofs - location of the target with offsets
 ---@return number|nil -- target_dist_ofs - distance to the target in meters
----@return number|nil -- target_heading_ofs_deg - heading to the target with offsets in degrees
 function follow:get_target_info() end
 
 -- desc

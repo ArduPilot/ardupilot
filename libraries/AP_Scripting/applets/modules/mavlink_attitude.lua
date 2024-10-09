@@ -14,12 +14,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
    MAVLinkAttitude
-   A MAVlink message receiver for ATTITUDE messages
+   A MAVlink message receiver for ATTITUDE messages specifically
 --]]
 
 local MAVLinkAttitude = {}
 
-MAVLinkAttitude.SCRIPT_VERSION = "4.6.0-002"
+MAVLinkAttitude.SCRIPT_VERSION = "4.6.0-004"
 MAVLinkAttitude.SCRIPT_NAME = "MAVLink Attitude"
 MAVLinkAttitude.SCRIPT_NAME_SHORT = "MAVATT"
 
@@ -39,14 +39,14 @@ ATTITUDE_MESSAGE = "ATTITUDE"
 --]]
 function MAVLinkAttitude.JitterCorrection(_max_lag_ms, _convergence_loops)
     local self = {}
- 
+
     local max_lag_ms = _max_lag_ms
     local convergence_loops = _convergence_loops
     local link_offset_ms = 0
     local min_sample_ms = 0
     local initialised = false
     local min_sample_counter = 0
- 
+
     function self.correct_offboard_timestamp_msec(offboard_ms, local_ms)
        local diff_ms = local_ms - offboard_ms
        if not initialised or diff_ms < link_offset_ms then
@@ -59,9 +59,9 @@ function MAVLinkAttitude.JitterCorrection(_max_lag_ms, _convergence_loops)
          link_offset_ms = diff_ms
          initialised = true
        end
- 
+
        local estimate_ms = offboard_ms + link_offset_ms
- 
+
        if estimate_ms + max_lag_ms < local_ms then
           --[[
              this implies the message came from too far in the past. clamp the lag estimate
@@ -88,10 +88,8 @@ function MAVLinkAttitude.JitterCorrection(_max_lag_ms, _convergence_loops)
           link_offset_ms = min_sample_ms
           min_sample_counter = 0
        end
-     
        return estimate_ms
     end
- 
     return self
  end
 
@@ -110,11 +108,7 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
              }
     ATTITUDE_map[ATTITUDE_map.id] = ATTITUDE_MESSAGE
     local mavlink_msgs = require("mavlink_msgs")
-    --local ATTITUDE_msgid = mavlink_msgs.get_msgid(ATTITUDE_MESSAGE)
-    --local msg_map = {}
     local jitter_correction = MAVLinkAttitude.JitterCorrection(5000, 100)
-
-    -- msg_map[ATTITUDE_msgid] = "ATTITUDE"
 
     -- initialise mavlink rx with number of messages, and buffer depth
     mavlink.init(1, 10)
@@ -145,12 +139,8 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
        local msg,_,timestamp_ms = mavlink.receive_chan()
        if msg then
           local parsed_msg = self.decode(msg, ATTITUDE_map)
-          -- gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": msgid:%.2f attitude: %d", parsed_msg.msgid, ATTITUDE_map.id))
 
           if (parsed_msg ~= nil) and (parsed_msg.msgid == ATTITUDE_map.id) then
-             -- convert remote timestamp to local timestamp with jitter correction
-             local time_boot_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms:toint())
-             local value = parsed_msg.value
              local sysid = parsed_msg.sysid
              local attitude = {}
              attitude.roll = parsed_msg.roll
@@ -166,11 +156,12 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
        end
        return nil
     end
- 
     return self
- end
+end
 
 MAVLinkAttitude.mavlink_handler = nil
 MAVLinkAttitude.mavlink_handler = MAVLinkAttitude.mavlink_attitude_receiver()
+
+gcs:send_text(MAV_SEVERITY.NOTICE, string.format("%s %s module loaded", MAVLinkAttitude.SCRIPT_NAME, MAVLinkAttitude.SCRIPT_VERSION) )
 
 return MAVLinkAttitude

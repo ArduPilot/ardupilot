@@ -25,7 +25,7 @@
    ZPR_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.6.0-039"
+SCRIPT_VERSION = "4.6.0-040"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -41,7 +41,6 @@ MAV_HEADING_TYPE = { COG = 0, HEADING = 1, DEFAULT = 2} -- COG = Course over Gro
 
 FLIGHT_MODE = {AUTO=10, RTL=11, LOITER=12, GUIDED=15, QHOVER=18, QLOITER=19, QRTL=21}
 
-local current_location = ahrs:get_location()
 local ahrs_eas2tas = ahrs:get_EAS2TAS()
 local windspeed_vector = ahrs:wind_estimate()
 
@@ -118,7 +117,7 @@ ZPF_ACT_FN = bind_add_param("ACT_FN", 3, 301)
     // @DisplayName: Plane Follow Scripting Timeout
     // @Description: How long to try re-aquire a target if lost
     // @Range: 0 30
-    // @Units: seconds
+    // @Units: s
 --]]
 ZPF_TIMEOUT = bind_add_param("TIMEOUT", 4, 10)
 
@@ -127,7 +126,7 @@ ZPF_TIMEOUT = bind_add_param("TIMEOUT", 4, 10)
     // @DisplayName: Plane Follow Scripting Overshoot Angle
     // @Description: If the target is greater than this many degrees left or right, assume an overshoot 
     // @Range: 0 180
-    // @Units: degrees
+    // @Units: deg
 --]]
 ZPF_OVRSHT_DEG = bind_add_param("OVRSHT_DEG", 5, 75)
 
@@ -136,7 +135,7 @@ ZPF_OVRSHT_DEG = bind_add_param("OVRSHT_DEG", 5, 75)
     // @DisplayName: Plane Follow Scripting Turn Angle
     // @Description: If the target is greater than this many degrees left or right, assume it's turning
     // @Range: 0 180
-    // @Units: degrees
+    // @Units: deg
 --]]
 ZPF_TURN_DEG = bind_add_param("TURN_DEG", 6, 15)
 
@@ -145,7 +144,7 @@ ZPF_TURN_DEG = bind_add_param("TURN_DEG", 6, 15)
     // @DisplayName: Plane Follow Scripting Close Distance
     // @Description: When closer than this distance assume we track by heading
     // @Range: 0 100
-    // @Units: meters
+    // @Units: m
 --]]
 ZPF_DIST_CLOSE = bind_add_param("DIST_CLOSE", 7, 50)
 
@@ -154,7 +153,7 @@ ZPF_DIST_CLOSE = bind_add_param("DIST_CLOSE", 7, 50)
     // @DisplayName: Plane Follow Scripting Wide Turns
     // @Description: Use wide turns when following a turning target. Alternative is "cutting the corner"
     // @Range: 0 1
-    // @Units: boolean
+    // @Units: bool
 --]]
 ZPF_WIDE_TURNS = bind_add_param("WIDE_TURNS", 8, 1)
 
@@ -163,7 +162,7 @@ ZPF_WIDE_TURNS = bind_add_param("WIDE_TURNS", 8, 1)
     // @DisplayName: Plane Follow Scripting Altitude Override
     // @Description: When non zero, this altitude value (in FOLL_ALT_TYPE frame) overrides the value sent by the target vehicle
     // @Range: 0 1000
-    // @Units: meters
+    // @Units: m
 --]]
 ZPF_ALT_OVR = bind_add_param("ALT_OVR", 9, 0)
 
@@ -228,6 +227,9 @@ LOST_TARGET_TIMEOUT = (ZPF_TIMEOUT:get() or 10) / REFRESH_RATE
 OVERSHOOT_ANGLE = ZPF_OVRSHT_DEG:get() or 75.0
 TURNING_ANGLE = ZPF_TURN_DEG:get() or 20.0
 
+local fail_mode = ZPF_FAIL_MODE:get() or FLIGHT_MODE.QRTL
+local exit_mode = ZPF_EXIT_MODE:get() or FLIGHT_MODE.LOITER
+
 local use_wide_turns = ZPF_WIDE_TURNS:get() or 1
 
 DISTANCE_LOOKAHEAD_SECONDS = ZPF2_LKAHD:get() or 5.0
@@ -243,12 +245,6 @@ local airspeed_min = AIRSPEED_MIN:get() or 12.0
 local airspeed_cruise = AIRSPEED_CRUISE:get() or 18.0
 local windspeed_max = WINDSPEED_MAX:get() or 100.0
 
---[[
-create a NaN value
---]]
-local function NaN()
-   return 0/0
-end
 local function constrain(v, vmin, vmax)
    if v < vmin then
       v = vmin
@@ -359,9 +355,7 @@ end
 -- target.lng - longitude in decimal degrees
 -- target.alt - target alitude in meters
 local function set_vehicle_target_location(target)
-   local home_location = ahrs:get_home()
    local radius = target.radius or 2.0
-   local angle = target.angle or 0.0
    local yaw = target.yaw or 1
    -- If we are on the right side of the vehicle make sure any loitering is CCW (moves away from the other plane)
    -- yaw > 0 - CCW = turn to the right of the target point
@@ -426,7 +420,7 @@ local function follow_check()
       if( active_state == 0) then
          if follow_enabled then
             -- Follow disabled - return to EXIT mode
-            vehicle:set_mode(ZPF_EXIT_MODE:get())
+            vehicle:set_mode(exit_mode)
             follow_enabled = false
             gcs:send_text(MAV_SEVERITY.INFO, SCRIPT_NAME_SHORT .. ": disabled")
          end
@@ -489,7 +483,6 @@ end
 -- main update function
 local function update()
    now = millis():tofloat() * 0.001
-   current_location = ahrs:get_location()
    ahrs_eas2tas = ahrs:get_EAS2TAS()
    windspeed_vector = ahrs:wind_estimate()
 
@@ -499,11 +492,8 @@ local function update()
    end
 
    -- set the target frame as per user set parameter - this is fundamental to this working correctly
-   local wp_loiter_rad = WP_LOITER_RAD:get()
    local close_distance = ZPF_DIST_CLOSE:get() or airspeed_cruise * 2.0
    local long_distance = close_distance * 4.0
-   local fail_mode = ZPF_FAIL_MODE:get() or FLIGHT_MODE.QRTL
-   local exit_mode = ZPF_EXIT_MODE:get() or FLIGHT_MODE.LOITER
    local altitude_override = ZPF_ALT_OVR:get() or 0
 
    LOST_TARGET_TIMEOUT = (ZPF_TIMEOUT:get() or 10) / REFRESH_RATE
@@ -545,7 +535,7 @@ local function update()
    target_distance, target_distance_offsets,
       target_velocity, target_velocity_offset,
       target_location, target_location_offset, 
-      xy_dist, heading_to_target = follow:get_target_info()
+      xy_dist = follow:get_target_info()
    target_heading = follow:get_target_heading_deg() or -400
 
    -- if we lose the target wait for LOST_TARGET_TIMEOUT seconds to try to reaquire it
@@ -628,7 +618,7 @@ local function update()
    local target_attitude = mavlink_attitude_receiver.get_attitude(foll_sysid)
    local pre_roll_target_heading = target_heading
    local desired_heading = target_heading
-   local angle_adjustment = 0.0
+   local angle_adjustment
    tight_turn = false
    if target_attitude ~= nil then
       if math.abs(target_attitude.roll) > 0.1 or math.abs(target_attitude.rollspeed) > 1 then
@@ -712,7 +702,7 @@ local function update()
    --new_target_location:lng(target_location_offset:lng())
    --new_target_location:alt(target_location_offset:alt()) -- location uses cm for altitude
 
-   local mechanism = 1 -- for logging 1: position/location 2:heading
+   local mechanism = 0 -- for logging 1: position/location 2:heading
    local normalized_distance = math.abs(projected_distance)
    local close = (normalized_distance < close_distance)
    local too_wide = (math.abs(target_distance_rotated:y()) > (close_distance/5) and not turning)
@@ -732,11 +722,8 @@ local function update()
                                     lng = target_location_offset:lng(),
                                     alt = target_altitude,
                                     frame = foll_alt_type,
-                                    yaw = foll_ofs_y,
-                                    angle = vehicle_heading - target_heading})
+                                    yaw = foll_ofs_y})
       mechanism = 1  -- position/location - for logging
-   else 
-      mechanism = 0
    end
    -- dv = interim delta velocity based on the pid controller using projected_distance as the error (we want distance == 0)
    local dv = pid_controller_distance.update(target_airspeed - vehicle_airspeed, projected_distance)

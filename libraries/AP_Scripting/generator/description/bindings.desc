@@ -748,7 +748,7 @@ singleton AP_Follow method get_last_update_ms uint32_t
 singleton AP_Follow method get_target_location_and_velocity boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_heading_deg boolean float'Null
-singleton AP_Follow method get_target_info boolean Vector3f'Null Vector3f'Null Vector3f'Null Vector3f'Null Location'Null Location'Null float'Null float'Null
+singleton AP_Follow method get_target_info boolean Vector3f'Null Vector3f'Null Vector3f'Null Vector3f'Null Location'Null Location'Null float'Null
 singleton AP_Follow method get_target_info depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
 include AC_PrecLand/AC_PrecLand.h
