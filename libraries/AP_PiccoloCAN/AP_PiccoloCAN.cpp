@@ -209,7 +209,6 @@ void AP_PiccoloCAN::loop()
 
         uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
 #endif
-        uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1000);
@@ -235,7 +234,7 @@ void AP_PiccoloCAN::loop()
 #endif
 
         // Look for any message responses on the CAN bus
-        while (read_frame(rxFrame, timeout)) {
+        while (read_frame(rxFrame, 0)) {
 
             // Extract group and device ID values from the frame identifier
             frame_id_group = (rxFrame.id >> 24) & 0x1F;
@@ -296,15 +295,16 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 }
 
 // read frame on CAN bus, returns true on succses
-bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
+bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us)
 {
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for read_frame\n\r");
         return false;
     }
+
     bool read_select = true;
     bool write_select = false;
-    bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
+    bool ret = _can_iface->select(read_select, write_select, nullptr, AP_HAL::micros64() + timeout_us);
 
     if (!ret || !read_select) {
         // No frame available
