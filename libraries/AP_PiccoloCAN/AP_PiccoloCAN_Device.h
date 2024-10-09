@@ -58,10 +58,10 @@ public:
     virtual bool is_enabled(void) const { return false; }
 
     // Determine if this device has been seen within a specified timeframe
-    virtual bool is_connected(int64_t timeout_ms) const {
+    virtual bool is_connected(uint32_t timeout_us) const {
         uint64_t now = AP_HAL::micros64();
 
-        return now < (last_msg_timestamp + (1000ULL * timeout_ms));
+        return now < (last_msg_timestamp + timeout_us);
     }
 
     // Reset the received message timestamp
