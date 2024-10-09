@@ -275,7 +275,7 @@ void AP_PiccoloCAN::loop()
 }
 
 // write frame on CAN bus, returns true on success
-bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
+bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us)
 {
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for write_frame\n\r");
@@ -284,14 +284,14 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 
     bool read_select = false;
     bool write_select = true;
-    
-    bool ret =  _can_iface->select(read_select, write_select, &out_frame, timeout);
+    const uint64_t deadline_us = AP_HAL::micros64() + timeout_us;
+    bool ret =  _can_iface->select(read_select, write_select, &out_frame, deadline_us);
 
     if (!ret || !write_select) {
         return false;
     }
 
-    return (_can_iface->send(out_frame, timeout, AP_HAL::CANIface::AbortOnError) == 1);
+    return (_can_iface->send(out_frame, deadline_us, AP_HAL::CANIface::AbortOnError) == 1);
 }
 
 // read frame on CAN bus, returns true on succses
@@ -409,8 +409,6 @@ void AP_PiccoloCAN::send_servo_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
 
-    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
-
     // No servos are selected? Don't send anything!
     if (_srv_bm == 0x00) {
         return;
@@ -445,7 +443,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
                 // Servo is not enabled
                 encodeServo_EnablePacket(&txFrame);
                 txFrame.id |= (idx + 1);
-                write_frame(txFrame, timeout);
+                write_frame(txFrame, 1000);
             } else if (_servos[idx].newCommand) {
                 // A new command is provided
                 send_cmd = true;
@@ -467,7 +465,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
             // Broadcast the command to all servos
             txFrame.id |= 0xFF;
 
-            write_frame(txFrame, timeout);
+            write_frame(txFrame, 1000);
         }
     }
 }
@@ -477,8 +475,6 @@ void AP_PiccoloCAN::send_servo_messages(void)
 void AP_PiccoloCAN::send_esc_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
-
-    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
     // No ESCs are selected? Don't send anything
     if (_esc_bm == 0x00) {
@@ -515,7 +511,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
                 if (is_esc_present(idx) && !is_esc_enabled(idx)) {
                     encodeESC_EnablePacket(&txFrame);
                     txFrame.id |= (idx + 1);
-                    write_frame(txFrame, timeout);
+                    write_frame(txFrame, 1000);
                 }
                 else if (_escs[idx].newCommand) {
                     send_cmd = true;
@@ -540,7 +536,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
                 // Broadcast the command to all ESCs
                 txFrame.id |= 0xFF;
 
-                write_frame(txFrame, timeout);
+                write_frame(txFrame, 1000);
             }
         }
 
@@ -553,7 +549,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
         // Set the ESC address to the broadcast ID (0xFF)
         txFrame.id |= 0xFF;
 
-        write_frame(txFrame, timeout);
+        write_frame(txFrame, 1000);
     }
 }
 
@@ -609,8 +605,6 @@ void AP_PiccoloCAN::send_ecu_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
 
-    const uint64_t timeout = AP_HAL::micros64() + 1000ULL;
-
     // No ECU node id set, don't send anything
     if (_ecu_id == 0) {
         return;
@@ -622,7 +616,7 @@ void AP_PiccoloCAN::send_ecu_messages(void)
 
         _ecu_info.newCommand = false;
 
-        write_frame(txFrame, timeout);
+        write_frame(txFrame, 1000);
     }
 }
 
