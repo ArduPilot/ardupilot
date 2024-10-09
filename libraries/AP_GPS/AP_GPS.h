@@ -216,6 +216,7 @@ public:
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
+        bool have_altitude;               ///< does GPS give altitude? Set to false only if GPS instance does not provide altitude.
         float undulation;                   //<height that WGS84 is above AMSL at the current location
         bool have_undulation;               ///<do we have a value for the undulation
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds

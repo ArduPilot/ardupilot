@@ -50,6 +50,7 @@ AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GP
     state.have_speed_accuracy = false;
     state.have_horizontal_accuracy = false;
     state.have_vertical_accuracy = false;
+    state.have_altitude = true;
 }
 
 /**
