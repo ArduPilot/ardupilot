@@ -699,7 +699,7 @@ uint32_t Copter::ap_value() const
         PRE_ARM_RC_CHECK = (1U << 3),           // true if rc input pre-arm checks have been completed successfully
         PRE_ARM_CHECK = (1U << 4),              // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
         AUTO_ARMED = (1U << 5),                 // stops auto missions from beginning until throttle is raised
-        LOGGING_STARTED = (1U << 6),            // true if logging has started
+        // LOGGING_STARTED = (1U << 6),            // true if logging has started
         LAND_COMPLETE = (1U << 7),              // true if we have detected a landing
         NEW_RADIO_FRAME = (1U << 8),            // Set true if we have new PWM data to act on from the Radio
         // USB_CONNECTED_UNUSED = (1U << 9),    // UNUSED
@@ -727,7 +727,6 @@ uint32_t Copter::ap_value() const
     if (ap.pre_arm_rc_check)          { ret |= uint32_t(AP_Bit::PRE_ARM_RC_CHECK); }
     if (ap.pre_arm_check)             { ret |= uint32_t(AP_Bit::PRE_ARM_CHECK); }
     if (ap.auto_armed)                { ret |= uint32_t(AP_Bit::AUTO_ARMED); }
-    if (logger.logging_started())     { ret |= uint32_t(AP_Bit::LOGGING_STARTED); }
     if (ap.land_complete)             { ret |= uint32_t(AP_Bit::LAND_COMPLETE); }
     if (ap.new_radio_frame)           { ret |= uint32_t(AP_Bit::NEW_RADIO_FRAME); }
     if (ap.compass_mot)               { ret |= uint32_t(AP_Bit::COMPASS_MOT); }
