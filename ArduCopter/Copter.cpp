@@ -772,13 +772,15 @@ void Copter::update_simple_mode(void)
 {
     float rollx, pitchx;
 
-    // exit immediately if no new radio frame or not in simple mode
-    if (simple_mode == SimpleMode::NONE || !ap.new_radio_frame) {
+    // exit immediately if not in simple mode:
+    if (simple_mode == SimpleMode::NONE) {
         return;
     }
 
-    // mark radio frame as consumed
-    ap.new_radio_frame = false;
+    // exit immediately if RC input is invalid:
+    if (!rc().has_valid_input()) {
+        return;
+    }
 
     if (simple_mode == SimpleMode::SIMPLE) {
         // rotate roll, pitch input by -initial simple heading (i.e. north facing)

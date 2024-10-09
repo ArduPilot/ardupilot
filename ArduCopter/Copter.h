@@ -365,7 +365,7 @@ private:
         bool auto_armed;                     //  5 stops auto missions from beginning until throttle is raised
         bool unused_log_started;             //  6
         bool land_complete;                  //  7 true if we have detected a landing
-        bool new_radio_frame;                //  8 Set true if we have new PWM data to act on from the Radio
+        bool unused_new_radio_frame;         //  8 was: Set true if we have new PWM data to act on from the Radio
         bool unused_usb_connected;           //  9
         bool unused_receiver_present;        // 10
         bool compass_mot;                    // 11 true if we are currently performing compassmot calibration
