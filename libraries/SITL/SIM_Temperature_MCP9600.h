@@ -12,6 +12,7 @@ namespace SITL {
 class MCP9600DevReg : public I2CRegEnum {
 public:
     static constexpr uint8_t HOT_JUNC        { 0x00 };
+    static constexpr uint8_t SENSOR_STATUS   { 0x04 };
     static constexpr uint8_t SENSOR_CONFIG   { 0x05 };
     static constexpr uint8_t WHOAMI          { 0x20 };
 };
