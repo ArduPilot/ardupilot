@@ -688,12 +688,71 @@ void Copter::three_hz_loop()
     low_alt_avoidance();
 }
 
+// ap_value calculates a 32-bit bitmask representing various pieces of
+// state about the Copter.  It replaces a global variable which was
+// used to track this state.
+uint32_t Copter::ap_value() const
+{
+    enum class AP_Bit {
+        // unused1 = (1U << 0),
+        // unused_was_simple_mode = (1U<<1): 2, // 1,2
+        PRE_ARM_RC_CHECK = (1U << 3),           // true if rc input pre-arm checks have been completed successfully
+        PRE_ARM_CHECK = (1U << 4),              // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+        AUTO_ARMED = (1U << 5),                 // stops auto missions from beginning until throttle is raised
+        LOGGING_STARTED = (1U << 6),            // true if logging has started
+        LAND_COMPLETE = (1U << 7),              // true if we have detected a landing
+        NEW_RADIO_FRAME = (1U << 8),            // Set true if we have new PWM data to act on from the Radio
+        // USB_CONNECTED_UNUSED = (1U << 9),    // UNUSED
+        // RC_RECEIVER_PRESENT_UNUSED = (1U << 10), // UNUSED
+        COMPASS_MOT = (1U << 11),               // true if we are currently performing compassmot calibration
+        MOTOR_TEST = (1U << 12),                // true if we are currently performing the motors test
+        INITIALISED = (1U << 13),               // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
+        LAND_COMPLETE_MAYBE = (1U << 14),       // true if we may have landed (less strict version of land_complete)
+        THROTTLE_ZERO = (1U << 15),             // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
+        // SYSTEM_TIME_SET_UNUSED = (1U << 16), // true if the system time has been set from the GPS
+        GPS_GLITCHING = (1U << 17),             // true if GPS glitching is affecting navigation accuracy
+        USING_INTERLOCK = (1U << 20),           // aux switch motor interlock function is in use
+        LAND_REPO_ACTIVE = (1U << 21),          // true if the pilot is overriding the landing position
+        MOTOR_INTERLOCK_SWITCH = (1U << 22),    // true if pilot is requesting motor interlock enable
+        IN_ARMING_DELAY = (1U << 23),           // true while we are armed but waiting to spin motors
+        INITIALISED_PARAMS = (1U << 24),        // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
+        // unused3 = (1U << 25),                // was compass_init_location; true when the compass's initial location has been set
+        // unused2 = (1U << 26),                // aux switch rc_override is allowed
+        ARMED_WITH_AIRMODE_SWITCH = (1U << 27), // we armed using a arming switch
+        PREC_LAND_ACTIVE = (1U << 28),          // true if precland is active
+    };
+
+    uint32_t ret = 0;
+
+    if (ap.pre_arm_rc_check)          { ret |= uint32_t(AP_Bit::PRE_ARM_RC_CHECK); }
+    if (ap.pre_arm_check)             { ret |= uint32_t(AP_Bit::PRE_ARM_CHECK); }
+    if (ap.auto_armed)                { ret |= uint32_t(AP_Bit::AUTO_ARMED); }
+    if (logger.logging_started())     { ret |= uint32_t(AP_Bit::LOGGING_STARTED); }
+    if (ap.land_complete)             { ret |= uint32_t(AP_Bit::LAND_COMPLETE); }
+    if (ap.new_radio_frame)           { ret |= uint32_t(AP_Bit::NEW_RADIO_FRAME); }
+    if (ap.compass_mot)               { ret |= uint32_t(AP_Bit::COMPASS_MOT); }
+    if (ap.motor_test)                { ret |= uint32_t(AP_Bit::MOTOR_TEST); }
+    if (ap.initialised)               { ret |= uint32_t(AP_Bit::INITIALISED); }
+    if (ap.land_complete_maybe)       { ret |= uint32_t(AP_Bit::LAND_COMPLETE_MAYBE); }
+    if (ap.throttle_zero)             { ret |= uint32_t(AP_Bit::THROTTLE_ZERO); }
+    if (ap.gps_glitching)             { ret |= uint32_t(AP_Bit::GPS_GLITCHING); }
+    if (ap.using_interlock)           { ret |= uint32_t(AP_Bit::USING_INTERLOCK); }
+    if (ap.land_repo_active)          { ret |= uint32_t(AP_Bit::LAND_REPO_ACTIVE); }
+    if (ap.motor_interlock_switch)    { ret |= uint32_t(AP_Bit::MOTOR_INTERLOCK_SWITCH); }
+    if (ap.in_arming_delay)           { ret |= uint32_t(AP_Bit::IN_ARMING_DELAY); }
+    if (ap.initialised_params)        { ret |= uint32_t(AP_Bit::INITIALISED_PARAMS); }
+    if (ap.armed_with_airmode_switch) { ret |= uint32_t(AP_Bit::ARMED_WITH_AIRMODE_SWITCH); }
+    if (ap.prec_land_active)          { ret |= uint32_t(AP_Bit::PREC_LAND_ACTIVE); }
+
+    return ret;
+}
+
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(LogDataID::AP_STATE, ap.value);
+        Log_Write_Data(LogDataID::AP_STATE, ap_value());
     }
 #endif
 

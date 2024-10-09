@@ -347,7 +347,6 @@ void Copter::update_auto_armed()
  */
 bool Copter::should_log(uint32_t mask)
 {
-    ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
 }
 #endif
