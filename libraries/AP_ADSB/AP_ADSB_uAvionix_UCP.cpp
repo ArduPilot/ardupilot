@@ -184,7 +184,6 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         run_state.last_packet_Transponder_Ownship_ms = AP_HAL::millis();
         _frontend.out_state.tx_status.NIC_NACp = rx.decoded.ownship_report.report.NIC | (rx.decoded.ownship_report.report.NACp << 4);
         memcpy(_frontend.out_state.tx_status.flight_id, rx.decoded.ownship_report.report.callsign, sizeof(_frontend.out_state.tx_status.flight_id));
-        //_frontend.out_state.tx_status.temperature = rx.decoded.ownship_report.report.temperature; // there is no message in the vocabulary of the 200x that has board temperature
         break;
 
     case GDL90_ID_OWNSHIP_GEOMETRIC_ALTITUDE:
@@ -267,6 +266,18 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         {
             // Version 3 of the transponder status message is sent in response to the transponder control message (if UCP-HD protocol out is enabled on the transponder)
             memcpy(&rx.decoded.transponder_status_v3, msg.raw, sizeof(rx.decoded.transponder_status_v3));
+
+            if (rx.decoded.transponder_status_v3.indicatingOnGround) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_ON_GROUND;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_ON_GROUND;
+            }
+
+            if (rx.decoded.transponder_status_v3.fault) {
+                // unsure what fault is indicated, query heartbeat for more info
+                request_msg(GDL90_ID_HEARTBEAT);
+            }
+
             if (rx.decoded.transponder_status_v3.identActive) {
                 _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
             } else {
@@ -298,11 +309,8 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             }
 
             _frontend.out_state.tx_status.squawk = rx.decoded.transponder_status_v3.squawkCode;
-
-            if (rx.decoded.transponder_status_v3.fault) {
-                // unsure what fault is indicated, query heartbeat for more info
-                request_msg(GDL90_ID_HEARTBEAT);
-            }
+            _frontend.out_state.tx_status.NIC_NACp = rx.decoded.transponder_status_v3.NIC | (rx.decoded.transponder_status_v3.NACp << 4);
+            _frontend.out_state.tx_status.boardTemp = rx.decoded.transponder_status_v3.temperature;
 
             // TODO not the best approach
             if (run_state.last_packet_Transponder_Status_ms == 0) {
