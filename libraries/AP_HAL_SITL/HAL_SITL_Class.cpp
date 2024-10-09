@@ -305,6 +305,22 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     actually_reboot();
 }
 
+void HAL_SITL::update_new_args(const char* opt, const char* val)
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(new_argv)-1; i++) {
+        if (new_argv[i] == nullptr && new_argv[i+1] == nullptr) {
+            // add new option and value
+            new_argv[i] = (char*)opt;
+            new_argv[i+1] = (char*)val;
+            return;
+        } else if (!strcmp(new_argv[i], opt)) {
+            // update existing value
+            strncpy(new_argv[i+1], val, 100);
+            return;
+        }
+    }
+}
+
 void HAL_SITL::actually_reboot()
 {
     execv(new_argv[0], new_argv);

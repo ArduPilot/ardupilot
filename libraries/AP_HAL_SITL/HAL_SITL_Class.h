@@ -13,6 +13,7 @@ public:
     HAL_SITL();
     void run(int argc, char * const argv[], Callbacks* callbacks) const override;
     static void actually_reboot();
+    static void update_new_args(const char* opt, const char* val);
 
     void set_storage_posix_enabled(bool _enabled) {
         storage_posix_enabled = _enabled;
