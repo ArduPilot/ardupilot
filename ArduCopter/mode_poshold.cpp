@@ -535,11 +535,7 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
     }
 
     // calculate velocity-only based lean angle
-    if (velocity >= 0) {
-        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (velocity + 60.0f));
-    } else {
-        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (-velocity + 60.0f));
-    }
+    lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (fabsf(velocity) + 60.0f));
 
     // do not let lean_angle be too far from brake_angle
     brake_angle = constrain_float(lean_angle, brake_angle - brake_rate, brake_angle + brake_rate);
