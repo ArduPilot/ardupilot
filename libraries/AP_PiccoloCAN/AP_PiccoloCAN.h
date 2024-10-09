@@ -83,7 +83,7 @@ private:
     void loop();
 
     // write frame on CAN bus, returns true on success
-    bool write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout);
+    bool write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us);
 
     // read frame on CAN bus, returns true on succses
     bool read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us);
