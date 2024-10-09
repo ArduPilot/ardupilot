@@ -69,6 +69,7 @@ private:
             GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 transponder_config;
             GDL90_HEARTBEAT heartbeat;
             GDL90_TRANSPONDER_STATUS_MSG transponder_status;
+            GDL90_TRANSPONDER_STATUS_MSG_V3 transponder_status_v3;
 #if AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
             GDL90_OWNSHIP_REPORT ownship_report;
             GDL90_OWNSHIP_GEO_ALTITUDE ownship_geometric_altitude;

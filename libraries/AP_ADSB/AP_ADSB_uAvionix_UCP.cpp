@@ -117,9 +117,6 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         memcpy(&rx.decoded.heartbeat, msg.raw, sizeof(rx.decoded.heartbeat));
         run_state.last_packet_Transponder_Heartbeat_ms = AP_HAL::millis();
 
-        // this is always true. The "ground/air bit place" is set meaning we're always in the air
-        _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_ON_GROUND;
-
         if (rx.decoded.heartbeat.status.one.maintenanceRequired) {
             _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_MAINT_REQ;
         } else {
@@ -202,61 +199,131 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         break;
 
     case GDL90_ID_TRANSPONDER_STATUS:
-        memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
-        if (rx.decoded.transponder_status.identActive) {
-            _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
-        } else {
-            _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
-        }
-        
-        if (rx.decoded.transponder_status.modeAEnabled) {
-            _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
-        } else {
-            _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
-        }
+    {
+        switch (msg.payload[0])
+        {
+        case 1:
+        {
+            // version 1 of the transponder status message is sent at 1 Hz (if UCP protocol out is enabled on the transponder)
+            memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
+            if (rx.decoded.transponder_status.identActive) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
+            }
 
-        if (rx.decoded.transponder_status.modeCEnabled) {
-            _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
-        } else {
-            _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
-        }
+            if (rx.decoded.transponder_status.modeAEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
+            }
 
-        if (rx.decoded.transponder_status.modeSEnabled) {
-            _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
-        } else {
-            _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
-        }
+            if (rx.decoded.transponder_status.modeCEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
+            }
 
-        if (rx.decoded.transponder_status.es1090TxEnabled) {
-            _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
-        } else {
-            _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
-        }
+            if (rx.decoded.transponder_status.modeSEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
+            }
 
-        if (rx.decoded.transponder_status.x_bit) {
-            _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_XBIT_ENABLED;
-        } else {
-            _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_XBIT_ENABLED;
-        }
+            if (rx.decoded.transponder_status.es1090TxEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
+            }
 
-        _frontend.out_state.tx_status.squawk = rx.decoded.transponder_status.squawkCode;
+            if (rx.decoded.transponder_status.x_bit) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_XBIT_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_XBIT_ENABLED;
+            }
 
-        _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
+            _frontend.out_state.tx_status.squawk = rx.decoded.transponder_status.squawkCode;
 
-        if (run_state.last_packet_Transponder_Status_ms == 0) {
-            // set initial control message contents to transponder defaults
-            _frontend.out_state.ctrl.modeAEnabled = rx.decoded.transponder_status.modeAEnabled;
-            _frontend.out_state.ctrl.modeCEnabled = rx.decoded.transponder_status.modeCEnabled;
-            _frontend.out_state.ctrl.modeSEnabled = rx.decoded.transponder_status.modeSEnabled;
-            _frontend.out_state.ctrl.es1090TxEnabled = rx.decoded.transponder_status.es1090TxEnabled;
-            _frontend.out_state.ctrl.squawkCode = rx.decoded.transponder_status.squawkCode;
-            _frontend.out_state.ctrl.x_bit = rx.decoded.transponder_status.x_bit;
-        }
-        run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
+            // TODO not the best approach
+            if (run_state.last_packet_Transponder_Status_ms == 0) {
+                // set initial control message contents to transponder defaults
+                _frontend.out_state.ctrl.modeAEnabled = rx.decoded.transponder_status.modeAEnabled;
+                _frontend.out_state.ctrl.modeCEnabled = rx.decoded.transponder_status.modeCEnabled;
+                _frontend.out_state.ctrl.modeSEnabled = rx.decoded.transponder_status.modeSEnabled;
+                _frontend.out_state.ctrl.es1090TxEnabled = rx.decoded.transponder_status.es1090TxEnabled;
+                _frontend.out_state.ctrl.squawkCode = rx.decoded.transponder_status.squawkCode;
+                _frontend.out_state.ctrl.x_bit = rx.decoded.transponder_status.x_bit;
+            }
+            run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
-        GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
+            GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
 #endif
+            break;
+        }
+        case 2:
+            // deprecated
+            break;
+        case 3:
+        {
+            // Version 3 of the transponder status message is sent in response to the transponder control message (if UCP-HD protocol out is enabled on the transponder)
+            memcpy(&rx.decoded.transponder_status_v3, msg.raw, sizeof(rx.decoded.transponder_status_v3));
+            if (rx.decoded.transponder_status_v3.identActive) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
+            }
+
+            if (rx.decoded.transponder_status_v3.modeAEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
+            }
+
+            if (rx.decoded.transponder_status_v3.modeCEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_C_ENABLED;
+            }
+
+            if (rx.decoded.transponder_status_v3.modeSEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_S_ENABLED;
+            }
+
+            if (rx.decoded.transponder_status_v3.es1090TxEnabled) {
+                _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
+            } else {
+                _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_1090ES_TX_ENABLED;
+            }
+
+            _frontend.out_state.tx_status.squawk = rx.decoded.transponder_status_v3.squawkCode;
+
+            if (rx.decoded.transponder_status_v3.fault) {
+                // unsure what fault is indicated, query heartbeat for more info
+                request_msg(GDL90_ID_HEARTBEAT);
+            }
+
+            // TODO not the best approach
+            if (run_state.last_packet_Transponder_Status_ms == 0) {
+                // set initial control message contents to transponder defaults
+                _frontend.out_state.ctrl.modeAEnabled = rx.decoded.transponder_status_v3.modeAEnabled;
+                _frontend.out_state.ctrl.modeCEnabled = rx.decoded.transponder_status_v3.modeCEnabled;
+                _frontend.out_state.ctrl.modeSEnabled = rx.decoded.transponder_status_v3.modeSEnabled;
+                _frontend.out_state.ctrl.es1090TxEnabled = rx.decoded.transponder_status_v3.es1090TxEnabled;
+                _frontend.out_state.ctrl.squawkCode = rx.decoded.transponder_status_v3.squawkCode;
+            }
+            run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
+#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
+            GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
+#endif
+            break;
+        }
+        default:
+            break;
+        }
         break;
+    }
 #endif // AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
 
     case GDL90_ID_TRANSPONDER_CONTROL:
