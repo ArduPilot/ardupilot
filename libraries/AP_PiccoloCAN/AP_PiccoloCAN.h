@@ -86,7 +86,7 @@ private:
     bool write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout);
 
     // read frame on CAN bus, returns true on succses
-    bool read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout);
+    bool read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us);
 
     // send ESC commands over CAN
     void send_esc_messages(void);
