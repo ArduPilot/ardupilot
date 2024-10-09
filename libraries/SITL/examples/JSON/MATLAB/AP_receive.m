@@ -1,4 +1,4 @@
-function [pwm, reset] = AP_receve(time)
+function [pwm, reset] = AP_receive(time)
 global u
 persistent connected frame_time last_sim_time frame_count last_SITL_frame past_time
 
