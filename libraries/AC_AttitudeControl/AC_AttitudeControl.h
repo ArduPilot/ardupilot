@@ -168,6 +168,8 @@ public:
     // Reduce attitude control gains while landed to stop ground resonance
     void landed_gain_reduction(bool landed);
 
+    bool limit_target_thrust_angle(float thrust_angle_max_cd);
+
     // Sets attitude target to vehicle attitude and sets all rates to zero
     // If reset_rate is false rates are not reset to allow the rate controllers to run
     void reset_target_and_rate(bool reset_rate = true);
