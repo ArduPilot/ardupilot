@@ -80,7 +80,7 @@ extern AP_Periph_FW periph;
     // especially helpful with HAL_GCS_ENABLED where libraries use the mavlink
     // send_text() method where we support strings up to 256 chars by splitting them
     // up into multiple 50 char mavlink packets.
-    #define HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF (BOARD_FLASH_SIZE >= 1024)
+    #define HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF (HAL_PROGRAM_SIZE_LIMIT_KB >= 1024)
 #endif
 
 static struct instance_t {

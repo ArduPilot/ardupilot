@@ -5,7 +5,7 @@
 #include <AP_Scripting/AP_Scripting_config.h>
 
 #ifndef HAL_EFI_ENABLED
-#define HAL_EFI_ENABLED BOARD_FLASH_SIZE > 1024
+#define HAL_EFI_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 #ifndef AP_EFI_BACKEND_DEFAULT_ENABLED
