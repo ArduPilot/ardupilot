@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Code by Charles "Silvanosky" Villard and David "Buzz" Bussenschutt
+ * Code by Charles "Silvanosky" Villard, David "Buzz" Bussenschutt and Andrey "ARg" Romanov
  *
  */
 
@@ -26,6 +26,13 @@
 #include "driver/rtc_io.h"
 
 #include <stdio.h>
+
+#include "esp_log.h"
+
+#define SERVO_TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
+#define SERVO_TIMEBASE_PERIOD        20000    // 20000 ticks, 20ms
+
+#define TAG "RCOut"
 
 extern const AP_HAL::HAL& hal;
 
@@ -50,63 +57,90 @@ void RCOutput::init()
 {
     _max_channels = MAX_CHANNELS;
 
-
-    //32 and 33 are special as they dont default to gpio, but can be if u disable their rtc setup:
+#ifdef CONFIG_IDF_TARGET_ESP32
+    // only on plain esp32
+    // 32 and 33 are special as they dont default to gpio, but can be if u disable their rtc setup:
     rtc_gpio_deinit(GPIO_NUM_32);
     rtc_gpio_deinit(GPIO_NUM_33);
+#endif
 
     printf("oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo\n");
     printf("RCOutput::init() - channels available: %d \n",(int)MAX_CHANNELS);
     printf("oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo\n");
 
-    static const mcpwm_io_signals_t signals[] = {
-        MCPWM0A,
-        MCPWM0B,
-        MCPWM1A,
-        MCPWM1B,
-        MCPWM2A,
-        MCPWM2B
-    };
-    static const mcpwm_timer_t timers[] = {
-        MCPWM_TIMER_0,
-        MCPWM_TIMER_1,
-        MCPWM_TIMER_2
+    const int MCPWM_CNT = SOC_MCPWM_OPERATORS_PER_GROUP*SOC_MCPWM_GENERATORS_PER_OPERATOR;
 
-    };
-    static const mcpwm_unit_t units[] = {
-        MCPWM_UNIT_0,
-        MCPWM_UNIT_1
-    };
-    static const mcpwm_operator_t operators[] = {
-        MCPWM_OPR_A,
-        MCPWM_OPR_B
-    };
+    for (int i = 0; i < MAX_CHANNELS; ++i) {
 
-    for (uint8_t i = 0; i < MAX_CHANNELS; ++i) {
-        auto unit = units[i/6];
-        auto signal = signals[i % 6];
-        auto timer = timers[i/2];
+        mcpwm_timer_handle_t h_timer;
+        mcpwm_oper_handle_t  h_oper;
+
+        ESP_LOGI(TAG, "Initialize CH%02d", i+1);
 
         //Save struct infos
         pwm_out &out = pwm_group_list[i];
+        out.group_id = i/MCPWM_CNT;
         out.gpio_num = outputs_pins[i];
-        out.unit_num = unit;
-        out.timer_num = timer;
-        out.io_signal = signal;
-        out.op = operators[i%2];
         out.chan = i;
 
-        //Setup gpio
-        mcpwm_gpio_init(unit, signal, outputs_pins[i]);
-        //Setup MCPWM module
-        mcpwm_config_t pwm_config;
-        pwm_config.frequency = 50;    //frequency = 50Hz, i.e. for every servo motor time period should be 20ms
-        pwm_config.cmpr_a = 0;    //duty cycle of PWMxA = 0
-        pwm_config.cmpr_b = 0;    //duty cycle of PWMxb = 0
-        pwm_config.counter_mode = MCPWM_UP_COUNTER;
-        pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
-        mcpwm_init(unit, timer, &pwm_config);
-        mcpwm_start(unit, timer);
+        if (0 == i % MCPWM_CNT) {
+            
+            mcpwm_timer_config_t timer_config = {
+                .group_id = out.group_id,
+                .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
+                .resolution_hz = SERVO_TIMEBASE_RESOLUTION_HZ,
+                .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
+                .period_ticks = SERVO_TIMEBASE_PERIOD,
+            };
+    
+            ESP_LOGI(TAG, "Initialize timer");
+            ESP_ERROR_CHECK(mcpwm_new_timer(&timer_config, &h_timer));
+
+            out.freq = timer_config.resolution_hz/timer_config.period_ticks;
+
+            ESP_LOGI(TAG, "Enable and start timer");
+            ESP_ERROR_CHECK(mcpwm_timer_enable(h_timer));
+            ESP_ERROR_CHECK(mcpwm_timer_start_stop(h_timer, MCPWM_TIMER_START_NO_STOP));
+        }
+        out.h_timer = h_timer;
+         
+
+        if (0 == i % SOC_MCPWM_GENERATORS_PER_OPERATOR) {
+
+            ESP_LOGI(TAG, "Initialize operator");
+
+            mcpwm_operator_config_t operator_config = {
+                .group_id = out.group_id, // operator must be in the same group to the timer
+            };
+            ESP_ERROR_CHECK(mcpwm_new_operator(&operator_config, &h_oper));
+        }
+        out.h_oper = h_oper;
+
+        ESP_LOGI(TAG, "Connect timer and operator");
+        ESP_ERROR_CHECK(mcpwm_operator_connect_timer(out.h_oper, out.h_timer));
+
+        ESP_LOGI(TAG, "Create comparator and generator from the operator");
+        mcpwm_comparator_config_t comparator_config = {};
+        comparator_config.flags.update_cmp_on_tez = true;
+
+        ESP_ERROR_CHECK(mcpwm_new_comparator(out.h_oper, &comparator_config, &out.h_cmpr));
+
+        mcpwm_generator_config_t generator_config = {
+            .gen_gpio_num = out.gpio_num,
+        };
+        ESP_ERROR_CHECK(mcpwm_new_generator(out.h_oper, &generator_config, &out.h_gen));
+
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(out.h_cmpr, 1500));
+        out.value = 1500;
+        
+        ESP_LOGI(TAG, "Set generator action on timer and compare event");
+        // go high on counter empty
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(out.h_gen,
+            MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
+        // go low on compare threshold
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(out.h_gen,
+            MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, out.h_cmpr, MCPWM_GEN_ACTION_LOW)));
+
     }
 
     _initialized = true;
@@ -123,7 +157,8 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
         if (chmask & 1 << i) {
             pwm_out &out = pwm_group_list[i];
-            mcpwm_set_frequency(out.unit_num, out.timer_num, freq_hz);
+            ESP_ERROR_CHECK(mcpwm_timer_set_period( out.h_timer, SERVO_TIMEBASE_RESOLUTION_HZ/freq_hz));
+            out.freq = freq_hz;
         }
     }
 }
@@ -143,7 +178,7 @@ uint16_t RCOutput::get_freq(uint8_t chan)
     }
 
     pwm_out &out = pwm_group_list[chan];
-    return mcpwm_get_frequency(out.unit_num, out.timer_num);
+    return out.freq;
 }
 
 void RCOutput::enable_ch(uint8_t chan)
@@ -153,7 +188,7 @@ void RCOutput::enable_ch(uint8_t chan)
     }
 
     pwm_out &out = pwm_group_list[chan];
-    mcpwm_start(out.unit_num, out.timer_num);
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(out.h_timer, MCPWM_TIMER_START_NO_STOP));
 }
 
 void RCOutput::disable_ch(uint8_t chan)
@@ -164,7 +199,7 @@ void RCOutput::disable_ch(uint8_t chan)
 
     write(chan, 0);
     pwm_out &out = pwm_group_list[chan];
-    mcpwm_stop(out.unit_num, out.timer_num);
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(out.h_timer, MCPWM_TIMER_STOP_EMPTY));
 }
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
@@ -189,9 +224,7 @@ uint16_t RCOutput::read(uint8_t chan)
     }
 
     pwm_out &out = pwm_group_list[chan];
-    double freq = mcpwm_get_frequency(out.unit_num, out.timer_num);
-    double dprc = mcpwm_get_duty(out.unit_num, out.timer_num, out.op);
-    return (1000000.0 * (dprc / 100.)) / freq;
+    return out.value;
 }
 
 void RCOutput::read(uint16_t *period_us, uint8_t len)
@@ -248,7 +281,8 @@ void RCOutput::write_int(uint8_t chan, uint16_t period_us)
     }
 
     pwm_out &out = pwm_group_list[chan];
-    mcpwm_set_duty_in_us(out.unit_num, out.timer_num, out.op, period_us);
+    ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(out.h_cmpr, period_us));
+    out.value = period_us;
 }
 
 /*
