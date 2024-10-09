@@ -84,6 +84,7 @@ private:
         uint32_t last_packet_Transponder_Status_ms;
         uint32_t last_packet_Transponder_Heartbeat_ms;
         uint32_t last_packet_Transponder_Ownship_ms;
+        uint32_t last_gcs_send_message_Transponder_Status_ms;
     } run_state;
 
 };

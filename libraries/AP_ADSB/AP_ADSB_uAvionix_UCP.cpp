@@ -97,13 +97,21 @@ void AP_ADSB_uAvionix_UCP::update()
     }
 
     // if the transponder has stopped giving us the data needed to 
-    // fill the transponder status mavlink message, reset that data.
-    if ((now_ms - run_state.last_packet_Transponder_Status_ms >= 10000 && run_state.last_packet_Transponder_Status_ms != 0)
-        && (now_ms - run_state.last_packet_Transponder_Heartbeat_ms >= 10000 && run_state.last_packet_Transponder_Heartbeat_ms != 0)
-        && (now_ms - run_state.last_packet_Transponder_Ownship_ms >= 10000 && run_state.last_packet_Transponder_Ownship_ms != 0))
+    // fill the transponder status mavlink message, indicate status unavailable.
+    if ((now_ms - run_state.last_packet_Transponder_Status_ms >= 10000)
+        && (now_ms - run_state.last_packet_Transponder_Heartbeat_ms >= 10000)
+        && (now_ms - run_state.last_packet_Transponder_Ownship_ms >= 10000))
     {
         _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
+        // TODO reset the data for each message when timeout occurs
     }
+#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
+    if (now_ms - run_state.last_gcs_send_message_Transponder_Status_ms >= 10000)
+    {
+        GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
+        run_state.last_gcs_send_message_Transponder_Status_ms = now_ms;
+    }
+#endif
 }
 
 
@@ -116,6 +124,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         // protocol.
         memcpy(&rx.decoded.heartbeat, msg.raw, sizeof(rx.decoded.heartbeat));
         run_state.last_packet_Transponder_Heartbeat_ms = AP_HAL::millis();
+        _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
 
         if (rx.decoded.heartbeat.status.one.maintenanceRequired) {
             _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_MAINT_REQ;
@@ -140,9 +149,6 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         } else {
             _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_TX_SYSTEM_FAIL;
         }
-
-        _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
-
         }
         break;
 
@@ -176,6 +182,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
 #if AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
     case GDL90_ID_OWNSHIP_REPORT:
+        _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
         // The Ownship message contains information on the GNSS position. If the Ownship GNSS
         // position fix is invalid, the Latitude, Longitude, and NIC fields will all have the ZERO value. The
         // Ownship message will be transmitted with a period of one second regardless of data status or
@@ -199,6 +206,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
     case GDL90_ID_TRANSPONDER_STATUS:
     {
+        _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
         switch (msg.payload[0])
         {
         case 1:
@@ -256,6 +264,8 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
             GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
+            const uint32_t now_ms = AP_HAL::millis();
+            run_state.last_gcs_send_message_Transponder_Status_ms = now_ms;
 #endif
             break;
         }
@@ -324,6 +334,8 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
             GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
+            const uint32_t now_ms = AP_HAL::millis();
+            run_state.last_gcs_send_message_Transponder_Status_ms = now_ms;
 #endif
             break;
         }
