@@ -31,7 +31,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL0|COMPUTER|USB|
 |SERIAL1|RX7/TX7|UART7 (MAVLink2, flow-control-capable)|
 |SERIAL2|TX1/RX1|UART1 (MAVLink2, DMA-enabled)|
-|SERIAL3|TX2/RX2|UART2 (SPARE, DMA-enabled)|
+|SERIAL3|TX2/RX2|UART2 (USER)|
 |SERIAL4|TX3/RX3|UART3 (GPS1, DMA-enabled)|
 |SERIAL5|TX4/RX4|UART4 (RCIN, DMA-enabled)|
 |SERIAL6|TX6/RX6|UART6 (VTX, DMA-enabled)|
