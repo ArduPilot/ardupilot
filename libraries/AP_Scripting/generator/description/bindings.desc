@@ -63,6 +63,14 @@ singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 singleton AP_AHRS method handle_external_position_estimate boolean Location float'skip_check uint32_t'skip_check
 
+include AP_Airspeed/AP_Airspeed.h
+singleton AP_Airspeed depends AP_AIRSPEED_ENABLED
+singleton AP_Airspeed rename airspeed
+singleton AP_Airspeed method enabled boolean uint8_t 0 (AIRSPEED_MAX_SENSORS-1)
+singleton AP_Airspeed method healthy boolean uint8_t 0 (AIRSPEED_MAX_SENSORS-1)
+singleton AP_Airspeed method get_airspeed float uint8_t 0 (AIRSPEED_MAX_SENSORS-1)
+singleton AP_Airspeed method get_raw_airspeed float uint8_t 0 (AIRSPEED_MAX_SENSORS-1)
+
 include AP_Arming/AP_Arming.h
 
 singleton AP_Arming rename arming
