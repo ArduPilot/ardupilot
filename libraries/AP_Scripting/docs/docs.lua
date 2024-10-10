@@ -1942,6 +1942,10 @@ analog = {}
 ---@return number -- MCU temperature
 function analog:mcu_temperature() end
 
+-- return The current MCU voltage
+---@return number -- MCU voltage
+function analog:mcu_voltage() end
+
 -- desc
 ---@return AP_HAL__AnalogSource_ud|nil
 function analog:channel() end
