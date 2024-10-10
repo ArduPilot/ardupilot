@@ -114,10 +114,6 @@
 #endif
 #endif
 
-#ifndef AP_STATS_ENABLED
-#define AP_STATS_ENABLED 0
-#endif
-
 #ifndef AP_BATTERY_ESC_ENABLED
 #define AP_BATTERY_ESC_ENABLED 0
 #endif
