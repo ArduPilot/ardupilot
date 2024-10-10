@@ -248,14 +248,6 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else { 
-        _main_rotor.set_autorotation_flag(false);
-    }
 }
 
 // calculate_scalars
@@ -435,11 +427,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // updates below land min collective flag
-    if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_land_min_coll = true;
-    } else {
-        _heliflags.below_land_min_coll = false;
-    }
+    _heliflags.below_land_min_coll = !is_positive(collective_out - _collective_land_min_pct);
 
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);

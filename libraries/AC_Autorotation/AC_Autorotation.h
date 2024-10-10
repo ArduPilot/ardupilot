@@ -5,95 +5,104 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Motors/AP_MotorsHeli_RSC.h>
-#include <Filter/Filter.h>
 #include <Filter/LowPassFilter.h>
 #include <AC_PID/AC_P.h>
-
+#include <AC_AttitudeControl/AC_PosControl.h>
+#include <AC_AttitudeControl/AC_AttitudeControl.h>
 
 class AC_Autorotation
 {
 public:
 
     //Constructor
-    AC_Autorotation();
+    AC_Autorotation(AP_AHRS& ahrs, AP_MotorsHeli*& motors, AC_PosControl*& pos_ctrl, AC_AttitudeControl*& att_crtl);
 
-    //--------Functions--------
-    void init_hs_controller(void);  // Initialise head speed controller
-    void init_fwd_spd_controller(void);  // Initialise forward speed controller
-    bool update_hs_glide_controller(float dt);  // Update head speed controller
-    float get_rpm(void) const { return _current_rpm; }  // Function just returns the rpm as last read in this library
-    float get_rpm(bool update_counter);  // Function fetches fresh rpm update and continues sensor health monitoring
-    void set_target_head_speed(float ths) { _target_head_speed = ths; }  // Sets the normalised target head speed
-    void set_col_cutoff_freq(float freq) { _col_cutoff_freq = freq; }  // Sets the collective low pass filter cut off frequency
-    int16_t get_hs_set_point(void) { return _param_head_speed_set_point; }
-    float get_col_entry_freq(void) { return _param_col_entry_cutoff_freq; }
-    float get_col_glide_freq(void) { return _param_col_glide_cutoff_freq; }
-    float get_bail_time(void) { return _param_bail_time; }
-    float get_last_collective() const { return _collective_out; }
-    bool is_enable(void) { return _param_enable; }
-    void Log_Write_Autorotation(void) const;
-    void update_forward_speed_controller(void);  // Update forward speed controller
-    void set_desired_fwd_speed(void) { _vel_target = _param_target_speed; } // Overloaded: Set desired speed for forward controller to parameter value
-    void set_desired_fwd_speed(float speed) { _vel_target = speed; } // Overloaded: Set desired speed to argument value
-    int32_t get_pitch(void) const { return _pitch_target; }  // Get pitch target
-    float calc_speed_forward(void);  // Calculates the forward speed in the horizontal plane
-    void set_dt(float delta_sec);
+    void init(void);
+
+    bool enabled(void) const { return _param_enable.get() > 0; }
+
+    // Init and run entry phase controller
+    void init_entry(void);
+    void run_entry(float pilot_norm_accel);
+
+    // Init and run the glide phase controller
+    void init_glide(void);
+    void run_glide(float pilot_norm_accel);
+
+    // Run the landed phase controller to zero the desired vels and accels
+    void run_landed(void);
+
+    // Update controller used to drive head speed with collective
+    void update_headspeed_controller(void);
+
+    // Update controller used to control speed via vehicle pitch
+    void update_xy_speed_controller(void);
+
+    // Arming checks for autorotation, mostly checking for miss-configurations
+    bool arming_checks(size_t buflen, char *buffer) const;
+
+    // Logging of autorotation specific variables
+    void log_write_autorotation(void) const;
+
+    // Returns true if we have met the autorotation-specific reasons to think we have landed
+    bool check_landed(void);
+
+    // Dynamically update time step used in autorotation controllers
+    void set_dt(float delta_sec) { _dt = delta_sec; }
+
+    // Helper to get measured head speed that has been normalised by head speed set point
+    bool get_norm_head_speed(float& norm_rpm) const;
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    static const uint32_t entry_time_ms = 2000; // (ms) Number of milliseconds that the entry phase operates for
+
 private:
 
-    //--------Internal Variables--------
-    float _current_rpm;
-    float _collective_out;
-    float _head_speed_error;         // Error between target head speed and current head speed.  Normalised by head speed set point RPM.
-    float _col_cutoff_freq;          // Lowpass filter cutoff frequency (Hz) for collective.
-    uint8_t _unhealthy_rpm_counter;  // Counter used to track RPM sensor unhealthy signal.
-    uint8_t _healthy_rpm_counter;    // Counter used to track RPM sensor healthy signal.
-    float _target_head_speed;        // Normalised target head speed.  Normalised by head speed set point RPM.
-    float _p_term_hs;                // Proportional contribution to collective setting.
-    float _ff_term_hs;               // Following trim feed forward contribution to collective setting.
+    // Calculates the forward ground speed in the horizontal plane
+    float get_speed_forward(void) const;
 
-    float _vel_target;               // Forward velocity target.
-    float _pitch_target;             // Pitch angle target.
-    float _accel_max;                // Maximum acceleration limit.
-    int16_t _speed_forward_last;       // The forward speed calculated in the previous cycle.
-    bool _flag_limit_accel;          // Maximum acceleration limit reached flag.
-    float _accel_out_last;           // Acceleration value used to calculate pitch target in previous cycle.
-    float _cmd_vel;                  // Command velocity, used to get PID values for acceleration calculation.
-    float _accel_target;             // Acceleration target, calculated from PID.
-    float _delta_speed_fwd;          // Change in forward speed between computation cycles.
-    float _dt;                       // Time step.
-    int16_t _speed_forward;            // Measured forward speed.
-    float _vel_p;                    // Forward velocity P term.
-    float _vel_ff;                   // Forward velocity Feed Forward term.
-    float _accel_out;                // Acceleration value used to calculate pitch target.
+    // Get measured accel from the EKF and convert it to body frame XY
+    Vector2f get_bf_accel(void) const;
 
-    LowPassFilterFloat _accel_target_filter; // acceleration target filter
+    float _dt; // (s) Time step, updated dynamically from vehicle
 
-    //--------Parameter Values--------
+    // Position controller related variables
+    AC_AttitudeControl::HeadingCommand _desired_heading;
+    LowPassFilterConstDtVector2f _desired_accel_bf;
+    Vector2f _desired_velocity_bf;
+    Vector2f _desired_accel_ef;
+    Vector2f _desired_velocity_ef;
+
+    // Head speed controller variables
+    float _hs_decay;                  // The head speed target acceleration during the entry phase
+    float _head_speed_error;          // Error between target head speed and current head speed. Normalised by head speed set point RPM.
+    float _target_head_speed;         // Normalised target head speed.  Normalised by head speed set point RPM.
+    float _p_term_hs;                 // Proportional contribution to collective setting.
+    float _ff_term_hs;                // Following trim feed forward contribution to collective setting.
+    LowPassFilterFloat col_trim_lpf;  // Low pass filter for collective trim
+
+    // Flags used to check if we believe the aircraft has landed
+    struct {
+        bool min_speed;
+        bool land_col;
+        bool is_still;
+    } _landed_reason;
+
+    // Parameter values
     AP_Int8  _param_enable;
     AC_P _p_hs;
-    AC_P _p_fw_vel;
-    AP_Int16 _param_head_speed_set_point;
-    AP_Int16 _param_target_speed;
+    AP_Float _param_head_speed_set_point;
+    AP_Float _param_target_speed;
     AP_Float _param_col_entry_cutoff_freq;
     AP_Float _param_col_glide_cutoff_freq;
-    AP_Int16 _param_accel_max;
-    AP_Float _param_bail_time;
+    AP_Float _param_accel_max;
     AP_Int8  _param_rpm_instance;
-    AP_Float _param_fwd_k_ff;
 
-    //--------Internal Flags--------
-    struct controller_flags {
-            bool bad_rpm             : 1;
-            bool bad_rpm_warning     : 1;
-    } _flags;
-
-    //--------Internal Functions--------
-    void set_collective(float _collective_filter_cutoff) const;
-
-    // low pass filter for collective trim
-    LowPassFilterFloat col_trim_lpf;
+    // References to other libraries
+    AP_AHRS&           _ahrs;
+    AP_MotorsHeli*&    _motors_heli;
+    AC_PosControl*&    _pos_control;
+    AC_AttitudeControl*& _attitude_control;
 };

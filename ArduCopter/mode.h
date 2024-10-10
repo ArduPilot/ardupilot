@@ -2008,50 +2008,21 @@ protected:
 
 private:
 
-    // --- Internal variables ---
-    float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
-    float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
-    float _desired_v_z;             // Desired vertical
-    int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
+    float _pitch_target;          // Target pitch attitude to pass to attitude controller
     uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
-    float _hs_decay;                // The head accerleration during the entry phase
-    float _bail_time;               // Timer for exiting the bail out phase (s)
-    uint32_t _bail_time_start_ms;   // Time at start of bail out
-    float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
-    float _target_pitch_adjust;     // Target pitch rate used during bail out phase
 
     enum class Autorotation_Phase {
         ENTRY,
         SS_GLIDE,
         FLARE,
         TOUCH_DOWN,
-        BAIL_OUT } phase_switch;
-        
-    enum class Navigation_Decision {
-        USER_CONTROL_STABILISED,
-        STRAIGHT_AHEAD,
-        INTO_WIND,
-        NEAREST_RALLY} nav_pos_switch;
+        LANDED } phase_switch;
 
-    // --- Internal flags ---
-    struct controller_flags {
-            bool entry_initial             : 1;
-            bool ss_glide_initial          : 1;
-            bool flare_initial             : 1;
-            bool touch_down_initial        : 1;
-            bool straight_ahead_initial    : 1;
-            bool level_initial             : 1;
-            bool break_initial             : 1;
-            bool bail_out_initial          : 1;
-            bool bad_rpm                   : 1;
+    struct Controller_Flags {
+            bool entry_init            : 1;
+            bool glide_init            : 1;
+            bool landed_init           : 1;
     } _flags;
-
-    struct message_flags {
-            bool bad_rpm                   : 1;
-    } _msg_flags;
-
-    //--- Internal functions ---
-    void warning_message(uint8_t message_n);    //Handles output messages to the terminal
 
 };
 #endif
