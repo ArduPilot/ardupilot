@@ -595,6 +595,15 @@ float Aircraft::rangefinder_range() const
             return INFINITY;
         }
         altitude /= v.z;
+
+        // this is awful, but there are drawbacks to assuming an
+        // infinite plane.  If we don't do this here then we end up
+        // with a ridiculous rangefinder range, and that can cause
+        // floating point exceptions when we return a distance in cm
+        // from the AP_RangeFinder_SITL.
+        if (altitude > 100000) {
+            return INFINITY;
+        }
     }
 
     // Add some noise on reading
@@ -1058,6 +1067,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 
     {
         const float range = rangefinder_range();
+        if (!isinf(range) && range > 100000) {
+            AP_HAL::panic("Bad rangefinder calculation");
+        }
         for (uint8_t i=0; i<ARRAY_SIZE(rangefinder_m); i++) {
             rangefinder_m[i] = range;
         }
