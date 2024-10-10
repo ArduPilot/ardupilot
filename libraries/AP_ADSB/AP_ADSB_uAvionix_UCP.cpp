@@ -424,7 +424,6 @@ void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
     gdl90Transmit((GDL90_TX_MESSAGE&)msg, sizeof(msg));
 }
 
-
 void AP_ADSB_uAvionix_UCP::send_GPS_Data()
 {
     GDL90_GPS_DATA_V2 msg {};
@@ -443,12 +442,19 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     msg.altitudeGnss_mm = fix_is_good ? (_frontend._my_loc.alt * 10): INT32_MAX;
 
     // Protection Limits. FD or SBAS-based depending on state bits
-    msg.HPL_mm = UINT32_MAX;
-    msg.VPL_cm = UINT32_MAX;
+    // Estimate HPL based on horizontal accuracy/HFOM to a probability of 10^-7:
+    //  Using the central limit theorem for a Gaussian distribution,
+    //  this is 5.326724*stdDev.
+    //  Conservatively round up to 6 as a scaling factor,
+    //  and asssume HFOM of 95% was calculated as 2*stdDev*HDOP.
+    //  This yields a factor of 3 to estimate HPL from horizontal accuracy.
+    float accHoriz;
+    bool gotAccHoriz = gps.horizontal_accuracy(accHoriz);
+    msg.HPL_mm = gotAccHoriz ? 3 * accHoriz * 1E3 : UINT32_MAX; // required to calculate NIC
+    msg.VPL_cm = UINT32_MAX; // unused by ping200X
 
     // Figure of Merits
-    float accHoriz;
-    msg.horizontalFOM_mm = gps.horizontal_accuracy(accHoriz) ? accHoriz * 1E3 : UINT32_MAX;
+    msg.horizontalFOM_mm = gotAccHoriz ? accHoriz * 1E3 : UINT32_MAX;
     float accVert;
     msg.verticalFOM_cm = gps.vertical_accuracy(accVert) ? accVert * 1E2 : UINT16_MAX;
     float accVel;
