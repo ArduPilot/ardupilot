@@ -58,6 +58,8 @@ bool AP_ADSB_uAvionix_UCP::init()
     }
 
     _frontend.out_state.ctrl.squawkCode = 1200;
+    _frontend.out_state.tx_status.squawk = 1200;
+    _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
 
     return true;
 }
