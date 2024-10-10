@@ -23,11 +23,16 @@ private:
 
     void timer(void) override;
 
-    // check if PEC supported with the version value in SpecificationInfo() function
-    // returns true once PEC is confirmed as working or not working
-    bool check_pec_support();
+    // Override capacity scaler, use the current multiplier from SpecificationInfo()
+    uint16_t get_capacity_scaler() const override { return _i_multiplier; }
 
-    uint8_t _pec_confirmed; // count of the number of times PEC has been confirmed as working
+    // Read SpecificationInfo() function, check if PEC is supported and update voltage and current multipliers
+    // returns true once SpecificationInfo() is returned from the Smart Battery
+    bool read_specification_info();
+
+    bool _specification_info_confirmed = false; // specification info successfully read
+    uint16_t _v_multiplier = 1;    // voltage multiplier = 10^VScale
+    uint16_t _i_multiplier = 1;   // current multiplier = 10^IPScale
     uint32_t _last_cell_update_us[BATTMONITOR_SMBUS_NUM_CELLS_MAX]; // system time of last successful read of cell voltage
     uint32_t _cell_count_check_start_us;  // system time we started attempting to count the number of cells
     uint8_t _cell_count;    // number of cells returning voltages
