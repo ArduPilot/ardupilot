@@ -207,6 +207,7 @@ public:
     AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
     AP_Int8  gps_hertz[2];   // GPS update rate in Hz
     AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
+    AP_Float gps_heading_offset[2]; // heading offset for GpsForYaw
     AP_Float gps_drift_alt[2]; // altitude drift error
     AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
     AP_Float gps_accuracy[2];
