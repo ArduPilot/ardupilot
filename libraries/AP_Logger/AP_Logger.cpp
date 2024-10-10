@@ -833,7 +833,7 @@ uint16_t AP_Logger::get_max_num_logs() {
 }
 
 /* we're started if any of the backends are started */
-bool AP_Logger::logging_started(void) {
+bool AP_Logger::logging_started(void) const {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
