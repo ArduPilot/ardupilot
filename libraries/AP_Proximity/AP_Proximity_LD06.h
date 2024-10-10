@@ -57,7 +57,6 @@ private:
 
     // Store and keep track of the bytes being read from the sensor
     uint8_t _response[MESSAGE_LENGTH_LD06];
-    bool _response_data;
     uint16_t _byte_count;
 
     // Store for error-tracking purposes
