@@ -60,3 +60,4 @@ bool PolyFit<order,xtype,vtype>::get_polynomial(vtype res[order]) const
 
 // instantiate for order 4 double with Vector3f
 template class PolyFit<4, double, Vector3f>;
+template class PolyFit<6, double, Vector3f>;
