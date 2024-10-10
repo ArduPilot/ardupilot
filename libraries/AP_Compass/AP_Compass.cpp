@@ -171,6 +171,13 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT",    7, Compass, _state._priv_instance[0].motor_compensation, 0),
+
+    // @Param: BAT_MASK
+    // @DisplayName: Motor interference compensation battery index
+    // @Description: The mask battery numbers that are used for motor compensation of compasses. Total current is sum of current from the selected batteries
+    // @Bitmask: 0:FirstBattery,1:2ndBattery,2:3rdBattery,3:4thBattery,4:5thBattery,5:6thBattery,6:7thBattery,7:8thBattery,8:9thBattery
+    // @User: Advanced
+    AP_GROUPINFO("BAT_MASK", 52, Compass, _motor_comp_batmask, 1),
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
