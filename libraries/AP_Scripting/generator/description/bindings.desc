@@ -252,10 +252,18 @@ singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
 singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method distance_cm_orient deprecate Use distance_orient (in metres)
+singleton RangeFinder method distance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method signal_quality_pct_orient int8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
-singleton RangeFinder method max_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
-singleton RangeFinder method min_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method max_distance_cm_orient int32_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method max_distance_cm_orient deprecate Use max_distance_orient (in metres)
+singleton RangeFinder method min_distance_cm_orient int32_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method min_distance_cm_orient deprecate Use min_distance_orient (in metres)
 singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method ground_clearance_cm_orient deprecate Use ground_clearance_orient (in metres)
+singleton RangeFinder method max_distance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method min_distance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method ground_clearance_orient float Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method status_orient uint8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method has_data_orient boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATION_NONE ROTATION_MAX-1

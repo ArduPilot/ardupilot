@@ -3128,6 +3128,21 @@ function rangefinder:max_distance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
+---@return number
+function rangefinder:ground_clearance_orient(orientation) end
+
+-- desc
+---@param orientation integer
+---@return number
+function rangefinder:min_distance_orient(orientation) end
+
+-- desc
+---@param orientation integer
+---@return number
+function rangefinder:max_distance_orient(orientation) end
+
+-- desc
+---@param orientation integer
 ---@return integer
 function rangefinder:distance_cm_orient(orientation) end
 

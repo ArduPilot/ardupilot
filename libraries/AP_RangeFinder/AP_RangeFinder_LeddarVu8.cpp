@@ -26,8 +26,8 @@ extern const AP_HAL::HAL& hal;
 // https://autonomoustuff.com/product/leddartech-vu8/
 
 #define LEDDARVU8_ADDR_DEFAULT              0x01        // modbus default device id
-#define LEDDARVU8_DIST_MAX_CM               18500       // maximum possible distance reported by lidar
-#define LEDDARVU8_OUT_OF_RANGE_ADD_CM       100         // add this many cm to out-of-range values
+#define LEDDARVU8_DIST_MAX                  185.00      // maximum possible distance reported by lidar
+#define LEDDARVU8_OUT_OF_RANGE_ADD          1.00        // add this many metres to out-of-range values
 #define LEDDARVU8_TIMEOUT_MS                200         // timeout in milliseconds if no distance messages received
 
 // distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
@@ -78,7 +78,7 @@ bool AP_RangeFinder_LeddarVu8::get_reading(float &reading_m)
         } else {
             // if only out of range readings return larger of
             // driver defined maximum range for the model and user defined max range + 1m
-            reading_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)/100.0f;
+            reading_m = MAX(LEDDARVU8_DIST_MAX, max_distance() + LEDDARVU8_OUT_OF_RANGE_ADD);
         }
         return true;
     }

@@ -25,8 +25,8 @@
 #define FRAME_HEADER_2_B  'B'    // 0x42
 #define FRAME_HEADER_2_C  'C'    // 0x43
 
-#define DIST_MAX_CM 5000
-#define OUT_OF_RANGE_ADD_CM   100
+#define DIST_MAX 50.00
+#define OUT_OF_RANGE_ADD   1.0  // metres
 
 void AP_RangeFinder_JRE_Serial::move_preamble_in_buffer(uint8_t search_start_pos)
 {
@@ -134,7 +134,7 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     // all readings were invalid so return out-of-range-high value
     if (invalid_count > 0) {
         no_signal = true;
-        reading_m = MIN(MAX(DIST_MAX_CM, max_distance_cm() + OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
+        reading_m = MAX(DIST_MAX, max_distance() + OUT_OF_RANGE_ADD);
         return true;
     }
 

@@ -7,8 +7,8 @@
 -- Parameters should be set as follows before this test is loaded.
 -- "RNGFND1_TYPE": 36,
 -- "RNGFND1_ORIENT": 25,
--- "RNGFND1_MIN_CM": 10,
--- "RNGFND1_MAX_CM": 5000,
+-- "RNGFND1_MIN": 0.10,
+-- "RNGFND1_MAX": 50.00,
 
 ---@diagnostic disable: cast-local-type
 
@@ -43,8 +43,8 @@ local SIGNAL_QUALITY_MAX = 100
 local SIGNAL_QUALITY_UNKNOWN = -1
 
 -- Read parameters for min and max valid range finder ranges.
-local RNGFND1_MIN_CM = Parameter("RNGFND1_MIN_CM"):get()
-local RNGFND1_MAX_CM = Parameter("RNGFND1_MAX_CM"):get()
+local RNGFND1_MIN = Parameter("RNGFND1_MIN"):get()
+local RNGFND1_MAX = Parameter("RNGFND1_MAX"):get()
 
 local function send(str)
     gcs:send_text(3, string.format("%s %s", TEST_ID_STR, str))
@@ -253,9 +253,9 @@ local function _update_begin_test()
         -- The full state udata must be initialized.
         local rf_state = RangeFinder_State()
         -- Set the status
-        if dist_m_in < RNGFND1_MIN_CM * 0.01 then
+        if dist_m_in < RNGFND1_MIN then
             rf_state:status(RNDFND_STATUS_OUT_OF_RANGE_LOW)
-        elseif dist_m_in > RNGFND1_MAX_CM * 0.01 then
+        elseif dist_m_in > RNGFND1_MAX then
             rf_state:status(RNDFND_STATUS_OUT_OF_RANGE_HIGH)
         else
             rf_state:status(RNDFND_STATUS_GOOD)
