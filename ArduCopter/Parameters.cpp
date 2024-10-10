@@ -1834,5 +1834,19 @@ void Copter::convert_tradheli_parameters(void) const
         AP_Param::convert_old_parameter(&collhelipct_conversion_info[i], 0.1f);
     }
 
+    // PARAMETER_CONVERSION - Added: Apr-2024
+    // Convert swash servo linearisation params from an on/off to max angle
+    const AP_Param::ConversionInfo swash_lin_conversion_info[] = {
+        { Parameters::k_param_motors, 212, AP_PARAM_INT8,  "H_SW_LIN_SV_ANG" },
+        { Parameters::k_param_motors, 213, AP_PARAM_INT8,  "H_SW2_LIN_SV_ANG" },
+    };
+    table_size = ARRAY_SIZE(swash_lin_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        // If the old param is not the default it should be either 0 or 1
+        // If it is 0 scaling by 50 will stil give zero so will remain disabled
+        // If it is 1 scaling by 50 will give the previously assumed servo range so there will be no change in behaviour
+        // If user had accidently set > 1 then there is a prearm to catch out of range linearisation angles
+        AP_Param::convert_old_parameter(&swash_lin_conversion_info[i], 50.0);
+    }
 }
 #endif

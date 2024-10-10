@@ -649,6 +649,11 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    // Run swashplate specific checks
+    if (!_swashplate.arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     return true;
 }
 

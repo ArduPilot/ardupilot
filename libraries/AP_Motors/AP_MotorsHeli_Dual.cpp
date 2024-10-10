@@ -593,6 +593,11 @@ bool AP_MotorsHeli_Dual::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    // Run swashplate specific checks
+    if (!_swashplate1.arming_checks(buflen, buffer) || !_swashplate2.arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     return true;
 }
 
