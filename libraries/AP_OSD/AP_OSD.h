@@ -562,6 +562,7 @@ public:
         TOGGLE=0,
         PWM_RANGE=1,
         AUTO_SWITCH=2,
+        STICKS_INPUT=3,
     };
 
     AP_Int8 osd_type;
