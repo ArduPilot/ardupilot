@@ -246,10 +246,10 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_name = "rt/ap/goal_lla",
         .type_name = "geographic_msgs::msg::dds_::GeoPointStamped_",
         .qos = {
-            .durability = UXR_DURABILITY_VOLATILE,
-            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .durability = UXR_DURABILITY_TRANSIENT_LOCAL,
+            .reliability = UXR_RELIABILITY_RELIABLE,
             .history = UXR_HISTORY_KEEP_LAST,
-            .depth = 5,
+            .depth = 1,
         },
     },
 #endif // AP_DDS_GOAL_PUB_ENABLED

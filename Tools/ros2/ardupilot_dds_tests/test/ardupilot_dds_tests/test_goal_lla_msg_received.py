@@ -104,7 +104,7 @@ def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
-def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_serial):
+def test_dds_serial_goal_msg_recv(launch_context, launch_sitl_copter_dds_serial):
     """Test position messages are published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_serial
     virtual_ports = actions["virtual_ports"].action
@@ -130,7 +130,7 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
-def test_dds_udp_geopose_msg_recv(launch_context, launch_sitl_copter_dds_udp):
+def test_dds_udp_goal_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     """Test position messages are published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_udp
     micro_ros_agent = actions["micro_ros_agent"].action

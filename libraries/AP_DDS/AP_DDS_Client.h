@@ -109,7 +109,8 @@ private:
     uint64_t last_goal_time_ms;
     //! @brief Serialize the current gps global origin and publish to the IO stream(s)
     void write_goal_topic();
-    static void update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg);
+    bool update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg);
+    geographic_msgs_msg_GeoPointStamped prev_goal_msg;
 # endif // AP_DDS_GOAL_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
