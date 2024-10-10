@@ -21,7 +21,7 @@ public:
       Velocity is in earth frame, NED [m/s].
       Yaw is in earth frame, NED [rad/s].
      */
-    virtual bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads) WARN_IF_UNUSED {
+    virtual bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, const float yaw_rate_rads) WARN_IF_UNUSED {
         return false;
     }
 
@@ -29,6 +29,14 @@ public:
         Sets the target global position with standard guided mode behavior.
     */
     virtual bool set_global_position(const Location& loc) WARN_IF_UNUSED {
+        return false;
+    }
+
+    /*
+        Sets only the target yaw rate
+        Yaw is in earth frame, NED [rad/s]
+    */
+    virtual bool set_yaw_rate(const float yaw_rate_rads) WARN_IF_UNUSED {
         return false;
     }
 

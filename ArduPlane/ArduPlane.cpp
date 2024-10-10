@@ -866,6 +866,19 @@ bool Plane::set_target_location(const Location &target_loc)
     plane.set_guided_WP(loc);
     return true;
 }
+
+bool Plane::set_target_yaw_rate(const float yaw_rate)
+{
+    if (plane.control_mode != &plane.mode_guided) {
+        // only accept yaw rate updates when in GUIDED mode
+        return false;
+    }
+
+    const auto direction_is_ccw = yaw_rate < 0;
+    plane.mode_guided.set_radius_and_direction(abs(yaw_rate), direction_is_ccw);
+
+    return true;
+}
 #endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
 #if AP_SCRIPTING_ENABLED
