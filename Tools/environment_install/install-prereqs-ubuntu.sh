@@ -493,6 +493,44 @@ grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
         echo "Skipping appending CCache to PATH."
     fi
 }
+
+
+UXRCE_GEN_TOOL_NAME="ArduPilot's MicroXRCEDDSGen tool for ROS 2"
+if [[ -z "${DO_UXRCGEN_INSTALL}" ]] && maybe_prompt_user "Install $UXRCE_GEN_TOOL_NAME [N/y]?" ; then
+    DO_UXRCGEN_INSTALL=1
+fi
+
+if [[ $DO_UXRCGEN_INSTALL -eq 1 ]]; then
+    if ! package_is_installed "default-jre"; then
+        heading "Installing default-jre"
+        $APT_GET install default-jre
+        echo "Done!"
+    fi
+
+    if [[ -z "${UXRCE_GEN_ROOT}" ]]; then
+        UXRCE_GEN_ROOT=$OPT/ardupilot_uxrce
+    fi
+
+    heading "Installing $UXRCE_GEN_TOOL_NAME"
+    echo "Downloading from ArduPilot release"
+    sudo mkdir -p $UXRCE_GEN_ROOT
+    cd $UXRCE_GEN_ROOT
+    sudo wget --progress=dot:giga -P $UXRCE_GEN_ROOT/scripts https://github.com/ArduPilot/Micro-XRCE-DDS-Gen/releases/download/v4.5.0/microxrceddsgen
+    sudo chmod +x scripts/microxrceddsgen
+    sudo wget --progress=dot:giga -P $UXRCE_GEN_ROOT/share/microxrceddsgen/java https://github.com/ArduPilot/Micro-XRCE-DDS-Gen/releases/download/v4.5.0/microxrceddsgen.jar
+
+    exportline="export PATH=$UXRCE_GEN_ROOT/scripts:\$PATH";
+    grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
+        if maybe_prompt_user "Add $UXRCE_GEN_ROOT to your PATH [N/y]?" ; then
+            echo $exportline >> ~/$SHELL_LOGIN
+            eval $exportline
+            microxrceddsgen -version
+        else
+            echo "Skipping adding $UXRCE_GEN_ROOT to PATH."
+        fi
+    }
+fi
+
 echo "Done!"
 
 if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then

@@ -138,9 +138,11 @@ jobs:
               export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
               export PATH=/__w/ardupilot/ardupilot/ardupilot/Tools/autotest:$PATH
               ;;
+            *"ubuntu"*)
+              WAF_EXTRA_ARGS=" --enable-dds"
           esac
           git config --global --add safe.directory /__w/ardupilot/ardupilot
-          ./waf configure --board CubeOrange
+          ./waf configure --board CubeOrange ${WAF_EXTRA_ARGS}
           ./waf plane
 
   build-alpine:  # special case for alpine as it doesn't have bash by default
