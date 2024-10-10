@@ -158,10 +158,20 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     ASCALAR(takeoff_throttle_min,       "TKOFF_THR_MIN",    0),
 
+    // @Param: TKOFF_THR_IDLE
+    // @DisplayName: Takeoff idle throttle
+    // @Description: The idle throttle to hold after arming and before a takeoff. Applicable in TAKEOFF and AUTO modes.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    ASCALAR(takeoff_throttle_idle,       "TKOFF_THR_IDLE",    0),
+
     // @Param: TKOFF_OPTIONS
     // @DisplayName: Takeoff options
     // @Description: This selects the mode of the takeoff in AUTO and TAKEOFF flight modes. 
     // @Bitmask: 0: When unset the maximum allowed throttle is always used (THR_MAX or TKOFF_THR_MAX) during takeoff. When set TECS is allowed to operate between a minimum (THR_MIN or TKOFF_THR_MIN) and a maximum (THR_MAX or TKOFF_THR_MAX) limit. Applicable only when using an airspeed sensor.
+    // @Bitmask: 1: When set the throttle will run at TKOFF_THR_IDLE before takeoff.
     // @User: Advanced
     ASCALAR(takeoff_options,               "TKOFF_OPTIONS",       0),
     
