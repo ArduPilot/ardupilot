@@ -105,9 +105,9 @@ private:
 
 #if AP_DDS_GOAL_PUB_ENABLED
     geographic_msgs_msg_GeoPointStamped goal_topic;
-    // The last ms timestamp AP_DDS wrote a gps global origin message
+    // The last ms timestamp AP_DDS wrote a goal message
     uint64_t last_goal_time_ms;
-    //! @brief Serialize the current gps global origin and publish to the IO stream(s)
+    //! @brief Serialize the current goal and publish to the IO stream(s)
     void write_goal_topic();
     bool update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg);
     geographic_msgs_msg_GeoPointStamped prev_goal_msg;

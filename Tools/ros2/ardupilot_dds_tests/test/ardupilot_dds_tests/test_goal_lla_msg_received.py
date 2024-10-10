@@ -26,7 +26,6 @@ import math
 import pytest
 import rclpy
 import rclpy.node
-from scipy.spatial.transform import Rotation as R
 import threading
 
 from launch import LaunchDescription
@@ -36,6 +35,7 @@ from launch_pytest.tools import process as process_tools
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSDurabilityPolicy
 
 from geographic_msgs.msg import GeoPointStamped
 
@@ -57,8 +57,9 @@ class GeoPointListener(rclpy.node.Node):
     def start_subscriber(self):
         """Start the subscriber."""
         qos_profile = QoSProfile(
-            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            reliability=QoSReliabilityPolicy.RELIABLE,
             history=QoSHistoryPolicy.KEEP_LAST,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
             depth=1,
         )
 
@@ -70,6 +71,7 @@ class GeoPointListener(rclpy.node.Node):
 
     def subscriber_callback(self, msg):
         """Process a GeoPointStamped message."""
+        print("-----> Got Message")
         self.msg_event_object.set()
 
 

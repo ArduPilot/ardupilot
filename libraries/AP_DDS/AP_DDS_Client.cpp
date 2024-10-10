@@ -29,9 +29,6 @@
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
 
-static constexpr double lat_lon_scale_factor = 1e-7;
-static constexpr double alt_scale_factor = 0.01;
-
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 #if AP_DDS_TIME_PUB_ENABLED
@@ -539,21 +536,22 @@ bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
     update_topic(msg.header.stamp);
     Location target_loc;
     vehicle->get_target_location(target_loc);
-    msg.position.latitude = target_loc.lat * lat_lon_scale_factor;
-    msg.position.longitude = target_loc.lng * lat_lon_scale_factor;
-    msg.position.altitude = target_loc.alt * alt_scale_factor;
+    msg.position.latitude = target_loc.lat * 1e-7;
+    msg.position.longitude = target_loc.lng * 1e-7;
+    msg.position.altitude = target_loc.alt * 1e-2;
 
     // Check whether the goal has changed or if the topic has never been published.
     const double distance_lat_lon = 1e-8;
     const double distance_alt = 1e-3;
-    if (std::abs(msg.position.latitude - prev_goal_msg.position.latitude) >  distance_lat_lon ||
-        std::abs(msg.position.longitude - prev_goal_msg.position.longitude) >  distance_lat_lon ||
-        std::abs(msg.position.altitude - prev_goal_msg.position.altitude) > distance_alt ||
+    if (abs(msg.position.latitude - prev_goal_msg.position.latitude) >  distance_lat_lon ||
+        abs(msg.position.longitude - prev_goal_msg.position.longitude) >  distance_lat_lon ||
+        abs(msg.position.altitude - prev_goal_msg.position.altitude) > distance_alt ||
         prev_goal_msg.header.stamp.sec == 0 ) {
         update_topic(prev_goal_msg.header.stamp);
         prev_goal_msg.position.latitude = msg.position.latitude;
         prev_goal_msg.position.longitude = msg.position.longitude;
         prev_goal_msg.position.altitude = msg.position.altitude;
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s AP_DDS Sent Goal", msg_prefix);
         return true;
     } else {
         return false;
