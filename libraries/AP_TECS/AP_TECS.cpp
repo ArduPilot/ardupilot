@@ -226,7 +226,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Range: 0.0 0.5
     // @Increment: 0.02
     // @User: Advanced
-    AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0),
+    AP_GROUPINFO("TKOFF_IGAIN", 25, AP_TECS, _integGain_takeoff, 0.3f),
 
     // @Param: LAND_PDAMP
     // @DisplayName: Pitch damping gain when landing
