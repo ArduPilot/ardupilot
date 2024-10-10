@@ -29,7 +29,7 @@ TEST(VectorTest, Rotations)
     EXPECT_FLOAT_EQ(expected.z, v.z); \
     Quaternion quat; \
     quat.from_rotation(rotation); \
-    quat.earth_to_body(v2); \
+    quat.body_to_earth(v2); \
     EXPECT_NEAR(expected.length(), v.length(), accuracy); \
     EXPECT_NEAR(expected.x, v2.x, accuracy); \
     EXPECT_NEAR(expected.y, v2.y, accuracy); \

@@ -136,7 +136,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     // compensate for height, this converts to (approx) m/s
     sensor_flow *= constrain_float(height_estimate, height_min, height_max);
 
-    // rotate controller input to earth frame
+    // convert controller input to earth frame representation
     Vector2f input_ef = copter.ahrs.body_to_earth2D(sensor_flow);
 
     // run PI controller

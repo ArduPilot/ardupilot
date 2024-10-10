@@ -152,11 +152,11 @@ public:
         return ahrs.getLastPosDownReset(posDelta);
     }
 
-    // rotate a 2D vector from earth frame to body frame
+    // convert a 2D vector from earth frame representation to body frame
     // in result, x is forward, y is right
     Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
 
-    // rotate a 2D vector from earth frame to body frame
+    // convert a 2D vector from body frame representation to earth frame
     // in input, x is forward, y is right
     Vector2f body_to_earth2D(const Vector2f &bf) const;
 
