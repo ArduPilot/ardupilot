@@ -209,8 +209,10 @@ public:
     float get_pitch() const { return _pos_control.get_pitch_cd(); }
     Vector3f get_thrust_vector() const { return _pos_control.get_thrust_vector(); }
 
-    // get target yaw in centi-degrees
-    float get_yaw() const { return _pos_control.get_yaw_cd(); }
+    // get target yaw in centi-degrees along the path to the next waypoint
+    // this may not point directly at the waypoint especially during cornering.  call is_active() before using
+    float get_yaw_cd() const;
+
     /// advance_wp_target_along_track - move target location along track from origin to destination
     bool advance_wp_target_along_track(float dt);
 
@@ -228,7 +230,7 @@ protected:
     struct wpnav_flags {
         uint8_t reached_destination     : 1;    // true if we have reached the destination
         uint8_t fast_waypoint           : 1;    // true if we should ignore the waypoint radius and consider the waypoint complete once the intermediate target has reached the waypoint
-        uint8_t wp_yaw_set              : 1;    // true if yaw target has been set
+        uint8_t wp_yaw_set              : 1;    // true if _wp_yaw_cd has been set
     } _flags;
 
     // helper function to calculate scurve jerk and jerk_time values
@@ -283,6 +285,7 @@ protected:
     float       _offset_vel;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     float       _offset_accel;          // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
     bool        _paused;                // flag for pausing waypoint controller
+    float       _wp_yaw_cd;             // yaw along path to next waypoint (may not point directly at waypoint). only valid is _flags.wp_yaw_set and is_active() are true
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
@@ -290,4 +293,12 @@ protected:
     AP_Int8     _rangefinder_use;       // parameter that specifies if the range finder should be used for terrain following commands
     bool        _rangefinder_healthy;   // true if rangefinder distance is healthy (i.e. between min and maximum)
     float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
+
+#if AP_AVOIDANCE_ENABLED
+    // simple avoidance variables
+    struct {
+        float vel_xy_max;               // maximum horizontal velocity possible while avoiding obstacles
+        bool vel_xy_max_set;            // true if _avoid_vel_max has been set
+    } _simple_avoidance;
+#endif
 };

@@ -3196,7 +3196,7 @@ void QuadPlane::waypoint_controller(void)
     disable_yaw_rate_time_constant();
     attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
                                                        plane.nav_pitch_cd,
-                                                       wp_nav->get_yaw(),
+                                                       wp_nav->get_yaw_cd(),
                                                        true);
 
     // climb based on altitude error
