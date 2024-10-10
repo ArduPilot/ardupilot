@@ -1,0 +1,28 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from rcl_interfaces/msg/ParameterType.msg
+// generated code does not contain a copyright notice
+
+
+module rcl_interfaces {
+  module msg {
+    module ParameterType_Constants {
+      @verbatim (language="comment", text=
+        "Default value, which implies this is not a valid parameter.")
+      const uint8 PARAMETER_NOT_SET = 0;
+      const uint8 PARAMETER_BOOL = 1;
+      const uint8 PARAMETER_INTEGER = 2;
+      const uint8 PARAMETER_DOUBLE = 3;
+      const uint8 PARAMETER_STRING = 4;
+      const uint8 PARAMETER_BYTE_ARRAY = 5;
+      const uint8 PARAMETER_BOOL_ARRAY = 6;
+      const uint8 PARAMETER_INTEGER_ARRAY = 7;
+      const uint8 PARAMETER_DOUBLE_ARRAY = 8;
+      const uint8 PARAMETER_STRING_ARRAY = 9;
+    };
+    @verbatim (language="comment", text=
+      "These types correspond to the value that is set in the ParameterValue message.")
+    struct ParameterType {
+      uint8 structure_needs_at_least_one_member;
+    };
+  };
+};

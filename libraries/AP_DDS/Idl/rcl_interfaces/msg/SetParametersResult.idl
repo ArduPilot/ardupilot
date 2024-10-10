@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from rcl_interfaces/msg/SetParametersResult.msg
+// generated code does not contain a copyright notice
+
+
+module rcl_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "A true value of the same index indicates that the parameter was set" "\n"
+      "successfully. A false value indicates the change was rejected.")
+    struct SetParametersResult {
+      boolean successful;
+
+      @verbatim (language="comment", text=
+        "Reason why the setting was either successful or a failure. This should only be" "\n"
+        "used for logging and user interfaces.")
+      string reason;
+    };
+  };
+};

@@ -19,6 +19,13 @@
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
 
+#include "rcl_interfaces/srv/SetParameters.h"
+#include "rcl_interfaces/srv/GetParameters.h"
+#include "rcl_interfaces/msg/Parameter.h"
+#include "rcl_interfaces/msg/SetParametersResult.h"
+#include "rcl_interfaces/msg/ParameterValue.h"
+#include "rcl_interfaces/msg/ParameterType.h"
+
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
 #endif
@@ -784,6 +791,194 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
+        break;
+    }
+    case services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id: {
+        rcl_interfaces_srv_SetParameters_Request set_parameter_request;
+        rcl_interfaces_srv_SetParameters_Response set_parameter_response;
+        const bool deserialize_success = rcl_interfaces_srv_SetParameters_Request_deserialize_topic(ub, &set_parameter_request);
+        if (deserialize_success == false) {
+            break;
+        }
+
+        if (set_parameter_request.parameters_size > 8U) {
+            break;
+        }
+
+        // Set parameters and responses for each one requested
+        set_parameter_response.results_size = set_parameter_request.parameters_size;
+        for (size_t i = 0; i < set_parameter_request.parameters_size; i++) {
+            rcl_interfaces_msg_Parameter param = set_parameter_request.parameters[i];
+
+            enum ap_var_type var_type;
+
+            // set parameter
+            AP_Param *vp;
+            char param_key[AP_MAX_NAME_SIZE+1];
+            strncpy(param_key, (char *)param.name, AP_MAX_NAME_SIZE);
+            param_key[AP_MAX_NAME_SIZE] = 0;
+
+            // Only worried about integer and float types for parameter setting.
+            bool param_isnan = true;
+            bool param_isinf = true;
+            float param_value;
+            switch (param.value.type) {
+            case PARAMETER_INTEGER: {
+                param_isnan = isnan(param.value.integer_value);
+                param_isinf = isinf(param.value.integer_value);
+                param_value = float(param.value.integer_value);
+                break;
+            }
+            case PARAMETER_DOUBLE: {
+                param_isnan = isnan(param.value.double_value);
+                param_isinf = isinf(param.value.double_value);
+                param_value = float(param.value.double_value);
+                break;
+            }
+            default: {
+                break;
+            }
+            }
+
+            // find existing param to get the old value
+            uint16_t parameter_flags = 0;
+            vp = AP_Param::find(param_key, &var_type, &parameter_flags);
+            if (vp == nullptr || param_isnan || param_isinf) {
+                set_parameter_response.results[i].successful = false;
+                strncpy(set_parameter_response.results[i].reason, "Parameter not found", sizeof(set_parameter_response.results[i].reason));
+                continue;
+            }
+
+            float old_value = vp->cast_to_float(var_type);
+
+            // Add existing parameter checks used in GCS_Param.cpp
+            if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+                // the user can set BRD_OPTIONS to enable set of internal
+                // parameters, for developer testing or unusual use cases
+                if (AP_BoardConfig::allow_set_internal_parameters()) {
+                    parameter_flags &= ~AP_PARAM_FLAG_INTERNAL_USE_ONLY;
+                }
+            }
+
+            if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
+                set_parameter_response.results[i].successful = false;
+                strncpy(set_parameter_response.results[i].reason, "Parameter is read only",sizeof(set_parameter_response.results[i].reason));
+                continue;
+            }
+
+            // set the value
+            vp->set_float(param_value, var_type);
+
+            // Force the save if the value is not equal to the old one
+            bool force_save = !is_equal(param_value, old_value);
+
+            // save the change
+            vp->save(force_save);
+
+            if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
+                AP_Param::invalidate_count();
+            }
+
+            set_parameter_response.results[i].successful = true;
+            strncpy(set_parameter_response.results[i].reason, "Parameter accepted", sizeof(set_parameter_response.results[i].reason));
+        }
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
+        uint8_t reply_buffer[reply_size] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
+        const bool serialize_success = rcl_interfaces_srv_SetParameters_Response_serialize_topic(&reply_ub, &set_parameter_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        bool successful_params = true;
+        for (size_t i = 0; i < set_parameter_response.results_size; i++) {
+            // Check that all the parameters were set successfully
+            successful_params &= set_parameter_response.results[i].successful;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Set Parameters Request : %s", msg_prefix, successful_params ? "SUCCESSFUL" : "ONE OR MORE PARAMS FAILED" );
+        break;
+    }
+    case services[to_underlying(ServiceIndex::GET_PARAMETERS)].rep_id: {
+        rcl_interfaces_srv_GetParameters_Request get_parameters_request;
+        rcl_interfaces_srv_GetParameters_Response get_parameters_response;
+        const bool deserialize_success = rcl_interfaces_srv_GetParameters_Request_deserialize_topic(ub, &get_parameters_request);
+        if (deserialize_success == false) {
+            break;
+        }
+
+        if (get_parameters_request.names_size > 8U) {
+            break;
+        }
+
+        bool successful_read = true;
+        get_parameters_response.values_size = get_parameters_request.names_size;
+        for (size_t i = 0; i < get_parameters_request.names_size; i++) {
+            enum ap_var_type var_type;
+
+            AP_Param *vp;
+            char param_key[AP_MAX_NAME_SIZE+1];
+            strncpy(param_key, (char *)get_parameters_request.names[i], AP_MAX_NAME_SIZE);
+            param_key[AP_MAX_NAME_SIZE] = 0;
+
+            vp = AP_Param::find(param_key, &var_type);
+            if (vp == nullptr) {
+                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                successful_read &= false;
+                continue;
+            }
+
+            float param_value = vp->cast_to_float(var_type);
+
+            switch (var_type) {
+            case AP_PARAM_INT8:
+            case AP_PARAM_INT16:
+            case AP_PARAM_INT32: {
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].integer_value = int(param_value);
+                successful_read &= true;
+                break;
+            }
+            case AP_PARAM_FLOAT: {
+                get_parameters_response.values[i].type = PARAMETER_DOUBLE;
+                get_parameters_response.values[i].double_value = double(param_value);
+                successful_read &= true;
+                break;
+            }
+            default: {
+                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                successful_read &= false;
+                break;
+            }
+            }
+        }
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::GET_PARAMETERS)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
+        uint8_t reply_buffer[reply_size] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
+        const bool serialize_success = rcl_interfaces_srv_GetParameters_Response_serialize_topic(&reply_ub, &get_parameters_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Get Parameters Request : %s", msg_prefix, successful_read ? "SUCCESSFUL" : "ONE OR MORE PARAM NOT FOUND");
         break;
     }
     }
