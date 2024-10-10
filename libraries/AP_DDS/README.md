@@ -209,6 +209,7 @@ nanosec: 729410000
 $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
+/ap/takeoff
 ---
 ```
 
@@ -234,6 +235,7 @@ List the available services:
 $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
+/ap/takeoff [ardupilot_msgs/srv/Takeoff]
 ```
 
 Call the arm motors service:
@@ -254,6 +256,16 @@ requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
 
 response:
 ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
+```
+
+Call the takeoff service:
+
+```bash
+$ ros2 service call /ap/takeoff ardupilot_msgs/srv/Takeoff "{alt: 10.5}"
+requester: making request: ardupilot_msgs.srv.Takeoff_Request(alt=10.5)
+
+response:
+ardupilot_msgs.srv.Takeoff_Response(status=True)
 ```
 
 ## Commanding using ROS 2 Topics

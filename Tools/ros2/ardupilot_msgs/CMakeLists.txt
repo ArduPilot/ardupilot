@@ -16,6 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/GlobalPosition.msg"
   "srv/ArmMotors.srv"
   "srv/ModeSwitch.srv"
+  "srv/Takeoff.srv"
   DEPENDENCIES geometry_msgs std_msgs
   ADD_LINTER_TESTS
 )

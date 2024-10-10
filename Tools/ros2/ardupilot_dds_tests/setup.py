@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             "time_listener = ardupilot_dds_tests.time_listener:main",
             "plane_waypoint_follower = ardupilot_dds_tests.plane_waypoint_follower:main",
+            "copter_takeoff = ardupilot_dds_tests.copter_takeoff:main",
         ],
     },
 )
