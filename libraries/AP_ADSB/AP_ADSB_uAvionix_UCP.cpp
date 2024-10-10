@@ -105,13 +105,6 @@ void AP_ADSB_uAvionix_UCP::update()
         _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
         // TODO reset the data for each message when timeout occurs
     }
-#if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
-    if (now_ms - run_state.last_gcs_send_message_Transponder_Status_ms >= 10000)
-    {
-        GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
-        run_state.last_gcs_send_message_Transponder_Status_ms = now_ms;
-    }
-#endif
 }
 
 
