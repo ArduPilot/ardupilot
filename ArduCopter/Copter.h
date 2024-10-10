@@ -347,45 +347,37 @@ private:
 # include USERHOOK_VARIABLES
 #endif
 
-    // Documentation of GLobals:
-    typedef union {
-        struct {
-            uint8_t unused1                 : 1; // 0
-            uint8_t unused_was_simple_mode  : 2; // 1,2
-            uint8_t pre_arm_rc_check        : 1; // 3       // true if rc input pre-arm checks have been completed successfully
-            uint8_t pre_arm_check           : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
-            uint8_t auto_armed              : 1; // 5       // stops auto missions from beginning until throttle is raised
-            uint8_t logging_started         : 1; // 6       // true if logging has started
-            uint8_t land_complete           : 1; // 7       // true if we have detected a landing
-            uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
-            uint8_t usb_connected_unused    : 1; // 9       // UNUSED
-            uint8_t rc_receiver_present_unused : 1; // 10      // UNUSED
-            uint8_t compass_mot             : 1; // 11      // true if we are currently performing compassmot calibration
-            uint8_t motor_test              : 1; // 12      // true if we are currently performing the motors test
-            uint8_t initialised             : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
-            uint8_t land_complete_maybe     : 1; // 14      // true if we may have landed (less strict version of land_complete)
-            uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
-            uint8_t system_time_set_unused  : 1; // 16      // true if the system time has been set from the GPS
-            uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
-            uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
-            uint8_t land_repo_active        : 1; // 21      // true if the pilot is overriding the landing position
-            uint8_t motor_interlock_switch  : 1; // 22      // true if pilot is requesting motor interlock enable
-            uint8_t in_arming_delay         : 1; // 23      // true while we are armed but waiting to spin motors
-            uint8_t initialised_params      : 1; // 24      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
-            uint8_t unused3                 : 1; // 25      // was compass_init_location; true when the compass's initial location has been set
-            uint8_t unused2                 : 1; // 26      // aux switch rc_override is allowed
-            uint8_t armed_with_airmode_switch : 1; // 27      // we armed using a arming switch
-            uint8_t prec_land_active        : 1; // 28      // true if precland is active
-        };
-        uint32_t value;
-    } ap_t;
+    // ap_value calculates a 32-bit bitmask representing various pieces of
+    // state about the Copter.  It replaces a global variable which was
+    // used to track this state.
+    uint32_t ap_value() const;
 
-    ap_t ap;
+    // These variables are essentially global variables.  These should
+    // be removed over time.
+    struct {
+        uint8_t pre_arm_rc_check;               // true if rc input pre-arm checks have been completed successfully
+        uint8_t pre_arm_check;                  // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+        uint8_t auto_armed;                     // stops auto missions from beginning until throttle is raised
+        uint8_t land_complete;                  // true if we have detected a landing
+        uint8_t new_radio_frame;                // Set true if we have new PWM data to act on from the Radio
+        uint8_t compass_mot;                    // true if we are currently performing compassmot calibration
+        uint8_t motor_test;                     // true if we are currently performing the motors test
+        uint8_t initialised;                    // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
+        uint8_t land_complete_maybe;            // true if we may have landed (less strict version of land_complete)
+        uint8_t throttle_zero;                  // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
+        uint8_t system_time_set_unused;         // true if the system time has been set from the GPS
+        uint8_t gps_glitching;                  // true if GPS glitching is affecting navigation accuracy
+        uint8_t using_interlock;                // aux switch motor interlock function is in use
+        uint8_t land_repo_active;               // true if the pilot is overriding the landing position
+        uint8_t motor_interlock_switch;         // true if pilot is requesting motor interlock enable
+        uint8_t in_arming_delay;                // true while we are armed but waiting to spin motors
+        uint8_t initialised_params;             // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
+        uint8_t armed_with_airmode_switch;      // we armed using a arming switch
+        uint8_t prec_land_active;               // true if precland is active
+    } ap;
 
     AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled;
     bool force_flying; // force flying is enabled when true;
-
-    static_assert(sizeof(uint32_t) == sizeof(ap), "ap_t must be uint32_t");
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
