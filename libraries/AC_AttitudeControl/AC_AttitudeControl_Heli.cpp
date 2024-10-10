@@ -540,7 +540,7 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
     update_althold_lean_angle_max(throttle_in);
 
     _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (apply_angle_boost && !((AP_MotorsHeli&)_motors).get_in_autorotation()) {
+    if (apply_angle_boost && !((AP_MotorsHeli&)_motors).in_autorotation()) {
         // Apply angle boost
         throttle_in = get_throttle_boosted(throttle_in);
     } else {

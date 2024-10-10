@@ -18,6 +18,7 @@
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AC_Autorotation/RSC_Autorotation.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -146,6 +147,10 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("COL_LAND_MIN", 32, AP_MotorsHeli, _collective_land_min_deg, AP_MOTORS_HELI_COLLECTIVE_LAND_MIN),
+
+    // @Group: RSC_AROT_
+    // @Path: ../AC_Autorotation/RSC_Autorotation.cpp
+    AP_SUBGROUPINFO(_main_rotor.autorotation, "RSC_AROT_", 33, AP_MotorsHeli, RSC_Autorotation),
 
     AP_GROUPEND
 };
@@ -554,6 +559,10 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    if (!_main_rotor.autorotation.arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -606,7 +615,7 @@ void AP_MotorsHeli::set_rotor_runup_complete(bool new_value)
 #if HAL_LOGGING_ENABLED
     if (!_heliflags.rotor_runup_complete && new_value) {
         LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
-    } else if (_heliflags.rotor_runup_complete && !new_value && !_heliflags.in_autorotation) {
+    } else if (_heliflags.rotor_runup_complete && !new_value && !_main_rotor.in_autorotation()) {
         LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
     }
 #endif
@@ -623,3 +632,19 @@ float AP_MotorsHeli::get_cyclic_angle_scaler(void) const {
     return ((float)(_collective_max-_collective_min))*1e-3 * (_collective_max_deg.get() - _collective_min_deg.get()) * 2.0;
 }
 #endif
+
+// Helper function for param conversions to be done in motors class
+void AP_MotorsHeli::heli_motors_param_conversions(void)
+{
+    // PARAMETER_CONVERSION - Added: Sep-2024
+    // move autorotation related parameters within the RSC into their own class
+    const AP_Param::ConversionInfo rsc_arot_conversion_info[] = {
+        { 90, 108096, AP_PARAM_INT8,  "H_RSC_AROT_ENBL" },
+        { 90, 104000, AP_PARAM_INT8,  "H_RSC_AROT_RAMP" },
+        { 90, 112192, AP_PARAM_INT16,  "H_RSC_AROT_IDLE" },
+    };
+    uint8_t table_size = ARRAY_SIZE(rsc_arot_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&rsc_arot_conversion_info[i], 1.0);
+    }
+}

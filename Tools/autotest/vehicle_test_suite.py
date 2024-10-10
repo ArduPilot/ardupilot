@@ -7962,6 +7962,28 @@ class TestSuite(ABC):
             if comparator(m_value, value):
                 return m_value
 
+    def wait_servo_channel_in_range(self, channel, v_min, v_max, timeout=2):
+        """wait for channel value to be within acceptable range"""
+        channel_field = "servo%u_raw" % channel
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise NotAchievedException("Channel value condition not met")
+            m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                    blocking=True,
+                                    timeout=remaining)
+            if m is None:
+                continue
+            m_value = getattr(m, channel_field, None)
+            if m_value is None:
+                raise ValueError("message (%s) has no field %s" %
+                                 (str(m), channel_field))
+            self.progress("want %u <= SERVO_OUTPUT_RAW.%s <= %u, got value = %u" %
+                          (v_min, channel_field, v_max, m_value))
+            if (v_min <= m_value) and (m_value <= v_max):
+                return m_value
+
     def assert_servo_channel_value(self, channel, value, comparator=operator.eq):
         """assert channel value (default condition is equality)"""
         channel_field = "servo%u_raw" % channel

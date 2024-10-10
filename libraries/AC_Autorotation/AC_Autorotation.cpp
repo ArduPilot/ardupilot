@@ -3,9 +3,7 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-//Autorotation controller defaults
-#define AROT_BAIL_OUT_TIME                            2.0f     // Default time for bail out controller to run (unit: s)
-
+// Autorotation controller defaults
 // Head Speed (HS) controller specific default definitions
 #define HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ          2.0f     // low-pass filter on accel error (unit: hz)
 #define HS_CONTROLLER_HEADSPEED_P                     0.7f     // Default P gain for head speed controller (unit: -)
@@ -81,15 +79,6 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("AS_ACC_MAX", 7, AC_Autorotation, _param_accel_max, FWD_SPD_CONTROLLER_MAX_ACCEL),
 
-    // @Param: BAIL_TIME
-    // @DisplayName: Bail Out Timer
-    // @Description: Time in seconds from bail out initiated to the exit of autorotation flight mode.
-    // @Units: s
-    // @Range: 0.5 4
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("BAIL_TIME", 8, AC_Autorotation, _param_bail_time, AROT_BAIL_OUT_TIME),
-
     // @Param: HS_SENSOR
     // @DisplayName: Main Rotor RPM Sensor 
     // @Description: Allocate the RPM sensor instance to use for measuring head speed.  RPM1 = 0.  RPM2 = 1.
@@ -97,7 +86,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.5 3
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("HS_SENSOR", 9, AC_Autorotation, _param_rpm_instance, 0),
+    AP_GROUPINFO("HS_SENSOR", 8, AC_Autorotation, _param_rpm_instance, 0),
 
     // @Param: FW_V_P
     // @DisplayName: Velocity (horizontal) P gain
@@ -105,7 +94,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_SUBGROUPINFO(_p_fw_vel, "FW_V_", 10, AC_Autorotation, AC_P),
+    AP_SUBGROUPINFO(_p_fw_vel, "FW_V_", 9, AC_Autorotation, AC_P),
 
     // @Param: FW_V_FF
     // @DisplayName: Velocity (horizontal) feed forward
@@ -113,7 +102,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("FW_V_FF", 11, AC_Autorotation, _param_fwd_k_ff, AP_FW_VEL_FF),
+    AP_GROUPINFO("FW_V_FF", 10, AC_Autorotation, _param_fwd_k_ff, AP_FW_VEL_FF),
 
     AP_GROUPEND
 };

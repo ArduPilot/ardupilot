@@ -243,7 +243,7 @@ void setup()
                     ::printf("autorotation only supported by heli frame types, got %i\n", frame_class);
                     exit(1);
                 }
-                motors_heli->set_in_autorotation(!is_zero(value));
+                motors_heli->set_autorotation_active(!is_zero(value));
 
             } else {
                 ::printf("Expected \"frame_class\", \"yaw_headroom\" or \"throttle_avg_max\"\n");
