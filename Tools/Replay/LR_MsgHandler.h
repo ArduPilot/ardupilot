@@ -176,17 +176,28 @@ public:
     void process_message(uint8_t *msg) override;
 };
 
+// RRNH - Replay RaNgefinder Header
 class LR_MsgHandler_RRNH : public LR_MsgHandler
 {
 public:
-    using LR_MsgHandler::LR_MsgHandler;
+    LR_MsgHandler_RRNH(struct log_Format &_f);
     void process_message(uint8_t *msg) override;
+private:
+    // code to cope with transformation from older log format (16-bit
+    // distances) to new format (32-bit distances):
+    bool distances_int16_to_float_transform_required;
+    void process_message_int16_to_float_transformed(uint8_t *msgbytes);
 };
 class LR_MsgHandler_RRNI : public LR_MsgHandler
 {
 public:
-    using LR_MsgHandler::LR_MsgHandler;
+    LR_MsgHandler_RRNI(struct log_Format &_f);
     void process_message(uint8_t *msg) override;
+private:
+    // code to cope with transformation from older log format (16-bit
+    // distances) to new format (32-bit distances):
+    bool distances_int16_to_float_transform_required;
+    void process_message_int16_to_float_transformed(uint8_t *msgbytes);
 };
 
 class LR_MsgHandler_RGPH : public LR_MsgHandler
