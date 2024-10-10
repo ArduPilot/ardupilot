@@ -79,12 +79,19 @@ private:
     } rx;
 
     struct {
-        uint32_t last_packet_GPS_ms;
-        uint32_t last_packet_Transponder_Control_ms;
-        uint32_t last_packet_Transponder_Status_ms;
-        uint32_t last_packet_Transponder_Heartbeat_ms;
-        uint32_t last_packet_Transponder_Ownship_ms;
-        uint32_t last_gcs_send_message_Transponder_Status_ms;
+        uint32_t last_packet_GPS_ms; // out
+        uint32_t last_packet_Transponder_Control_ms; // out
+        uint32_t last_packet_Transponder_Status_ms; // in
+        uint32_t last_packet_Transponder_Heartbeat_ms; // in
+        uint32_t last_packet_Transponder_Ownship_ms; // in
+        uint32_t last_gcs_send_message_Transponder_Status_ms; // out
+        uint32_t last_packet_Request_Transponder_Config_ms;  // out
+        uint32_t last_packet_Transponder_Config_ms; // in
+        uint32_t request_Transponder_Config_tries; 
+        uint32_t last_packet_Request_Transponder_Id_ms; // out
+        uint32_t last_packet_Transponder_Id_ms; // in
+        uint32_t request_Transponder_Id_tries;
+
     } run_state;
 
 };

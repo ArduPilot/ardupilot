@@ -57,8 +57,8 @@ bool AP_ADSB_uAvionix_UCP::init()
         return false;
     }
 
-    request_msg(GDL90_ID_IDENTIFICATION);
-    request_msg(GDL90_ID_TRANSPONDER_CONFIG);
+    _frontend.out_state.ctrl.squawkCode = 1200;
+
     return true;
 }
 
@@ -86,8 +86,32 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     } // while nbytes
 
+    
+    if (run_state.last_packet_Transponder_Id_ms == 0 && run_state.request_Transponder_Id_tries < 5)
+    {
+        if (now_ms - run_state.last_packet_Request_Transponder_Id_ms >= 1000)
+        {
+            request_msg(GDL90_ID_IDENTIFICATION);
+            run_state.request_Transponder_Id_tries++;
+        }
+    }
+
+    if (run_state.last_packet_Transponder_Config_ms == 0 && run_state.request_Transponder_Config_tries < 5)
+    {
+        if (now_ms - run_state.last_packet_Request_Transponder_Config_ms >= 1000)
+        {
+            request_msg(GDL90_ID_TRANSPONDER_CONFIG);
+            run_state.request_Transponder_Config_tries++;
+        }
+    }
+
    if (now_ms - run_state.last_packet_Transponder_Control_ms >= 1000) {
         run_state.last_packet_Transponder_Control_ms = now_ms;
+
+        // We want to use the defaults stored on the ping200X, if possible.
+        // Until we get the config message (or we've tried requesting it several times),
+        // don't send the control message. 
+        if (run_state.last_packet_Transponder_Config_ms != 0 || run_state.request_Transponder_Config_tries >= 5)
         send_Transponder_Control();
     }
 
@@ -146,6 +170,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         break;
 
     case GDL90_ID_IDENTIFICATION:
+        run_state.last_packet_Transponder_Id_ms = AP_HAL::millis();
         // The Identification message contains information used to identify the connected device. The
         // Identification message will be transmitted with a period of one second regardless of data status
         // or update for the UCP protocol and will be transmitted upon request for the UCP-HD protocol.
@@ -170,6 +195,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         break;
 
     case GDL90_ID_TRANSPONDER_CONFIG:
+        run_state.last_packet_Transponder_Config_ms = AP_HAL::millis();
         memcpy(&rx.decoded.transponder_config, msg.raw, sizeof(rx.decoded.transponder_config));
         break;
 
@@ -244,9 +270,10 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
             _frontend.out_state.tx_status.squawk = rx.decoded.transponder_status.squawkCode;
 
-            // TODO not the best approach
-            if (run_state.last_packet_Transponder_Status_ms == 0) {
-                // set initial control message contents to transponder defaults
+            if (run_state.last_packet_Transponder_Status_ms == 0 && run_state.last_packet_Transponder_Config_ms == 0) {
+                // If this is the first time we've seen a status message,
+                // and we haven't initialized the control message from the config message,
+                // set initial control message contents to match transponder's current behavior.
                 _frontend.out_state.ctrl.modeAEnabled = rx.decoded.transponder_status.modeAEnabled;
                 _frontend.out_state.ctrl.modeCEnabled = rx.decoded.transponder_status.modeCEnabled;
                 _frontend.out_state.ctrl.modeSEnabled = rx.decoded.transponder_status.modeSEnabled;
@@ -316,8 +343,10 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             _frontend.out_state.tx_status.boardTemp = rx.decoded.transponder_status_v3.temperature;
 
             // TODO not the best approach
-            if (run_state.last_packet_Transponder_Status_ms == 0) {
-                // set initial control message contents to transponder defaults
+            if (run_state.last_packet_Transponder_Status_ms == 0 && run_state.last_packet_Transponder_Config_ms == 0) {
+                // If this is the first time we've seen a status message,
+                // and we haven't initialized the control message from the config message,
+                // set initial control message contents to match transponder's current behavior.
                 _frontend.out_state.ctrl.modeAEnabled = rx.decoded.transponder_status_v3.modeAEnabled;
                 _frontend.out_state.ctrl.modeCEnabled = rx.decoded.transponder_status_v3.modeCEnabled;
                 _frontend.out_state.ctrl.modeSEnabled = rx.decoded.transponder_status_v3.modeSEnabled;
