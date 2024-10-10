@@ -81,7 +81,7 @@ public:
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
 
-    // Reset rate and steering controllers
+    // Reset rate and steering and TECS controllers
     void reset_controllers();
 
     //
