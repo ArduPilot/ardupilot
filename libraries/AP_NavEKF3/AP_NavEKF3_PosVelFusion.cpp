@@ -970,7 +970,7 @@ void NavEKF3_core::FuseVelPosNED()
                     const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
                     const ftype gndBaroInnovFloor = -0.5;
 
-                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                    if ((dal.get_touchdown_expected() || takeoff_expected) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
                         // when baro positive pressure error due to ground effect is expected,
                         // floor the barometer innovation at gndBaroInnovFloor
                         // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
@@ -1248,7 +1248,7 @@ void NavEKF3_core::selectHeightForFusion()
         }
         // filtered baro data used to provide a reference for takeoff
         // it is is reset to last height measurement on disarming in performArmingChecks()
-        if (!dal.get_takeoff_expected()) {
+        if (!takeoff_expected) {
             const ftype gndHgtFiltTC = 0.5;
             const ftype dtBaro = frontend->hgtAvg_ms*1.0e-3;
             ftype alpha = constrain_ftype(dtBaro / (dtBaro+gndHgtFiltTC),0.0,1.0);
@@ -1323,7 +1323,7 @@ void NavEKF3_core::selectHeightForFusion()
         // set the observation noise
         posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.1f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
-        if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
+        if (takeoff_expected || dal.get_touchdown_expected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
         }
         velPosObs[5] = -hgtMea;

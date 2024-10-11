@@ -633,6 +633,11 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     fill_scratch_variables();
 
+    if (dal.get_takeoff_expected() != last_dal_takeoff_expected) {
+        last_dal_takeoff_expected = dal.get_takeoff_expected();
+        takeoff_expected = last_dal_takeoff_expected;
+    }
+
     // update sensor selection (for affinity)
     update_sensor_selection();
 
@@ -896,10 +901,10 @@ void NavEKF3_core::calcOutputStates()
 
     // Detect fixed wing launch acceleration using latest data from IMU to enable early startup of filter functions
     // that use launch acceleration to detect start of flight
-    if (!inFlight && !dal.get_takeoff_expected() && assume_zero_sideslip()) {
+    if (!inFlight && !takeoff_expected && assume_zero_sideslip()) {
         const ftype launchDelVel = imuDataNew.delVel.x + GRAVITY_MSS * imuDataNew.delVelDT * Tbn_temp.c.x;
         if (launchDelVel > GRAVITY_MSS * imuDataNew.delVelDT) {
-            dal.set_takeoff_expected();
+            takeoff_expected = true;
         }
     }
 
