@@ -4374,9 +4374,20 @@ bool SLT_Transition::allow_update_throttle_mix() const
 
 bool SLT_Transition::active_frwd() const
 {
-    return quadplane.assisted_flight && // We need to be in assisted flight...
-        ((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER)) // ... and a transition must be active...
-        && !quadplane.in_vtol_airbrake(); // ... but not executing an QPOS_AIRBRAKE maneuver during an automated landing.
+    // We need to be in assisted flight...
+    if (!quadplane.assisted_flight) {
+        return false;
+    }
+    // ... and a transition must be active...
+    if (!((transition_state == TRANSITION_AIRSPEED_WAIT) || (transition_state == TRANSITION_TIMER))) {
+        return false;
+    }
+    // ... but not executing a QPOS_AIRBRAKE maneuver during an automated landing.
+    if (quadplane.in_vtol_airbrake()) {
+        return false;
+    }
+    
+    return true;
 }
 
 /*
