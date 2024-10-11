@@ -74,7 +74,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
             // we really, really shouldn't be here.
             return false;
         }
-        height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
 #else
         return false;
 #endif
