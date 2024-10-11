@@ -16,7 +16,7 @@ struct PACKED log_Control_Tuning {
     float    inav_alt;
     float    baro_alt;
     int16_t  desired_rangefinder_alt;
-    int16_t  rangefinder_alt;
+    float    rangefinder_alt;
     float    terr_alt;
     int16_t  target_climb_rate;
     int16_t  climb_rate;
@@ -48,7 +48,7 @@ void Sub::Log_Write_Control_Tuning()
         inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
         baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : (int16_t)mode_surftrak.get_rangefinder_target_cm(),
-        rangefinder_alt           : rangefinder_state.alt_cm,
+        rangefinder_alt           : rangefinder_state.alt,
         terr_alt            : terr_alt,
         target_climb_rate   : (int16_t)pos_control.get_vel_target_z_cms(),
         climb_rate          : climb_rate
@@ -264,7 +264,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
+      "CTUN", "Qffffffffcfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BB0BBB" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
