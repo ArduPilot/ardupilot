@@ -77,17 +77,15 @@ void RSC_Autorotation::set_active(bool active, bool force_state)
     }
 
     // Wait for allocated autorotation run up time before we allow progression of state to deactivated
-    if ((state == State::BAILING_OUT) && 
+    if ((state == State::BAILING_OUT) &&
         (desired_state == State::DEACTIVATED) &&
-        (bail_out_started_ms > 0) && 
-        (AP_HAL::millis() - bail_out_started_ms < uint32_t(get_runup_time()*1000)))
-    {
+        (bail_out_started_ms > 0) &&
+        (AP_HAL::millis() - bail_out_started_ms < uint32_t(get_runup_time()*1000))) {
         return;
     }
 
     // handle GCS messages
-    switch (desired_state)
-    {
+    switch (desired_state) {
     case State::DEACTIVATED:
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "RSC: Autorotation Stopped");
         break;
