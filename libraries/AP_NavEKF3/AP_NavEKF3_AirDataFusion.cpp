@@ -20,25 +20,19 @@
 void NavEKF3_core::FuseAirspeed()
 {
     // declarations
-    ftype vn;
-    ftype ve;
-    ftype vd;
-    ftype vwn;
-    ftype vwe;
     ftype SH_TAS[3];
     ftype SK_TAS[2];
     Vector24 H_TAS = {};
-    ftype VtasPred;
 
     // copy required states to local variable names
-    vn = stateStruct.velocity.x;
-    ve = stateStruct.velocity.y;
-    vd = stateStruct.velocity.z;
-    vwn = stateStruct.wind_vel.x;
-    vwe = stateStruct.wind_vel.y;
+    const ftype vn = stateStruct.velocity.x;
+    const ftype ve = stateStruct.velocity.y;
+    const ftype vd = stateStruct.velocity.z;
+    const ftype vwn = stateStruct.wind_vel.x;
+    const ftype vwe = stateStruct.wind_vel.y;
 
     // calculate the predicted airspeed
-    VtasPred = norm((ve - vwe) , (vn - vwn) , vd);
+    const ftype VtasPred = norm((ve - vwe) , (vn - vwn) , vd);
     // perform fusion of True Airspeed measurement
     if (VtasPred > 1.0f)
     {
@@ -280,15 +274,6 @@ void NavEKF3_core::SelectBetaDragFusion()
 void NavEKF3_core::FuseSideslip()
 {
     // declarations
-    ftype q0;
-    ftype q1;
-    ftype q2;
-    ftype q3;
-    ftype vn;
-    ftype ve;
-    ftype vd;
-    ftype vwn;
-    ftype vwe;
     const ftype R_BETA = 0.03f; // assume a sideslip angle RMS of ~10 deg
     Vector13 SH_BETA;
     Vector8 SK_BETA;
@@ -296,15 +281,15 @@ void NavEKF3_core::FuseSideslip()
     Vector24 H_BETA;
 
     // copy required states to local variable names
-    q0 = stateStruct.quat[0];
-    q1 = stateStruct.quat[1];
-    q2 = stateStruct.quat[2];
-    q3 = stateStruct.quat[3];
-    vn = stateStruct.velocity.x;
-    ve = stateStruct.velocity.y;
-    vd = stateStruct.velocity.z;
-    vwn = stateStruct.wind_vel.x;
-    vwe = stateStruct.wind_vel.y;
+    const ftype q0 = stateStruct.quat[0];
+    const ftype q1 = stateStruct.quat[1];
+    const ftype q2 = stateStruct.quat[2];
+    const ftype q3 = stateStruct.quat[3];
+    const ftype vn = stateStruct.velocity.x;
+    const ftype ve = stateStruct.velocity.y;
+    const ftype vd = stateStruct.velocity.z;
+    const ftype vwn = stateStruct.wind_vel.x;
+    const ftype vwe = stateStruct.wind_vel.y;
 
     // calculate predicted wind relative velocity in NED
     vel_rel_wind.x = vn - vwn;
