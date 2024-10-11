@@ -719,10 +719,10 @@ void Plane::rangefinder_height_update(void)
         // to misconfiguration or a faulty sensor
         if (rangefinder_state.in_range_count < 10) {
             if (!is_equal(distance, rangefinder_state.last_distance) &&
-                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm_orient(rangefinder_orientation())*0.01f) {
+                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_orient(rangefinder_orientation())) {
                 rangefinder_state.in_range_count++;
             }
-            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm_orient(rangefinder_orientation())*0.01*0.2) {
+            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_orient(rangefinder_orientation())*0.2) {
                 // changes by more than 20% of full range will reset counter
                 rangefinder_state.in_range_count = 0;
             }
