@@ -50,11 +50,11 @@ void loop()
         if (!sensor->has_data()) {
             continue;
         }
-        hal.console->printf("All: device_%u type %d status %d distance_cm %d\n",
+        hal.console->printf("All: device_%u type=%d status=%d distance=%f\n",
                             i,
                             (int)sensor->type(),
                             (int)sensor->status(),
-                            sensor->distance_cm());
+                            sensor->distance());
         had_data = true;
     }
     if (!had_data) {
