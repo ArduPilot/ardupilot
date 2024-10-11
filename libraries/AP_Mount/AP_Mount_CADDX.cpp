@@ -2,8 +2,6 @@
 
 #if HAL_MOUNT_CADDX_ENABLED
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 
 // update mount position - should be called periodically
 void AP_Mount_CADDX::update()
@@ -112,16 +110,13 @@ bool AP_Mount_CADDX::get_attitude_quaternion(Quaternion& att_quat)
 void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
 {
 
-    static cmd_set_angles_struct cmd_set_angles_data = {
-        0xFA,
-        0x0E,
-        0x11,
-        0, // pitch
-        0, // roll
-        0, // yaw
-        0, // flags
-        0, // type
-        0, // crc
+    static cmd_set_angles_struct cmd_set_angles_data = { //init some fields here. all others default to zero
+        .sync = {0xA5 , 0x5A},
+        .mode = GIMBAL_MODE_DEFAULT,
+        .sensitivity = 0,
+        .roll = 0,
+        .tilt = 0,
+        .pan = 0
     };
 
     // exit immediately if not initialised
@@ -133,15 +128,28 @@ void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
         return;
     }
 
-    // send CMD_SETANGLE (need to normalize here)
-    cmd_set_angles_data.pitch = degrees(angle_target_rad.pitch);
+    // compute angles
+    cmd_set_angles_data.tilt = degrees(angle_target_rad.pitch);
     cmd_set_angles_data.roll = degrees(angle_target_rad.roll);
-    cmd_set_angles_data.yaw = degrees(angle_target_rad.get_bf_yaw());
+    cmd_set_angles_data.pan = degrees(angle_target_rad.get_bf_yaw());
+    
+    //normalize here
 
     uint8_t* buf = (uint8_t*)&cmd_set_angles_data;
+    
+    //todo: add mode here
 
-    cmd_set_angles_data.crc = crc_calculate(&buf[1], sizeof(cmd_set_angles_data)-3);
-
+    // CRC here
+    uint16_t crc16 = 0;
+    uint8_t *b = (uint8_t *)&cmd_set_angles_data;
+    for (uint8_t i = 0; i < sizeof(cmd_set_angles_data) - 2; i++) {
+        crc16 = crc_xmodem_update(crc16, *(b + i));
+    }
+    cmd_set_angles_data.crch = (crc16 >> 8) & 0xFF;
+    cmd_set_angles_data.crcl = crc16 & 0xFF;
+    
+    //send to gimbal
+    
     for (uint8_t i = 0;  i != sizeof(cmd_set_angles_data) ; i++) {
         _uart->write(buf[i]);
     }
