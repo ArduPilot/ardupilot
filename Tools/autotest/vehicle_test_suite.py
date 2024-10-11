@@ -5823,8 +5823,8 @@ class TestSuite(ABC):
     def analog_rangefinder_parameters(self):
         return {
             "RNGFND1_TYPE": 1,
-            "RNGFND1_MIN_CM": 0,
-            "RNGFND1_MAX_CM": 4000,
+            "RNGFND1_MIN": 0,
+            "RNGFND1_MAX": 40.00,
             "RNGFND1_SCALING": 12.12,
             "RNGFND1_PIN": 0,
         }
@@ -7208,6 +7208,8 @@ class TestSuite(ABC):
         if m.distance > dist_max:
             raise NotAchievedException("above max height (%f > %f)" %
                                        (m.distance, dist_max))
+
+        self.progress(f"Rangefinder distance {m.distance} is between {dist_min} and {dist_max}")
 
     def assert_distance_sensor_quality(self, quality):
         m = self.assert_receive_message('DISTANCE_SENSOR')
