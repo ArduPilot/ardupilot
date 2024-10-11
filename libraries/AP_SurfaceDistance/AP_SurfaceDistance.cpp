@@ -69,7 +69,7 @@ void AP_SurfaceDistance::update()
     }
 
     // tilt corrected but unfiltered, not glitch protected alt
-    alt_cm = tilt_correction * rangefinder->distance_cm_orient(rotation);
+    alt_cm = tilt_correction * rangefinder->distance_orient(rotation)*100;
 
     // remember inertial alt to allow us to interpolate rangefinder
     inertial_alt_cm = inertial_nav.get_position_z_up_cm();
