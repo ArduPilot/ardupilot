@@ -795,8 +795,10 @@ bool NavEKF3_core::setWind(float speed, float speed_accuracy, float direction, f
 
         // store the time of the reset
         lastVelReset_ms = imuSampleTime_ms;
-        lastExtWindVelSet_ms = imuSampleTime_ms;
     }
+
+    // store the time of the reset
+    lastExtWindVelSet_ms = imuSampleTime_ms;
 
     return true;
 
