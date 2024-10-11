@@ -3157,29 +3157,53 @@ function rangefinder:status_orient(orientation) end
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use ground_clearance_orient (in metres)
 function rangefinder:ground_clearance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use min_distance_orient (in metres)
 function rangefinder:min_distance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use max_distance_orient (in metres)
 function rangefinder:max_distance_cm_orient(orientation) end
 
 -- desc
 ---@param orientation integer
 ---@return integer
+---@deprecated -- Use distance_orient (in metres)
 function rangefinder:distance_cm_orient(orientation) end
+
+-- Configured distance between rangefinder of a particular orientation and the vehicle's side which would rest on the ground.  Usually used for a downward-facing rangefinder to give ground clearance.
+---@param orientation integer
+---@return number
+function rangefinder:ground_clearance_orient(orientation) end
+
+-- Configured minimum distance the rangefinder in supplied orientation can measure
+---@param orientation integer
+---@return number
+function rangefinder:min_distance_orient(orientation) end
+
+-- Configured maximum distance the rangefinder in supplied orientation can measure
+---@param orientation integer
+---@return number
+function rangefinder:max_distance_orient(orientation) end
+
+-- Distance rangefinder in supplied orientation is currently measuring
+---@param orientation integer
+---@return number
+function rangefinder:distance_orient(orientation) end
 
 -- Current distance measurement signal quality for range finder at this orientation
 ---@param orientation integer
 ---@return integer
 function rangefinder:signal_quality_pct_orient(orientation) end
 
--- desc
+-- Returns true if there is a rangefinder measuring in supplied orientation
 ---@param orientation integer
 ---@return boolean
 function rangefinder:has_orientation(orientation) end
