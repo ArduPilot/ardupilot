@@ -312,4 +312,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     noble.vm.boot_timeout = 1200
   end
+
+  # 24.10 end of standard support ??
+  # note the use of "bento" here; Ubuntu stopped providing Vagrant
+  # images due to Hashicorp adopting the "Business Source License".
+  config.vm.define "oracular", autostart: false do |oracular|
+    oracular.vm.box = "bento/ubuntu-24.10"
+    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    oracular.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (oracular)"
+    end
+    oracular.vm.boot_timeout = 1200
+  end
+  config.vm.define "oracular-desktop", autostart: false do |oracular|
+    oracular.vm.box = "bento/ubuntu-24.10"
+    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    oracular.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (oracular-desktop)"
+      vb.gui = true
+    end
+    oracular.vm.boot_timeout = 1200
+  end
 end
