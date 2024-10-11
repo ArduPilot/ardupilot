@@ -943,7 +943,6 @@ private:
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_AETR();
-    void log_init();
 #endif
 
     // Parameters.cpp
