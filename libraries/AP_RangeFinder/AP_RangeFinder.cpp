@@ -192,6 +192,14 @@ RangeFinder::RangeFinder()
     _singleton = this;
 }
 
+void RangeFinder::convert_params(void)
+{
+    // PARAMETER_CONVERSION - Added: Aug-2024 for 4.5->4.6
+    for (auto &p : params) {
+        p.convert_min_max_params();
+    }
+}
+
 /*
   initialise the RangeFinder class. We do detection of attached range
   finders here. For now we won't allow for hot-plugging of
@@ -199,6 +207,8 @@ RangeFinder::RangeFinder()
  */
 void RangeFinder::init(enum Rotation orientation_default)
 {
+    convert_params();
+
     if (num_instances != 0) {
         // don't re-init if we've found some sensors already
         return;
@@ -704,11 +714,6 @@ float RangeFinder::distance_orient(enum Rotation orientation) const
     return backend->distance();
 }
 
-uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
-{
-    return distance_orient(orientation) * 100.0;
-}
-
 int8_t RangeFinder::signal_quality_pct_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
@@ -718,31 +723,31 @@ int8_t RangeFinder::signal_quality_pct_orient(enum Rotation orientation) const
     return backend->signal_quality_pct();
 }
 
-int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
+float RangeFinder::min_distance_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return 0;
+        return 0;  // consider NaN
     }
-    return backend->max_distance_cm();
+    return backend->min_distance();
 }
 
-int16_t RangeFinder::min_distance_cm_orient(enum Rotation orientation) const
+float RangeFinder::max_distance_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return 0;
+        return 0;  // consider NaN
     }
-    return backend->min_distance_cm();
+    return backend->max_distance();
 }
 
-int16_t RangeFinder::ground_clearance_cm_orient(enum Rotation orientation) const
+float RangeFinder::ground_clearance_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return 0;
+        return 0;  // consider NaN
     }
-    return backend->ground_clearance_cm();
+    return backend->ground_clearance();
 }
 
 bool RangeFinder::has_data_orient(enum Rotation orientation) const
@@ -823,7 +828,7 @@ void RangeFinder::Log_RFND() const
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
                 instance     : i,
-                dist         : s->distance_cm(),
+                dist         : s->distance(),
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),
