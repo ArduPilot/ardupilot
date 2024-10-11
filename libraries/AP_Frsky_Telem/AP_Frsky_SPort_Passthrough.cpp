@@ -696,7 +696,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     attiandrng |= ((uint16_t)roundf((pitch * RAD_TO_DEG * 100 + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
 #if AP_RANGEFINDER_ENABLED
-    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng ? _rng->distance_orient(ROTATION_PITCH_270)*100 : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
 #else
     attiandrng |= prep_number(0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
 #endif
