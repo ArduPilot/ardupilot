@@ -275,6 +275,79 @@ void AC_AttitudeControl::landed_gain_reduction(bool landed)
     set_angle_P_scale_mult(scale_mult);
 }
 
+// limit_target_thrust_angle - 
+bool AC_AttitudeControl::limit_target_thrust_angle(float thrust_angle_max_cd)
+{
+    float thrust_angle_max_rad = radians(thrust_angle_max_cd * 0.01f);
+
+    // attitude_body represents a quaternion rotation in NED frame to the body
+    Quaternion attitude_body;
+    _ahrs.get_quat_body_to_ned(attitude_body);
+    
+    Vector3f gyro = _ahrs.get_gyro_latest();
+
+    // angle_delta is the estimated rotation that the aircraft will experience during the correction
+    Vector3f angle_delta = Vector3f{gyro.x / get_angle_roll_p().kP(), gyro.y / get_angle_pitch_p().kP(), gyro.z / get_angle_yaw_p().kP() };
+
+    // attitude_update represents a quaternion rotation representing the expected rotation in the next time_constant
+    Quaternion attitude_update;
+    attitude_update.from_axis_angle(angle_delta);
+    attitude_body *= attitude_update;
+
+    // The direction of thrust is [0,0,-1] is any body-fixed frame, inc. body frame and target frame.
+    const Vector3f thrust_vector_up{0.0f, 0.0f, -1.0f};
+    
+    // Rotating [0,0,-1] by attitude_body expresses (gets a view of) the thrust vector in the inertial frame
+    Vector3f thrust_vec = attitude_body * thrust_vector_up;
+
+    // the dot product is used to calculate the current lean angle
+    float thrust_correction_angle = acosf(constrain_float(thrust_vec * thrust_vector_up, -1.0f, 1.0f));
+
+    if (abs(thrust_correction_angle) <= thrust_angle_max_rad) {
+        return false;
+    }
+
+    // the cross product of the current thrust vector and vertical thrust vector defines the rotation vector
+    Vector3f thrust_vec_cross = thrust_vec % thrust_vector_up;
+
+    // Normalize the thrust rotation vector
+    if (thrust_vec_cross.is_zero()) {
+        thrust_vec_cross.xy() = gyro.xy();
+        thrust_vec_cross.z = 0.0;
+        if (thrust_vec_cross.is_zero()) {
+            // choose recovery in the pitch axis
+            const Vector3f y_axis{0.0f, 1.0f, 0.0f};
+            thrust_vec_cross = _attitude_target * y_axis;
+        } else {
+            // choose recovery in the current rotation direction
+            thrust_vec_cross.normalize();
+        }
+    } else {
+        thrust_vec_cross.normalize();
+    }
+
+    // subtract the maximum lean angle from the current thrust angle
+    thrust_correction_angle -= constrain_float(thrust_correction_angle, -thrust_angle_max_rad, thrust_angle_max_rad);
+
+    // calculate the closest _attitude_target using roll and pitch only, with a thrust angle of thrust_angle_max_rad
+    Quaternion attitude_target_offset;
+    attitude_target_offset.from_axis_angle(thrust_vec_cross, thrust_correction_angle);
+    _attitude_target = attitude_target_offset * attitude_body;
+
+// Angular velocity targets must be zeroed at large thrust angles to prevent them from preventing efficient recovery  
+// so zero angular velocity targets when tilted more than 1.25 * thrust_angle_max_cd  
+// Interpolate between an unmodified ang_vel_target at thrust_angle_max and zero at 1.25 * thrust_angle_max  
+// This ensures small angles past thrust_angle_max_cd do not zero angular velocity targets and prevent full recovery  
+    float ang_vel_scalar = 0.0;
+    if (!is_zero(thrust_angle_max_rad)) {
+        ang_vel_scalar = MAX( 0.0, 1.0f - (abs(thrust_correction_angle) / (0.25 * thrust_angle_max_rad)));
+    }
+    _ang_vel_target *= ang_vel_scalar;
+    ang_vel_to_euler_rate(_attitude_target, _ang_vel_target, _euler_rate_target);
+
+    return true;
+}
+
 // The attitude controller works around the concept of the desired attitude, target attitude
 // and measured attitude. The desired attitude is the attitude input into the attitude controller
 // that expresses where the higher level code would like the aircraft to move to. The target attitude is moved
