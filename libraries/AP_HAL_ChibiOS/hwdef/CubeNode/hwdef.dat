@@ -70,12 +70,26 @@ define BOARD_PHY_ID  MII_LAN8720_ID
 define BOARD_PHY_RMII
 define HAL_PERIPH_ENABLE_NETWORKING
 
+# IMU
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+PG15 IMU_CS CS
+
+SPIDEV icm45686  SPI3  DEVID4  IMU_CS   MODE0  24*MHZ  24*MHZ
+
+IMU Invensensev3 SPI:icm45686 ROTATION_NONE
+
+define HAL_PERIPH_ENABLE_IMU
+
+# Periph GCS
+define HAL_GCS_ENABLED 1
+
 #################################
 # AP_Periph - configurations specific to this App
 #################################
 
 define HAL_BARO_ALLOW_INIT_NO_BARO
-define AP_INERTIALSENSOR_ENABLED 0
 
 define AP_NETWORKING_MAX_INSTANCES 4
 
