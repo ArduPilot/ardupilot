@@ -97,6 +97,8 @@ public:
         k_param_rpm_msg_rate,
         k_param_esc_rate,
         k_param_esc_extended_telem_rate,
+        k_param_imu_sample_rate,
+        k_param_imu,
     };
 
     AP_Int16 format_version;
@@ -209,6 +211,10 @@ public:
 #ifdef HAL_PERIPH_ENABLE_EFI
     AP_Int32 efi_baudrate;
     AP_Int8 efi_port;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_IMU
+    AP_Int16 imu_sample_rate;
 #endif
 
 #if HAL_PERIPH_CAN_MIRROR
