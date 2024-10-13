@@ -1,4 +1,4 @@
-include ../CubePilot-CANMod/hwdef.dat
+include ../CubeNode/hwdef.dat
 
 # we need RTS/CTS for the PPP link
 undef PE0
