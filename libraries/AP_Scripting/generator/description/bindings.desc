@@ -284,7 +284,7 @@ singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method get uint8_t uint8_t 0 AP_RELAY_NUM_RELAYS
 
 include GCS_MAVLink/GCS.h
-singleton GCS depends HAL_GCS_ENABLED
+singleton GCS depends (HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
 singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
@@ -970,7 +970,7 @@ global manual dirlist lua_dirlist 1 2
 global manual remove lua_removefile 1 3
 global manual print lua_print 1 0
 
-singleton mavlink depends HAL_GCS_ENABLED
+singleton mavlink depends (HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
 singleton mavlink manual init lua_mavlink_init 2 0
 singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1 1
 singleton mavlink manual send_chan lua_mavlink_send_chan 3 1
