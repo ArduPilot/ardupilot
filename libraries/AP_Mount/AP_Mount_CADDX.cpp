@@ -134,10 +134,12 @@ void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
     cmd_set_angles_data.pan = degrees(angle_target_rad.get_bf_yaw());
     
     //normalize here
+    cmd_set_angles_data.tilt = int16_t(linear_interpolate(AXIS_MIN, AXIS_MAX, cmd_set_angles_data.tilt, _params.pitch_angle_min, _params.pitch_angle_max));
+    cmd_set_angles_data.roll = int16_t(linear_interpolate(AXIS_MIN, AXIS_MAX, cmd_set_angles_data.roll, _params.roll_angle_min, _params.roll_angle_max));
+    cmd_set_angles_data.pan = int16_t(linear_interpolate(AXIS_MIN, AXIS_MAX, cmd_set_angles_data.pan, _params.yaw_angle_min, _params.yaw_angle_max));
 
-    uint8_t* buf = (uint8_t*)&cmd_set_angles_data;
-    
     //todo: add mode here
+    cmd_set_angles_data.mode = GIMBAL_MODE_TILT_ROLL_LOCK;
 
     // CRC here
     uint16_t crc16 = 0;
@@ -149,7 +151,7 @@ void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
     cmd_set_angles_data.crcl = crc16 & 0xFF;
     
     //send to gimbal
-    
+    uint8_t* buf = (uint8_t*)&cmd_set_angles_data;    
     for (uint8_t i = 0;  i != sizeof(cmd_set_angles_data) ; i++) {
         _uart->write(buf[i]);
     }

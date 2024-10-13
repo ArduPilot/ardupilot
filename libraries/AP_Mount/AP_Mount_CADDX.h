@@ -12,7 +12,20 @@
 #include <AP_Common/AP_Common.h>
 
 #define AP_MOUNT_CADDX_RESEND_MS   1000    // resend angle targets to gimbal once per second
-#define GIMBAL_MODE_DEFAULT 0  //Full follow mode, ie gimbal locked to body frame
+
+#define AXIS_MAX 2047
+#define AXIS_MIN -2048
+
+typedef enum {
+    GIMBAL_MODE_FOLLOW = 0,
+    GIMBAL_MODE_TILT_LOCK = (1<<0),
+    GIMBAL_MODE_ROLL_LOCK = (1<<1),
+    GIMBAL_MODE_PAN_LOCK  = (1<<2),
+} gimbal_lock_mode;
+
+#define GIMBAL_MODE_DEFAULT             GIMBAL_MODE_FOLLOW
+#define GIMBAL_MODE_TILT_ROLL_LOCK      (GIMBAL_MODE_TILT_LOCK | GIMBAL_MODE_ROLL_LOCK)
+#define GIMBAL_MODE_PAN_TILT_ROLL_LOCK  (GIMBAL_MODE_TILT_LOCK | GIMBAL_MODE_ROLL_LOCK | GIMBAL_MODE_PAN_LOCK)
 
 class AP_Mount_CADDX : public AP_Mount_Backend_Serial
 {
