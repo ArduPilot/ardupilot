@@ -24,7 +24,6 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_XACTI_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_XACTI_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xacti: " fmt, ## args); } } while (0)
 
-bool AP_Mount_Xacti::_subscribed = false;
 AP_Mount_Xacti::DetectedModules AP_Mount_Xacti::_detected_modules[];
 HAL_Semaphore AP_Mount_Xacti::_sem_registry;
 const char* AP_Mount_Xacti::send_text_prefix = "Xacti:";
@@ -425,16 +424,12 @@ void AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
         return;
     }
 
-    _subscribed = true;
-
     if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gimbal_attitude_status, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("gimbal_attitude_status_sub");
-        _subscribed = false;
     }
 
     if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_gnss_status_req, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("gnss_status_req_sub");
-        _subscribed = false;
     }
 }
 
