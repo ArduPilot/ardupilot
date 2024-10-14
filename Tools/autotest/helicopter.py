@@ -303,6 +303,12 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
+    def AutorotationAllTests(self, timeout=600):
+        """Run all autorotation tests"""
+        self.AutorotationPreArm()
+        self.Autorotation(timeout)
+        self.ManAutorotation(timeout)
+
     def Autorotation(self, timeout=600):
         """Check engine-out behaviour"""
         self.context_push()
@@ -310,8 +316,11 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AROT_ENABLE": 1,
             "H_RSC_AROT_ENBL": 1,
-            "H_COL_LAND_MIN" : -2.0
+            "H_COL_LAND_MIN" : -2.0,
+            "RNGFND1_TYPE" : 100,
+            "RNGFND1_MAX" : 100
         })
+        self.reboot_sitl()
         bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
         self.set_rc(3, 1000)
@@ -368,9 +377,11 @@ class AutoTestHelicopter(AutoTestCopter):
         self.start_subtest("Check pass when autorotation mode not enabled")
         self.set_parameters({
             "AROT_ENABLE": 0,
-            "RPM1_TYPE": 0
+            "RPM1_TYPE": 0,
+            "RNGFND1_TYPE": 0
         })
         self.reboot_sitl()
+        # Check that we don't fail any autorotation related prearms when the mode is not enabled
         try:
             self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
             raise NotAchievedException("Received AROT prearm when not AROT not enabled")
@@ -392,9 +403,29 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.start_subtest("Check pre-arm fails with bad RSC config")
         self.wait_statustext("PreArm: AROT: H_RSC_AROT_* not configured", timeout=50)
+        self.set_parameter("H_RSC_AROT_ENBL", 1)
+
+        self.start_subtest("Check pre-arm fails with no rangefinder configured")
+        self.wait_statustext("PreArm: AROT: Downward rangefinder not configured", timeout=50)
+        self.set_parameters({"RNGFND1_TYPE": 100,
+                             "RNGFND1_ORIENT": 25,
+                             "RNGFND1_MAX": 100})
+        self.reboot_sitl()
+
+        self.start_subtest("Check pre-arm fails with suspicious hover collective setting")
+        self.context_push()
+        self.set_parameter("H_COL_HOVER", 0.0)
+        self.wait_statustext("PreArm: AROT: Hover pit < 1 deg", timeout=50)
+        self.context_pop()
+
+        self.start_subtest("Ensure min heights check can fail")
+        self.context_push()
+        min_touchdown_hgt = self.get_parameter('AROT_TD_MIN_HGT')
+        self.set_parameter("AROT_FLR_MIN_HGT", min_touchdown_hgt*0.5)
+        self.wait_statustext("PreArm: AROT: FLR_MIN_HGT < TD_MIN_HGT", timeout=50)
+        self.context_pop()
 
         self.start_subtest("Check pre-arms clear with all issues corrected")
-        self.set_parameter("H_RSC_AROT_ENBL", 1)
         self.wait_ready_to_arm()
 
         self.context_pop()
@@ -1195,6 +1226,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.AutorotationPreArm,
             self.Autorotation,
             self.ManAutorotation,
+            self.AutorotationAllTests,
             self.governortest,
             self.FlyEachFrame,
             self.AirspeedDrivers,
