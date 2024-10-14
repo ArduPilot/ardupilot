@@ -267,7 +267,6 @@ private:
     bool _camera_error;                             // true if status reports camera error
 
     // DroneCAN related variables
-    static bool _subscribed;                        // true once subscribed to receive DroneCAN messages
     static struct DetectedModules {
         AP_Mount_Xacti *driver;                     // pointer to Xacti backends
         AP_DroneCAN* ap_dronecan;                   // DroneCAN interface used by this backend
