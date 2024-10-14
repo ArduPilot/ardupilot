@@ -2024,6 +2024,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void exit() override;
 
     bool is_autopilot() const override { return true; }
     bool requires_GPS() const override { return false; }
