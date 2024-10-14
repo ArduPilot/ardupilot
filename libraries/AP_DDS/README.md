@@ -209,6 +209,7 @@ nanosec: 729410000
 $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
+/ap/prearm_check
 ---
 ```
 
@@ -234,6 +235,7 @@ List the available services:
 $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
+/ap/prearm_check [std_srvs/srv/Trigger]
 ```
 
 Call the arm motors service:
@@ -254,6 +256,20 @@ requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
 
 response:
 ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
+```
+
+Call the prearm check service:
+
+```bash
+$ ros2 service call /ap/prearm_check std_srvs/srv/Trigger
+requester: making request: std_srvs.srv.Trigger_Request()
+
+response:
+std_srvs.srv.Trigger_Response(success=False, message='Vehicle is Not Armable')
+
+or
+
+std_srvs.srv.Trigger_Response(success=True, message='Vehicle is Armable')
 ```
 
 ## Commanding using ROS 2 Topics
