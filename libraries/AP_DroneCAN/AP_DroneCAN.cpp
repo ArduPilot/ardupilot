@@ -844,9 +844,9 @@ void AP_DroneCAN::SRV_send_esc(void)
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
-
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
+            if (armed && ((((uint32_t) 1U) << i) & _ESC_armed_mask)) {
                 esc_msg.cmd.data[k] = scale_esc_output(i);
             } else {
                 esc_msg.cmd.data[k] = static_cast<unsigned>(0);
@@ -897,9 +897,9 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
-
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
+            if (armed && ((((uint32_t) 1U) << i) & _ESC_armed_mask)) {
                 esc_msg.command.data[k] = scale_esc_output(i);
             } else {
                 esc_msg.command.data[k] = static_cast<unsigned>(0);
