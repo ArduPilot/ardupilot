@@ -54,7 +54,7 @@ public:
     bool add_11bit_driver(CANSensor *sensor);
 
     // handler for outgoing frames for auxillary drivers
-    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us);
+    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us);
     
 #if AP_TEST_DRONECAN_DRIVERS
     static CanardInterface& get_test_iface() { return test_iface; }
