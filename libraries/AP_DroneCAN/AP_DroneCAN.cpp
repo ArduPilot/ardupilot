@@ -1956,7 +1956,7 @@ bool AP_DroneCAN::add_11bit_driver(CANSensor *sensor)
 }
 
 // handler for outgoing frames for auxillary drivers
-bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
     if (out_frame.isExtended()) {
         // don't allow extended frames to be sent by auxillary driver
