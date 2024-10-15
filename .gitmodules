@@ -44,4 +44,4 @@
 	url = https://github.com/ArduPilot/lwip.git
 [submodule "libraries/NOVA_Custom"]
 	path = libraries/NOVA_Custom
-	url = git@github.com:Tencore-LLC/nova_ardupilot_custom.git
+	url = git@github.com:NOVATechLab/nova_ardupilot_custom.git
