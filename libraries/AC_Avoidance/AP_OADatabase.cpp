@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @Description: OADatabase output level to configure which database objects are sent to the ground station. All data is always available internally for avoidance algorithms.
     // @Values: 0:Disabled,1:Send only HIGH importance items,2:Send HIGH and NORMAL importance items,3:Send all items
     // @User: Advanced
-    AP_GROUPINFO("OUTPUT", 4, AP_OADatabase, _output_level, (float)OutputLevel::HIGH),
+    AP_GROUPINFO("OUTPUT", 4, AP_OADatabase, _output_level, static_cast<int32_t>(OutputLevel::HIGH)),
 
     // @Param: BEAM_WIDTH
     // @DisplayName: OADatabase beam width
