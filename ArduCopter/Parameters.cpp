@@ -690,7 +690,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Used by Throw mode. Controls whether motors will run at the speed set by MOT_SPIN_MIN or will be stopped when armed and waiting for the throw.
     // @Values: 0:Stopped,1:Running
     // @User: Standard
-    GSCALAR(throw_motor_start, "THROW_MOT_START", (float)ModeThrow::PreThrowMotorState::STOPPED),
+    GSCALAR(throw_motor_start, "THROW_MOT_START", static_cast<int32_t>(ModeThrow::PreThrowMotorState::STOPPED)),
 
     // @Param: THROW_ALT_MIN
     // @DisplayName: Throw mode minimum altitude
@@ -761,7 +761,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Used by Throw mode. Specifies whether Copter is thrown upward or dropped.
     // @Values: 0:Upward Throw,1:Drop
     // @User: Standard
-    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, (float)ModeThrow::ThrowType::Upward),
+    AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, static_cast<int32_t>(ModeThrow::ThrowType::Upward)),
 #endif
 
     // @Param: GND_EFFECT_COMP
@@ -940,7 +940,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 (default) disables all options.
     // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe, 5:Release Gripper
     // @User: Advanced
-    AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, (float)Copter::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL),
+    AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, static_cast<int32_t>(Copter::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL)),
 
 #if MODE_AUTOROTATE_ENABLED
     // @Group: AROT_
