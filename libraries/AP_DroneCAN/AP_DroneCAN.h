@@ -327,6 +327,12 @@ private:
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_actuator_Status> actuator_status_cb{this, &AP_DroneCAN::handle_actuator_status};
     Canard::Subscriber<uavcan_equipment_actuator_Status> actuator_status_listener{actuator_status_cb, _driver_index};
 
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_power_CircuitStatus> power_cktstatus_cb{this, &AP_DroneCAN::handle_power_circuitstatus};
+    Canard::Subscriber<uavcan_equipment_power_CircuitStatus> power_cktstatus_listener{power_cktstatus_cb, _driver_index};
+
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_device_Temperature> device_temperature_cb{this, &AP_DroneCAN::handle_device_temperature};
+    Canard::Subscriber<uavcan_equipment_device_Temperature> device_temperature_listener{device_temperature_cb, _driver_index};
+
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
 
@@ -399,6 +405,8 @@ private:
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
+    void handle_power_circuitstatus(const CanardRxTransfer& transfer, const uavcan_equipment_power_CircuitStatus& msg);
+    void handle_device_temperature(const CanardRxTransfer& transfer, const uavcan_equipment_device_Temperature& msg);
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
 #if AP_EXTENDED_ESC_TELEM_ENABLED
