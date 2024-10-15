@@ -472,8 +472,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // update sensor selection (for affinity)
     update_sensor_selection();
 
-    // If we are a plane and don't have GPS lock then don't initialise
-    if (assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+    // If PlaneRequiresGPS bit in EK3_OPTIONS is set, then don't initialise if we are a plane and don't have GPS lock
+    if ((frontend->_options & (int32_t)NavEKF3::Options::PlaneRequiresGPS) &&
+        assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         dal.snprintf(prearm_fail_string,
                      sizeof(prearm_fail_string),
                      "EKF3 init failure: No GPS lock");
