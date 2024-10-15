@@ -875,7 +875,7 @@ bool Plane::set_target_location(const Location &target_loc)
         return false;
     }
     // add home alt if needed
-    if (loc.relative_alt) {
+    if (loc.relative_alt && !loc.terrain_alt) {
         loc.alt += plane.home.alt;
         loc.relative_alt = 0;
     }
