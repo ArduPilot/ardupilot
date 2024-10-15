@@ -41,7 +41,7 @@ void AP_Networking::start_tests(void)
     if (param.tests & TEST_CONNECTOR_LOOPBACK) {
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_connector_loopback, void),
                                      "connector_loopback",
-                                     8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
+                                     8192, AP_HAL::Scheduler::PRIORITY_IO, -1);
     }
 }
 
