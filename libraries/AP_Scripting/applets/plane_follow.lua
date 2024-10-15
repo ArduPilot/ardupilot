@@ -25,7 +25,7 @@
    ZPR_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.6.0-040"
+SCRIPT_VERSION = "4.6.0-041"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -222,6 +222,14 @@ ZPF2_V_D = bind_add_param2("V_D", 6, 0.05)
 --]]
 ZPF2_LKAHD = bind_add_param2("LKAHD", 7, 5)
 
+--[[
+    // @Param: ZPF_DIST_FUDGE
+    // @DisplayName: Plane Follow distance fudge factor
+    // @Description: THe distance returned by the AP_FOLLOW library might be off by about this factor of airspeed
+    // @Units: s
+--]]
+ZPF2_DIST_FUDGE = bind_add_param2("DIST_FUDGE", 8, 0.92)
+
 REFRESH_RATE = 0.05   -- in seconds, so 20Hz
 LOST_TARGET_TIMEOUT = (ZPF_TIMEOUT:get() or 10) / REFRESH_RATE
 OVERSHOOT_ANGLE = ZPF_OVRSHT_DEG:get() or 75.0
@@ -231,6 +239,8 @@ local fail_mode = ZPF_FAIL_MODE:get() or FLIGHT_MODE.QRTL
 local exit_mode = ZPF_EXIT_MODE:get() or FLIGHT_MODE.LOITER
 
 local use_wide_turns = ZPF_WIDE_TURNS:get() or 1
+
+local distance_fudge = ZPF2_DIST_FUDGE:get() or 0.92
 
 DISTANCE_LOOKAHEAD_SECONDS = ZPF2_LKAHD:get() or 5.0
 
@@ -502,6 +512,7 @@ local function update()
    foll_ofs_y = FOLL_OFS_Y:get() or 0.0
    foll_alt_type = FOLL_ALT_TYPE:get() or ALT_FRAME.GLOBAL
    use_wide_turns = ZPF_WIDE_TURNS:get() or 1
+   distance_fudge = ZPF2_DIST_FUDGE:get() or 0.92
 
    --[[
       get the current navigation target. 
@@ -534,7 +545,7 @@ local function update()
 
    target_distance, target_distance_offsets,
       target_velocity, target_velocity_offset,
-      target_location, target_location_offset, 
+      target_location, target_location_offset,
       xy_dist = follow:get_target_info()
    target_heading = follow:get_target_heading_deg() or -400
 
@@ -568,9 +579,9 @@ local function update()
    -- default the desired heading to the target heading (adjusted for projected turns) - we might change this below
    local airspeed_difference = vehicle_airspeed - target_airspeed
 
-   -- distance seem to be out by about 1s at approximately current airspeed just eyeballing it.
+   -- distance seem to be out by about 0.92s at approximately current airspeed just eyeballing it.
    if xy_dist ~= nil then
-      xy_dist = math.abs(xy_dist) - vehicle_airspeed * 0.92
+      xy_dist = math.abs(xy_dist) - vehicle_airspeed * distance_fudge
       -- xy_dist will always be a positive value. To get -v to represent overshoot, use the offset_angle
       -- to decide if the target is behind
       if (math.abs(xy_dist) < long_distance) and (math.abs(offset_angle) > OVERSHOOT_ANGLE) then
@@ -626,8 +637,8 @@ local function update()
 
          turning = true
          -- predict the roll in 1s from now and use that based on rollspeed
-         -- need some more maths to convert a roll angle into a turn angle
-         --turn_radius = vehicle_airspeed * vehicle_airspeed / (9.80665 * math.tan(target_attitude.roll + target_attitude.rollspeed))
+         -- need some more maths to convert a roll angle into a turn angle - from Mission Planner:
+         -- turn_radius = vehicle_airspeed * vehicle_airspeed / (9.80665 * math.tan(target_attitude.roll + target_attitude.rollspeed))
          local tangent_angle = wrap_360(math.deg(math.pi/2.0 - vehicle_airspeed / turn_radius))
 
          angle_adjustment = tangent_angle * 0.6
@@ -649,11 +660,6 @@ local function update()
          end
       end
    end
-
-   --if math.floor(now) ~= math.floor(now_roll) then
-   --   now_roll = millis():tofloat() * 0.001
-   --   gcs:send_text(MAV_SEVERITY.NOTICE, SCRIPT_NAME_SHORT .. string.format(": pre %.0f adjust:%.2f angle: %.1f offset %.1f heading %.0f target %.0f ", pre_roll_target_heading, angle_adjustment, target_angle, offset_angle, desired_heading, target_heading))
-   --end
 
    -- don't count it as close if the heading is diverging (i.e. the target plane has overshot the target so extremely that it's pointing in the wrong direction)
    local too_close = (projected_distance > 0) and (math.abs(projected_distance) < close_distance) and (offset_angle < OVERSHOOT_ANGLE)
@@ -686,7 +692,6 @@ local function update()
       current_altitude = old_location:alt() * 0.01
    end
 
-   --local new_target_location = old_location:copy()
    local target_altitude = 0.0
    local frame_type_log = foll_alt_type
 
@@ -698,9 +703,6 @@ local function update()
       target_location_offset:change_alt_frame(foll_alt_type)
       target_altitude = target_location_offset:alt() * 0.01
    end
-   --new_target_location:lat(target_location_offset:lat())
-   --new_target_location:lng(target_location_offset:lng())
-   --new_target_location:alt(target_location_offset:alt()) -- location uses cm for altitude
 
    local mechanism = 0 -- for logging 1: position/location 2:heading
    local normalized_distance = math.abs(projected_distance)

@@ -10,28 +10,96 @@ and must be different from the MAVLINK_SYSID of the following plane.
 # Parameters
 
 The script adds the following parameters to control it's behaviour. It uses 
-the existing FOLL parameters that are used for the Copter FOLLOW mode.
+the existing FOLL parameters that are used for the Copter FOLLOW mode. In addition
+the following "ZPF" parameters are added: Z = scripting, P = Plane, F = Follow, in two
+banks ZPF and ZPF2.
 
-## FOLL_FAIL_MODE
+## ZPF_FAIL_MODE
 
 This is the mode the plane will change to if following fails. Failure happens
 if the following plane loses telemetry from the target, or the distance exceeds
 FOLL_DIST_MAX.
 
-## FOLL_EXIT_MODE
+## ZPF_EXIT_MODE
 
 The flight mode the plane will switch to if it exits following. 
 
-## FOLL_ALT_TYPE
-
-The existing FOLLOW mode parameter that specifies the target frame for 
-altitudes to be used when following.
-
-## FOLL_ACT_FN
+## ZPF_ACT_FN
 
 The scripting action that will trigger the plane to start following. When this
 happens the plane will switch to GUIDED mode and the script will use guided mode
 commands to steer the plane towards the target.
+
+## ZPF_TIMEOUT
+
+If the target is lost, this is the timeout to wait to re-aquire the target before 
+triggering ZPF_FAIL_MODE
+
+## ZPF_OVRSHT_DEG
+
+This is for the heuristic that uses the difference between the target vehicle heading
+and the follow vehicle heading to determine if the vehicle has overshot and should slow
+down and turn around. 75 degrees is a good start but tune for your circumstances.
+
+## ZPF_TURN_DEG
+
+This is for the heuristic that uses the difference between the target vehicle heading
+and the follow vehicle heading to determine if the target vehicle is executing a turn.
+15 degrees is a good start but tune for your circumstances.
+
+## ZPF_DIST_CLOSE
+
+One of the most important heuristics the follow logic uses to match the heading and speed
+of the target plane is to trigger different behavior when the target location is "close".
+How close is determined by this value, likely a larger number makes more sense for larger 
+and faster vehicles and lower values for smaller and slower vehicles. Tune for your circumstances.
+
+## ZPF_ALT_OVR
+
+The follow logic can have the follow vehicle track the altitude of the target, but setting a value
+in ZPF_ALT_OVR allows the follow vehicle to follow at a fixed altitude regardless of the altitude
+of the target. The ZPF_ALT_OVR is in meters in FOLL_ALT_TYPE frame. 
+
+## ZPF2_D_P
+
+The follow logic uses two PID controllers for controlling speed, the first uses distance (D) 
+as the error. This is the P gain for the "D" PID controller.
+
+## ZPF2_D_I
+
+The follow logic uses two PID controllers for controlling speed, the first uses distance (D) 
+as the error. This is the I gain for the "D" PID controller.
+
+## ZPF2_D_D
+
+The follow logic uses two PID controllers for controlling speed, the first uses distance (D) 
+as the error. This is the D gain for the "D" PID controller.
+
+## ZPF2_V_P
+
+The follow logic uses two PID controllers for controlling speed, the first uses velocity (V) 
+as the error. This is the P gain for the "V" PID controller.
+
+## ZPF2_V_I
+
+The follow logic uses two PID controllers for controlling speed, the first uses distance (V) 
+as the error. This is the I gain for the "V" PID controller.
+
+## ZPF2_V_D
+
+The follow logic uses two PID controllers for controlling speed, the first uses distance (V) 
+as the error. This is the D gain for the "V" PID controller.
+
+## ZPF2_LKAHD
+
+Time to "lookahead" when calculating distance errors.
+
+## ZPF2_DIST_FUDGE
+
+This parameter might be a bad idea, but it seems the xy_distance between the target offset location
+and the follow vehicle returned by AP_Follow appears to be off by a factor of 
+airspeed * a fudge factor
+This allows this fudge factor to be adjusted until a better solution can be found for this problem.
 
 # Operation
 
@@ -39,14 +107,18 @@ Install the lua script in the APM/SCRIPTS directory on the flight
 controllers microSD card. Review the above parameter descriptions and
 decide on the right parameter values for your vehicle and operations.
 
+Install the speedpid.lua, mavlink_attitude.lua and mavlink_msgs.lua files
+in the APM/scripts/modules directory on the SD card.
+
 Most of the follow logic is in AP_Follow which is part of the ArduPilot c++
 code, so this script just calls the existing methods to do things like
 lookup the SYSID of the vehicle to follow and calculate the direction and distance
 to the target, which should ideally be another fixed wing plane, or VTOL in
 fixed wing mode.
 
-The target location the plane will attempt to acheive will be offset from the target
+The target location the plane will attempt to achieve will be offset from the target
 vehicle location by FOLL_OFS_X and FOLL_OFS_Y. FOLL_OFS_Z will be offset against the 
 target vehicle, but also FOLL_ALT_TYPE will determine the altitude frame that the vehicle
 will use when calculating the target altitude. See the definitions of these
-parameters to understand how they work. 
+parameters to understand how they work. ZPF2_ALT_OVR will override the operation of FOLL_OFS_Z
+setting a fixed altitude for the following plane in FOLL_ALT_TYPE frame.
