@@ -29,7 +29,6 @@ uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count)
     {
         ret += data[i];
     }
-    // GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"Abhishek :: CheckSum :: (%f)", float(ret));
     return ret;
 }
 
@@ -61,9 +60,7 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
 
     while (nbytes-- > PACKET_SIZE)
     {
-        // int16_t r = uart->read();
-        // uint8_t c = (uint8_t)r;
-
+        // Syncing the Header to the start of the Packet
         const uint8_t header[] = {
             0xEB, // Header MSB
             0x90, // Header LSB
@@ -136,8 +133,20 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
             SNR:       data19 or buffer[15]
             Velocity:  data20 data 21 or buffer[16] buffer [17]
         */
-        reading_m = UINT16_VALUE(buffer[13], buffer[14]) * 0.01;
-        const uint8_t snr = buffer[15];
+
+        uint8_t snr = 0;
+        /*
+            Param: RNGFND1_LRD1MOD will give value:
+            0: 24GHz Mode (Default) and 1: Integrated Mode
+        */
+        if (lrd1_freq_mode() == 1){
+            reading_m = UINT16_VALUE(buffer[13], buffer[14]) * 0.01;
+            snr = buffer[15];
+        }
+        else{
+            reading_m = UINT16_VALUE(buffer[3], buffer[4]) * 0.01;
+            snr = buffer[5];
+        }
 
         /* Setting Logging Params */
         reading_24Gz_cm = UINT16_VALUE(buffer[3], buffer[4]);

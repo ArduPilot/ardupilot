@@ -138,6 +138,13 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
+    // @Param: LRD1MODE
+    // @DisplayName: LRD1 Ops Mode
+    // @Description: LRD1 Frequency Mode: 24GHz or Integrated
+    // @Values: 0:24GHz,1:Int-Signal
+    // @User: Standard
+    AP_GROUPINFO("LRD1MODE", 54, AP_RangeFinder_Params, lrd1_freq_mode, 0),
+
     AP_GROUPEND
 };
 

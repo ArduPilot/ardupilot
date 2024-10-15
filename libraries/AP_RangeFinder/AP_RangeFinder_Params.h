@@ -27,4 +27,6 @@ public:
     AP_Int8  ground_clearance_cm;
     AP_Int8  address;
     AP_Int8  orientation;
+    // LRD1 frequency mode (24GHz of Integrated)
+    AP_Int8  lrd1_freq_mode;
 };
