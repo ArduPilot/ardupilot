@@ -426,6 +426,9 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     // global_position_int.alt is *UP*, so is location.
     _target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
     _target_sysid_location_set = true;
+    // keep track of when we last received the update
+    //_target_sysid_update_ms = AP_HAL::millis();
+    _target_sysid_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
 
     return true;
 }
@@ -887,6 +890,10 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
         return false;
     }
     if (!_target_sysid) {
+        return false;
+    }
+    // don't update the angle if we haven't received a recent update from the target
+    if(AP_HAL::millis() - _target_sysid_update_ms > 200) {
         return false;
     }
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
