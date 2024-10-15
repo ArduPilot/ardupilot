@@ -166,7 +166,8 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         if (malfunction_alert_prev != malfunction_alert)
         {
             malfunction_alert_prev = malfunction_alert;
-            report_malfunction(malfunction_alert);
+            // The report malfunction is for debug use only
+            // report_malfunction(malfunction_alert);
         }
 
         /* From datasheet:
@@ -233,10 +234,9 @@ void AP_RangeFinder_Ainstein_LRD1_Pro::Log_LRD1_Pro(
 bool AP_RangeFinder_Ainstein_LRD1_Pro::check_radar_reading(float &reading_m)
 {
     // Range of the LRD1 Pro 0.3m to 656m
-    if (reading_m < 0.3 || reading_m > 655)
+    if (reading_m > 655)
     {
         reading_m = MIN(656, reading_m);
-        reading_m = MAX(0.3, reading_m);
         return false;
     }
     return true;
