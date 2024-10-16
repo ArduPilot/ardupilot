@@ -655,12 +655,6 @@ void Copter::twentyfive_hz_logging()
         AP::ins().Write_IMU();
     }
 
-#if MODE_AUTOROTATE_ENABLED
-    if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
-        //update autorotation log
-        g2.arot.Log_Write_Autorotation();
-    }
-#endif
 #if HAL_GYROFFT_ENABLED
     if (should_log(MASK_LOG_FTN_FAST)) {
         gyro_fft.write_log_messages();
