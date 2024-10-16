@@ -143,6 +143,7 @@ function MAVLinkAttitude.mavlink_attitude_receiver()
           if (parsed_msg ~= nil) and (parsed_msg.msgid == ATTITUDE_map.id) then
              local sysid = parsed_msg.sysid
              local attitude = {}
+             attitude.timestamp_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms:toint())
              attitude.roll = parsed_msg.roll
              attitude.pitch = parsed_msg.pitch
              attitude.yaw = parsed_msg.yaw

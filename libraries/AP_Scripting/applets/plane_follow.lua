@@ -25,7 +25,7 @@
    ZPR_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.6.0-041"
+SCRIPT_VERSION = "4.6.0-042"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -46,12 +46,13 @@ local windspeed_vector = ahrs:wind_estimate()
 
 local now = millis():tofloat() * 0.001
 local now_target_heading = now
+local now_results = now
 local follow_enabled = false
 local too_close_follow_up = 0
 local lost_target_countdown = LOST_TARGET_TIMEOUT
-local save_target_heading = {0.0, 0.0, 0.0}
 local save_target_heading1 = -400.0
 local save_target_heading2 = -400.0
+local save_target_altitude
 local tight_turn = false
 
 local PARAM_TABLE_KEY = 120
@@ -82,10 +83,12 @@ assert(param:add_table(PARAM_TABLE_KEY2, PARAM_TABLE_PREFIX2, 10), 'could not ad
 -- we need these existing FOLL_ parametrs
 FOLL_ALT_TYPE = Parameter('FOLL_ALT_TYPE')
 FOLL_SYSID = Parameter('FOLL_SYSID')
+FOLL_TIMEOUT = Parameter('FOLL_TIMEOUT')
 FOLL_OFS_Y = Parameter('FOLL_OFS_Y')
 local foll_sysid = FOLL_SYSID:get() or -1
 local foll_ofs_y = FOLL_OFS_Y:get() or 0.0
 local foll_alt_type = FOLL_ALT_TYPE:get() or ALT_FRAME.GLOBAL
+local foll_timeout = FOLL_TIMEOUT:get() or 1000
 
 -- Add these ZPF_ parameters specifically for this script
 --[[
@@ -320,6 +323,11 @@ local function set_vehicle_heading(heading)
    local heading_heading = heading.heading or 0
    local heading_accel = heading.accel or 0.0
 
+   if heading_heading == nil or heading_heading <= -400 or heading_heading > 360 then
+      gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": set_vehicle_heading no heading")
+      return
+   end
+
    if not gcs:run_command_int(MAV_CMD_INT.GUIDED_CHANGE_HEADING, { frame = MAV_FRAME.GLOBAL,
                                  p1 = heading_type, 
                                  p2 = heading_heading,
@@ -517,15 +525,20 @@ local function update()
    --[[
       get the current navigation target. 
    --]]
-   local target_location -- = Location()     of the target
-   local target_location_offset -- Location  of the target with FOLL_OFS_* offsets applied
+   local target_location                     -- = Location()     of the target
+   local target_location_offset               -- Location  of the target with FOLL_OFS_* offsets applied
    local target_velocity -- = Vector3f()     -- current velocity of lead vehicle
    local target_velocity_offset -- Vector3f  -- velocity to the offset target_location_offset
    local target_distance -- = Vector3f()     -- vector to lead vehicle
-   local target_distance_offsets             -- vector to the target taking offsets into account
+   local target_distance_offset              -- vector to the target taking offsets into account
    local xy_dist                             -- distance to target with offsets in meters
-   local target_heading = 0.0                -- heading of the target vehicle
-   local heading_to_target                   -- heading of the follow vehicle to the target with offsets
+   local target_heading                      -- heading of the target vehicle
+
+   local current_location = ahrs:get_location()
+   local current_altitude = 0.0
+   if current_location ~= nil then
+      current_altitude = current_location:alt() * 0.01
+   end
 
    local vehicle_airspeed = ahrs:airspeed_estimate()
    local current_target = vehicle:get_target_location()
@@ -543,14 +556,15 @@ local function update()
    local target_heading = follow:get_target_heading_deg()
    --]]
 
-   target_distance, target_distance_offsets,
+   target_distance, target_distance_offset,
       target_velocity, target_velocity_offset,
       target_location, target_location_offset,
       xy_dist = follow:get_target_info()
    target_heading = follow:get_target_heading_deg() or -400
 
    -- if we lose the target wait for LOST_TARGET_TIMEOUT seconds to try to reaquire it
-   if target_location == nil or target_velocity == nil or target_distance_offsets == nil or current_target == nil then
+   if target_location == nil or target_velocity == nil or target_velocity_offset == nil or
+      target_distance_offset == nil or current_target == nil or target_distance == nil then
       lost_target_countdown = lost_target_countdown - 1
       if lost_target_countdown <= 0 then
          follow_enabled = false
@@ -558,6 +572,11 @@ local function update()
          gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": follow: " .. FOLL_SYSID:get() .. " FAILED")
          return
       end
+
+      -- maintain the current heading until we re-establish telemetry from the target vehicle -- note that this is not logged, needs fixing
+      gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": follow: lost " .. FOLL_SYSID:get() .. " FAILED hdg: " .. save_target_heading1)
+      set_vehicle_heading({heading = save_target_heading1})
+      set_vehicle_target_altitude({alt = save_target_altitude, frame = foll_alt_type}) -- pass altitude in meters (location has it in cm)
       return
    else
       -- have a good target so reset the countdown 
@@ -566,14 +585,15 @@ local function update()
 
    -- target_velocity from MAVLink (via AP_Follow) is groundspeed, need to convert to airspeed, 
    -- we can only assume the windspeed for the target is the same as the chase plane
-   local target_airspeed = calculate_airspeed_from_groundspeed(target_velocity)
+   local target_airspeed = calculate_airspeed_from_groundspeed(target_velocity_offset)
 
    local vehicle_heading = math.abs(wrap_360(math.deg(ahrs:get_yaw())))
+   local heading_to_target_offset = math.deg(current_location:get_bearing(target_location_offset)) or -400
    -- offset_angle is the difference between the current heading of the follow vehicle and the target_location (with offsets)
-   local offset_angle = wrap_180(vehicle_heading - target_heading)
+   local offset_angle = wrap_180(vehicle_heading - heading_to_target_offset)
 
    -- rotate the target_distance_offsets in NED to the same direction has the follow vehicle, we use this below
-   local target_distance_rotated = target_distance_offsets:copy()
+   local target_distance_rotated = target_distance_offset:copy()
    target_distance_rotated:rotate_xy(math.rad(vehicle_heading))
 
    -- default the desired heading to the target heading (adjusted for projected turns) - we might change this below
@@ -594,7 +614,7 @@ local function update()
 
    -- target angle is the difference between the heading of the target and what its heading was 2 seconds ago
    local target_angle = 0.0
-   if target_heading ~= nil and target_heading > -400 then
+   if (target_heading ~= nil and target_heading > -400) then
       -- want the greatest angle of we might have turned
       local angle_diff1 = wrap_180(math.abs(save_target_heading1 - target_heading))
       local angle_diff2 = wrap_180(math.abs(save_target_heading2 - target_heading))
@@ -605,6 +625,7 @@ local function update()
       end
       -- remember the target heading from 2 seconds ago, so we can tell if it is turning or not
       if (now - now_target_heading) > 1 then
+         save_target_altitude = current_altitude
          save_target_heading2 = save_target_heading1
          save_target_heading1 = target_heading
          now_target_heading = now
@@ -632,7 +653,8 @@ local function update()
    local angle_adjustment
    tight_turn = false
    if target_attitude ~= nil then
-      if math.abs(target_attitude.roll) > 0.1 or math.abs(target_attitude.rollspeed) > 1 then
+      if (now - target_attitude.timestamp_ms < foll_timeout) and
+         math.abs(target_attitude.roll) > 0.1 or math.abs(target_attitude.rollspeed) > 1 then
          local turn_radius = vehicle_airspeed * vehicle_airspeed / (9.80665 * math.tan(target_attitude.roll + target_attitude.rollspeed))
 
          turning = true
@@ -684,12 +706,6 @@ local function update()
       end
    else
       too_close_follow_up = 0
-   end
-
-   local old_location = ahrs:get_location()
-   local current_altitude = 0.0
-   if old_location ~= nil then
-      current_altitude = old_location:alt() * 0.01
    end
 
    local target_altitude = 0.0

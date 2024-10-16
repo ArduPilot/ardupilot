@@ -122,3 +122,8 @@ target vehicle, but also FOLL_ALT_TYPE will determine the altitude frame that th
 will use when calculating the target altitude. See the definitions of these
 parameters to understand how they work. ZPF2_ALT_OVR will override the operation of FOLL_OFS_Z
 setting a fixed altitude for the following plane in FOLL_ALT_TYPE frame.
+
+To ensure the follow plane gets timely updates from the target, the SRx_EXT_STAT and SRx_EXTRA1
+telemetry stream rate parameters should be increased to increase the rate that the POSITION_TARGET_GLOBAL_INT
+and ATTITUDE mavlink messages are sent. The default value is 4Hz, a good value is probably 8Hz or 10Hz but 
+some testing should be done to confirm the best rate for your telemetry radios and vehicles.
