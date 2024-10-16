@@ -29,7 +29,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_FOLLOW_TIMEOUT_MS    3000    // position estimate timeout after 1 second
 #define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we have not heard from them in 10 seconds
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
@@ -143,6 +142,16 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
+    // @Param: _TIMEOUT
+    // @DisplayName: Follow timeout
+    // @Description: Follow position estimate timeout after x milliseconds
+    // @User: Standard
+    // @Units: milliseconds
+#if (APM_BUILD_TYPE(APM_BUILD_ArduPlane)) 
+    AP_GROUPINFO("_TIMEOUT", 12, AP_Follow, _timeout, 600),
+#else
+    AP_GROUPINFO("_TIMEOUT", 12, AP_Follow, _timeout, 3000),
+#endif
     AP_GROUPEND
 };
 
@@ -176,7 +185,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     }
 
     // check for timeout
-    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > (uint32_t)_timeout)) {
         return false;
     }
 
@@ -265,7 +274,7 @@ bool AP_Follow::get_target_heading_deg(float &heading) const
     }
 
     // check for timeout
-    if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > (uint32_t)_timeout)) {
         return false;
     }
 
@@ -582,7 +591,8 @@ bool AP_Follow::have_target(void) const
     }
 
     // check for timeout
-    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > (uint32_t)_timeout)) {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "location timeout %d", (int)(AP_HAL::millis() - _last_location_update_ms));
         return false;
     }
     return true;
