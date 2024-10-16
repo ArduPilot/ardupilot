@@ -162,13 +162,13 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect python3-packaging python3-setuptools python3-wheel python3-lxml python3-pygame"
+PYTHON_PKGS="future pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    PYTHON_PKGS="$PYTHON_PKGS intelhex"
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
@@ -181,7 +181,7 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
     PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
-SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
+SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
 fi
 
 # add some packages required for commonly-used MAVProxy modules:
@@ -391,6 +391,10 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
     $SOURCE_LINE
     PIP_USER_ARGUMENT=""
 
+    # Try update packaging, setuptools and wheel before installing pip package that may need compilation.
+    # This will overwrite the system supplied version in the virtual environment.
+    $PIP install $PIP_USER_ARGUMENT -U pip packaging setuptools wheel
+
     if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?" ; then
         DO_PYTHON_VENV_ENV=1
     fi
@@ -401,13 +405,6 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
         echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
-
-# try update packaging, setuptools and wheel before installing pip package that may need compilation
-SETUPTOOLS="setuptools"
-if [ ${RELEASE_CODENAME} == 'focal' ]; then
-    SETUPTOOLS=setuptools==70.3.0
-fi
-$PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
