@@ -31,14 +31,14 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
     // @Description: This is the initial mode when the vehicle is first turned on. This mode is assumed to not require GPS
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:FlowHold
     // @User: Standard
-    AP_GROUPINFO("_MODE1", 2, ToyMode, primary_mode[0], (float)Mode::Number::ALT_HOLD),
+    AP_GROUPINFO("_MODE1", 2, ToyMode, primary_mode[0], static_cast<int8_t>(Mode::Number::ALT_HOLD)),
 
     // @Param: _MODE2
     // @DisplayName: Tmode second mode
     // @Description: This is the secondary mode. This mode is assumed to require GPS
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:FlowHold
     // @User: Standard
-    AP_GROUPINFO("_MODE2", 3, ToyMode, primary_mode[1], (float)Mode::Number::LOITER),
+    AP_GROUPINFO("_MODE2", 3, ToyMode, primary_mode[1], static_cast<int8_t>(Mode::Number::LOITER)),
 
     // @Param: _ACTION1
     // @DisplayName: Tmode action 1
