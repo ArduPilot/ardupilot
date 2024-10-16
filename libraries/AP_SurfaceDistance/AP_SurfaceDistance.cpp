@@ -64,6 +64,20 @@ void AP_SurfaceDistance::update()
     // update health
     alt_healthy = (rangefinder->status_orient(rotation) == RangeFinder::Status::Good) &&
                             (rangefinder->range_valid_count_orient(rotation) >= RANGEFINDER_HEALTH_MIN);
+
+    // Keep track of whether we have ever had a healthy reading
+    has_been_healthy = has_been_healthy || alt_healthy;
+
+    // reset the out of range low timer if reading is reporting any other status
+    if (rangefinder->status_orient(rotation) != RangeFinder::Status::OutOfRangeLow) {
+        out_of_range_low_ms = 0;
+    }
+
+    // if we have just changed state to out of range low then keep track of the time this happened
+    if (out_of_range_low_ms == 0 && rangefinder->status_orient(rotation) == RangeFinder::Status::OutOfRangeLow) {
+        out_of_range_low_ms = now;
+    }
+
     if (!alt_healthy) {
         status |= (uint8_t)Surface_Distance_Status::Unhealthy;
     }
@@ -134,11 +148,37 @@ void AP_SurfaceDistance::update()
   difference between the inertial height at that time and the current
   inertial height to give us interpolation of height from rangefinder
  */
-bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret) const
+bool AP_SurfaceDistance::get_rangefinder_height_interpolated_cm(int32_t& ret, const uint32_t oor_low_timeout_ms)
 {
-    if (!enabled_and_healthy()) {
+    WITH_SEMAPHORE(sem);
+    // surface distance state not enabled
+    if (!enabled) {
         return false;
     }
+
+    // rangefinder has never been healthy so we cannot trust an interpolated result
+    if (!has_been_healthy) {
+        return false;
+    }
+
+    // rangefinder is unhealthy and we have not been told to temporarily accept out of range low values so we cannot use this measurement
+    if (!alt_healthy && oor_low_timeout_ms == 0) {
+        return false;
+    }
+
+    // we don't have an out of range low measurement and the rangefinder state is reporting unhealthy
+    if (!alt_healthy && out_of_range_low_ms == 0) {
+        return false;
+    }
+
+    // we are unhealthy because of an out of range low ready and the timer has run out on how long we are allowed to use a potentially out of range low reading
+    // TODO: handle timer wrap case?
+    if (!alt_healthy && (out_of_range_low_ms > 0) && (AP_HAL::millis() - out_of_range_low_ms > oor_low_timeout_ms)) {
+        return false;
+    }
+
+    // if we have got this far the rangefinder is enabled and is either healthy or we are within the permited
+    // grace time to be able to still use the rangefinder even though it is reporting out of range low
     ret = alt_cm_filt.get();
     ret += inertial_nav.get_position_z_up_cm() - inertial_alt_cm;
     return true;
@@ -172,6 +212,16 @@ void AP_SurfaceDistance::Log_Write(void) const
                                 );
 }
 #endif  // HAL_LOGGING_ENABLED
+
+bool AP_SurfaceDistance::rangefinder_configured(void) const
+{
+    const RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+        return false;
+    }
+    return rangefinder->status_orient(rotation) != RangeFinder::Status::NotConnected &&
+           rangefinder->status_orient(rotation) != RangeFinder::Status::NoData;
+}
 
 #endif // AP_RANGEFINDER_ENABLED
 
