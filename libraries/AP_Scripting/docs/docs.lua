@@ -1002,6 +1002,11 @@ function Quaternion_ud:q1(value) end
 ---@param vec Vector3f_ud
 function Quaternion_ud:body_to_earth(vec) end
 
+-- Compatability alias for body_to_earth
+---@deprecated renamed to body_to_earth, this alias will be removed in 4.7
+---@param vec Vector3f_ud
+function Quaternion_ud:earth_to_body(vec) end
+
 -- Returns inverse of quaternion
 ---@return Quaternion_ud
 function Quaternion_ud:inverse() end

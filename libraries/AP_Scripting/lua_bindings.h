@@ -34,3 +34,4 @@ int lua_mavlink_block_command(lua_State *L);
 int lua_print(lua_State *L);
 int lua_range_finder_handle_script_msg(lua_State *L);
 int lua_GCS_command_int(lua_State *L);
+int Quaternion_earth_to_body(lua_State *L);

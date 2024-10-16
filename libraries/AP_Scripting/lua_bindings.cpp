@@ -12,6 +12,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 
 #include "lua_bindings.h"
+#include "lua_scripts.h"
 
 #include "lua_boxed_numerics.h"
 #include <AP_Scripting/lua_generated_bindings.h>
@@ -1236,5 +1237,22 @@ int lua_GCS_command_int(lua_State *L)
     return 1;
 }
 #endif
+
+#if AP_AHRS_ENABLED
+int Quaternion_earth_to_body(lua_State *L) {
+    static bool warned = false;
+    if (!warned) {
+        lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, "Quaternion_ud:earth_to_body renamed to body_to_earth, this alias will be removed in 4.7");
+        warned = true;
+    }
+
+    binding_argcheck(L, 2);
+    Quaternion * ud = check_Quaternion(L, 1);
+    Vector3f & data_2 = *check_Vector3f(L, 2);
+    ud->body_to_earth(data_2);
+
+    return 0;
+}
+#endif // AP_AHRS_ENABLED
 
 #endif  // AP_SCRIPTING_ENABLED
