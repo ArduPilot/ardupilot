@@ -51,6 +51,7 @@ struct float_array {
 
 class StratoBlimp;
 class Glider;
+class FlightAxis;
 
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
@@ -326,6 +327,9 @@ public:
 #endif
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
         SlungPayloadSim slung_payload_sim;
+#endif
+#if AP_SIM_FLIGHTAXIS_ENABLED
+        FlightAxis *flightaxis_ptr;
 #endif
     };
     ModelParm models;
