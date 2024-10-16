@@ -1104,6 +1104,14 @@ class chibios(Board):
             'AP_HAL_ChibiOS',
         ]
 
+        # get location of nano.specs and nosys.specs
+        cfg.msg("Toolchain Location", cfg.env.AR)
+        # location of nosys.specs relative to the toolchain
+        env.NOSYS_SPECS = os.path.dirname(cfg.env.AR[0]) + '/../arm-none-eabi/lib/nosys.specs'
+        cfg.msg("ARM GCC nosys.specs", env.NOSYS_SPECS)
+        env.NANO_SPECS = os.path.dirname(cfg.env.AR[0]) + '/../arm-none-eabi/lib/nano.specs'
+        cfg.msg("ARM GCC nano.specs", env.NANO_SPECS)
+
         # make board name available for USB IDs
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
         env.HAL_MAX_STACK_FRAME_SIZE = 'HAL_MAX_STACK_FRAME_SIZE=%d' % 1300 # set per Wframe-larger-than, ensure its same
@@ -1139,8 +1147,8 @@ class chibios(Board):
             '-fno-builtin-puts',
             '-mno-thumb-interwork',
             '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
+            '--specs=%s' % env.NANO_SPECS,
+            '--specs=%s' % env.NOSYS_SPECS,
             '-D__USE_CMSIS',
             '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
@@ -1183,8 +1191,8 @@ class chibios(Board):
             '-nostartfiles',
             '-mno-thumb-interwork',
             '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
+            '--specs=%s' % env.NANO_SPECS,
+            '--specs=%s' % env.NOSYS_SPECS,
             '-L%s' % env.BUILDROOT,
             '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
