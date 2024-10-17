@@ -53,8 +53,8 @@ AP_BattMonitor_SMBus_Generic::AP_BattMonitor_SMBus_Generic(AP_BattMonitor &mon,
 
 void AP_BattMonitor_SMBus_Generic::timer()
 {
-	// check if PEC is supported
-    if (!check_pec_support()) {
+	// read SMBus SpecificationInfo()
+    if (!read_specification_info()) {
         return;
     }
 
@@ -63,7 +63,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
 
     // read voltage (V)
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
-        _state.voltage = (float)data * 0.001f;
+        _state.voltage = (float)data * _v_multiplier * 0.001f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
     }
@@ -98,7 +98,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
     for (uint8_t i = 0; i < (_cell_count_fixed ? _cell_count : BATTMONITOR_SMBUS_NUM_CELLS_MAX); i++) {
         if (read_word(smbus_cell_ids[i], data) && (data > 0) && (data < UINT16_MAX)) {
             _has_cell_voltages = true;
-            _state.cell_voltages.cells[i] = data;
+            _state.cell_voltages.cells[i] = data * _v_multiplier;
             _last_cell_update_us[i] = tnow;
             if (!_cell_count_fixed) {
                 _cell_count = MAX(_cell_count, i + 1);
@@ -116,7 +116,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
 
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
-        _state.current_amps = -(float)((int16_t)data) * 0.001f;
+        _state.current_amps = -(float)((int16_t)data) * _i_multiplier * 0.001f;
         _state.last_time_micros = tnow;
     }
 
@@ -132,12 +132,12 @@ void AP_BattMonitor_SMBus_Generic::timer()
     read_cycle_count();
 }
 
-// check if PEC supported with the version value in SpecificationInfo() function
-// returns true once PEC is confirmed as working or not working
-bool AP_BattMonitor_SMBus_Generic::check_pec_support()
+// Read SpecificationInfo(), check if PEC is supported and update voltages and current multipliers
+// returns true once SpecificationInfo() is read from the Smart Battery
+bool AP_BattMonitor_SMBus_Generic::read_specification_info()
 {
-    // exit immediately if we have already confirmed pec support
-    if (_pec_confirmed) {
+    // exit immediately if we have already read SpecificationInfo()
+    if (_specification_info_confirmed) {
         return true;
     }
 
@@ -147,30 +147,57 @@ bool AP_BattMonitor_SMBus_Generic::check_pec_support()
         return false;
     }
 
-    // extract version
-    uint8_t version = (data & 0xF0) >> 4;
-
-    // version less than 0011b (i.e. 3) do not support PEC
-    if (version < 3) {
-        _pec_supported = false;
-        _pec_confirmed = true;
-        return true;
-    }
-
     // check manufacturer name
     uint8_t buff[AP_BATTMONITOR_SMBUS_READ_BLOCK_MAXIMUM_TRANSFER + 1] {};
     if (read_block(BATTMONITOR_SMBUS_MANUFACTURE_NAME, buff, sizeof(buff))) {
         // Hitachi maxell batteries do not support PEC
         if (strcmp((char*)buff, "Hitachi maxell") == 0) {
             _pec_supported = false;
-            _pec_confirmed = true;
+            _v_multiplier = 1;
+            _i_multiplier = 1;
+            _specification_info_confirmed = true;
             return true;
         }
     }
+    // extract version
+    uint8_t version = (data & 0xF0) >> 4;
 
-    // assume all other batteries support PEC
-	_pec_supported = true;
-	_pec_confirmed = true;
+    // version less than 0011b (i.e. 3) do not support PEC
+    _pec_supported = version >= 3;
+
+    // extract and update voltage multiplier
+    switch ((data & 0xF00) >> 8) {
+    case 1:
+        _v_multiplier = 10;
+        break;
+    case 2:
+        _v_multiplier = 100;
+        break;
+    case 3:
+        _v_multiplier = 1000;
+        break;
+    default:
+        _v_multiplier = 1;
+        break;
+    }
+
+    // extract and update current multiplier
+    switch ((data & 0xF000) >> 12) {
+    case 1:
+        _i_multiplier = 10;
+        break;
+    case 2:
+        _i_multiplier = 100;
+        break;
+    case 3:
+        _i_multiplier = 1000;
+        break;
+    default:
+        _i_multiplier = 1;
+        break;
+    }
+    
+	_specification_info_confirmed = true;
 	return true;
 }
 
