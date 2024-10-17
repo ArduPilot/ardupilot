@@ -491,8 +491,8 @@ def configure(cfg):
     _set_build_context_variant(cfg.env.BOARD)
     cfg.setenv(cfg.env.BOARD)
 
+    cfg.env.AP_SIGNED_FIRMWARE = cfg.options.signed_fw
     if cfg.options.signed_fw:
-        cfg.env.AP_SIGNED_FIRMWARE = True
         cfg.options.enable_check_firmware = True
 
     cfg.env.BOARD = cfg.options.board
