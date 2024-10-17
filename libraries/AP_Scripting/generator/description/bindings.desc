@@ -352,6 +352,7 @@ singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
+singleton AP_Vehicle method register_custom_mode boolean uint8_t'skip_check string string
 
 
 include AP_SerialLED/AP_SerialLED.h

@@ -411,7 +411,39 @@ bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_
     mode_guided.set_angle(q, ang_vel_body, throttle, true);
     return true;
 }
-#endif
+
+// Register a custom mode with given number and names
+bool Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name)
+{
+    // Numbers over 100 are reserved for custom modes
+    if (num < 100) {
+        return false;
+    }
+
+    const Mode::Number number = (Mode::Number)num;
+
+    // Number already registered to existing mode
+    if (mode_from_mode_num(number) != nullptr) {
+        return false;
+    }
+
+    // Find free slot
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if (mode_guided_custom[i] == nullptr) {
+            // Duplicate strings so were not pointing to unknown memory
+            const char* full_name_copy = strdup(full_name);
+            const char* short_name_copy = strndup(short_name, 4);
+            if ((full_name_copy != nullptr) && (short_name_copy != nullptr)) {
+                mode_guided_custom[i] = NEW_NOTHROW ModeGuidedCustom(number, full_name_copy, short_name_copy);
+            }
+            return mode_guided_custom[i] != nullptr;
+        }
+    }
+
+    // No free slots
+    return false;
+}
+#endif // MODE_GUIDED_ENABLED
 
 #if MODE_CIRCLE_ENABLED
 // circle mode controls
