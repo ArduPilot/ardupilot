@@ -1217,7 +1217,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     float max_back_vel_z = 0.0f;
     float min_back_vel_z = 0.0f; 
 
-    // rotate velocity vector from earth frame to body-frame since obstacles are in body-frame
+    // convert velocity vector from earth frame to body-frame since obstacles are in body-frame
     const Vector2f desired_vel_body_cms = _ahrs.earth_to_body2D(Vector2f{desired_vel_cms.x, desired_vel_cms.y});
     
     // safe_vel will be adjusted to stay away from Proximity Obstacles
@@ -1322,7 +1322,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     }
 
     // set modified desired velocity vector and back away velocity vector
-    // vectors were in body-frame, rotate resulting vector back to earth-frame
+    // vectors were in body-frame, represent resulting vector in the earth-frame
     const Vector2f safe_vel_2d = _ahrs.body_to_earth2D(Vector2f{safe_vel.x, safe_vel.y});
     desired_vel_cms = Vector3f{safe_vel_2d.x, safe_vel_2d.y, safe_vel.z};
     const Vector2f backup_vel_xy = _ahrs.body_to_earth2D(desired_back_vel_cms_xy);
