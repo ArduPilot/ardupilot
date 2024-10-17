@@ -66,6 +66,10 @@
 #define AP_DDS_CLOCK_PUB_ENABLED 1
 #endif
 
+#ifndef AP_DDS_GOAL_PUB_ENABLED
+#define AP_DDS_GOAL_PUB_ENABLED 1
+#endif
+
 #ifndef AP_DDS_JOY_SUB_ENABLED
 #define AP_DDS_JOY_SUB_ENABLED 1
 #endif
