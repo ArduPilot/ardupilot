@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_BEACON_ENABLED
-#define AP_BEACON_ENABLED 1
+#define AP_BEACON_ENABLED BOARD_FLASH_SIZE > 2048
 #endif
 
 #ifndef AP_BEACON_MAX_BEACONS
