@@ -90,9 +90,8 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     } // while nbytes
 
-    
-    if (run_state.last_packet_Transponder_Id_ms == 0 && run_state.request_Transponder_Id_tries < 5)
-    {
+
+    if (run_state.last_packet_Transponder_Id_ms == 0 && run_state.request_Transponder_Id_tries < 5) {
         if (now_ms - run_state.last_packet_Request_Transponder_Id_ms >= 1000)
         {
             request_msg(GDL90_ID_IDENTIFICATION);
@@ -100,8 +99,7 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     }
 
-    if (run_state.last_packet_Transponder_Config_ms == 0 && run_state.request_Transponder_Config_tries < 5)
-    {
+    if (run_state.last_packet_Transponder_Config_ms == 0 && run_state.request_Transponder_Config_tries < 5) {
         if (now_ms - run_state.last_packet_Request_Transponder_Config_ms >= 1000)
         {
             request_msg(GDL90_ID_TRANSPONDER_CONFIG);
@@ -114,9 +112,10 @@ void AP_ADSB_uAvionix_UCP::update()
 
         // We want to use the defaults stored on the ping200X, if possible.
         // Until we get the config message (or we've tried requesting it several times),
-        // don't send the control message. 
-        if (run_state.last_packet_Transponder_Config_ms != 0 || run_state.request_Transponder_Config_tries >= 5)
-        send_Transponder_Control();
+        // don't send the control message.
+        if (run_state.last_packet_Transponder_Config_ms != 0 || run_state.request_Transponder_Config_tries >= 5) {
+            send_Transponder_Control();
+        }
     }
 
     if ((now_ms - run_state.last_packet_GPS_ms >= 200) && (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Ping200X_Send_GPS)) != 0) {
@@ -124,14 +123,12 @@ void AP_ADSB_uAvionix_UCP::update()
         send_GPS_Data();
     }
 
-    // if the transponder has stopped giving us the data needed to 
+    // if the transponder has stopped giving us the data needed to
     // fill the transponder status mavlink message, indicate status unavailable.
     if ((now_ms - run_state.last_packet_Transponder_Status_ms >= 10000)
         && (now_ms - run_state.last_packet_Transponder_Heartbeat_ms >= 10000)
-        && (now_ms - run_state.last_packet_Transponder_Ownship_ms >= 10000))
-    {
+        && (now_ms - run_state.last_packet_Transponder_Ownship_ms >= 10000)) {
         _frontend.out_state.tx_status.fault |= UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
-        // TODO reset the data for each message when timeout occurs
     }
 }
 
@@ -187,7 +184,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             char primaryFwPartNumber[str_len+1];
             memcpy(&primaryFwPartNumber, rx.decoded.identification.primaryFwPartNumber, str_len);
             primaryFwPartNumber[str_len] = 0;
-            
+
             GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"ADSB:Detected %s v%u.%u.%u SN:%u %s",
                 get_hardware_name(rx.decoded.identification.primary.hwId),
                 (unsigned)rx.decoded.identification.primary.fwMajorVersion,
@@ -230,10 +227,8 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
     case GDL90_ID_TRANSPONDER_STATUS:
     {
         _frontend.out_state.tx_status.fault &= ~UAVIONIX_ADSB_OUT_STATUS_FAULT_STATUS_MESSAGE_UNAVAIL;
-        switch (msg.payload[0])
-        {
-        case 1:
-        {
+        switch (msg.payload[0]) {
+        case 1: {
             // version 1 of the transponder status message is sent at 1 Hz (if UCP protocol out is enabled on the transponder)
             memcpy(&rx.decoded.transponder_status, msg.raw, sizeof(rx.decoded.transponder_status));
             if (rx.decoded.transponder_status.identActive) {
@@ -295,8 +290,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         case 2:
             // deprecated
             break;
-        case 3:
-        {
+        case 3: {
             // Version 3 of the transponder status message is sent in response to the transponder control message (if UCP-HD protocol out is enabled on the transponder)
             memcpy(&rx.decoded.transponder_status_v3, msg.raw, sizeof(rx.decoded.transponder_status_v3));
 
@@ -345,7 +339,6 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             _frontend.out_state.tx_status.NIC_NACp = rx.decoded.transponder_status_v3.NIC | (rx.decoded.transponder_status_v3.NACp << 4);
             _frontend.out_state.tx_status.boardTemp = rx.decoded.transponder_status_v3.temperature;
 
-            // TODO not the best approach
             if (run_state.last_packet_Transponder_Status_ms == 0 && run_state.last_packet_Transponder_Config_ms == 0) {
                 // If this is the first time we've seen a status message,
                 // and we haven't initialized the control message from the config message,
@@ -535,14 +528,14 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
     // Set flag byte in frame buffer
     gdl90FrameBuffer[0] = GDL90_FLAG_BYTE;
     uint16_t frameIndex = 1;
-    
+
     // Copy and stuff all payload bytes into frame buffer
     for (uint16_t i = 0; i < length+2; i++) {
         // Check for overflow of frame buffer
         if (frameIndex >= GDL90_TX_MAX_FRAME_LENGTH) {
             return 0;
         }
-        
+
         uint8_t data;
         // Append CRC to payload
         if (i == length) {
@@ -550,7 +543,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
         } else if (i == length+1) {
             data = HIGHBYTE(frameCrc);
         } else {
-            data = message.raw[i];    
+            data = message.raw[i];
         }
 
         if (data == GDL90_FLAG_BYTE || data == GDL90_CONTROL_ESCAPE_BYTE) {
@@ -558,7 +551,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
             if (frameIndex + 2 > GDL90_TX_MAX_FRAME_LENGTH) {
               return 0;
             }
-            
+
             // Set control break and stuff this byte
             gdl90FrameBuffer[frameIndex++] = GDL90_CONTROL_ESCAPE_BYTE;
             gdl90FrameBuffer[frameIndex++] = data ^ GDL90_STUFF_BYTE;
@@ -566,7 +559,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
             gdl90FrameBuffer[frameIndex++] = data;
         }
     }
-    
+
     // Add end of frame indication
     gdl90FrameBuffer[frameIndex++] = GDL90_FLAG_BYTE;
 
@@ -574,7 +567,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
     if (hostTransmit(gdl90FrameBuffer, frameIndex)) {
         return frameIndex;
     }
-    
+
     return 0;
 }
 
