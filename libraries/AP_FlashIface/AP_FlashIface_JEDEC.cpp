@@ -34,7 +34,8 @@ extern const AP_HAL::HAL& hal;
 
 enum class SupportedDeviceType {
     QuadSPI = 0,
-    OctoSPI = 1
+    OctoSPI = 1,
+    QuadSPIDTR = 2,
 };
 
 struct supported_device {
@@ -42,12 +43,21 @@ struct supported_device {
     uint8_t manufacturer_id;
     uint8_t device_id;
     SupportedDeviceType device_type;
+    uint8_t fast_read_ins;
 };
 
+#ifndef HAL_ENABLE_DTR
+#define HAL_ENABLE_DTR 0
+#endif
+
 static const struct supported_device supported_devices[] = {
-    {"mt25q",       0x20, 0xBA, SupportedDeviceType::QuadSPI},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
-    {"w25q",        0xEF, 0x40, SupportedDeviceType::QuadSPI},
-    {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPI},
+    {"mt25q",       0x20, 0xBA, SupportedDeviceType::QuadSPI, 0},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
+    {"w25q",        0xEF, 0x40, SupportedDeviceType::QuadSPI, 0},
+#if HAL_ENABLE_DTR
+    {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPIDTR, 0xED},
+#else
+    {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPI, 0},
+#endif
 };
 
 #ifdef HAL_BOOTLOADER_BUILD
@@ -409,10 +419,17 @@ bool AP_FlashIface_JEDEC::detect_device()
             return false;
         }
 
-        _desc.fast_read_ins = SFDP_GET_BITS(param_table[fast_read_dword], 8, 15);
+        _desc.is_dtr_supported = supported_devices[_dev_list_idx].device_type == SupportedDeviceType::QuadSPIDTR;
+        // Check if DTR is supported Ref. JESD216F 6.4.4
+        if (_desc.is_dtr_supported) {
+            _desc.fast_read_ins = supported_devices[_dev_list_idx].fast_read_ins;
+            _desc.fast_read_dummy_cycles = 7;
+        } else {
+            _desc.fast_read_ins = SFDP_GET_BITS(param_table[fast_read_dword], 8, 15);
+            _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[fast_read_dword], 0, 4);
+        }
         // we get number of dummy clocks cycles needed, also include mode bits
         _desc.fast_read_mode_clocks =  SFDP_GET_BITS(param_table[fast_read_dword], 5, 7);
-        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[fast_read_dword], 0, 4);
 
         if (_desc.fast_read_ins == 0) {
             Debug("Fast read unsupported");
@@ -949,6 +966,9 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
         cmd.cfg     =   AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
                         AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
                         AP_HAL::WSPI::CFG_ALT_SIZE_8;
+        if (_desc.is_dtr_supported) {
+            cmd.cfg |= AP_HAL::WSPI::CFG_ALT_DDR;
+        }
         if (_wide_spi_mode == WSPIMode::QuadSPI) {
             cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
                          AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
@@ -1036,6 +1056,9 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
             cmd.cfg = AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
                       AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
                       AP_HAL::WSPI::CFG_ALT_SIZE_8;
+            if (_desc.is_dtr_supported) {
+                cmd.cfg |= AP_HAL::WSPI::CFG_ALT_DDR;
+            }
             if (_wide_spi_mode == WSPIMode::QuadSPI) {
                 cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
                              AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
@@ -1072,6 +1095,9 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
                       AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
                       AP_HAL::WSPI::CFG_ALT_SIZE_8 |
                       AP_HAL::WSPI::CFG_SIOO;
+            if (_desc.is_dtr_supported) {
+                cmd.cfg |= AP_HAL::WSPI::CFG_ALT_DDR;
+            }
             if (_wide_spi_mode == WSPIMode::QuadSPI) {
                 cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
                              AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
