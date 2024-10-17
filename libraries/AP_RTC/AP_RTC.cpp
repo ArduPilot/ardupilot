@@ -9,6 +9,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/time.h>
 
+#define DEBUG_RTC_SHIFT 1
+
+#if DEBUG_RTC_SHIFT
+#include <AP_Logger/AP_Logger.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_RTC::AP_RTC()
@@ -47,9 +53,19 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
     const uint64_t oldest_acceptable_date_us = 1640995200ULL*1000*1000; // 2022-01-01 0:00
 
-    if (type >= rtc_source_type) {
-        // e.g. system-time message when we've been set by the GPS
-        return;
+    // only allow time to be moved forward from the same sourcetype
+    // while the vehicle is disarmed:
+    if (hal.util->get_soft_armed()) {
+        if (type >= rtc_source_type) {
+            // e.g. system-time message when we've been set by the GPS
+            return;
+        }
+    } else {
+        // vehicle is disarmed; accept (e.g.) GPS time source updates
+        if (type > rtc_source_type) {
+            // e.g. system-time message when we've been set by the GPS
+            return;
+        }
     }
 
     // check it's from an allowed sources:
@@ -70,6 +86,11 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
     }
     WITH_SEMAPHORE(rsem);
 
+#if DEBUG_RTC_SHIFT
+    uint64_t old_utc = 0;
+    UNUSED_RESULT(get_utc_usec(old_utc));
+#endif
+
     rtc_shift = tmp;
 
     // update hardware clock:
@@ -82,6 +103,32 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 #if HAL_GCS_ENABLED
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
+#endif
+
+#if DEBUG_RTC_SHIFT
+    uint64_t new_utc = 0;
+    UNUSED_RESULT(get_utc_usec(new_utc));
+    if (old_utc != new_utc) {
+        if (AP::logger().should_log(0xFFFF)){
+            // log to AP_Logger
+            // @LoggerMessage: RTC
+            // @Description: Information about RTC clock resets
+            // @Field: TimeUS: Time since system startup
+            // @Field: old: old time
+            // @Field: new: new time
+            // @Field: in: new argument time
+            AP::logger().WriteStreaming(
+                "RTC",
+                "TimeUS,old_utc,new_utc",
+                "sss",
+                "FFF",
+                "QQQ",
+                AP_HAL::micros64(),
+                old_utc,
+                new_utc
+                );
+        }
+    }
 #endif
 }
 
