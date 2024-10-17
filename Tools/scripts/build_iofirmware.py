@@ -29,11 +29,23 @@ run_program(["./waf", "iofirmware"])
 shutil.copy('build/iomcu/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_lowpolh.bin')
 shutil.copy('build/iomcu/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_highpolh.bin')
 
+run_program(["./waf", "configure", "--board", 'iomcu', '--enable-iomcu-profiled-support'])
+run_program(["./waf", "clean"])
+run_program(["./waf", "iofirmware"])
+shutil.copy('build/iomcu/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_cube_lowpolh.bin')
+shutil.copy('build/iomcu/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_cube_highpolh.bin')
+
 run_program(["./waf", "configure", "--board", 'iomcu-dshot'])
 run_program(["./waf", "clean"])
 run_program(["./waf", "iofirmware"])
 shutil.copy('build/iomcu-dshot/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin')
 shutil.copy('build/iomcu-dshot/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_dshot_highpolh.bin')
+
+run_program(["./waf", "configure", "--board", 'iomcu-dshot', '--enable-iomcu-profiled-support'])
+run_program(["./waf", "clean"])
+run_program(["./waf", "iofirmware"])
+shutil.copy('build/iomcu-dshot/bin/iofirmware_lowpolh.bin', 'Tools/IO_Firmware/iofirmware_cube_dshot_lowpolh.bin')
+shutil.copy('build/iomcu-dshot/bin/iofirmware_highpolh.bin', 'Tools/IO_Firmware/iofirmware_cube_dshot_highpolh.bin')
 
 run_program(["./waf", "configure", "--board", 'iomcu-f103'])
 run_program(["./waf", "clean"])

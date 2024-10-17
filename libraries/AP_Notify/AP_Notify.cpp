@@ -42,6 +42,7 @@
 #include "ProfiLED.h"
 #include "ScriptingLED.h"
 #include "DShotLED.h"
+#include "ProfiLED_IOMCU.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -115,7 +116,11 @@ AP_Notify *AP_Notify::_singleton;
 #endif  // defined (DEFAULT_NTF_LED_TYPES)
 
 #ifndef DEFAULT_NTF_LED_TYPES
-    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
+    #if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
+      #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | Notify_LED_ProfiLED_IOMCU | I2C_LEDS)
+    #else
+        #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
+    #endif
 #endif // DEFAULT_NTF_LED_TYPES
 
 #ifndef BUZZER_ENABLE_DEFAULT
@@ -203,7 +208,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 15:IS31FL3195 External, 16: IS31FL3195 Internal, 17: DiscreteRGB, 18: NeoPixelRGB
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal, 15:IS31FL3195 External, 16: IS31FL3195 Internal, 17: DiscreteRGB, 18: NeoPixelRGB, 19:ProfiLED_IOMCU
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -366,6 +371,11 @@ void AP_Notify::add_backends(void)
 #if AP_NOTIFY_DSHOT_LED_ENABLED
             case Notify_LED_DShot:
                 ADD_BACKEND(NEW_NOTHROW DShotLED());
+                break;
+#endif
+#if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
+            case Notify_LED_ProfiLED_IOMCU:
+                ADD_BACKEND(NEW_NOTHROW ProfiLED_IOMCU());
                 break;
 #endif
 #if AP_NOTIFY_LP5562_ENABLED
