@@ -15,11 +15,6 @@
 #define HAL_GCS_ENABLED 0
 #endif
 
-// by default bootloaders don't use INS:
-#ifndef AP_INERTIALSENSOR_ENABLED
-#define AP_INERTIALSENSOR_ENABLED 0
-#endif
-
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 
 // bootloader does not save temperature cals etc:

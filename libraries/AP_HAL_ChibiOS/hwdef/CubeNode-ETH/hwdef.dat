@@ -1,8 +1,10 @@
-include ../CubePilot-CANMod/hwdef.dat
+include ../CubeNode/hwdef.dat
 
 # we need RTS/CTS for the PPP link
 undef PE0
 undef PE1
+undef PC11
+undef HAL_PERIPH_ENABLE_IMU
 
 # need to use UART8 to get RTS/CTS
 PE1 UART8_TX UART8

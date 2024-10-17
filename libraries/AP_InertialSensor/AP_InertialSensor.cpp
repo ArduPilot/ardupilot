@@ -854,9 +854,11 @@ void AP_InertialSensor::_start_backends()
         _backends[i]->start();
     }
 
+#if AP_INERTIALSENSOR_ALLOW_NO_SENSORS
     if (_gyro_count == 0 || _accel_count == 0) {
         AP_HAL::panic("INS needs at least 1 gyro and 1 accel");
     }
+#endif
 
     // clear IDs for unused sensor instances
     for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
@@ -949,7 +951,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     }
 
     // calibrate gyros unless gyro calibration has been disabled
-    if (gyro_calibration_timing() != GYRO_CAL_NEVER) {
+    if (gyro_calibration_timing() != GYRO_CAL_NEVER && _gyro_count > 0) {
         init_gyro();
     }
 
@@ -1324,7 +1326,9 @@ AP_InertialSensor::detect_backends(void)
         #else
         DEV_PRINTF("INS: unable to initialise driver\n");
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
+        #if !AP_INERTIALSENSOR_ALLOW_NO_SENSORS
         AP_BoardConfig::config_error("INS: unable to initialise driver");
+        #endif
         #endif
     }
 }
