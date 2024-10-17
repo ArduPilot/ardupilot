@@ -112,19 +112,19 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LEN_WIDTH",   6, AP_ADSB, out_state.cfg.lengthWidth, UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L15M_W23M),
 
-    // @Param: OFFSET_LAT
+    // @Param: POS_X
     // @DisplayName: GPS antenna lateral offset
     // @Description: GPS antenna lateral offset. This describes the physical location offset from center of the GPS antenna on the aircraft.
 	// @Values: 0:NoData,1:Left2m,2:Left4m,3:Left6m,4:Center,5:Right2m,6:Right4m,7:Right6m
     // @User: Advanced
-    AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsOffsetLat, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_0M),
+    AP_GROUPINFO("POS_X",   7, AP_ADSB, out_state.cfg.gpsOffsetLat, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_0M),
 
-    // @Param: OFFSET_LON
+    // @Param: POS_Y
     // @DisplayName: GPS antenna longitudinal offset
     // @Description: GPS antenna longitudinal offset. This is usually set to 1, Applied By Sensor
     // @Values: 0:NO_DATA,1:AppliedBySensor
     // @User: Advanced
-    AP_GROUPINFO("OFFSET_LON",   8, AP_ADSB, out_state.cfg.gpsOffsetLon, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_APPLIED_BY_SENSOR),
+    AP_GROUPINFO("POS_Y",   8, AP_ADSB, out_state.cfg.gpsOffsetLon, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_APPLIED_BY_SENSOR),
 
     // @Param: RF_SELECT
     // @DisplayName: Transceiver RF selection
