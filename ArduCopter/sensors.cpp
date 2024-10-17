@@ -68,7 +68,7 @@ void Copter::update_rangefinder_terrain_offset()
 }
 
 // helper function to get inertially interpolated rangefinder height.
-bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret) const
+bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret)
 {
 #if AP_RANGEFINDER_ENABLED
     return rangefinder_state.get_rangefinder_height_interpolated_cm(ret);
