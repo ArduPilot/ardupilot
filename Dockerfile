@@ -13,6 +13,8 @@ ARG SKIP_AP_COV_ENV=1
 ARG SKIP_AP_GIT_CHECK=1
 ARG DO_AP_STM_ENV=1
 
+RUN git config --global --add safe.directory $PWD
+
 RUN groupadd ${USER_NAME} --gid ${USER_GID}\
     && useradd -l -m ${USER_NAME} -u ${USER_UID} -g ${USER_GID} -s /bin/bash
 
