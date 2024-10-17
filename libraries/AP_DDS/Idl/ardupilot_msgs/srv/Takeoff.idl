@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/Takeoff.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    struct Takeoff_Request {
+      @verbatim (language="comment", text=
+        "This service requests the vehicle to takeoff" "\n"
+        "float : Set the takeoff altitude [m] above home, or above terrain if rangefinder is healthy")
+      float alt;
+    };
+    @verbatim (language="comment", text=
+      "status    : True if the request for takeoff was successful, False otherwise")
+    struct Takeoff_Response {
+      boolean status;
+    };
+  };
+};
