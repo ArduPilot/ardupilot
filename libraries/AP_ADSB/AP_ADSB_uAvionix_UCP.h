@@ -82,7 +82,7 @@ private:
         uint32_t last_gcs_send_message_Transponder_Status_ms; // out
         uint32_t last_packet_Request_Transponder_Config_ms;  // out
         uint32_t last_packet_Transponder_Config_ms; // in
-        uint32_t request_Transponder_Config_tries; 
+        uint32_t request_Transponder_Config_tries;
         uint32_t last_packet_Request_Transponder_Id_ms; // out
         uint32_t last_packet_Transponder_Id_ms; // in
         uint32_t request_Transponder_Id_tries;
