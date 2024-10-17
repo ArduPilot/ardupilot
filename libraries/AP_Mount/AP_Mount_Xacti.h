@@ -134,7 +134,12 @@ private:
         Status,
         DateTime,
         OpticalZoomMagnification,
-        LAST = OpticalZoomMagnification,            // this should be equal to the final parameter enum
+        IRThroughColorPalette,
+        IRTemperatureRange,
+        IRTemperatureThreshold_S,
+        IRColorControl_S,
+        IRColorInfo_S,
+        LAST = IRColorInfo_S,                       // this should be equal to the final parameter enum
     };
     static const char* _param_names[];              // array of Xacti parameter strings
 
@@ -144,6 +149,7 @@ private:
 
     // helper function to get and set parameters
     bool set_param_int32(Param param, int32_t param_value);
+    bool get_param_int32(Param param);
     bool set_param_string(Param param, const AP_DroneCAN::string& param_value);
     bool get_param_string(Param param);
 
@@ -178,6 +184,18 @@ private:
     // request status.  now_ms is current system time
     // returns true if sent so that we avoid immediately trying to also send other messages
     bool request_status(uint32_t now_ms);
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // configure CX-GB250 to take absolute thermal images
+    // this is the main function to configure the camera for thermal imaging
+    bool configure_cxgb250(uint32_t now_ms);
+
+    // set IR temperature thresholds
+    bool set_ir_temp_thesholds();
+
+    // set IR color control
+    bool set_ir_color_control();
+#endif
 
     // check if safe to send message (if messages sent too often camera will not respond)
     // now_ms is current system time
@@ -263,6 +281,21 @@ private:
     } _status_report;
     bool _motor_error;                              // true if status reports motor or control error (used for health reporting)
     bool _camera_error;                             // true if status reports camera error
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // thermal related variables
+    struct {
+        uint32_t last_config_ms;                    // system time that thermal configuration was last sent
+        int8_t ir_through_color_palette = -1;       // latest IRThroughColorPalette param value received from camera (used to confirm correct setting)
+        int8_t ir_temperate_range = -1;             // latest IRTemperatureRange param value received from camera (used to confirm correct setting)
+        bool got_ir_temp_thresh;                    // true once IRTemperatureThreshold_S value has been received from camera
+        bool ir_temp_thresh_ok;                     // true once IRTemperatureThreshold_S value has been set correctly
+        bool sent_ir_color_control;                 // true once IRColorControl_S value has been sent
+        bool config_complete_msg;                   // true once config complete message has been sent to user
+    } _thermal;
+    static const char* _ir_temp_thresh_config_str;      // IR temperature thresholds configuration string
+    static const char* _ir_color_control_config_str;    // IR color control config string
+#endif
 
     // DroneCAN related variables
     static bool _subscribed;                        // true once subscribed to receive DroneCAN messages
