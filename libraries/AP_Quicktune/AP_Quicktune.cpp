@@ -246,18 +246,15 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
         // We are just starting tuning, get current values
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Tuning: Starting tune");
         // Get all params
-        for (int8_t pname = 0; pname < uint8_t(Param::END); pname++) {
-            param_saved[pname] = get_param_value(Param(pname));
+        for (uint8_t p = 0; p < uint8_t(Param::END); p++) {
+            param_saved[p] = get_param_value(Param(p));
         }
         // Set up SMAX
-        Param is[3];
-        is[0] = Param::RLL_SMAX;
-        is[1] = Param::PIT_SMAX;
-        is[2] = Param::YAW_SMAX;
-        for (uint8_t i = 0; i < 3; i++) {
-            float smax = get_param_value(is[i]);
+        const Param is[3] { Param::RLL_SMAX, Param::PIT_SMAX, Param::YAW_SMAX };
+        for (const auto p : is) {
+            float smax = get_param_value(p);
             if (smax <= 0) {
-                adjust_gain(is[i], DEFAULT_SMAX); 
+                adjust_gain(p, DEFAULT_SMAX);
             }
         }
     }
@@ -271,12 +268,12 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
         setup_filters(axis);
     }
 
-    Param pname = get_pname(axis, current_stage);
-    float pval = get_param_value(pname);
-    float limit = gain_limit(pname);
-    bool limited = (limit > 0.0 && pval >= limit);
-    float srate = get_slew_rate(axis);
-    bool oscillating = srate > osc_smax;
+    const Param pname = get_pname(axis, current_stage);
+    const float pval = get_param_value(pname);
+    const float limit = gain_limit(pname);
+    const bool limited = (limit > 0.0 && pval >= limit);
+    const float srate = get_slew_rate(axis);
+    const bool oscillating = srate > osc_smax;
     
     // Check if reached limit
     if (limited || oscillating) {
@@ -290,11 +287,15 @@ void AP_Quicktune::update(bool mode_supports_quicktune)
         }
         float old_gain = param_saved[uint8_t(pname)];
         if (new_gain < old_gain && (pname == Param::PIT_D || pname == Param::RLL_D)) {
-            // We are lowering a D gain from the original gain. Also lower the P gain by the same amount so that we don't trigger P oscillation. We don't drop P by more than a factor of 2
-            float ratio = fmaxf(new_gain / old_gain, 0.5);
-            Param P_name = Param(uint8_t(pname)-2); //from D to P
-            float old_pval = get_param_value(P_name);;
-            float new_pval = old_pval * ratio;
+            // We are lowering a D gain from the original gain. Also
+            // lower the P gain by the same amount so that we don't
+            // trigger P oscillation. We don't drop P by more than a
+            // factor of 2
+            const float ratio = fmaxf(new_gain / old_gain, 0.5);
+            const uint8_t P_TO_D_OFS = uint8_t(Param::RLL_D) - uint8_t(Param::RLL_P);
+            const Param P_name = Param(uint8_t(pname)-P_TO_D_OFS); //from D to P
+            const float old_pval = get_param_value(P_name);;
+            const float new_pval = old_pval * ratio;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Adjusting %s %.3f -> %.3f", get_param_name(P_name), old_pval, new_pval);
             adjust_gain_limited(P_name, new_pval);
         }
@@ -355,15 +356,15 @@ void AP_Quicktune::setup_filters(AP_Quicktune::AxisName axis)
     }
     AP_InertialSensor *imu = AP_InertialSensor::get_singleton();
     if (imu == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Quicktune: can't find IMU.");
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
-    float gyro_filter = imu->get_gyro_filter_hz();
+    const float gyro_filter = imu->get_gyro_filter_hz();
     adjust_gain(get_pname(axis, Stage::FLTT), gyro_filter * FLTT_MUL);
     adjust_gain(get_pname(axis, Stage::FLTD), gyro_filter * FLTT_MUL);
 
     if (axis == AxisName::YAW) {
-        float FLTE = get_param_value(Param::YAW_FLTE);
+        const float FLTE = get_param_value(Param::YAW_FLTE);
         if (FLTE < 0.0 || FLTE > YAW_FLTE_MAX) {
             adjust_gain(Param::YAW_FLTE, YAW_FLTE_MAX);
         }
@@ -375,9 +376,9 @@ void AP_Quicktune::setup_filters(AP_Quicktune::AxisName axis)
 bool AP_Quicktune::have_pilot_input()
 {
     const auto &rcmap = *AP::rcmap();
-    float roll = rc().rc_channel(rcmap.roll()-1)->norm_input_dz();
-    float pitch = rc().rc_channel(rcmap.pitch()-1)->norm_input_dz();
-    float yaw = rc().rc_channel(rcmap.yaw()-1)->norm_input_dz();
+    const float roll = rc().rc_channel(rcmap.roll()-1)->norm_input_dz();
+    const float pitch = rc().rc_channel(rcmap.pitch()-1)->norm_input_dz();
+    const float yaw = rc().rc_channel(rcmap.yaw()-1)->norm_input_dz();
 
     if (fabsf(roll) > 0 || fabsf(pitch) > 0 || fabsf(yaw) > 0) {
         return true;
@@ -396,20 +397,32 @@ AP_Quicktune::AxisName AP_Quicktune::get_current_axis()
     return AxisName::DONE;
 }
 
-float AP_Quicktune::get_slew_rate(AP_Quicktune::AxisName axis)
+// get the AC_PID object for an axis
+AC_PID *AP_Quicktune::get_axis_pid(AP_Quicktune::AxisName axis)
 {
     auto &attitude_control = *AC_AttitudeControl::get_singleton();
     switch(axis) {
     case AxisName::RLL:
-        return attitude_control.get_rate_roll_pid().get_pid_info().slew_rate;
+        return &attitude_control.get_rate_roll_pid();
     case AxisName::PIT:
-        return attitude_control.get_rate_pitch_pid().get_pid_info().slew_rate;
+        return &attitude_control.get_rate_pitch_pid();
     case AxisName::YAW:
-        return attitude_control.get_rate_yaw_pid().get_pid_info().slew_rate;
+        return &attitude_control.get_rate_yaw_pid();
     default:
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        return 0.0;
+        break;
     }
+    return nullptr;
+}
+
+// get slew rate parameter for an axis
+float AP_Quicktune::get_slew_rate(AP_Quicktune::AxisName axis)
+{
+    auto *pid = get_axis_pid(axis);
+    if (pid == nullptr) {
+        return 0;
+    }
+    return pid->get_pid_info().slew_rate;
 }
 
 // Move to next stage of tune
@@ -432,8 +445,10 @@ void AP_Quicktune::adjust_gain(AP_Quicktune::Param param, float value)
 
     if (get_stage(param) == Stage::P) {
         // Also change I gain
-        Param iname = Param(uint8_t(param)+1);
-        Param ffname = Param(uint8_t(param)+7);
+        const uint8_t P_TO_I_OFS = uint8_t(Param::RLL_I) - uint8_t(Param::RLL_P);
+        const uint8_t P_TO_FF_OFS = uint8_t(Param::RLL_FF) - uint8_t(Param::RLL_P);
+        const Param iname = Param(uint8_t(param)+P_TO_I_OFS);
+        const Param ffname = Param(uint8_t(param)+P_TO_FF_OFS);
         float FF = get_param_value(ffname);
         if (FF > 0) {
             // If we have any FF on an axis then we don't couple I to P,
@@ -461,10 +476,10 @@ void AP_Quicktune::adjust_gain_limited(AP_Quicktune::Param param, float value)
 
 float AP_Quicktune::limit_gain(AP_Quicktune::Param param, float value)
 {
-    float saved_value = param_saved[uint8_t(param)];
+    const float saved_value = param_saved[uint8_t(param)];
     if (reduce_max >= 0 && reduce_max < 100 && saved_value > 0) {
         // Check if we exceeded gain reduction
-        float reduction_pct = 100.0 * (saved_value - value) / saved_value;
+        const float reduction_pct = 100.0 * (saved_value - value) / saved_value;
         if (reduction_pct > reduce_max) {
             float new_value = saved_value * (100 - reduce_max) * 0.01;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Limiting %s %.3f -> %.3f", get_param_name(param), value, new_value);
@@ -509,78 +524,41 @@ float AP_Quicktune::get_gain_mul()
 
 void AP_Quicktune::restore_all_params()
 {
-    for (int8_t pname = 0; pname < uint8_t(Param::END); pname++) {
-        if (BIT_IS_SET(param_changed, pname)) {
-            set_param_value(Param(pname), param_saved[pname]);
-            BIT_CLEAR(param_changed, pname);
+    for (uint8_t p = 0; p < uint8_t(Param::END); p++) {
+        const auto param = Param(p);
+        if (BIT_IS_SET(param_changed, p)) {
+            set_param_value(param, param_saved[p]);
+            BIT_CLEAR(param_changed, p);
         }
     }
 }
 
 void AP_Quicktune::save_all_params()
 {
-    // for pname in pairs(params) do
-    for (int8_t pname = 0; pname < uint8_t(Param::END); pname++) {
-        if (BIT_IS_SET(param_changed, pname)) {
-            set_and_save_param_value(Param(pname), get_param_value(Param(pname)));
-            param_saved[pname] = get_param_value(Param(pname));
-            BIT_CLEAR(param_changed, pname);
-        }
+    for (uint8_t p = 0; p < uint8_t(Param::END); p++) {
+        const auto param = Param(p);
+        set_and_save_param_value(param, get_param_value(param));
+        param_saved[p] = get_param_value(param);
+        BIT_CLEAR(param_changed, p);
     }
 }
 
 AP_Quicktune::Param AP_Quicktune::get_pname(AP_Quicktune::AxisName axis, AP_Quicktune::Stage stage)
 {
-    switch (axis)
+    const uint8_t axis_offset = uint8_t(axis) * param_per_axis;
+    switch (stage)
     {
-        case AxisName::RLL:
-            switch (stage)
-            {
-                case Stage::P:
-                    return Param::RLL_P;
-                case Stage::D:
-                    return Param::RLL_D;
-                case Stage::FLTT:
-                    return Param::RLL_FLTT;
-                case Stage::FLTD:
-                    return Param::RLL_FLTD;
-                default:
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                    return Param::END;
-            }
-        case AxisName::PIT:
-            switch (stage)
-            {
-                case Stage::P:
-                    return Param::PIT_P;
-                case Stage::D:
-                    return Param::PIT_D;
-                case Stage::FLTT:
-                    return Param::PIT_FLTT;
-                case Stage::FLTD:
-                    return Param::PIT_FLTD;
-                default:
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                    return Param::END;
-            }
-        case AxisName::YAW:
-            switch (stage)
-            {
-                case Stage::P:
-                    return Param::YAW_P;
-                case Stage::D:
-                    return Param::YAW_D;
-                case Stage::FLTT:
-                    return Param::YAW_FLTT;
-                case Stage::FLTD:
-                    return Param::YAW_FLTD;
-                default:
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                    return Param::END;
-            }
-        default:
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            return Param::END;
+    case Stage::P:
+        return Param(uint8_t(Param::RLL_P) + axis_offset);
+    case Stage::D:
+        return Param(uint8_t(Param::RLL_D) + axis_offset);
+    case Stage::FLTT:
+        return Param(uint8_t(Param::RLL_FLTT) + axis_offset);
+    case Stage::FLTD:
+        return Param(uint8_t(Param::RLL_FLTD) + axis_offset);
+    default:
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return Param::END;
     }
 }
 
@@ -595,57 +573,30 @@ AP_Quicktune::Stage AP_Quicktune::get_stage(AP_Quicktune::Param param)
 
 AP_Float *AP_Quicktune::get_param_pointer(AP_Quicktune::Param param)
 {
-    auto &attitude_control = *AC_AttitudeControl::get_singleton();
-    switch (param)
+    const AxisName axis = AxisName(uint8_t(param) / param_per_axis);
+    auto *pid = get_axis_pid(axis);
+    if (pid == nullptr) {
+        return nullptr;
+    }
+    const Param roll_param = Param(uint8_t(param) % param_per_axis);
+    switch (roll_param)
     {
         case Param::RLL_P:
-            return &attitude_control.get_rate_roll_pid().kP();
+            return &pid->kP();
         case Param::RLL_I:
-            return &attitude_control.get_rate_roll_pid().kI();
+            return &pid->kI();
         case Param::RLL_D:
-            return &attitude_control.get_rate_roll_pid().kD();
+            return &pid->kD();
         case Param::RLL_SMAX:
-            return &attitude_control.get_rate_roll_pid().slew_limit();
+            return &pid->slew_limit();
         case Param::RLL_FLTT:
-            return &attitude_control.get_rate_roll_pid().filt_T_hz();
+            return &pid->filt_T_hz();
         case Param::RLL_FLTD:
-            return &attitude_control.get_rate_roll_pid().filt_D_hz();
+            return &pid->filt_D_hz();
         case Param::RLL_FLTE:
-            return &attitude_control.get_rate_roll_pid().filt_E_hz();
+            return &pid->filt_E_hz();
         case Param::RLL_FF:
-            return &attitude_control.get_rate_roll_pid().ff();
-        case Param::PIT_P:
-            return &attitude_control.get_rate_pitch_pid().kP();
-        case Param::PIT_I:
-            return &attitude_control.get_rate_pitch_pid().kI();
-        case Param::PIT_D:
-            return &attitude_control.get_rate_pitch_pid().kD();
-        case Param::PIT_SMAX:
-            return &attitude_control.get_rate_pitch_pid().slew_limit();
-        case Param::PIT_FLTT:
-            return &attitude_control.get_rate_pitch_pid().filt_T_hz();
-        case Param::PIT_FLTD:
-            return &attitude_control.get_rate_pitch_pid().filt_D_hz();
-        case Param::PIT_FLTE:
-            return &attitude_control.get_rate_pitch_pid().filt_E_hz();
-        case Param::PIT_FF:
-            return &attitude_control.get_rate_pitch_pid().ff();
-        case Param::YAW_P:
-            return &attitude_control.get_rate_yaw_pid().kP();
-        case Param::YAW_I:
-            return &attitude_control.get_rate_yaw_pid().kI();
-        case Param::YAW_D:
-            return &attitude_control.get_rate_yaw_pid().kD();
-        case Param::YAW_SMAX:
-            return &attitude_control.get_rate_yaw_pid().slew_limit();    
-        case Param::YAW_FLTT:
-            return &attitude_control.get_rate_yaw_pid().filt_T_hz();
-        case Param::YAW_FLTD:
-            return &attitude_control.get_rate_yaw_pid().filt_D_hz();
-        case Param::YAW_FLTE:
-            return &attitude_control.get_rate_yaw_pid().filt_E_hz();
-        case Param::YAW_FF:
-            return &attitude_control.get_rate_roll_pid().ff();
+            return &pid->ff();
         default:
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return nullptr;
@@ -686,15 +637,10 @@ void AP_Quicktune::set_and_save_param_value(AP_Quicktune::Param param, float val
 
 AP_Quicktune::AxisName AP_Quicktune::get_axis(AP_Quicktune::Param param)
 {
-    if (param < Param::PIT_P) {
-        return AxisName::RLL;
-    } else if (param < Param::YAW_P) {
-        return AxisName::PIT;
-    } else if (param < Param::END) {
-        return AxisName::YAW;
-    } else {
+    if (param >= Param::END) {
         return AxisName::END;
     }
+    return AxisName(uint8_t(param) / param_per_axis);
 }
 
 const char* AP_Quicktune::get_axis_name(AP_Quicktune::AxisName axis)
@@ -723,7 +669,7 @@ float AP_Quicktune::gain_limit(AP_Quicktune::Param param)
             return yaw_d_max;
         }
     }
-   return 0.0;
+    return 0.0;
 }
 
 
