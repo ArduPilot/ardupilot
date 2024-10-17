@@ -788,59 +788,15 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
     }
 }
 
-// send an EKF_STATUS message to GCS
-void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
+// get variances
+bool AP_ExternalAHRS_VectorNav::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    if (!latest_ins_ekf_packet) {
-        return;
-    }
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // send message
     const struct VN_INS_ekf_packet &pkt = *(struct VN_INS_ekf_packet *)latest_ins_ekf_packet;
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       pkt.velU / vel_gate, pkt.posU / pos_gate, pkt.posU / hgt_gate,
-                                       mag_var, 0, 0);
+    velVar = pkt.velU;
+    posVar = pkt.posU;
+    hgtVar = pkt.posU;
+    tasVar = 0;
+    return true;
 }
 
 #endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED

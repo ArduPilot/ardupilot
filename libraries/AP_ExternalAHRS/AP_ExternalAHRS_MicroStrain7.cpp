@@ -317,63 +317,14 @@ void AP_ExternalAHRS_MicroStrain7::get_filter_status(nav_filter_status &status) 
     }
 }
 
-void AP_ExternalAHRS_MicroStrain7::send_status_report(GCS_MAVLINK &link) const
+// get variances
+bool AP_ExternalAHRS_MicroStrain7::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // send message
-    const float vel_gate = 4; // represents hz value data is posted at
-    const float pos_gate = 4; // represents hz value data is posted at
-    const float hgt_gate = 4; // represents hz value data is posted at
-    const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
-
-    const float velocity_variance {filter_data.ned_velocity_uncertainty.length() / vel_gate};
-    const float pos_horiz_variance {filter_data.ned_position_uncertainty.xy().length() / pos_gate};
-    const float pos_vert_variance {filter_data.ned_position_uncertainty.z / hgt_gate};
-    // No terrain alt sensor on MicroStrain7.
-    const float terrain_alt_variance {0};
-    // No airspeed sensor on MicroStrain7.
-    const float airspeed_variance {0};
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       velocity_variance, pos_horiz_variance, pos_vert_variance,
-                                       mag_var, terrain_alt_variance, airspeed_variance);
-
+    velVar = filter_data.ned_velocity_uncertainty.length();
+    posVar = filter_data.ned_position_uncertainty.xy().length();
+    hgtVar = filter_data.ned_position_uncertainty.z;
+    tasVar = 0;
+    return true;
 }
 
 bool AP_ExternalAHRS_MicroStrain7::times_healthy() const

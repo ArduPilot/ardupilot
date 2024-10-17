@@ -57,6 +57,7 @@ public:
 
     NavEKF2 ekf2;
     NavEKF3 ekf3;
+    AP_ExternalAHRS *eahrs;
 
     SRV_Channels servo_channels;
 
@@ -99,7 +100,7 @@ private:
     const char *filename;
     ReplayVehicle &_vehicle;
 
-    LogReader reader{_vehicle.log_structure, _vehicle.ekf2, _vehicle.ekf3};
+    LogReader reader{_vehicle.log_structure, _vehicle.ekf2, _vehicle.ekf3, AP::externalAHRS()};
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
