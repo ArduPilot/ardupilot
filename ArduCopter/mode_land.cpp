@@ -7,8 +7,15 @@ bool ModeLand::init(bool ignore_checks)
     control_position = copter.position_ok();
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    const float adjusted_acceleration  = (float)copter.g.land_accel_limit;
+
+    if (adjusted_acceleration > 0.0f){
+        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(),adjusted_acceleration );
+        pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), adjusted_acceleration);
+    } else {
+        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+        pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    }
 
     // initialise the horizontal position controller
     if (control_position && !pos_control->is_active_xy()) {
