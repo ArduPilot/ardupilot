@@ -1,5 +1,5 @@
 style=linux
-keep-one-line-statements
+keep-one-line-statements=true
 add-brackets
 indent=spaces=4
 indent-col1-comments
