@@ -29,7 +29,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_FOLLOW_TIMEOUT_MS    3000    // position estimate timeout after 1 second
+#define AP_FOLLOW_TIMEOUT_MS    5000    // position estimate timeout after 1 second
 #define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we have not heard from them in 10 seconds
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
@@ -156,6 +156,12 @@ AP_Follow::AP_Follow() :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+void AP_Follow::set_offset(Vector3f offset, int8_t offset_type)
+{
+    _offset_type.set(offset_type);
+    _offset.set(offset);
+}
+
 // restore offsets to zero if necessary, should be called when vehicle exits follow mode
 void AP_Follow::clear_offsets_if_required()
 {
@@ -175,6 +181,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+        hal.console->printf("Timout %d", AP_HAL::millis() - _last_location_update_ms );
         return false;
     }
 
@@ -183,6 +190,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // get velocity estimate
     if (!get_velocity_ned(vel_ned, dt)) {
+        hal.console->printf("No vel estimate");
         return false;
     }
 
@@ -193,6 +201,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 
     // return latest position estimate
     loc = last_loc;
+
     return true;
 }
 
@@ -202,6 +211,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // get our location
     Location current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
+        hal.console->printf("Unable to fetch UAV loc\n");
         clear_dist_and_bearing_to_target();
          return false;
     }
@@ -210,6 +220,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     Location target_loc;
     Vector3f veh_vel;
     if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+        hal.console->printf("Unable to fetch target loc\n");
         clear_dist_and_bearing_to_target();
         return false;
     }
@@ -224,16 +235,21 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+        hal.console->printf("Velocity: %f", veh_vel.x);
+        hal.console->printf("UAV x: %d \n", current_loc.lat);
+        hal.console->printf("Tar x: %d \n", target_loc.lat);
+        hal.console->printf("dt: %f \n",  (AP_HAL::millis() - _last_location_update_ms) * 0.001f);
         clear_dist_and_bearing_to_target();
         return false;
     }
 
     // initialise offsets from distance vector if required
-    init_offsets_if_required(dist_vec);
+    // init_offsets_if_required(dist_vec);
 
     // get offsets
     Vector3f offsets;
     if (!get_offsets_ned(offsets)) {
+        hal.console->printf("No offset");
         clear_dist_and_bearing_to_target();
         return false;
     }
