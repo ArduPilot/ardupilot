@@ -50,9 +50,6 @@ void ModeSurface::run()
     // set target climb rate
     float cmb_rate = constrain_float(fabsf(sub.wp_nav.get_default_speed_up()), 1, position_control->get_max_speed_up_cms());
 
-    // record desired climb rate for logging
-    sub.desired_climb_rate = cmb_rate;
-
     // update altitude target and call position controller
     position_control->set_pos_target_z_from_climb_rate_cm(cmb_rate);
     position_control->update_z_controller();
