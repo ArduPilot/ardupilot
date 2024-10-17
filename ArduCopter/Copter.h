@@ -115,7 +115,7 @@
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
-#if MODE_FOLLOW_ENABLED
+#if MODE_FOLLOW_ENABLED || MODE_TARLAND_ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
 #if AP_TERRAIN_AVAILABLE
@@ -223,6 +223,7 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModeTarLand;
 
     friend class _AutoTakeoff;
 
@@ -258,10 +259,6 @@ private:
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
 
-    // Target position variables
-    Vector3f target_postion;
-    Vector3f target_velocity;
-    bool is_target_pos_set;
 
 #if AP_RANGEFINDER_ENABLED
     class SurfaceTracking {
@@ -1087,6 +1084,18 @@ private:
 
 public:
     void failsafe_check();      // failsafe.cpp
+    // mode_tarland.cpp
+    void update_gps_target(float lat, float lon, float alt);
+    // Target position variables
+    Vector3f target_position;
+    Vector3f target_velocity;
+    bool is_target_pos_set;
+    // struct target_position {
+    //     float lat;
+    //     float lon;
+    //     float alt;
+    // };
+
 };
 
 extern Copter copter;

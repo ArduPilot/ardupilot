@@ -848,7 +848,7 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
 // Update the position of moving target
 void Copter::update_gps_target(float lat, float lon, float alt)
 {
-    target_postion = {lat, lon, alt};
+    target_position = {lat, lon, alt};
     is_target_pos_set = true;
 }
 

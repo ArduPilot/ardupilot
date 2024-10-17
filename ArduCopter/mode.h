@@ -1944,11 +1944,11 @@ private:
     bool is_suspended;              // true if zigzag auto is suspended
 };
 
-class ModeTarLand: public Mode {
+class ModeTarLand: public  ModeGuided {
     
 public:
     // inherit constructor
-    using Mode::Mode;
+    using ModeGuided::Mode;
     Number mode_number() const override {return Number::TARLAND;};
 
     bool init(bool ignore_checks) override;
@@ -1972,11 +1972,12 @@ public:
 
     void climb_to_alt();
 
-    // FIG8 states
     enum class SubMode: uint8_t {
-        STARTING,
-        LOITERING,
-        LAND
+        FOLLOW,
+        APPROACH, 
+        DESCENT,
+        FINAL_APPROACH,
+        TOUCHDOWN
     };
 
     SubMode state() { return _state; }
@@ -1988,9 +1989,24 @@ protected:
 
 private:
     
-    SubMode _state = SubMode::STARTING;
+    SubMode _state = SubMode::FOLLOW;
     bool _state_complete = false;
-    float _target_alt_cm = 150;
+    uint32_t last_log_ms;
+    Vector3f dist_vec;           // vector to target vehicle (Position error)  
+    Vector3f dist_vec_offs;     // vector to target vehicle + offset (Position error with offset)
+    Vector3f target_vel;
+    int8_t offset_type = 1;     // Relative
+    float target_alt_relative;
+    bool landed = false;
+
+
+    void follow();
+
+    void get_desired_vel_neu_cms(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu, Vector3f pos_err, Vector3f pos_err_off);
+    void limit_desired_velocity_xy(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu);
+    void add_feedforward_velocity_xy(Vector3f &desired_vel_xy_cms);
+    void limit_desired_velocity_z(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu);
+    void add_feedforward_velocity_z(Vector3f &desired_vel_neu_cms);
 };
 
 #if MODE_AUTOROTATE_ENABLED
