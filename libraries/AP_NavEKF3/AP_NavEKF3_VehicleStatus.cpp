@@ -362,7 +362,7 @@ void NavEKF3_core::detectFlight()
 
         if (motorsArmed) {
             onGround = false;
-            if (highGndSpd && (dal.get_takeoff_expected() || highAirSpd || largeHgtChange)) {
+            if (highGndSpd && (takeoff_expected || highAirSpd || largeHgtChange)) {
                 // to a high certainty we are flying
                 inFlight = true;
             }
@@ -434,7 +434,7 @@ void NavEKF3_core::detectFlight()
     if ((!prevOnGround && onGround) || !gpsSpdAccPass) {
         // disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || dal.get_takeoff_expected()) && gpsSpdAccPass) {
+    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || takeoff_expected) && gpsSpdAccPass) {
         // flying or about to fly so reset counters and enable filter bank when GPS is good
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;

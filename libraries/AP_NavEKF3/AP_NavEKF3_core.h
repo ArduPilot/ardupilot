@@ -1433,6 +1433,13 @@ private:
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source
     AP_NavEKF_Source::SourceZ prevHgtSource;    // previous height source used to detect changes in source
 
+    // takeoff expected; last-one-in-wins from either the AHRS state
+    // (as polled in UpdateFilter), or the EKF's own acceleration-based detection:
+    bool takeoff_expected;
+    // last state the DAL had; if the DAL state changes then we update
+    // our own state:
+    bool last_dal_takeoff_expected;
+
     // Movement detector
     bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
     ftype rngAtStartOfFlight;       // range finder measurement at start of flight
