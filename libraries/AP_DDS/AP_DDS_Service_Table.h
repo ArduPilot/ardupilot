@@ -2,7 +2,8 @@
 
 enum class ServiceIndex: uint8_t {
     ARMING_MOTORS,
-    MODE_SWITCH
+    MODE_SWITCH,
+    PREARM_CHECK
 };
 
 static inline constexpr uint8_t to_underlying(const ServiceIndex index)
@@ -37,5 +38,15 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .reply_type = "ardupilot_msgs::srv::dds_::ModeSwitch_Response_",
         .request_topic_name = "rq/ap/mode_switchRequest",
         .reply_topic_name = "rr/ap/mode_switchReply",
+    },
+    {
+        .req_id = to_underlying(ServiceIndex::PREARM_CHECK),
+        .rep_id = to_underlying(ServiceIndex::PREARM_CHECK),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/prearm_checkService",
+        .request_type = "std_srvs::srv::dds_::Trigger_Request_",
+        .reply_type = "std_srvs::srv::dds_::Trigger_Response_",
+        .request_topic_name = "rq/ap/prearm_checkRequest",
+        .reply_topic_name = "rr/ap/prearm_checkReply",
     },
 };
