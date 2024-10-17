@@ -28,7 +28,6 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket_native.h>
-
 namespace SITL {
 
 /*
