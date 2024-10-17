@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
+    // @Values: 0:Disabled,1:uAvionix-MAVLink-InOut,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series,5:uAvionix-MAVLink-In
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    AP_ADSB_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
@@ -269,7 +269,8 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::None:
         return;
 
-    case Type::uAvionix_MAVLink:
+    case Type::uAvionix_MAVLink_In:
+    case Type::uAvionix_MAVLink_InOut:
 #if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
         if (AP_ADSB_uAvionix_MAVLink::detect()) {
             _backend[instance] = NEW_NOTHROW AP_ADSB_uAvionix_MAVLink(*this, instance);
@@ -715,6 +716,13 @@ void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &pack
  */
 void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_uavionix_adsb_transceiver_health_report_t &packet)
 {
+    // Don't ingest a transciever report, as it's used to trigger sending out control packets
+    if (_type[0] == (int8_t)(AP_ADSB::Type::uAvionix_MAVLink_In)) {
+        return;
+    }
+    // we need to refactor the code to use AP_SerialManager and ask the user to tell us which serial port is rx vs tx
+    static_assert(ADSB_MAX_INSTANCES == 1, "Transceiver control is not correctly handled with more then one receiver");
+
     if (out_state.chan != chan) {
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
     }
@@ -844,7 +852,7 @@ void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message
             break;
 
         case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL: {
-            mavlink_uavionix_adsb_out_control_t packet {};            
+            mavlink_uavionix_adsb_out_control_t packet {};
             mavlink_msg_uavionix_adsb_out_control_decode(&msg, &packet);
             handle_out_control(packet);
             break;
