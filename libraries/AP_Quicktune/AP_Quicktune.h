@@ -59,15 +59,18 @@ private:
 
 
     enum class AxisName : uint8_t {
-        RLL,
+        RLL = 0,
         PIT,
         YAW,
         DONE,
         END,
     };
 
+    /*
+      note! we rely on the enum being in the same order between axes
+     */
     enum class Param : uint8_t {
-        RLL_P,
+        RLL_P = 0,
         RLL_I,
         RLL_D,
         RLL_SMAX,
@@ -75,6 +78,7 @@ private:
         RLL_FLTD,
         RLL_FLTE,
         RLL_FF,
+
         PIT_P,
         PIT_I,
         PIT_D,
@@ -83,6 +87,7 @@ private:
         PIT_FLTD,
         PIT_FLTE,
         PIT_FF,
+
         YAW_P,
         YAW_I,
         YAW_D,
@@ -93,6 +98,9 @@ private:
         YAW_FF,
         END,
     };
+
+    static const uint8_t param_per_axis = uint8_t(Param::PIT_P) - uint8_t(Param::RLL_P);
+    static_assert(uint8_t(Param::END) == 3*param_per_axis, "AP_Quicktune Param error");
 
     // Also the gains
     enum class Stage : uint8_t {
@@ -151,6 +159,7 @@ private:
     const char* get_param_name(Param param);
     Stage get_stage(Param param);
     const char* get_axis_name(AxisName axis);
+    AC_PID *get_axis_pid(AxisName axis);
     void Write_QUIK(float SRate, float Gain, Param param);
 
     void abort_tune(void);
