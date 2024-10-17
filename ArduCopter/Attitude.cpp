@@ -4,18 +4,21 @@
  *  Attitude Rate controllers and timing
  ****************************************************************/
 
-// update rate controllers and output to roll, pitch and yaw actuators
-//  called at 400hz by default
-void Copter::run_rate_controller()
+/*
+  update rate controller when run from main thread (normal operation)
+*/
+void Copter::run_rate_controller_main()
 {
     // set attitude and position controller loop time
     const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
-    motors->set_dt(last_loop_time_s);
-    attitude_control->set_dt(last_loop_time_s);
     pos_control->set_dt(last_loop_time_s);
+    attitude_control->set_dt(last_loop_time_s);
 
-    // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
+    if (!using_rate_thread) {
+        motors->set_dt(last_loop_time_s);
+        // only run the rate controller if we are not using the rate thread
+        attitude_control->rate_controller_run();
+    }
     // reset sysid and other temporary inputs
     attitude_control->rate_controller_target_reset();
 }

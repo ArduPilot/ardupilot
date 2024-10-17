@@ -20,6 +20,7 @@ define CH_CFG_ST_RESOLUTION 16
 
 # leave 1 sectors free
 FLASH_RESERVE_START_KB 384
+env OPTIMIZE -O2
 
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each

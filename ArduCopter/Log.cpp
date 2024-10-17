@@ -76,6 +76,10 @@ void Copter::Log_Write_Control_Tuning()
 void Copter::Log_Write_Attitude()
 {
     attitude_control->Write_ANG();
+}
+
+void Copter::Log_Write_Rate()
+{
     attitude_control->Write_Rate(*pos_control);
 }
 
