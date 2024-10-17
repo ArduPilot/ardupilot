@@ -446,6 +446,11 @@ void AP_ExternalAHRS_VectorNav::initialize() {
         // These assumes unit is still configured at its default rate of 800hz
         run_command("VNWRG,75,3,%u,01,0721", unsigned(800 / get_rate()));
         run_command("VNWRG,76,3,16,11,0001,0106");
+
+        WITH_SEMAPHORE(state.sem);
+        set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::IMU) |
+                            uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
+                            uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
     } else {
         // Default to setup for sensors other than VN-100 or VN-110
         // This assumes unit is still configured at its default IMU rate of 400hz for VN-300, 800hz for others
@@ -459,6 +464,12 @@ void AP_ExternalAHRS_VectorNav::initialize() {
         run_command("VNWRG,75,3,%u,01,0721", unsigned(imu_rate / get_rate()));
         run_command("VNWRG,76,3,%u,31,0001,0106,0613", unsigned(imu_rate / 50));
         run_command("VNWRG,77,3,%u,49,0003,26B8,0018", unsigned(imu_rate / 5));
+
+        WITH_SEMAPHORE(state.sem);
+        set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::IMU) |
+                            uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
+                            uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS) |
+                            uint16_t(AP_ExternalAHRS::AvailableSensor::GPS));
     }
 
     // Resume asynchronous communications
@@ -758,6 +769,11 @@ bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure
         }
     }
     return true;
+}
+
+uint8_t AP_ExternalAHRS_VectorNav::num_gps_sensors(void) const
+{
+    return type == TYPE::VN_INS ? 1 + has_dual_gnss : 0;
 }
 
 /*
