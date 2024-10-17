@@ -1,7 +1,13 @@
 #include "Copter.h"
 
 // Code to detect a crash main ArduCopter code
-#define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
+#if PARACHUTE == ENABLED
+    // CRASH_CHECK_TRIGGER_SEC should be grater than CHUTE_TIMEOUT, to prevent disarming without deploying parachute
+    #define CRASH_CHECK_TRIGGER_SEC (parachute.get_chute_timeout() + 1.0)
+#else
+    #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
+#endif
+
 #define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond target angle is signal we are out of control
 #define CRASH_CHECK_ANGLE_MIN_DEG       15.0f   // vehicle must be leaning at least 15deg to trigger crash check
 #define CRASH_CHECK_SPEED_MAX           10.0f   // vehicle must be moving at less than 10m/s to trigger crash check
@@ -86,7 +92,7 @@ void Copter::crash_check()
     // we may be crashing
     crash_counter++;
 
-    // check if crashing for 2 seconds
+    // check if crashing for time defined by CRASH_CHECK_TRIGGER_SEC seconds
     if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
         // send message to gcs
@@ -232,7 +238,6 @@ void Copter::yaw_imbalance_check()
 #if HAL_PARACHUTE_ENABLED
 
 // Code to detect a crash main ArduCopter code
-#define PARACHUTE_CHECK_TRIGGER_SEC         1       // 1 second of loss of control triggers the parachute
 #define PARACHUTE_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees off from target indicates a loss of control
 
 // parachute_check - disarms motors and triggers the parachute if serious loss of control has been detected
@@ -302,7 +307,7 @@ void Copter::parachute_check()
     }
 
     // increment counter
-    if (control_loss_count < (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
+    if (control_loss_count < (parachute.get_chute_timeout()*scheduler.get_loop_rate_hz())) {
         control_loss_count++;
     }
 
@@ -317,8 +322,8 @@ void Copter::parachute_check()
 
     // To-Do: add check that the vehicle is actually falling
 
-    // check if loss of control for at least 1 second
-    } else if (control_loss_count >= (PARACHUTE_CHECK_TRIGGER_SEC*scheduler.get_loop_rate_hz())) {
+    // check if loss of control for at least time defined in CHUTE_TIMEOUT parameter
+    } else if (control_loss_count >= (parachute.get_chute_timeout()*scheduler.get_loop_rate_hz())) {
         // reset control loss counter
         control_loss_count = 0;
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_LOSS_OF_CONTROL);
