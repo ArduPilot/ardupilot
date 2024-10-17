@@ -455,6 +455,7 @@ private:
     // enum for processing options
     enum class Options {
         JammingExpected     = (1<<0),
+        SuppressGPSFixCheck = (1<<1),
     };
 
 // Possible values for _flowUse
