@@ -307,10 +307,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 };
 
 AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsHeli& motors) :
-    AC_AttitudeControl(ahrs, aparm, motors),
-    _pid_rate_roll(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_FF, AC_ATC_HELI_RATE_RP_IMAX, AC_ATTITUDE_HELI_RATE_RP_FF_FILTER, AC_ATC_HELI_RATE_RP_FILT_HZ, 0.0f),
-    _pid_rate_pitch(AC_ATC_HELI_RATE_RP_P, AC_ATC_HELI_RATE_RP_I, AC_ATC_HELI_RATE_RP_D, AC_ATC_HELI_RATE_RP_FF, AC_ATC_HELI_RATE_RP_IMAX, AC_ATTITUDE_HELI_RATE_RP_FF_FILTER, AC_ATC_HELI_RATE_RP_FILT_HZ, 0.0f),
-    _pid_rate_yaw(AC_ATC_HELI_RATE_YAW_P, AC_ATC_HELI_RATE_YAW_I, AC_ATC_HELI_RATE_YAW_D, AC_ATC_HELI_RATE_YAW_FF, AC_ATC_HELI_RATE_YAW_IMAX, AC_ATTITUDE_HELI_RATE_Y_FF_FILTER, AC_ATC_HELI_RATE_YAW_FILT_HZ, 0.0f)
+    AC_AttitudeControl(ahrs, aparm, motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -422,7 +419,8 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 {	
     _ang_vel_body += _sysid_ang_vel_body;
 
-    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+    _rate_gyro = _ahrs.get_gyro_latest();
+    _rate_gyro_time_us = AP_HAL::micros64();
 
     // call rate controllers and send output to motors object
     // if using a flybar passthrough roll and pitch directly to motors
@@ -430,12 +428,12 @@ void AC_AttitudeControl_Heli::rate_controller_run()
         _motors.set_roll(_passthrough_roll / 4500.0f);
         _motors.set_pitch(_passthrough_pitch / 4500.0f);
     } else {
-        rate_bf_to_motor_roll_pitch(gyro_latest, _ang_vel_body.x, _ang_vel_body.y);
+        rate_bf_to_motor_roll_pitch(_rate_gyro, _ang_vel_body.x, _ang_vel_body.y);
     }
     if (_flags_heli.tail_passthrough) {
         _motors.set_yaw(_passthrough_yaw / 4500.0f);
     } else {
-        _motors.set_yaw(rate_target_to_motor_yaw(gyro_latest.z, _ang_vel_body.z));
+        _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro.z, _ang_vel_body.z));
     }
 
     _sysid_ang_vel_body.zero();
@@ -542,7 +540,7 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
     update_althold_lean_angle_max(throttle_in);
 
     _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (apply_angle_boost && !((AP_MotorsHeli&)_motors).get_in_autorotation()) {
+    if (apply_angle_boost && !((AP_MotorsHeli&)_motors).in_autorotation()) {
         // Apply angle boost
         throttle_in = get_throttle_boosted(throttle_in);
     } else {

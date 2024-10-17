@@ -21,7 +21,6 @@ on:
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
@@ -141,8 +140,8 @@ concurrency:
 
 jobs:
   build:
+    if: github.repository == 'ArduPilot/ardupilot'
     runs-on: 'ardupilot-qurt'
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -160,7 +159,7 @@ jobs:
           cp -a build/QURT/bin/ardurover build/QURT/ArduPilot_Rover.so
 
       - name: Archive build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qurt-binaries
           path: |

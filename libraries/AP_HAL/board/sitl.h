@@ -29,6 +29,10 @@
 #define HAL_FLASH_ALLOW_UPDATE 0
 #endif
 
+#ifndef BOARD_FLASH_SIZE
+#define BOARD_FLASH_SIZE 4096
+#endif
+
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE            32768
 #endif
@@ -47,6 +51,9 @@
 #define AP_NOTIFY_GPIO_LED_RGB_RED_PIN    8  // these are set in SIM_PIN_MASK
 #define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN  9
 #define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN  10
+
+// #define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+#define AP_NOTIFY_GPIO_LED_A_PIN          8  // these are set in SIM_PIN_MASK
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 1
@@ -87,3 +94,5 @@
 #ifndef AP_FILTER_ENABLED
 #define AP_FILTER_ENABLED 1
 #endif
+
+#define HAL_SOLO_GIMBAL_ENABLED 1

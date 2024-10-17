@@ -106,12 +106,12 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     default_ki(initial_i),
     default_kd(initial_d),
     default_kff(initial_ff),
+    default_kdff(initial_dff),
     default_kimax(initial_imax),
     default_filt_T_hz(initial_filt_T_hz),
     default_filt_E_hz(initial_filt_E_hz),
     default_filt_D_hz(initial_filt_D_hz),
-    default_slew_rate_max(initial_srmax),
-    default_kdff(initial_dff)
+    default_slew_rate_max(initial_srmax)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
@@ -130,25 +130,25 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
 }
 
 // filt_T_hz - set target filter hz
-void AC_PID::filt_T_hz(float hz)
+void AC_PID::set_filt_T_hz(float hz)
 {
     _filt_T_hz.set(fabsf(hz));
 }
 
 // filt_E_hz - set error filter hz
-void AC_PID::filt_E_hz(float hz)
+void AC_PID::set_filt_E_hz(float hz)
 {
     _filt_E_hz.set(fabsf(hz));
 }
 
 // filt_D_hz - set derivative filter hz
-void AC_PID::filt_D_hz(float hz)
+void AC_PID::set_filt_D_hz(float hz)
 {
     _filt_D_hz.set(fabsf(hz));
 }
 
 // slew_limit - set slew limit
-void AC_PID::slew_limit(float smax)
+void AC_PID::set_slew_limit(float smax)
 {
     _slew_rate_max.set(fabsf(smax));
 }
@@ -388,20 +388,6 @@ void AC_PID::save_gains()
     _filt_T_hz.save();
     _filt_E_hz.save();
     _filt_D_hz.save();
-}
-
-/// Overload the function call operator to permit easy initialisation
-void AC_PID::operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz, float dff_val)
-{
-    _kp.set(p_val);
-    _ki.set(i_val);
-    _kd.set(d_val);
-    _kff.set(ff_val);
-    _kimax.set(fabsf(imax_val));
-    _filt_T_hz.set(input_filt_T_hz);
-    _filt_E_hz.set(input_filt_E_hz);
-    _filt_D_hz.set(input_filt_D_hz);
-    _kdff.set(dff_val);
 }
 
 // get_filt_T_alpha - get the target filter alpha

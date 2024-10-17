@@ -271,6 +271,15 @@ public:
     // send camera capture status message to GCS
     void send_camera_capture_status(uint8_t instance, mavlink_channel_t chan) const;
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const;
+#endif
+
+    // change camera settings not normally used by autopilot
+    // setting values from AP_Camera::Setting enum
+    bool change_setting(uint8_t instance, CameraSetting setting, float value);
+
     //
     // rangefinder
     //

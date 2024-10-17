@@ -146,6 +146,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Landing/LogStructure.h>
 #include <AC_AttitudeControl/LogStructure.h>
 #include <AP_HAL/LogStructure.h>
+#include <AP_Mission/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -348,22 +349,6 @@ struct PACKED log_MCU {
     float MCU_voltage;
     float MCU_voltage_min;
     float MCU_voltage_max;
-};
-
-struct PACKED log_Cmd {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t command_total;
-    uint16_t sequence;
-    uint16_t command;
-    float param1;
-    float param2;
-    float param3;
-    float param4;
-    int32_t latitude;
-    int32_t longitude;
-    float altitude;
-    uint8_t frame;
 };
 
 struct PACKED log_MAVLink_Command {
@@ -711,21 +696,6 @@ struct PACKED log_VER {
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
 // @Field: Pri: True if sensor is the primary sensor
-
-// @LoggerMessage: CMD
-// @Description: Executed mission command information
-// @Field: TimeUS: Time since system startup
-// @Field: CTot: Total number of mission commands
-// @Field: CNum: This command's offset in mission
-// @Field: CId: Command type
-// @Field: Prm1: Parameter 1
-// @Field: Prm2: Parameter 2
-// @Field: Prm3: Parameter 3
-// @Field: Prm4: Parameter 4
-// @Field: Lat: Command latitude
-// @Field: Lng: Command longitude
-// @Field: Alt: Command altitude
-// @Field: Frame: Frame used for position
 
 // @LoggerMessage: CSRV
 // @Description: Servo feedback data
@@ -1218,8 +1188,7 @@ LOG_STRUCTURE_FROM_PRECLAND \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
     { LOG_MCU_MSG, sizeof(log_MCU), \
       "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
-    { LOG_CMD_MSG, sizeof(log_Cmd), \
-      "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
+LOG_STRUCTURE_FROM_MISSION \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
       "MAVC", "QBBBBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
@@ -1249,7 +1218,7 @@ LOG_STRUCTURE_FROM_AVOIDANCE \
       "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
-      "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#---%dvAOO-", "F-000000000-", true }, \
+      "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#---%dvAOO-", "F-000000000-", false }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS, true },  \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -1326,7 +1295,6 @@ enum LogMessages : uint8_t {
     LOG_MCU_MSG,
     LOG_IDS_FROM_AHRS,
     LOG_SIMSTATE_MSG,
-    LOG_CMD_MSG,
     LOG_MAVLINK_COMMAND_MSG,
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
@@ -1337,6 +1305,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
     LOG_IDS_FROM_HAL_CHIBIOS,
+    LOG_IDS_FROM_MISSION,
 
     LOG_IDS_FROM_GPS,
 

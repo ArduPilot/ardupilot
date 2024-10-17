@@ -41,7 +41,7 @@ void Sub::read_rangefinder()
 
     int16_t temp_alt = rangefinder.distance_cm_orient(ROTATION_PITCH_270);
 
-#if RANGEFINDER_TILT_CORRECTION == ENABLED
+#if RANGEFINDER_TILT_CORRECTION
     // correct alt for angle of the rangefinder
     temp_alt = (float)temp_alt * MAX(0.707f, ahrs.get_rotation_body_to_ned().c.z);
 #endif

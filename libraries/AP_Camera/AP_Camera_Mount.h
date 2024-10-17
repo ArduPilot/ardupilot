@@ -69,6 +69,16 @@ public:
 
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan) const override;
+
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan) const override;
+#endif
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+    // change camera settings not normally used by autopilot
+    bool change_setting(CameraSetting setting, float value) override;
+#endif
 };
 
 #endif // AP_CAMERA_MOUNT_ENABLED

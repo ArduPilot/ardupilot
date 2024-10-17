@@ -75,11 +75,9 @@ void Copter::Log_Write_Control_Tuning()
 // Write an attitude packet
 void Copter::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control->get_att_target_euler_cd();
-    targets.z = wrap_360_cd(targets.z);
-    ahrs.Write_Attitude(targets);
-    ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
- }
+    attitude_control->Write_ANG();
+    attitude_control->Write_Rate(*pos_control);
+}
 
 // Write PIDS packets
 void Copter::Log_Write_PIDS()
@@ -258,7 +256,7 @@ struct PACKED log_SysIdD {
 // Write an rate packet
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
 {
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     struct log_SysIdD pkt_sidd = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
         time_us         : AP_HAL::micros64(),
@@ -292,7 +290,7 @@ struct PACKED log_SysIdS {
 // Write an rate packet
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out)
 {
-#if MODE_SYSTEMID_ENABLED == ENABLED
+#if MODE_SYSTEMID_ENABLED
     struct log_SysIdS pkt_sids = {
         LOG_PACKET_HEADER_INIT(LOG_SYSIDS_MSG),
         time_us             : AP_HAL::micros64(),
@@ -308,31 +306,6 @@ void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitu
     logger.WriteBlock(&pkt_sids, sizeof(pkt_sids));
 #endif
 }
-
-#if FRAME_CONFIG == HELI_FRAME
-struct PACKED log_Heli {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    desired_rotor_speed;
-    float    main_rotor_speed;
-    float    governor_output;
-    float    control_output;
-};
-
-// Write an helicopter packet
-void Copter::Log_Write_Heli()
-{
-    struct log_Heli pkt_heli = {
-        LOG_PACKET_HEADER_INIT(LOG_HELI_MSG),
-        time_us                 : AP_HAL::micros64(),
-        desired_rotor_speed     : motors->get_desired_rotor_speed(),
-        main_rotor_speed        : motors->get_main_rotor_speed(),
-        governor_output         : motors->get_governor_output(),
-        control_output          : motors->get_control_output(),
-    };
-    logger.WriteBlock(&pkt_heli, sizeof(pkt_heli));
-}
-#endif
 
 // guided position target logging
 struct PACKED log_Guided_Position_Target {
@@ -489,18 +462,6 @@ const struct LogStructure Copter::log_structure[] = {
       "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
-    
-// @LoggerMessage: HELI
-// @Description: Helicopter related messages 
-// @Field: TimeUS: Time since system startup
-// @Field: DRRPM: Desired rotor speed
-// @Field: ERRPM: Estimated rotor speed
-// @Field: Gov: Governor Output
-// @Field: Throt: Throttle output
-#if FRAME_CONFIG == HELI_FRAME
-    { LOG_HELI_MSG, sizeof(log_Heli),
-      "HELI",  "Qffff",        "TimeUS,DRRPM,ERRPM,Gov,Throt", "s----", "F----" , true },
-#endif
 
 // @LoggerMessage: SIDD
 // @Description: System ID data

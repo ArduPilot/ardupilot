@@ -40,6 +40,11 @@ public:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
+#if HAL_LOGGING_ENABLED
+    // heli motors logging - called at 10 Hz
+    void Log_Write(void) override;
+#endif
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -75,10 +75,11 @@ public:
 /*
   subclass for MAVLink UDP communications
 */
+
 class QURT::UARTDriver_MAVLinkUDP : public QURT::UARTDriver
 {
 public:
-    UARTDriver_MAVLinkUDP(void);
+    UARTDriver_MAVLinkUDP(uint8_t instance);
 
     bool _write_pending_bytes(void) override;
 
@@ -93,6 +94,7 @@ public:
 
 private:
     static void _mavlink_data_cb(const struct qurt_rpc_msg *msg, void *p);
+    uint8_t inst;
     uint32_t seq;
 };
 

@@ -133,18 +133,18 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
                 }
                 break;
             case FailsafeAction::Terminate:
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
                 char battery_type_str[17];
                 snprintf(battery_type_str, 17, "%s battery", type_str);
                 g2.afs.gcs_terminate(true, battery_type_str);
 #else
                 arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
-#endif // ADVANCED_FAILSAFE == ENABLED
+#endif // AP_ROVER_ADVANCED_FAILSAFE_ENABLED
                 break;
         }
 }
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
 /*
    check for AFS failsafe check
  */

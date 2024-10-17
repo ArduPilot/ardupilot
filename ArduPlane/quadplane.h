@@ -76,6 +76,13 @@ public:
     void control_auto(void);
     bool setup(void);
 
+    enum class ThrustType : uint8_t {
+        SLT=0, // Traditional quadplane, with a pusher motor and independent multicopter lift.
+        TAILSITTER,
+        TILTROTOR,
+    };
+    ThrustType get_thrust_type(void) {return thrust_type;}
+
     void vtol_position_controller(void);
     void setup_target_position(void);
     void takeoff_controller(void);
@@ -103,10 +110,7 @@ public:
     // abort landing, only valid when in a VTOL landing descent
     bool abort_landing(void);
 
-    /*
-      return true if we are in a transition to fwd flight from hover
-    */
-    bool in_transition(void) const;
+    bool in_frwd_transition(void) const;
 
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
@@ -197,6 +201,9 @@ private:
 
     AP_Enum<AP_Motors::motor_frame_class> frame_class;
     AP_Enum<AP_Motors::motor_frame_type> frame_type;
+
+    // Types of different "quadplane" configurations.
+    ThrustType thrust_type;
 
     // Initialise motors to allow passing it to tailsitter in its constructor
     AP_MotorsMulticopter *motors = nullptr;
@@ -436,13 +443,13 @@ private:
     Transition *transition = nullptr;
 
     // true when waiting for pilot throttle
-    bool throttle_wait:1;
+    bool throttle_wait;
 
     // true when quad is assisting a fixed wing mode
-    bool assisted_flight:1;
+    bool assisted_flight;
 
     // are we in a guided takeoff?
-    bool guided_takeoff:1;
+    bool guided_takeoff;
 
     /* if we arm in guided mode when we arm then go into a "waiting
        for takeoff command" state. In this state we are waiting for
@@ -601,6 +608,9 @@ private:
     bool option_is_set(OPTION option) const {
         return (options.get() & int32_t(option)) != 0;
     }
+
+    // minimum distance to be from destination to use approach logic
+    AP_Float approach_distance;
 
     AP_Float takeoff_failure_scalar;
     AP_Float maximum_takeoff_airspeed;

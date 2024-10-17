@@ -90,8 +90,6 @@ PA4 RTK_RESET_N OUTPUT HIGH
 # PPS
 PA7 PPS INPUT PULLUP
 
-define HAL_NO_MONITOR_THREAD
-
 define HAL_DEVICE_THREAD_STACK 768
 
 # we setup a small defaults.parm

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_TURTLE_ENABLED == ENABLED
+#if MODE_TURTLE_ENABLED
 
 #define CRASH_FLIP_EXPO 35.0f
 #define CRASH_FLIP_STICK_MINF 0.15f

@@ -71,8 +71,6 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
         reading_m = UINT16_VALUE(buffer[3], buffer[4]) * 0.01;
         const uint8_t snr = buffer[5];
 
-        has_data = true;
-
 #if AP_RANGEFINDER_AINSTEIN_LR_D1_SHOW_MALFUNCTIONS
         const uint32_t now_ms = AP_HAL::millis();
         if (malfunction_alert_prev != malfunction_alert && now_ms - malfunction_alert_last_send_ms >= 1000) {
@@ -102,6 +100,7 @@ bool AP_RangeFinder_Ainstein_LR_D1::get_reading(float &reading_m)
                 state.status = RangeFinder::Status::NoData;
             }
         } else {
+            has_data = true;
             state.status = RangeFinder::Status::Good;
         }
     }

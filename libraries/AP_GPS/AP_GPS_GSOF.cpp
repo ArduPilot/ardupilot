@@ -19,7 +19,7 @@
 //
 //  Usage in SITL with hardware for debugging: 
 //    sim_vehicle.py -v Plane -A "--serial3=uart:/dev/ttyUSB0" --console --map -DG
-//    param set GPS_TYPE 11 // GSOF
+//    param set GPS1_TYPE 11 // GSOF
 //    param set SERIAL3_PROTOCOL 5 // GPS
 //
 //  Pure SITL usage
@@ -58,8 +58,6 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
 {
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
     static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
-    
-    msg.state = Msg_Parser::State::STARTTX;
 
     constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
     params.com_port.set_default(default_com_port);
@@ -101,66 +99,19 @@ AP_GPS_GSOF::read(void)
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&temp, 1);
 #endif
-        ret |= parse(temp);
+        const int n_gsof_received = parse(temp, ARRAY_SIZE(gsofmsgreq));
+        if(n_gsof_received == UNEXPECTED_NUM_GSOF_PACKETS) {
+            state.status = AP_GPS::NO_FIX;
+            continue;
+        }
+        const bool got_expected_packets = n_gsof_received == ARRAY_SIZE(gsofmsgreq);
+        ret |= got_expected_packets;
+    }
+    if (ret) {
+        pack_state_data();
     }
 
     return ret;
-}
-
-bool
-AP_GPS_GSOF::parse(const uint8_t temp)
-{
-    // https://receiverhelp.trimble.com/oem-gnss/index.html#API_DataCollectorFormatPacketStructure.html
-    switch (msg.state)
-    {
-    default:
-    case Msg_Parser::State::STARTTX:
-        if (temp == STX)
-        {
-            msg.state = Msg_Parser::State::STATUS;
-            msg.read = 0;
-            msg.checksumcalc = 0;
-        }
-        break;
-    case Msg_Parser::State::STATUS:
-        msg.status = temp;
-        msg.state = Msg_Parser::State::PACKETTYPE;
-        msg.checksumcalc += temp;
-        break;
-    case Msg_Parser::State::PACKETTYPE:
-        msg.packettype = temp;
-        msg.state = Msg_Parser::State::LENGTH;
-        msg.checksumcalc += temp;
-        break;
-    case Msg_Parser::State::LENGTH:
-        msg.length = temp;
-        msg.state = Msg_Parser::State::DATA;
-        msg.checksumcalc += temp;
-        break;
-    case Msg_Parser::State::DATA:
-        msg.data[msg.read] = temp;
-        msg.read++;
-        msg.checksumcalc += temp;
-        if (msg.read >= msg.length)
-        {
-            msg.state = Msg_Parser::State::CHECKSUM;
-        }
-        break;
-    case Msg_Parser::State::CHECKSUM:
-        msg.checksum = temp;
-        msg.state = Msg_Parser::State::ENDTX;
-        if (msg.checksum == msg.checksumcalc)
-        {
-            return process_message();
-        }
-        break;
-    case Msg_Parser::State::ENDTX:
-        msg.endtx = temp;
-        msg.state = Msg_Parser::State::STARTTX;
-        break;
-    }
-
-    return false;
 }
 
 void
@@ -205,165 +156,9 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, con
     port->write((const uint8_t*)buffer, sizeof(buffer));
 }
 
-double
-AP_GPS_GSOF::SwapDouble(const uint8_t* src, const uint32_t pos) const
-{
-    union {
-        double d;
-        char bytes[sizeof(double)];
-    } doubleu;
-    doubleu.bytes[0] = src[pos + 7];
-    doubleu.bytes[1] = src[pos + 6];
-    doubleu.bytes[2] = src[pos + 5];
-    doubleu.bytes[3] = src[pos + 4];
-    doubleu.bytes[4] = src[pos + 3];
-    doubleu.bytes[5] = src[pos + 2];
-    doubleu.bytes[6] = src[pos + 1];
-    doubleu.bytes[7] = src[pos + 0];
-
-    return doubleu.d;
-}
-
-float
-AP_GPS_GSOF::SwapFloat(const uint8_t* src, const uint32_t pos) const
-{
-    union {
-        float f;
-        char bytes[sizeof(float)];
-    } floatu;
-    floatu.bytes[0] = src[pos + 3];
-    floatu.bytes[1] = src[pos + 2];
-    floatu.bytes[2] = src[pos + 1];
-    floatu.bytes[3] = src[pos + 0];
-
-    return floatu.f;
-}
-
-uint32_t
-AP_GPS_GSOF::SwapUint32(const uint8_t* src, const uint32_t pos) const
-{
-    uint32_t u;
-    memcpy(&u, &src[pos], sizeof(u));
-    return be32toh(u);
-}
-
-uint16_t
-AP_GPS_GSOF::SwapUint16(const uint8_t* src, const uint32_t pos) const
-{
-    uint16_t u;
-    memcpy(&u, &src[pos], sizeof(u));
-    return be16toh(u);
-}
-
 bool
-AP_GPS_GSOF::process_message(void)
+AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const
 {
-    if (msg.packettype == 0x40) { // GSOF
-        // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
-#if gsof_DEBUGGING
-        const uint8_t trans_number = msg.data[0];
-        const uint8_t pageidx = msg.data[1];
-        const uint8_t maxpageidx = msg.data[2];
-
-        Debug("GSOF page: %u of %u (trans_number=%u)",
-              pageidx, maxpageidx, trans_number);
-#endif
-
-        int valid = 0;
-
-        // want 1 2 8 9 12
-        for (uint32_t a = 3; a < msg.length; a++)
-        {
-            const uint8_t output_type = msg.data[a];
-            a++;
-            const uint8_t output_length = msg.data[a];
-            a++;
-            //Debug("GSOF type: " + output_type + " len: " + output_length);
-
-            if (output_type == 1) // pos time
-            {
-                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
-                state.time_week_ms = SwapUint32(msg.data, a);
-                state.time_week = SwapUint16(msg.data, a + 4);
-                state.num_sats = msg.data[a + 6];
-                const uint8_t posf1 = msg.data[a + 7];
-                const uint8_t posf2 = msg.data[a + 8];
-
-                //Debug("POSTIME: " + posf1 + " " + posf2);
-                
-                if ((posf1 & 1)) { // New position
-                    state.status = AP_GPS::GPS_OK_FIX_3D;
-                    if ((posf2 & 1)) { // Differential position 
-                        state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
-                        if (posf2 & 2) { // Differential position method
-                            if (posf2 & 4) {// Differential position method
-                                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
-                            } else {
-                                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
-                            }
-                        }
-                    }
-                } else {
-                    state.status = AP_GPS::NO_FIX;
-                }
-                valid++;
-            }
-            else if (output_type == 2) // position
-            {
-                // This packet is not documented in Trimble's receiver help as of May 18, 2023
-                state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(msg.data, a)) * (double)1e7);
-                state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(msg.data, a + 8)) * (double)1e7);
-                state.location.alt = (int32_t)(SwapDouble(msg.data, a + 16) * 100);
-
-                state.last_gps_time_ms = AP_HAL::millis();
-
-                valid++;
-            }
-            else if (output_type == 8) // velocity
-            {
-                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Velocity.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____32
-                const uint8_t vflag = msg.data[a];
-                if ((vflag & 1) == 1)
-                {
-                    state.ground_speed = SwapFloat(msg.data, a + 1);
-                    state.ground_course = wrap_360(degrees(SwapFloat(msg.data, a + 5)));
-                    fill_3d_velocity();
-                    state.velocity.z = -SwapFloat(msg.data, a + 9);
-                    state.have_vertical_velocity = true;
-                }
-                valid++;
-            }
-            else if (output_type == 9) //dop
-            {
-                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_PDOP.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____12
-                state.hdop = (uint16_t)(SwapFloat(msg.data, a + 4) * 100);
-                valid++;
-            }
-            else if (output_type == 12) // position sigma
-            {
-                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_SIGMA.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____24
-                state.horizontal_accuracy = (SwapFloat(msg.data, a + 4) + SwapFloat(msg.data, a + 8)) / 2;
-                state.vertical_accuracy = SwapFloat(msg.data, a + 16);
-                state.have_horizontal_accuracy = true;
-                state.have_vertical_accuracy = true;
-                valid++;
-            }
-
-            a += output_length-1u;
-        }
-
-        if (valid == 5) {
-            return true;
-        } else {
-            state.status = AP_GPS::NO_FIX;
-        }
-    }
-
-    return false;
-}
-
-bool
-AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
     switch(com_port) {
         case static_cast<uint8_t>(HW_Port::COM1):
         case static_cast<uint8_t>(HW_Port::COM2):
@@ -373,4 +168,49 @@ AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const {
     }
 }
 
+void
+AP_GPS_GSOF::pack_state_data() 
+{
+    // TODO should we pack time data if there is no fix?
+    state.time_week_ms = pos_time.time_week_ms;
+    state.time_week = pos_time.time_week;
+    state.num_sats = pos_time.num_sats;
+
+    if ((pos_time.pos_flags1 & 1)) { // New position
+        state.status = AP_GPS::GPS_OK_FIX_3D;
+        if ((pos_time.pos_flags2 & 1)) { // Differential position 
+            state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+            if (pos_time.pos_flags2 & 2) { // Differential position method
+                if (pos_time.pos_flags2 & 4) {// Differential position method
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                } else {
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                }
+            }
+        }
+    } else {
+        state.status = AP_GPS::NO_FIX;
+    }
+
+    state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * position.latitude_rad * (double)1e7);
+    state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * position.longitude_rad * (double)1e7);
+    state.location.alt = (int32_t)(position.altitude * 100);
+    state.last_gps_time_ms = AP_HAL::millis();
+
+    if ((vel.velocity_flags & 1) == 1) {
+        state.ground_speed = vel.horizontal_velocity;
+        state.ground_course = wrap_360(degrees(vel.heading));
+        fill_3d_velocity();
+        state.velocity.z = -vel.vertical_velocity;
+        state.have_vertical_velocity = true;
+    }
+
+    state.hdop = (uint16_t)(dop.hdop * 100);
+    state.vdop = (uint16_t)(dop.vdop * 100);
+
+    state.horizontal_accuracy = (pos_sigma.sigma_east + pos_sigma.sigma_north) / 2;
+    state.vertical_accuracy = pos_sigma.sigma_up;
+    state.have_horizontal_accuracy = true;
+    state.have_vertical_accuracy = true;
+}
 #endif

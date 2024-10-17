@@ -106,7 +106,7 @@ protected:
 #if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
     void Log_AutoTune() override;
-    void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
+    void Log_Write_AutoTune(AxisType _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
 
     // methods to log autotune time history results for command, angular rate, and attitude.
     void Log_AutoTuneDetails() override;
@@ -261,7 +261,6 @@ private:
 
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
-    float    trim_meas_rate;                        // trim measured gyro rate
 
     // variables from dwell test
     LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;

@@ -60,7 +60,7 @@
 // Local modules
 #include "AP_Arming.h"
 #include "sailboat.h"
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
 #include "afs_rover.h"
 #endif
 #include "Parameters.h"
@@ -81,7 +81,7 @@ public:
     friend class ParametersG2;
     friend class AP_Rally_Rover;
     friend class AP_Arming_Rover;
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     friend class AP_AdvancedFailsafe_Rover;
 #endif
 #if AP_EXTERNAL_CONTROL_ENABLED
@@ -99,11 +99,11 @@ public:
     friend class ModeManual;
     friend class ModeRTL;
     friend class ModeSmartRTL;
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     friend class ModeFollow;
 #endif
     friend class ModeSimple;
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     friend class ModeDock;
 #endif
 
@@ -253,11 +253,11 @@ private:
     ModeSteering mode_steering;
     ModeRTL mode_rtl;
     ModeSmartRTL mode_smartrtl;
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     ModeFollow mode_follow;
 #endif
     ModeSimple mode_simple;
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     ModeDock mode_dock;
 #endif
 
@@ -322,7 +322,7 @@ private:
     // failsafe.cpp
     void failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool on);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
 

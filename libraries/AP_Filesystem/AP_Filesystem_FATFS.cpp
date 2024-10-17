@@ -47,7 +47,7 @@ typedef struct {
 #define MAX_FILES 16
 static FAT_FILE *file_table[MAX_FILES];
 
-static int isatty_(int fileno)
+static bool isatty_(int fileno)
 {
     if (fileno >= 0 && fileno <= 2) {
         return true;

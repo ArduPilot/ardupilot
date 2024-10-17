@@ -193,7 +193,7 @@ void AP_Periph_FW::can_efi_update(void)
         c.exhaust_gas_temperature = state_c.exhaust_gas_temperature;
         c.lambda_coefficient = state_c.lambda_coefficient;
 
-        uint8_t buffer[UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_MAX_SIZE] {};
+        uint8_t buffer[UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_MAX_SIZE];
         const uint16_t total_size = uavcan_equipment_ice_reciprocating_Status_encode(&pkt, buffer, !canfdout());
 
         canard_broadcast(UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_SIGNATURE,

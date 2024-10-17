@@ -76,6 +76,7 @@ public:
     virtual void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) = 0;
     virtual void get_log_info(uint16_t list_entry, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
+    virtual void end_log_transfer() = 0;
     virtual uint16_t get_num_logs() = 0;
     virtual uint16_t find_oldest_log();
 
@@ -139,7 +140,8 @@ public:
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
-                               const AP_Mission::Mission_Command &cmd);
+                           const AP_Mission::Mission_Command &cmd,
+                           LogMessages id);
     bool Write_Mode(uint8_t mode, const ModeReason reason);
     bool Write_Parameter(const char *name, float value, float default_val);
     bool Write_Parameter(const AP_Param *ap,

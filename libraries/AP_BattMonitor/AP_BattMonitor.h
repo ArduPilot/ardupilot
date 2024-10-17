@@ -262,6 +262,8 @@ public:
     void MPPT_set_powered_state_to_all(const bool power_on);
     void MPPT_set_powered_state(const uint8_t instance, const bool power_on);
 
+    bool option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const;
+
     // cycle count
     bool get_cycle_count(uint8_t instance, uint16_t &cycles) const;
 

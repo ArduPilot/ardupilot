@@ -876,7 +876,10 @@ bool AP_Airspeed::enabled(uint8_t i) const {
 
 // return health status of sensor
 bool AP_Airspeed::healthy(uint8_t i) const {
-    bool ok = state[i].healthy && enabled(i) && sensor[i] != nullptr;
+    if (!enabled(i)) {
+        return false;
+    }
+    bool ok = state[i].healthy && sensor[i] != nullptr;
 #ifndef HAL_BUILD_AP_PERIPH
     // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
     ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);

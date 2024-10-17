@@ -125,7 +125,7 @@ void GCS::send_named_float(const char *name, float value) const
 void GCS::enable_high_latency_connections(bool enabled)
 {
     high_latency_link_enabled = enabled;
-    gcs().send_text(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
 }
 
 bool GCS::get_high_latency_status()

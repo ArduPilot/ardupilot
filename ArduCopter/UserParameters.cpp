@@ -1,7 +1,7 @@
 #include "UserParameters.h"
 #include "config.h"
 
-#if USER_PARAMS_ENABLED == ENABLED
+#if USER_PARAMS_ENABLED
 // "USR" + 13 chars remaining for param name
 const AP_Param::GroupInfo UserParameters::var_info[] = {
 

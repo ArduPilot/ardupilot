@@ -8,6 +8,7 @@
 
 #include <AP_Networking/AP_Networking.h>
 #include <AP_Networking/AP_Networking_ChibiOS.h>
+#include <AP_Networking/AP_Networking_CAN.h>
 
 #include <lwip/ip_addr.h>
 #include <lwip/tcpip.h>
@@ -29,6 +30,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -59,6 +61,8 @@
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+static AP_Networking_CAN mcast_server;
+
 void BL_Network::link_up_cb(void *p)
 {
     auto *driver = (BL_Network *)p;
@@ -67,6 +71,9 @@ void BL_Network::link_up_cb(void *p)
 #endif
     char ipstr[IP4_STR_LEN];
     can_printf("IP %s", SocketAPM::inet_addr_to_str(ntohl(driver->thisif->ip_addr.addr), ipstr, sizeof(ipstr)));
+
+    // start mcast CAN server
+    mcast_server.start((1U<<HAL_NUM_CAN_IFACES)-1);
 }
 
 void BL_Network::link_down_cb(void *p)
@@ -484,10 +491,14 @@ void BL_Network::handle_request(SocketAPM *sock)
     sock->send(header, strlen(header));
 
     if (strncmp(headers, "POST / ", 7) == 0) {
-        const char *clen = "\r\nContent-Length:";
-        const char *p = strstr(headers, clen);
+        const char *clen1 = "\r\nContent-Length:";
+        const char *clen2 = "\r\ncontent-length:";
+        const char *p = strstr(headers, clen1);
+        if (p == nullptr) {
+            p = strstr(headers, clen2);
+        }
         if (p != nullptr) {
-            p += strlen(clen);
+            p += strlen(clen1);
             const uint32_t content_length = atoi(p);
             handle_post(sock, content_length);
             delete headers;

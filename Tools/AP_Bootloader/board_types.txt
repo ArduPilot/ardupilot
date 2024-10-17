@@ -72,6 +72,11 @@ EXT_HW_RADIOLINK_MINI_PIX               3
 # Do not allocate IDs in the range 1000 to 19999 except via a PR
 # against this file in https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader/board_types.txt
 
+# if you want to reserve a block of IDs, please limit that allocation
+#  to 10 IDs at a time.
+
+# please fill gaps rather than adding past ID #7109
+
 # values starting with AP_ are implemented in the ArduPilot bootloader
 # https://github.com/ArduPilot/ardupilot/tree/master/Tools/AP_Bootloader
 # the values come from the APJ_BOARD_ID in the hwdef files here:
@@ -275,22 +280,31 @@ AP_HW_MicoAir405Mini                 1161
 AP_HW_BlitzH7Pro                     1162
 AP_HW_BlitzF7Mini                    1163
 AP_HW_BlitzF7                        1164
+AP_HW_3DR-ASAUAV                     1165
 AP_HW_MicoAir743                     1166
 AP_HW_BlitzH7Wing                    1168
 AP_HW_SDMODELH7V2                    1167
-
 AP_HW_JHEMCUF405WING                 1169
 AP_HW_MatekG474                      1170
 AP_HW_PhenixH7_lite                  1171
 AP_HW_PhenixH7_Pro                   1172
 AP_HW_2RAWH743                       1173
+AP_HW_X-MAV-AP-H743V2                1174
+AP_HW_BETAFPV_F4_2-3S_20A            1175
 
 AP_HW_FlywooF405HD_AIOv2             1180
+AP_HW_FlywooH743Pro                  1181
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 
+AP_HW_MUPilot                        1222
+
+AP_HW_CBUnmanned-CM405-FC            1301
+
 AP_HW_KHA_ETH                        1315
+
+AP_HW_FlysparkF4                     1361
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -311,6 +325,13 @@ AP_HW_JHEMCU-H743HD                  1411
 AP_HW_LongbowF405                    1422
 
 AP_HW_MountainEagleH743              1444
+
+AP_HW_StellarF4                      1500
+AP_HW_GEPRCF745BTHD                  1501
+
+AP_HW_HGLRCF405V4                    1524
+
+AP_HW_MFT-SEMA100                    2000
 
 AP_HW_SakuraRC-H743                  2714
 
@@ -352,6 +373,8 @@ AP_HW_Holybro-PMU-F4                 5401
 AP_HW_Holybro-UM982-G4               5402
 AP_HW_Holybro-UM960-H7               5403
 AP_HW_Holybro-PERIPH-H7              5404
+AP_HW_Holybro-DroneCAN-Airspeed      5405
+AP_HW_Holybro-KakuteF4-Wing          5406
 
 #IDs 5501-5599 reserved for MATEKSYS
 AP_HW_MATEKH743SE                    5501
@@ -361,12 +384,24 @@ AP_HW_ZeroOne_X6                     5600
 AP_HW_ZeroOne_PMU                    5601
 AP_HW_ZeroOne_GNSS                   5602
 
+#IDs 5700-5710 reserved for DroneBuild  
+AP_HW_DroneBuild_G1                  5700
+AP_HW_DroneBuild_G2                  5701
+
 # IDs 6000-6099 reserved for SpektreWorks
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
+# IDs 6900-6909 reserved for Easy Aerial
+
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
+
+# IDs 7100-7109 reserved for VIEWPRO
+AP_HW_VUAV-V7pro                     7100
+
+# please fill gaps in the above ranges rather than adding past ID #7109
+
 
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140

@@ -264,6 +264,9 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+#if AP_AIRSPEED_ENABLED
+    MSG_AIRSPEED,
+#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
@@ -289,7 +292,9 @@ static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 };
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_RC_CHANNELS,
+#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
     MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
+#endif
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,

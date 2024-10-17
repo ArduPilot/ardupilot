@@ -89,7 +89,7 @@ void Gripper_Servo::update(const struct sitl_input &input)
         position_demand = position;
     }
 
-    const float position_max_change = position_slew_rate / 100.0f * dt;
+    const float position_max_change = position_slew_rate * 0.01f * dt;
     position = constrain_float(position_demand, position - position_max_change, position + position_max_change);
     float jaw_gap;
     if ((release_pwm < grab_pwm && reverse) || (release_pwm > grab_pwm && !reverse)) {

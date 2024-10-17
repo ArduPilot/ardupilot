@@ -114,10 +114,6 @@
 #endif
 #endif
 
-#ifndef AP_STATS_ENABLED
-#define AP_STATS_ENABLED 0
-#endif
-
 #ifndef AP_BATTERY_ESC_ENABLED
 #define AP_BATTERY_ESC_ENABLED 0
 #endif
@@ -323,6 +319,10 @@
 
 #ifndef HAL_RCIN_THREAD_ENABLED
 #define HAL_RCIN_THREAD_ENABLED 0
+#endif
+
+#ifndef HAL_MONITOR_THREAD_ENABLED
+#define HAL_MONITOR_THREAD_ENABLED 0
 #endif
 
 #ifndef HAL_SCHEDULER_LOOP_DELAY_ENABLED

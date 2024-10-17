@@ -169,7 +169,7 @@ void AP_ExternalAHRS_MicroStrain5::post_filter() const
     AP_ExternalAHRS::gps_data_message_t gps {
         gps_week: filter_data.week,
         ms_tow: filter_data.tow_ms,
-        fix_type: (uint8_t) gnss_data[gnss_instance].fix_type,
+        fix_type: AP_GPS_FixType(gnss_data[gnss_instance].fix_type),
         satellites_in_view: gnss_data[gnss_instance].satellites,
 
         horizontal_pos_accuracy: gnss_data[gnss_instance].horizontal_position_accuracy,
@@ -188,7 +188,7 @@ void AP_ExternalAHRS_MicroStrain5::post_filter() const
         ned_vel_down: filter_data.ned_velocity_down,
     };
 
-    if (gps.fix_type >= 3 && !state.have_origin) {
+    if (gps.fix_type >= AP_GPS_FixType::FIX_3D && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
         state.origin = Location{int32_t(filter_data.lat),
                                 int32_t(filter_data.lon),

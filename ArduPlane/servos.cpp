@@ -51,7 +51,7 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
         slewrate = g.takeoff_throttle_slewrate;
     }
 #if HAL_QUADPLANE_ENABLED
-    if (g.takeoff_throttle_slewrate != 0 && quadplane.in_transition()) {
+    if (g.takeoff_throttle_slewrate != 0 && quadplane.in_frwd_transition()) {
         slewrate = g.takeoff_throttle_slewrate;
     }
 #endif
@@ -78,7 +78,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     if (control_mode->does_auto_throttle() && parachute.release_initiated()) {
         // throttle always suppressed in auto-throttle modes after parachute release initiated
         throttle_suppressed = true;
@@ -359,28 +359,41 @@ void ModeAuto::wiggle_servos()
         return;
     }
 
-    int16_t servo_value;
-    // move over full range for 2 seconds
+    int16_t servo_valueElevator;
+    int16_t servo_valueAileronRudder;
+    // Wiggle the control surfaces in stages: elevators first, then rudders + ailerons, through the full range over 4 seconds
     if (wiggle.stage != 0) {
-        wiggle.stage += 2;
+        wiggle.stage += 1;
     }
     if (wiggle.stage == 0) {
-        servo_value = 0;
-    } else if (wiggle.stage < 50) {
-        servo_value = wiggle.stage * (4500 / 50);
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 25) { 
+        servo_valueElevator = wiggle.stage * (4500 / 25);      
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 75) {
+        servo_valueElevator = (50 - wiggle.stage) * (4500 / 25);        
+        servo_valueAileronRudder = 0;
     } else if (wiggle.stage < 100) {
-        servo_value = (100 - wiggle.stage) * (4500 / 50);        
-    } else if (wiggle.stage < 150) {
-        servo_value = (100 - wiggle.stage) * (4500 / 50);        
+        servo_valueElevator = (wiggle.stage - 100) * (4500 / 25);        
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 125) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (wiggle.stage - 100) * (4500 / 25);
+    } else if (wiggle.stage < 175) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (150 - wiggle.stage) * (4500 / 25);  
     } else if (wiggle.stage < 200) {
-        servo_value = (wiggle.stage-200) * (4500 / 50);        
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (wiggle.stage - 200) * (4500 / 25); 
     } else {
         wiggle.stage = 0;
-        servo_value = 0;
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = 0;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_valueAileronRudder);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_valueElevator);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_valueAileronRudder);
 
 }
 
@@ -499,47 +512,80 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
 #endif // #if AP_BATTERY_WATT_MAX_ENABLED
 
 /*
-  Apply min/max limits to throttle
+  Apply min/max safety limits to throttle.
  */
 float Plane::apply_throttle_limits(float throttle_in)
 {
-    // convert 0 to 100% (or -100 to +100) into PWM
+    // Pull the base throttle limits.
+    // These are usually set to map the ESC operating range.
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
 
 #if AP_ICENGINE_ENABLED
-    // apply idle governor
+    // Apply idle governor.
     g2.ice_control.update_idle_governor(min_throttle);
 #endif
 
+    // If reverse thrust is enabled not allowed right now, the minimum throttle must not fall below 0.
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
         min_throttle = 0;
     }
 
-    const bool use_takeoff_throttle_max =
-#if HAL_QUADPLANE_ENABLED
-        quadplane.in_transition() ||
-#endif
+    // Handle throttle limits for takeoff conditions.
+    // Query the conditions where TKOFF_THR_MAX applies.
+    const bool use_takeoff_throttle =
         (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
         (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING);
 
-    if (use_takeoff_throttle_max) {
-        if (aparm.takeoff_throttle_max != 0) {
-            max_throttle = aparm.takeoff_throttle_max.get();
-        }
+    // Handle throttle limits for takeoff conditions.
+    if (use_takeoff_throttle) {
+        // Read from takeoff_state
+        max_throttle = takeoff_state.throttle_lim_max;
+        min_throttle = takeoff_state.throttle_lim_min;
     } else if (landing.is_flaring()) {
+        // Allow throttle cutoff when flaring.
+        // This is to allow the aircraft to bleed speed faster and land with a shut off thruster.
         min_throttle = 0;
     }
 
-    // compensate for battery voltage drop
+    // Handle throttle limits for transition conditions.
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_frwd_transition()) {
+        if (aparm.takeoff_throttle_max != 0) {
+            max_throttle = aparm.takeoff_throttle_max.get();
+        }
+
+        // Apply minimum throttle limits only for SLT thrust types.
+        // The other types don't support it well.
+        if (quadplane.get_thrust_type() == QuadPlane::ThrustType::SLT
+            && control_mode->does_auto_throttle()
+        ) {
+            if (aparm.takeoff_throttle_min.get() != 0) {
+                min_throttle = MAX(min_throttle, aparm.takeoff_throttle_min.get());
+            } else {
+                min_throttle = MAX(min_throttle, aparm.throttle_cruise.get());
+            }
+        }
+    }
+#endif
+
+    // Compensate the limits for battery voltage drop.
+    // This relaxes the limits when the battery is getting depleted.
     g2.fwd_batt_cmp.apply_min_max(min_throttle, max_throttle);
 
 #if AP_BATTERY_WATT_MAX_ENABLED
-    // apply watt limiter
+    // Ensure that the power draw limits are not exceeded.
     throttle_watt_limiter(min_throttle, max_throttle);
 #endif
 
+    // Do a sanity check on them. Constrain down if necessary.
+    min_throttle = MIN(min_throttle, max_throttle);
+
+    // Let TECS know about the updated throttle limits.
+    // These will be taken into account on the next iteration.
+    TECS_controller.set_throttle_min(0.01f*min_throttle);
+    TECS_controller.set_throttle_max(0.01f*max_throttle);
     return constrain_float(throttle_in, min_throttle, max_throttle);
 }
 
@@ -756,7 +802,7 @@ void Plane::servos_twin_engine_mix(void)
 void Plane::force_flare(void)
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_transition() && plane.arming.is_armed()) { //allows for ground checking of flare tilts
+    if (quadplane.in_frwd_transition() && plane.arming.is_armed()) { //allows for ground checking of flare tilts
         return;
     }
     if (control_mode->is_vtol_mode()) {

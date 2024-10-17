@@ -25,7 +25,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
@@ -218,7 +217,7 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
         gps_state.lon = loc.lng;
         gps_state.alt_m = loc.alt/100; // 1m resolution
         gps_state.speed_cms = gps.ground_speed() * 100;
-        gps_state.ground_course_cd = gps.ground_course_cd();
+        gps_state.ground_course_dd = gps.ground_course_cd() / 10;
     }
 }
 #endif
@@ -503,93 +502,105 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     MSP_UNUSED(src);
 
     switch (cmd_msp) {
+#if HAL_MSP_RANGEFINDER_ENABLED
     case MSP2_SENSOR_RANGEFINDER: {
         const MSP::msp_rangefinder_data_message_t *pkt = (const MSP::msp_rangefinder_data_message_t *)src->ptr;
         msp_handle_rangefinder(*pkt);
     }
     break;
+#endif
+#if HAL_MSP_OPTICALFLOW_ENABLED
     case MSP2_SENSOR_OPTIC_FLOW: {
         const MSP::msp_opflow_data_message_t *pkt = (const MSP::msp_opflow_data_message_t *)src->ptr;
         msp_handle_opflow(*pkt);
     }
     break;
+#endif
+#if HAL_MSP_GPS_ENABLED
     case MSP2_SENSOR_GPS: {
         const MSP::msp_gps_data_message_t *pkt = (const MSP::msp_gps_data_message_t *)src->ptr;
         msp_handle_gps(*pkt);
     }
     break;
+#endif
+#if AP_COMPASS_MSP_ENABLED
     case MSP2_SENSOR_COMPASS: {
         const MSP::msp_compass_data_message_t *pkt = (const MSP::msp_compass_data_message_t *)src->ptr;
         msp_handle_compass(*pkt);
     }
     break;
+#endif
+#if AP_BARO_MSP_ENABLED
     case MSP2_SENSOR_BAROMETER: {
         const MSP::msp_baro_data_message_t *pkt = (const MSP::msp_baro_data_message_t *)src->ptr;
         msp_handle_baro(*pkt);
     }
     break;
+#endif
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     case MSP2_SENSOR_AIRSPEED: {
         const MSP::msp_airspeed_data_message_t *pkt = (const MSP::msp_airspeed_data_message_t *)src->ptr;
         msp_handle_airspeed(*pkt);
     }
     break;
+#endif
     }
 
     return MSP_RESULT_NO_REPLY;
 }
 
+#if HAL_MSP_OPTICALFLOW_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
-#if HAL_MSP_OPTICALFLOW_ENABLED
     AP_OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
         return;
     }
     optflow->handle_msp(pkt);
-#endif
 }
+#endif
 
+#if HAL_MSP_RANGEFINDER_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_data_message_t &pkt)
 {
-#if HAL_MSP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = AP::rangefinder();
     if (rangefinder == nullptr) {
         return;
     }
     rangefinder->handle_msp(pkt);
-#endif
 }
+#endif
 
+#if HAL_MSP_GPS_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_gps(const MSP::msp_gps_data_message_t &pkt)
 {
-#if HAL_MSP_GPS_ENABLED
     AP::gps().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_COMPASS_MSP_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_compass(const MSP::msp_compass_data_message_t &pkt)
 {
-#if AP_COMPASS_MSP_ENABLED
     AP::compass().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_BARO_MSP_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &pkt)
 {
-#if AP_BARO_MSP_ENABLED
     AP::baro().handle_msp(pkt);
-#endif
 }
+#endif
 
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
 {
-#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     auto *airspeed = AP::airspeed();
     if (airspeed) {
         airspeed->handle_msp(pkt);
     }
-#endif
 }
+#endif
 
 uint32_t AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask(void)
 {
@@ -1056,17 +1067,10 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-#if AP_RCMAPPER_ENABLED
-    const RCMapper* rcmap = AP::rcmap();
-    if (rcmap == nullptr) {
-        return MSP_RESULT_ERROR;
-    }
-
-    // note: rcmap channels start at 1
-    float roll = rc().rc_channel(rcmap->roll()-1)->norm_input_dz();
-    float pitch = -rc().rc_channel(rcmap->pitch()-1)->norm_input_dz();
-    float yaw = rc().rc_channel(rcmap->yaw()-1)->norm_input_dz();
-    float throttle = rc().rc_channel(rcmap->throttle()-1)->norm_input_dz();
+    float roll = rc().get_roll_channel().norm_input_dz();
+    float pitch = -rc().get_pitch_channel().norm_input_dz();
+    float yaw = rc().get_yaw_channel().norm_input_dz();
+    float throttle = rc().get_throttle_channel().norm_input_dz();
 
     const struct PACKED {
         uint16_t a;
@@ -1083,9 +1087,6 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
-#else
-    return MSP_RESULT_ERROR;
-#endif
 }
 #endif  // AP_RC_CHANNEL_ENABLED
 

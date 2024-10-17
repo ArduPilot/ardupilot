@@ -70,6 +70,9 @@ static const eventmask_t EVT_PARITY = EVENT_MASK(11);
 // event for transmit end for half-duplex
 static const eventmask_t EVT_TRANSMIT_END = EVENT_MASK(12);
 
+// event for framing error
+static const eventmask_t EVT_ERROR = EVENT_MASK(13);
+
 // events for dma tx, thread per UART so can be from 0
 static const eventmask_t EVT_TRANSMIT_DMA_START = EVENT_MASK(0);
 static const eventmask_t EVT_TRANSMIT_DMA_COMPLETE = EVENT_MASK(1);
@@ -100,8 +103,8 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
-serial_num(_serial_num),
 sdef(_serial_tab[_serial_num]),
+serial_num(_serial_num),
 _baudrate(57600)
 {
     osalDbgAssert(serial_num < UART_MAX_DRIVERS, "too many SERIALn drivers");
@@ -292,9 +295,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
       thrashing of the heap once we are up. The ttyACM0 driver may not
       connect for some time after boot
      */
-    while (_in_rx_timer) {
-        hal.scheduler->delay(1);
-    }
+    WITH_SEMAPHORE(rx_sem);
     if (rxS != _readbuf.get_size()) {
         _rx_initialised = false;
         _readbuf.set_size_best(rxS);
@@ -356,9 +357,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     /*
       allocate the write buffer
      */
-    while (_in_tx_timer) {
-        hal.scheduler->delay(1);
-    }
+    WITH_SEMAPHORE(tx_sem);
     if (txS != _writebuf.get_size()) {
         _tx_initialised = false;
         _writebuf.set_size_best(txS);
@@ -452,6 +451,13 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 sercfg.cr3 |= USART_CR3_DMAT;
             }
             sercfg.irq_cb = rx_irq_cb;
+#if HAL_HAVE_LOW_NOISE_UART
+            if (sdef.low_noise_line) {
+                // we can mark UART to sample on one bit instead of default 3 bits
+                // this allows us to be slightly less sensitive to clock differences
+                sercfg.cr3 |= USART_CR3_ONEBIT;
+            }
+#endif
 #endif // HAL_UART_NODMA
             if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
                 sercfg.cr2 |= USART_CR2_STOP1_BITS;
@@ -495,6 +501,16 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         vprintf_console_hook = hal_console_vprintf;
 #endif
     }
+
+#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
+    if (!err_listener_initialised) {
+        chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
+                                &err_listener,
+                                EVT_ERROR,
+                                SD_FRAMING_ERROR | SD_OVERRUN_ERROR | SD_NOISE_ERROR);
+        err_listener_initialised = true;
+    }
+#endif
 }
 
 #ifndef HAL_UART_NODMA
@@ -620,9 +636,9 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 
 void UARTDriver::_end()
 {
-    while (_in_rx_timer) hal.scheduler->delay(1);
+    WITH_SEMAPHORE(rx_sem);
+    WITH_SEMAPHORE(tx_sem);
     _rx_initialised = false;
-    while (_in_tx_timer) hal.scheduler->delay(1);
     _tx_initialised = false;
 
     if (sdef.is_usb) {
@@ -891,6 +907,9 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
         dmaStreamEnable(txdma);
         uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
+        // prevent very long timeouts at low baudrates which could cause another thread
+        // using begin() to block
+        timeout_us = MIN(timeout_us, 100000UL);
         chSysUnlock();
         // wait for the completion or timeout handlers to signal that we are done
         eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_DMA_COMPLETE, chTimeUS2I(timeout_us));
@@ -1089,7 +1108,23 @@ void UARTDriver::_rx_timer_tick(void)
         return;
     }
 
-    _in_rx_timer = true;
+    WITH_SEMAPHORE(rx_sem);
+
+#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
+    if (!sdef.is_usb) {
+        const auto err_flags = chEvtGetAndClearFlags(&err_listener);
+        // count the number of errors
+        if (err_flags & SD_FRAMING_ERROR) {
+            _rx_stats_framing_errors++;
+        }
+        if (err_flags & SD_OVERRUN_ERROR) {
+            _rx_stats_overrun_errors++;
+        }
+        if (err_flags & SD_NOISE_ERROR) {
+            _rx_stats_noise_errors++;
+        }
+    }
+#endif
 
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled && rxdma) {
@@ -1126,7 +1161,6 @@ void UARTDriver::_rx_timer_tick(void)
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            _in_rx_timer = false;
             return;
         }
 #endif
@@ -1150,7 +1184,6 @@ void UARTDriver::_rx_timer_tick(void)
         fwd_otg2_serial();
     }
 #endif
-    _in_rx_timer = false;
 }
 
 // forward data from a serial port to the USB
@@ -1269,14 +1302,13 @@ void UARTDriver::_tx_timer_tick(void)
         return;
     }
 
-    _in_tx_timer = true;
-
     if (hd_tx_active) {
+        WITH_SEMAPHORE(tx_sem);
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
         if (!hd_tx_active) {
             /*
-                half-duplex transmit has finished. We now re-enable the
-                HDSEL bit for receive
+              half-duplex transmit has finished. We now re-enable the
+              HDSEL bit for receive
             */
             SerialDriver *sd = (SerialDriver*)(sdef.serial);
             sdStop(sd);
@@ -1289,7 +1321,6 @@ void UARTDriver::_tx_timer_tick(void)
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            _in_tx_timer = false;
             return;
         }
 #endif
@@ -1302,18 +1333,16 @@ void UARTDriver::_tx_timer_tick(void)
 
     // half duplex we do reads in the write thread
     if (half_duplex) {
-        _in_rx_timer = true;
+        WITH_SEMAPHORE(rx_sem);
         read_bytes_NODMA();
         if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
             chEvtSignal(_wait.thread_ctx, EVT_DATA);
         }
-        _in_rx_timer = false;
     }
 
     // now do the write
+    WITH_SEMAPHORE(tx_sem);
     write_pending_bytes();
-
-    _in_tx_timer = false;
 }
 
 /*
@@ -1662,21 +1691,37 @@ bool UARTDriver::set_options(uint16_t options)
         cr2 &= ~USART_CR2_SWAP;
         _cr2_options &= ~USART_CR2_SWAP;
     }
-#else // STM32F4
+#elif defined(STM32F4) // STM32F4
     // F4 can do inversion by GPIO if enabled in hwdef.dat, using
     // TXINV and RXINV options
     if (options & OPTION_RXINV) {
         if (sdef.rxinv_gpio >= 0) {
             hal.gpio->write(sdef.rxinv_gpio, sdef.rxinv_polarity);
+            if (arx_line != 0) {
+                palLineSetPushPull(arx_line, PAL_PUSHPULL_PULLDOWN);
+            }
         } else {
             ret = false;
+        }
+    } else if (sdef.rxinv_gpio >= 0) {
+        hal.gpio->write(sdef.rxinv_gpio, !sdef.rxinv_polarity);
+        if (arx_line != 0) {
+            palLineSetPushPull(arx_line, PAL_PUSHPULL_PULLUP);
         }
     }
     if (options & OPTION_TXINV) {
         if (sdef.txinv_gpio >= 0) {
             hal.gpio->write(sdef.txinv_gpio, sdef.txinv_polarity);
+            if (atx_line != 0) {
+                palLineSetPushPull(atx_line, PAL_PUSHPULL_PULLDOWN);
+            }
         } else {
             ret = false;
+        }
+    } else if (sdef.txinv_gpio >= 0) {
+        hal.gpio->write(sdef.txinv_gpio, !sdef.txinv_polarity);
+        if (atx_line != 0) {
+            palLineSetPushPull(atx_line, PAL_PUSHPULL_PULLUP);
         }
     }
     if (options & OPTION_SWAP) {
@@ -1748,13 +1793,22 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
     } else {
         str.printf("UART%u ", unsigned(sdef.instance));
     }
-    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u FlowCtrl=%u\n",
+    str.printf("TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u"
+#if CH_CFG_USE_EVENTS == TRUE
+                " FE=%lu OE=%lu NE=%lu"
+#endif
+                " FlowCtrl=%u\n",
                tx_dma_enabled ? '*' : ' ',
                unsigned(tx_bytes),
                rx_dma_enabled ? '*' : ' ',
                unsigned(rx_bytes),
                unsigned((tx_bytes * 10000) / dt_ms),
                unsigned((rx_bytes * 10000) / dt_ms),
+#if CH_CFG_USE_EVENTS == TRUE
+               _rx_stats_framing_errors,
+               _rx_stats_overrun_errors,
+               _rx_stats_noise_errors,
+#endif
                _flow_control);
 }
 #endif

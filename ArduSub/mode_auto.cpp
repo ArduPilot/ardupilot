@@ -50,7 +50,7 @@ void ModeAuto::run()
         break;
 
     case Auto_NavGuided:
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
         auto_nav_guided_run();
 #endif
         break;
@@ -187,8 +187,8 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
-    sub.circle_nav.get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
+    float dist_to_edge;
+    sub.circle_nav.get_closest_point_on_circle(circle_edge_neu, dist_to_edge);
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -252,7 +252,7 @@ void ModeAuto::auto_circle_run()
     attitude_control->input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw(), true);
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::auto_nav_guided_start()
 {

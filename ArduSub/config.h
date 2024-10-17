@@ -31,7 +31,7 @@
 //
 
 #ifndef CIRCLE_NAV_ENABLED
-# define CIRCLE_NAV_ENABLED ENABLED
+# define CIRCLE_NAV_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@
 //
 
 #ifndef RCMAP_ENABLED
-# define RCMAP_ENABLED DISABLED
+# define RCMAP_ENABLED 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@
 #endif
 
 #ifndef RANGEFINDER_TILT_CORRECTION        // by disable tilt correction for use of range finder data by EKF
-# define RANGEFINDER_TILT_CORRECTION DISABLED
+# define RANGEFINDER_TILT_CORRECTION 0
 #endif
 
 #ifndef RANGEFINDER_SIGNAL_MIN_DEFAULT
@@ -72,11 +72,11 @@
 
 // Avoidance (relies on Proximity and Fence)
 #ifndef AVOIDANCE_ENABLED
-# define AVOIDANCE_ENABLED DISABLED
+# define AVOIDANCE_ENABLED 0
 #endif
 
-#if AVOIDANCE_ENABLED == ENABLED // Avoidance Library relies on Fence
-# define FENCE_ENABLED ENABLED
+#if AVOIDANCE_ENABLED // Avoidance Library relies on Fence
+# define FENCE_ENABLED 1
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -90,7 +90,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
-# define NAV_GUIDED    ENABLED
+# define NAV_GUIDED    1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@
 // PosHold parameter defaults
 //
 #ifndef POSHOLD_ENABLED
-# define POSHOLD_ENABLED               ENABLED // PosHold flight mode enabled by default
+# define POSHOLD_ENABLED               1 // PosHold flight mode enabled by default
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

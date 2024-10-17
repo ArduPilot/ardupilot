@@ -260,12 +260,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 // singleton instance
 AP_Baro *AP_Baro::_singleton;
 
-#if HAL_GCS_ENABLED
-#define BARO_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
-#else
-#define BARO_SEND_TEXT(severity, format, args...)
-#endif
-
 /*
   AP_Baro constructor
  */
@@ -288,7 +282,7 @@ void AP_Baro::calibrate(bool save)
     }
 
     if (hal.util->was_watchdog_reset()) {
-        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
         return;
     }
 
@@ -300,12 +294,12 @@ void AP_Baro::calibrate(bool save)
 
     #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
-            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
             return;
     }
     #endif
     
-    BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
@@ -364,7 +358,7 @@ void AP_Baro::calibrate(bool save)
     uint8_t num_calibrated = 0;
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
-            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
             num_calibrated++;
         }
     }
@@ -980,7 +974,7 @@ void AP_Baro::update_field_elevation(void)
             } else {
                 _field_elevation.set(_field_elevation_active);
                 _field_elevation.notify();
-                BARO_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
+                GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
             }
         }
     }
@@ -988,7 +982,7 @@ void AP_Baro::update_field_elevation(void)
         _field_elevation_last_ms = now_ms;
         AP::ahrs().resetHeightDatum();
         update_calibration();
-        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Field Elevation Set: %.0fm", _field_elevation_active);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Field Elevation Set: %.0fm", _field_elevation_active);
     }
 #endif
 }

@@ -32,6 +32,8 @@
 #include <ctype.h>
 #include <AP_Notify/AP_Notify.h>
 
+#include <AP_GPS/AP_GPS.h>
+
 extern const AP_HAL::HAL &hal;
 
 #define AP_ADSB_UAVIONIX_HEALTH_TIMEOUT_MS                     (5000UL)

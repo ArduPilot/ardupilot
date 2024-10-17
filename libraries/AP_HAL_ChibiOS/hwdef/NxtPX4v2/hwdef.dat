@@ -159,5 +159,3 @@ IMU BMI088 SPI:imu1_a SPI:imu1_g ROTATION_ROLL_180_YAW_90
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"

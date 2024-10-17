@@ -25,6 +25,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_Math/AP_Math.h>
+#include <RC_Channel/RC_Channel.h>
 #include "AC_AutoTune_FreqResp.h"
 
 #define AUTOTUNE_AXIS_BITMASK_ROLL            1
@@ -41,6 +42,7 @@
 #define AUTOTUNE_MESSAGE_FAILED 3
 #define AUTOTUNE_MESSAGE_SAVED_GAINS 4
 #define AUTOTUNE_MESSAGE_TESTING 5
+#define AUTOTUNE_MESSAGE_TESTING_END 6
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
@@ -53,21 +55,29 @@ public:
     // main run loop
     virtual void run();
 
-    // save gained, called on disarm
-    virtual void save_tuning_gains() = 0;
+    // Possibly save gains, called on disarm
+    void disarmed(const bool in_autotune_mode);
 
     // stop tune, reverting gains
     void stop();
+
+    // Autotune aux function trigger
+    void do_aux_function(const RC_Channel::AuxSwitchPos ch_flag);
+
+protected:
+
+    virtual void save_tuning_gains() = 0;
+
 
     // reset Autotune so that gains are not saved again and autotune can be run again.
     void reset() {
         mode = UNINITIALISED;
         axes_completed = 0;
+        have_pilot_testing_command = false;
     }
 
-protected:
     // axis that can be tuned
-    enum AxisType {
+    enum class AxisType {
         ROLL = 0,                 // roll axis is being tuned (either angle or rate)
         PITCH = 1,                // pitch axis is being tuned (either angle or rate)
         YAW = 2,                  // yaw axis is being tuned using FLTE (either angle or rate)
@@ -198,6 +208,7 @@ protected:
         WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
         TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
         UPDATE_GAINS      = 2,    // autotune has completed a test and is updating the gains based on the results
+        ABORT             = 3     // load normal gains and return to WAITING_FOR_LEVEL
     };
 
     // mini steps performed while in Tuning mode, Testing step
@@ -236,7 +247,7 @@ protected:
         GAIN_TEST       = 1,
         GAIN_INTRA_TEST = 2,
         GAIN_TUNED      = 3,
-    };
+    } loaded_gains;
     void load_gains(enum GainType gain_type);
 
     // autotune modes (high level states)
@@ -259,24 +270,15 @@ protected:
     bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
     StepType step;                       // see StepType for what steps are performed
     TuneType tune_type;                  // see TuneType
-    bool     ignore_next;                // true = ignore the next test
     bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
     uint8_t  axes_completed;             // bitmask of completed axes
-    float    test_rate_min;                         // the minimum angular rate achieved during TESTING_RATE step-multi only
-    float    test_rate_max;                         // the maximum angular rate achieved during TESTING_RATE step-multi only
-    float    test_angle_min;                        // the minimum angle achieved during TESTING_ANGLE step-multi only
-    float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step-multi only
     uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
     uint32_t step_time_limit_ms;                    // time limit of current autotune process
     uint32_t level_start_time_ms;                   // start time of waiting for level
     int8_t   counter;                               // counter for tuning gains
-    float    target_rate;                           // target rate-multi only
-    float    target_angle;                          // target angle-multi only
     float    start_angle;                           // start angle
     float    start_rate;                            // start rate - parent and multi
-    float    rate_max;                              // maximum rate variable - parent and multi
     float    test_accel_max;                        // maximum acceleration variable
-    float    angle_finish;                           // Angle that test is aborted- parent and multi
     float    desired_yaw_cd;                        // yaw heading during tune - parent and Tradheli
     float    step_scaler;                           // scaler to reduce maximum target step - parent and multi
 
@@ -345,6 +347,10 @@ private:
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
+
+    // True if we ever got a pilot testing command of tuned gains.
+    // If true then disarming will save if the tuned gains are currently active.
+    bool have_pilot_testing_command;
 
 };
 

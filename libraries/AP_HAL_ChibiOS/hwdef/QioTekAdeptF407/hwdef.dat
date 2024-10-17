@@ -111,10 +111,6 @@ PD2  SDIO_CMD SDIO
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1
 
-# now some defines for logging and terrain data files
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # define the order that I2C buses
 I2C_ORDER I2C1 I2C2
 PB8  I2C1_SCL I2C1

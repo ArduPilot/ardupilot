@@ -42,6 +42,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
+#include <AP_NavEKF3/AP_NavEKF3_feature.h>
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -188,8 +189,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional AHRS behaviour
-    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. 
-    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL
+    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency
+    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
     
@@ -616,6 +617,22 @@ void AP_AHRS::update_EKF2(void)
             EKF2.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
         }
+
+        /*
+          if we now have an origin then set in all backends
+        */
+        if (!done_common_origin) {
+            Location new_origin;
+            if (EKF2.getOriginLLH(new_origin)) {
+                done_common_origin = true;
+#if HAL_NAVEKF3_AVAILABLE
+                EKF3.setOriginLLH(new_origin);
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+                external.set_origin(new_origin);
+#endif
+            }
+        }
     }
 }
 #endif
@@ -685,6 +702,21 @@ void AP_AHRS::update_EKF3(void)
             EKF3.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
         }
+        /*
+          if we now have an origin then set in all backends
+        */
+        if (!done_common_origin) {
+            Location new_origin;
+            if (EKF3.getOriginLLH(new_origin)) {
+                done_common_origin = true;
+#if HAL_NAVEKF2_AVAILABLE
+                EKF2.setOriginLLH(new_origin);
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+                external.set_origin(new_origin);
+#endif
+            }
+        }
     }
 }
 #endif
@@ -697,6 +729,22 @@ void AP_AHRS::update_external(void)
 
     if (_active_EKF_type() == EKFType::EXTERNAL) {
         copy_estimates_from_backend_estimates(external_estimates);
+    }
+
+    /*
+      if we now have an origin then set in all backends
+    */
+    if (!done_common_origin) {
+        Location new_origin;
+        if (external.get_origin(new_origin)) {
+            done_common_origin = true;
+#if HAL_NAVEKF2_AVAILABLE
+            EKF2.setOriginLLH(new_origin);
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+            EKF3.setOriginLLH(new_origin);
+#endif
+        }
     }
 }
 #endif // AP_AHRS_EXTERNAL_ENABLED
@@ -867,7 +915,8 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
         return false;
     }
     nav_filter_status filter_status;
-    if (fly_forward &&
+    if (!option_set(Options::DISABLE_AIRSPEED_EKF_CHECK) &&
+        fly_forward &&
         hal.util->get_soft_armed() &&
         get_filter_status(filter_status) &&
         (filter_status.flags.rejecting_airspeed && !filter_status.flags.dead_reckoning)) {
@@ -1411,6 +1460,9 @@ bool AP_AHRS::set_origin(const Location &loc)
 #if HAL_NAVEKF3_AVAILABLE
     const bool ret3 = EKF3.setOriginLLH(loc);
 #endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    const bool ret_ext = external.set_origin(loc);
+#endif
 
     // return success if active EKF's origin was set
     bool success = false;
@@ -1440,7 +1492,7 @@ bool AP_AHRS::set_origin(const Location &loc)
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        // don't allow origin set with external AHRS
+        success = ret_ext;
         break;
 #endif
     }
@@ -2338,7 +2390,7 @@ void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &ra
 #if HAL_NAVEKF2_AVAILABLE
     EKF2.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
 #endif
-#if HAL_NAVEKF3_AVAILABLE
+#if EK3_FEATURE_OPTFLOW_FUSION
     EKF3.writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
 #endif
 }
@@ -2346,7 +2398,7 @@ void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &ra
 // retrieve latest corrected optical flow samples (used for calibration)
 bool AP_AHRS::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
 {
-#if HAL_NAVEKF3_AVAILABLE
+#if EK3_FEATURE_OPTFLOW_FUSION
     return EKF3.getOptFlowSample(timeStamp_ms, flowRate, bodyRate, losPred);
 #endif
     return false;
@@ -3170,7 +3222,7 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 #if HAL_NAVEKF3_AVAILABLE
     if (active_EKF_type() == EKFType::THREE) {
         uint8_t ret = EKF3.getActiveAirspeed();
-        if (ret != 255 && airspeed->healthy(ret) && airspeed->use(ret)) {
+        if (ret != UINT8_MAX && airspeed->healthy(ret) && airspeed->use(ret)) {
             return ret;
         }
     }
@@ -3334,10 +3386,10 @@ void AP_AHRS::request_yaw_reset(void)
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void AP_AHRS::set_posvelyaw_source_set(uint8_t source_set_idx)
+void AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx)
 {
 #if HAL_NAVEKF3_AVAILABLE
-    EKF3.setPosVelYawSourceSet(source_set_idx);
+    EKF3.setPosVelYawSourceSet((uint8_t)source_set_idx);
 #endif
 }
 

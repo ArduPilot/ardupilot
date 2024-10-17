@@ -22,18 +22,18 @@ using namespace SITL;
 ELRS::ELRS(const uint8_t portNumber, HALSITL::SITL_State_Common *sitl_state) :
     // Mirror typical ELRS UART buffer sizes
     SerialDevice::SerialDevice(64, 128),
-    target_address("127.0.0.1"),
-    target_port(5761 + portNumber),
     // Mirror MAVLink buffer sizes
     mavlinkInputBuffer(2048),
     mavlinkOutputBuffer(2048),
-    // Typical setup is about 500 B /s
-    input_data_rate(500),
-    output_data_rate(500),
     // 255 is typically used by the GCS, for RC override to work in ArduPilot `SYSID_MYGCS` must be set to this value (255 is the default)
     this_system_id(255),
     // Strictly this is not a valid source component ID
-    this_component_id(MAV_COMPONENT::MAV_COMP_ID_ALL)
+    this_component_id(MAV_COMPONENT::MAV_COMP_ID_ALL),
+    // Typical setup is about 500 B /s
+    input_data_rate(500),
+    output_data_rate(500),
+    target_address("127.0.0.1"),
+    target_port(5761 + portNumber)
 {
 
     // Setup TCP server

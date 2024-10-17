@@ -650,6 +650,11 @@ uint32_t RCOutput::get_disabled_channels(uint32_t digital_mask)
     }
 
     disabled_chan_mask <<= chan_offset;
+#if HAL_WITH_IO_MCU
+    if (iomcu_dshot) {
+       disabled_chan_mask |= iomcu.get_disabled_channels(digital_mask);
+    }
+#endif
     return disabled_chan_mask;
 }
 
@@ -808,11 +813,9 @@ void RCOutput::push_local(void)
 #endif // HAL_DSHOT_ENABLED
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
-                    group.current_mode == MODE_NEOPIXEL ||
-                    group.current_mode == MODE_NEOPIXELRGB ||
-                    group.current_mode == MODE_PROFILED ||
                     is_dshot_protocol(group.current_mode)) {
                     // only control widest pulse for oneshot and dshot
+                    // do not control for neopixel since updates to these are not pushed
                     if (period_us > widest_pulse) {
                         widest_pulse = period_us;
                     }
@@ -1133,6 +1136,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         if (is_bidir_dshot_enabled(group)) {
             group.dshot_pulse_send_time_us = pulse_send_time_us;
             // to all intents and purposes the pulse time of send and receive are the same
+            // for dshot600 this is roughly 26us + 30us + 26us = 82us
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
         }
 #endif
@@ -1263,9 +1267,13 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
     if (iomcu_enabled) {
         uint8_t iomcu_mask;
         const output_mode iomcu_mode = iomcu.get_output_mode(iomcu_mask);
+        const uint8_t gpio_mask = iomcu.get_GPIO_mask();
         for (uint8_t i = 0; i < chan_offset; i++ ) {
-            if (iomcu_mask & 1U<<i) {
+            const uint8_t chan_bit = 1U<<i;
+            if (iomcu_mask & chan_bit) {
                 ch_mode[i] = iomcu_mode;
+            } else if (gpio_mask & chan_bit) {
+                ch_mode[i] = MODE_PWM_NONE;
             } else {
                 ch_mode[i] = MODE_PWM_NORMAL;
             }
@@ -1460,9 +1468,9 @@ void RCOutput::dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t tim
     }
 
     for (auto &group : pwm_group_list) {
-        bool pulse_sent;
+        bool pulse_sent = false;
         // send a dshot command
-        if (is_dshot_protocol(group.current_mode)
+        if (group.can_send_dshot_pulse()
             && dshot_command_is_active(group)) {
             command_sent = dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
             pulse_sent = true;
@@ -1634,9 +1642,8 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
     bdshot_prepare_for_next_pulse(group);
 #endif
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
-#if !defined(IOMCU_FW)
     bool armed = hal.util->get_soft_armed();
-#endif
+
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
 
     for (uint8_t i=0; i<4; i++) {
@@ -1647,7 +1654,9 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
                 bdshot_decode_telemetry_from_erpm(group.bdshot.erpm[i], chan);
             }
 #endif
-            if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
+            const uint32_t servo_chan_mask = 1U<<(chan+chan_offset);
+
+            if (safety_on && !(safety_mask & servo_chan_mask)) {
                 // safety is on, don't output anything
                 continue;
             }
@@ -1659,12 +1668,10 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
                 continue;
             }
 
-            const uint32_t chan_mask = (1U<<chan);
-
             pwm = constrain_int16(pwm, 1000, 2000);
             uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
-            if ((chan_mask & _reversible_mask) != 0) {
+            if ((servo_chan_mask & _reversible_mask) != 0) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
                 if (value < 1000) {
                     value = 1999 - value;
@@ -1680,13 +1687,14 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
             if (value != 0) {
                 value += DSHOT_ZERO_THROTTLE;
             }
-#if !defined(IOMCU_FW)
+
             if (!armed) {
                 // when disarmed we always send a zero value
                 value = 0;
             }
-#endif
+
             // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc
+            const uint32_t chan_mask = (1U<<chan);
             bool request_telemetry = telem_request_mask & chan_mask;
             uint16_t packet = create_dshot_packet(value, request_telemetry,
 #ifdef HAL_WITH_BIDIR_DSHOT
@@ -2292,7 +2300,7 @@ void RCOutput::safety_update(void)
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
     if (safety_pressed) {
         AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
-        if (safety_press_count < 255) {
+        if (safety_press_count < UINT8_MAX) {
             safety_press_count++;
         }
         if (brdconfig && brdconfig->safety_button_handle_pressed(safety_press_count)) {

@@ -2013,11 +2013,11 @@ void AP_OSD_Screen::draw_esc_temp(uint8_t x, uint8_t y)
     int16_t etemp;
 
     if (esc_index > 0) {
-        if (!AP::esc_telem().get_motor_temperature(esc_index-1, etemp)) {
+        if (!AP::esc_telem().get_temperature(esc_index-1, etemp)) {
             return;
         }
     }
-    else if (!AP::esc_telem().get_highest_motor_temperature(etemp)) {
+    else if (!AP::esc_telem().get_highest_temperature(etemp)) {
         return;
     }
 
@@ -2584,8 +2584,10 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(avgcellrestvolt);
     DRAW_SETTING(restvolt);
+#if AP_RSSI_ENABLED
     DRAW_SETTING(rssi);
     DRAW_SETTING(link_quality);
+#endif
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);

@@ -22,9 +22,10 @@
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
+#include <AP_GSOF/AP_GSOF.h>
 
 #if AP_GPS_GSOF_ENABLED
-class AP_GPS_GSOF : public AP_GPS_Backend
+class AP_GPS_GSOF : public AP_GPS_Backend, public AP_GSOF
 {
 public:
     AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
@@ -56,9 +57,6 @@ private:
         FREQ_100_HZ = 16,
     };
 
-    bool parse(const uint8_t temp) WARN_IF_UNUSED;
-    bool process_message() WARN_IF_UNUSED;
-
     // Send a request to the GPS to set the baud rate on the specified port.
     // Note - these request functions currently ignore the ACK from the device.
     // If the device is already sending serial traffic, there is no mechanism to prevent conflict.
@@ -67,43 +65,10 @@ private:
     // Send a request to the GPS to enable a message type on the port at the specified rate.
     void requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz);
 
-    double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-
     bool validate_baud(const uint8_t baud) const WARN_IF_UNUSED;
     bool validate_com_port(const uint8_t com_port) const WARN_IF_UNUSED;
 
-    struct Msg_Parser
-    {
-
-        enum class State
-        {
-            STARTTX = 0,
-            STATUS,
-            PACKETTYPE,
-            LENGTH,
-            DATA,
-            CHECKSUM,
-            ENDTX
-        };
-
-        State state;
-
-        uint8_t status;
-        uint8_t packettype;
-        uint8_t length;
-        uint8_t data[256];
-        uint8_t checksum;
-        uint8_t endtx;
-
-        uint16_t read;
-        uint8_t checksumcalc;
-    } msg;
-
-    static const uint8_t STX = 0x02;
-    static const uint8_t ETX = 0x03;
+    void pack_state_data();
 
     uint8_t packetcount;
     uint32_t gsofmsg_time;

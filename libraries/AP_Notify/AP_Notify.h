@@ -25,8 +25,6 @@
 #define RGB_LED_LOW     1
 #define RGB_LED_MEDIUM  2
 #define RGB_LED_HIGH    3
-#define BUZZER_ON       1
-#define BUZZER_OFF      0
 
 #define NOTIFY_TEXT_BUFFER_SIZE 51
 

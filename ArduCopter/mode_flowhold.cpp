@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <utility>
 
-#if MODE_FLOWHOLD_ENABLED == ENABLED
+#if MODE_FLOWHOLD_ENABLED
 
 /*
   implement FLOWHOLD mode, for position hold using optical flow
@@ -240,7 +240,7 @@ void ModeFlowHold::run()
 
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
-        flow_filter.set_cutoff_frequency(flow_filter_hz.get());
+        flow_filter.set_cutoff_frequency(copter.scheduler.get_loop_rate_hz(), flow_filter_hz.get());
     }
 
     // get pilot desired climb rate
@@ -248,7 +248,7 @@ void ModeFlowHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+    float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // Flow Hold State Machine Determination
     AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);

@@ -18,16 +18,17 @@
 
 #pragma once
 
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
 
+#include "AP_Mount_Backend_Serial.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
 #define AP_MOUNT_TOPOTEK_PACKETLEN_MAX              36          // maximum number of bytes in a packet sent to or received from the gimbal
-#define AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM     6           // parse the number of gimbal command types
+#define AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM     7           // parse the number of gimbal command types
 
 class AP_Mount_Topotek : public AP_Mount_Backend_Serial
 {
@@ -78,9 +79,11 @@ public:
     // set camera picture-in-picture mode
     bool set_lens(uint8_t lens) override;
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
     // set_camera_source is functionally the same as set_lens except primary and secondary lenses are specified by type
     // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
     bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
+#endif
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
@@ -147,6 +150,13 @@ private:
         WAITING_FOR_CRC_HIGH,
     };
 
+    // tracking status
+    enum class TrackingStatus : uint8_t {
+        STOPPED_TRACKING = 0x30,                // not tracking
+        WAITING_FOR_TRACKING = 0x31,            // wait to track command status
+        TRACKING_IN_PROGRESS = 0x32             // the status is being tracked.
+    };
+
     // identifier bytes
     typedef char Identifier[3];
 
@@ -167,6 +177,9 @@ private:
 
     // request gimbal version
     void request_gimbal_version();
+
+    // request gimbal model name
+    void request_gimbal_model_name();
 
     // send angle target in radians to gimbal
     void send_angle_target(const MountTarget& angle_rad);
@@ -194,6 +207,9 @@ private:
 
     // gimbal basic information analysis
     void gimbal_version_analyse();
+
+    // gimbal model name message analysis
+    void gimbal_model_name_analyse();
 
     // gimbal distance information analysis
     void gimbal_dist_info_analyse();
@@ -224,13 +240,15 @@ private:
     // members
     bool _recording;                                            // recording status (received from gimbal)
     bool _is_tracking;                                          // whether to enable the tracking state
-    uint8_t _last_tracking_state;                               // last tracking state received from gimbal
+    TrackingStatus _last_tracking_state = TrackingStatus::STOPPED_TRACKING; // last tracking state received from gimbal
     uint8_t _last_mode;                                         // mode during latest update, used to detect mode changes and cancel tracking
     bool _sdcard_status;                                        // memory card status (received from gimbal)
     bool _last_lock;                                            // last lock mode sent to gimbal
     bool _got_gimbal_version;                                   // true if gimbal's version has been received
+    bool _got_gimbal_model_name;                                // true if gimbal's model name has been received
     bool _last_zoom_stop;                                       // true if zoom has been stopped (used to re-send in order to handle lost packets)
     bool _last_focus_stop;                                      // true if focus has been stopped (used to re-sent in order to handle lost packets)
+    uint8_t _model_name[16];                                    // gimbal model name
     uint8_t _sent_time_count;                                   // count of current time messages sent to gimbal
     uint32_t _firmware_ver;                                     // firmware version
     Vector3f _current_angle_rad;                                // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
@@ -260,6 +278,7 @@ private:
         {{"LRF"}, &AP_Mount_Topotek::gimbal_dist_info_analyse},
         {{"TRC"}, &AP_Mount_Topotek::gimbal_track_analyse},
         {{"VSN"}, &AP_Mount_Topotek::gimbal_version_analyse},
+        {{"PA2"}, &AP_Mount_Topotek::gimbal_model_name_analyse}
     };
 };
 

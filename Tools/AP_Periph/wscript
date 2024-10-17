@@ -44,6 +44,7 @@ def build(bld):
                      'AP_FlashStorage',
                      'AP_RAMTRON',
                      'AP_GPS',
+                     'AP_GSOF',
                      'AP_Networking',
                      'AP_SerialManager',
                      'AP_RTC',

@@ -41,8 +41,8 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
-    _address(address),
-    bus(I2CDeviceManager::businfo[busnum])
+    bus(I2CDeviceManager::businfo[busnum]),
+    _address(address)
 {
     if (busnum >= ARRAY_SIZE(i2c_bus_ids)) {
         bus.fd = -1;

@@ -65,13 +65,24 @@ static void run_command_on_ownpid(const char *commandname)
     // find dumpstack command:
     const char *command_filepath = commandname; // if we can't find it trust in PATH
     struct stat statbuf;
+    const char *custom_scripts_dir_path = getenv("AP_SCRIPTS_DIR_PATH");
+    char *custom_scripts_dir_path_pattern = nullptr;
+    if (custom_scripts_dir_path != nullptr) {
+        if (asprintf(&custom_scripts_dir_path_pattern, "%s/%%s", custom_scripts_dir_path) == -1) {
+            custom_scripts_dir_path_pattern = nullptr;
+        }
+    }
     const char *paths[] {
+        custom_scripts_dir_path_pattern,
         "Tools/scripts/%s",
         "APM/Tools/scripts/%s", // for autotest server
         "../Tools/scripts/%s", // when run from e.g. ArduCopter subdirectory
     };
     char buffer[60];
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
+        if (paths[i] == nullptr) {
+            continue;
+        }
         // form up a filepath from each path and commandname; if it
         // exists, use it
         snprintf(buffer, sizeof(buffer), paths[i], commandname);
@@ -80,6 +91,7 @@ static void run_command_on_ownpid(const char *commandname)
             break;
         }
     }
+    free(custom_scripts_dir_path_pattern);
 
 	char progname[100];
 	int n = readlink("/proc/self/exe", progname, sizeof(progname)-1);

@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200,8:PWMRange,9:PWMAngle
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, PWM_TYPE_NORMAL),
+    AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, float(PWMType::NORMAL)),
 
     // @Param: PWM_MIN
     // @DisplayName: PWM output minimum
@@ -457,6 +457,21 @@ float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
     return constrain_float(_spin_up_ratio, 0.0f, 1.0f) * thr_lin.get_spin_min();
 }
 
+// return throttle out for motor motor_num, returns true if value is valid false otherwise
+bool AP_MotorsMulticopter::get_thrust(uint8_t motor_num, float& thr_out) const
+{
+    if (motor_num >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[motor_num]) {
+        return false;
+    }
+
+    // Constrain to linearization range.
+    const float actuator = constrain_float(_actuator[motor_num], thr_lin.get_spin_min(), thr_lin.get_spin_max());
+
+    // Remove linearization and compensation gain
+    thr_out = thr_lin.actuator_to_thrust(actuator) / thr_lin.get_compensation_gain();
+    return true;
+}
+
 // parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
 bool AP_MotorsMulticopter::check_mot_pwm_params() const
 {
@@ -474,7 +489,7 @@ void AP_MotorsMulticopter::update_throttle_range()
 {
     // if all outputs are digital adjust the range. We also do this for type PWM_RANGE, as those use the
     // scaled output, which is then mapped to PWM via the SRV_Channel library
-    if (SRV_Channels::have_digital_outputs(get_motor_mask()) || (_pwm_type == PWM_TYPE_PWM_RANGE) || (_pwm_type == PWM_TYPE_PWM_ANGLE)) {
+    if (SRV_Channels::have_digital_outputs(get_motor_mask()) || (_pwm_type == PWMType::PWM_RANGE) || (_pwm_type == PWMType::PWM_ANGLE)) {
         _pwm_min.set_and_default(1000);
         _pwm_max.set_and_default(2000);
     }

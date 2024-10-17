@@ -2,7 +2,7 @@
 #include <AP_SerialManager/AP_SerialManager_config.h>
 
 #if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
-// allow --enable-ppp to enable networking
+// allow --enable-PPP to enable networking
 #define AP_NETWORKING_ENABLED AP_NETWORKING_BACKEND_PPP
 #endif
 
@@ -101,6 +101,10 @@
 
 #ifndef AP_NETWORKING_TESTS_ENABLED
 #define AP_NETWORKING_TESTS_ENABLED 0
+#endif
+
+#ifndef AP_NETWORKING_CAN_MCAST_ENABLED
+#define AP_NETWORKING_CAN_MCAST_ENABLED 0
 #endif
 
 #if AP_NETWORKING_TESTS_ENABLED

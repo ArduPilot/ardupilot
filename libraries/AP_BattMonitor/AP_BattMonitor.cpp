@@ -777,6 +777,14 @@ float AP_BattMonitor::gcs_voltage(uint8_t instance) const
     return state[instance].voltage;
 }
 
+bool AP_BattMonitor::option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return false;
+    }
+    return drivers[instance]->option_is_set(option);
+}
+
 /// current_amps - returns the instantaneous current draw in amperes
 bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
     if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
@@ -1011,8 +1019,29 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
 {
     char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
 
-    for (uint8_t i = 0; i < _num_instances; i++) {
-        if (drivers[i] != nullptr && !(drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer)))) {
+    for (uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        const auto expected_type = configured_type(i);
+
+        if (drivers[i] == nullptr && expected_type == Type::NONE) {
+            continue;
+        }
+
+#if !AP_BATTERY_SUM_ENABLED
+        // CONVERSION - Added Sep 2024 for ArduPilot 4.6 as we are
+        // removing the SUM backend on 1MB boards.  Give a
+        // more-specific error for the sum backend:
+        if (expected_type == Type::Sum) {
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, "feature BATTERY_SUM not available");
+            return false;
+        }
+#endif
+
+        if (drivers[i] == nullptr || allocated_type(i) != expected_type) {
+            hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, "unhealthy");
+            return false;
+        }
+
+        if (!drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer))) {
             hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, temp_buffer);
             return false;
         }
@@ -1037,7 +1066,7 @@ void AP_BattMonitor::checkPoweringOff(void)
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
             GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
-            gcs().send_text(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
 #endif
 
             // only send this once

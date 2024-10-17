@@ -21,7 +21,7 @@
 #include "AP_Math.h"
 
 // create a rotation matrix given some euler angles
-// this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
+// this is based on https://github.com/ArduPilot/Datasheets/blob/main/References/EulerAngles.pdf
 template <typename T>
 void Matrix3<T>::from_euler(T roll, T pitch, T yaw)
 {
@@ -44,7 +44,7 @@ void Matrix3<T>::from_euler(T roll, T pitch, T yaw)
 }
 
 // calculate euler angles from a rotation matrix
-// this is based on http://gentlenav.googlecode.com/files/EulerAngles.pdf
+// this is based on https://github.com/ArduPilot/Datasheets/blob/main/References/EulerAngles.pdf
 template <typename T>
 void Matrix3<T>::to_euler(T *roll, T *pitch, T *yaw) const
 {

@@ -241,17 +241,16 @@ uint8_t GPIO::read(uint8_t pin)
     if (g) {
         return palReadLine(g->pal_line);
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        return iomcu.read_virtual_GPIO(pin);
+    }
+#endif
     return 0;
 }
 
 void GPIO::write(uint8_t pin, uint8_t value)
 {
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        iomcu.write_GPIO(pin, value);
-        return;
-    }
-#endif
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
         if (g->is_input) {
@@ -263,36 +262,42 @@ void GPIO::write(uint8_t pin, uint8_t value)
         } else {
             palSetLine(g->pal_line);
         }
+        return;
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        iomcu.write_GPIO(pin, value);
+    }
+#endif
 }
 
 void GPIO::toggle(uint8_t pin)
 {
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        iomcu.toggle_GPIO(pin);
-        return;
-    }
-#endif
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
         palToggleLine(g->pal_line);
+        return;
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        iomcu.toggle_GPIO(pin);
+    }
+#endif
 }
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 {
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g != nullptr) {
+        return NEW_NOTHROW DigitalSource(g->pal_line);
+    }
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
         return NEW_NOTHROW IOMCU_DigitalSource(pin);
     }
 #endif
-    struct gpio_entry *g = gpio_by_pin_num(pin);
-    if (!g) {
-        return nullptr;
-    }
-    return NEW_NOTHROW DigitalSource(g->pal_line);
+    return nullptr;
 }
 
 extern const AP_HAL::HAL& hal;
@@ -526,12 +531,15 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
 // check if a pin number is valid
 bool GPIO::valid_pin(uint8_t pin) const
 {
+    if (gpio_by_pin_num(pin) != nullptr) {
+        return true;
+    }
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
         return true;
     }
 #endif
-    return gpio_by_pin_num(pin) != nullptr;
+    return false;
 }
 
 // return servo channel associated with GPIO pin.  Returns true on success and fills in servo_ch argument

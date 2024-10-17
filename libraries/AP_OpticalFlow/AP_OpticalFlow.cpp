@@ -140,7 +140,7 @@ void AP_OpticalFlow::init(uint32_t log_bit)
 #endif
         break;
     case Type::BEBOP:
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
+#if AP_OPTICALFLOW_ONBOARD_ENABLED
         backend = NEW_NOTHROW AP_OpticalFlow_Onboard(*this);
 #endif
         break;

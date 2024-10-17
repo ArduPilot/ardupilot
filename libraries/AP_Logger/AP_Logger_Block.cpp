@@ -200,7 +200,7 @@ uint16_t AP_Logger_Block::ReadHeaders()
     // we are at the start of a file, read the file header
     if (df_FilePage == 1) {
         struct FileHeader fh;
-        BlockRead(0, &fh, sizeof(fh));
+        BlockRead(sizeof(ph), &fh, sizeof(fh));
         df_FileTime = fh.utc_secs;
         df_Read_BufferIdx += sizeof(fh);
     }

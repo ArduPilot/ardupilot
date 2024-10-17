@@ -229,7 +229,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: _DSHOT_ESC
     // @DisplayName: Servo DShot ESC type
     // @Description: DShot ESC type for all outputs. The ESC type affects the range of DShot commands available and the bit widths used. None means that no dshot commands will be executed. Some ESC types support Extended DShot Telemetry (EDT) which allows telemetry other than RPM data to be returned when using bi-directional dshot. If you enable EDT you must install EDT capable firmware for correct operation.
-    // @Values: 0:None,1:BLHeli32/Kiss,2:BLHeli_S,3:BLHeli32/Kiss+EDT,4:BLHeli_S+EDT
+    // @Values: 0:None,1:BLHeli32/Kiss/AM32,2:BLHeli_S/BlueJay,3:BLHeli32/AM32/Kiss+EDT,4:BLHeli_S/BlueJay+EDT
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
 

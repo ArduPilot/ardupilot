@@ -45,6 +45,7 @@ public:
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override;
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override;
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
+    void end_log_transfer() override;
     uint16_t get_num_logs() override;
     void start_new_log(void) override;
     uint16_t find_oldest_log() override;

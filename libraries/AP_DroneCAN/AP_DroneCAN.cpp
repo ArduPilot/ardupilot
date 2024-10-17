@@ -80,8 +80,8 @@ extern const AP_HAL::HAL& hal;
 #define DRONECAN_STACK_SIZE     4096
 #endif
 
-#ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
-#define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
+#ifndef AP_DRONECAN_DEFAULT_NODE
+#define AP_DRONECAN_DEFAULT_NODE 10
 #endif
 
 #define AP_DRONECAN_GETSET_TIMEOUT_MS 100       // timeout waiting for response from node after 0.1 sec
@@ -96,11 +96,11 @@ extern const AP_HAL::HAL& hal;
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: NODE
-    // @DisplayName: DroneCAN node that is used for this network
-    // @Description: DroneCAN node should be set implicitly
-    // @Range: 1 250
+    // @DisplayName: Own node ID
+    // @Description: DroneCAN node ID used by the driver itself on this network
+    // @Range: 1 125
     // @User: Advanced
-    AP_GROUPINFO("NODE", 1, AP_DroneCAN, _dronecan_node, 10),
+    AP_GROUPINFO("NODE", 1, AP_DroneCAN, _dronecan_node, AP_DRONECAN_DEFAULT_NODE),
 
     // @Param: SRV_BM
     // @DisplayName: Output channels to be transmitted as servo over DroneCAN
@@ -326,6 +326,11 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called more than once\n\r");
         return;
     }
+    uint8_t node = _dronecan_node;
+    if (node < 1 || node > 125) { // reset to default if invalid
+        _dronecan_node.set(AP_DRONECAN_DEFAULT_NODE);
+        node = AP_DRONECAN_DEFAULT_NODE;
+    }
 
     node_info_rsp.name.len = hal.util->snprintf((char*)node_info_rsp.name.data, sizeof(node_info_rsp.name.data), "org.ardupilot:%u", driver_index);
 
@@ -348,16 +353,16 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to allocate memory pool\n\r");
         return;
     }
-    canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), _dronecan_node);
+    canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), node);
 
     if (!hal.util->get_system_id_unformatted(unique_id, uid_len)) {
         return;
     }
-    unique_id[uid_len - 1] += _dronecan_node;
+    unique_id[uid_len - 1] += node;
     memcpy(node_info_rsp.hardware_version.unique_id, unique_id, uid_len);
 
     //Start Servers
-    if (!_dna_server.init(unique_id, uid_len, _dronecan_node)) {
+    if (!_dna_server.init(unique_id, uid_len, node)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to start DNA Server\n\r");
         return;
     }
@@ -515,6 +520,10 @@ void AP_DroneCAN::loop(void)
             hal.scheduler->delay_microseconds(1000);
             continue;
         }
+
+        // ensure that the DroneCAN thread cannot completely saturate
+        // the CPU, preventing low priority threads from running
+        hal.scheduler->delay_microseconds(100);
 
         canard_iface.process(1);
 
@@ -704,14 +713,17 @@ void AP_DroneCAN::handle_node_info_request(const CanardRxTransfer& transfer, con
 
 int16_t AP_DroneCAN::scale_esc_output(uint8_t idx){
     static const int16_t cmd_max = ((1<<13)-1);
-    float scaled = 0;
-
+    float scaled = hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse);
+    // Prevent invalid values (from misconfigured scaling parameters) from sending non-zero commands
+    if (!isfinite(scaled)) {
+        return 0;
+    }
+    scaled = constrain_float(scaled, -1, 1);
     //Check if this channel has a reversible ESC. If it does, we can send negative commands.
     if ((((uint32_t) 1) << idx) & _esc_rv) {
-        scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse));
+        scaled *= cmd_max;
     } else {
-        scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[idx].pulse) + 1.0) / 2.0;
-        scaled = constrain_float(scaled, 0, cmd_max);
+        scaled = cmd_max * (scaled + 1.0) / 2.0;
     }
 
     return static_cast<int16_t>(scaled);
@@ -832,9 +844,9 @@ void AP_DroneCAN::SRV_send_esc(void)
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
-
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
+            if (armed && ((((uint32_t) 1U) << i) & _ESC_armed_mask)) {
                 esc_msg.cmd.data[k] = scale_esc_output(i);
             } else {
                 esc_msg.cmd.data[k] = static_cast<unsigned>(0);
@@ -885,9 +897,9 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
-
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
+            if (armed && ((((uint32_t) 1U) << i) & _ESC_armed_mask)) {
                 esc_msg.command.data[k] = scale_esc_output(i);
             } else {
                 esc_msg.command.data[k] = static_cast<unsigned>(0);
@@ -1415,7 +1427,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
         ToDeg(msg.actual_position),
         msg.current * 0.025f,
         msg.voltage * 0.2f,
-        msg.motor_pwm * (100.0/255.0),
+        uint8_t(msg.motor_pwm * (100.0/255.0)),
         int16_t(msg.motor_temperature) - 50);
 #endif
 }
@@ -1438,15 +1450,50 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
         .temperature_cdeg = int16_t((KELVIN_TO_C(msg.temperature)) * 100),
         .voltage = msg.voltage,
         .current = msg.current,
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+        .power_percentage = msg.power_rating_pct,
+#endif
     };
 
     update_rpm(esc_index, msg.rpm, msg.error_count);
     update_telem_data(esc_index, t,
         (isnan(msg.current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT)
             | (isnan(msg.voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)
-            | (isnan(msg.temperature) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE));
+            | (isnan(msg.temperature) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE)
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+            | AP_ESC_Telem_Backend::TelemetryType::POWER_PERCENTAGE
 #endif
+        );
+#endif // HAL_WITH_ESC_TELEM
 }
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+/*
+  handle Extended ESC status message
+ */
+void AP_DroneCAN::handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg)
+{
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
+    const uint8_t esc_index = msg.esc_index + esc_offset;
+
+    if (!is_esc_data_index_valid(esc_index)) {
+        return;
+    }
+
+    TelemetryData telemetryData {
+        .motor_temp_cdeg = (int16_t)(msg.motor_temperature_degC * 100),
+        .input_duty = msg.input_pct,
+        .output_duty = msg.output_pct,
+        .flags = msg.status_flags,
+    };
+
+    update_telem_data(esc_index, telemetryData,
+        AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE
+        | AP_ESC_Telem_Backend::TelemetryType::INPUT_DUTY
+        | AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY
+        | AP_ESC_Telem_Backend::TelemetryType::FLAGS);
+}
+#endif // AP_EXTENDED_ESC_TELEM_ENABLED
 
 bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     if (index > DRONECAN_SRV_NUMBER) {

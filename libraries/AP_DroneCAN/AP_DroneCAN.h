@@ -64,6 +64,10 @@
 #define AP_DRONECAN_SERIAL_ENABLED AP_SERIALMANAGER_REGISTER_ENABLED && (BOARD_FLASH_SIZE>1024)
 #endif
 
+#ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+#define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
+#endif
+
 #if AP_DRONECAN_SERIAL_ENABLED
 #include "AP_DroneCAN_serial.h"
 #endif
@@ -231,9 +235,11 @@ private:
 
     uint32_t *mem_pool;
 
-    AP_DroneCAN_DNA_Server _dna_server;
-
     uint8_t _driver_index;
+
+    CanardInterface canard_iface;
+
+    AP_DroneCAN_DNA_Server _dna_server;
 
     char _thread_name[13];
     bool _initialized;
@@ -288,8 +294,6 @@ private:
     } _relay;
 #endif
 
-    CanardInterface canard_iface;
-
 #if AP_DRONECAN_SERIAL_ENABLED
     AP_DroneCAN_Serial serial;
 #endif
@@ -326,8 +330,18 @@ private:
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
 
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_StatusExtended> esc_status_extended_cb{this, &AP_DroneCAN::handle_esc_ext_status};
+    Canard::Subscriber<uavcan_equipment_esc_StatusExtended> esc_status_extended_listener{esc_status_extended_cb, _driver_index};
+#endif
+
     Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_debug_LogMessage> debug_cb{this, &AP_DroneCAN::handle_debug};
     Canard::Subscriber<uavcan_protocol_debug_LogMessage> debug_listener{debug_cb, _driver_index};
+
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+    Canard::ObjCallback<AP_DroneCAN, com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_cb{this, &AP_DroneCAN::handle_actuator_status_Volz};
+    Canard::Subscriber<com_volz_servo_ActuatorStatus> volz_servo_ActuatorStatus_listener{volz_servo_ActuatorStatus_cb, _driver_index};
+#endif
 
     // param client
     Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_param_GetSetResponse> param_get_set_res_cb{this, &AP_DroneCAN::handle_param_get_set_response};
@@ -387,6 +401,9 @@ private:
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    void handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg);
+#endif
     static bool is_esc_data_index_valid(const uint8_t index);
     void handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg);
     void handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp);

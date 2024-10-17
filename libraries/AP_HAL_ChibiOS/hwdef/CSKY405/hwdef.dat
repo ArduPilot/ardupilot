@@ -140,8 +140,6 @@ SPIDEV sdcard    SPI2 DEVID3 SDCARD_CS  MODE3 104*MHZ 104*MHZ
 #define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # ----------------- I2C compass & Baro -----------------
 # no built-in compass, but probe the i2c bus for all possible

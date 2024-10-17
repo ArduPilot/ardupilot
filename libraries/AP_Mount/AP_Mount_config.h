@@ -1,13 +1,15 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
-#include <AP_Terrain/AP_Terrain.h>
+#include <AP_Terrain/AP_Terrain_config.h>
 
 #ifndef HAL_MOUNT_ENABLED
 #define HAL_MOUNT_ENABLED 1
 #endif
 
+#ifndef AP_MOUNT_BACKEND_DEFAULT_ENABLED
 #define AP_MOUNT_BACKEND_DEFAULT_ENABLED HAL_MOUNT_ENABLED
+#endif
 
 #ifndef HAL_MOUNT_ALEXMOS_ENABLED
 #define HAL_MOUNT_ALEXMOS_ENABLED AP_MOUNT_BACKEND_DEFAULT_ENABLED
@@ -61,4 +63,9 @@
 // set camera source is supported on gimbals that may have more than one lens
 #ifndef HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 #define HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED HAL_MOUNT_SIYI_ENABLED || HAL_MOUNT_XACTI_ENABLED || HAL_MOUNT_VIEWPRO_ENABLED
+#endif
+
+// send thermal range is only support on Siyi cameras
+#ifndef AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+#define AP_MOUNT_SEND_THERMAL_RANGE_ENABLED HAL_MOUNT_SIYI_ENABLED
 #endif

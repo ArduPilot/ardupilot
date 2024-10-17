@@ -370,12 +370,8 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     change_arm_state();
 
 #if QAUTOTUNE_ENABLED
-    //save qautotune gains if enabled and success
-    if (plane.control_mode == &plane.mode_qautotune) {
-        plane.quadplane.qautotune.save_tuning_gains();
-    } else {
-        plane.quadplane.qautotune.reset();
-    }
+    // Possibly save auto tuned parameters
+    plane.quadplane.qautotune.disarmed(plane.control_mode == &plane.mode_qautotune);
 #endif
 
     // re-initialize speed variable used in AUTO and GUIDED for

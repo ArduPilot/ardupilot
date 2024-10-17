@@ -181,7 +181,18 @@ public:
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     bool get_state(uint8_t instance, camera_state_t& cam_state);
+
+    // change camera settings not normally used by autopilot
+    bool change_setting(uint8_t instance, CameraSetting setting, float value);
 #endif
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    void set_camera_information(mavlink_camera_information_t camera_info);
+    void set_camera_information(uint8_t instance, mavlink_camera_information_t camera_info);
+
+    void set_stream_information(mavlink_video_stream_information_t camera_info);
+    void set_stream_information(uint8_t instance, mavlink_video_stream_information_t camera_info);
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
     // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
     bool get_legacy_relay_index(int8_t &index) const;
@@ -226,6 +237,10 @@ private:
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan);
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    void send_video_stream_information(mavlink_channel_t chan);
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan);
 
@@ -236,6 +251,11 @@ private:
 
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan);
+
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan);
+#endif
 
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed

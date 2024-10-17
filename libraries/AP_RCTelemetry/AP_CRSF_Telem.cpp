@@ -70,10 +70,12 @@ bool AP_CRSF_Telem::init(void)
         return false;
     }
 
+#if AP_VIDEOTX_ENABLED
     // Someone explicitly configure CRSF control for VTX
     if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::CRSF);
     }
+#endif
 
     return AP_RCTelemetry::init();
 }
@@ -1286,8 +1288,13 @@ void AP_CRSF_Telem::calc_parameter() {
 class BufferChunker {
 public:
     BufferChunker(uint8_t* buf, uint16_t chunk_size, uint16_t start_chunk) :
-        _buf(buf), _idx(0), _start_chunk(start_chunk), _chunk_size(chunk_size), _chunk(0), _bytes(0) {
-    }
+        _buf(buf),
+        _idx(0),
+        _bytes(0),
+        _chunk(0),
+        _start_chunk(start_chunk),
+        _chunk_size(chunk_size)
+    { }
 
     // accumulate a string, writing to the underlying buffer as required
     void put_string(const char* str, uint16_t str_len) {
