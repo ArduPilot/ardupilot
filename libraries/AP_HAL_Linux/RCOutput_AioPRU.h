@@ -20,7 +20,8 @@
 #define RCOUT_PRUSS_CTRL_BASE 0x4a324000
 #define RCOUT_PRUSS_IRAM_BASE 0x4a338000
 #endif
-#define PWM_CHAN_COUNT 12
+#define PWM_CHAN_COUNT      12
+#define DSHOT_CHAN_COUNT    6
 
 namespace Linux {
 
@@ -35,23 +36,48 @@ class RCOutput_AioPRU : public AP_HAL::RCOutput {
     void     read(uint16_t* period_us, uint8_t len) override;
     void     cork(void) override;
     void     push(void) override;
+    void     set_output_mode(uint32_t mask, const enum output_mode mode) override;
+    void     timer_tick(void) override;
 
 private:
-   static const uint32_t TICK_PER_US = 200;
-   static const uint32_t TICK_PER_S = 200000000;
-
-   struct pwm {
-      volatile uint32_t channelenable;
-      struct {
-        volatile uint32_t time_high;
-        volatile uint32_t time_t;
+    static const uint32_t TICK_PER_US = 200;
+    static const uint32_t TICK_PER_S = 200000000;
+    bool is_dshot_mode(enum RCOutput::output_mode mode);
+    
+    /*struct pwm {
+        volatile uint32_t channelenable;
+        struct {
+            volatile uint32_t time_high;
+            volatile uint32_t time_t;
         } channel[PWM_CHAN_COUNT];
-    };
+    }; */
 
-    volatile struct pwm *pwm;
-    uint16_t pending[PWM_CHAN_COUNT];
+    struct rcoutput {
+        volatile uint32_t channelenable;
+        volatile uint32_t failsafe; // Has to be kept set to prevent channels from being disabled.
+        union {
+            struct {
+                volatile uint32_t time_high;
+                volatile uint32_t time_t;
+            } pwm_out[PWM_CHAN_COUNT];
+            struct {
+                volatile uint32_t bitpos; // Position of bit currently read
+                volatile uint32_t ch_frame; // Frame, only lower 16 bits used
+            } dshot_out[DSHOT_CHAN_COUNT];
+        };
+    };
+    
+    volatile struct rcoutput *rcoutput;
+    
+    uint32_t* iram;
+    uint32_t* ctrl;
+    uint16_t period[DSHOT_CHAN_COUNT + PWM_CHAN_COUNT] ;
     uint32_t pending_mask;
+    
     bool corked;
+    enum output_mode _mode;
+    
+    void push_internal();
 };
 
 }
