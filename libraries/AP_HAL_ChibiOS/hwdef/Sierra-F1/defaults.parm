@@ -1,0 +1,13 @@
+# Serial3 default to GPS
+SERIAL3_PROTOCOL 5
+
+# Enable CAN1 and CAN2
+CAN_P1_DRIVER 1
+CAN_P2_DRIVER 2
+
+# LED drivers
+NTF_LED_TYPES 289
+
+# EKF setup
+EK3_IMU_MASK 7
+EK3_PRIMARY 1
