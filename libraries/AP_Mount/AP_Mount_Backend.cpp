@@ -119,6 +119,34 @@ void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float 
     }
 }
 
+void AP_Mount_Backend::control_mount_open_servo() {
+    // check if the open function is assigned to a servo channel.
+    uint8_t open_chan;
+    if (!SRV_Channels::find_channel(SRV_Channel::k_mount_open, open_chan) &&
+        !SRV_Channels::find_channel(SRV_Channel::k_mount2_open, open_chan)) {
+        return; // open function not assigned, do nothing.
+    }
+
+    // get the configured PWM values for open and closed states.
+    SRV_Channel *channel = SRV_Channels::srv_channel(open_chan);
+    if (!channel) {
+        return; // channel not found.
+    }
+    uint16_t pwm_open = channel->get_output_max();
+    uint16_t pwm_closed = channel->get_output_min();
+
+    // determine the desired open state based on the current mode.
+    bool mount_open = true;
+    if (get_mode() == MAV_MOUNT_MODE_RETRACT) {
+        mount_open = false;
+    }
+
+    // move the servo to the appropriate position.
+    uint16_t target_pwm = mount_open ? pwm_open : pwm_closed;
+    SRV_Channels::move_servo(SRV_Channel::Aux_servo_function_t(open_chan), 
+                              target_pwm, pwm_closed, pwm_open);
+}
+
 // set_roi_target - sets target location that mount should attempt to point towards
 void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 {

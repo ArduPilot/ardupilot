@@ -30,6 +30,9 @@ void AP_Mount_Servo::update()
     // change to RC_TARGETING mode if RC input has changed
     set_rctargeting_on_rcinput_change();
 
+    // control the open/close servo.
+    control_mount_open_servo();
+
     auto mount_mode = get_mode();
     switch (mount_mode) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
@@ -109,9 +112,6 @@ void AP_Mount_Servo::update()
             break;
     }
 
-    // move mount to a "retracted position" into the fuselage with a fourth servo
-    const bool mount_open = (mount_mode == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
-    move_servo(_open_idx, mount_open, 0, 1);
 
     // write the results to the servos
     move_servo(_roll_idx, degrees(_angle_bf_output_rad.x)*10, _params.roll_angle_min*10, _params.roll_angle_max*10);

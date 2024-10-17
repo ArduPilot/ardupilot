@@ -310,6 +310,9 @@ protected:
     // sent warning to GCS
     void send_warning_to_GCS(const char* warning_str);
 
+    // control the open/close servo based on current mode and parameters.
+    void control_mount_open_servo();
+
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount_Params &_params; // parameters for this backend
     uint8_t     _instance;  // this instance's number
