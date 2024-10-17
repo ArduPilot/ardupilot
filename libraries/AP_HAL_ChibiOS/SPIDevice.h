@@ -37,6 +37,7 @@ public:
     struct spi_dev_s *dev;
     uint8_t bus;
     SPIConfig spicfg;
+    SPIConfig last_spicfg;
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);
     uint8_t slowdown;
@@ -53,6 +54,7 @@ public:
     // start and stop the hardware peripheral
     void start_peripheral(void);
     void stop_peripheral(void);
+    bool config_changed(void);
 
 private:
     bool spi_started;
