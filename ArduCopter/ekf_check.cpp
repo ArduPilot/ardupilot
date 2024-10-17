@@ -284,6 +284,7 @@ void Copter::check_vibration()
     const bool bad_vibe_detected = (innovation_checks_valid && innov_velD_posD_positive && (vel_variance_filt.get() > 1.0f)) || is_vibration_affected;
     const bool do_bad_vibe_actions = (g2.fs_vibe_enabled == 1) && bad_vibe_detected && motors->armed() && !flightmode->has_manual_throttle();
 
+    static const char *vibrationCompensation = "Vibration compensation %s";
     if (!vibration_check.high_vibes) {
         // initialise timers
         if (!do_bad_vibe_actions) {
@@ -296,7 +297,7 @@ void Copter::check_vibration()
             vibration_check.high_vibes = true;
             pos_control->set_vibe_comp(true);
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_OCCURRED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation ON");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, vibrationCompensation, "ON");
         }
     } else {
         // initialise timer
@@ -311,7 +312,7 @@ void Copter::check_vibration()
             pos_control->set_vibe_comp(false);
             vibration_check.clear_ms = 0;
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_VIBE, LogErrorCode::FAILSAFE_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Vibration compensation OFF");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, vibrationCompensation, "OFF");
         }
     }
 
