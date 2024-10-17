@@ -12,7 +12,7 @@ PA15  TIM2_CH1  TIM2 PWM(5) GPIO(54)
 PA6   TIM16_CH1 TIM16 GPIO(32) ALARM
 
 # ----------------------- GPS ----------------------------
-define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_GPS 1
 define GPS_MAX_RATE_MS 200
 
 define GPS_MAX_RECEIVERS 1

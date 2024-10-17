@@ -164,7 +164,7 @@ public:
     AP_Int8 pole_count[ESC_NUMBERS];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
     AP_Int8 gps_port;
 #if GPS_MOVING_BASELINE
     AP_Int8 gps_mb_only_can_port;

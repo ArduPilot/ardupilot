@@ -1,7 +1,7 @@
 include ../MatekG474/hwdef.inc
 
 # ----------- GPS
-define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_GPS 1
 define GPS_MAX_RATE_MS 200
 
 define GPS_MAX_RECEIVERS 1
