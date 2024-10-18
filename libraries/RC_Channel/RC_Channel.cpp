@@ -60,6 +60,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Parachute/AP_Parachute_config.h>
+#include <AP_ExternalControl/AP_ExternalControl.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
@@ -1844,6 +1845,20 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         break;
     }
 #endif
+
+#if AP_DDS_ENABLED
+    case AUX_FUNC::DDS_EXTERNAL_CONTROL: {
+        AP_ExternalControl *external_control = AP_ExternalControl::get_singleton();
+        if (external_control != nullptr) {
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                external_control->enable();
+            } else {
+                external_control->disable();
+            }
+        }
+        break;        
+    }
+#endif // AP_DDS_ENABLED
 
     // do nothing for these functions
 #if HAL_MOUNT_ENABLED

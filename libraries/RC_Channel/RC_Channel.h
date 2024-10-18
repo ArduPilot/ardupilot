@@ -260,6 +260,7 @@ public:
         FLIGHTMODE_PAUSE =   178,  // e.g. pause movement towards waypoint
         ICE_START_STOP =     179, // AP_ICEngine start stop
         AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
+        DDS_EXTERNAL_CONTROL = 181, // Enable/Disable external control from DDS interface
 
 
         // inputs from 200 will eventually used to replace RCMAP

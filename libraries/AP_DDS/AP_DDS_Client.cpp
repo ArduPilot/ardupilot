@@ -696,12 +696,9 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         if (success == false) {
             break;
         }
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received velocity command", msg_prefix);
 #if AP_EXTERNAL_CONTROL_ENABLED
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Applied velocity command", msg_prefix);
         if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
             // TODO #23430 handle velocity control failure through rosout, throttled.
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Failed velocity command", msg_prefix);
         }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
