@@ -31,6 +31,13 @@
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
 #include "geometry_msgs/msg/PoseStamped.h"
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Iclude DIY Topic head~~~~~~~~~~~~~~~~~~~~
+
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+#include "geometry_msgs/msg/WrenchStamped.h"
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_NEEDS_TWIST
 #include "geometry_msgs/msg/TwistStamped.h"
 #endif // AP_DDS_NEEDS_TWIST
@@ -129,6 +136,19 @@ private:
     void write_tx_local_velocity_topic();
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Add new Topic~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+geometry_msgs_msg_WrenchStamped wre_out_topic;
+// The last ms timestamp AP_DDS wrote a Local Pose message
+uint64_t last_wre_out_time_ms;
+//! @brief Serialize the current local_pose and publish to the IO stream(s)
+void write_wre_out_topic();
+static void update_topic(geometry_msgs_msg_WrenchStamped& msg);
+#endif // AP_DDS_THR_OUT_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     geometry_msgs_msg_Vector3Stamped tx_local_airspeed_topic;

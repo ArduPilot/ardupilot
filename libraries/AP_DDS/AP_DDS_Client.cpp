@@ -15,6 +15,12 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~include new header~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#include <AC_AttitudeControl/AC_PosControl.h>
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~
+
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
@@ -46,6 +52,13 @@ static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~Add new Topic Delay~~~~~~~~~~~~~~~~~~~~~~
+
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+static constexpr uint16_t DELAY_WRE_OUT_TOPIC_MS = 33;
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = 33;
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
@@ -459,6 +472,31 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
     msg.twist.angular.z = -angular_velocity[2];
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Add New Topic Update~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Add New Topic Update~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Add New Topic Update~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+void AP_DDS_Client::update_topic(geometry_msgs_msg_WrenchStamped& msg)
+{
+update_topic(msg.header.stamp);
+strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+// 直接调用静态函数 get_wrench() 获取 Wrench 数据
+AC_PosControl::DIYWrench DIYwrench = AC_PosControl::get_DIYwrench();
+// 将获取到的 force 和 torque 赋值到 ROS2 消息中
+msg.wrench.force.x = DIYwrench.force.x;
+msg.wrench.force.y = DIYwrench.force.y;
+msg.wrench.force.z = DIYwrench.force.z;
+
+msg.wrench.torque.x = DIYwrench.torque.x;
+msg.wrench.torque.y = DIYwrench.torque.y;
+msg.wrench.torque.z = DIYwrench.torque.z;
+}
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
 {
@@ -1162,6 +1200,32 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+void AP_DDS_Client::write_wre_out_topic()
+{
+WITH_SEMAPHORE(csem);
+if (connected) {
+ucdrBuffer ub {};
+const uint32_t topic_size = geometry_msgs_msg_WrenchStamped_size_of_topic(&wre_out_topic, 0);
+uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::WRE_OUT_PUB)].dw_id, &ub, topic_size);
+const bool success = geometry_msgs_msg_WrenchStamped_serialize_topic(&ub, &wre_out_topic);
+if (!success) {
+
+// TODO sometimes serialization fails on bootup. Determine why.
+
+// AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+}
+}
+}
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 void AP_DDS_Client::write_tx_local_airspeed_topic()
 {
@@ -1288,6 +1352,21 @@ void AP_DDS_Client::update()
         write_tx_local_velocity_topic();
     }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+    if (cur_time_ms - last_wre_out_time_ms > DELAY_WRE_OUT_TOPIC_MS) {
+        update_topic(wre_out_topic);
+        last_wre_out_time_ms = cur_time_ms;
+        write_wre_out_topic();
+    }
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_MS) {
         last_airspeed_time_ms = cur_time_ms;
