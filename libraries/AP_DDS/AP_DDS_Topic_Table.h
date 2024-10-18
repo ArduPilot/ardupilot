@@ -4,6 +4,9 @@
 #include "sensor_msgs/msg/BatteryState.h"
 #include "geographic_msgs/msg/GeoPoseStamped.h"
 #include "geometry_msgs/msg/Vector3Stamped.h"
+//~~~~~~~~~~~~~include new head~~~~~~~~~~~~~~
+#include "geometry_msgs/msg/WrenchStamped.h"
+//~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Imu.h"
 #endif //AP_DDS_IMU_PUB_ENABLED
@@ -36,6 +39,13 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
     LOCAL_VELOCITY_PUB,
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+//~~~~~~~~~~~~~Add Topic Index~~~~~~~~~~~~~~~~~~
+
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+WRE_OUT_PUB, //Add DIY Publisher topic Index
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+//~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     LOCAL_AIRSPEED_PUB,
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
@@ -196,6 +206,26 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Add New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#if AP_DDS_WRE_OUT_PUB_ENABLED
+{
+.topic_id = to_underlying(TopicIndex::WRE_OUT_PUB),
+.pub_id = to_underlying(TopicIndex::WRE_OUT_PUB),
+.sub_id = to_underlying(TopicIndex::WRE_OUT_PUB),
+.dw_id = uxrObjectId{.id=to_underlying(TopicIndex::WRE_OUT_PUB), .type=UXR_DATAWRITER_ID},
+.dr_id = uxrObjectId{.id=to_underlying(TopicIndex::WRE_OUT_PUB), .type=UXR_DATAREADER_ID},
+.topic_rw = Topic_rw::DataWriter,
+.topic_name = "rt/ap/wrench/wre_out",
+.type_name = "geometry_msgs::msg::dds_::WrenchStamped_",
+.qos = {
+.durability = UXR_DURABILITY_VOLATILE,
+.reliability = UXR_RELIABILITY_BEST_EFFORT,
+.history = UXR_HISTORY_KEEP_LAST,
+.depth = 5,
+},
+},
+#endif //AP_DDS_WRE_OUT_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB),

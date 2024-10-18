@@ -54,6 +54,14 @@
 #define AP_DDS_LOCAL_VEL_PUB_ENABLED 1
 #endif
 
+//~~~~~~~~~~~~~~~~~~~~~Add your DIY Topic Index~~~~~~~~~~~~~
+
+#ifndef AP_DDS_WRE_OUT_PUB_ENABLED
+#define AP_DDS_WRE_OUT_PUB_ENABLED 1
+#endif
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 #ifndef AP_DDS_AIRSPEED_PUB_ENABLED
 #define AP_DDS_AIRSPEED_PUB_ENABLED 1
 #endif
