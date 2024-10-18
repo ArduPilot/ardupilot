@@ -1208,6 +1208,7 @@ private:
     void gps_run();
     void nogps_run();
 
+    bool completed_source_change;
     bool control_position; // true if we are using an external reference to control position
 
     uint32_t land_start_time;

@@ -64,8 +64,8 @@ public:
     // returns ekf outlier count
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
 
-    // give chance to driver to get updates from sensor, should be called at 400hz
-    void update(float rangefinder_alt_cm, bool rangefinder_alt_valid);
+    // give chance to driver to get updates from sensor, should be called at 400hz, also added option to select multiple backend
+    void update(float rangefinder_alt_cm, bool rangefinder_alt_valid, uint8_t backend_number);
 
     // returns target position relative to the EKF origin
     bool get_target_position_cm(Vector2f& ret);
@@ -190,6 +190,7 @@ private:
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled
     AP_Enum<Type>               _type;              // precision landing sensor type
+    AP_Enum<Type>               _type2;              // precision landing sensor type2
     AP_Int8                     _bus;               // which sensor bus
     AP_Enum<EstimatorType>      _estimator_type;    // precision landing estimator type
     AP_Float                    _lag;               // sensor lag in seconds
@@ -248,6 +249,8 @@ private:
     struct precland_state {
         bool    healthy;
     } _backend_state;
+    AC_PrecLand_Backend         *_backend1;  // pointers to backend precision landing driver1
+    AC_PrecLand_Backend         *_backend2;  // pointers to backend precision landing driver2
     AC_PrecLand_Backend         *_backend;  // pointers to backend precision landing driver
 
     // write out PREC message to log:

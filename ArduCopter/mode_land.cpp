@@ -3,6 +3,7 @@
 // land_init - initialise land controller
 bool ModeLand::init(bool ignore_checks)
 {
+    copter.precland_source = 1;
     // check if we have GPS and decide which LAND we're going to do
     control_position = copter.position_ok();
 
@@ -85,6 +86,12 @@ void ModeLand::gps_run()
         // pause before beginning land descent
         if (land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
             land_pause = false;
+        }
+
+        if(!completed_source_change && copter.baro_alt < g.differ_alt * 100) {
+            copter.precland_source = 2;
+            completed_source_change = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "PLAND: source changed");
         }
 
         // run normal landing or precision landing (if enabled)

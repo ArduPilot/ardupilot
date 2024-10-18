@@ -188,6 +188,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
 
+    // @Param: DIFFER_ALT
+    // @DisplayName: Land speed
+    // @Description: Altitude at which precland engine changes its source 
+    // @Units: metres
+    // @Range: 0 255
+    // @Increment: 10
+    // @User: Standard
+    GSCALAR(differ_alt,             "DIFFER_ALT",   0),
+
     // @Param: LAND_SPEED
     // @DisplayName: Land speed
     // @Description: The descent speed for the final stage of landing in cm/s

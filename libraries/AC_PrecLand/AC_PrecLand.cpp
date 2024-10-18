@@ -189,6 +189,12 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER),
+    // @Param: TYPE2
+    // @DisplayName: Precision Land Type
+    // @Description: Precision Land Type
+    // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo, 4:SITL
+    // @User: Advanced
+    AP_GROUPINFO("TYPE2",    19, AC_PrecLand, _type2, 0),
 
     AP_GROUPEND
 };
@@ -210,6 +216,14 @@ AC_PrecLand::AC_PrecLand()
 void AC_PrecLand::init(uint16_t update_rate_hz)
 {
     // exit immediately if init has already been run
+    if (_backend1 != nullptr) {
+        return;
+    }
+
+    if (_backend2 != nullptr) {
+        return;
+    }
+
     if (_backend != nullptr) {
         return;
     }
@@ -219,6 +233,8 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
 
     // default health to false
     _backend = nullptr;
+    _backend1 = nullptr;
+    _backend2 = nullptr;
     _backend_state.healthy = false;
 
     // create inertial history buffer
@@ -243,39 +259,90 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
         // companion computer
 #if AC_PRECLAND_COMPANION_ENABLED
         case Type::COMPANION:
-            _backend = new AC_PrecLand_Companion(*this, _backend_state);
+            _backend1 = new AC_PrecLand_Companion(*this, _backend_state);
             break;
         // IR Lock
 #endif
 #if AC_PRECLAND_IRLOCK_ENABLED
         case Type::IRLOCK:
-            _backend = new AC_PrecLand_IRLock(*this, _backend_state);
+            _backend1 = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
 #endif
 #if AC_PRECLAND_SITL_GAZEBO_ENABLED
         case Type::SITL_GAZEBO:
-            _backend = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
+            _backend1 = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
             break;
 #endif
 #if AC_PRECLAND_SITL_ENABLED
         case Type::SITL:
-            _backend = new AC_PrecLand_SITL(*this, _backend_state);
+            _backend1 = new AC_PrecLand_SITL(*this, _backend_state);
             break;
 #endif
     }
 
+    // check wether both backend type are not same 
+    if(_type.get() != _type2.get()) {
+
+        switch ((Type)(_type2.get())) {
+            // no type defined
+            case Type::NONE:
+            default:
+                return;
+            // companion computer
+#if AC_PRECLAND_COMPANION_ENABLED
+            case Type::COMPANION:
+                _backend2 = new AC_PrecLand_Companion(*this, _backend_state);
+                break;
+            // IR Lock
+#endif
+#if AC_PRECLAND_IRLOCK_ENABLED
+            case Type::IRLOCK:
+                _backend2 = new AC_PrecLand_IRLock(*this, _backend_state);
+                break;
+#endif
+#if AC_PRECLAND_SITL_GAZEBO_ENABLED
+            case Type::SITL_GAZEBO:
+                _backend2 = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
+                break;
+#endif
+#if AC_PRECLAND_SITL_ENABLED
+            case Type::SITL:
+                _backend2 = new AC_PrecLand_SITL(*this, _backend_state);
+                break;
+#endif
+        }
+
+    }
+
     // init backend
-    if (_backend != nullptr) {
-        _backend->init();
+    if (_backend1 != nullptr) {
+        _backend1->init();
+    }
+
+    if (_backend2 != nullptr) {
+        _backend2->init();
     }
 
     _approach_vector_body.x = 1;
     _approach_vector_body.rotate(_orient);
 }
 
-// update - give chance to driver to get updates from sensor
-void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
+// update - give chance to driver to get updates from sensor, also added option to select multiple backend
+void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid, uint8_t backend_number)
 {
+    // select appropriate backend
+    switch (backend_number)
+    {
+        case 1:
+        default:
+            _backend = _backend1;
+            break;
+
+        case 2:
+            _backend = _backend2;
+            break;
+    }
+
     // exit immediately if not enabled
     if (_backend == nullptr || _inertial_history == nullptr) {
         return;

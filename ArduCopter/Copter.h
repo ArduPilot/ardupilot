@@ -231,6 +231,8 @@ public:
 
 private:
 
+    uint8_t precland_source;
+
     // key aircraft parameters passed to multiple libraries
     AP_MultiCopter aparm;
 

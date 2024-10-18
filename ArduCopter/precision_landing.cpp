@@ -13,8 +13,8 @@ void Copter::init_precland()
 
 void Copter::update_precland()
 {
-    // alt will be unused if we pass false through as the second parameter:
+    // alt will be unused if we pass false through as the second parameter: you can change backend type by sending 1 or 2 as per condition
     return precland.update(rangefinder_state.alt_cm_glitch_protected,
-                           rangefinder_alt_ok());
+                           rangefinder_alt_ok(), precland_source);
 }
 #endif

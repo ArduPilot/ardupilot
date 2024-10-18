@@ -381,12 +381,15 @@ public:
         k_param_vehicle = 257, // vehicle common block of parameters
         k_param_throw_altitude_min,
         k_param_throw_altitude_max,
+        k_param_differ_alt,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
 
     AP_Int16        format_version;
+
+    AP_Int8         differ_alt;
 
     // Telemetry control
     //
