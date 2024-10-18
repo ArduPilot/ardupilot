@@ -448,11 +448,22 @@ void Tailsitter::output(void)
           apply extra elevator when at high pitch errors, using a
           power law. This allows the motors to point straight up for
           takeoff without integrator windup
+          reduce effect with roll error
          */
-        float des_pitch_cd = quadplane.attitude_control->get_att_target_euler_cd().y;
-        int32_t pitch_error_cd = (des_pitch_cd - quadplane.ahrs_view->pitch_sensor) * 0.5;
-        float extra_pitch = constrain_float(pitch_error_cd, -SERVO_MAX, SERVO_MAX) / SERVO_MAX;
-        float extra_sign = extra_pitch > 0?1:-1;
+        Quaternion act;
+        Vector3f z_unit{0,0,1};
+        quadplane.ahrs_view->get_quat_body_to_ned(act);
+
+        // rotate by attitude targets and then back again buy actual, resulting in vector representing roll/pitch error
+        quadplane.attitude_control->get_attitude_target_quat().earth_to_body(z_unit);
+        act.inverse().earth_to_body(z_unit);
+
+        // equivelent (sort of) to `pitch_error * cos(roll_error)` without the pitfalls of euler angles
+        const float pitch_error = degrees(atan2f(z_unit.x,z_unit.z)) * safe_sqrt(1.0 - z_unit.y*z_unit.y) * 50.0;
+
+        const float extra_pitch = constrain_float(pitch_error, -SERVO_MAX, SERVO_MAX) / SERVO_MAX;
+
+        const float extra_sign = extra_pitch > 0?1:-1;
         float extra_elevator = 0;
         if (!is_zero(extra_pitch) && quadplane.in_vtol_mode()) {
             extra_elevator = extra_sign * powf(fabsf(extra_pitch), vectored_hover_power) * SERVO_MAX;
