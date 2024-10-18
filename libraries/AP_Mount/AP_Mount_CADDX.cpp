@@ -140,7 +140,7 @@ void AP_Mount_CADDX::send_target_angles(const MountTarget& angle_target_rad)
 
     //todo: add mode here
     cmd_set_angles_data.mode = GIMBAL_MODE_TILT_ROLL_LOCK;
-    cmd_set_angles_data.mode = mount_lock_mode;
+    cmd_set_angles_data.mode = _mount_lock_mode;
 
     // CRC here
     uint16_t crc16 = 0;

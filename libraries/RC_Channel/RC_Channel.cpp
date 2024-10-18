@@ -1759,13 +1759,13 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         }
         switch (ch_flag) {
         case AuxSwitchPos::LOW:
-            // nothing
+            mount->set_mount_mode(0);
             break;
         case AuxSwitchPos::MIDDLE:
-            // nothing
+ //           mount->set_mount_mode(1);
             break;
         case AuxSwitchPos::HIGH:
-            //nothing
+ //           mount->set_mount_mode(2);
             break;
         }
         break;

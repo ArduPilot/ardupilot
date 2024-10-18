@@ -160,6 +160,9 @@ public:
     //      this operation requires 60us on a Pixhawk/PX4
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
+    
+    //set operating mode, not to be confused with modes like retracted,usually axis locking modes
+    void set_mount_mode(uint8_t mount_lock_mode);   
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle

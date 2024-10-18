@@ -46,10 +46,6 @@ public:
     // has_pitch_control - returns true if this mount can control its tilt
     bool has_pitch_control() const override { return pitch_range_valid(); };
     
-    void set_mount_mode(const uint8_t mount_lock_mode);
-    
-    uint8_t mount_lock_mode;
-
 
 protected:
 
