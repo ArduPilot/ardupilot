@@ -189,6 +189,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::ARSPD_CALIBRATE:
 #endif
     case AUX_FUNC::TER_DISABLE:
+#if AP_DDS_ENABLED
+    case AUX_FUNC::DDS_EXTERNAL_CONTROL:
+#endif    
     case AUX_FUNC::CROW_SELECT:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
@@ -457,6 +460,22 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         plane.quadplane.qautotune.do_aux_function(ch_flag);
         break;
 #endif
+
+#if AP_DDS_ENABLED
+    case AUX_FUNC::DDS_EXTERNAL_CONTROL: {
+        AP_ExternalControl *external_control = AP_ExternalControl::get_singleton();
+        if (external_control != nullptr) {
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC: External Control Enabled");
+                external_control->enable();
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC: External Control Disabled");
+                external_control->disable();
+            }
+        }
+        break;        
+    }
+#endif // AP_DDS_ENABLED 
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

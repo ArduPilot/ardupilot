@@ -32,6 +32,24 @@ public:
         return false;
     }
 
+    /*
+        Set the External control status.
+    */
+    void enable(void) {
+        enabled = true;
+    }
+
+    void disable(void) {
+        enabled = false;
+    }    
+
+    /*
+        Get the External control status.
+    */
+    bool is_enabled(void) {
+        return enabled;
+    }
+
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
     }
@@ -40,6 +58,7 @@ protected:
 
 private:
     static AP_ExternalControl *singleton;
+    bool enabled {true};
 };
 
 

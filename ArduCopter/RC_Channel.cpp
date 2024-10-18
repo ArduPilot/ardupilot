@@ -139,6 +139,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::FORCEFLYING:
     case AUX_FUNC::CUSTOM_CONTROLLER:
     case AUX_FUNC::WEATHER_VANE_ENABLE:
+#if AP_DDS_ENABLED
+    case AUX_FUNC::DDS_EXTERNAL_CONTROL:
+#endif    
     case AUX_FUNC::TRANSMITTER_TUNING:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
@@ -666,6 +669,22 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
     case AUX_FUNC::TRANSMITTER_TUNING:
         // do nothing, used in tuning.cpp for transmitter based tuning
         break;
+
+#if AP_DDS_ENABLED
+    case AUX_FUNC::DDS_EXTERNAL_CONTROL: {
+        AP_ExternalControl *external_control = AP_ExternalControl::get_singleton();
+        if (external_control != nullptr) {
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC: External Control Enabled");
+                external_control->enable();
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC: External Control Disabled");
+                external_control->disable();
+            }
+        }
+        break;        
+    }
+#endif // AP_DDS_ENABLED        
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
