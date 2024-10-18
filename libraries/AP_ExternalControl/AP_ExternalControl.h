@@ -32,6 +32,15 @@ public:
         return false;
     }
 
+    /*
+        Set the target setpoint for path guidance: the closest position on the
+        path, the unit tangent to the path, and path curvature and direction.
+    */
+    virtual bool set_path_position_tangent_and_curvature(const Location &position_on_path,
+            Vector2f unit_path_tangent, const float path_curvature, const bool direction_is_ccw) WARN_IF_UNUSED {
+        return false;
+    }
+
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
     }
@@ -41,7 +50,6 @@ protected:
 private:
     static AP_ExternalControl *singleton;
 };
-
 
 namespace AP
 {
