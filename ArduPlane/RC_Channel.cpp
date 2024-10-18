@@ -177,7 +177,10 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #if QAUTOTUNE_ENABLED
     case AUX_FUNC::AUTOTUNE_TEST_GAINS:
 #endif
+#if AP_QUICKTUNE_ENABLED
+    case AUX_FUNC::QUICKTUNE:
         break;
+#endif
 
     case AUX_FUNC::SOARING:
 #if HAL_QUADPLANE_ENABLED
@@ -455,6 +458,12 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
 #if QAUTOTUNE_ENABLED
     case AUX_FUNC::AUTOTUNE_TEST_GAINS:
         plane.quadplane.qautotune.do_aux_function(ch_flag);
+        break;
+#endif
+
+#if AP_QUICKTUNE_ENABLED
+    case AUX_FUNC::QUICKTUNE:
+        plane.quicktune.update_switch_pos(ch_flag);
         break;
 #endif
 
