@@ -82,6 +82,10 @@ public:
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
     void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
+    
+    //set operating mode, not to be confused with modes like retracted,usually axis locking modes
+    void set_mount_mode( uint8_t mount_lock_mode) { _mount_lock_mode = mount_lock_mode; } ;   
+    uint8_t _mount_lock_mode;
 
     // set angle target in degrees
     // roll and pitch are in earth-frame
