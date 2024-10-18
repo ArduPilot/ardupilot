@@ -769,6 +769,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::CAMERA_AUTO_FOCUS:
     case AUX_FUNC::CAMERA_LENS:
 #endif
+#if AP_DDS_ENABLED
+    case AUX_FUNC::DDS_EXTERNAL_CONTROL:
+#endif
 #if AP_AHRS_ENABLED
     case AUX_FUNC::AHRS_TYPE:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
@@ -1851,14 +1854,16 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         AP_ExternalControl *external_control = AP_ExternalControl::get_singleton();
         if (external_control != nullptr) {
             if (ch_flag == AuxSwitchPos::HIGH) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC: External Control Enabled");
                 external_control->enable();
             } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC: External Control Disabled");
                 external_control->disable();
             }
         }
         break;        
     }
-#endif // AP_DDS_ENABLED
+#endif // AP_DDS_ENABLED 
 
     // do nothing for these functions
 #if HAL_MOUNT_ENABLED
