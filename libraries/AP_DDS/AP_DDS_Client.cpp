@@ -18,6 +18,7 @@
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
+#include "std_srvs/srv/Trigger.h"
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -787,6 +788,33 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
+        break;
+    }
+    case services[to_underlying(ServiceIndex::PREARM_CHECK)].rep_id: {
+        std_srvs_srv_Trigger_Request prearm_check_request;
+        std_srvs_srv_Trigger_Response prearm_check_response;
+        const bool deserialize_success = std_srvs_srv_Trigger_Request_deserialize_topic(ub, &prearm_check_request);
+        if (deserialize_success == false) {
+            break;
+        }
+        prearm_check_response.success = AP::arming().pre_arm_checks(false);
+        strcpy(prearm_check_response.message, prearm_check_response.success ? "Vehicle is Armable" : "Vehicle is Not Armable");
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::PREARM_CHECK)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[sizeof(prearm_check_response.message) + 1] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = std_srvs_srv_Trigger_Response_serialize_topic(&reply_ub, &prearm_check_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         break;
     }
     }
