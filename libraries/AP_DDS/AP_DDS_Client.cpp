@@ -15,6 +15,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+#include <AP_ExternalControl/AP_ExternalControl.h>
 
 #include "ardupilot_msgs/srv/ArmMotors.h"
 #include "ardupilot_msgs/srv/ModeSwitch.h"
@@ -636,6 +637,10 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
     (void) request_id;
     (void) stream_id;
     (void) length;
+    auto *external_control = AP::externalcontrol();
+    if (!external_control->is_enabled()) {
+        return;
+    }
     switch (object_id.id) {
 #if AP_DDS_JOY_SUB_ENABLED
     case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id: {
@@ -691,9 +696,12 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         if (success == false) {
             break;
         }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received velocity command", msg_prefix);
 #if AP_EXTERNAL_CONTROL_ENABLED
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Applied velocity command", msg_prefix);
         if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
             // TODO #23430 handle velocity control failure through rosout, throttled.
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Failed velocity command", msg_prefix);
         }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
@@ -731,6 +739,10 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 {
     (void) request_id;
     (void) length;
+    auto *external_control = AP::externalcontrol();
+    if (!external_control->is_enabled()) {
+        return;
+    }
     switch (object_id.id) {
     case services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id: {
         ardupilot_msgs_srv_ArmMotors_Request arm_motors_request;
