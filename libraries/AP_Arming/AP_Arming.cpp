@@ -1743,6 +1743,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
+        last_arm_time_us = AP_HAL::micros64();
 
         _last_arm_method = method;
 
