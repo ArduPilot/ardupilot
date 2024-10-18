@@ -330,6 +330,10 @@ private:
     ModeThermal mode_thermal;
 #endif
 
+#if AP_QUICKTUNE_ENABLED
+    AP_Quicktune quicktune;
+#endif
+    
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
@@ -873,6 +877,10 @@ private:
        terrain_bitmask bitmask;
     };
     static const TerrainLookupTable Terrain_lookup[];
+#endif
+
+#if AP_QUICKTUNE_ENABLED
+    void update_quicktune(void);
 #endif
 
     // Attitude.cpp
