@@ -19,6 +19,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+#include <AP_ExternalControl/AP_ExternalControl.h>
 
 #if AP_DDS_ARM_SERVER_ENABLED
 #include "ardupilot_msgs/srv/ArmMotors.h"
@@ -711,6 +712,10 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
     (void) request_id;
     (void) stream_id;
     (void) length;
+    auto *external_control = AP::externalcontrol();
+    if (!external_control->is_enabled()) {
+        return;
+    }
     switch (object_id.id) {
 #if AP_DDS_JOY_SUB_ENABLED
     case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id: {
@@ -806,6 +811,8 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 {
     (void) request_id;
     (void) length;
+    // Verify if external control is enabled.
+    auto *external_control = AP::externalcontrol();
     switch (object_id.id) {
 #if AP_DDS_ARM_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id: {
@@ -852,9 +859,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         if (deserialize_success == false) {
             break;
         }
-        mode_switch_response.status = AP::vehicle()->set_mode(mode_switch_request.mode, ModeReason::DDS_COMMAND);
         mode_switch_response.curr_mode = AP::vehicle()->get_mode();
-
+        if (external_control->is_enabled()) {
+            mode_switch_response.status = AP::vehicle()->set_mode(mode_switch_request.mode, ModeReason::DDS_COMMAND);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Mode Switch Request rejected: External Control Disabled", msg_prefix);
+            mode_switch_response.status = false;
+        }
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::MODE_SWITCH)].rep_id,
             .type = UXR_REPLIER_ID
