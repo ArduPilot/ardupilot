@@ -164,7 +164,7 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
     origin_loc = {};
     origin_loc.lat = origin_lat * 1.0e7f;
     origin_loc.lng = origin_lon * 1.0e7f;
-    origin_loc.alt = origin_alt * 100;
+    origin_loc.set_alt_cm(origin_alt * 100, Location::AltFrame::ABSOLUTE);
 
     return true;
 }
