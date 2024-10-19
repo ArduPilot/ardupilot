@@ -43,7 +43,7 @@ extern const AP_HAL::HAL &hal;
 int8_t AP_Periph_FW::get_default_tunnel_serial_port(void) const
 {
     int8_t uart_num = -1;
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if HAL_PERIPH_ENABLE_GPS
     if (uart_num == -1) {
         uart_num = g.gps_port;
     }
