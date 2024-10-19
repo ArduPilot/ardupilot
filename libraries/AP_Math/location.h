@@ -25,7 +25,7 @@ float        get_bearing_cd(const Vector2f &origin, const Vector2f &destination)
 void        wgsllh2ecef(const Vector3d &llh, Vector3d &ecef);
 
 // Converts from WGS84 Earth Centered, Earth Fixed (ECEF)
-// coordinates (X, Y, Z), into WHS84 geodetic
+// coordinates (X, Y, Z), into WGS84 geodetic
 // coordinates (lat, lon, height)
 void        wgsecef2llh(const Vector3d &ecef, Vector3d &llh);
 
