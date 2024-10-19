@@ -44,25 +44,6 @@ public:
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
                   const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-    ///~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New DDS Topic output get_Wrench~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// Wrench struct
-
-struct DIYWrench
-{
-Vector3f force; // 力的三维向量
-Vector3f torque; // 力矩的三维向量
-// 默认构造函数，初始化为 0
-DIYWrench() : force(), torque() {}
-// 参数化构造函数
-DIYWrench(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
-};
-
-static DIYWrench get_DIYwrench();
-
-///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
     // do not allow copying
     CLASS_NO_COPY(AC_PosControl);
 
@@ -613,3 +594,20 @@ private:
     // singleton
     static AC_PosControl *_singleton;
 };
+ ///~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New DDS Topic output get_Wrench~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Wrench struct
+
+struct DIYWrench
+{
+Vector3f force; // 力的三维向量
+Vector3f torque; // 力矩的三维向量
+// 默认构造函数，初始化为 0
+DIYWrench() : force(), torque() {}
+// 参数化构造函数
+DIYWrench(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
+};
+
+extern DIYWrench get_DIYwrench();
+
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -356,11 +356,11 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
 
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-AC_PosControl::DIYWrench AC_PosControl::get_DIYwrench()
+DIYWrench get_DIYwrench()
 {
 // 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(10.0f, 5.0f, -3.0f); // 假设的力值
-Vector3f torque(2.0f, -1.0f, 4.0f); // 假设的力矩值
+Vector3f force(1.0f, 2.0f, 3.0f); // 假设的力值
+Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
   
 // 返回 DIYWrench 对象
 return DIYWrench(force, torque);

@@ -482,15 +482,15 @@ update_topic(msg.header.stamp);
 strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
 
 // 直接调用静态函数 get_wrench() 获取 Wrench 数据
-AC_PosControl::DIYWrench DIYwrench = AC_PosControl::get_DIYwrench();
+DIYWrench DroneWrench = get_DIYwrench();
 // 将获取到的 force 和 torque 赋值到 ROS2 消息中
-msg.wrench.force.x = DIYwrench.force.x;
-msg.wrench.force.y = DIYwrench.force.y;
-msg.wrench.force.z = DIYwrench.force.z;
+msg.wrench.force.x = DroneWrench.force.x;
+msg.wrench.force.y = DroneWrench.force.y;
+msg.wrench.force.z = DroneWrench.force.z;
 
-msg.wrench.torque.x = DIYwrench.torque.x;
-msg.wrench.torque.y = DIYwrench.torque.y;
-msg.wrench.torque.z = DIYwrench.torque.z;
+msg.wrench.torque.x = DroneWrench.torque.x;
+msg.wrench.torque.y = DroneWrench.torque.y;
+msg.wrench.torque.z = DroneWrench.torque.z;
 }
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
