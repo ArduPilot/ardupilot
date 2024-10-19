@@ -94,6 +94,11 @@ void AC_Sprayer::run(const bool activate)
         return;
     }
 
+    // exit immediately if the pump function has not been set-up for any servos
+    if (!SRV_Channels::function_assigned(SRV_Channel::k_sprayer_pump)) {
+        return;
+    }
+
     // set flag indicate whether spraying is permitted:
     // do not allow running to be set to true if we are currently not enabled
     _flags.running = _enabled && activate;
@@ -118,11 +123,6 @@ void AC_Sprayer::update()
     // exit immediately if we are disabled or shouldn't be running
     if (!_enabled || !running()) {
         run(false);
-        return;
-    }
-
-    // exit immediately if the pump function has not been set-up for any servo
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_sprayer_pump)) {
         return;
     }
 
