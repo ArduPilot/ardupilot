@@ -335,7 +335,7 @@ AP_GPS_SBP2::_attempt_state_update()
         //
         state.location.lat      = (int32_t) (last_pos_llh.lat * (double)1e7);
         state.location.lng      = (int32_t) (last_pos_llh.lon * (double)1e7);
-        state.location.alt      = (int32_t) (last_pos_llh.height * 100);
+        state.location.set_alt_cm((int32_t) (last_pos_llh.height * 100), Location::AltFrame::ABSOLUTE);
         state.num_sats          = last_pos_llh.n_sats;
 
         switch (last_pos_llh.flags.fix_mode) {

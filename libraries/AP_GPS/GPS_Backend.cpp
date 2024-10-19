@@ -459,9 +459,9 @@ void AP_GPS_Backend::set_alt_amsl_cm(AP_GPS::GPS_State &_state, int32_t alt_amsl
     if (option_set(AP_GPS::HeightEllipsoid) && _state.have_undulation) {
         // user has asked ArduPilot to use ellipsoid height in the
         // canonical height for mission and navigation
-        _state.location.alt = alt_amsl_cm - _state.undulation*100;
+        _state.location.set_alt_cm(alt_amsl_cm - _state.undulation*100, Location::AltFrame::ABSOLUTE);
     } else {
-        _state.location.alt = alt_amsl_cm;
+        _state.location.set_alt_cm(alt_amsl_cm, Location::AltFrame::ABSOLUTE);
     }
 }
 

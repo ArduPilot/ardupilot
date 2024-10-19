@@ -47,7 +47,7 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     Location loc = {};
     loc.lat = pkt.latitude;
     loc.lng = pkt.longitude;
-    loc.alt = pkt.msl_altitude;
+    loc.set_alt_cm(pkt.msl_altitude, Location::AltFrame::ABSOLUTE);
 
     state.location = loc;
     state.hdop = pkt.hdop;

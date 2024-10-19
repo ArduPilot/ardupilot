@@ -321,13 +321,13 @@ void AP_GPS_Blended::calc_state(void)
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (_blend_weights[i] > 0.0f && i != best_index) {
             blended_NE_offset_m += state.location.get_distance_NE(gps.state[i].location) * _blend_weights[i];
-            blended_alt_offset_cm += (float)(gps.state[i].location.alt - state.location.alt) * _blend_weights[i];
+            blended_alt_offset_cm += (float)(gps.state[i].location.get_alt_cm() - state.location.get_alt_cm()) * _blend_weights[i];
         }
     }
 
     // Add the sum of weighted offsets to the reference location to obtain the blended location
     state.location.offset(blended_NE_offset_m.x, blended_NE_offset_m.y);
-    state.location.alt += (int)blended_alt_offset_cm;
+    state.location.set_alt_cm(state.location.get_alt_cm() + (int)blended_alt_offset_cm, Location::AltFrame::ABSOLUTE);
 
     // Calculate ground speed and course from blended velocity vector
     state.ground_speed = state.velocity.xy().length();
