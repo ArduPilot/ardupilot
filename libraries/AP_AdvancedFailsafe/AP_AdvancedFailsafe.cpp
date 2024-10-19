@@ -378,7 +378,7 @@ AP_AdvancedFailsafe::check_altlimit(void)
         // the barometer has been unresponsive for 5 seconds. See if we can switch to GPS
         if (_amsl_margin_gps != -1 &&
             gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
-            gps.location().alt*0.01f <= _amsl_limit - _amsl_margin_gps) {
+            gps.location().get_alt_cm()*0.01f <= _amsl_limit - _amsl_margin_gps) {
             // GPS based altitude OK
             return false;
         }

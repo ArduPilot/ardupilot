@@ -355,7 +355,7 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     msg.utcTime_s = gps.time_epoch_usec() * 1E-6;
     msg.latitude_ddE7 = fix_is_good ? _frontend._my_loc.lat : INT32_MAX;
     msg.longitude_ddE7 = fix_is_good ? _frontend._my_loc.lng : INT32_MAX;
-    msg.altitudeGnss_mm = fix_is_good ? (_frontend._my_loc.alt * 10): INT32_MAX;
+    msg.altitudeGnss_mm = fix_is_good ? (_frontend._my_loc.get_alt_cm() * 10): INT32_MAX;
 
     // Protection Limits. FD or SBAS-based depending on state bits
     msg.HPL_mm = UINT32_MAX;
