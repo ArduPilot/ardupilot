@@ -18,7 +18,7 @@ public:
         loc.zero();
         loc.lat = _RBCH.origin_lat;
         loc.lng = _RBCH.origin_lng;
-        loc.alt = _RBCH.origin_alt;
+        loc.set_alt_cm(_RBCH.origin_alt, Location::AltFrame::ABSOLUTE);
         return _RBCH.get_origin_returncode;
     }
 

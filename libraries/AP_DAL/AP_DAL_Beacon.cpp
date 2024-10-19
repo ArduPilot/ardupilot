@@ -29,7 +29,7 @@ void AP_DAL_Beacon::start_frame()
         _RBCH.enabled = bcon->enabled();
         _RBCH.origin_lat = loc.lat;
         _RBCH.origin_lng = loc.lng;
-        _RBCH.origin_alt = loc.alt;
+        _RBCH.origin_alt = loc.get_alt_cm();
     }
     WRITE_REPLAY_BLOCK_IFCHANGED(RBCH, _RBCH, old);
     if (bcon == nullptr) {

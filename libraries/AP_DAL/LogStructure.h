@@ -41,7 +41,7 @@
     LOG_RBOH_MSG
 
 // @LoggerMessage: RFRH
-// @Description: Replay FRame Header
+// @Description: Replay Frame Header
 struct log_RFRH {
     uint64_t time_us;
     uint32_t time_flying_ms;
@@ -49,7 +49,7 @@ struct log_RFRH {
 };
 
 // @LoggerMessage: RFRF
-// @Description: Replay FRame data - Finished frame
+// @Description: Replay Frame data - Finished frame
 struct log_RFRF {
     uint8_t frame_types;
     uint8_t core_slow;
@@ -57,7 +57,7 @@ struct log_RFRF {
 };
 
 // @LoggerMessage: RFRN
-// @Description: Replay FRame - aNother frame header
+// @Description: Replay Frame - another frame header
 struct log_RFRN {
     int32_t lat;
     int32_t lng;

@@ -130,7 +130,7 @@ public:
 
         tmp_location[msg.instance].lat = msg.lat;
         tmp_location[msg.instance].lng = msg.lng;
-        tmp_location[msg.instance].alt = msg.alt;
+        tmp_location[msg.instance].set_alt_cm(msg.alt, Location::AltFrame::ABSOLUTE);
     }
 
 private:
