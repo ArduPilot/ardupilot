@@ -89,6 +89,7 @@ private:
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
         _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
+        _GPS_SENTENCE_PALYSBLS = 320, // extension for AllyStar, moving baseline, 9 fields
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -146,6 +147,14 @@ private:
 #endif
 #endif
 
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED
+
+#if GPS_MOVING_BASELINE
+    // parse ALLYSTAR $PALYSBLS field
+    void parse_alysbls_field(uint16_t term_number, const char *term);
+#endif
+#endif
+
 
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
     uint32_t _crc32;                                            ///< CRC for unicore messages
@@ -182,6 +191,7 @@ private:
     uint32_t _last_3D_velocity_ms;
     uint32_t _last_KSXT_pos_ms;
     uint32_t _last_AGRICA_ms;
+    uint32_t _last_PALYSBLS_ms;
     uint32_t _last_fix_ms;
 
     /// @name	Init strings
@@ -258,6 +268,22 @@ private:
 #endif
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
     bool _expect_agrica;
+
+    
+
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED
+#if GPS_MOVING_BASELINE
+    // $PALYSBLS,034727.000,0.256,0.992,-0.258,1.056,75.52,-14.12,R*4E
+    // lat-projection of bl,long-project of bl,height-project of bl,baseline length,yaw,pitch,mode(A:Autonomous, D: DGPS, N: invalid,F:Float,R:RTK Fixed)
+    // ALLYSTAR $PALYSBLS field
+    struct {
+        float baseline_length;
+        float heading;
+        float pitch;
+        uint8_t mb_quality_indicator;
+    } _alysbls_heading;
+#endif
+#endif
 
     // last time we sent type specific config strings
     uint32_t last_config_ms;
