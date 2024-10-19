@@ -14,7 +14,7 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     loc = {};
     loc.lat = fdm.latitude * 1e7;
     loc.lng = fdm.longitude * 1e7;
-    loc.alt = fdm.altitude*100;
+    loc.set_alt_cm(fdm.altitude*100, Location::AltFrame::ABSOLUTE);
 
     return true;
 }
@@ -97,7 +97,7 @@ bool AP_AHRS_SIM::get_hagl(float &height) const
         return false;
     }
 
-    height = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+    height = _sitl->state.altitude - AP::ahrs().get_home().get_alt_cm()*0.01f;
 
     return true;
 }
@@ -117,7 +117,7 @@ bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
     const Vector2f diff2d = orgn.get_distance_NE(loc);
     const struct SITL::sitl_fdm &fdm = _sitl->state;
     vec = Vector3f(diff2d.x, diff2d.y,
-                   -(fdm.altitude - orgn.alt*0.01f));
+                   -(fdm.altitude - orgn.get_alt_cm()*0.01f));
 
     return true;
 }
@@ -144,7 +144,7 @@ bool AP_AHRS_SIM::get_relative_position_D_origin(float &posD) const
     if (!get_origin(orgn)) {
         return false;
     }
-    posD = -(fdm.altitude - orgn.alt*0.01f);
+    posD = -(fdm.altitude - orgn.get_alt_cm()*0.01f);
 
     return true;
 }

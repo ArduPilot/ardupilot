@@ -24,7 +24,7 @@ void AP_AHRS::Write_AHRS2() const
         roll  : (int16_t)(degrees(euler.x)*100),
         pitch : (int16_t)(degrees(euler.y)*100),
         yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
-        alt   : loc.alt*1.0e-2f,
+        alt   : loc.get_alt_cm()*1.0e-2f,
         lat   : loc.lat,
         lng   : loc.lng,
         q1    : quat.q1,
@@ -73,7 +73,7 @@ void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
         origin_type : (uint8_t)origin_type,
         latitude    : loc.lat,
         longitude   : loc.lng,
-        altitude    : loc.alt
+        altitude    : loc.get_alt_cm()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
@@ -92,7 +92,7 @@ void AP_AHRS::Write_POS() const
         time_us        : AP_HAL::micros64(),
         lat            : loc.lat,
         lng            : loc.lng,
-        alt            : loc.alt*1.0e-2f,
+        alt            : loc.get_alt_cm()*1.0e-2f,
         rel_home_alt   : -home,
         rel_origin_alt : get_relative_position_D_origin(origin) ? -origin : AP::logger().quiet_nanf(),
     };

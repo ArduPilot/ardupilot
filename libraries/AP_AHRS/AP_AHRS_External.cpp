@@ -67,7 +67,7 @@ bool AP_AHRS_External::get_relative_position_NED_origin(Vector3f &vec) const
         extahrs.get_location(loc)) {
         const Vector2f diff2d = orgn.get_distance_NE(loc);
         vec = Vector3f(diff2d.x, diff2d.y,
-                       -(loc.alt - orgn.alt)*0.01);
+                       -(loc.get_alt_cm() - orgn.get_alt_cm())*0.01);
         return true;
     }
     return false;
@@ -95,7 +95,7 @@ bool AP_AHRS_External::get_relative_position_D_origin(float &posD) const
         !extahrs.get_location(loc)) {
         return false;
     }
-    posD = -(loc.alt - orgn.alt)*0.01;
+    posD = -(loc.get_alt_cm() - orgn.get_alt_cm())*0.01;
     return true;
 }
 
