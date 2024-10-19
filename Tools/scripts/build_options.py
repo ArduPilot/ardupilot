@@ -430,6 +430,9 @@ BUILD_OPTIONS = [
     Feature('Networking', 'CAN MCAST', 'AP_NETWORKING_CAN_MCAST_ENABLED', 'Enable CAN multicast bridge', 0, None),
 
     Feature('DroneCAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
+
+    Feature('DDS', 'DDS', 'AP_DDS_ENABLED', 'Enable DDS support', 0, None),
+
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
