@@ -242,6 +242,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 178:FlightMode Pause/Resume
     // @Values{Plane}: 179:ICEngine start / stop
     // @Values{Copter, Plane}: 180:Test autotuned gains after tune is complete
+    // @Values{Copter,Plane,Rover,Blimp}: 181:Primary Mount's Mode
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -756,6 +757,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::RETRACT_MOUNT1:
     case AUX_FUNC::RETRACT_MOUNT2:
     case AUX_FUNC::MOUNT_LOCK:
+    case AUX_FUNC::MOUNT_MODE:
 #endif
 #if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE:
@@ -891,6 +893,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if HAL_MOUNT_ENABLED
     { AUX_FUNC::MOUNT_LRF_ENABLE, "Mount LRF Enable"},
+    { AUX_FUNC::MOUNT_MODE, "Mount Mode"},
 #endif
 };
 
@@ -1748,6 +1751,25 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         mount->set_rangefinder_enable(0, ch_flag == AuxSwitchPos::HIGH);
         break;
     }
+    
+    case AUX_FUNC::MOUNT_MODE:{
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            break;
+        }
+        switch (ch_flag) {
+        case AuxSwitchPos::LOW:
+            mount->set_mount_mode(0);
+            break;
+        case AuxSwitchPos::MIDDLE:
+ //           mount->set_mount_mode(1);
+            break;
+        case AuxSwitchPos::HIGH:
+ //           mount->set_mount_mode(2);
+            break;
+        }
+        break;
+      }  
 #endif
 
 #if HAL_LOGGING_ENABLED
