@@ -26,10 +26,10 @@ void AP_OABendyRuler::Write_OABendyRuler(const uint8_t type, const bool active, 
         margin      : margin,
         final_lat   : final_dest.lat,
         final_lng   : final_dest.lng,
-        final_alt   : got_final_dest ? final_alt : final_dest.alt,
+        final_alt   : got_final_dest ? final_alt : final_dest.get_alt_cm(),
         oa_lat      : oa_dest.lat,
         oa_lng      : oa_dest.lng,
-        oa_alt      : got_oa_dest ? oa_dest_alt : oa_dest.alt
+        oa_alt      : got_oa_dest ? oa_dest_alt : oa_dest.get_alt_cm()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
