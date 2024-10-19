@@ -318,10 +318,10 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         AP_HAL::millis(),
         loc.lat,
         loc.lng,
-        loc.alt * 10,
+        loc.get_alt_cm() * 10,
         poi_loc.lat,
         poi_loc.lng,
-        poi_loc.alt * 10,
+        poi_loc.get_alt_cm() * 10,
         quat_array,
         horizontal_fov() > 0 ? horizontal_fov() : NaNf,
         vertical_fov() > 0 ? vertical_fov() : NaNf
