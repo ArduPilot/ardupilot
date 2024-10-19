@@ -16,6 +16,7 @@
 #include "AP_Mount_Xacti.h"
 #include "AP_Mount_Viewpro.h"
 #include "AP_Mount_Topotek.h"
+#include "AP_Mount_CADDX.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -166,6 +167,15 @@ void AP_Mount::init()
             serial_instance++;
             break;
 #endif // HAL_MOUNT_TOPOTEK_ENABLED
+
+#if HAL_MOUNT_CADDX_ENABLED
+        // check for CADDX gimbal
+        case Type::CADDX:
+            _backends[instance] = NEW_NOTHROW AP_Mount_CADDX(*this, _params[instance], instance, serial_instance);
+            _num_instances++;
+            serial_instance++;
+            break;
+#endif // HAL_MOUNT_CADDX_ENABLED
         }
 
         // init new instance
@@ -278,6 +288,18 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
 
     // call backend's set_yaw_lock
     backend->set_yaw_lock(yaw_lock);
+}
+
+// set mount operating mode
+void AP_Mount::set_mount_mode(uint8_t mount_mode)
+{
+    auto *backend = get_instance(_primary);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call backend's set_yaw_lock
+    backend->set_mount_mode(mount_mode);
 }
 
 // set angle target in degrees
