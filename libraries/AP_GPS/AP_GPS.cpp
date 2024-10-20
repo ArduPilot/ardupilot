@@ -29,6 +29,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "AP_GPS_NOVA.h"
+#include "AP_GPS_Blended.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
 #include "AP_GPS_NMEA.h"
@@ -59,14 +60,18 @@
 #include "RTCM3_Parser.h"
 #endif
 
+#if !AP_GPS_BLENDED_ENABLED
+#if defined(GPS_BLENDED_INSTANCE)
+#error GPS_BLENDED_INSTANCE should not be defined when AP_GPS_BLENDED_ENABLED is false
+#endif
+#endif
+
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 #endif
 #define GPS_BAUD_TIME_MS 1200
 #define GPS_TIMEOUT_MS 4000u
-
-#define BLEND_COUNTER_FAILURE_INCREMENT 10
 
 extern const AP_HAL::HAL &hal;
 
@@ -347,6 +352,11 @@ void AP_GPS::init()
             rate_ms.set(GPS_MAX_RATE_MS);
         }
     }
+
+    // create the blended instance if appropriate:
+#if AP_GPS_BLENDED_ENABLED
+    drivers[GPS_BLENDED_INSTANCE] = NEW_NOTHROW AP_GPS_Blended(*this, params[GPS_BLENDED_INSTANCE], state[GPS_BLENDED_INSTANCE], timing[GPS_BLENDED_INSTANCE]);
+#endif
 }
 
 void AP_GPS::convert_parameters()
@@ -652,8 +662,11 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
-        dstate->auto_detected_baud = false; // specified, not detected
-        return NEW_NOTHROW AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
+        if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::GPS) >= 0) {
+            dstate->auto_detected_baud = false; // specified, not detected
+            return NEW_NOTHROW AP_GPS_ExternalAHRS(*this, params[instance], state[instance], nullptr);
+        }
+        break;
 #endif
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
@@ -1084,25 +1097,15 @@ void AP_GPS::update_primary(void)
     */
     const bool using_moving_base = is_rtk_base(0) || is_rtk_base(1);
     if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::BLEND && !using_moving_base) {
-        _output_is_blended = calc_blend_weights();
-        // adjust blend health counter
-        if (!_output_is_blended) {
-            _blend_health_counter = MIN(_blend_health_counter+BLEND_COUNTER_FAILURE_INCREMENT, 100);
-        } else if (_blend_health_counter > 0) {
-            _blend_health_counter--;
-        }
-        // stop blending if unhealthy
-        if (_blend_health_counter >= 50) {
-            _output_is_blended = false;
-        }
+        _output_is_blended = ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_weights();
     } else {
         _output_is_blended = false;
-        _blend_health_counter = 0;
+        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->zero_health_counter();
     }
 
     if (_output_is_blended) {
         // Use the weighting to calculate blended GPS states
-        calc_blended_state();
+        ((AP_GPS_Blended*)drivers[GPS_BLENDED_INSTANCE])->calc_state();
         // set primary to the virtual instance
         primary_instance = GPS_BLENDED_INSTANCE;
         return;
@@ -1695,10 +1698,7 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 #if AP_GPS_BLENDED_ENABLED
     // return lag of blended GPS
     if (instance == GPS_BLENDED_INSTANCE) {
-        lag_sec = _blended_lag_sec;
-        // auto switching uses all GPS receivers, so all must be configured
-        uint8_t inst; // we don't actually care what the number is, but must pass it
-        return first_unconfigured_gps(inst);
+        return drivers[instance]->get_lag(lag_sec);
     }
 #endif
 
@@ -1732,7 +1732,7 @@ const Vector3f &AP_GPS::get_antenna_offset(uint8_t instance) const
 #if AP_GPS_BLENDED_ENABLED
     if (instance == GPS_BLENDED_INSTANCE) {
         // return an offset for the blended GPS solution
-        return _blended_antenna_offset;
+        return ((AP_GPS_Blended*)drivers[instance])->get_antenna_offset();
     }
 #endif
 
@@ -1788,12 +1788,6 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     }
 #endif // HAL_BUILD_AP_PERIPH
 
-#if AP_GPS_BLENDED_ENABLED
-    if (instance == GPS_BLENDED_INSTANCE) {
-        return blend_health_check();
-    }
-#endif
-
     return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 }
@@ -1808,18 +1802,17 @@ bool AP_GPS::prepare_for_arming(void) {
     return all_passed;
 }
 
-bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
+{
+    // the DroneCAN class has additional checks for DroneCAN-specific
+    // parameters:
 #if AP_GPS_DRONECAN_ENABLED
-        const auto type = params[i].type;
-        if (type == GPS_TYPE_UAVCAN ||
-            type == GPS_TYPE_UAVCAN_RTK_BASE ||
-            type == GPS_TYPE_UAVCAN_RTK_ROVER) {
-            if (!AP_GPS_DroneCAN::backends_healthy(failure_msg, failure_msg_len)) {
-                return false;
-            }
-        }
+    if (!AP_GPS_DroneCAN::inter_instance_pre_arm_checks(failure_msg, failure_msg_len)) {
+        return false;
+    }
 #endif
+
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if (is_rtk_rover(i)) {
             if (AP_HAL::millis() - state[i].gps_yaw_time_ms > 15000) {
                 hal.util->snprintf(failure_msg, failure_msg_len, "GPS[%u] yaw not available", unsigned(i+1));
@@ -1827,6 +1820,14 @@ bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
             }
         }
     }
+
+#if AP_GPS_BLENDED_ENABLED
+    if (!drivers[GPS_BLENDED_INSTANCE]->is_healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "GPS blending unhealthy");
+        return false;
+    }
+#endif
+
     return true;
 }
 
@@ -1997,31 +1998,36 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _TYPE
     // @DisplayName: 1st GPS type
-    // @Description: GPS type of 1st GPS
+    // @Description: GPS type of 1st GPS.Renamed in 4.6 and later to GPS1_TYPE
     // @Values: 0:None,1:AUTO,2:uBlox,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:DroneCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:DroneCAN-MovingBaseline-Base,23:DroneCAN-MovingBaseline-Rover,24:UnicoreNMEA,25:UnicoreMovingBaselineNMEA,26:SBF-DualAntenna
     // @RebootRequired: True
     // @User: Advanced
+    // @Legacy: only included here so GCSs running stable can get the description.  Omitted in the Wiki.
 
     // @Param: _TYPE2
     // @CopyFieldsFrom: GPS_TYPE
-    // @DisplayName: 2nd GPS type
+    // @DisplayName: 2nd GPS type.Renamed in 4.6 to GPS2_TYPE
     // @Description: GPS type of 2nd GPS
+    // @Legacy: 4.5 param
 
     // @Param: _GNSS_MODE
     // @DisplayName: GNSS system configuration
-    // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured)
+    // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured).Renamed in 4.6 and later to GPS1_GNSS_MODE.
+    // @Legacy: 4.5 param
     // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
 
     // @Param: _GNSS_MODE2
-    // @DisplayName: GNSS system configuration
-    // @Description: Bitmask for what GNSS system to use on the second GPS (all unchecked or zero to leave GPS as configured)
+    // @DisplayName: GNSS system configuration.
+    // @Description: Bitmask for what GNSS system to use on the second GPS (all unchecked or zero to leave GPS as configured). Renamed in 4.6 and later to GPS2_GNSS_MODE
+    // @Legacy: 4.5 param
     // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
 
     // @Param: _RATE_MS
     // @DisplayName: GPS update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS1_RATE_MS
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -2029,7 +2035,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS2_RATE_MS
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -2037,7 +2044,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _POS1_X
     // @DisplayName: Antenna X position offset
-    // @Description: X position of the first GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: X position of the first GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_X.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2045,7 +2053,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _POS1_Y
     // @DisplayName: Antenna Y position offset
-    // @Description: Y position of the first GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Y position of the first GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_Y.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2053,7 +2062,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _POS1_Z
     // @DisplayName: Antenna Z position offset
-    // @Description: Z position of the first GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Z position of the first GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_Z.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2061,7 +2071,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _POS2_X
     // @DisplayName: Antenna X position offset
-    // @Description: X position of the second GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: X position of the second GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_X.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2069,7 +2080,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _POS2_Y
     // @DisplayName: Antenna Y position offset
-    // @Description: Y position of the second GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Y position of the second GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_Y.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2077,7 +2089,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _POS2_Z
     // @DisplayName: Antenna Z position offset
-    // @Description: Z position of the second GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Z position of the second GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_Z.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2085,7 +2098,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _DELAY_MS
     // @DisplayName: GPS delay in milliseconds
-    // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
+    // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.Renamed in 4.6 and later to GPS1_DELAY_MS.
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
@@ -2093,7 +2107,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _DELAY_MS2
     // @DisplayName: GPS 2 delay in milliseconds
-    // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.
+    // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.Renamed in 4.6 and later to GPS2_DELAY_MS.
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
@@ -2101,7 +2116,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _COM_PORT
     // @DisplayName: GPS physical COM port
-    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS
+    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS,Renamed in 4.6 and later to GPS1_COM_PORT.
+    // @Legacy: 4.5 param
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -2110,7 +2126,8 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Param: _COM_PORT2
     // @DisplayName: GPS physical COM port
-    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS
+    // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS.Renamed in 4.6 and later to GPS1_COM_PORT.
+    // @Legacy: 4.5 param
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -2118,19 +2135,23 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Group: _MB1_
     // @Path: MovingBase.cpp
+    // @Legacy: 4.5 param
 
     // @Group: _MB2_
     // @Path: MovingBase.cpp
+    // @Legacy: 4.5 param
 
     // @Param: _CAN_NODEID1
     // @DisplayName: GPS Node ID 1
-    // @Description: GPS Node id for first-discovered GPS.
+    // @Description: GPS Node id for first-discovered GPS.Renamed in 4.6 and later to GPS1_CAN_NODEID.
+    // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
 
     // @Param: _CAN_NODEID2
     // @DisplayName: GPS Node ID 2
-    // @Description: GPS Node id for second-discovered GPS.
+    // @Description: GPS Node id for second-discovered GPS.Renamed in 4.6 and later to GPS2_CAN_NODEID.
+    // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
 

@@ -127,7 +127,7 @@ protected:
         // this should never happen
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
-    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
+    void Log_Write_AutoTune(AxisType axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 #endif
 
@@ -156,7 +156,7 @@ private:
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
 
     // measure acceleration during twitch test
-    void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
+    void twitching_measure_acceleration(float &accel_average, float rate, float rate_max) const;
 
     // updating_rate_d_up - increase D and adjust P to optimize the D term for a little bounce back
     // optimize D term while keeping the maximum just below the target by adjusting P
@@ -185,6 +185,15 @@ private:
     AP_Int8  axis_bitmask;      // axes to be tuned
     AP_Float aggressiveness;    // aircraft response aggressiveness to be tuned
     AP_Float min_d;             // minimum rate d gain allowed during tuning
+    bool     ignore_next;       // ignore the results of the next test when true
+    float    target_angle;      // target angle for the test
+    float    target_rate;       // target rate for the test
+    float    angle_abort;       // Angle that test is aborted
+    float    test_rate_min;     // the minimum angular rate achieved during TESTING_RATE
+    float    test_rate_max;     // the maximum angular rate achieved during TESTING_RATE
+    float    test_angle_min;    // the minimum angle achieved during TESTING_ANGLE
+    float    test_angle_max;    // the maximum angle achieved during TESTING_ANGLE
+    float    accel_measure_rate_max; // the maximum rate used to measure average acceleration during twitch
 };
 
 #endif  // AC_AUTOTUNE_ENABLED

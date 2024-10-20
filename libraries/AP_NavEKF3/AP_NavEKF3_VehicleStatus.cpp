@@ -1,6 +1,7 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF3_core.h"
+
+#include "AP_NavEKF3.h"
+
 #include <AP_DAL/AP_DAL.h>
 
 /* Monitor GPS data to see if quality is good enough to initialise the EKF
@@ -460,6 +461,7 @@ void NavEKF3_core::setTerrainHgtStable(bool val)
     terrainHgtStable = val;
 }
 
+#if EK3_FEATURE_OPTFLOW_FUSION
 // Detect takeoff for optical flow navigation
 void NavEKF3_core::detectOptFlowTakeoff(void)
 {
@@ -477,4 +479,4 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
         takeOffDetected = false;
     }
 }
-
+#endif  // EK3_FEATURE_OPTFLOW_FUSION

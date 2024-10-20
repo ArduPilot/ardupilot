@@ -80,8 +80,6 @@ define PORT_INT_REQUIRED_STACK 64
 PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
 
-define HAL_NO_MONITOR_THREAD
-
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
 
 # keep ROMFS uncompressed as we don't have enough RAM

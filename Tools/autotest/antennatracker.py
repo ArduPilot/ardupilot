@@ -177,8 +177,6 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
 
     def GPSForYaw(self):
         '''Moving baseline GPS yaw'''
-        self.context_push()
-
         self.load_default_params_file("tracker-gps-for-yaw.parm")
         self.reboot_sitl()
 
@@ -194,10 +192,6 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
             if abs(gps_raw_hdg - sim_hdg) > 5:
                 raise NotAchievedException("GPS_RAW not tracking simstate yaw")
             self.progress(f"yaw match ({gps_raw_hdg} vs {sim_hdg}")
-
-        self.context_pop()
-
-        self.reboot_sitl()
 
     def tests(self):
         '''return list of all tests'''

@@ -439,9 +439,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'v':
             vehicle_str = gopt.optarg;
             break;
+#if AP_SIM_SOLOGIMBAL_ENABLED
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
             break;
+#endif
         case CMDLINE_FGVIEW:
             _use_fg_view = true;
             break;

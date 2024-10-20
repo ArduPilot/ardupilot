@@ -85,6 +85,13 @@ public:
     virtual void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) {}
 #endif
 
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
+    bool has_been_killed(uint8_t instance) const { return ((1U<<instance) & _imu.imu_kill_mask); }
+#else
+    bool has_been_killed(uint8_t instance) const { return false; }
+#endif
+
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -139,7 +146,7 @@ protected:
     HAL_Semaphore _sem;
 
     //Default Clip Limit
-    float _clip_limit = 15.5f * GRAVITY_MSS;
+    float _clip_limit = (16.0f - 0.5f) * GRAVITY_MSS;
 
     // instance numbers of accel and gyro data
     uint8_t gyro_instance;
@@ -269,9 +276,11 @@ protected:
 
     // common gyro update function for all backends
     void update_gyro(uint8_t instance) __RAMFUNC__; /* front end */
+    void update_gyro_filters(uint8_t instance) __RAMFUNC__; /* front end */
 
     // common accel update function for all backends
     void update_accel(uint8_t instance) __RAMFUNC__; /* front end */
+    void update_accel_filters(uint8_t instance) __RAMFUNC__; /* front end */
 
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;

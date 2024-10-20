@@ -261,11 +261,11 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
+    bus(I2CDeviceManager::businfo[busnum]),
     _retries(2),
     _address(address),
     _use_smbus(use_smbus),
-    _timeout_ms(timeout_ms),
-    bus(I2CDeviceManager::businfo[busnum])
+    _timeout_ms(timeout_ms)
 {
     set_device_bus(busnum+HAL_I2C_BUS_BASE);
     set_device_address(address);

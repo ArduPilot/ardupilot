@@ -76,6 +76,7 @@ define HAL_BATT2_VOLT_SCALE 21.0
 # LED
 # green LED1 marked as B/E
 # blue LED0 marked as ACT
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PA14 LED0 OUTPUT LOW GPIO(90) # blue
 PA13 LED1 OUTPUT LOW GPIO(91) # green
 define HAL_GPIO_A_LED_PIN 91

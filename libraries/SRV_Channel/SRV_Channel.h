@@ -188,6 +188,7 @@ public:
         k_rcin14_mapped         = 153,
         k_rcin15_mapped         = 154,
         k_rcin16_mapped         = 155,
+        k_lift_release          = 156,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -415,7 +416,13 @@ public:
 
     // set MIN/MAX parameters for a function
     static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
-    
+
+    // set MIN/MAX parameter defaults for a function
+    static void set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
+    // Save MIN/MAX/REVERSED parameters for a function
+    static void save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
     // save trims
     void save_trim(void);
 

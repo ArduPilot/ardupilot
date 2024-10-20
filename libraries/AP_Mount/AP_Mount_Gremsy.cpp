@@ -202,7 +202,7 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
     const uint8_t fw_ver_build = (info.firmware_version & 0xFF000000) >> 24;
 
     // display gimbal info to user
-    gcs().send_text(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
             info.vendor_name,
             info.model_name,
             (unsigned)fw_ver_major,

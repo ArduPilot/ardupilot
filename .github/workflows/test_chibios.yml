@@ -19,7 +19,6 @@ on:
       - 'Tools/GIT_Test/**'
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -157,6 +156,7 @@ jobs:
             build-options-defaults-test,
             signing,
             CubeOrange-PPP,
+            CubeRed-EKF2,
             SOHW,
             Pixhawk6X-PPPGW,
             new-check,

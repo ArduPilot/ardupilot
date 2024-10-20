@@ -489,7 +489,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     if (false && passed) {
         for (uint8_t j=0; j<strlen(logstructure->multipliers); j++) {
             const char fmt = logstructure->format[j];
-            if (fmt != 'f') {
+            if (fmt != 'f' && fmt != 'd' && fmt != 'g') {
                 continue;
             }
             const char logmultiplier = logstructure->multipliers[j];
@@ -614,16 +614,6 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
 void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
     _log_start_count++;
-
-    for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i] == backend) { // pointer comparison!
-            // reset sent masks
-            for (struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
-                f->sent_mask &= ~(1<<i);
-            }
-            break;
-        }
-    }
 }
 
 bool AP_Logger::should_log(const uint32_t mask) const
@@ -906,9 +896,10 @@ void AP_Logger::Write_Parameter(const char *name, float value)
 }
 
 void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
-                                            const AP_Mission::Mission_Command &cmd)
+                                  const AP_Mission::Mission_Command &cmd,
+                                  LogMessages id)
 {
-    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
+    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd, id));
 }
 
 #if HAL_RALLY_ENABLED
@@ -950,12 +941,7 @@ void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (!(f->sent_mask & (1U<<i))) {
-            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
-                continue;
-            }
-            f->sent_mask |= (1U<<i);
-        }
+        backends[i]->Safe_Write_Emit_FMT(f->msg_type);
     }
 }
 
@@ -1041,12 +1027,6 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
     }
 
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (!(f->sent_mask & (1U<<i))) {
-            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
-                continue;
-            }
-            f->sent_mask |= (1U<<i);
-        }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
         backends[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
@@ -1313,8 +1293,15 @@ int16_t AP_Logger::find_free_msg_type() const
  * It is assumed that logstruct's char* variables are valid strings of
  * maximum lengths for those fields (given in LogStructure.h e.g. LS_NAME_SIZE)
  */
-bool AP_Logger::fill_log_write_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
+bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
 {
+    // check the static lists first...
+    const LogStructure *found = structure_for_msg_type(msg_type);
+    if (found != nullptr) {
+        logstruct = *found;
+        return true;
+    }
+
     // find log structure information corresponding to msg_type:
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
@@ -1368,6 +1355,7 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
         case 'd' : len += sizeof(double); break;
         case 'e' : len += sizeof(int32_t); break;
         case 'f' : len += sizeof(float); break;
+        case 'g' : len += sizeof(float16_s); break;
         case 'h' : len += sizeof(int16_t); break;
         case 'i' : len += sizeof(int32_t); break;
         case 'n' : len += sizeof(char[4]); break;

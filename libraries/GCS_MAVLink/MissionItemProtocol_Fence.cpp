@@ -222,7 +222,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
     if (allocation_size != 0) {
         _new_items = (AC_PolyFenceItem*)malloc(allocation_size);
         if (_new_items == nullptr) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "Out of memory for upload");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Out of memory for upload");
             return MAV_MISSION_ERROR;
         }
     }

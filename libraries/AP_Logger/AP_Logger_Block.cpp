@@ -132,11 +132,6 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         return false;
     }
 
-    if (!WriteBlockCheckStartupMessages()) {
-        _dropped++;
-        return false;
-    }
-
     WITH_SEMAPHORE(write_sem);
 
     const uint32_t space = writebuf.space();
@@ -205,7 +200,7 @@ uint16_t AP_Logger_Block::ReadHeaders()
     // we are at the start of a file, read the file header
     if (df_FilePage == 1) {
         struct FileHeader fh;
-        BlockRead(0, &fh, sizeof(fh));
+        BlockRead(sizeof(ph), &fh, sizeof(fh));
         df_FileTime = fh.utc_secs;
         df_Read_BufferIdx += sizeof(fh);
     }
@@ -546,7 +541,7 @@ void AP_Logger_Block::stop_logging_async(void)
 void AP_Logger_Block::start_new_log(void)
 {
     if (erase_started) {
-        // already erasing
+        // currently erasing
         return;
     }
 

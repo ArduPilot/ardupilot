@@ -343,6 +343,7 @@ public:
 
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
+        k_param_airspeed_stall,
 
         k_param_logger = 253, // Logging Group
 
@@ -356,6 +357,10 @@ public:
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
         k_param_autotune_options,
+        k_param_takeoff_throttle_min,
+        k_param_takeoff_options,
+
+        k_param_pullup = 270,
     };
 
     AP_Int16 format_version;
@@ -552,7 +557,7 @@ public:
     } fwd_batt_cmp;
 
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided yaw heading PID
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
@@ -576,6 +581,11 @@ public:
 
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
+
+#if AP_RANGEFINDER_ENABLED
+    // orientation of rangefinder to use for landing
+    AP_Int8 rangefinder_land_orient;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

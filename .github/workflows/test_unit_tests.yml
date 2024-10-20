@@ -33,7 +33,6 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -165,7 +164,7 @@ jobs:
           Tools/autotest/unittest/annotate_params_unittest.py
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
            name: fail-${{ matrix.toolchain }}-${{matrix.config}}

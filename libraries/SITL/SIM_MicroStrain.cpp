@@ -25,6 +25,7 @@
 */
 #include "SIM_MicroStrain.h"
 #include <stdio.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <AP_HAL/utility/sparse-endian.h>

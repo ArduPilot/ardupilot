@@ -54,13 +54,12 @@ bool Mode::enter()
     plane.guided_state.last_forced_rpy_ms.zero();
     plane.guided_state.last_forced_throttle_ms = 0;
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     plane.guided_state.target_heading = -4; // radians here are in range -3.14 to 3.14, so a default value needs to be outside that range
     plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
     plane.guided_state.target_airspeed_cm = -1; // same as above, although an airspeed of -1 is rare on plane.
-    plane.guided_state.target_alt = -1; // same as above, although a target alt of -1 is rare on plane.
     plane.guided_state.target_alt_time_ms = 0;
-    plane.guided_state.last_target_alt = 0;
+    plane.guided_state.target_location.set_alt_cm(-1, Location::AltFrame::ABSOLUTE); 
 #endif
 
 #if AP_CAMERA_ENABLED
@@ -101,6 +100,9 @@ bool Mode::enter()
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+    // disable auto mode servo idle during altitude wait command
+    plane.auto_state.idle_mode = false;
+
     bool enter_result = _enter();
 
     if (enter_result) {
@@ -138,6 +140,14 @@ bool Mode::enter()
 
         // Make sure the flight stage is correct for the new mode
         plane.update_flight_stage();
+
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.enabled()) {
+            float aspeed;
+            bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+            quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
+        }
+#endif
     }
 
     return enter_result;
@@ -168,7 +178,9 @@ void Mode::update_target_altitude()
         plane.set_target_altitude_location(plane.next_WP_loc);
     } else if (plane.landing.is_on_approach()) {
         plane.landing.setup_landing_glide_slope(plane.prev_WP_loc, plane.next_WP_loc, plane.current_loc, plane.target_altitude.offset_cm);
+#if AP_RANGEFINDER_ENABLED
         plane.landing.adjust_landing_slope_for_rangefinder_bump(plane.rangefinder_state, plane.prev_WP_loc, plane.next_WP_loc, plane.current_loc, plane.auto_state.wp_distance, plane.target_altitude.offset_cm);
+#endif
     } else if (plane.landing.get_target_altitude_location(target_location)) {
         plane.set_target_altitude_location(target_location);
 #if HAL_SOARING_ENABLED
@@ -243,6 +255,9 @@ void Mode::reset_controllers()
     // reset steering controls
     plane.steer_state.locked_course = false;
     plane.steer_state.locked_course_err = 0;
+
+    // reset TECS
+    plane.TECS_controller.reset();
 }
 
 bool Mode::is_taking_off() const

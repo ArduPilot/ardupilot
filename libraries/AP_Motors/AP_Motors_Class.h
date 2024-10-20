@@ -155,6 +155,7 @@ public:
     float               get_yaw() const { return _yaw_in; }
     float               get_yaw_ff() const { return _yaw_in_ff; }
     float               get_throttle_out() const { return _throttle_out; }
+    virtual bool        get_thrust(uint8_t motor_num, float& thr_out) const { return false; }
     float               get_throttle() const { return constrain_float(_throttle_filter.get(), 0.0f, 1.0f); }
     float               get_throttle_bidirectional() const { return constrain_float(2 * (_throttle_filter.get() - 0.5f), -1.0f, 1.0f); }
     float               get_throttle_slew_rate() const { return _throttle_slew_rate; }
@@ -262,10 +263,10 @@ public:
     bool is_digital_pwm_type() const;
 
     // returns true is pwm type is brushed
-    bool is_brushed_pwm_type() const { return _pwm_type == PWM_TYPE_BRUSHED; }
+    bool is_brushed_pwm_type() const { return _pwm_type == PWMType::BRUSHED; }
 
     // returns true is pwm type is normal
-    bool is_normal_pwm_type() const { return (_pwm_type == PWM_TYPE_NORMAL) || (_pwm_type == PWM_TYPE_PWM_RANGE) || (_pwm_type == PWM_TYPE_PWM_ANGLE); }
+    bool is_normal_pwm_type() const { return (_pwm_type == PWMType::NORMAL) || (_pwm_type == PWMType::PWM_RANGE) || (_pwm_type == PWMType::PWM_ANGLE); }
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
@@ -333,7 +334,7 @@ protected:
     // mask of what channels need fast output
     uint32_t            _motor_fast_mask;
 
-    // Used with PWM_TYPE_PWM_RANGE and PWM_TYPE_PWM_ANGLE
+    // Used with PWMType::PWM_RANGE and PWMType::PWM_ANGLE
     struct {
         // Mask of motors using scaled output
         uint32_t mask;
@@ -349,7 +350,20 @@ protected:
     float _throttle_radio_passthrough; // throttle/collective input from pilot in 0 ~ 1 range.  used for setup and providing servo feedback while landed
     float _yaw_radio_passthrough;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
-    AP_Int8             _pwm_type;            // PWM output type
+    enum class PWMType : uint8_t {
+        NORMAL     = 0,
+        ONESHOT    = 1,
+        ONESHOT125 = 2,
+        BRUSHED    = 3,
+        DSHOT150   = 4,
+        DSHOT300   = 5,
+        DSHOT600   = 6,
+        DSHOT1200  = 7,
+        PWM_RANGE  = 8,
+        PWM_ANGLE  = 9,
+    };
+
+    AP_Enum<PWMType>             _pwm_type;            // PWM output type
 
     // motor failure handling
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
@@ -360,19 +374,6 @@ protected:
     AP_Int16            _options;
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
-
-    enum pwm_type {
-        PWM_TYPE_NORMAL     = 0,
-        PWM_TYPE_ONESHOT    = 1,
-        PWM_TYPE_ONESHOT125 = 2,
-        PWM_TYPE_BRUSHED    = 3,
-        PWM_TYPE_DSHOT150   = 4,
-        PWM_TYPE_DSHOT300   = 5,
-        PWM_TYPE_DSHOT600   = 6,
-        PWM_TYPE_DSHOT1200  = 7,
-        PWM_TYPE_PWM_RANGE  = 8,
-        PWM_TYPE_PWM_ANGLE  = 9
-    };
 
     // return string corresponding to frame_class
     virtual const char* _get_frame_string() const = 0;

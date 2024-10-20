@@ -116,7 +116,8 @@ private:
             prev_tick(0), delta_time(0),
             width_s0(0), width_s1(0),
             curr_signal(0), last_signal(0),
-            enable_pin(0), state(RCIN_RPI_INITIAL_STATE)
+            state(RCIN_RPI_INITIAL_STATE),
+            enable_pin(0)
         {}
 
         uint64_t prev_tick;

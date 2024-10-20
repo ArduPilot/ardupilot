@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_BRAKE_ENABLED == ENABLED
+#if MODE_BRAKE_ENABLED
 
 /*
  * Init and run calls for brake flight mode

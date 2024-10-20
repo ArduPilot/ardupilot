@@ -27,6 +27,7 @@
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Arming/AP_Arming_config.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
 
 #include "ap_message.h"
 
@@ -266,6 +267,9 @@ public:
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
+    // cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
+    uint16_t cap_message_interval(uint16_t interval_ms) const;
+
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 
@@ -360,6 +364,12 @@ public:
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
+#if AP_AIRSPEED_ENABLED
+    // Send per instance airspeed message
+    // last index is used to rotate through sensors
+    void send_airspeed();
+    uint8_t last_airspeed_idx;
+#endif
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
@@ -525,6 +535,7 @@ protected:
 
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
 #if AP_HOME_ENABLED
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
@@ -732,7 +743,7 @@ protected:
 #endif // HAL_HIGH_LATENCY2_ENABLED
     
     static constexpr const float magic_force_arm_value = 2989.0f;
-    static constexpr const float magic_force_disarm_value = 21196.0f;
+    static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 
     void manual_override(class RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
@@ -1270,6 +1281,11 @@ public:
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     virtual uint8_t sysid_this_mav() const = 0;
+
+#if AP_SCRIPTING_ENABLED
+    // lua access to command_int
+    MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
+#endif
 
 protected:
 

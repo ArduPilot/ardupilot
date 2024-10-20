@@ -125,7 +125,7 @@ void GCS::send_named_float(const char *name, float value) const
 void GCS::enable_high_latency_connections(bool enabled)
 {
     high_latency_link_enabled = enabled;
-    gcs().send_text(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
 }
 
 bool GCS::get_high_latency_status()
@@ -405,5 +405,26 @@ bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
     }
     return true;
 }
+
+#if AP_SCRIPTING_ENABLED
+/*
+  lua access to command_int
+
+  Note that this is called with the AP_Scheduler lock, ensuring the
+  main thread does not race with a lua command_int
+*/
+MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
+{
+    // for now we assume channel 0. In the future we may create a dedicated channel
+    auto *ch = chan(0);
+    if (ch == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    // we need a dummy message for some calls
+    mavlink_message_t msg {};
+
+    return ch->handle_command_int_packet(packet, msg);
+}
+#endif // AP_SCRIPTING_ENABLED
 
 #endif  // HAL_GCS_ENABLED

@@ -41,12 +41,13 @@ public:
     void update(void);
 
 private:
-    uint32_t last_pkt1_us;
-    uint32_t last_pkt2_us;
-    uint32_t last_type_us;
+    uint32_t last_imu_pkt_us;
+    uint32_t last_ekf_pkt_us;
+    uint32_t last_gnss_pkt_us;
 
-    void send_packet1();
-    void send_packet2();
+    void send_imu_packet();
+    void send_ins_ekf_packet();
+    void send_ins_gnss_packet();
     void nmea_printf(const char *fmt, ...);
 };
 

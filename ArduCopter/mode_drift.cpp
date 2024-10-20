@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_DRIFT_ENABLED == ENABLED
+#if MODE_DRIFT_ENABLED
 
 /*
  * Init and run calls for drift flight mode

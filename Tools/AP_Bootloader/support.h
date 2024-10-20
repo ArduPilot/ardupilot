@@ -48,10 +48,13 @@ void led_off(unsigned led);
 void led_toggle(unsigned led);
 
 void thread_sleep_ms(uint32_t ms);
+void thread_sleep_us(uint32_t us);
 
 void custom_startup(void);
 
+#if defined(STM32H7) && CH_CFG_USE_HEAP
 void check_ecc_errors(void);
+#endif
 
 // printf to debug uart (or USB)
 extern "C" {

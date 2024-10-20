@@ -166,6 +166,11 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return true;
     }
 
+    if(_enable == 0) {
+        strncpy(failmsg, "DID_ENABLE must be 1", failmsg_len);
+        return false;
+    }
+
     if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
         strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
         return false;

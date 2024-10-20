@@ -34,11 +34,11 @@ extern const AP_HAL::HAL &hal;
 #define SQRT_2_3 0.816496580927726f
 #define SQRT_6   2.449489742783178f
 
-DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
-    : _window_size(window_size),
+DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size) :
+    _bin_resolution((float)sample_rate / (float)window_size),
     _bin_count(window_size / 2),
     _num_stored_freqs(window_size / 2 + 1),
-    _bin_resolution((float)sample_rate / (float)window_size),
+    _window_size(window_size),
     _sliding_window_size(sliding_window_size),
     _current_slice(0)
 {

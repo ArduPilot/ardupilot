@@ -135,7 +135,7 @@ i2c = {}
 ---@param address integer -- device address 0 to 128
 ---@param clock? uint32_t_ud|integer|number -- optional bus clock, default 400000
 ---@param smbus? boolean -- optional sumbus flag, default false
----@return AP_HAL__I2CDevice_ud|nil
+---@return AP_HAL__I2CDevice_ud
 function i2c:get_device(bus, address, clock, smbus) end
 
 -- EFI state structure
@@ -392,6 +392,10 @@ efi = {}
 ---@return EFI_State_ud
 function efi:get_state() end
 
+-- get last update time in milliseconds
+---@return uint32_t_ud
+function efi:get_last_update_ms() end
+
 -- desc
 ---@param instance integer
 ---@return AP_EFI_Backend_ud|nil
@@ -513,9 +517,19 @@ function motor_factor_table_ud:roll(index, value) end
 local SocketAPM_ud = {}
 
 -- Get a new socket
----@param datagram boolean
+---@param datagram integer -- set to 1 for UDP, 0 for TCP
 ---@return SocketAPM_ud
 function Socket(datagram) end
+
+-- return an IPv4 address given a string
+---@param str_address string -- ipv4 address as string
+---@return uint32_t_ud -- ipv4 address
+function string_to_ipv4_addr(str_address) end
+
+-- return a string representation of ipv4 address
+---@param addr uint32_t_ud|integer|number -- ipv4 address
+---@return string -- string representation of address
+function ipv4_addr_to_string(addr) end
 
 -- return true if a socket is connected
 ---@return boolean
@@ -536,6 +550,14 @@ function SocketAPM_ud:listen(backlog) end
 ---@param len uint32_t_ud|integer|number
 ---@return integer
 function SocketAPM_ud:send(str, len) end
+
+-- send a lua string to a specified address. May contain binary data
+---@param str string
+---@param len uint32_t_ud|integer|number
+---@param ipaddr uint32_t_ud|integer|number -- ipv4 address
+---@param port integer -- ipv4 port
+---@return integer
+function SocketAPM_ud:sendto(str, len, ipaddr, port) end
 
 -- bind to an address. Use "0.0.0.0" for wildcard bind
 ---@param IP_address string
@@ -558,6 +580,8 @@ function SocketAPM_ud:accept() end
 -- receive data from a socket
 ---@param length integer
 ---@return string|nil
+---@return uint32_t_ud|nil -- source IP
+---@return integer|nil -- source port
 function SocketAPM_ud:recv(length) end
 
 -- check for available input
@@ -1211,6 +1235,13 @@ local AP_HAL__I2CDevice_ud = {}
 ---@param address integer
 function AP_HAL__I2CDevice_ud:set_address(address) end
 
+-- Performs an I2C transfer, sending data_str bytes (see string.pack) and
+-- returning a string of any requested read bytes (see string.unpack)
+---@param data_str string
+---@param read_length integer
+---@return string|nil
+function AP_HAL__I2CDevice_ud:transfer(data_str, read_length) end
+
 -- If no read length is provided a single register will be read and returned.
 -- If read length is provided a table of register values are returned.
 ---@param register_num integer
@@ -1397,6 +1428,258 @@ function AP_Camera__camera_state_t_ud:take_pic_incr() end
 ---@param instance integer
 ---@return AP_Camera__camera_state_t_ud|nil
 function camera:get_state(instance) end
+
+-- Change a camera setting to a given value
+---@param instance integer
+---@param setting integer
+---| '0' # THERMAL_PALETTE
+---| '1' # THERMAL_GAIN
+---| '2' # THERMAL_RAW_DATA
+---@param value number
+---@return boolean
+function camera:change_setting(instance, setting, value) end
+
+-- The MAVLink CAMERA_INFORMATION message struct
+---@class (exact) mavlink_camera_information_t_ud
+local mavlink_camera_information_t_ud = {}
+
+---@return mavlink_camera_information_t_ud
+function mavlink_camera_information_t() end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_camera_information_t_ud:time_boot_ms() end
+
+-- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_camera_information_t_ud:time_boot_ms(value) end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_camera_information_t_ud:firmware_version() end
+
+ -- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_camera_information_t_ud:firmware_version(value) end
+
+-- get field
+---@return number
+function mavlink_camera_information_t_ud:focal_length() end
+
+ -- set field
+---@param value number
+function mavlink_camera_information_t_ud:focal_length(value) end
+
+-- get field
+---@return number
+function mavlink_camera_information_t_ud:sensor_size_h() end
+
+ -- set field
+---@param value number
+function mavlink_camera_information_t_ud:sensor_size_h(value) end
+
+-- get field
+---@return number
+function mavlink_camera_information_t_ud:sensor_size_v() end
+
+ -- set field
+---@param value number
+function mavlink_camera_information_t_ud:sensor_size_v(value) end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_camera_information_t_ud:flags() end
+
+ -- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_camera_information_t_ud:flags(value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:resolution_h() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:resolution_h(value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:resolution_v() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:resolution_v(value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:cam_definition_version() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:cam_definition_version(value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_camera_information_t_ud:vendor_name(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_camera_information_t_ud:vendor_name(index, value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_camera_information_t_ud:model_name(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_camera_information_t_ud:model_name(index, value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:lens_id() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:lens_id(value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_camera_information_t_ud:cam_definition_uri(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_camera_information_t_ud:cam_definition_uri(index, value) end
+
+-- get field
+---@return integer
+function mavlink_camera_information_t_ud:gimbal_device_id() end
+
+ -- set field
+---@param value integer
+function mavlink_camera_information_t_ud:gimbal_device_id(value) end
+
+-- Populate the fields of the CAMERA_INFORMATION message
+---@param instance integer
+---@param cam_info mavlink_camera_information_t_ud
+function camera:set_camera_information(instance, cam_info) end
+
+-- The MAVLink VIDEO_STREAM_INFORMATION message struct
+---@class (exact) mavlink_video_stream_information_t_ud
+local mavlink_video_stream_information_t_ud = {}
+
+---@return mavlink_video_stream_information_t_ud
+function mavlink_video_stream_information_t() end
+
+-- get field
+---@return number
+function mavlink_video_stream_information_t_ud:framerate() end
+
+-- set field
+---@param value number
+function mavlink_video_stream_information_t_ud:framerate(value) end
+
+-- get field
+---@return uint32_t_ud
+function mavlink_video_stream_information_t_ud:bitrate() end
+
+-- set field
+---@param value uint32_t_ud|integer|number
+function mavlink_video_stream_information_t_ud:bitrate(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:flags() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:flags(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:resolution_h() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:resolution_h(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:resolution_v() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:resolution_v(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:rotation() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:rotation(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:hfov() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:hfov(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:stream_id() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:stream_id(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:count() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:count(value) end
+
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:type() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:type(value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_video_stream_information_t_ud:name(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_video_stream_information_t_ud:name(index, value) end
+
+-- get array field
+---@param index integer
+---@return integer
+function mavlink_video_stream_information_t_ud:uri(index) end
+
+-- set array field
+---@param index integer
+---@param value integer
+function mavlink_video_stream_information_t_ud:uri(index, value) end
+
+-- Populate the fields of the VIDEO_STREAM_INFORMATION message
+---@param instance integer
+---@param stream_info mavlink_video_stream_information_t_ud
+function camera:set_stream_information(instance, stream_info) end
 
 -- desc
 mount = {}
@@ -1659,6 +1942,10 @@ analog = {}
 ---@return number -- MCU temperature
 function analog:mcu_temperature() end
 
+-- return The current MCU voltage
+---@return number -- MCU voltage
+function analog:mcu_voltage() end
+
 -- desc
 ---@return AP_HAL__AnalogSource_ud|nil
 function analog:channel() end
@@ -1689,6 +1976,26 @@ function gpio:write(pin_number, value) end
 ---@param pin_number integer
 ---@return boolean -- pin state
 function gpio:read(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:set_mode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:get_mode(pin_number) end
+
+-- desc
+---@param pin_number integer
+---@param mode uint32_t_ud|integer|number
+function gpio:setPinFullMode(pin_number, mode) end
+
+-- desc
+---@param pin_number integer
+---@return uint32_t_ud|nil -- full pin mode ioline_t in chibios
+function gpio:getPinFullMode(pin_number) end
 
 
 -- desc
@@ -2066,6 +2373,11 @@ function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 ---@param scale_factor number -- factor
 function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 
+-- get the timestamp of last telemetry data for an ESC
+---@param esc_index integer
+---@return uint32_t_ud
+function esc_telem:get_last_telem_data_ms(esc_index) end
+
 -- desc
 optical_flow = {}
 
@@ -2107,6 +2419,11 @@ function baro:get_altitude() end
 ---@return boolean
 function baro:healthy(instance) end
 
+-- get altitude difference from a base pressure and current pressure
+---@param base_pressure number -- first reference pressure in Pa
+---@param pressure number -- 2nd pressure in Pa
+---@return number -- altitude difference in meters
+function baro:get_altitude_difference(base_pressure,pressure) end
 
 -- Serial ports
 serial = {}
@@ -2333,6 +2650,14 @@ function vehicle:get_circle_radius() end
 ---@return boolean
 function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms, use_yaw_rate, yaw_rate_degs) end
 
+-- Set vehicles roll, pitch, and yaw rates with throttle in guided mode
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true if successful
+function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
+
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
 ---@return boolean -- true on success
@@ -2485,6 +2810,12 @@ function vehicle:is_taking_off() end
 ---@return boolean
 function vehicle:is_landing() end
 
+-- Set the previous target location for crosstrack and crosstrack if available in the current mode
+-- It's up to the Lua code to ensure the new_start_location makes sense
+---@param new_start_location Location_ud
+---@return boolean -- true on success
+function vehicle:set_crosstrack_start(new_start_location) end
+
 -- desc
 onvif = {}
 
@@ -2604,6 +2935,12 @@ function gcs:send_text(severity, text) end
 -- Return the system time when a gcs with id of SYSID_MYGCS was last seen
 ---@return uint32_t_ud -- system time in milliseconds
 function gcs:last_seen() end
+
+-- call a MAVLink MAV_CMD_xxx command via command_int interface
+---@param command integer -- MAV_CMD_xxx
+---@param params table -- parameters of p1, p2, p3, p4, x, y and z and frame. Any not specified taken as zero
+---@return integer -- MAV_RESULT
+function gcs:run_command_int(command, params) end
 
 -- The relay library provides access to controlling relay outputs.
 relay = {}
@@ -3077,6 +3414,14 @@ function BattMonitorScript_State_ud:voltage(value) end
 ---@param value boolean
 function BattMonitorScript_State_ud:healthy(value) end
 
+-- The temperature library provides access to information about the currently connected temperature sensors on the vehicle.
+temperature_sensor = {}
+
+-- Returns the temperature from this sensor in degrees Celsius
+---@param instance integer -- temperature instance
+---@return number|nil -- temperature if available
+function temperature_sensor:get_temperature(instance) end
+
 -- The battery library provides access to information about the currently connected batteries on the vehicle.
 battery = {}
 
@@ -3141,6 +3486,11 @@ function battery:current_amps(instance) end
 ---@return number -- resting voltage
 function battery:voltage_resting_estimate(instance) end
 
+-- Returns the estimated internal battery resistance in Ohms
+---@param instance integer -- battery instance
+---@return number -- estimated internal resistance in Ohms
+function battery:get_resistance(instance) end
+
 -- Returns the voltage of the selected battery instance.
 ---@param instance integer -- battery instance
 ---@return number -- voltage
@@ -3182,6 +3532,10 @@ function arming:get_aux_auth_id() end
 ---@return boolean -- true if armed successfully
 function arming:arm() end
 
+-- force arm the vehicle
+---@return boolean -- true if armed
+function arming:arm_force() end
+
 -- Returns a true if vehicle is currently armed.
 ---@return boolean -- true if armed
 function arming:is_armed() end
@@ -3198,6 +3552,13 @@ function arming:disarm() end
 -- The ahrs library represents the Attitude Heading Reference System computed by the autopilot. 
 -- It provides estimates for the vehicles attitude, and position.
 ahrs = {}
+
+-- supply an external position estimate to the AHRS (supported by EKF3)
+---@param location Location_ud -- estimated location, altitude is ignored
+---@param accuracy number -- 1-sigma accuracy in meters
+---@param timestamp_ms uint32_t_ud|integer|number -- timestamp of reading in ms since boot
+---@return boolean -- true if call was handled successfully
+function ahrs:handle_external_position_estimate(location, accuracy, timestamp_ms) end
 
 -- desc
 ---@return Quaternion_ud|nil
@@ -3233,6 +3594,9 @@ function ahrs:get_vel_innovations_and_variances_for_source(source) end
 
 -- desc
 ---@param source_set_idx integer
+---| '0' # PRIMARY
+---| '1' # SECONDARY
+---| '2' # TERTIARY
 function ahrs:set_posvelyaw_source_set(source_set_idx) end
 
 -- desc
@@ -3363,6 +3727,22 @@ AR_AttitudeControl = {}
 ---@return number -- spees slew rate
 function AR_AttitudeControl:get_srate() end
 
+-- copter position controller
+poscontrol = {}
+
+-- add an offset to position controller's target position, velocity and acceleration
+---@param pos_offset_NED Vector3f_ud
+---@param vel_offset_NED Vector3f_ud
+---@param accel_offset_NED Vector3f_ud
+---@return boolean
+function poscontrol:set_posvelaccel_offset(pos_offset_NED, vel_offset_NED, accel_offset_NED) end
+
+-- get position controller's target position, velocity and acceleration offsets
+---@return Vector3f_ud|nil
+---@return Vector3f_ud|nil
+---@return Vector3f_ud|nil
+function poscontrol:get_posvelaccel_offset() end
+
 -- desc
 AR_PosControl = {}
 
@@ -3464,7 +3844,7 @@ function mavlink:receive_chan() end
 ---@return boolean -- success
 function mavlink:send_chan(chan, msgid, message) end
 
--- Block a given MAV_CMD from being procceced by ArduPilot
+-- Block a given MAV_CMD from being processed by ArduPilot
 ---@param comand_id integer
 ---@return boolean
 function mavlink:block_command(comand_id) end

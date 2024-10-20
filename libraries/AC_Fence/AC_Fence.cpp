@@ -36,26 +36,30 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE     100.0   // after fence is broken we recreate the fence 100m further out
+#define AC_FENCE_OPTIONS_DEFAULT                   OPTIONS::DISABLE_MODE_CHANGE
 #else
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0   // after fence is broken we recreate the fence 20m further out
+#define AC_FENCE_OPTIONS_DEFAULT                   0
 #endif
 
+//#define AC_FENCE_DEBUG
 
 const AP_Param::GroupInfo AC_Fence::var_info[] = {
+
     // @Param: ENABLE
     // @DisplayName: Fence enable/disable
-    // @Description: Allows you to enable (1) or disable (0) the fence functionality
+    // @Description: Allows you to enable (1) or disable (0) the fence functionality. Fences can still be enabled and disabled via mavlink or an RC option, but these changes are not persisted.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
 
     // @Param: TYPE
     // @DisplayName: Fence Type
-    // @Description: Enabled fence types held as bitmask
+    // @Description: Configured fence types held as bitmask. Max altitide, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
     // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
     // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
-    AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_DEFAULT),
+    AP_GROUPINFO("TYPE",        1,  AC_Fence,   _configured_fences,  AC_FENCE_TYPE_DEFAULT),
 
     // @Param: ACTION
     // @DisplayName: Fence Action
@@ -126,21 +130,21 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("RET_ALT",   9,  AC_Fence,   _ret_altitude,       0.0f, AP_PARAM_FRAME_PLANE),
 
-    // @Param{Plane}: AUTOENABLE
+    // @Param{Plane, Copter}: AUTOENABLE
     // @DisplayName: Fence Auto-Enable
-    // @Description: Auto-enable of fences. AutoEnableOnTakeoff enables all configured fences after autotakeoffs reach altitude. During autolandings the fences will be disabled.  AutoEnableDisableFloorOnLanding enables all configured fences after autotakeoffs reach altitude. During autolandings only the Minimum Altitude fence will be disabled. AutoEnableOnlyWhenArmed enables all configured fences, but no fences are disabled during autolandings. However, fence breaches are ignored while executing prior breach recovery actions which may include autolandings.
-    // @Values: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
+    // @Description: Auto-enable of fences. AutoEnableOnTakeoff enables all configured fences, except the minimum altitude fence (which is enabled when the minimum altitude is reached), after autotakeoffs reach altitude. During autolandings the fences will be disabled.  AutoEnableDisableFloorOnLanding enables all configured fences, except the minimum altitude fence (which is enabled when the minimum altitude is reached), after autotakeoffs reach altitude. During autolandings only the Minimum Altitude fence will be disabled. AutoEnableOnlyWhenArmed enables all configured fences on arming, except the minimum altitude fence (which is enabled when the minimum altitude is reached), but no fences are disabled during autolandings. However, fence breaches are ignored while executing prior breach recovery actions which may include autolandings.
+    // @Values{Plane, Copter}: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
     // @Range: 0 3
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
-    // @Param{Plane}: OPTIONS
+    // @Param{Plane, Copter}: OPTIONS
     // @DisplayName: Fence options
-    // @Description: 0:Disable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
+    // @Description: When bit 0 is set sisable mode change following fence action until fence breach is cleared. When bit 1 is set the allowable flight areas is the union of all polygon and circle fence areas instead of the intersection, which means a fence breach occurs only if you are outside all of the fence areas.
     // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared, 1:Allow union of inclusion areas
     // @User: Standard
-    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(OPTIONS::DISABLE_MODE_CHANGE), AP_PARAM_FRAME_PLANE),
+    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(AC_FENCE_OPTIONS_DEFAULT), AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
     AP_GROUPEND
 };
@@ -155,49 +159,167 @@ AC_Fence::AC_Fence()
 #endif
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
+    if (_enabled) {
+        _enabled_fences = _configured_fences.get() & ~AC_FENCE_TYPE_ALT_MIN;
+    }
 }
 
-/// enable the Fence code generally; a master switch for all fences
-void AC_Fence::enable(bool value)
+// get a user-friendly list of fences
+void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg)
 {
-#if HAL_LOGGING_ENABLED
-    if (_enabled && !value) {
-        AP::logger().Write_Event(LogEvent::FENCE_DISABLE);
-    } else if (!_enabled && value) {
-        AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
+    if (!fences) {
+        return;
+    }
+    static const char* FENCE_NAMES[] = {
+        "Max Alt",
+        "Circle",
+        "Polygon",
+        "Min Alt",
+    };
+    uint8_t i = 0;
+    uint8_t nfences = 0;
+    while (fences !=0) {
+        if (fences & 0x1) {
+            if (nfences > 0) {
+                if (!(fences & ~1U)) {
+                    msg.printf(" and ");
+                } else {
+                    msg.printf(", ");
+                }
+            }
+            msg.printf("%s", FENCE_NAMES[i]);
+            nfences++;
+        }
+        fences >>= 1;
+        i++;
+    }
+    msg.printf(" fence");
+    if (nfences>1) {
+        msg.printf("s");
+    }
+}
+
+// print a message about the passed in fences
+void AC_Fence::print_fence_message(const char* message, uint8_t fences) const
+{
+    if (!fences) {
+        return;
+    }
+
+    char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+    AC_Fence::get_fence_names(fences, e);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "%s %s", e.get_writeable_string(), message);
+}
+
+// should be called @10Hz to handle loading from eeprom
+void AC_Fence::update()
+{
+    _poly_loader.update();
+    // if someone changes the parameter we want to enable or disable everything
+    if (_enabled != _last_enabled || _auto_enabled != _last_auto_enabled) {
+        // reset the auto mask since we just reconfigured all of fencing
+        _auto_enable_mask = AC_FENCE_ALL_FENCES;
+        _last_enabled = _enabled;
+        _last_auto_enabled = _auto_enabled;
+        if (_enabled) {
+            _enabled_fences = _configured_fences.get() & ~AC_FENCE_TYPE_ALT_MIN;
+        } else {
+            _enabled_fences = 0;
+        }
+    }
+#ifdef AC_FENCE_DEBUG
+    static uint32_t last_msg_count = 0;
+    if (get_enabled_fences() && last_msg_count++ % 10 == 0) {
+        print_fence_message("active", get_enabled_fences());
+        print_fence_message("breached", get_breaches());
     }
 #endif
-    _enabled.set(value);
-    if (!value) {
-        clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
-        disable_floor();
+}
+
+// enable or disable configured fences present in fence_types
+// also updates the bitmask of auto enabled fences if update_auto_mask is true
+// returns a bitmask of fences that were changed
+uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
+{
+    uint8_t fences = _configured_fences.get() & fence_types;
+    uint8_t enabled_fences = _enabled_fences;
+    if (value) {
+        enabled_fences |= fences;
     } else {
-        enable_floor();
+        enabled_fences &= ~fences;
     }
+
+    // fences that were manually changed are no longer eligible for auto-enablement or disablement
+    if (update_auto_mask) {
+        _auto_enable_mask &= ~fences;
+    }
+
+    uint8_t fences_to_change = _enabled_fences ^ enabled_fences;
+
+    if (!fences_to_change) {
+        return 0;
+    }
+#if HAL_LOGGING_ENABLED
+    AP::logger().Write_Event(value ? LogEvent::FENCE_ENABLE : LogEvent::FENCE_DISABLE);
+    if (fences_to_change & AC_FENCE_TYPE_ALT_MAX) {
+        AP::logger().Write_Event(value ? LogEvent::FENCE_ALT_MAX_ENABLE : LogEvent::FENCE_ALT_MAX_DISABLE);
+    }
+    if (fences_to_change & AC_FENCE_TYPE_CIRCLE) {
+        AP::logger().Write_Event(value ? LogEvent::FENCE_CIRCLE_ENABLE : LogEvent::FENCE_CIRCLE_DISABLE);
+    }
+    if (fences_to_change & AC_FENCE_TYPE_ALT_MIN) {
+        AP::logger().Write_Event(value ? LogEvent::FENCE_ALT_MIN_ENABLE : LogEvent::FENCE_ALT_MIN_DISABLE);
+    }
+    if (fences_to_change & AC_FENCE_TYPE_POLYGON) {
+        AP::logger().Write_Event(value ? LogEvent::FENCE_POLYGON_ENABLE : LogEvent::FENCE_POLYGON_DISABLE);
+    }
+#endif
+
+    _enabled_fences = enabled_fences;
+
+    if (!value) {
+        clear_breach(fences_to_change);
+    }
+
+    return fences_to_change;
 }
 
 /// enable/disable fence floor only
 void AC_Fence::enable_floor()
 {
-#if HAL_LOGGING_ENABLED
-    if (!_floor_enabled) {
-        // Floor is currently disabled, enable it
-        AP::logger().Write_Event(LogEvent::FENCE_FLOOR_ENABLE);
-    }
-#endif
-    _floor_enabled = true;
+    enable(true, AC_FENCE_TYPE_ALT_MIN);
 }
 
 void AC_Fence::disable_floor()
 {
-#if HAL_LOGGING_ENABLED
-    if (_floor_enabled) {
-        // Floor is currently enabled, disable it
-        AP::logger().Write_Event(LogEvent::FENCE_FLOOR_DISABLE);
+    enable(false, AC_FENCE_TYPE_ALT_MIN);
+}
+
+/*
+  called on arming
+*/
+void AC_Fence::auto_enable_fence_on_arming(void)
+{
+    if (auto_enabled() != AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+        return;
     }
-#endif
-    _floor_enabled = false;
-    clear_breach(AC_FENCE_TYPE_ALT_MIN);
+
+    const uint8_t fences = enable(true, _auto_enable_mask & ~AC_FENCE_TYPE_ALT_MIN, false);
+    print_fence_message("auto-enabled", fences);
+}
+
+/*
+  called on disarming
+*/
+void AC_Fence::auto_disable_fence_on_disarming(void)
+{
+    if (auto_enabled() != AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+        return;
+    }
+
+    const uint8_t fences = enable(false, _auto_enable_mask, false);
+    print_fence_message("auto-disabled", fences);
 }
 
 /*
@@ -205,82 +327,63 @@ void AC_Fence::disable_floor()
 */
 void AC_Fence::auto_enable_fence_after_takeoff(void)
 {
-    if (_enabled) {
+    if (auto_enabled() != AutoEnable::ENABLE_ON_AUTO_TAKEOFF &&
+        auto_enabled() != AutoEnable::ENABLE_DISABLE_FLOOR_ONLY) {
         return;
-    } 
-    switch(auto_enabled()) {
-        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
-        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
-            enable(true);
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
-            break;
-        default:
-            // fence does not auto-enable in other takeoff conditions
-            break;
     }
+
+    const uint8_t fences = enable(true, _auto_enable_mask, false);
+    print_fence_message("auto-enabled", fences);
 }
 
-/*
-  called when performing an auto landing
- */
-void AC_Fence::auto_disable_fence_for_landing(void)
+// return fences that should be auto-disabled when requested
+uint8_t AC_Fence::get_auto_disable_fences(void) const
 {
+    uint8_t auto_disable = 0;
     switch (auto_enabled()) {
-        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
-            enable(false);
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
+        case AC_Fence::AutoEnable::ENABLE_ON_AUTO_TAKEOFF:
+            auto_disable = _auto_enable_mask;
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
-            disable_floor();
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
-            break;
-        default:
-            // fence does not auto-disable in other landing conditions
+        case AC_Fence::AutoEnable::ONLY_WHEN_ARMED:
+        default: // when auto disable is not set we still need to disable the altmin fence on landing
+            auto_disable = _auto_enable_mask & AC_FENCE_TYPE_ALT_MIN;
             break;
     }
+    return auto_disable;
 }
 
-bool AC_Fence::present() const
+uint8_t AC_Fence::present() const
 {
-    const auto enabled_fences = _enabled_fences.get();
-    // A fence is present if any of the conditions are true.
-    //   * tin can (circle) is enabled
-    //   * min or max alt is enabled
-    //   * polygon fences are enabled and any fence has been uploaded
-    if (enabled_fences & AC_FENCE_TYPE_CIRCLE ||
-        enabled_fences & AC_FENCE_TYPE_ALT_MIN ||
-        enabled_fences & AC_FENCE_TYPE_ALT_MAX ||
-        ((enabled_fences & AC_FENCE_TYPE_POLYGON) && _poly_loader.total_fence_count() > 0)) {
-        return true;
+    uint8_t mask = AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX;
+    if (_poly_loader.total_fence_count() > 0) {
+        mask |= AC_FENCE_TYPE_POLYGON;
     }
 
-    return false;
+    return _configured_fences.get() & mask;
 }
 
 /// get_enabled_fences - returns bitmask of enabled fences
 uint8_t AC_Fence::get_enabled_fences() const
 {
-    if (!_enabled && !_auto_enabled) {
-        return 0;
-    }
-    return _enabled_fences;
+    return _enabled_fences & present();
 }
 
 // additional checks for the polygon fence:
-bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const
 {
-    if (!(_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+    if (!(_configured_fences & AC_FENCE_TYPE_POLYGON)) {
         // not enabled; all good
         return true;
     }
 
     if (! _poly_loader.loaded()) {
-        fail_msg = "Fences invalid";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence(s) invalid");
         return false;
     }
 
     if (!_poly_loader.check_inclusion_circle_margin(_margin)) {
-        fail_msg = "Margin is less than inclusion circle radius";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Polygon fence margin is less than inclusion circle radius");
         return false;
     }
 
@@ -288,14 +391,14 @@ bool AC_Fence::pre_arm_check_polygon(const char* &fail_msg) const
 }
 
 // additional checks for the circle fence:
-bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check_circle(char *failure_msg, const uint8_t failure_msg_len) const
 {
     if (_circle_radius < 0) {
-        fail_msg = "Invalid FENCE_RADIUS value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid Circle FENCE_RADIUS value");
         return false;
     }
     if (_circle_radius < _margin) {
-        fail_msg = "FENCE_MARGIN is less than FENCE_RADIUS";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Circle FENCE_MARGIN is less than FENCE_RADIUS");
         return false;
     }
 
@@ -303,15 +406,15 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
 }
 
 // additional checks for the alt fence:
-bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check_alt(char *failure_msg, const uint8_t failure_msg_len) const
 {
     if (_alt_max < 0.0f) {
-        fail_msg = "Invalid FENCE_ALT_MAX value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MAX value");
         return false;
     }
 
     if (_alt_min < -100.0f) {
-        fail_msg = "Invalid FENCE_ALT_MIN value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_ALT_MIN value");
         return false;
     }
     return true;
@@ -319,63 +422,75 @@ bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
 
 
 /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-bool AC_Fence::pre_arm_check(const char* &fail_msg) const
+bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
 {
-    fail_msg = nullptr;
-
     // if fences are enabled but none selected fail pre-arm check
-    if (enabled() && !present()) {
-        fail_msg = "Fences enabled, but none selected";
+    if (_enabled && !present()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Fences enabled, but none selected");
         return false;
+    }
+    
+    // if AUTOENABLE = 1 or 2 warn now, but fail in a later release
+    // PARAMETER_CONVERSION - Added: Jul-2024 for ArduPilot-4.6
+    if (_auto_enabled == 1 || _auto_enabled == 2) {
+        static uint32_t last_autoenable_warn_ms;
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_autoenable_warn_ms > 60000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FENCE_AUTOENABLE is %u, will be removed in 4.7, use 3", unsigned(_auto_enabled));
+            last_autoenable_warn_ms = now_ms;
+        }
     }
 
     // if not enabled or not fence set-up always return true
-    if ((!_enabled && !_auto_enabled) || !_enabled_fences) {
+    if ((!enabled() && !_auto_enabled) || !_configured_fences) {
         return true;
     }
 
     // if we have horizontal limits enabled, check we can get a
     // relative position from the AHRS
-    if ((_enabled_fences & AC_FENCE_TYPE_CIRCLE) ||
-        (_enabled_fences & AC_FENCE_TYPE_POLYGON)) {
+    if ((_configured_fences & AC_FENCE_TYPE_CIRCLE) ||
+        (_configured_fences & AC_FENCE_TYPE_POLYGON)) {
         Vector2f position;
         if (!AP::ahrs().get_relative_position_NE_home(position)) {
-            fail_msg = "Fence requires position";
+            hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
             return false;
         }
     }
 
-    if (!pre_arm_check_polygon(fail_msg)) {
+    if (!pre_arm_check_polygon(failure_msg, failure_msg_len)) {
         return false;
     }
 
-    if (!pre_arm_check_circle(fail_msg)) {
+    if (!pre_arm_check_circle(failure_msg, failure_msg_len)) {
         return false;
     }
 
-    if (!pre_arm_check_alt(fail_msg)) {
+    if (!pre_arm_check_alt(failure_msg, failure_msg_len)) {
         return false;
     }
 
     // check no limits are currently breached
     if (_breached_fences) {
-        fail_msg =  "vehicle outside fence";
+        char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
+        AC_Fence::get_fence_names(_breached_fences, e);
+        hal.util->snprintf(failure_msg, failure_msg_len, "Vehicle breaching %s", e.get_writeable_string());
         return false;
     }
 
     // validate FENCE_MARGIN parameter range
     if (_margin < 0.0f) {
-        fail_msg = "Invalid FENCE_MARGIN value";
+        hal.util->snprintf(failure_msg, failure_msg_len, "Invalid FENCE_MARGIN value");
         return false;
     }
 
     if (_alt_max < _alt_min) {
-        fail_msg =  "FENCE_ALT_MAX < FENCE_ALT_MIN";
+        hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_ALT_MAX < FENCE_ALT_MIN");
         return false;
     }
 
     if (_alt_max - _alt_min <= 2.0f * _margin) {
-        fail_msg =  "FENCE_MARGIN too big";
+        hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_MARGIN too big");
         return false;
     }
 
@@ -389,13 +504,14 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
 bool AC_Fence::check_fence_alt_max()
 {
     // altitude fence check
-    if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MAX)) {
+    if (!(get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
         // not enabled; no breach
         return false;
     }
 
-    AP::ahrs().get_relative_position_D_home(_curr_alt);
-    _curr_alt = -_curr_alt; // translate Down to Up
+    float alt;
+    AP::ahrs().get_relative_position_D_home(alt);
+    _curr_alt = -alt; // translate Down to Up
 
     // check if we are over the altitude fence
     if (_curr_alt >= _alt_max) {
@@ -437,13 +553,14 @@ bool AC_Fence::check_fence_alt_max()
 bool AC_Fence::check_fence_alt_min()
 {
     // altitude fence check
-    if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MIN)) {
+    if (!(get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)) {
         // not enabled; no breach
         return false;
     }
 
-    AP::ahrs().get_relative_position_D_home(_curr_alt);
-    _curr_alt = -_curr_alt; // translate Down to Up
+    float alt;
+    AP::ahrs().get_relative_position_D_home(alt);
+    _curr_alt = -alt; // translate Down to Up
 
     // check if we are under the altitude fence
     if (_curr_alt <= _alt_min) {
@@ -479,15 +596,47 @@ bool AC_Fence::check_fence_alt_min()
     return false;
 }
 
+
+/// auto enable fence floor
+bool AC_Fence::auto_enable_fence_floor()
+{
+    // altitude fence check
+    if (!(_configured_fences & AC_FENCE_TYPE_ALT_MIN)       // not configured
+        || (get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)   // already enabled
+        || !(_auto_enable_mask & AC_FENCE_TYPE_ALT_MIN)     // has been manually disabled
+        || (!_enabled && (auto_enabled() == AC_Fence::AutoEnable::ALWAYS_DISABLED
+            || auto_enabled() == AutoEnable::ENABLE_ON_AUTO_TAKEOFF))) {
+        // not enabled
+        return false;
+    }
+
+    float alt;
+    AP::ahrs().get_relative_position_D_home(alt);
+    _curr_alt = -alt; // translate Down to Up
+
+    // check if we are over the altitude fence
+    if (!floor_enabled() && _curr_alt >= _alt_min + _margin) {
+        enable(true, AC_FENCE_TYPE_ALT_MIN, false);
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Min Alt fence enabled (auto enable)");
+        return true;
+    } 
+
+    return false;
+}
+
 // check_fence_polygon - returns true if the poly fence is freshly
 // breached.  That includes being inside exclusion zones and outside
 // inclusions zones
 bool AC_Fence::check_fence_polygon()
 {
+    if (!(get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
+        // not enabled; no breach
+        clear_breach(AC_FENCE_TYPE_POLYGON);
+        return false;
+    }
+
     const bool was_breached = _breached_fences & AC_FENCE_TYPE_POLYGON;
-    const bool breached = ((_enabled_fences & AC_FENCE_TYPE_POLYGON) &&
-                           _poly_loader.breached());
-    if (breached) {
+    if (_poly_loader.breached()) {
         if (!was_breached) {
             record_breach(AC_FENCE_TYPE_POLYGON);
             return true;
@@ -506,7 +655,7 @@ bool AC_Fence::check_fence_polygon()
 /// fence is breached.
 bool AC_Fence::check_fence_circle()
 {
-    if (!(_enabled_fences & AC_FENCE_TYPE_CIRCLE)) {
+    if (!(get_enabled_fences() & AC_FENCE_TYPE_CIRCLE)) {
         // not enabled; no breach
         return false;
     }
@@ -549,19 +698,58 @@ bool AC_Fence::check_fence_circle()
 
 
 /// check - returns bitmask of fence types breached (if any)
-uint8_t AC_Fence::check()
+uint8_t AC_Fence::check(bool disable_auto_fences)
 {
     uint8_t ret = 0;
+    uint8_t disabled_fences = disable_auto_fences ? get_auto_disable_fences() : 0;
+    uint8_t fences_to_disable = disabled_fences & _enabled_fences;
 
     // clear any breach from a non-enabled fence
-    clear_breach(~_enabled_fences);
+    clear_breach(~_configured_fences);
+    // clear any breach from disabled fences
+    clear_breach(fences_to_disable);
+
+    // report on any fences that were auto-disabled
+    if (fences_to_disable) {
+        print_fence_message("auto-disabled", fences_to_disable);
+    }
 
     // return immediately if disabled
-    if ((!_enabled && !_auto_enabled) || !_enabled_fences) {
+    if ((!enabled() && !_auto_enabled && !(_configured_fences & AC_FENCE_TYPE_ALT_MIN)) || !_configured_fences) {
         return 0;
     }
 
+    // disable the (temporarily) disabled fences
+    enable(false, disabled_fences, false);
+
+    // maximum altitude fence check
+    if (!(disabled_fences & AC_FENCE_TYPE_ALT_MAX) && check_fence_alt_max()) {
+        ret |= AC_FENCE_TYPE_ALT_MAX;
+    }
+
+    // minimum altitude fence check, do this before auto-disabling (e.g. because falling)
+    // so that any action can be taken
+    if (!(disabled_fences & AC_FENCE_TYPE_ALT_MIN) && check_fence_alt_min()) {
+        ret |= AC_FENCE_TYPE_ALT_MIN;
+    }
+
+    // auto enable floor unless auto enable on auto takeoff has been set (which means other behaviour is required)
+    if (!(disabled_fences & AC_FENCE_TYPE_ALT_MIN)) {
+        auto_enable_fence_floor();
+    }
+
+    // circle fence check
+    if (!(disabled_fences & AC_FENCE_TYPE_CIRCLE) && check_fence_circle()) {
+        ret |= AC_FENCE_TYPE_CIRCLE;
+    }
+
+    // polygon fence check
+    if (!(disabled_fences & AC_FENCE_TYPE_POLYGON) && check_fence_polygon()) {
+        ret |= AC_FENCE_TYPE_POLYGON;
+    }
+
     // check if pilot is attempting to recover manually
+    // this is done last so that _breached_fences is correct
     if (_manual_recovery_start_ms != 0) {
         // we ignore any fence breaches during the manual recovery period which is about 10 seconds
         if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
@@ -570,26 +758,6 @@ uint8_t AC_Fence::check()
         // recovery period has passed so reset manual recovery time
         // and continue with fence breach checks
         _manual_recovery_start_ms = 0;
-    }
-
-    // maximum altitude fence check
-    if (check_fence_alt_max()) {
-        ret |= AC_FENCE_TYPE_ALT_MAX;
-    }
-
-    // minimum altitude fence check
-    if (_floor_enabled && check_fence_alt_min()) {
-        ret |= AC_FENCE_TYPE_ALT_MIN;
-    }
-
-    // circle fence check
-    if (check_fence_circle()) {
-        ret |= AC_FENCE_TYPE_CIRCLE;
-    }
-
-    // polygon fence check
-    if (check_fence_polygon()) {
-        ret |= AC_FENCE_TYPE_POLYGON;
     }
 
     // return any new breaches that have occurred
@@ -695,6 +863,8 @@ void AC_Fence::manual_recovery_start()
 
     // record time pilot began manual recovery
     _manual_recovery_start_ms = AP_HAL::millis();
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Manual recovery started");
 }
 
 // methods for mavlink SYS_STATUS message (send_sys_status)
@@ -712,7 +882,7 @@ bool AC_Fence::sys_status_enabled() const
         return false;
     }
     // Fence is only enabled when the flag is enabled
-    return _enabled;
+    return enabled();
 }
 
 bool AC_Fence::sys_status_failed() const
@@ -742,22 +912,27 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = { AP_GROUPEND };
 
 AC_Fence::AC_Fence() {};
 
-void AC_Fence::enable(bool value) {};
+uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_enable) { return 0; }
 
-void AC_Fence::disable_floor() {};
+void AC_Fence::enable_floor() {}
+void AC_Fence::disable_floor() {}
+void AC_Fence::update() {}
 
-void AC_Fence::auto_enable_fence_after_takeoff() {};
-void AC_Fence::auto_disable_fence_for_landing() {};
+void AC_Fence::auto_enable_fence_after_takeoff() {}
+void AC_Fence::auto_enable_fence_on_arming() {}
+void AC_Fence::auto_disable_fence_on_disarming() {}
 
-bool AC_Fence::present() const { return false; }
+uint8_t AC_Fence::present() const { return 0; }
 
 uint8_t AC_Fence::get_enabled_fences() const { return 0; }
 
-bool AC_Fence::pre_arm_check(const char* &fail_msg) const  { return true; }
+bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const  { return true; }
 
-uint8_t AC_Fence::check() { return 0; }
+uint8_t AC_Fence::check(bool disable_auto_fences) { return 0; }
 bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
 float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
+void AC_Fence::get_fence_names(uint8_t fences, ExpandingString& msg) { }
+void AC_Fence::print_fence_message(const char* msg, uint8_t fences) const {}
 
 void AC_Fence::manual_recovery_start() {}
 

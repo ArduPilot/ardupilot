@@ -278,6 +278,9 @@ __bin_names = {
     "CopterTests2b": "arducopter",
 
     "Plane": "arduplane",
+    "PlaneTests1a": "arduplane",
+    "PlaneTests1b": "arduplane",
+
     "Rover": "ardurover",
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
@@ -352,6 +355,8 @@ tester_class_map = {
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
     "test.Plane": arduplane.AutoTestPlane,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
@@ -516,6 +521,7 @@ def run_step(step):
         "reset_after_every_test": opts.reset_after_every_test,
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
+        "enable_fgview": opts.enable_fgview,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -862,6 +868,9 @@ if __name__ == "__main__":
     parser.add_option("--viewerip",
                       default=None,
                       help='IP address to send MAVLink and fg packets to')
+    parser.add_option("--enable-fgview",
+                      action='store_true',
+                      help="Enable FlightGear output")
     parser.add_option("--map",
                       action='store_true',
                       default=False,
@@ -1107,6 +1116,9 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+
+        'test.PlaneTests1a',
+        'test.PlaneTests1b',
 
         'clang-scan-build',
     ]

@@ -1266,6 +1266,7 @@ void AP_Param::save(bool force_save)
         if (hal.util->get_soft_armed() && hal.scheduler->in_main_thread()) {
             // if we are armed in main thread then don't sleep, instead we lose the
             // parameter save
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return;
         }
         // when we are disarmed then loop waiting for a slot to become
@@ -2533,7 +2534,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
             if (last_pass) {
-#if ENABLE_DEBUG
+#if ENABLE_DEBUG && (AP_PARAM_MAX_EMBEDDED_PARAM > 0)
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
                          pname, unsigned(ptr - param_defaults_data.data));
                 hal.console->printf(
@@ -2944,14 +2945,14 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
     ParamToken token;
     AP_Param *ap;
     enum ap_var_type type;
-    float default_value = nanf("0x4152");  // from logger quiet_nanf
+    float default_value = NaNf;  // from logger quiet_nanf
 
     for (ap=AP_Param::first(&token, &type, &default_value);
          ap;
          ap=AP_Param::next_scalar(&token, &type, &default_value)) {
         if (showKeyValues) {
             ::printf("Key %u: Index %u: GroupElement %u : Default %f  :", (unsigned)var_info(token.key).key, (unsigned)token.idx, (unsigned)token.group_element, default_value);
-            default_value = nanf("0x4152");
+            default_value = NaNf;
         }
         show(ap, token, type, port);
         hal.scheduler->delay(1);

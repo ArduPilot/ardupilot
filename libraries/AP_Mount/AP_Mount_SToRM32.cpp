@@ -128,7 +128,7 @@ void AP_Mount_SToRM32::find_gimbal()
     if (GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_GIMBAL, compid, _sysid, _chan)) {
         _compid = compid;
         _initialised = true;
-        gcs().send_text(MAV_SEVERITY_INFO, "Mount: SToRM32");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: SToRM32");
     }
 }
 

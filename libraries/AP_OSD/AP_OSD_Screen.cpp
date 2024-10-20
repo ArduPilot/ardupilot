@@ -2013,11 +2013,11 @@ void AP_OSD_Screen::draw_esc_temp(uint8_t x, uint8_t y)
     int16_t etemp;
 
     if (esc_index > 0) {
-        if (!AP::esc_telem().get_motor_temperature(esc_index-1, etemp)) {
+        if (!AP::esc_telem().get_temperature(esc_index-1, etemp)) {
             return;
         }
     }
-    else if (!AP::esc_telem().get_highest_motor_temperature(etemp)) {
+    else if (!AP::esc_telem().get_highest_temperature(etemp)) {
         return;
     }
 
@@ -2534,6 +2534,7 @@ void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
 }
 #endif
 
+#if AP_RANGEFINDER_ENABLED
 void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
@@ -2547,6 +2548,7 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%c%4.1f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
     }
 }
+#endif
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
@@ -2572,7 +2574,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(hgt_abvterr);
 #endif
 
+#if AP_RANGEFINDER_ENABLED
     DRAW_SETTING(rngf);
+#endif
     DRAW_SETTING(waypoint);
     DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
@@ -2580,8 +2584,10 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(avgcellrestvolt);
     DRAW_SETTING(restvolt);
+#if AP_RSSI_ENABLED
     DRAW_SETTING(rssi);
     DRAW_SETTING(link_quality);
+#endif
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);

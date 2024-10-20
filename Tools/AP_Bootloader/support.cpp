@@ -364,6 +364,17 @@ void thread_sleep_ms(uint32_t ms)
     }
 }
 
+void thread_sleep_us(uint32_t us)
+{
+    while (us > 0) {
+        // don't sleep more than 65 at a time, to cope with 16 bit
+        // timer
+        const uint32_t dt = us > 6500? 6500: us;
+        chThdSleepMicroseconds(dt);
+        us -= dt;
+    }
+}
+
 // generate a pulse sequence forever, for debugging
 void led_pulses(uint8_t npulses)
 {
@@ -506,7 +517,7 @@ bool update_otg2_serial_forward()
         chnWriteTimeout(&SDU2, data, n, TIME_IMMEDIATE);
     }
 
-    return (AP_HAL::millis() > otg2_serial_deadline_ms);
+    return (AP_HAL::millis() < otg2_serial_deadline_ms);
 }
 #endif
 
@@ -533,32 +544,40 @@ void port_setbaud(uint32_t baudrate)
 }
 #endif // BOOTLOADER_DEV_LIST
 
-#ifdef STM32H7
+#if defined(STM32H7) && CH_CFG_USE_HEAP
 /*
   check if flash has any ECC errors and if it does then erase all of
   flash
  */
+#define ECC_CHECK_CHUNK_SIZE (32*sizeof(uint32_t))
 void check_ecc_errors(void)
 {
     __disable_fault_irq();
+    // stm32_flash_corrupt(0x8043200);
     auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
-    uint32_t buf[32];
+
+    uint32_t *buf = (uint32_t*)malloc_dma(ECC_CHECK_CHUNK_SIZE);
+
+    if (buf == nullptr) {
+        // DMA'ble memory not available
+        return;
+    }
     uint32_t ofs = 0;
     while (ofs < BOARD_FLASH_SIZE*1024) {
-        if (FLASH->SR1 != 0) {
+        if (FLASH->SR1 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
             break;
         }
 #if BOARD_FLASH_SIZE > 1024
-        if (FLASH->SR2 != 0) {
+        if (FLASH->SR2 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
             break;
         }
 #endif
         dmaStartMemCopy(dma,
                         STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_BYTE |
                         STM32_DMA_CR_MSIZE_BYTE,
-                        ofs+(uint8_t*)FLASH_BASE, buf, sizeof(buf));
+                        ofs+(uint8_t*)FLASH_BASE, buf, ECC_CHECK_CHUNK_SIZE);
         dmaWaitCompletion(dma);
-        ofs += sizeof(buf);
+        ofs += ECC_CHECK_CHUNK_SIZE;
     }
     dmaStreamFree(dma);
     
@@ -572,5 +591,5 @@ void check_ecc_errors(void)
     }
     __enable_fault_irq();
 }
-#endif // STM32H7
+#endif // defined(STM32H7) && CH_CFG_USE_HEAP
 

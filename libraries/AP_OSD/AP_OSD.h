@@ -33,6 +33,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
 #include <AC_Fence/AC_Fence_config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 
 class AP_OSD_Backend;
 class AP_MSP;
@@ -334,7 +335,9 @@ private:
 #if AP_FENCE_ENABLED
     void draw_fence(uint8_t x, uint8_t y);
 #endif
+#if AP_RANGEFINDER_ENABLED
     void draw_rngf(uint8_t x, uint8_t y);
+#endif
 
 #if AP_OSD_EXTENDED_LNK_STATS
     // Extended link stats data panels
@@ -500,7 +503,7 @@ private:
 
 #if AP_RC_CHANNEL_ENABLED
     Event map_rc_input_to_event() const;
-    RC_Channel::AuxSwitchPos get_channel_pos(uint8_t rcmapchan) const;
+    RC_Channel::AuxSwitchPos get_channel_pos(const class RC_Channel &chan) const;
 #endif
 
     uint8_t _selected_param = 1;

@@ -124,7 +124,7 @@ void AP_ExternalAHRS::init(void)
         return;
 #endif
 
-#if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
+#if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
     case DevType::InertialLabs:
         backend = NEW_NOTHROW AP_ExternalAHRS_InertialLabs(this, state);
         return;
@@ -178,6 +178,17 @@ bool AP_ExternalAHRS::get_origin(Location &loc)
         return true;
     }
     return false;
+}
+
+bool AP_ExternalAHRS::set_origin(const Location &loc)
+{
+    WITH_SEMAPHORE(state.sem);
+    if (state.have_origin) {
+        return false;
+    }
+    state.origin = loc;
+    state.have_origin = true;
+    return true;
 }
 
 bool AP_ExternalAHRS::get_location(Location &loc)
@@ -312,19 +323,7 @@ void AP_ExternalAHRS::update(void)
         backend->update();
     }
 
-    /*
-      if backend has not supplied an origin and AHRS has an origin
-      then use that origin so we get a common origin for minimum
-      disturbance when switching backends
-     */
     WITH_SEMAPHORE(state.sem);
-    if (!state.have_origin) {
-        Location origin;
-        if (AP::ahrs().get_origin(origin)) {
-            state.origin = origin;
-            state.have_origin = true;
-        }
-    }
 #if HAL_LOGGING_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     if (log_rate.get() > 0 && now_ms - last_log_ms >= uint32_t(1000U/log_rate.get())) {

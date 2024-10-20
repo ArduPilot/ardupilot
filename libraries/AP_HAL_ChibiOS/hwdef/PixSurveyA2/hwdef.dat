@@ -5,6 +5,7 @@ include ../PixPilot-V6/hwdef.dat
 undef APJ_BOARD_ID
 APJ_BOARD_ID 1097
 
+undef AP_NOTIFY_GPIO_LED_RGB_ENABLED
 undef HAL_GPIO_A_LED_PIN
 undef HAL_GPIO_B_LED_PIN
 undef HAL_GPIO_C_LED_PIN

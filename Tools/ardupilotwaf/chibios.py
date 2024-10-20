@@ -273,12 +273,14 @@ class set_app_descriptor(Task.Task):
         else:
             descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
 
-        img = open(self.inputs[0].abspath(), 'rb').read()
+        elf_file = self.inputs[0].abspath()
+        bin_file = self.inputs[1].abspath()
+        img = open(bin_file, 'rb').read()
         offset = img.find(descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
             return
-        offset += 8
+        offset += len(descriptor)
         # next 8 bytes is 64 bit CRC. We set first 4 bytes to
         # CRC32 of image before descriptor and 2nd 4 bytes
         # to CRC32 of image after descriptor. This is very efficient
@@ -310,7 +312,19 @@ class set_app_descriptor(Task.Task):
             desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
         Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
-        open(self.inputs[0].abspath(), 'wb').write(img)
+        open(bin_file, 'wb').write(img)
+
+        elf_img = open(elf_file,'rb').read()
+        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
+        elf_ofs = elf_img.find(zero_descriptor)
+        if elf_ofs == -1:
+            Logs.info("No APP_DESCRIPTOR found in elf file")
+            return
+        elf_ofs += len(descriptor)
+        elf_img = elf_img[:elf_ofs] + desc + elf_img[elf_ofs+desc_len:]
+        Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
+        open(elf_file, 'wb').write(elf_img)
+
 
 class generate_apj(Task.Task):
     '''generate an apj firmware file'''
@@ -438,7 +452,7 @@ def chibios_firmware(self):
 
     # we need to setup the app descriptor so the bootloader can validate the firmware
     if not self.bld.env.BOOTLOADER:
-        app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
+        app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output,bin_target[0]])
         app_descriptor_task.set_run_after(generate_bin_task)
         generate_apj_task.set_run_after(app_descriptor_task)
         if hex_task is not None:
@@ -450,6 +464,10 @@ def chibios_firmware(self):
         
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw', src=apj_target)
+        _upload_task.set_run_after(generate_apj_task)
+
+    if self.bld.options.upload_blueos:
+        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
         _upload_task.set_run_after(generate_apj_task)
 
 def setup_canmgr_build(cfg):

@@ -168,6 +168,11 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
         return AP_BattMonitor::Failsafe::Low;
     }
 
+    // 5 second health timeout
+    if ((now - _state.last_healthy_ms) > 5000) {
+        return AP_BattMonitor::Failsafe::Unhealthy;
+    }
+
     // if we've gotten this far then battery is ok
     return AP_BattMonitor::Failsafe::None;
 }

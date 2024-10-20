@@ -244,7 +244,9 @@ struct dirent *AP_Filesystem_Sys::readdir(void *dirp)
         // we have reached end of list
         return nullptr;
     }
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
     dtracker->curr_file.d_type = DT_REG;
+#endif
     size_t max_length = ARRAY_SIZE(dtracker->curr_file.d_name);
     strncpy_noterm(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length);
     dtracker->file_offset++;

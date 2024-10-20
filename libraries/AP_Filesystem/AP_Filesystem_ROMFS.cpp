@@ -192,11 +192,14 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
     const char* slash = strchr(name, '/');
     if (slash == nullptr) {
         // File
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         dir[idx].de.d_type = DT_REG;
-
+#endif
     } else {
         // Directory
+#if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         dir[idx].de.d_type = DT_DIR;
+#endif
 
         // Add null termination after directory name
         const size_t index = slash - name;

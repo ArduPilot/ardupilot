@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 
 /*
  * Init and run calls for guided flight mode
@@ -114,7 +114,7 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return option_is_enabled(Option::AllowArmingFromTX);
 };
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
     return option_is_enabled(Option::AllowWeatherVaning);
@@ -128,6 +128,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
+#if AP_RANGEFINDER_ENABLED
     if (wp_nav->rangefinder_used_and_healthy() &&
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
         takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
@@ -138,7 +139,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         // provide target altitude as alt-above-terrain
         alt_target_cm = takeoff_alt_cm;
         alt_target_terrain = true;
-    } else {
+    } else
+#endif
+    {
         // interpret altitude as alt-above-home
         Location target_loc = copter.current_loc;
         target_loc.set_alt_cm(takeoff_alt_cm, Location::AltFrame::ABOVE_HOME);
@@ -380,10 +383,10 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         // convert origin to alt-above-terrain if necessary
         if (!guided_pos_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->set_pos_offset_z_cm(origin_terr_offset);
+            pos_control->init_pos_terrain_cm(origin_terr_offset);
         }
     } else {
-        pos_control->set_pos_offset_z_cm(0.0);
+        pos_control->init_pos_terrain_cm(0.0);
     }
 
     // set yaw state
@@ -493,10 +496,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_pos_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->set_pos_offset_z_cm(origin_terr_offset);
+            pos_control->init_pos_terrain_cm(origin_terr_offset);
         }
     } else {
-        pos_control->set_pos_offset_z_cm(0.0);
+        pos_control->init_pos_terrain_cm(0.0);
     }
 
     guided_pos_target_cm = pos_target_f.topostype();
@@ -649,6 +652,9 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
         angle_control_start();
+    } else if (!use_thrust && guided_angle_state.use_thrust) {
+        // Already angle control but changing from thrust to climb rate
+        pos_control->init_z_controller();
     }
 
     guided_angle_state.attitude_quat = attitude_quat;
@@ -682,6 +688,9 @@ void ModeGuided::takeoff_run()
     auto_takeoff.run();
     if (auto_takeoff.complete && !takeoff_complete) {
         takeoff_complete = true;
+#if AP_FENCE_ENABLED
+        copter.fence.auto_enable_fence_after_takeoff();
+#endif
 #if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
@@ -816,8 +825,7 @@ void ModeGuided::velaccel_control_run()
 
     if (!stabilizing_vel_xy() && !do_avoid) {
         // set the current commanded xy vel to the desired vel
-        guided_vel_target_cms.x = pos_control->get_vel_desired_cms().x;
-        guided_vel_target_cms.y = pos_control->get_vel_desired_cms().y;
+        guided_vel_target_cms.xy() = pos_control->get_vel_desired_cms().xy();
     }
     pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
     if (!stabilizing_vel_xy() && !do_avoid) {
@@ -894,14 +902,11 @@ void ModeGuided::posvelaccel_control_run()
     // send position and velocity targets to position controller
     if (!stabilizing_vel_xy()) {
         // set the current commanded xy pos to the target pos and xy vel to the desired vel
-        guided_pos_target_cm.x = pos_control->get_pos_target_cm().x;
-        guided_pos_target_cm.y = pos_control->get_pos_target_cm().y;
-        guided_vel_target_cms.x = pos_control->get_vel_desired_cms().x;
-        guided_vel_target_cms.y = pos_control->get_vel_desired_cms().y;
+        guided_pos_target_cm.xy() = pos_control->get_pos_desired_cm().xy();
+        guided_vel_target_cms.xy() = pos_control->get_vel_desired_cms().xy();
     } else if (!stabilizing_pos_xy()) {
         // set the current commanded xy pos to the target pos
-        guided_pos_target_cm.x = pos_control->get_pos_target_cm().x;
-        guided_pos_target_cm.y = pos_control->get_pos_target_cm().y;
+        guided_pos_target_cm.xy() = pos_control->get_pos_desired_cm().xy();
     }
     pos_control->input_pos_vel_accel_xy(guided_pos_target_cm.xy(), guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
     if (!stabilizing_vel_xy()) {

@@ -129,7 +129,7 @@ void Sub::init_ardupilot()
     last_pilot_heading = ahrs.yaw_sensor;
 
     // initialise rangefinder
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     init_rangefinder();
 #endif
 
@@ -140,6 +140,9 @@ void Sub::init_ardupilot()
 
     // initialise mission library
     mission.init();
+#if HAL_LOGGING_ENABLED
+    mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 
     // initialise AP_Logger library
 #if HAL_LOGGING_ENABLED
@@ -166,6 +169,7 @@ void Sub::startup_INS_ground()
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
     ahrs.set_vehicle_class(AP_AHRS::VehicleClass::SUBMARINE);
+    ahrs.set_fly_forward(false);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());

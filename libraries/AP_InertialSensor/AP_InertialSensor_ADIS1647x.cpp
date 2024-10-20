@@ -137,7 +137,7 @@ bool AP_InertialSensor_ADIS1647x::check_product_id(uint16_t &prod_id)
         // can do up to 40G
         opmode = OpMode::Basic;
         accel_scale = 1.25 * GRAVITY_MSS * 0.001;
-        _clip_limit = 39.5f * GRAVITY_MSS;
+        _clip_limit = (40.0f - 0.5f) * GRAVITY_MSS;
         gyro_scale = radians(0.1);
         expected_sample_rate_hz = 2000;
         return true;
@@ -146,7 +146,7 @@ bool AP_InertialSensor_ADIS1647x::check_product_id(uint16_t &prod_id)
         // can do up to 40G
         opmode = OpMode::Basic;
         accel_scale = 1.25 * GRAVITY_MSS * 0.001;
-        _clip_limit = 39.5f * GRAVITY_MSS;
+        _clip_limit = (40.0f - 0.5f) * GRAVITY_MSS;
         expected_sample_rate_hz = 2000;
         // RANG_MDL register used for gyro range
         uint16_t rang_mdl = read_reg16(REG_RANG_MDL);
@@ -167,11 +167,12 @@ bool AP_InertialSensor_ADIS1647x::check_product_id(uint16_t &prod_id)
     }
         
     case PROD_ID_16507: {
+        // can do up to 40G
         opmode = OpMode::Delta32;
         expected_sample_rate_hz = 1200;
         accel_scale = 392.0 / 2097152000.0;
         dvel_scale = 400.0 / 0x7FFFFFFF;
-        _clip_limit = 39.5f * GRAVITY_MSS;
+        _clip_limit = (40.0f - 0.5f) * GRAVITY_MSS;
         // RANG_MDL register used for gyro range
         uint16_t rang_mdl = read_reg16(REG_RANG_MDL);
         switch ((rang_mdl >> 2) & 3) {

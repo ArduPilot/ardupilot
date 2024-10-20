@@ -366,6 +366,8 @@ public:
     const EKFGSF_yaw *get_yawEstimator(void) const;
 
 private:
+    class AP_DAL &dal;
+
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
