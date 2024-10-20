@@ -223,6 +223,9 @@ class EnumDocco(object):
                     continue
                 if filepath.endswith("libraries/AP_HAL/utility/getopt_cpp.h"):
                     continue
+                # Failed to match (    IOEVENT_PWM = EVENT_MASK(1),)
+                if filepath.endswith("libraries/AP_IOMCU/iofirmware/iofirmware.cpp"):
+                    continue
                 self.files.append(filepath)
         if len(_next):
             self.search_for_files(_next)
