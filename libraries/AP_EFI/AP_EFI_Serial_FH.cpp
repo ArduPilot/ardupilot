@@ -26,7 +26,8 @@
 #include <stdio.h>
 
 // RPM Threshold for fuel consumption estimator
-#define RPM_THRESHOLD                100
+#define RPM_THRESHOLD_RUNNING    500
+#define RPM_THRESHOLD            300
 
 extern const AP_HAL::HAL &hal;
 
@@ -77,14 +78,14 @@ void AP_EFI_Serial_FH::update()
         internal_state.spark_dwell_time_ms = 123.45f;        
         // RPM and Engine State
         internal_state.engine_speed_rpm = data.rpm;
-        if (internal_state.engine_speed_rpm > 0) {
+        if (internal_state.engine_speed_rpm > RPM_THRESHOLD_RUNNING) {
           internal_state.engine_state = Engine_State::RUNNING;
         } else {
           internal_state.engine_state = Engine_State::STOPPED;
         }
         // EFI ECU power [volts]
         internal_state.ignition_voltage = tenth(data.ivolt);
-        internal_state.atmospheric_pressure_kpa = tenth(data.ivolt);
+        internal_state.atmospheric_pressure_kpa = data.FTL==0xFFFF ? 0:tenth(data.FTL);// tenth(data.ivolt);
         //0=-273.15 273.15=0
         internal_state.intake_manifold_temperature = degC_to_Kelvin(data.tempOut);
         internal_state.intake_manifold_pressure_kpa = tenth(data.FP);
@@ -106,16 +107,28 @@ void AP_EFI_Serial_FH::update()
         // Throttle Position [%]
         internal_state.throttle_position_percent = data.tps;
 
+        float c1 = get_coef1(), c2 = get_coef2();
+        
+        c2*=10;
+        if (c2<1) c2=1;
+        internal_state.engine_load_percent = data.FTL==0xFFFF ? 0:(tenth(data.FTL)/c2*100);
+
+
         internal_state.fuel_pressure = tenth(data.FP); // Fuel_Pressure_Status::OK;
         // Fuel consumption
-        internal_state.fuel_consumption_rate_cm3pm = convertFuelConsumption((float)data.CFCHPL/1000.f);
         // Integrate fuel consumption
-        if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
-            //const float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm) / 600.0f;
-            //internal_state.fuel_consumption_rate_cm3pm = duty_cycle * get_coef1() - get_coef2();
+
+        if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {          
+          if (c1 < 1)  {
+            internal_state.fuel_consumption_rate_cm3pm = hundth(data.CFCHPL);
+            internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (now - internal_state.last_updated_ms) / 3600000.0f;
+          }
+          else {
+            internal_state.fuel_consumption_rate_cm3pm = hundth(data.CFCHPL) * get_ecu_fuel_density() / 60;
             internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (now - internal_state.last_updated_ms) / 60000.0f;
+          }
         } else {
-            //internal_state.fuel_consumption_rate_cm3pm = 0;
+            internal_state.fuel_consumption_rate_cm3pm = 0;
         }
         internal_state.last_updated_ms = now;
         copy_to_frontend();
