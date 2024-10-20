@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#include "AP_DDS_config.h"
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
@@ -12,16 +13,22 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
+# endif // AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
+#if AP_DDS_ARM_SERVER_ENABLED
 #include "ardupilot_msgs/srv/ArmMotors.h"
+#endif // AP_DDS_ARM_SERVER_ENABLED
+#if AP_DDS_MODE_SWITCH_SERVER_ENABLED
 #include "ardupilot_msgs/srv/ModeSwitch.h"
+#endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
-#endif
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_Frames.h"
 
 #include "AP_DDS_Client.h"
@@ -667,7 +674,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_JOY_SUB_ENABLED
-#if AP_DDS_DYNAMIC_TF_SUB
+#if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     case topics[to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB)].dr_id.id: {
         const bool success = tf2_msgs_msg_TFMessage_deserialize_topic(ub, &rx_dynamic_transforms_topic);
         if (success == false) {
@@ -684,7 +691,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
         break;
     }
-#endif // AP_DDS_DYNAMIC_TF_SUB
+#endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::VELOCITY_CONTROL_SUB)].dr_id.id: {
         const bool success = geometry_msgs_msg_TwistStamped_deserialize_topic(ub, &rx_velocity_control_topic);
@@ -732,6 +739,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
     (void) request_id;
     (void) length;
     switch (object_id.id) {
+#if AP_DDS_ARM_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id: {
         ardupilot_msgs_srv_ArmMotors_Request arm_motors_request;
         ardupilot_msgs_srv_ArmMotors_Response arm_motors_response;
@@ -761,6 +769,8 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : %s", msg_prefix, arm_motors_response.result ? "SUCCESS" : "FAIL");
         break;
     }
+#endif // AP_DDS_ARM_SERVER_ENABLED
+#if AP_DDS_MODE_SWITCH_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::MODE_SWITCH)].rep_id: {
         ardupilot_msgs_srv_ModeSwitch_Request mode_switch_request;
         ardupilot_msgs_srv_ModeSwitch_Response mode_switch_response;
@@ -789,6 +799,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
         break;
     }
+#endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
     }
 }
 
