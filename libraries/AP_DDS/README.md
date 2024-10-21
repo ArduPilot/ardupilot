@@ -178,7 +178,7 @@ Published topics:
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
  * /ap/gps_global_origin/filtered [geographic_msgs/msg/GeoPointStamped] 1 publisher
  * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
- * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
+ * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
@@ -354,7 +354,7 @@ The table below provides example mappings for topics and services
 | ROS 2 | DDS |
 | --- | --- |
 | ap/clock | rt/ap/clock |
-| ap/navsat/navsat0 | rt/ap/navsat/navsat0 |
+| ap/navsat | rt/ap/navsat |
 | ap/arm_motors | rq/ap/arm_motorsRequest, rr/ap/arm_motorsReply |
 
 Refer to existing mappings in [`AP_DDS_Topic_Table`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/AP_DDS_Topic_Table.h)
