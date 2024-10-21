@@ -562,15 +562,15 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
-    // limit update rate to avoid overflowing the FIFO buffer
-    if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
-        return;
-    }
-
     if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
+        return;
+    }
+
+    // limit update rate to avoid overflowing the FIFO buffer
+    if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;
     }
 
