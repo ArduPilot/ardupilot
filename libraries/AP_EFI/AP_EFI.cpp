@@ -17,6 +17,7 @@
 
 #if HAL_EFI_ENABLED
 
+#include "AP_EFI_Serial_FH.h"
 #include "AP_EFI_Serial_MS.h"
 #include "AP_EFI_Serial_Lutan.h"
 #include "AP_EFI_NWPMU.h"
@@ -96,6 +97,11 @@ void AP_EFI::init(void)
     switch ((Type)type.get()) {
     case Type::NONE:
         break;
+#if AP_EFI_SERIAL_FH_ENABLED
+    case Type::FlyHenry:
+        backend = NEW_NOTHROW AP_EFI_Serial_FH(*this);
+        break;
+#endif
 #if AP_EFI_SERIAL_MS_ENABLED
     case Type::MegaSquirt:
         backend = NEW_NOTHROW AP_EFI_Serial_MS(*this);
