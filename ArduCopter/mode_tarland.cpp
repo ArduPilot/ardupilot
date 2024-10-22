@@ -3,8 +3,7 @@
 #if MODE_TARLAND_ENABLED
 
 #define MIN_DESCENT_ALT_OFF 1
-#define MIN_FOLLOW_ALT_OFF 15
-#define MIN_FOLLOW_DIST 0.5
+#define MIN_FOLLOW_DIST 1 
 
 /**
  * mode_tarland.cpp - follow another mavlink enabled vehicle and land on it
@@ -25,6 +24,8 @@ bool ModeTarLand::init(bool ignore_checks)
     }
 
     // re use guided mode
+    hal.console->printf("start tarland");
+    copter.precland_statemachine.init();
     return ModeGuided::init(ignore_checks);
 }
 
@@ -44,40 +45,17 @@ void ModeTarLand::run()
             g2.follow.set_offset({0,0,-15}, offset_type);
             follow();
 
-
         }else if(dist_vec.xy().length() <= MIN_FOLLOW_DIST){
 
-            // Location target_loc;
-            // Vector3f v;
-            // g2.follow.get_target_location_and_velocity(target_loc, v);
-            // target_alt_relative = target_loc.alt * 0.01f;
 
                 if(dist_vec.z > MIN_DESCENT_ALT_OFF){
                     // Initiate descent
-                    g2.follow.set_offset({0,0,0}, offset_type);
+                    g2.follow.set_offset({0,0,-MIN_DESCENT_ALT_OFF}, offset_type);
                     follow();
 
                 }else if(dist_vec.z <= MIN_DESCENT_ALT_OFF){
-                    // Land and disarm
-                    // Set initial landing parameters
-                    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-                    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
-                    // Initialize position controller
-                    if (!pos_control->is_active_z()) {
-                        pos_control->init_z_controller();
-                    }
-
-                    if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
-                        landed = true;
-                        hal.console->printf("Landed %d", landed);
-                        copter.arming.disarm(AP_Arming::Method::LANDED);
-                    }else{
-                        g2.follow.set_offset({0,0,0}, offset_type);
-                        follow();
-                    }
-                    //  motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-                    // copter.arming.disarm(AP_Arming::Method::LANDED);
+                    perform_landing();
                 }
         }
 
@@ -166,6 +144,21 @@ void ModeTarLand::follow()
     ModeGuided::set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false, log_request);
 
     ModeGuided::run();
+}
+
+void ModeTarLand::perform_landing()
+{
+    copter.set_land_complete(true);
+    copter.pos_control->set_vel_desired_cms({0,0,0});
+
+    copter.pos_control->update_xy_controller();
+    copter.pos_control->update_z_controller();
+
+    if (copter.motors->armed()) {
+        copter.arming.disarm(AP_Arming::Method::LANDED);
+        gcs().send_text(MAV_SEVERITY_INFO, "Ship landing complete. Motors disarmed.");
+        landed = true;
+    }
 }
 
 /**

@@ -1998,9 +1998,11 @@ private:
     int8_t offset_type = 1;     // Relative
     float target_alt_relative;
     bool landed = false;
+    bool land_initialized = false;
 
 
     void follow();
+    void perform_landing();
 
     void get_desired_vel_neu_cms(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu, Vector3f pos_err, Vector3f pos_err_off);
     void limit_desired_velocity_xy(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu);
