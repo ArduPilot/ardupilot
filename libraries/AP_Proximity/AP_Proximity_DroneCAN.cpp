@@ -32,15 +32,9 @@ ObjectBuffer_TS<AP_Proximity_DroneCAN::ObstacleItem> AP_Proximity_DroneCAN::item
 
 
 //links the Proximity DroneCAN message to this backend
-void AP_Proximity_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_Proximity_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan, uint8_t driver_index)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("measurement_sub");
-    }
+    return Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, driver_index) != nullptr;
 }
 
 //Method to find the backend relating to the node id
