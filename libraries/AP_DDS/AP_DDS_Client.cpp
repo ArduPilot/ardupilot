@@ -482,7 +482,7 @@ update_topic(msg.header.stamp);
 strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
 
 // 直接调用静态函数 get_wrench() 获取 Wrench 数据
-DIYWrench DroneWrench = get_DIYwrench();
+DIYWrench DroneWrench = get_current_DIYwrench();
 // 将获取到的 force 和 torque 赋值到 ROS2 消息中
 msg.wrench.force.x = DroneWrench.force.x;
 msg.wrench.force.y = DroneWrench.force.y;

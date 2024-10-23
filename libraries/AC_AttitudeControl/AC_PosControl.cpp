@@ -354,19 +354,6 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _singleton = this;
 }
 
-///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-DIYWrench get_DIYwrench()
-{
-// 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(1.0f, 2.0f, 3.0f); // 假设的力值
-Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
-  
-// 返回 DIYWrench 对象
-return DIYWrench(force, torque);
-}
-
-///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ///
 /// 3D position shaper
@@ -991,6 +978,30 @@ bool AC_PosControl::is_active_z() const
     return dt_ticks <= 1;
 }
 
+
+
+ ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DIYWrench get_DIYwrench()
+{
+    
+// 示例力和力矩数据，你可以根据实际情况进行修改
+Vector3f force(1.0f, 2.0f, 3.0f); // 假设的力值
+
+Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
+  
+// 返回 DIYWrench 对象
+return DIYWrench(force, torque);
+}
+
+DIYWrench current_DIYwrench; 
+
+DIYWrench get_current_DIYwrench(){
+     return current_DIYwrench;
+}
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 /// update_z_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
 ///     Desired velocity and accelerations are added to these corrections as they are calculated
@@ -1074,7 +1085,10 @@ void AC_PosControl::update_z_controller()
     } else {
         _limit_vector.z = 0.0f;
     }
+
+     current_DIYwrench = get_DIYwrench();
 }
+
 
 
 ///
