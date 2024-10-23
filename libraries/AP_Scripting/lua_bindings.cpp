@@ -1237,4 +1237,34 @@ int lua_GCS_command_int(lua_State *L)
 }
 #endif
 
+#if HAL_ENABLE_DRONECAN_DRIVERS
+/*
+  get FlexDebug from a DroneCAN node
+ */
+int lua_DroneCAN_get_FlexDebug(lua_State *L)
+{
+    binding_argcheck(L, 4);
+
+    const uint8_t bus = get_uint8_t(L, 1);
+    const uint8_t node_id = get_uint8_t(L, 2);
+    const uint16_t msg_id = get_uint16_t(L, 3);
+    uint32_t tstamp_us = get_uint32(L, 4, 0, UINT32_MAX);
+
+    const auto *dc = AP_DroneCAN::get_dronecan(bus);
+    if (dc == nullptr) {
+        return 0;
+    }
+    dronecan_protocol_FlexDebug msg;
+
+    if (!dc->get_FlexDebug(node_id, msg_id, tstamp_us, msg)) {
+        return 0;
+    }
+
+    *new_uint32_t(L) = tstamp_us;
+    lua_pushlstring(L, (const char *)msg.u8.data, msg.u8.len);
+
+    return 2;
+}
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
+
 #endif  // AP_SCRIPTING_ENABLED
