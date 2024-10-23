@@ -2,35 +2,22 @@
 
 #include "AP_Proximity_config.h"
 
-#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
-
-#include "AP_Proximity_LightWareSerial.h"
-
+#if AP_PROXIMITY_LIGHTWARE_SF45B_SERIAL_ENABLED || AP_PROXIMITY_LIGHTWARE_SF45B_I2C_ENABLED
+#include "AP_Proximity.h"
+#include "AP_Proximity_Backend.h"
 #include <Filter/Filter.h>
 
-class AP_Proximity_LightWareSF45B : public AP_Proximity_LightWareSerial
-{
+static const uint32_t PROXIMITY_SF45B_TIMEOUT_MS = 200;
+static const uint32_t PROXIMITY_SF45B_REINIT_INTERVAL_MS = 5000;    // re-initialise sensor after this many milliseconds
+static const float PROXIMITY_SF45B_COMBINE_READINGS_DEG = 5.0f;     // combine readings from within this many degrees to improve efficiency
+static const uint32_t PROXIMITY_SF45B_DESIRED_FIELDS = ((uint32_t)1 << 0 | (uint32_t)1 << 8);   // first return (unfiltered), yaw angle
+static const uint16_t PROXIMITY_SF45B_DESIRED_FIELD_COUNT = 2;      // DISTANCE_DATA_CM message should contain two fields
 
+class AP_Proximity_LightWareSF45B
+{
 public:
     // constructor
-    AP_Proximity_LightWareSF45B(AP_Proximity &_frontend,
-                                AP_Proximity::Proximity_State &_state,
-                                AP_Proximity_Params& _params,
-                                uint8_t serial_instance) :
-            AP_Proximity_LightWareSerial(_frontend, _state, _params, serial_instance) {}
-
-    uint16_t rxspace() const override {
-        return 1280;
-    };
-
-    // update state
-    void update(void) override;
-
-    // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override { return 50.0f; }
-    float distance_min() const override { return 0.20f; }
-
-private:
+    AP_Proximity_LightWareSF45B() {}
 
     // message ids
     enum class MessageID : uint8_t {
@@ -57,6 +44,7 @@ private:
         LOST_SIGNAL_COUNTER = 76,
         BAUD_RATE = 79,
         I2C_ADDRESS = 80,
+        SCAN_SPEED = 85,
         STEPPER_STATUS = 93,
         SCAN_ON_STARTUP = 94,
         SCAN_ENABLE = 96,
@@ -65,20 +53,8 @@ private:
         SCAN_HIGH_ANGLE = 99
     };
 
-    // initialise sensor
-    void initialise();
-
-    // request start of streaming of distances
-    void request_stream_start();
-
-    // check and process replies from sensor
-    void process_replies();
-
-    // process the latest message held in the msg structure
-    void process_message();
-
     // convert an angle (in degrees) to a mini sector number
-    uint8_t convert_angle_to_minisector(float angle_deg) const;
+    uint8_t convert_angle_to_minisector(float angle_deg) const { return wrap_360(angle_deg + (PROXIMITY_SF45B_COMBINE_READINGS_DEG * 0.5f)) / PROXIMITY_SF45B_COMBINE_READINGS_DEG; };
 
     // internal variables
     uint32_t _last_init_ms;                 // system time of last re-initialisation
@@ -97,14 +73,6 @@ private:
     float _minisector_distance;             // shortest distance (in meters) in mini sector
     float _minisector_angle;                // angle (in degrees) of shortest distance in mini sector
     bool _minisector_distance_valid;        // true if mini sector has at least one valid distance
-
-    // state of sensor
-    struct {
-        uint8_t update_rate;        // sensor reported update rate enum from UPDATE_RATE message
-        uint32_t streaming_fields;  // sensor reported bitmask of fields sent in DISTANCE_DATA_CM message
-        uint32_t stream_data_type;  // sensor reported stream value.  5 if DISTANCE_DATA_CM messages are being streamed
-    } _sensor_state;
-
 };
 
-#endif // AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
+#endif // AP_PROXIMITY_LIGHTWARE_SF45B_SERIAL_ENABLED

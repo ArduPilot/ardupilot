@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_Proximity_Params::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1, 14:DroneCAN, 15:Scripting, 16:LD06, 17: MR72_CAN
+    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B_Serial,10:SITL,12:AirSimSITL,13:CygbotD1, 14:DroneCAN, 15:Scripting, 16:LD06, 17: MR72_CAN, 18:LightwareSF45B_I2C
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",   1, AP_Proximity_Params, type, 0, AP_PARAM_FLAG_ENABLE),
