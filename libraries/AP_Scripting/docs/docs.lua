@@ -414,6 +414,16 @@ function CAN:get_device(buffer_len) end
 ---@return ScriptingCANBuffer_ud|nil
 function CAN:get_device2(buffer_len) end
 
+
+-- get latest FlexDebug message from a CAN node
+---@param bus number -- CAN bus number, 0 for first bus, 1 for 2nd
+---@param node number -- CAN node
+---@param id number -- FlexDebug message ID
+---@param last_us uint32_t_ud|integer|number -- timestamp of last received message, new message will be returned if timestamp is different
+---@return uint32_t_ud|nil -- timestamp of message (first frame arrival time)
+---@return string|nil -- up to 255 byte buffer
+function DroneCAN_get_FlexDebug(bus,node,id,last_us) end
+
 -- Auto generated binding
 
 -- desc
