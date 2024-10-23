@@ -276,6 +276,7 @@ private:
     // $PALYSBLS,034727.000,0.256,0.992,-0.258,1.056,75.52,-14.12,R*4E
     // lat-projection of bl,long-project of bl,height-project of bl,baseline length,yaw,pitch,mode(A:Autonomous, D: DGPS, N: invalid,F:Float,R:RTK Fixed)
     // ALLYSTAR $PALYSBLS field
+    // not support HDT yet
     struct {
         float baseline_length;
         float heading;
