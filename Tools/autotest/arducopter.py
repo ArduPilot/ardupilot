@@ -12168,6 +12168,83 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # restart GPS driver
         self.reboot_sitl()
 
+    def Quicktune_CPP(self):
+        '''VTOL Quicktune in C++'''
+        self.set_parameters({
+            "RC7_OPTION": 181,
+            "QWIK_ENABLE" : 1,
+            "QWIK_DOUBLE_TIME" : 5, # run faster for autotest
+        })
+
+        # reduce roll/pitch gains by 2
+        gain_mul = 0.5
+        soften_params = ['ATC_RAT_RLL_P', 'ATC_RAT_RLL_I', 'ATC_RAT_RLL_D',
+                         'ATC_RAT_PIT_P', 'ATC_RAT_PIT_I', 'ATC_RAT_PIT_D',
+                         'ATC_RAT_YAW_P', 'ATC_RAT_YAW_I']
+
+        original_values = self.get_parameters(soften_params)
+
+        softened_values = {}
+        for p in original_values.keys():
+            softened_values[p] = original_values[p] * gain_mul
+        self.set_parameters(softened_values)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        self.wait_ready_to_arm()
+        self.change_mode("LOITER")
+        self.set_rc(7, 1000)
+
+        self.arm_vehicle()
+        self.takeoff(alt_min=20, mode='LOITER')
+        self.set_rc(3, 1500)
+
+        self.progress("Starting tune with R/C switch")
+        self.set_rc(7, 1500)
+
+        self.wait_text("Quicktune: starting tune", check_context=True)
+        for axis in ['Roll', 'Pitch', 'Yaw']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Quicktune: %s D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Quicktune: %s P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Quicktune: %s done" % axis, check_context=True, timeout=120)
+        self.wait_text("Quicktune: Yaw done", check_context=True, timeout=120)
+
+        new_values = self.get_parameters(soften_params)
+        for p in original_values.keys():
+            threshold = 0.9 * original_values[p]
+            self.progress("tuned param %s %.4f need %.4f" % (p, new_values[p], threshold))
+            if new_values[p] < threshold:
+                raise NotAchievedException(
+                    "parameter %s %.4f not increased over %.4f" %
+                    (p, new_values[p], threshold))
+
+        self.progress("ensure we are not overtuned")
+        self.set_parameter('SIM_ENGINE_MUL', 0.9)
+
+        for i in range(5):
+            self.wait_heartbeat()
+
+        # and restore it
+        self.set_parameter('SIM_ENGINE_MUL', 1)
+
+        for i in range(5):
+            self.wait_heartbeat()
+
+        if self.statustext_in_collections("ABORTING"):
+            raise NotAchievedException("tune has aborted, overtuned")
+
+        self.progress("using aux fn for save tune")
+        self.run_auxfunc(181, 2)
+        self.wait_text("Quicktune: saved", check_context=True)
+        self.change_mode("LAND")
+
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("QWIK_ENABLE", 0)
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -12273,6 +12350,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
             self.CommonOrigin,
+            self.Quicktune_CPP,
         ])
         return ret
 
