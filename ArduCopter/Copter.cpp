@@ -75,6 +75,7 @@
  */
 
 #include "Copter.h"
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
@@ -113,7 +114,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     // update INS immediately to get current gyro data populated
     FAST_TASK_CLASS(AP_InertialSensor, &copter.ins, update),
     // run low level rate controllers that only require IMU data
-    FAST_TASK(run_rate_controller),
+    FAST_TASK(run_rate_controller_main),
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     FAST_TASK(run_custom_controller),
 #endif
@@ -121,7 +122,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK(heli_update_autorotation),
 #endif //HELI_FRAME
     // send outputs to the motors library immediately
-    FAST_TASK(motors_output),
+    FAST_TASK(motors_output_main),
      // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
 #if FRAME_CONFIG == HELI_FRAME
@@ -258,6 +259,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
 #if HAL_BUTTON_ENABLED
     SCHED_TASK_CLASS(AP_Button,            &copter.button,              update,           5, 100, 168),
+#endif
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    SCHED_TASK(update_dynamic_notch_at_specified_rate_main,                       LOOP_RATE, 200, 215),
 #endif
 };
 
@@ -570,12 +574,15 @@ void Copter::update_batt_compass(void)
 // should be run at loop rate
 void Copter::loop_rate_logging()
 {
-    if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
+   if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
-        Log_Write_PIDS(); // only logs if PIDS bitmask is set
+        if (!using_rate_thread) {
+            Log_Write_Rate();
+            Log_Write_PIDS(); // only logs if PIDS bitmask is set
+        }
     }
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-    if (should_log(MASK_LOG_FTN_FAST)) {
+    if (should_log(MASK_LOG_FTN_FAST) && !using_rate_thread) {
         AP::ins().write_notch_log_messages();
     }
 #endif
@@ -593,10 +600,15 @@ void Copter::ten_hz_logging_loop()
     // log attitude controller data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
+        if (!using_rate_thread) {
+            Log_Write_Rate();
+        }
     }
     if (!should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
     // log at 10Hz if PIDS bitmask is selected, even if no ATT bitmask is selected; logs at looprate if ATT_FAST and PIDS bitmask set
-        Log_Write_PIDS();
+        if (!using_rate_thread) {
+            Log_Write_PIDS();
+        }
     }
     // log EKF attitude data always at 10Hz unless ATTITUDE_FAST, then do it in the 25Hz loop
     if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
@@ -724,10 +736,23 @@ void Copter::one_hz_loop()
     AP_Notify::flags.flying = !ap.land_complete;
 
     // slowly update the PID notches with the average loop rate
-    attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    if (!using_rate_thread) {
+        attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    }
     pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
     custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+#endif
+
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // see if we should have a separate rate thread
+    if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
+        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
+                                         "rate",
+                                         1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
+            started_rate_thread = true;
+        }
+    }
 #endif
 }
 

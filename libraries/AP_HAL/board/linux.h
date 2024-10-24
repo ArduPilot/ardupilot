@@ -421,3 +421,7 @@
 #else
 #define HAL_LINUX_USE_VIRTUAL_CAN 0
 #endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
