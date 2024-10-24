@@ -347,9 +347,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     if (battery.current_amps(current, instance)) {
         if (percentage == 100) {
             msg.power_supply_status = 4;   //POWER_SUPPLY_STATUS_FULL
-        } else if (current < 0.0) {
+        } else if (is_negative(current)) {
             msg.power_supply_status = 1;   //POWER_SUPPLY_STATUS_CHARGING
-        } else if (current > 0.0) {
+        } else if (is_positive(current)) {
             msg.power_supply_status = 2;   //POWER_SUPPLY_STATUS_DISCHARGING
         } else {
             msg.power_supply_status = 3;   //POWER_SUPPLY_STATUS_NOT_CHARGING
