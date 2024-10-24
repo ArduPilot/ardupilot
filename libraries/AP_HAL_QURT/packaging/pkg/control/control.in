@@ -1,0 +1,8 @@
+Package: voxl-ardupilot
+Version: FW_VERSION
+Section: devel
+Priority: optional
+Architecture: arm64
+Depends: modalai-slpi(>=1.1.19), libslpi-link
+Maintainer: Eric Katzfey <eric.katzfey@modalai.com>
+Description: ModalAI ArduPilot flight controller
