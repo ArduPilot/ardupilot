@@ -1503,6 +1503,58 @@ bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     return true;
 }
 
+#if AP_SCRIPTING_ENABLED
+/*
+  handle FlexDebug message, holding a copy locally for a lua script to access
+ */
+void AP_DroneCAN::handle_FlexDebug(const CanardRxTransfer& transfer, const dronecan_protocol_FlexDebug &msg)
+{
+    // find an existing element in the list
+    const uint8_t source_node = transfer.source_node_id;
+    for (auto *p = flexDebug_list; p != nullptr; p = p->next) {
+        if (p->node_id == source_node && p->msg.id == msg.id) {
+            p->msg = msg;
+            p->timestamp_us = uint32_t(transfer.timestamp_usec);
+            return;
+        }
+    }
+
+    // new message ID, add to the list. Note that this gets called
+    // only from one thread, so no lock needed
+    auto *p = NEW_NOTHROW FlexDebug;
+    if (p == nullptr) {
+        return;
+    }
+    p->node_id = source_node;
+    p->msg = msg;
+    p->timestamp_us = uint32_t(transfer.timestamp_usec);
+    p->next = flexDebug_list;
+
+    // link into the list
+    flexDebug_list = p;
+}
+
+/*
+  get the last FlexDebug message from a node
+ */
+bool AP_DroneCAN::get_FlexDebug(uint8_t node_id, uint16_t msg_id, uint32_t &timestamp_us, dronecan_protocol_FlexDebug &msg) const
+{
+    for (const auto *p = flexDebug_list; p != nullptr; p = p->next) {
+        if (p->node_id == node_id && p->msg.id == msg_id) {
+            if (timestamp_us == p->timestamp_us) {
+                // stale message
+                return false;
+            }
+            timestamp_us = p->timestamp_us;
+            msg = p->msg;
+            return true;
+        }
+    }
+    return false;
+}
+
+#endif // AP_SCRIPTING_ENABLED
+
 /*
   handle LogMessage debug
  */
