@@ -608,7 +608,7 @@ DIYWrench() : force(), torque() {}
 DIYWrench(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
 };
 
-extern DIYWrench get_DIYwrench();
+extern DIYWrench get_DIYwrench(float thr_out);
 extern DIYWrench current_DIYwrench;
 extern DIYWrench get_current_DIYwrench();
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

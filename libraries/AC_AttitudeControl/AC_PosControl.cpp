@@ -633,7 +633,7 @@ void AC_PosControl::stop_vel_xy_stabilisation()
 // is_active_xy - returns true if the xy position controller has been run in the previous loop
 bool AC_PosControl::is_active_xy() const
 {
-    const uint32_t dt_ticks = AP::scheduler().ticks32() - _last_update_xy_ticks;
+    const uint32_t dt_ticks = AP::scheduler().ticks32() - _last_update_xy_ticks;  //时间间隔dt_ticks计算
     return dt_ticks <= 1;
 }
 
@@ -641,30 +641,34 @@ bool AC_PosControl::is_active_xy() const
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
 ///     Desired velocity and accelerations are added to these corrections as they are calculated
 ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~横向位置控制器更新~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~横向位置控制器更新~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update_xy_controller~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void AC_PosControl::update_xy_controller()
 {
-    // check for ekf xy position reset
+    // check for ekf xy position reset // 卡尔曼滤波器 EKF XY 位置重置检查
     handle_ekf_xy_reset();
 
     // Check for position control time out
-    if (!is_active_xy()) {
-        init_xy_controller();
-        if (has_good_timing()) {
+    if (!is_active_xy()) {                //如果位置控制不活跃
+        init_xy_controller();             //重新初始化横向位置控制器
+        if (has_good_timing()) {          //检查时间同步
             // call internal error because initialisation has not been done
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); //逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
         }
     }
-    _last_update_xy_ticks = AP::scheduler().ticks32();
+    _last_update_xy_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
 
     float ahrsGndSpdLimit, ahrsControlScaleXY;
-    AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
+    AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY); //获取地面速度限制和横向控制缩放比例
 
     // update the position, velocity and acceleration offsets
-    update_offsets_xy();
+    update_offsets_xy(); //更新位置、速度和加速度的偏移量（误差）
 
     // Position Controller
 
-    _pos_target.xy() = _pos_desired.xy() + _pos_offset.xy();
+    _pos_target.xy() = _pos_desired.xy() + _pos_offset.xy(); //对XY目标位置进行赋值：期望位置+偏移量补偿，这个_pos_target.xy()值是实时更新的
 
     // determine the combined position of the actual position and the disturbance from system ID mode
     const Vector3f &curr_pos = _inav.get_position_neu_cm();
@@ -982,11 +986,11 @@ bool AC_PosControl::is_active_z() const
 
  ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DIYWrench get_DIYwrench()
+DIYWrench get_DIYwrench(float thr_out)
 {
     
 // 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(1.0f, 2.0f, 3.0f); // 假设的力值
+Vector3f force(1.0f, 2.0f, thr_out); // 假设的力值
 
 Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
   
@@ -1063,7 +1067,7 @@ void AC_PosControl::update_z_controller()
         thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, _dt, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
         thr_out += _pid_accel_z.get_ff() * 0.001f;
     }
-    thr_out += _motors.get_throttle_hover();
+    thr_out += _motors.get_throttle_hover(); //加上悬停推力
 
     // Actuator commands
 
@@ -1086,7 +1090,7 @@ void AC_PosControl::update_z_controller()
         _limit_vector.z = 0.0f;
     }
 
-     current_DIYwrench = get_DIYwrench();
+     current_DIYwrench = get_DIYwrench(thr_out); //用于ROS2推力话题
 }
 
 
