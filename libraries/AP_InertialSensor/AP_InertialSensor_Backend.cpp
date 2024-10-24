@@ -212,7 +212,6 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     save_gyro_window(instance, gyro, filter_phase++);
 
     Vector3f gyro_filtered = gyro;
-
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // apply the harmonic notch filters
     for (auto &notch : _imu.harmonic_notches) {
@@ -220,15 +219,13 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
             continue;
         }
         bool inactive = notch.is_inactive();
-#if AP_AHRS_ENABLED
         // by default we only run the expensive notch filters on the
         // currently active IMU we reset the inactive notch filters so
         // that if we switch IMUs we're not left with old data
         if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
-            instance != AP::ahrs().get_primary_gyro_index()) {
+            instance != _imu._primary_gyro) {
             inactive = true;
         }
-#endif
         if (inactive) {
             // while inactive we reset the filter so when it activates the first output
             // will be the first input sample
@@ -349,6 +346,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
 
     // 5us
     log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    update_primary_gyro();
 }
 
 /*
@@ -436,6 +434,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     }
 
     log_gyro_raw(instance, sample_us, gyro, _imu._gyro_filtered[instance]);
+    update_primary_gyro();
 }
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &raw_gyro, const Vector3f &filtered_gyro)
@@ -593,6 +592,7 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     // assume we're doing pre-filter logging:
     log_accel_raw(instance, sample_us, accel);
 #endif
+    update_primary_accel();
 }
 
 /*
@@ -670,6 +670,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
     // assume we're doing pre-filter logging
     log_accel_raw(instance, sample_us, accel);
 #endif
+    update_primary_accel();
 }
 
 
@@ -784,6 +785,17 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     update_gyro_filters(instance);
 }
 
+void AP_InertialSensor_Backend::update_primary_gyro()
+{
+    // timing changes need to be made in the bus thread in order to take effect which is
+    // why they are actioned here
+    const bool is_new_primary = gyro_instance == _imu._primary_gyro;
+    if (is_primary_gyro != is_new_primary) {
+        set_primary_gyro(is_new_primary);
+        is_primary_gyro = is_new_primary;
+    }
+}
+
 /*
   propagate filter changes from front end to backend
  */
@@ -827,6 +839,16 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
     update_accel_filters(instance);
 }
 
+void AP_InertialSensor_Backend::update_primary_accel()
+{
+    // timing changes need to be made in the bus thread in order to take effect which is
+    // why they are actioned here
+    const bool is_new_primary = accel_instance == _imu._primary_accel;
+    if (is_primary_accel != is_new_primary) {
+        set_primary_accel(is_new_primary);
+        is_primary_accel = is_new_primary;
+    }
+}
 
 /*
   propagate filter changes from front end to backend

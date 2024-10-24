@@ -61,7 +61,7 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 #include "AP_InertialSensor_Invensensev2_registers.h"
 
 #define INV2_SAMPLE_SIZE 14
-#define INV2_FIFO_BUFFER_LEN 8
+#define INV2_FIFO_BUFFER_LEN 16
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
@@ -252,7 +252,7 @@ void AP_InertialSensor_Invensensev2::start()
     }
 
     // start the timer process to read samples
-    _dev->register_periodic_callback(1265625UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev2::_poll_data, void));
+    periodic_handle = _dev->register_periodic_callback(1265625UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev2::_poll_data, void));
 }
 
 // get a startup banner to output to the GCS
@@ -277,6 +277,19 @@ bool AP_InertialSensor_Invensensev2::update()
 
     return true;
 }
+
+#if AP_INERTIALSENSOR_DYNAMIC_FIFO
+void AP_InertialSensor_Invensensev2::set_primary_gyro(bool is_primary)
+{
+    if (((1U<<gyro_instance) & AP_INERTIALSENSOR_DYNAMIC_FIFO_MASK) && enable_fast_sampling(gyro_instance)) {
+        if (is_primary) {
+            _dev->adjust_periodic_callback(periodic_handle, 1265625UL / _gyro_backend_rate_hz);
+        } else {
+            _dev->adjust_periodic_callback(periodic_handle, 1265625UL / 1125);
+        }
+    }
+}
+#endif
 
 /*
   accumulate new samples
