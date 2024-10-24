@@ -281,6 +281,22 @@ bool AP_GPS_NMEA::_have_new_message()
     }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
 
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED
+
+#if GPS_MOVING_BASELINE
+
+    if (now - _last_PALYSBLS_ms > 500) {
+        if (_last_PALYSBLS_ms != 0) {
+            // we have lost PALYSBLS
+            state.have_gps_yaw = false;
+            _last_PALYSBLS_ms = 0;
+        }
+    }   
+
+#endif // GPS_MOVING_BASELINE
+
+#endif // AP_GPS_NMEA_ALLYSTAR_ENABLED
+
     _last_fix_ms = now;
 
     _last_GGA_ms = 1;
@@ -508,6 +524,38 @@ bool AP_GPS_NMEA::_term_complete()
                 break;
             }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
+
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED // AllyStar Moving Baseline extensions
+
+            case _GPS_SENTENCE_PALYSBLS: {
+#if GPS_MOVING_BASELINE
+                const auto &bls = _alysbls_heading;
+                _last_PALYSBLS_ms = now;
+                if (now - _last_GGA_ms > 500 || bls.mb_quality_indicator != 4) { // RTK Fixed
+                    // now - _last_GGA_ms > 500 is a failsafe to prevent us from using stale data
+                    // need RTK Fixed
+                    state.have_gps_yaw = false;
+                    break;
+                }
+
+                const float dist = bls.baseline_length;
+                const float bearing = bls.heading;
+                const float alt_diff = dist*tanf(radians(-bls.pitch));
+                state.relPosHeading = bearing;
+                state.relPosLength = dist;
+                state.relPosD = alt_diff;
+                state.relposheading_ts = now;
+                if (calculate_moving_base_yaw(bearing, dist, alt_diff)) {
+                    state.have_gps_yaw_accuracy = false;
+                    _last_yaw_ms = now;
+                }
+                state.gps_yaw_configured = true;
+
+#endif // GPS_MOVING_BASELINE
+                break;
+            }
+#endif // AP_GPS_NMEA_ALLYSTAR_ENABLED
+
             }
             // see if we got a good message
             return _have_new_message();
@@ -543,6 +591,18 @@ bool AP_GPS_NMEA::_term_complete()
             return false;
         }
 #endif
+
+        /*
+          AllyStar Moving Baseline extensions
+        */
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED
+        if (strcmp(_term, "PALYSBLS") == 0) {
+            _sentence_type = _GPS_SENTENCE_PALYSBLS;
+            return false;
+        }
+#endif  
+
+
         /*
           The first two letters of the NMEA term are the talker
           ID. The most common is 'GP' but there are a bunch of others
@@ -670,11 +730,73 @@ bool AP_GPS_NMEA::_term_complete()
             break;
 #endif
 #endif
+
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED
+#if GPS_MOVING_BASELINE
+        case _GPS_SENTENCE_PALYSBLS + 1 ... _GPS_SENTENCE_PALYSBLS + 9: // PALYSBLS message
+            parse_alysbls_field(_term_number, _term);
+            break;
+#endif // GPS_MOVING_BASELINE
+#endif // AP_GPS_NMEA_ALLYSTAR_ENABLED
+
         }
     }
 
     return false;
 }
+
+
+#if AP_GPS_NMEA_ALLYSTAR_ENABLED
+#if GPS_MOVING_BASELINE
+/*
+  parse a PALYSBLS message 
+
+  Example:
+    $PALYSBLS,034727.000,0.256,0.992,-0.258,1.056,75.52,-14.12,R*4E
+    header,hhmmss.sss,lat-projection of bl,long-projection of bl,height-projection of bl,baseline length,yaw,pitch, status(A:Autonomous, D: DGPS, N: invalid,F:Float,R:RTK Fixed)
+ */
+void AP_GPS_NMEA::parse_alysbls_field(uint16_t term_number, const char *term)
+{
+    auto &bls = _alysbls_heading;
+
+    switch (term_number) {
+    case 5:
+        bls.baseline_length = atof(term);
+        break;
+    case 6:
+        bls.heading = atof(term);
+        break;
+    case 7:
+        bls.pitch = atof(term);
+        break;
+    case 8:
+        switch (term[0]) {
+            case 'A':
+                bls.mb_quality_indicator = 1; // Autonomous
+                break;
+            case 'D':
+                bls.mb_quality_indicator = 2; // DGPS
+                break;
+            case 'N':
+                bls.mb_quality_indicator = 0; // Invalid
+                break;
+            case 'F':
+                bls.mb_quality_indicator = 5; // RTK Float
+                break;
+            case 'R':
+                bls.mb_quality_indicator = 4; // RTK Fixed
+                break;
+            default:
+                bls.mb_quality_indicator = 0; // Default to invalid if unknown
+                break;
+        }
+        break;
+    }
+}
+
+#endif
+
+#endif
 
 #if AP_GPS_NMEA_UNICORE_ENABLED
 /*
@@ -885,6 +1007,7 @@ void AP_GPS_NMEA::send_config(void)
     }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
 
+
     case AP_GPS::GPS_TYPE_HEMI: {
         port->printf(
         "$JATT,NMEAHE,0\r\n" /* Prefix of GP on the HDT message */      \
@@ -897,10 +1020,27 @@ void AP_GPS_NMEA::send_config(void)
         break;
     }
 
-    case AP_GPS::GPS_TYPE_ALLYSTAR:
+
+    // For Allystar
+    case AP_GPS::GPS_TYPE_ALLYSTAR:{
+        // Allystar no longer supports CFG-PWRCTL, it is recommended to use CFG-PWRCTL2 (0x06,0x44).
+        // CFG-PWRCTL2 does not support ASCII mode
+        /*
         nmea_printf(port, "$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
-                    unsigned(rate_hz), unsigned(rate_ms));
+                    unsigned(rate_hz), unsigned(rate_ms)); */
+        // set to 5Hz, F1 D9 06 44 10 00 00 00 01 00 05 00 00 00 C8 00 00 00 00 00 00 00 28 2E
+        // set to 1Hz, F1 D9 06 44 10 00 00 00 01 00 01 00 00 00 E8 03 00 00 00 00 00 00 47 13
+
+        // force to send cmd to set rate to 5Hz,since Allystar's RTK/Heading product only support rate up to 5Hz
+        const uint8_t allystar_cfg_rate_5hz[] = {
+            0xF1, 0xD9, 0x06, 0x44, 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x05, 0x00, 
+            0x00, 0x00, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x2E
+        };
+
+        port->write(allystar_cfg_rate_5hz, sizeof(allystar_cfg_rate_5hz));
         break;
+    }
+
 
     default:
         break;
