@@ -489,6 +489,10 @@ void AP_IOMCU_FW::update()
         last_status_ms = now;
         page_status_update();
     }
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    profiled_update();
+#endif
 #ifdef HAL_WITH_BIDIR_DSHOT
     // EDT updates are semt at ~1Hz per ESC, but we want to make sure
     // that we don't delay updates unduly so sample at 5Hz
@@ -1029,6 +1033,20 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
     }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    case PAGE_PROFILED:
+        if (rx_io_packet.count != 2 || (rx_io_packet.regs[0] & 0xFF) != PROFILED_ENABLE_MAGIC) {
+            return false;
+        }
+        profiled_brg[0] = rx_io_packet.regs[0] >> 8;
+        profiled_brg[1] = rx_io_packet.regs[1] & 0xFF;
+        profiled_brg[2] = rx_io_packet.regs[1] >> 8;
+        // push new led data
+        profiled_num_led_pushed = 0;
+        profiled_control_enabled = true;
+        break;
+#endif
+
     default:
         break;
     }
@@ -1063,6 +1081,48 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
     reg_setup.crc[1] = sum >> 16;
 }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+// bitbang profiled bitstream, 8-10 chunks at a time
+// Max time taken per call is ~7us
+void AP_IOMCU_FW::profiled_update(void)
+{
+    if (profiled_num_led_pushed > PROFILED_LED_LEN) {
+        profiled_byte_index = 0;
+        profiled_leading_zeros = PROFILED_LEADING_ZEROS;
+        return;
+    }
+
+    // push 10 zero leading bits at a time
+    if (profiled_leading_zeros != 0) {
+        for (uint8_t i = 0; i < 10; i++) {
+            palClearLine(HAL_GPIO_PIN_SAFETY_INPUT);
+            palSetLine(HAL_GPIO_PIN_SAFETY_INPUT);
+            profiled_leading_zeros--;
+        }
+        return;
+    }
+
+    if ((profiled_byte_index == 0) ||
+        (profiled_byte_index == PROFILED_OUTPUT_BYTE_LEN)) {
+        // start bit
+        palClearLine(HAL_GPIO_PIN_SAFETY_INPUT);
+        palSetLine(HAL_GPIO_PIN_SAFETY_LED);
+        palSetLine(HAL_GPIO_PIN_SAFETY_INPUT);
+        profiled_byte_index = 0;
+        profiled_num_led_pushed++;
+    }
+
+    uint8_t byte_val = profiled_brg[profiled_byte_index];
+    for (uint8_t i = 0; i < 8; i++) {
+        palClearLine(HAL_GPIO_PIN_SAFETY_INPUT);
+        palWriteLine(HAL_GPIO_PIN_SAFETY_LED, byte_val & 1);
+        byte_val >>= 1;
+        palSetLine(HAL_GPIO_PIN_SAFETY_INPUT);
+    }
+
+    profiled_byte_index++;
+}
+#endif
 
 /*
   update safety state
@@ -1075,6 +1135,15 @@ void AP_IOMCU_FW::safety_update(void)
         return;
     }
     safety_update_ms = now;
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    if (profiled_control_enabled) {
+        // set line mode to output for safety input pin
+        palSetLineMode(HAL_GPIO_PIN_SAFETY_INPUT, PAL_MODE_OUTPUT_PUSHPULL);
+        palSetLineMode(HAL_GPIO_PIN_SAFETY_LED, PAL_MODE_OUTPUT_PUSHPULL);
+        return;
+    }
+#endif
 
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_INPUT);
     if (safety_pressed) {
