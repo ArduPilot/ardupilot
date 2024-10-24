@@ -716,7 +716,10 @@ def generate_code():
     # body_frame_velocity_observation(P,state,R_to_body,vx,vy,vz)
     # print('Generating body frame acceleration observation code ...')
     # body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy)
-    # print('Generating 2D range to beacon onservation code ...')
+    # the 2D range-to-beacon observation code is present in the
+    # libraries but has been significantly reworked; search for "less
+    # hacky way of achieving this"
+    # print('Generating 2D range to beacon observation code ...')
     # rng2d_observation(P,state,px,py)
     # print('Generating yaw estimator code ...')
     # yaw_estimator()
