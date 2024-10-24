@@ -373,16 +373,15 @@ void AP_InertialSensor_Invensensev3::start()
 
 // get a startup banner to output to the GCS
 bool AP_InertialSensor_Invensensev3::get_output_banner(char* banner, uint8_t banner_len) {
-    if (fast_sampling) {
-        snprintf(banner, banner_len, "IMU%u: fast%s sampling enabled %.1fkHz",
-            gyro_instance,
+    snprintf(banner, banner_len, "IMU%u:%s%s sampling LR:%.1fkHz SR:%.1fkHz",
+        gyro_instance,
+        fast_sampling ? " fast" : " normal",
 #if HAL_INS_HIGHRES_SAMPLE
-            highres_sampling ? ", high-resolution" :
+        highres_sampling ? " hi-res" :
 #endif
-            "" , backend_rate_hz * 0.001);
-        return true;
-    }
-    return false;
+        "", backend_rate_hz * 0.001,
+        sampling_rate_hz * 0.001);
+    return true;
 }
 
 /*
@@ -649,21 +648,21 @@ void AP_InertialSensor_Invensensev3::register_write_bank(uint8_t bank, uint8_t r
 }
 
 // calculate the fast sampling backend rate
-uint16_t AP_InertialSensor_Invensensev3::calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const
+uint16_t AP_InertialSensor_Invensensev3::calculate_fast_sampling_backend_rate(uint16_t base_backend_rate, uint16_t max_backend_rate) const
 {
     // constrain the gyro rate to be at least the loop rate
-    uint8_t loop_limit = 1;
-    if (get_loop_rate_hz() > base_odr) {
-        loop_limit = 2;
+    uint8_t min_base_rate_multiplier = 1;
+    if (get_loop_rate_hz() > base_backend_rate) {
+        min_base_rate_multiplier = 2;
     }
-    if (get_loop_rate_hz() > base_odr * 2) {
-        loop_limit = 4;
+    if (get_loop_rate_hz() > base_backend_rate * 2) {
+        min_base_rate_multiplier = 4;
     }
     // constrain the gyro rate to be a 2^N multiple
-    uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+    uint8_t fast_sampling_rate_multiplier = constrain_int16(get_fast_sampling_rate(), min_base_rate_multiplier, 8);
 
     // calculate rate we will be giving samples to the backend
-    return constrain_int16(base_odr * fast_sampling_rate, base_odr, max_odr);
+    return constrain_int16(base_backend_rate * fast_sampling_rate_multiplier, base_backend_rate, max_backend_rate);
 }
 
 /*
@@ -786,6 +785,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
             }
         }
     }
+    sampling_rate_hz = backend_rate_hz; // sampling rate and backend rate are the same
 
     // disable gyro and accel as per 12.9 in the ICM-42688 docs
     register_write(INV3REG_PWR_MGMT0, 0x00);
@@ -841,6 +841,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
 {
     backend_rate_hz = 1600;
+    sampling_rate_hz = 1600;
     // use low-noise mode
     register_write(INV3REG_70_PWR_MGMT0, 0x0f);
     hal.scheduler->delay_microseconds(300);
@@ -865,27 +866,24 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
  */
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 {
-    uint8_t odr_config = 4;
-    backend_rate_hz = 1600;
-    // always fast sampling
-    fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+    uint8_t odr_config;
+    backend_rate_hz = 800;
 
-    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
-        backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, backend_rate_hz * 4);
+    fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() && fast_sampling) {
+        // For ICM45686 we only set 3200 or 6400Hz as sampling rates
+        // we don't need to read FIFO faster than requested rate
+        backend_rate_hz = calculate_fast_sampling_backend_rate(800, 6400);
+    } else {
+        fast_sampling = false;
     }
 
-    // this sensor actually only supports 2 speeds
-    backend_rate_hz = constrain_int16(backend_rate_hz, 3200, 6400);
-
-    switch (backend_rate_hz) {
-    case 6400: // 6.4Khz
-        odr_config = 3;
-        break;
-    case 3200: // 3.2Khz
-        odr_config = 4;
-        break;
-    default:
-        break;
+    if (backend_rate_hz <= 3200) {
+        odr_config = 0x04; // 3200Hz
+        sampling_rate_hz = 3200;
+    } else {
+        odr_config = 0x03; // 6400Hz
+        sampling_rate_hz = 6400;
     }
 
     // Disable FIFO first
