@@ -2404,6 +2404,8 @@ INCLUDE common.ld
         gpioset = set()
         for label in self.bylabel:
             p = self.bylabel[label]
+            if 'SPI' in label and ('RX' in label or 'TX' in label):
+                continue
             gpio = p.extra_value('GPIO', type=int)
             if gpio is None:
                 continue
