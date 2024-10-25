@@ -23,12 +23,12 @@ GIT_VERSION=$(git rev-parse HEAD | cut -c1-8)
 
 VERSION="${FW_MAJOR}.${FW_MINOR}.${FW_PATCH}-${GIT_VERSION}"
 
-echo "Package Name: " $PACKAGE
-echo "version Number: " $VERSION
-
 cd libraries/AP_HAL_QURT/packaging
 
 cat pkg/control/control.in | sed "s/FW_VERSION/$VERSION/g" > pkg/control/control
+
+echo "Package Name: " $PACKAGE
+echo "version Number: " $VERSION
 
 ################################################################################
 # variables
@@ -43,7 +43,7 @@ DEB_DIR=pkg/DEB
 # start with a little cleanup to remove old files
 ################################################################################
 # remove data directory where 'make install' installed to
-sudo rm -rf $DATA_DIR
+rm -rf $DATA_DIR
 mkdir $DATA_DIR
 
 # remove deb packaging folders
@@ -57,24 +57,24 @@ if [ -f ../../../build/QURT/ardupilot ] && \
    [ -f ../../../build/QURT/bin/$VEHICLE_BINARY ]; then
 
 	# Copy the SLPI DSP AP library
-	sudo mkdir -p $DATA_DIR/usr/lib/rfsa/adsp
-	sudo cp ../../../build/QURT/bin/$VEHICLE_BINARY $DATA_DIR/usr/lib/rfsa/adsp/ArduPilot.so
+    mkdir -p $DATA_DIR/usr/lib/rfsa/adsp
+	cp ../../../build/QURT/bin/$VEHICLE_BINARY $DATA_DIR/usr/lib/rfsa/adsp/ArduPilot.so
 
     # Install executables
-	sudo mkdir -p $DATA_DIR/usr/bin
-	sudo cp ../../../build/QURT/ardupilot $DATA_DIR/usr/bin
-	sudo cp ../ap_host/service/voxl-ardupilot $DATA_DIR/usr/bin
-	sudo chmod a+x $DATA_DIR/usr/bin/ardupilot
-	sudo chmod a+x $DATA_DIR/usr/bin/voxl-ardupilot
+	mkdir -p $DATA_DIR/usr/bin
+	cp ../../../build/QURT/ardupilot $DATA_DIR/usr/bin
+	cp ../ap_host/service/voxl-ardupilot $DATA_DIR/usr/bin
+	chmod a+x $DATA_DIR/usr/bin/ardupilot
+	chmod a+x $DATA_DIR/usr/bin/voxl-ardupilot
 
     # Create necessary directories for ArduPilot operation
-	sudo mkdir -p $DATA_DIR/data/APM
+	mkdir -p $DATA_DIR/data/APM
 
 	# Install default parameter files
-	sudo cp ../../../Tools/Frame_params/ModalAI/*.parm $DATA_DIR/data/APM
+	cp ../../../Tools/Frame_params/ModalAI/*.parm $DATA_DIR/data/APM
 
-	sudo mkdir -p $DATA_DIR/etc/systemd/system/
-	sudo cp ../ap_host/service/voxl-ardupilot.service $DATA_DIR/etc/systemd/system/
+	mkdir -p $DATA_DIR/etc/systemd/system/
+	cp ../ap_host/service/voxl-ardupilot.service $DATA_DIR/etc/systemd/system/
 
 else
 	echo "Error: Build artifacts not found"
@@ -95,6 +95,6 @@ cp -rf $CONTROL_DIR/ $DEB_DIR/DEBIAN
 cp -rf $DATA_DIR/*   $DEB_DIR
 
 DEB_NAME="${PACKAGE}_${VEHICLETYPE}_${VERSION}_arm64.deb"
-dpkg-deb --build "${DEB_DIR}" "${DEB_NAME}"
+dpkg-deb --root-owner-group --build "${DEB_DIR}" "${DEB_NAME}"
 
 echo "DONE"
