@@ -651,7 +651,7 @@ void AC_PosControl::update_xy_controller()
     handle_ekf_xy_reset();
 
     // Check for position control time out
-    if (!is_active_xy()) {                //如果位置控制不活跃
+    if (!is_active_xy()) {                //如果横向位置控制不活跃
         init_xy_controller();             //重新初始化横向位置控制器
         if (has_good_timing()) {          //检查时间同步
             // call internal error because initialisation has not been done
@@ -671,47 +671,47 @@ void AC_PosControl::update_xy_controller()
     _pos_target.xy() = _pos_desired.xy() + _pos_offset.xy(); //对XY目标位置进行赋值：期望位置+偏移量补偿，这个_pos_target.xy()值是实时更新的
 
     // determine the combined position of the actual position and the disturbance from system ID mode
-    const Vector3f &curr_pos = _inav.get_position_neu_cm();
-    Vector3f comb_pos = curr_pos;
-    comb_pos.xy() += _disturb_pos;
+    const Vector3f &curr_pos = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
+    Vector3f comb_pos = curr_pos;  // 定义一个新的三维向量 `comb_pos`，并将 `curr_pos` 赋值给它。
+    comb_pos.xy() += _disturb_pos; //取得 `comb_pos` 的 x 和 y 分量，形成一个二维向量并在当前位置加上干扰的位置
 
-    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos);
-    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy();
+    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, comb_pos); //`_p_pos_xy` 是一个用于横向位置控制的P（比例）控制器。控制器输出目标速度
+    _pos_desired.xy() = _pos_target.xy() - _pos_offset.xy(); //对XY期望位置进行再赋值：这个值也是实时更新的
 
     // Velocity Controller
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
-    vel_target *= ahrsControlScaleXY;
+    vel_target *= ahrsControlScaleXY; //光流噪声补偿缩放因子。如果没有用到光流可以去掉
 
-    _vel_target.xy() = vel_target;
-    _vel_target.xy() += _vel_desired.xy() + _vel_offset.xy();
+    _vel_target.xy() = vel_target; //将位置控制得到的2维目标速度向量赋值给3维目标速度向量
+    _vel_target.xy() += _vel_desired.xy() + _vel_offset.xy(); //加入期望速度 (`_vel_desired.xy()`) 和速度偏移量 (`_vel_offset.xy()`)。
 
     // determine the combined velocity of the actual velocity and the disturbance from system ID mode
-    const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
-    Vector2f comb_vel = curr_vel;
-    comb_vel += _disturb_vel;
+    const Vector2f &curr_vel = _inav.get_velocity_xy_cms(); //获取由惯性导航模块计算出的横向（x 和 y）速度，单位是厘米每秒（cm/s）。
+    Vector2f comb_vel = curr_vel; 
+    comb_vel += _disturb_vel;  //加入系统标识过程中或者通过扰动观测器估算的速度扰动项
 
-    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), comb_vel, _dt, _limit_vector.xy());
+    Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), comb_vel, _dt, _limit_vector.xy()); //使用 PID 控制器 _pid_vel_xy 来计算目标加速度 (accel_target)。
 
     // Acceleration Controller
     
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    accel_target *= ahrsControlScaleXY;
+    accel_target *= ahrsControlScaleXY; //缩放因子补偿光流引入的噪声
 
     // pass the correction acceleration to the target acceleration output
     _accel_target.xy() = accel_target;
-    _accel_target.xy() += _accel_desired.xy() + _accel_offset.xy();
+    _accel_target.xy() += _accel_desired.xy() + _accel_offset.xy(); //期望加速度以及干扰补偿
 
-    // limit acceleration using maximum lean angles
+    // limit acceleration using maximum lean angles //最大允许的倾斜角度和加速度限制
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
     float accel_max = angle_to_accel(angle_max * 0.01) * 100;
     // Define the limit vector before we constrain _accel_target 
     _limit_vector.xy() = _accel_target.xy();
     if (!limit_accel_xy(_vel_desired.xy(), _accel_target.xy(), accel_max)) {
-        // _accel_target was not limited so we can zero the xy limit vector
+        // _accel_target was not limited so we can zero the xy limit vector //加速度限制判断
         _limit_vector.xy().zero();
     } else {
-        // Check for pitch limiting in the forward direction
+        // Check for pitch limiting in the forward direction //限制后的俯仰角计算
         const float accel_fwd_unlimited = _limit_vector.x * _ahrs.cos_yaw() + _limit_vector.y * _ahrs.sin_yaw();
         const float pitch_target_unlimited = accel_to_angle(- MIN(accel_fwd_unlimited, accel_max) * 0.01f) * 100;
         const float accel_fwd_limited = _accel_target.x * _ahrs.cos_yaw() + _accel_target.y * _ahrs.sin_yaw();
@@ -719,11 +719,11 @@ void AC_PosControl::update_xy_controller()
         _fwd_pitch_is_limited = is_negative(pitch_target_unlimited) && pitch_target_unlimited < pitch_target_limited;
     }
 
-    // update angle targets that will be passed to stabilize controller
-    accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
-    calculate_yaw_and_rate_yaw();
+    // update angle targets that will be passed to stabilize controller //更新姿态角目标
+    accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target); //通过目标加速度 _accel_target 计算出无人机的目标滚转角 (_roll_target) 和俯仰角 (_pitch_target)。
+    calculate_yaw_and_rate_yaw(); //计算目标航向角和航向角速率。
 
-    // reset the disturbance from system ID mode to zero
+    // reset the disturbance from system ID mode to zero //扰动复位
     _disturb_pos.zero();
     _disturb_vel.zero();
 }
@@ -1010,17 +1010,20 @@ DIYWrench get_current_DIYwrench(){
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
 ///     Desired velocity and accelerations are added to these corrections as they are calculated
 ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~垂直位置控制器更新~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~垂直位置控制器更新~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update_z_controller~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void AC_PosControl::update_z_controller()
 {
     // check for ekf z-axis position reset
-    handle_ekf_z_reset();
+    handle_ekf_z_reset(); //检查 EKF z 轴位置重置
 
     // Check for z_controller time out
-    if (!is_active_z()) {
-        init_z_controller();
-        if (has_good_timing()) {
+    if (!is_active_z()) {  //如果垂直位置控制不活跃
+        init_z_controller(); //重新初始化垂直控制器
+        if (has_good_timing()) {  //检查时间同步
             // call internal error because initialisation has not been done
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); ////逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
         }
     }
     _last_update_z_ticks = AP::scheduler().ticks32();
