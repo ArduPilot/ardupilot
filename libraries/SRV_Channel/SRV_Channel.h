@@ -386,6 +386,9 @@ public:
     // get slew limited scaled output for the given function type
     static float get_slew_limited_output_scaled(SRV_Channel::Aux_servo_function_t function);
 
+    // get slew limited normalized output for the given function type
+    static float get_slew_limited_output_norm(SRV_Channel::Aux_servo_function_t function);
+
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
 
