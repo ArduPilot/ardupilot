@@ -806,6 +806,7 @@ private:
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     // Support for the fast rate thread in copter
     FastRateBuffer* fast_rate_buffer;
+    bool fast_rate_buffer_enabled;
 
 public:
     // enable the fast rate buffer and start pushing samples to it
@@ -818,8 +819,6 @@ public:
     uint32_t get_num_gyro_samples();
     // set the rate at which samples are collected, unused samples are dropped
     void set_rate_decimation(uint8_t rdec);
-    // are gyro samples being sourced from the rate loop buffer
-    bool use_rate_loop_gyro_samples() const;
     // push a new gyro sample into the fast rate buffer
     bool push_next_gyro_sample(const Vector3f& gyro);
     // run the filter parmeter update code.

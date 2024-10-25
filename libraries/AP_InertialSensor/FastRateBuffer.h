@@ -35,6 +35,7 @@ public:
     // whether or not to push the current gyro sample
     bool use_rate_loop_gyro_samples() const { return rate_decimation > 0; }
     bool gyro_samples_available() { return  _rate_loop_gyro_window.available() > 0; }
+    void reset();
 
 private:
     /*
