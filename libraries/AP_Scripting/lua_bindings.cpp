@@ -1165,7 +1165,7 @@ void lua_abort()
 #endif
 }
 
-#if HAL_GCS_ENABLED
+#if (HAL_GCS_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
 /*
   implement gcs:command_int() access to MAV_CMD_xxx commands
  */

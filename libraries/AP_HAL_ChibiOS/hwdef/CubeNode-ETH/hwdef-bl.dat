@@ -1,4 +1,4 @@
-include ../CubePilot-CANMod/hwdef-bl.dat
+include ../CubeNode/hwdef-bl.dat
 
 # Ethernet
 PC1  ETH_MDC            ETH1

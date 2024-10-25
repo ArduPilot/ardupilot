@@ -120,6 +120,7 @@ public:
     bool get_gyro(Vector3f &gyro);
     bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
     // update backend
     void update();

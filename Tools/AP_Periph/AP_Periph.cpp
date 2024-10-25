@@ -168,6 +168,15 @@ void AP_Periph_FW::init()
     baro.init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_IMU
+    if (g.imu_sample_rate) {
+        imu.init(g.imu_sample_rate);
+        if (imu.get_accel_count() > 0 || imu.get_gyro_count() > 0) {
+            hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Periph_FW::can_imu_update, void), "IMU_UPDATE", 16384, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+        }
+    }
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     battery_lib.init();
 #endif
