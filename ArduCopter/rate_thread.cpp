@@ -248,28 +248,6 @@ void Copter::rate_controller_thread()
         const float dt = dt_us * 1.0e-6;
         last_run_us = now_us;
 
-        max_dt = MAX(dt, max_dt);
-        min_dt = MIN(dt, min_dt);
-
-#if HAL_LOGGING_ENABLED
-// @LoggerMessage: RTDT
-// @Description: Attitude controller time deltas
-// @Field: TimeUS: Time since system startup
-// @Field: dt: current time delta
-// @Field: dtAvg: current time delta average
-// @Field: dtMax: Max time delta since last log output
-// @Field: dtMin: Min time delta since last log output
-
-        if (now_ms - last_rtdt_log_ms >= 10) {    // 100 Hz
-            AP::logger().WriteStreaming("RTDT", "TimeUS,dt,dtAvg,dtMax,dtMin", "Qffff",
-                                                AP_HAL::micros64(),
-                                                dt, sensor_dt, max_dt, min_dt);
-            max_dt = sensor_dt;
-            min_dt = sensor_dt;
-            last_rtdt_log_ms = now_ms;
-        }
-#endif
-
         motors->set_dt(sensor_dt);
         // check if we are falling behind
         if (ins.get_num_gyro_samples() > 2) {
@@ -303,6 +281,18 @@ void Copter::rate_controller_thread()
 
             rate_controller_filter_update();
         }
+
+        max_dt = MAX(dt, max_dt);
+        min_dt = MIN(dt, min_dt);
+
+#if HAL_LOGGING_ENABLED
+        if (now_ms - last_rtdt_log_ms >= 100) {    // 10 Hz
+            Log_Write_Rate_Thread_Dt(dt, sensor_dt, max_dt, min_dt);
+            max_dt = sensor_dt;
+            min_dt = sensor_dt;
+            last_rtdt_log_ms = now_ms;
+        }
+#endif
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         motor_output_us += AP_HAL::micros() - rate_now_us;
@@ -453,6 +443,7 @@ uint8_t Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControlle
     return 0;
 }
 
+// enable the fast rate thread using the provided decimation rate and record the new output rates
 void Copter::enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates)
 {
     ins.enable_fast_rate_buffer();
@@ -461,6 +452,7 @@ void Copter::enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates&
     using_rate_thread = true;
 }
 
+// disable the fast rate thread and record the new output rates
 void Copter::disable_fast_rate_loop(RateControllerRates& rates)
 {
     using_rate_thread = false;

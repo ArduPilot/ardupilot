@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
 #if HAL_LOGGING_ENABLED
 
@@ -343,6 +344,16 @@ struct PACKED log_Guided_Attitude_Target {
     float climb_rate;
 };
 
+// rate thread dt stats
+struct PACKED log_Rate_Thread_Dt {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float dt;
+    float dtAvg;
+    float dtMax;
+    float dtMin;
+};
+
 // Write a Guided mode position target
 // pos_target is lat, lon, alt OR offset from ekf origin in cm
 // terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
@@ -388,6 +399,21 @@ void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, f
         climb_rate      : climb_rate
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Copter::Log_Write_Rate_Thread_Dt(float dt, float dtAvg, float dtMax, float dtMin)
+{
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    const log_Rate_Thread_Dt pkt {
+        LOG_PACKET_HEADER_INIT(LOG_RATE_THREAD_DT_MSG),
+        time_us         : AP_HAL::micros64(),
+        dt              : dt,
+        dtAvg           : dtAvg,
+        dtMax           : dtMax,
+        dtMin           : dtMin
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+#endif
 }
 
 // type and unit information can be found in
@@ -531,6 +557,18 @@ const struct LogStructure Copter::log_structure[] = {
 
     { LOG_GUIDED_ATTITUDE_TARGET_MSG, sizeof(log_Guided_Attitude_Target),
       "GUIA",  "QBffffffff",    "TimeUS,Type,Roll,Pitch,Yaw,RollRt,PitchRt,YawRt,Thrust,ClimbRt", "s-dddkkk-n", "F-000000-0" , true },
+
+// @LoggerMessage: RTDT
+// @Description: Attitude controller time deltas
+// @Field: TimeUS: Time since system startup
+// @Field: dt: current time delta
+// @Field: dtAvg: current time delta average
+// @Field: dtMax: Max time delta since last log output
+// @Field: dtMin: Min time delta since last log output
+
+    { LOG_RATE_THREAD_DT_MSG, sizeof(log_Rate_Thread_Dt),
+      "RTDT", "Qffff", "TimeUS,dt,dtAvg,dtMax,dtMin", "sssss", "F----" , true },
+
 };
 
 uint8_t Copter::get_num_log_structures() const

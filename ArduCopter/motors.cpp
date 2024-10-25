@@ -133,6 +133,7 @@ void Copter::auto_disarm_check()
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
+// full_push is true when slower rate updates (e.g. servo output) need to be performed at the main loop rate.
 void Copter::motors_output(bool full_push)
 {
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
@@ -184,13 +185,15 @@ void Copter::motors_output(bool full_push)
 
     // push all channels
     if (full_push) {
+        // motor output including servos and other updates that need to run at the main loop rate
         srv.push();
     } else {
+        // motor output only at main loop rate or faster
         hal.rcout->push();
     }
 }
 
-// motors_output from main thread
+// motors_output from main thread at main loop rate
 void Copter::motors_output_main()
 {
     if (!using_rate_thread) {
