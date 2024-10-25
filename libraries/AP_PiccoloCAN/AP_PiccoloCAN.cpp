@@ -344,6 +344,14 @@ void AP_PiccoloCAN::update()
         if (is_esc_channel_active(ii)) {
 
             uint16_t output = 0;
+
+            if (SRV_Channels::channel_function(ii) == SRV_Channel::k_throttle) {
+                SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, output);
+                _escs[ii].command = output;
+                _escs[ii].newCommand = true;
+                break;
+            }
+
             
             SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
 
@@ -670,7 +678,7 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
     // Check if a motor function is assigned for this motor channel
     SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
 
-    if (SRV_Channels::function_assigned(motor_function)) {
+    if (SRV_Channels::function_assigned(motor_function) || SRV_Channels::channel_function(chan) == SRV_Channel::k_throttle) {
         return true;
     }
 
