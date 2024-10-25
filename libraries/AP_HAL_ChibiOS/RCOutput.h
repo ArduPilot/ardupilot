@@ -584,7 +584,7 @@ private:
     uint8_t _dshot_cycle;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
-    // force triggering of groups
+    // force triggering of groups, this is used by the rate thread to ensure output occurs
     bool force_trigger;
 
 #if HAL_DSHOT_ENABLED
