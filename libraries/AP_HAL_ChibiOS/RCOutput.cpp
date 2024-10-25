@@ -1399,6 +1399,9 @@ void RCOutput::trigger_groups()
 #if !defined(HAL_NO_RCOUT_THREAD) || HAL_DSHOT_ENABLED
     // trigger a PWM send
     if (!in_soft_serial() &&
+        // we always trigger an output if we are in the main thread
+        // we also always trigger an output if we are in the rate thread and thus
+        // force_trigger has been set
         (hal.scheduler->in_main_thread() || force_trigger) && rcout_thread_ctx) {
         chEvtSignal(rcout_thread_ctx, EVT_PWM_SEND);
     }
