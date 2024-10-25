@@ -190,7 +190,8 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
 
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
+    static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
+    hal.util->snprintf(msg.header.frame_id, 2, "%u", instance);
     msg.status.service = 0; // SERVICE_GPS
     msg.status.status = -1; // STATUS_NO_FIX
 

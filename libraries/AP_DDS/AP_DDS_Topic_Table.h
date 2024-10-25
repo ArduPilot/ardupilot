@@ -96,7 +96,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::NAV_SAT_FIX_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::NAV_SAT_FIX_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "rt/ap/navsat/navsat0",
+        .topic_name = "rt/ap/navsat",
         .type_name = "sensor_msgs::msg::dds_::NavSatFix_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,

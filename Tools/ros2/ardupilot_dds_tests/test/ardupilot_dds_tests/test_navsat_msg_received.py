@@ -30,7 +30,7 @@ from rclpy.qos import QoSHistoryPolicy
 
 from sensor_msgs.msg import NavSatFix
 
-TOPIC = "ap/navsat/navsat0"
+TOPIC = "ap/navsat"
 
 
 class NavSatFixListener(rclpy.node.Node):
