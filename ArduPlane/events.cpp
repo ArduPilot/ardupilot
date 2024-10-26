@@ -42,6 +42,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
             set_mode(mode_fbwa, reason);
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
             set_mode(mode_fbwb, reason);
+        } else if (g.fs_action_short == FS_ACTION_SHORT_RTL) {
+            failsafe.saved_waypoint = AP::mission()->get_current_nav_index();
+            set_mode(mode_rtl, reason);
         } else {
             set_mode(mode_circle, reason); // circle if action = 0 or 1 
         }
@@ -82,6 +85,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
                 set_mode(mode_fbwa, reason);
             } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
                 set_mode(mode_fbwb, reason);
+            } else if (g.fs_action_short == FS_ACTION_SHORT_RTL) {
+                failsafe.saved_waypoint = AP::mission()->get_current_nav_index();
+                set_mode(mode_rtl, reason);
             } else {
                 set_mode(mode_circle, reason);
             }
@@ -96,6 +102,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::LOITER_ALT_QLAND:
 #endif
     case Mode::Number::INITIALISING:
+        // do nothing
         break;
     }
     if (failsafe.saved_mode_number != control_mode->mode_number()) {
@@ -103,6 +110,32 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     } else {
         gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe On");
     }
+}
+
+void Plane::failsafe_long_on_event_most_modes(enum failsafe_state fstype, ModeReason reason)
+{
+        if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
+            // don't failsafe if in inital climb of TAKEOFF mode and FS action is not parachute or glide
+            // long failsafe will be re-called if still in fs after initial climb
+            long_failsafe_pending = true;
+            return;
+        }
+
+        if(plane.emergency_landing) {
+            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            return;
+        }
+        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
+#if HAL_PARACHUTE_ENABLED
+            parachute_release();
+#endif
+        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
+            set_mode(mode_fbwa, reason);
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+            set_mode(mode_auto, reason);
+        } else {
+            set_mode(mode_rtl, reason);
+        }
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
@@ -126,28 +159,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
     case Mode::Number::TAKEOFF:
-        if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
-            // don't failsafe if in inital climb of TAKEOFF mode and FS action is not parachute or glide
-            // long failsafe will be re-called if still in fs after initial climb
-            long_failsafe_pending = true;
-            break;
-        }
-
-        if(plane.emergency_landing) {
-            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
-            break;
-        }
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
-#if HAL_PARACHUTE_ENABLED
-            parachute_release();
-#endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(mode_fbwa, reason);
-        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
-            set_mode(mode_auto, reason);
-        } else {
-            set_mode(mode_rtl, reason);
-        }
+        failsafe_long_on_event_most_modes(fstype, reason);
         break;
 
 #if HAL_QUADPLANE_ENABLED
@@ -169,8 +181,13 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif  // HAL_QUADPLANE_ENABLED
 
     case Mode::Number::AUTO:
+        if (g.fs_action_short == FS_ACTION_SHORT_RTL) {
+            failsafe_long_on_event_most_modes(fstype, reason);
+            break;
+        }
+
         if (failsafe_in_landing_sequence()) {
-            // don't failsafe in a landing sequence
+            // do nothing if in a landing sequence
             break;
         }
 
@@ -202,6 +219,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::RTL:
         if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             set_mode(mode_auto, reason);
+        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
+            set_mode(mode_fbwa, reason);
         }
         break;
 #if HAL_QUADPLANE_ENABLED
@@ -224,6 +243,10 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
        set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
        gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+    }
+    if (failsafe.saved_mode_number == Mode::Number::AUTO) {
+        gcs().send_text(MAV_SEVERITY_INFO,"Waypoint %u restored", failsafe.saved_waypoint);
+        AP::mission()->set_current_cmd(failsafe.saved_waypoint);
     }
 }
 
