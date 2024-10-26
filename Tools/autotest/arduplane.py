@@ -5364,6 +5364,25 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             0, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
+    def create_DO_JUMP(self, num, repeat=0, target_system=1, target_component=1):
+        '''create a jump tag mission item'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_DO_JUMP,
+            0, # current
+            0, # autocontinue
+            num, # p1
+            repeat, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
     def mission_jump_tag(self, tag, target_system=1, target_component=1):
         '''create a jump tag mission item'''
         return self.mav.mav.mission_item_int_encode(
@@ -6273,6 +6292,78 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''ensure we don't die with a  bad Roll channel defined'''
         self.set_parameter("RCMAP_ROLL", 17)
 
+    def FailsafeShortRTL(self):
+        '''make sure short failsafe works'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 30),
+            self.create_DO_JUMP(2, repeat=100),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -800, 0, 30),
+        ])
+        self.set_parameters({
+            'FS_SHORT_ACTN': 5,  # 5 is RTL
+            'FS_LONG_ACTN': 2,  # 2 is glide
+            'RTL_AUTOLAND': 2,
+        })
+        self.wait_ready_to_arm()
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)
+        self.set_parameter('SIM_RC_FAIL', 1)
+        self.wait_mode('AUTO')
+        self.set_parameter('SIM_RC_FAIL', 0)
+        self.wait_mode('AUTO')
+        self.wait_current_waypoint(2)
+        # self.wait_mode('AUTO')
+        self.set_parameter('SIM_RC_FAIL', 1)
+        self.wait_mode('AUTO')
+        self.wait_mode('FBWA')
+        self.fly_home_land_and_disarm()
+
+    def FailsafeShortRTLGuided(self):
+        '''make sure short failsafe works - when entering from guided'''
+        self.set_parameters({
+            'FS_SHORT_ACTN': 5,  # 5 is RTL
+            'FS_LONG_ACTN': 2,  # 2 is glide
+            'RTL_AUTOLAND': 2,
+        })
+
+        alt = 30
+        self.takeoff(alt, mode='TAKEOFF')
+        self.arm_vehicle()
+        self.wait_altitude(25, 35, relative=True)
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 500, 500)
+
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p2=1,
+            p5=int(loc.lat * 1e7),
+            p6=int(loc.lng * 1e7),
+            p7=alt,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_mode('GUIDED')
+        self.wait_location(
+            loc,
+            accuracy=120,
+            height_accuracy=20,
+            timeout=180,
+        )
+        self.set_parameter('SIM_RC_FAIL', 1)
+        self.wait_mode('RTL')
+        self.set_parameter('SIM_RC_FAIL', 0)
+        self.wait_mode('GUIDED')
+        self.set_parameter('SIM_RC_FAIL', 1)
+        self.wait_mode('RTL')
+        self.wait_mode('FBWA')
+        self.fly_home_land_and_disarm()
+
     def MAV_CMD_NAV_LOITER_TO_ALT(self):
         '''test loiter to alt mission item'''
         self.upload_simple_relhome_mission([
@@ -6437,6 +6528,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
             self.BadRollChannelDefined,
+            self.FailsafeShortRTL,
+            self.FailsafeShortRTLGuided,
         ]
 
     def disabled_tests(self):
