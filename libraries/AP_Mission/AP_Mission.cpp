@@ -18,6 +18,9 @@
 #include <RC_Channel/RC_Channel_config.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_ICEngine/AP_ICEngine_config.h>
+#include <AC_Sprayer/AC_Sprayer_config.h>
+#include <AP_Parachute/AP_Parachute_config.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -472,14 +475,20 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 #endif
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return start_command_do_scripting(cmd);
+#endif
+#if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
         return start_command_do_sprayer(cmd);
+#endif
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return command_do_set_repeat_dist(cmd);
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return start_command_do_gimbal_manager_pitchyaw(cmd);
+#endif
     case MAV_CMD_JUMP_TAG:
         _jump_tag.tag = cmd.content.jump.target;
         _jump_tag.age = 1;
@@ -959,10 +968,12 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
         // where we have changed the storage format (see
         // format_conversion), 0 otherwise
         uint8_t tag_byte = 0;
+#if AP_SCRIPTING_ENABLED
         // currently the only converted structure is NAV_SCRIPT_TIME
         if (cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
             tag_byte = 1;
         }
+#endif
         _storage.write_byte(pos_in_storage, tag_byte);
         _storage.write_uint16(pos_in_storage+1, cmd.id);
         _storage.write_uint16(pos_in_storage+3, cmd.p1);
@@ -1197,6 +1208,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // p1=0 means use current location, p=1 means use provided location
         break;
 
+#if AP_SERVORELAYEVENTS_ENABLED
     case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
         cmd.content.relay.num = packet.param1;          // relay number
         cmd.content.relay.state = packet.param2;        // 0:off, 1:on
@@ -1219,6 +1231,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.repeat_servo.repeat_count = packet.param3; // count
         cmd.content.repeat_servo.cycle_time = packet.param4;   // time in seconds
         break;
+#endif  // AP_SERVORELAYEVENTS_ENABLED
 
     case MAV_CMD_DO_RETURN_PATH_START:                  // MAV ID: 188
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
@@ -1231,6 +1244,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
         cmd.content.digicam_configure.shooting_mode = packet.param1;
         cmd.content.digicam_configure.shutter_speed = packet.param2;
@@ -1249,31 +1263,40 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.digicam_control.shooting_cmd = packet.x;
         cmd.content.digicam_control.cmd_id = packet.y;
         break;
+#endif  // AP_CAMERA_ENABLED
 
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
         // TODO: this is only valid if packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING
         cmd.content.mount_control.pitch = packet.param1;
         cmd.content.mount_control.roll = packet.param2;
         cmd.content.mount_control.yaw = packet.param3;
         break;
+#endif
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         cmd.content.cam_trigg_dist.meters = packet.param1;  // distance between camera shots in meters
         cmd.content.cam_trigg_dist.trigger = packet.param3; // when enabled, camera triggers once immediately
         break;
+#endif
 
+#if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
         cmd.p1 = packet.param1;                         // action 0=disable, 1=enable, 2=disable floor
         break;
+#endif
 
     case MAV_CMD_DO_AUX_FUNCTION:
         cmd.content.auxfunction.function = packet.param1;
         cmd.content.auxfunction.switchpos = packet.param2;
         break;
 
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:                         // MAV ID: 208
         cmd.p1 = packet.param1;                        // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
+#endif
 
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         cmd.p1 = packet.param1;                         // normal=0 inverted=1
@@ -1318,12 +1341,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1; // 0 = forward, 1 = reverse
         break;
 
+#if AP_ICENGINE_ENABLED
     case MAV_CMD_DO_ENGINE_CONTROL:
         cmd.content.do_engine_control.start_control = (packet.param1>0);
         cmd.content.do_engine_control.cold_start = (packet.param2>0);
         cmd.content.do_engine_control.height_delay_cm = packet.param3*100;
         cmd.content.do_engine_control.allow_disarmed_start = (((uint32_t)packet.param4) & ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED) != 0;
         break;
+#endif
 
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
@@ -1337,21 +1362,26 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.set_yaw_speed.relative_angle = packet.param3;   // 0 = absolute angle, 1 = relative angle
         break;
 
+#if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:                              // MAV ID: 42600
         cmd.content.winch.num = packet.param1;          // winch number
         cmd.content.winch.action = packet.param2;       // action (0 = relax, 1 = length control, 2 = rate control).  See WINCH_ACTION enum
         cmd.content.winch.release_length = packet.param3;   // cable distance to unwind in meters, negative numbers to wind in cable
         cmd.content.winch.release_rate = packet.param4; // release rate in meters/second
         break;
+#endif
 
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         cmd.p1 = packet.param1; // Resume repeat distance (m)
         break;
 
+#if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
         cmd.p1 = packet.param1;                        // action 0=disable, 1=enable
         break;
+#endif
 
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         cmd.p1 = packet.param1;
         cmd.content.scripting.p1 = packet.param2;
@@ -1359,7 +1389,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.scripting.p3 = packet.param4;
         break;
 
-#if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         cmd.content.nav_script_time.command = packet.param1;
         cmd.content.nav_script_time.timeout_s = packet.param2;
@@ -1368,7 +1397,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.nav_script_time.arg3 = int16_t(packet.x);
         cmd.content.nav_script_time.arg4 = int16_t(packet.y);
         break;
-#endif
+#endif  // AP_SCRIPTING_ENABLED
 
     case MAV_CMD_NAV_ATTITUDE_TIME:
         cmd.content.nav_attitude_time.time_sec = constrain_float(packet.param1, 0, UINT16_MAX);
@@ -1382,6 +1411,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;
         break;
 
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg = packet.param1;
         cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg = packet.param2;
@@ -1390,7 +1420,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.gimbal_manager_pitchyaw.flags = packet.x;
         cmd.content.gimbal_manager_pitchyaw.gimbal_id = packet.z;
         break;
+#endif
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_IMAGE_START_CAPTURE:
         cmd.content.image_start_capture.instance = packet.param1;
         cmd.content.image_start_capture.interval_s = packet.param2;
@@ -1425,6 +1457,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         cmd.content.video_stop_capture.video_stream_id = packet.param1;
         break;
+#endif  // AP_CAMERA_ENABLED
 
     default:
         // unrecognised command
@@ -1711,6 +1744,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;                         // p1=0 means use current location, p=1 means use provided location
         break;
 
+#if AP_SERVORELAYEVENTS_ENABLED
     case MAV_CMD_DO_SET_RELAY:                          // MAV ID: 181
         packet.param1 = cmd.content.relay.num;          // relay number
         packet.param2 = cmd.content.relay.state;        // 0:off, 1:on
@@ -1733,6 +1767,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param3 = cmd.content.repeat_servo.repeat_count;  // count
         packet.param4 = cmd.content.repeat_servo.cycle_time;    // time in milliseconds converted to seconds
         break;
+#endif  // AP_SERVORELAYEVENTS_ENABLED
 
     case MAV_CMD_DO_RETURN_PATH_START:                  // MAV ID: 188
     case MAV_CMD_DO_LAND_START:                         // MAV ID: 189
@@ -1745,6 +1780,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;                         // 0 = no roi, 1 = next waypoint, 2 = waypoint number, 3 = fixed location, 4 = given target (not supported)
         break;
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:                  // MAV ID: 202
         packet.param1 = cmd.content.digicam_configure.shooting_mode;
         packet.param2 = cmd.content.digicam_configure.shutter_speed;
@@ -1763,30 +1799,41 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.x = cmd.content.digicam_control.shooting_cmd;
         packet.y = cmd.content.digicam_control.cmd_id;
         break;
+#endif
 
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
         packet.param1 = cmd.content.mount_control.pitch;
         packet.param2 = cmd.content.mount_control.roll;
         packet.param3 = cmd.content.mount_control.yaw;
         packet.z = MAV_MOUNT_MODE_MAVLINK_TARGETING;
         break;
+#endif
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         packet.param1 = cmd.content.cam_trigg_dist.meters;  // distance between camera shots in meters
         packet.param3 = cmd.content.cam_trigg_dist.trigger; // when enabled, camera triggers once immediately
         break;
+#endif
 
+#if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=disable floor, 3=enable except floor
         break;
+#endif
 
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:                          // MAV ID: 208
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
+#endif
 
+#if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable
         break;
+#endif
 
     case MAV_CMD_DO_AUX_FUNCTION:
         packet.param1 = cmd.content.auxfunction.function;
@@ -1836,6 +1883,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.do_vtol_transition.target_state;
         break;
 
+#if AP_ICENGINE_ENABLED
     case MAV_CMD_DO_ENGINE_CONTROL:
         packet.param1 = cmd.content.do_engine_control.start_control?1:0;
         packet.param2 = cmd.content.do_engine_control.cold_start?1:0;
@@ -1844,6 +1892,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
             packet.param4 = ENGINE_CONTROL_OPTIONS_ALLOW_START_WHILE_DISARMED;
         }
         break;
+#endif  // AP_ICENGINE_ENABLED
 
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
     case MAV_CMD_NAV_PAYLOAD_PLACE:
@@ -1868,6 +1917,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1; // Resume repeat distance (m)
         break;
 
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         packet.param1 = cmd.p1;
         packet.param2 = cmd.content.scripting.p1;
@@ -1875,7 +1925,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.scripting.p3;
         break;
 
-#if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         packet.param1 = cmd.content.nav_script_time.command;
         packet.param2 = cmd.content.nav_script_time.timeout_s;
@@ -1898,6 +1947,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.p1;
         break;
 
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         packet.param1 = cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg;
         packet.param2 = cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg;
@@ -1906,7 +1956,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.x = cmd.content.gimbal_manager_pitchyaw.flags;
         packet.z = cmd.content.gimbal_manager_pitchyaw.gimbal_id;
         break;
+#endif
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_IMAGE_START_CAPTURE:
         packet.param1 = cmd.content.image_start_capture.instance;
         packet.param2 = cmd.content.image_start_capture.interval_s;
@@ -1941,6 +1993,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         packet.param1 = cmd.content.video_stop_capture.video_stream_id;
         break;
+#endif  // AP_CAMERA_ENABLED
 
     default:
         // unrecognised command
@@ -2762,6 +2815,7 @@ const char *AP_Mission::Mission_Command::type() const
         return "ChangeSpeed";
     case MAV_CMD_DO_SET_HOME:
         return "SetHome";
+#if AP_SERVORELAYEVENTS_ENABLED
     case MAV_CMD_DO_SET_SERVO:
         return "SetServo";
     case MAV_CMD_DO_SET_RELAY:
@@ -2770,12 +2824,15 @@ const char *AP_Mission::Mission_Command::type() const
         return "RepeatServo";
     case MAV_CMD_DO_REPEAT_RELAY:
         return "RepeatRelay";
+#endif  // AP_SERVORELAYEVENTS_ENABLED
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
         return "DigiCamCfg";
     case MAV_CMD_DO_DIGICAM_CONTROL:
         return "DigiCamCtrl";
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return "SetCamTrigDst";
+#endif
     case MAV_CMD_DO_SET_ROI:
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
@@ -2798,14 +2855,18 @@ const char *AP_Mission::Mission_Command::type() const
         return "VTOLLand";
     case MAV_CMD_DO_INVERTED_FLIGHT:
         return "InvertedFlight";
+#if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
         return "FenceEnable";
+#endif
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         return "AutoTuneEnable";
     case MAV_CMD_DO_VTOL_TRANSITION:
         return "VTOLTransition";
+#if AP_ICENGINE_ENABLED
     case MAV_CMD_DO_ENGINE_CONTROL:
         return "EngineControl";
+#endif
     case MAV_CMD_CONDITION_YAW:
         return "CondYaw";
     case MAV_CMD_DO_RETURN_PATH_START:
@@ -2822,18 +2883,28 @@ const char *AP_Mission::Mission_Command::type() const
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         return "PayloadPlace";
 #endif
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
         return "Parachute";
+#endif
+#if HAL_SPRAYER_ENABLED
     case MAV_CMD_DO_SPRAYER:
         return "Sprayer";
+#endif
     case MAV_CMD_DO_AUX_FUNCTION:
         return "AuxFunction";
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
+#endif
+#if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:
         return "Winch";
+#endif
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return "Scripting";
+#endif
     case MAV_CMD_DO_JUMP:
         return "Jump";
     case MAV_CMD_DO_JUMP_TAG:
@@ -2850,8 +2921,11 @@ const char *AP_Mission::Mission_Command::type() const
         return "NavAttitudeTime";
     case MAV_CMD_DO_PAUSE_CONTINUE:
         return "PauseContinue";
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return "GimbalPitchYaw";
+#endif
+#if AP_CAMERA_ENABLED
     case MAV_CMD_IMAGE_START_CAPTURE:
         return "ImageStartCapture";
     case MAV_CMD_IMAGE_STOP_CAPTURE:
@@ -2866,6 +2940,7 @@ const char *AP_Mission::Mission_Command::type() const
         return "VideoStartCapture";
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         return "VideoStopCapture";
+#endif  // AP_CAMERA_ENABLED
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Mission command with ID %u has no string", id);
