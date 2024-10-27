@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL_ChibiOS/AP_HAL_ChibiOS.h>
+
 #define LED_ACTIVITY	1
 #define LED_BOOTLOADER	2
 
