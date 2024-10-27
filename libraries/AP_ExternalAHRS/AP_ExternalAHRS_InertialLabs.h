@@ -39,6 +39,10 @@ public:
     void get_filter_status(nav_filter_status &status) const override;
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
+    // enable/disable sending data to autopilot. Can be used to simulate EAHRS failure.
+    void set_data_sending_state(AP_ExternalAHRS::DataSendingState new_state) override;
+    void set_gps_state(AP_ExternalAHRS::GpsState new_state) override;
+
     // check for new data
     void update() override {
         check_uart();
@@ -220,6 +224,7 @@ private:
     void update_thread();
     bool check_uart();
     bool check_header(const ILabsHeader *h) const;
+    bool write_bytes(const char *bytes, uint8_t len);
 
     // re-sync on header bytes
     void re_sync(void);
