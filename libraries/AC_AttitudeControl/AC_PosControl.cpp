@@ -1026,41 +1026,41 @@ void AC_PosControl::update_z_controller()
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); ////逻辑：如果不活跃，且初始化后，时间同步正常，则报错有内部错误
         }
     }
-    _last_update_z_ticks = AP::scheduler().ticks32();
+    _last_update_z_ticks = AP::scheduler().ticks32(); ////更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
 
     // update the position, velocity and acceleration offsets
-    update_offsets_z();
-    update_terrain();
+    update_offsets_z(); //更新偏移量
+    update_terrain();  //更新地形高度
     _pos_target.z = _pos_desired.z + _pos_offset.z + _pos_terrain;
 
     // calculate the target velocity correction
-    float pos_target_zf = _pos_target.z;
+    float pos_target_zf = _pos_target.z; //赋值给局部变量
 
-    _vel_target.z = _p_pos_z.update_all(pos_target_zf, _inav.get_position_z_up_cm());
-    _vel_target.z *= AP::ahrs().getControlScaleZ();
+    _vel_target.z = _p_pos_z.update_all(pos_target_zf, _inav.get_position_z_up_cm()); //P控制器，得到目标速度_vel_target.z
+    _vel_target.z *= AP::ahrs().getControlScaleZ(); //光流补偿缩放因子
 
-    _pos_target.z = pos_target_zf;
-    _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain);
+    _pos_target.z = pos_target_zf; //局部变量的赋值还原
+    _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
 
-    // add feed forward component
+    // add feed forward component //目标速度，添加一些前馈
     _vel_target.z += _vel_desired.z + _vel_offset.z + _vel_terrain;
 
-    // Velocity Controller
+    // Velocity Controller //速度控制器
 
-    const float curr_vel_z = _inav.get_velocity_z_up_cms();
-    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
-    _accel_target.z *= AP::ahrs().getControlScaleZ();
+    const float curr_vel_z = _inav.get_velocity_z_up_cms(); //获取当前 z 轴方向的速度
+    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper); //目标加速度PID控制
+    _accel_target.z *= AP::ahrs().getControlScaleZ(); //缩放因子
 
-    // add feed forward component
+    // add feed forward component //加入一些加速度前馈项
     _accel_target.z += _accel_desired.z + _accel_offset.z + _accel_terrain;
 
-    // Acceleration Controller
+    // Acceleration Controller //加速度控制器
 
     // Calculate vertical acceleration
-    const float z_accel_meas = get_z_accel_cmss();
+    const float z_accel_meas = get_z_accel_cmss(); //获取当前垂直加速度
 
     // ensure imax is always large enough to overpower hover throttle
-    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) { //确保积分项限制的合理性
         _pid_accel_z.set_imax(_motors.get_throttle_hover() * 1000.0f);
     }
     float thr_out;
@@ -1075,22 +1075,22 @@ void AC_PosControl::update_z_controller()
     // Actuator commands
 
     // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ); //将油门指令发送给姿态控制器
 
     // Check for vertical controller health
 
     // _speed_down_cms is checked to be non-zero when set
-    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
-    _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
+    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms; //垂直速度误差比率计算
+    _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);     //更新垂直速度控制比例
     _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 
-    // set vertical component of the limit vector
+    // set vertical component of the limit vector //油门的限制状态
     if (_motors.limit.throttle_upper) {
-        _limit_vector.z = 1.0f;
+        _limit_vector.z = 1.0f; //当油门达到上限时，将垂直方向的限制向量设置为 `1.0`，这表示上升推力受限。
     } else if (_motors.limit.throttle_lower) {
-        _limit_vector.z = -1.0f;
+        _limit_vector.z = -1.0f; //当油门达到下限时，将垂直方向的限制向量设置为 `-1.0`，这表示下降推力受限。
     } else {
-        _limit_vector.z = 0.0f;
+        _limit_vector.z = 0.0f; //如果油门既不受上限也不受下限的限制，则限制向量为 `0.0`，表示没有垂直方向上的限制。
     }
 
      current_DIYwrench = get_DIYwrench(thr_out); //用于ROS2推力话题

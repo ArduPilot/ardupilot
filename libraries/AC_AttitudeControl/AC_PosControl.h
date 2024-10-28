@@ -252,7 +252,7 @@ public:
     /// get_pos_target_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_cm() const { return _pos_target; }
 
-    /// set_pos_desired_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin
+    /// set_pos_desired_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin //AC_WPNav模块通过这个set访问器，设置期望位置
     void set_pos_desired_xy_cm(const Vector2f& pos) { _pos_desired.xy() = pos.topostype(); }
 
     /// get_pos_desired_cm - returns the position desired, frame NEU in cm relative to the EKF origin
@@ -277,7 +277,7 @@ public:
     void get_stopping_point_z_cm(postype_t &stopping_point) const;
 
 
-    /// Position Error
+    /// Position Error //这里的get访问通过调用pid的访问器get_error来实现“串联访问”
 
     /// get_pos_error_cm - get position error vector between the current and target position
     const Vector3f get_pos_error_cm() const { return Vector3f(_p_pos_xy.get_error().x, _p_pos_xy.get_error().y, _p_pos_z.get_error()); }
