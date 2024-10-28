@@ -1232,6 +1232,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
 
+    // @Param: ROI_YAW_OFFSET
+    // @DisplayName: ROI yaw offset
+    // @Description: Offset applied to yaw when pointing to region of interest. Zero offset points nose at ROI.
+    // @Range: -18000 18000
+    // @Units: cdeg
+    // @User: Advanced
+    AP_GROUPINFO("ROI_YAW_OFFSET", 9, ParametersG2, roi_yaw_offset, 0),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

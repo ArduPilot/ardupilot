@@ -676,6 +676,8 @@ public:
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
+    AP_Float roi_yaw_offset;
+
 #if WEATHERVANE_ENABLED
     AC_WeatherVane weathervane;
 #endif
