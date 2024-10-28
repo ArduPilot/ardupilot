@@ -138,5 +138,5 @@ private:
     int32_t get_yaw_sensor() const;
 
     // allow loiter radius scaling to be disabled (in path guidance).
-    bool _disable_loiter_radius_scaling = false;
+    bool _disable_loiter_radius_scaling;
 };
