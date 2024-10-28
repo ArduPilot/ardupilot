@@ -11385,13 +11385,16 @@ Also, ignores heartbeats not from our target system'''
 
         self.install_terrain_handlers_context()
 
-        self.set_parameter("FS_GCS_ENABLE", 0)
+        if not self.is_plane():
+            self.set_parameter("FS_GCS_ENABLE", 0)
         self.change_mode("GUIDED")
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
         if self.is_copter() or self.is_heli():
             self.user_takeoff(alt_min=50)
+        elif self.is_plane():
+            self.takeoff()
 
         targetpos = self.mav.location()
         wp_accuracy = None
@@ -11404,16 +11407,19 @@ Also, ignores heartbeats not from our target system'''
             raise ValueError()
 
         def to_alt_frame(alt, mav_frame):
+            """Convert absolute altitude to altitude above home.
+            """
             if mav_frame in ["MAV_FRAME_GLOBAL_RELATIVE_ALT",
                              "MAV_FRAME_GLOBAL_RELATIVE_ALT_INT",
                              "MAV_FRAME_GLOBAL_TERRAIN_ALT",
                              "MAV_FRAME_GLOBAL_TERRAIN_ALT_INT"]:
+                            # TODO what about MAV_FRAME_GLOBAL
                 home = self.home_position_as_mav_location()
                 return alt - home.alt
             else:
                 return alt
 
-        def send_target_position(lat, lng, alt, mav_frame):
+        def send_target_position(lat: float, lng: float, alt: float, mav_frame):
             self.mav.mav.set_position_target_global_int_send(
                 0,  # timestamp
                 self.sysid_thismav(),  # target system_id
@@ -11425,7 +11431,33 @@ Also, ignores heartbeats not from our target system'''
                 MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                 int(lat * 1.0e7),  # lat
                 int(lng * 1.0e7),  # lon
-                alt,  # alt
+                alt, # alt
+                0,  # vx
+                0,  # vy
+                0,  # vz
+                0,  # afx
+                0,  # afy
+                0,  # afz
+                0,  # yaw
+                0,  # yawrate
+            )
+
+        def send_target_alt(alt: float, mav_frame):
+            self.mav.mav.set_position_target_global_int_send(
+                0,  # timestamp
+                self.sysid_thismav(),  # target system_id
+                1,  # target component id
+                mav_frame,
+                mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
+                mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                # Ignore everything except for the position Z (altitude).
+                MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
+                0,  # lat
+                0,  # lon
+                alt, # alt
                 0,  # vx
                 0,  # vy
                 0,  # vz
@@ -11446,8 +11478,26 @@ Also, ignores heartbeats not from our target system'''
                 minimum_duration=2,
             )
 
+        def testalt(self, targetpos : mavutil.location, frame_name: str, frame):
+            alt_rel = to_alt_frame(targetpos.alt, frame_name)
+            send_target_alt(alt_rel, frame)
+
+            self.wait_altitude(alt_rel - 1.0,
+                    alt_rel + 1.0,
+                    relative=True,
+                    timeout=timeout)
+
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
+            if self.is_plane() and test_alt:
+                self.start_subtest("Testing Set Altitude in %s" % frame_name)
+                targetpos.alt += 5
+                testalt(self, targetpos, frame_name, frame)
+                self.fly_home_land_and_disarm()
+                # Skip other tests in plane because GUIDED doesn't support those behaviors yet.
+                # Instead, just jump to the next frame to test.
+                continue
+
             self.start_subtest("Testing Set Position in %s" % frame_name)
             self.start_subtest("Changing Latitude")
             targetpos.lat += 0.0001
