@@ -5058,7 +5058,7 @@ bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Locat
     out.lat = in.x;
     out.lng = in.y;
 
-    out.set_alt_cm(int32_t(in.z * 100), frame);
+    out.set_alt_m(in.z, frame);
 
     return true;
 }
