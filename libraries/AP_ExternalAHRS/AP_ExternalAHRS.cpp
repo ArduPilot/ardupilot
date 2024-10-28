@@ -355,7 +355,8 @@ void AP_ExternalAHRS::update(void)
                                     AP_HAL::micros64(),
                                     degrees(roll), degrees(pitch), degrees(yaw),
                                     state.velocity.x, state.velocity.y, state.velocity.z,
-                                    state.location.lat, state.location.lng, state.location.alt*0.01,
+                                    state.location.lat, state.location.lng,
+                                    state.location.get_alt_cm()*0.01,
                                     filterStatus.value);
     }
 #endif  // HAL_LOGGING_ENABLED
