@@ -18,6 +18,7 @@
 #include "AP_Mount_Xacti.h"
 #include "AP_Mount_Viewpro.h"
 #include "AP_Mount_Topotek.h"
+#include "AP_Mount_Tusuav.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -168,6 +169,16 @@ void AP_Mount::init()
             serial_instance++;
             break;
 #endif // HAL_MOUNT_TOPOTEK_ENABLED
+
+#if HAL_MOUNT_TUSUAV_ENABLED
+        // check for TUSUAV gimbal
+        case Type::Tusuav:
+            _backends[instance] = NEW_NOTHROW AP_Mount_Tusuav(*this, _params[instance], instance, serial_instance);
+            _num_instances++;
+            serial_instance++;
+            break;
+#endif // HAL_MOUNT_TUSUAV_ENABLED
+
         }
 
         // init new instance
