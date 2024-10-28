@@ -3,6 +3,8 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
+#define MAX_WINDOW_SIZE 20
+
 class AP_RangeFinder_Params {
 public:
     static const struct AP_Param::GroupInfo var_info[];
@@ -29,4 +31,8 @@ public:
     AP_Int8  orientation;
     // LRD1 frequency mode (24GHz of Integrated)
     AP_Int8  lrd1_freq_mode;
+    // LRD1 Low pass filter window size (1-20)
+    AP_Int8  lrd1_lpf_window;
+    int8_t lrd1_cur_pos;
+    float _range_window[MAX_WINDOW_SIZE];  // Static array for readings
 };

@@ -145,6 +145,14 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LRD1MODE", 54, AP_RangeFinder_Params, lrd1_freq_mode, 0),
 
+    // @Param: LRD1WND
+    // @DisplayName: LRD1 LPF Window 
+    // @Description:  LRD1 Moving average Low pass filter Window 
+    // @Range: 1 20
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LRD1WND", 55, AP_RangeFinder_Params, lrd1_lpf_window, 5),
+
     AP_GROUPEND
 };
 
