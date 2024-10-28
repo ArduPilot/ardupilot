@@ -13,6 +13,7 @@
  *  - Ability to use loiter radius smaller than L1 length
  */
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
