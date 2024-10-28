@@ -1460,41 +1460,43 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
                     break;
             }
 
-            if (msg_valid) {
-                const Vector2f vel{pos_target.vx, pos_target.vy};
-                const Vector2f accel{pos_target.afx, pos_target.afy};
-                Vector2f unit_vel;
-
-                float path_curvature = 0.0;
-                bool dir_is_ccw = false;
-
-                if (!vel.is_zero()) {
-                    unit_vel = vel.normalized();
-
-                    if (!accel.is_zero()) {
-                        // curvature is determined from the acceleration normal
-                        // to the planar velocity and the equation for uniform
-                        // circular motion: a = v^2 / r.
-                        float accel_proj = accel.dot(unit_vel);
-                        Vector2f accel_lat = accel - unit_vel * accel_proj;
-                        Vector2f accel_lat_unit = accel_lat.normalized();
-
-                        path_curvature = accel_lat.length() / vel.length_squared();
-
-                        // % is cross product, direction: cw:= 1, ccw:= -1
-                        float dir = accel_lat_unit % unit_vel;
-                        dir_is_ccw = dir < 0.0;
-                    }
-                }
-            
-                // update path guidance
-                plane.mode_guided.handle_guided_path_request(
-                    cmd.content.location, unit_vel, path_curvature, dir_is_ccw);
-
-                // update adjust_altitude_target immediately rather than wait
-                // for the scheduler.
-                plane.adjust_altitude_target();
+            if (!msg_valid) {
+                return;
             }
+
+            const Vector2f vel{pos_target.vx, pos_target.vy};
+            const Vector2f accel{pos_target.afx, pos_target.afy};
+            Vector2f unit_vel;
+
+            float path_curvature = 0.0;
+            bool dir_is_ccw = false;
+
+            if (!vel.is_zero()) {
+                unit_vel = vel.normalized();
+
+                if (!accel.is_zero()) {
+                    // curvature is determined from the acceleration normal
+                    // to the planar velocity and the equation for uniform
+                    // circular motion: a = v^2 / r.
+                    float accel_proj = accel.dot(unit_vel);
+                    Vector2f accel_lat = accel - unit_vel * accel_proj;
+                    Vector2f accel_lat_unit = accel_lat.normalized();
+
+                    path_curvature = accel_lat.length() / vel.length_squared();
+
+                    // % is cross product, direction: cw:= 1, ccw:= -1
+                    float dir = accel_lat_unit % unit_vel;
+                    dir_is_ccw = dir < 0.0;
+                }
+            }
+        
+            // update path guidance
+            plane.mode_guided.handle_guided_path_request(
+                cmd.content.location, unit_vel, path_curvature, dir_is_ccw);
+
+            // update adjust_altitude_target immediately rather than wait
+            // for the scheduler.
+            plane.adjust_altitude_target();
         }
     }
 
