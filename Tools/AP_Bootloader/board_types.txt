@@ -390,6 +390,12 @@ AP_HW_DroneBuild_G2                  5701
 
 # IDs 6000-6099 reserved for SpektreWorks
 
+# IDs 6100-6199 reserved for MFE
+AP_HW_MFE_PDB_CAN                            6100
+AP_HW_MFE_POS3_CAN                          6101
+AP_HW_MFE_RTK_CAN                             6102
+AP_HW_MFE_AirSpeed_CAN                     6103
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial
