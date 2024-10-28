@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include "AP_RangeFinder.h"
+#include <GCS_MAVLink/GCS.h>
 
 class AP_RangeFinder_Backend
 {

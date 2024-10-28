@@ -17,7 +17,6 @@
 
 #if AP_RANGEFINDER_AINSTEIN_LRD1_PRO_SERIAL_ENABLED
 
-#include <GCS_MAVLink/GCS.h>
 #include <ctype.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -50,6 +49,9 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
     {
         return false;
     }
+
+    // Noting the current sensor value
+    float current_dist_reading_m = reading_m;
 
     bool has_data = false;
     int16_t nbytes = uart->available();
@@ -189,6 +191,13 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
                 state.status = RangeFinder::Status::OutOfRangeHigh;
                 reading_m = MAX(656, max_distance_cm() * 0.01 + 1);
             }
+            /* Adding a check to ignore sudden jumps in height from Radar*/
+            else if(state.status == RangeFinder::Status::Good && 
+                   (reading_m - current_dist_reading_m > CHANGE_HEIGHT_THRESHOLD ||
+                   reading_m - current_dist_reading_m < -CHANGE_HEIGHT_THRESHOLD)){
+            state.status = RangeFinder::Status::NoData;
+            has_data = false;
+        }
             else
             {
                 state.status = RangeFinder::Status::NoData;
