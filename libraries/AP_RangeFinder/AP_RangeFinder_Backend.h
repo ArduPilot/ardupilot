@@ -65,10 +65,7 @@ public:
         float sum = 0.0f;
         for (int i = 0; i < _window_size; ++i) {
             sum += params._range_window[i];
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder Val [%d]: %.1f", i, params._range_window[i]);
         }
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "-----------------------");
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder Avg Val: %.3f", (sum / _window_size));
         set_lrd1_cur_pos(_cur_window_pos);
         return sum / _window_size;
     }
