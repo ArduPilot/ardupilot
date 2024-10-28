@@ -205,6 +205,7 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
         }
         else
         {
+            reading_m = get_avg_reading(reading_m);
             state.status = RangeFinder::Status::Good;
         }
 
