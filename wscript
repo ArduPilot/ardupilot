@@ -506,6 +506,9 @@ def configure(cfg):
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
 
+    extra_hwdef = cfg.options.extra_hwdef
+    if extra_hwdef is not None and not os.path.exists(extra_hwdef):
+        raise FileNotFoundError(f"extra-hwdef file NOT found: '{cfg.options.extra_hwdef}'")
     cfg.env.HWDEF_EXTRA = cfg.options.extra_hwdef
     if cfg.env.HWDEF_EXTRA:
         cfg.env.HWDEF_EXTRA = os.path.abspath(cfg.env.HWDEF_EXTRA)

@@ -195,10 +195,10 @@ private:
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
-#if AP_DDS_DYNAMIC_TF_SUB
+#if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
-#endif // AP_DDS_DYNAMIC_TF_SUB
+#endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
     HAL_Semaphore csem;
 
     // connection parametrics
