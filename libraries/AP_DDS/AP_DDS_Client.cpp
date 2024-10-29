@@ -17,6 +17,7 @@
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Common/AP_FWVersion.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
 #if AP_DDS_ARM_SERVER_ENABLED
@@ -66,6 +67,9 @@ static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
+#ifdef AP_DDS_STATUS_PUB_ENABLED
+static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
+#endif // AP_DDS_STATUS_PUB_ENABLED
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -615,6 +619,56 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
+#if AP_DDS_STATUS_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
+{
+    // Fill the new message.
+    const auto &vehicle = AP::vehicle();
+    const auto &battery = AP::battery();
+    msg.vehicle_type = static_cast<uint8_t>(AP::fwversion().vehicle_type);
+    msg.armed = hal.util->get_soft_armed();
+    msg.mode = vehicle->get_mode();
+    msg.flying = vehicle->get_likely_flying();
+    msg.external_control = true; // Always true for now. To be filled after PR#28429.
+    uint8_t fs_iter = 0;
+    msg.failsafe_size = 0;
+    if (AP_Notify::flags.failsafe_radio) {
+        msg.failsafe[fs_iter++] = FS_RADIO;
+    }
+    if (battery.has_failsafed()) {
+        msg.failsafe[fs_iter++] = FS_BATTERY;
+    }
+    if (AP_Notify::flags.failsafe_gcs) {
+        msg.failsafe[fs_iter++] = FS_GCS;
+    }
+    if (AP_Notify::flags.failsafe_ekf) {
+        msg.failsafe[fs_iter++] = FS_EKF;
+    }
+    msg.failsafe_size = fs_iter;
+
+    // Compare with the previous one.
+    bool is_message_changed {false};
+    is_message_changed |= (last_status_msg_.flying != msg.flying);
+    is_message_changed |= (last_status_msg_.armed != msg.armed);
+    is_message_changed |= (last_status_msg_.mode != msg.mode);
+    is_message_changed |= (last_status_msg_.vehicle_type != msg.vehicle_type);
+    is_message_changed |= (last_status_msg_.failsafe_size != msg.failsafe_size);
+    is_message_changed |= (last_status_msg_.external_control != msg.external_control);
+
+    if ( is_message_changed ) {
+        last_status_msg_.flying = msg.flying;
+        last_status_msg_.armed  = msg.armed;
+        last_status_msg_.mode  = msg.mode;
+        last_status_msg_.vehicle_type = msg.vehicle_type;
+        last_status_msg_.failsafe_size = msg.failsafe_size;
+        last_status_msg_.external_control = msg.external_control;
+        update_topic(msg.header.stamp);
+        return true;
+    } else {
+        return false;
+    }
+}
+#endif // AP_DDS_STATUS_PUB_ENABLED
 /*
   start the DDS thread
  */
@@ -1458,6 +1512,23 @@ void AP_DDS_Client::write_gps_global_origin_topic()
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
+#if AP_DDS_STATUS_PUB_ENABLED
+void AP_DDS_Client::write_status_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_Status_size_of_topic(&status_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::STATUS_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_Status_serialize_topic(&ub, &status_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_STATUS_PUB_ENABLED
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1537,10 +1608,17 @@ void AP_DDS_Client::update()
         write_gps_global_origin_topic();
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+#if AP_DDS_STATUS_PUB_ENABLED
+    if (cur_time_ms - last_status_check_time_ms > DELAY_STATUS_TOPIC_MS) {
+        if (update_topic(status_topic)) {
+            write_status_topic();
+        }
+        last_status_check_time_ms = cur_time_ms;
+    }
 
     status_ok = uxr_run_session_time(&session, 1);
 }
-
+#endif // AP_DDS_STATUS_PUB_ENABLED
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 extern "C" {
     int clock_gettime(clockid_t clockid, struct timespec *ts);
