@@ -25,6 +25,9 @@
 #if AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Imu.h"
 #endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_STATUS_PUB_ENABLED
+#include "ardupilot_msgs/msg/Status.h"
+#endif // AP_DDS_STATUS_PUB_ENABLED
 #if AP_DDS_JOY_SUB_ENABLED
 #include "sensor_msgs/msg/Joy.h"
 #endif // AP_DDS_JOY_SUB_ENABLED
@@ -175,6 +178,17 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_STATUS_PUB_ENABLED
+    ardupilot_msgs_msg_Status status_topic;
+    bool update_topic(ardupilot_msgs_msg_Status& msg);
+    // The last ms timestamp AP_DDS wrote/checked a status message
+    uint64_t last_status_check_time_ms;
+    // last status values;
+    ardupilot_msgs_msg_Status last_status_msg_;
+    //! @brief Serialize the current status and publish to the IO stream(s)
+    void write_status_topic();
+#endif // AP_DDS_STATUS_PUB_ENABLED
+
 #if AP_DDS_STATIC_TF_PUB_ENABLED
     // outgoing transforms
     tf2_msgs_msg_TFMessage tx_static_transforms_topic;
@@ -254,6 +268,7 @@ private:
 
     // client key we present
     static constexpr uint32_t key = 0xAAAABBBB;
+
 
 public:
     ~AP_DDS_Client();
