@@ -60,6 +60,9 @@ static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+static constexpr uint16_t DELAY_GOAL_TOPIC_MS = AP_DDS_DELAY_GOAL_TOPIC_MS ;
+#endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
 static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
 #endif // AP_DDS_CLOCK_PUB_ENABLED
@@ -551,6 +554,39 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     }
 }
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+
+#if AP_DDS_GOAL_PUB_ENABLED
+bool AP_DDS_Client::update_topic_goal(geographic_msgs_msg_GeoPointStamped& msg)
+{
+    const auto &vehicle = AP::vehicle();
+    update_topic(msg.header.stamp);
+    Location target_loc;
+    // Exit if no target is available.
+    if (!vehicle->get_target_location(target_loc)) {
+        return false;
+    }
+    target_loc.change_alt_frame(Location::AltFrame::ABSOLUTE);
+    msg.position.latitude = target_loc.lat * 1e-7;
+    msg.position.longitude = target_loc.lng * 1e-7;
+    msg.position.altitude = target_loc.alt * 1e-2;
+
+    // Check whether the goal has changed or if the topic has never been published.
+    const double tolerance_lat_lon = 1e-8; // One order of magnitude smaller than the target's resolution.
+    const double distance_alt = 1e-3;
+    if (abs(msg.position.latitude - prev_goal_msg.position.latitude) >  tolerance_lat_lon ||
+        abs(msg.position.longitude - prev_goal_msg.position.longitude) >  tolerance_lat_lon ||
+        abs(msg.position.altitude - prev_goal_msg.position.altitude) > distance_alt ||
+        prev_goal_msg.header.stamp.sec == 0 ) {
+        update_topic(prev_goal_msg.header.stamp);
+        prev_goal_msg.position.latitude = msg.position.latitude;
+        prev_goal_msg.position.longitude = msg.position.longitude;
+        prev_goal_msg.position.altitude = msg.position.altitude;
+        return true;
+    } else {
+        return false;
+    }
+}
+#endif // AP_DDS_GOAL_PUB_ENABLED
 
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
@@ -1522,6 +1558,22 @@ void AP_DDS_Client::write_gps_global_origin_topic()
 }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
+#if AP_DDS_GOAL_PUB_ENABLED
+void AP_DDS_Client::write_goal_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geographic_msgs_msg_GeoPointStamped_size_of_topic(&goal_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::GOAL_PUB)].dw_id, &ub, topic_size);
+        const bool success = geographic_msgs_msg_GeoPointStamped_serialize_topic(&ub, &goal_topic);
+        if (!success) {
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_GOAL_PUB_ENABLED
+
 #if AP_DDS_STATUS_PUB_ENABLED
 void AP_DDS_Client::write_status_topic()
 {
@@ -1618,6 +1670,14 @@ void AP_DDS_Client::update()
         write_gps_global_origin_topic();
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+    if (cur_time_ms - last_goal_time_ms > DELAY_GOAL_TOPIC_MS) {
+        if (update_topic_goal(goal_topic)) {
+            write_goal_topic();
+        }
+        last_goal_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_STATUS_PUB_ENABLED
     if (cur_time_ms - last_status_check_time_ms > DELAY_STATUS_TOPIC_MS) {
         if (update_topic(status_topic)) {
