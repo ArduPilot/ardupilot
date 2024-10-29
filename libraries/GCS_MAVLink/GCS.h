@@ -1127,6 +1127,9 @@ private:
     // handle a mission item int uploaded with current==2 or
     // current==3, meaning go somewhere when in guided mode:
     void handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int);
+    // a timer so that we don't flood the GCS with deprecation
+    // warnings about people uploading missions with guided
+    uint32_t last_guided_mission_request_received_ms;
 #endif
 };
 

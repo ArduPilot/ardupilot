@@ -915,6 +915,12 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 #if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 void GCS_MAVLINK::handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int)
 {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_guided_mission_request_received_ms > 60000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Guided mode mission request received; use SET_POSITION_TARGET_GLOBAL_INT instead");
+            last_guided_mission_request_received_ms = now_ms;
+        }
+
         const uint8_t current = mission_item_int.current;
 
         struct AP_Mission::Mission_Command cmd = {};
