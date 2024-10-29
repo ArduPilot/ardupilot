@@ -485,7 +485,7 @@ void NavEKF3_core::FuseDragForces()
     ZERO_FARRAY(Kfusion);
     Vector24 Hfusion; // Observation Jacobians
     const ftype R_ACC = sq(fmaxF(frontend->_dragObsNoise, 0.5f));
-    const ftype density_ratio = sqrtF(dal.get_EAS2TAS());
+    const ftype density_ratio = 1.0f/sq(dal.get_EAS2TAS());
     const ftype rho = fmaxF(1.225f * density_ratio, 0.1f); // air density
 
     // get latest estimated orientation
