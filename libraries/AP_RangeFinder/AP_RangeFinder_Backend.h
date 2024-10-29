@@ -52,23 +52,7 @@ public:
     int8_t get_lrd1_cur_pos(){ return params.lrd1_cur_pos; }
 
     // Function to be called to update reading and calculate average
-    float get_avg_reading(float new_reading) {
-        // Add new reading to the circular buffer
-        int8_t _window_size = lrd1_lpf_window();
-        int8_t _cur_window_pos = get_lrd1_cur_pos();
-        params._range_window[_cur_window_pos % _window_size] = new_reading;
-        _cur_window_pos++;
-        if (_cur_window_pos >= _window_size){
-            _cur_window_pos =0;
-        }
-        // Calculate the average of active elements in the buffer
-        float sum = 0.0f;
-        for (int i = 0; i < _window_size; ++i) {
-            sum += params._range_window[i];
-        }
-        set_lrd1_cur_pos(_cur_window_pos);
-        return sum / _window_size;
-    }
+    float get_avg_reading(float new_reading);
 
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;

@@ -80,3 +80,21 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::Status _status)
     }
 }
 
+// Function to be called to update reading and calculate average
+float AP_RangeFinder_Backend::get_avg_reading(float new_reading) {
+    // Add new reading to the circular buffer
+    int8_t _window_size = lrd1_lpf_window();
+    int8_t _cur_window_pos = get_lrd1_cur_pos();
+    params._range_window[_cur_window_pos % _window_size] = new_reading;
+    _cur_window_pos++;
+    if (_cur_window_pos >= _window_size){
+        _cur_window_pos =0;
+    }
+    // Calculate the average of active elements in the buffer
+    float sum = 0.0f;
+    for (int i = 0; i < _window_size; ++i) {
+        sum += params._range_window[i];
+    }
+    set_lrd1_cur_pos(_cur_window_pos);
+    return sum / _window_size;
+}
