@@ -1121,6 +1121,9 @@ private:
     bool send_available_modes();
     bool send_available_mode_monitor();
 
+    // handle a mission item int uploaded with current==2 or
+    // current==3, meaning go somewhere when in guided mode:
+    void handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int);
 };
 
 /// @class GCS
