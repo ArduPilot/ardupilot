@@ -1,5 +1,6 @@
 ROOT = $(dir $(lastword $(MAKEFILE_LIST)))
 
+
 WAF_BINARY = $(realpath $(ROOT)/modules/waf/waf-light)
 WAF = python $(WAF_BINARY) $(WAF_FLAGS)
 
