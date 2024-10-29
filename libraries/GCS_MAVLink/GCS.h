@@ -1126,6 +1126,10 @@ private:
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
     bool _locked;
+
+    // handle a mission item int uploaded with current==2 or
+    // current==3, meaning go somewhere when in guided mode:
+    void handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int);
 };
 
 /// @class GCS
