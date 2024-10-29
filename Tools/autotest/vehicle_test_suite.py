@@ -11404,10 +11404,8 @@ Also, ignores heartbeats not from our target system'''
             raise ValueError()
 
         def to_alt_frame(alt, mav_frame):
-            if mav_frame in ["MAV_FRAME_GLOBAL_RELATIVE_ALT",
-                             "MAV_FRAME_GLOBAL_RELATIVE_ALT_INT",
-                             "MAV_FRAME_GLOBAL_TERRAIN_ALT",
-                             "MAV_FRAME_GLOBAL_TERRAIN_ALT_INT"]:
+            # Per MAVLink spec, GLOBAL is a keyword to represent MSL.
+            if "GLOBAL" in mav_frame:
                 home = self.home_position_as_mav_location()
                 return alt - home.alt
             else:
