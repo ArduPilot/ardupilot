@@ -8,6 +8,9 @@ enum class ServiceIndex: uint8_t {
 #if AP_DDS_MODE_SWITCH_SERVER_ENABLED
     MODE_SWITCH,
 #endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_ARM_CHECK_SERVER_ENABLED
+    PREARM_CHECK,
+#endif // AP_DDS_ARM_CHECK_SERVER_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     SET_PARAMETERS,
     GET_PARAMETERS
@@ -51,6 +54,18 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .reply_topic_name = "rr/ap/mode_switchReply",
     },
 #endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_ARM_CHECK_SERVER_ENABLED
+    {
+        .req_id = to_underlying(ServiceIndex::PREARM_CHECK),
+        .rep_id = to_underlying(ServiceIndex::PREARM_CHECK),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/prearm_checkService",
+        .request_type = "std_srvs::srv::dds_::Trigger_Request_",
+        .reply_type = "std_srvs::srv::dds_::Trigger_Response_",
+        .request_topic_name = "rq/ap/prearm_checkRequest",
+        .reply_topic_name = "rr/ap/prearm_checkReply",
+    },
+#endif // AP_DDS_ARM_CHECK_SERVER_ENABLED    
 #if AP_DDS_PARAMETER_SERVER_ENABLED
     {
         .req_id = to_underlying(ServiceIndex::SET_PARAMETERS),
