@@ -334,6 +334,8 @@ singleton AP_Vehicle method get_circle_radius boolean float'Null
 singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
 singleton AP_Vehicle method get_steering_and_throttle boolean float'Null float'Null
+singleton AP_Vehicle method get_steering_rate_pid_info boolean float'Null float'Null
+singleton AP_Vehicle method get_throttle_speed_pid_info boolean float'Null float'Null
 singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
