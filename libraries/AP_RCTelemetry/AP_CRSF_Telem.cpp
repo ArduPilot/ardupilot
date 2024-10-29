@@ -975,7 +975,7 @@ int8_t AP_CRSF_Telem::get_vertical_speed_packed()
 // prepare vario data
 void AP_CRSF_Telem::calc_baro_vario()
 {
-    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.altitude_packed = htobe16(get_altitude_packed());
     _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
 
     _telem_size = sizeof(BaroVarioFrame);
@@ -987,7 +987,7 @@ void AP_CRSF_Telem::calc_baro_vario()
 // prepare vario data
 void AP_CRSF_Telem::calc_vario()
 {
-    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem.bcast.vario.v_speed = htobe16(int16_t(get_vspeed_ms() * 100.0f));
     _telem_size = sizeof(VarioFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
 
