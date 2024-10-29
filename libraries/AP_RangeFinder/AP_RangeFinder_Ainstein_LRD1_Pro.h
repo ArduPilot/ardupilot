@@ -23,6 +23,7 @@
 static constexpr int8_t SIGNAL_QUALITY_MIN = 0;
 static constexpr int8_t SIGNAL_QUALITY_MAX = 100;
 static constexpr int8_t SIGNAL_QUALITY_UNKNOWN = -1;
+static constexpr int8_t CHANGE_HEIGHT_THRESHOLD = 5;
 
 uint16_t crc_sum_of_bytes_16(const uint8_t *data, uint16_t count);
 uint8_t crc_sum_of_bytes(const uint8_t *data, uint16_t count);

@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include "AP_RangeFinder.h"
+#include <GCS_MAVLink/GCS.h>
 
 class AP_RangeFinder_Backend
 {
@@ -46,6 +47,13 @@ public:
     virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
     int16_t ground_clearance_cm() const { return params.ground_clearance_cm; }
     int8_t lrd1_freq_mode() const { return params.lrd1_freq_mode; }
+    int8_t lrd1_lpf_window() const { return params.lrd1_lpf_window; }
+    void set_lrd1_cur_pos(int8_t pos){ params.lrd1_cur_pos = pos; }
+    int8_t get_lrd1_cur_pos(){ return params.lrd1_cur_pos; }
+
+    // Function to be called to update reading and calculate average
+    float get_avg_reading(float new_reading);
+
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
