@@ -1,0 +1,12 @@
+# This service appends a Rally Point to the list or clears the whole list.
+
+# Rally Point.
+ardupilot_msgs/Rally rally
+
+# True to clear the whole list (rally entry is ignored).
+bool clear
+---
+# True if the action is successful.
+bool success
+# Size of Rally Points list.
+uint8 size
