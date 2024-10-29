@@ -431,6 +431,9 @@ BUILD_OPTIONS = [
     Feature('Networking', 'CAN MCAST', 'AP_NETWORKING_CAN_MCAST_ENABLED', 'Enable CAN multicast bridge', 0, None),
 
     Feature('DroneCAN', 'DroneCAN', 'HAL_ENABLE_DRONECAN_DRIVERS', 'Enable DroneCAN support', 0, None),
+
+    Feature('MAVLink', 'GUIDED_MISSION_REQUESTS', 'HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED', 'Enable changing position and location with mission requests in guided mode', 0, None),  # noqa:E501
+
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
