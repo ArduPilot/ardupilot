@@ -320,7 +320,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     AP_GROUPEND
 };
 
-AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) :
+AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) : //类的构造函数，初始化
     AC_AttitudeControl(ahrs, aparm, motors),
     _motors_multi(motors)
 {
@@ -332,10 +332,10 @@ AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_
 }
 
 // Update Alt_Hold angle maximum
-void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
+void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in) //高度保持模式下的最大倾斜角度
 {
     // calc maximum tilt angle based on throttle
-    float thr_max = _motors_multi.get_throttle_thrust_max();
+    float thr_max = _motors_multi.get_throttle_thrust_max(); //获取动态的无人机最大推力
 
     // divide by zero check
     if (is_zero(thr_max)) {
@@ -347,7 +347,7 @@ void AC_AttitudeControl_Multi::update_althold_lean_angle_max(float throttle_in)
     _althold_lean_angle_max = _althold_lean_angle_max + (_dt / (_dt + _angle_limit_tc)) * (althold_lean_angle_max - _althold_lean_angle_max);
 }
 
-void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff)
+void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_angle_boost, float filter_cutoff) //设置油门输出，传入值是从AC_PosControl.cpp文件垂直控制中thr_out传入
 {
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
@@ -363,7 +363,7 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
 }
 
-void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio)
+void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio) //设置油门与姿态控制之间的混合优先级（几何控制不需要）
 {
     ratio = constrain_float(ratio, 0.0f, 1.0f);
     _throttle_rpy_mix_desired = (1.0f - ratio) * _thr_mix_min + ratio * _thr_mix_max;
@@ -371,7 +371,7 @@ void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio)
 
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
-float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
+float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in) //// 返回包含滚转/俯仰角补偿的油门值 由于飞行器姿态倾斜导致的升力损失而进行的油门调整。（几何控制不需要）
 {
     if (!_angle_boost_enabled) {
         _angle_boost = 0;
@@ -390,7 +390,7 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
     return throttle_out;
 }
 
-// returns a throttle including compensation for roll/pitch angle
+// returns a throttle including compensation for roll/pitch angle  // 返回包含滚转/俯仰角补偿的平均最大油门值（几何控制不需要）
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
 {
@@ -398,7 +398,7 @@ float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
     return MAX(throttle_in, throttle_in * MAX(0.0f, 1.0f - _throttle_rpy_mix) + _motors.get_throttle_hover() * _throttle_rpy_mix);
 }
 
-// update_throttle_gain_boost - boost angle_p/pd each cycle on high throttle slew
+// update_throttle_gain_boost - boost angle_p/pd each cycle on high throttle slew //// 更新油门增益提升 - 在油门快速变化时每个周期增加角度P和PD（几何控制不需要）
 void AC_AttitudeControl_Multi::update_throttle_gain_boost()
 {
     // Boost PD and Angle P on very rapid throttle changes
@@ -411,7 +411,7 @@ void AC_AttitudeControl_Multi::update_throttle_gain_boost()
     }
 }
 
-// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
+// update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value //// 更新油门姿态混合比例 - 调整油门姿态混合比例到请求的值（几何控制不需要）
 void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
 {
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
@@ -439,7 +439,7 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
-void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, float dt)
+void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, float dt) //姿态速率控制
 {
     // take a copy of the target so that it can't be changed from under us.
     Vector3f ang_vel_body = _ang_vel_body;
@@ -469,7 +469,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     control_monitor_update();
 }
 
-// reset the rate controller target loop updates
+// reset the rate controller target loop updates //// 重置速率控制器目标环更新
 void AC_AttitudeControl_Multi::rate_controller_target_reset()
 {
     _sysid_ang_vel_body.zero();
@@ -477,14 +477,14 @@ void AC_AttitudeControl_Multi::rate_controller_target_reset()
     _pd_scale = VECTORF_111;
 }
 
-// run the rate controller using the configured _dt and latest gyro
+// run the rate controller using the configured _dt and latest gyro //运行姿态控制器
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
     rate_controller_run_dt(gyro_latest, _dt);
 }
 
-// sanity check parameters.  should be called once before takeoff
+// sanity check parameters.  should be called once before takeoff //参数合理性检查
 void AC_AttitudeControl_Multi::parameter_sanity_check()
 {
     // sanity check throttle mix parameters
@@ -507,7 +507,7 @@ void AC_AttitudeControl_Multi::parameter_sanity_check()
     }
 }
 
-void AC_AttitudeControl_Multi::set_notch_sample_rate(float sample_rate)
+void AC_AttitudeControl_Multi::set_notch_sample_rate(float sample_rate) //设置速率控制器的陷波滤波器采样率
 {
 #if AP_FILTER_ENABLED
     _pid_rate_roll.set_notch_sample_rate(sample_rate);

@@ -896,7 +896,7 @@ void AC_AttitudeControl::attitude_controller_run_quat() //通过四元数表示�
 }
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
-// The maximum error in the yaw axis is limited based on static output saturation.
+// The maximum error in the yaw axis is limited based on static output saturation. //基于四元数的姿态误差计算
 void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_target, const Quaternion& attitude_body, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const
 {
     Quaternion thrust_vector_correction;
@@ -919,7 +919,7 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_tar
 }
 
 // thrust_vector_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
-// The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
+// The first rotation corrects the thrust vector and the second rotation corrects the heading vector. //底层误差修正计算函数
 void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitude_target, const Quaternion& attitude_body, Quaternion& thrust_vector_correction, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const
 {
     // The direction of thrust is [0,0,-1] is any body-fixed frame, inc. body frame and target frame.
@@ -970,7 +970,7 @@ void AC_AttitudeControl::thrust_vector_rotation_angles(const Quaternion& attitud
     attitude_error.z = rotation.z;
 }
 
-// calculates the velocity correction from an angle error. The angular velocity has acceleration and
+// calculates the velocity correction from an angle error. The angular velocity has acceleration and //通过角度误差计算速度修正
 // deceleration limits including basic jerk limiting using _input_tc
 float AC_AttitudeControl::input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt)
 {
@@ -1266,7 +1266,7 @@ float AC_AttitudeControl::max_rate_step_bf_yaw()
 
 bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
                                         char *failure_msg,
-                                        const uint8_t failure_msg_len)
+                                        const uint8_t failure_msg_len) //起飞检查 Arm check
 {
     // validate AC_P members:
     const struct {
