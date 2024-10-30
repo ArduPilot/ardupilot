@@ -123,8 +123,34 @@ int32_t AP_L1_Control::target_bearing_cd(void) const
  */
 float AP_L1_Control::turn_distance(float wp_radius) const
 {
-    wp_radius *= sq(_ahrs.get_EAS2TAS());
-    return MIN(wp_radius, _L1_dist);
+    const float eas2tas_sq = sq(_ahrs.get_EAS2TAS()); // true airspeed correction
+
+    const float scaled_turn_distance = wp_radius * eas2tas_sq; // distance scaled to true airspeed
+
+    /** Wind effect i.e. forward crosstrack error correction for the leg to the next waypoint.
+     *  turn early on tail-wind
+     */
+    float headwind = _ahrs.head_wind(); // forward head-wind component in m/s. Negative means tail-wind.
+
+    float arc_distance_for_90_degree_turn_in_meters = 0.5f * M_PI * wp_radius;
+
+    float current_speed = 0.0f;
+
+    if (!_ahrs.airspeed_estimate_true(current_speed))
+    {
+        // fallback to groundspeed
+        current_speed = _ahrs.groundspeed_vector().length();
+    };
+
+    float seconds_needed_for_90_degree_turn = arc_distance_for_90_degree_turn_in_meters / current_speed;
+
+    float estimated_lateral_shift_by_wind_during_turn = seconds_needed_for_90_degree_turn * headwind;
+
+    float scaled_and_wind_corrected_turn_distance = scaled_turn_distance - estimated_lateral_shift_by_wind_during_turn;
+    
+    float sanitized_turn_distance = MIN(scaled_and_wind_corrected_turn_distance, _L1_dist); // presumably some invariant of the L1 algo
+
+    return sanitized_turn_distance;
 }
 
 /*
