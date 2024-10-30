@@ -178,7 +178,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
 constexpr Vector3f AC_AttitudeControl::VECTORF_111;
 
-// get the slew yaw rate limit in deg/s
+// get the slew yaw rate limit in deg/s //获取当前的偏航速率上限
 float AC_AttitudeControl::get_slew_yaw_max_degs() const
 {
     if (!is_positive(_ang_vel_yaw_max)) {
@@ -201,7 +201,7 @@ float AC_AttitudeControl::get_slew_yaw_max_degs() const
 // to minimise latency.
 // However this code can be removed once quadplane updates it's structure to run the rate loops before
 // the Attitude controller.
-const Vector3f AC_AttitudeControl::get_latest_gyro() const
+const Vector3f AC_AttitudeControl::get_latest_gyro() const //获取用于姿态控制的最新陀螺仪数据，以向姿态控制器提供最新的""角速度""信息。
 {
 #if AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL
     // rate updates happen before attitude updates so the last gyro value is the last rate gyro value
@@ -213,7 +213,7 @@ const Vector3f AC_AttitudeControl::get_latest_gyro() const
 #endif
 }
 
-// Ensure attitude controller have zero errors to relax rate controller output
+// Ensure attitude controller have zero errors to relax rate controller output //使姿态控制器的误差归零，从而使速率控制器的输出放松（即减小）
 void AC_AttitudeControl::relax_attitude_controllers()
 {
     // take a copy of the last gyro used by the rate controller before using it
@@ -241,14 +241,14 @@ void AC_AttitudeControl::relax_attitude_controllers()
     _ang_vel_body = gyro;
 }
 
-void AC_AttitudeControl::reset_rate_controller_I_terms()
+void AC_AttitudeControl::reset_rate_controller_I_terms() //重置速率控制器（PID 控制器）中的积分项 I
 {
     get_rate_roll_pid().reset_I();
     get_rate_pitch_pid().reset_I();
     get_rate_yaw_pid().reset_I();
 }
 
-// reset rate controller I terms smoothly to zero in 0.5 seconds
+// reset rate controller I terms smoothly to zero in 0.5 seconds //平滑重置速率控制器（PID 控制器）中的积分项 I
 void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 {
     get_rate_roll_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
@@ -256,7 +256,7 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
     get_rate_yaw_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
 }
 
-// Reduce attitude control gains while landed to stop ground resonance
+// Reduce attitude control gains while landed to stop ground resonance //在飞行器着陆时，降低姿态控制器的增益，以防止地面共振的发生。
 void AC_AttitudeControl::landed_gain_reduction(bool landed)
 {
     if (is_positive(_input_tc)) {
@@ -297,10 +297,28 @@ void AC_AttitudeControl::landed_gain_reduction(bool landed)
 //    integrate them into the target attitude. Any errors between the target attitude and the measured attitude are
 //    corrected by first correcting the thrust vector until the angle between the target thrust vector measured
 //    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
+// 姿态控制器围绕期望姿态、目标姿态和测量姿态的概念进行工作。
+// 期望姿态是输入到姿态控制器的姿态，表示高级代码希望飞行器移动到的位置。
+// 目标姿态则在加加速度（jerk）、加速度和速度限制下逐渐移动到期望姿态。
+// 目标角速度直接输入到速率控制器中。
+// 测量姿态和目标姿态之间的角度误差会被输入到角度控制器中，角度控制器的输出会加到速率控制器的输入上。
+// 通过将目标角速度直接输入到速率控制器，测量姿态和目标姿态保持非常接近。
+
+// 下面所有输入函数遵循相同的过程：
+// 1. 基于输入变量定义期望姿态或姿态变化
+// 2. 基于角速度目标和上一次循环的时间间隔更新目标姿态
+// 3. 使用期望姿态和输入变量，定义目标角速度，使目标姿态逐渐接近期望姿态
+// 4. 如果 _rate_bf_ff_enabled 未使用，则将目标姿态和目标角速度设置为期望姿态和期望角速度
+// 5. 确保 _attitude_target、_euler_angle_target、_euler_rate_target 和 _ang_vel_target 已被定义，
+//    这确保在输入模式改变时不会产生不连续性。
+// 6. 然后运行 attitude_controller_run_quat，将目标角速度传递给速率控制器并将其积分到目标姿态中。
+//    任何目标姿态与测量姿态之间的误差首先通过矫正推力向量来修正，直到目标推力向量和测量推力向量之间的角度
+//    低于 2 * AC_ATTITUDE_THRUST_ERROR_ANGLE。这时也会矫正偏航角。
+
 
 // Command a Quaternion attitude with feedforward and smoothing
 // attitude_desired_quat: is updated on each time_step by the integral of the body frame angular velocity
-void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body)
+void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body) //四元数输入的姿态控制
 {
     // update attitude target
     update_attitude_target();
@@ -341,8 +359,8 @@ void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vec
     attitude_controller_run_quat();
 }
 
-// Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds)
+// Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing //欧拉角角速度作为输入的姿态控制器
+void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds) 
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_angle = radians(euler_roll_angle_cd * 0.01f);
@@ -395,7 +413,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
     attitude_controller_run_quat();
 }
 
-// Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
+// Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing //欧拉角姿态控制
 void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
@@ -458,7 +476,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
 }
 
 // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
-void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds)
+void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds) //欧拉角速率姿态控制
 {
     // Convert from centidegrees on public interface to radians
     float euler_roll_rate = radians(euler_roll_rate_cds * 0.01f);
@@ -503,7 +521,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
 }
 
 // Fully stabilized acro
-// Command an angular velocity with angular velocity feedforward and smoothing
+// Command an angular velocity with angular velocity feedforward and smoothing //特技模式下的姿态控制
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
     // Convert from centidegrees on public interface to radians
@@ -543,7 +561,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
     attitude_controller_run_quat();
 }
 
-// Rate-only acro with no attitude feedback - used only by Copter rate-only acro
+// Rate-only acro with no attitude feedback - used only by Copter rate-only acro //仅速率控制的特技模式
 // Command an angular velocity with angular velocity smoothing using rate loops only with no attitude loop stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
@@ -569,7 +587,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     _ang_vel_body = _ang_vel_target;
 }
 
-// Acro with attitude feedback that does not rely on attitude - used only by Plane acro
+// Acro with attitude feedback that does not rely on attitude - used only by Plane acro //// 特技模式（Acro），带姿态反馈但不依赖姿态 - 仅供 Plane 的特技模式使用
 // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
 void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds)
 {
@@ -652,7 +670,7 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
 }
 
 // Command an rate step (i.e change) in body frame rate
-// Used to command a step in rate without exciting the orthogonal axis during autotune
+// Used to command a step in rate without exciting the orthogonal axis during autotune //自动调参过程中指定机体坐标系的速率步进，以避免激励正交轴，同时确保线程安全，避免中间零值对姿态控制的影响
 // Done as a single thread-safe function to avoid intermediate zero values being seen by the attitude controller
 void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw(float roll_rate_step_bf_cd, float pitch_rate_step_bf_cd, float yaw_rate_step_bf_cd)
 {
@@ -670,7 +688,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw(float roll_rate_step_
     _ang_vel_body = ang_vel_body;
 }
 
-// Command a thrust vector and heading rate
+// Command a thrust vector and heading rate //指定推力向量和偏航速率的姿态控制输入函数
 void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
     // Convert from centidegrees on public interface to radians
@@ -726,7 +744,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
     attitude_controller_run_quat();
 }
 
-// Command a thrust vector, heading and heading rate
+// Command a thrust vector, heading and heading rate //// 指定推力向量、偏航角和偏航速率的姿态控制输入函数
 void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds)
 {
     // a zero _angle_vel_yaw_max means that setting is disabled
@@ -777,7 +795,7 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
     attitude_controller_run_quat();
 }
 
-// Command a thrust vector and heading rate
+// Command a thrust vector and heading rate /// 指定推力向量和偏航指令的姿态控制输入函数
 void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading)
 {
     switch (heading.heading_mode) {
@@ -793,14 +811,14 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
     }
 }
 
-Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle) const
+Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle) const ///// 根据推力向量和偏航角计算目标姿态的四元数
 {
     const Vector3f thrust_vector_up{0.0f, 0.0f, -1.0f};
 
     if (is_zero(thrust_vector.length_squared())) {
         thrust_vector = thrust_vector_up;
     } else {
-        thrust_vector.normalize();
+        thrust_vector.normalize(); //归一化
     }
 
     // the cross product of the desired and target thrust vector defines the rotation vector
@@ -825,7 +843,7 @@ Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vecto
 }
 
 // Calculates the body frame angular velocities to follow the target attitude
-void AC_AttitudeControl::update_attitude_target()
+void AC_AttitudeControl::update_attitude_target() ///// 计算机体坐标系的角速度以跟随目标姿态
 {
     // rotate target and normalize
     Quaternion attitude_target_update;
@@ -834,8 +852,8 @@ void AC_AttitudeControl::update_attitude_target()
     _attitude_target.normalize();
 }
 
-// Calculates the body frame angular velocities to follow the target attitude
-void AC_AttitudeControl::attitude_controller_run_quat()
+// Calculates the body frame angular velocities to follow the target attitude /////实际姿态控制器
+void AC_AttitudeControl::attitude_controller_run_quat() //通过四元数表示的目标姿态来计算飞行器在机体坐标系中的目标角速度，从而引导飞行器朝目标姿态运动。
 {
     // This represents a quaternion rotation in NED frame to the body
     Quaternion attitude_body;
