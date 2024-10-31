@@ -168,12 +168,7 @@ bool AP_Arming_Rover::oa_check(bool report)
         return true;
     }
 
-    // display failure
-    if (strlen(failure_msg) == 0) {
-        check_failed(report, "Check Object Avoidance");
-    } else {
-        check_failed(report, "%s", failure_msg);
-    }
+    check_failed(report, "%s", failure_msg);
     return false;
 }
 #endif  // AP_OAPATHPLANNER_ENABLED

@@ -1,6 +1,7 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF3_core.h"
+
+#include "AP_NavEKF3.h"
+
 #include <AP_DAL/AP_DAL.h>
 
 /* Monitor GPS data to see if quality is good enough to initialise the EKF
@@ -383,6 +384,17 @@ void NavEKF3_core::detectFlight()
         }
 
         if (!onGround) {
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+            // If depth has increased since arming, then we definitely are diving
+            if ((stateStruct.position.z - posDownAtTakeoff) > 1.5f) {
+                inFlight = true;
+            }
+
+            // If rangefinder has decreased since arming, then we definitely are diving
+            if ((rangeDataNew.rng - rngAtStartOfFlight) < -0.5f) {
+                inFlight = true;
+            }
+#else
             // If height has increased since exiting on-ground, then we definitely are flying
             if ((stateStruct.position.z - posDownAtTakeoff) < -1.5f) {
                 inFlight = true;
@@ -392,6 +404,7 @@ void NavEKF3_core::detectFlight()
             if ((rangeDataNew.rng - rngAtStartOfFlight) > 0.5f) {
                 inFlight = true;
             }
+#endif
 
             // If more than 5 seconds since likely_flying was set
             // true, then set inFlight true
@@ -448,6 +461,7 @@ void NavEKF3_core::setTerrainHgtStable(bool val)
     terrainHgtStable = val;
 }
 
+#if EK3_FEATURE_OPTFLOW_FUSION
 // Detect takeoff for optical flow navigation
 void NavEKF3_core::detectOptFlowTakeoff(void)
 {
@@ -465,4 +479,4 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
         takeOffDetected = false;
     }
 }
-
+#endif  // EK3_FEATURE_OPTFLOW_FUSION

@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
 
 /*
  * mode_follow.cpp - follow another mavlink-enabled vehicle by system id
@@ -172,4 +172,4 @@ bool ModeFollow::get_wp(Location &loc) const
     return true;
 }
 
-#endif // MODE_FOLLOW_ENABLED == ENABLED
+#endif // MODE_FOLLOW_ENABLED

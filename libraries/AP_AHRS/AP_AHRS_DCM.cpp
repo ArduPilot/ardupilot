@@ -107,14 +107,34 @@ AP_AHRS_DCM::update()
     if (now_ms - last_log_ms >= 100) {
         // log DCM at 10Hz
         last_log_ms = now_ms;
-        AP::logger().WriteStreaming("DCM", "TimeUS,Roll,Pitch,Yaw",
-                                    "sddd",
-                                    "F000",
-                                    "Qfff",
-                                    AP_HAL::micros64(),
-                                    degrees(roll),
-                                    degrees(pitch),
-                                    wrap_360(degrees(yaw)));
+
+// @LoggerMessage: DCM
+// @Description: DCM Estimator Data
+// @Field: TimeUS: Time since system startup
+// @Field: Roll: estimated roll
+// @Field: Pitch: estimated pitch
+// @Field: Yaw: estimated yaw
+// @Field: ErrRP: lowest estimated gyro drift error
+// @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
+// @Field: VWN: wind velocity, to-the-North component
+// @Field: VWE: wind velocity, to-the-East component
+// @Field: VWD: wind velocity, Up-to-Down component
+        AP::logger().WriteStreaming(
+            "DCM",
+            "TimeUS," "Roll," "Pitch," "Yaw," "ErrRP," "ErrYaw," "VWN," "VWE," "VWD",
+            "s"       "d"     "d"      "d"    "d"      "h"       "n"    "n"    "n",
+            "F"       "0"     "0"      "0"    "0"      "0"       "0"    "0"    "0",
+            "Q"       "f"     "f"      "f"    "f"      "f"       "f"    "f"    "f",
+            AP_HAL::micros64(),
+            degrees(roll),
+            degrees(pitch),
+            wrap_360(degrees(yaw)),
+            get_error_rp(),
+            get_error_yaw(),
+            _wind.x,
+            _wind.y,
+            _wind.z
+       );
     }
 #endif // HAL_LOGGING_ENABLED
 }
@@ -414,7 +434,7 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (AP::gps().status() <= AP_GPS::NO_FIX || _gps_use == GPSUse::Disable) {
+    if (_gps_use == GPSUse::Disable || AP::gps().status() <= AP_GPS::NO_FIX) {
         return false;
     }
     return true;
@@ -987,11 +1007,10 @@ void AP_AHRS_DCM::estimate_wind(void)
     if (diff_length > 0.2f) {
         // when turning, use the attitude response to estimate
         // wind speed
-        float V;
         const Vector3f velocityDiff = velocity - _last_vel;
 
         // estimate airspeed it using equation 6
-        V = velocityDiff.length() / diff_length;
+        const float V = velocityDiff.length() / diff_length;
 
         const Vector3f fuselageDirectionSum = fuselageDirection + _last_fuse;
         const Vector3f velocitySum = velocity + _last_vel;
@@ -1003,10 +1022,11 @@ void AP_AHRS_DCM::estimate_wind(void)
         const float sintheta = sinf(theta);
         const float costheta = cosf(theta);
 
-        Vector3f wind = Vector3f();
-        wind.x = velocitySum.x - V * (costheta * fuselageDirectionSum.x - sintheta * fuselageDirectionSum.y);
-        wind.y = velocitySum.y - V * (sintheta * fuselageDirectionSum.x + costheta * fuselageDirectionSum.y);
-        wind.z = velocitySum.z - V * fuselageDirectionSum.z;
+        Vector3f wind{
+            velocitySum.x - V * (costheta * fuselageDirectionSum.x - sintheta * fuselageDirectionSum.y),
+            velocitySum.y - V * (sintheta * fuselageDirectionSum.x + costheta * fuselageDirectionSum.y),
+            velocitySum.z - V * fuselageDirectionSum.z
+        };
         wind *= 0.5f;
 
         if (wind.length() < _wind.length() + 20) {
@@ -1028,6 +1048,13 @@ void AP_AHRS_DCM::estimate_wind(void)
 #endif
 }
 
+#ifdef AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
+    _wind.x = -cosf(radians(direction)) * speed;
+    _wind.y = -sinf(radians(direction)) * speed;
+    _wind.z = 0;
+}
+#endif
 
 // return our current position estimate using
 // dead-reckoning or GPS

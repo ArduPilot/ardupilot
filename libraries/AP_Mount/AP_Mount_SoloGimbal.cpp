@@ -1,5 +1,8 @@
-#include "AP_Mount_SoloGimbal.h"
+#include "AP_Mount_config.h"
+
 #if HAL_SOLO_GIMBAL_ENABLED
+
+#include "AP_Mount_SoloGimbal.h"
 
 #include "SoloGimbal.h"
 #include <AP_Logger/AP_Logger.h>

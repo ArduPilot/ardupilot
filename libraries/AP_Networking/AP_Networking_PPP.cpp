@@ -25,6 +25,9 @@ extern const AP_HAL::HAL& hal;
 #define LWIP_TCPIP_UNLOCK()
 #endif
 
+#define PPP_DEBUG_TX 0
+#define PPP_DEBUG_RX 0
+
 /*
   output some data to the uart
  */
@@ -34,6 +37,27 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
     LWIP_UNUSED_ARG(pcb);
     uint32_t remaining = len;
     const uint8_t *ptr = (const uint8_t *)data;
+#if PPP_DEBUG_TX
+    bool flag_end = false;
+    if (ptr[len-1] == 0x7E) {
+        flag_end = true;
+        remaining--;
+    }
+    if (ptr[0] == 0x7E) {
+        // send byte size
+        if (pkt_size > 0) {
+            printf("PPP: tx[%lu] %u\n", tx_index++,  pkt_size);
+        }
+        // dump the packet
+        if (!(tx_index % 10)) {
+            for (uint32_t i = 0; i < pkt_size; i++) {
+                printf(" %02X", tx_bytes[i]);
+            }
+            printf("\n");
+        }
+        pkt_size = 0;
+    }
+#endif
     while (remaining > 0) {
         const auto n = driver.uart->write(ptr, remaining);
         if (n > 0) {
@@ -43,6 +67,22 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
             hal.scheduler->delay_microseconds(100);
         }
     }
+#if PPP_DEBUG_TX
+    memcpy(&tx_bytes[pkt_size], data, len);
+    pkt_size += len;
+    if (flag_end) {
+        driver.uart->write(0x7E);
+        printf("PPP: tx[%lu] %u\n", tx_index++,  pkt_size);
+        // dump the packet
+        if (!(tx_index % 10)) {
+            for (uint32_t i = 0; i < pkt_size; i++) {
+                printf(" %02X", tx_bytes[i]);
+            }
+            printf("\n");
+        }
+        pkt_size = 0;
+    }
+#endif
     return len;
 }
 
@@ -224,6 +264,25 @@ void AP_Networking_PPP::ppp_loop(void)
             } else {
                 hal.scheduler->delay_microseconds(200);
             }
+#if PPP_DEBUG_RX
+            auto pppos = (pppos_pcb *)ppp->link_ctx_cb;
+            for (uint32_t i = 0; i < n; i++) {
+                if (buf[i] == 0x7E && last_ppp_frame_size != 1) {
+                    // dump the packet
+                    if (pppos->bad_pkt) {
+                        printf("PPP: rx[%lu] %u\n", rx_index, last_ppp_frame_size);
+                        for (uint32_t j = 0; j < last_ppp_frame_size; j++) {
+                            printf("0x%02X,", rx_bytes[j]);
+                        }
+                        printf("\n");
+                        hal.scheduler->delay(1);
+                    }
+                    rx_index++;
+                    last_ppp_frame_size = 0;
+                }
+                rx_bytes[last_ppp_frame_size++] = buf[i];
+            }
+#endif
         }
     }
 }

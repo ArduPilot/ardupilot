@@ -41,7 +41,7 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
 
     state.time_week = pkt.gps_week;
     state.time_week_ms = pkt.ms_tow;
-    if (pkt.fix_type == 0) {
+    if (pkt.fix_type == AP_GPS_FixType::NO_GPS) {
         state.status = AP_GPS::NO_FIX;
     } else {
         state.status = (AP_GPS::GPS_Status)pkt.fix_type;

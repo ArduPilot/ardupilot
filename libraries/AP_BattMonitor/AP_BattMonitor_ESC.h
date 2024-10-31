@@ -51,8 +51,11 @@ private:
     AP_Int32  _mask;
 
     bool have_current;
+    bool have_consumed_mah;
     bool have_temperature;
     float delta_mah;
+
+    uint32_t last_read_us;
 };
 
 #endif  // AP_BATTERY_ESC_ENABLED

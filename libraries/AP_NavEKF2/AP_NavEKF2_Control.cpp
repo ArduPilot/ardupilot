@@ -1,11 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AP_NavEKF2_core.h"
+
+#include <GCS_MAVLink/GCS.h>
+#include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF2.h"
-#include "AP_NavEKF2_core.h"
-#include <GCS_MAVLink/GCS.h>
-
-extern const AP_HAL::HAL& hal;
-
 
 // Control filter mode transitions
 void NavEKF2_core::controlFilterModes()

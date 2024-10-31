@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_LOITER_ENABLED == ENABLED
+#if MODE_LOITER_ENABLED
 
 /*
  * Init and run calls for loiter flight mode
@@ -102,7 +102,7 @@ void ModeLoiter::run()
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -191,8 +191,10 @@ void ModeLoiter::run()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
+#if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();
+#endif
 
         // Send the commanded climb rate to the position controller
         pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);

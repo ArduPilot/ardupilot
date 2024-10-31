@@ -108,7 +108,6 @@ define PORT_INT_REQUIRED_STACK 64
 
 # avoid timer threads to save memory
 define HAL_NO_TIMER_THREAD
-define HAL_NO_MONITOR_THREAD
 define HAL_NO_RCOUT_THREAD  # also disables LED thread
 
 define AP_HAL_SHARED_DMA_ENABLED 0

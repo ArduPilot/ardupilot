@@ -2,6 +2,7 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 
+#if AP_RANGEFINDER_ENABLED
 /*
   read the rangefinder and update height estimate
  */
@@ -33,3 +34,5 @@ void Plane::read_rangefinder(void)
 
     rangefinder_height_update();
 }
+
+#endif  // AP_RANGEFINDER_ENABLED

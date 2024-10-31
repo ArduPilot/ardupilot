@@ -4,7 +4,7 @@
 
 #include "AP_Logger_config.h"
 
-#if HAL_LOGGING_DATAFLASH_ENABLED
+#if HAL_LOGGING_FLASH_JEDEC_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -323,4 +323,4 @@ void AP_Logger_Flash_JEDEC::WriteEnable(void)
     dev->transfer(&b, 1, nullptr, 0);
 }
 
-#endif // HAL_LOGGING_DATAFLASH_ENABLED
+#endif // HAL_LOGGING_FLASH_JEDEC_ENABLED

@@ -27,6 +27,7 @@ param set SERIAL5_PROTOCOL 5
 
 #if HAL_SIM_GPS_ENABLED
 
+#include <sys/time.h>
 #include "SIM_SerialDevice.h"
 
 namespace SITL {
@@ -119,6 +120,9 @@ public:
 #endif
 #if AP_SIM_GPS_SBP2_ENABLED
         SBP2  =  9,
+#endif
+#if AP_SIM_GPS_SBF_ENABLED
+        SBF = 10, //matches GPS_TYPE 
 #endif
 #if AP_SIM_GPS_TRIMBLE_ENABLED
         TRIMBLE  = 11, // matches GPS1_TYPE

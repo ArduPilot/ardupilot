@@ -38,8 +38,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_NO_MONITOR_THREAD
-
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
 

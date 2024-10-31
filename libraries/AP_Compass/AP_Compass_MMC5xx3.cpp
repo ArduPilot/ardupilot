@@ -63,8 +63,8 @@ AP_Compass_MMC5XX3::AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
                                        enum Rotation _rotation)
     : dev(std::move(_dev))
     , force_external(_force_external)
-    , rotation(_rotation)
     , have_initial_offset(false)
+    , rotation(_rotation)
 {
 }
 
@@ -115,7 +115,7 @@ bool AP_Compass_MMC5XX3::init()
 
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a MMC5983 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
+    printf("Found a MMC5983 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
 
     set_rotation(compass_instance, rotation);
 

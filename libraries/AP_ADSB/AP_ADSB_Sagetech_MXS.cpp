@@ -621,8 +621,10 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
     const float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     snprintf((char*)&gps.grdSpeed, 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
 
-    const float heading = wrap_360(degrees(speed.angle()));
-    snprintf((char*)&gps.grdTrack, 9, "%03u.%04u", unsigned(heading), unsigned((heading - (int)heading) * 1.0E4));
+    if (!is_zero(speed_knots)) {
+        cog = wrap_360(degrees(speed.angle()));
+    }
+    snprintf((char*)&gps.grdTrack, 9, "%03u.%04u", unsigned(cog), unsigned((cog - (int)cog) * 1.0E4));
 
 
     gps.latNorth = (latitude >= 0 ? true: false);

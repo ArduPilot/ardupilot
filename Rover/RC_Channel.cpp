@@ -86,7 +86,7 @@ void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
 {
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
-        rover.set_mode(mode, ModeReason::RC_COMMAND);
+        rover.set_mode(mode, ModeReason::AUX_FUNCTION);
         break;
     case AuxSwitchPos::MIDDLE:
         // do nothing
@@ -215,7 +215,7 @@ bool RC_Channel_Rover::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         do_aux_function_change_mode(rover.mode_loiter, ch_flag);
         break;
 
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     // Set mode to Follow
     case AUX_FUNC::FOLLOW:
         do_aux_function_change_mode(rover.mode_follow, ch_flag);

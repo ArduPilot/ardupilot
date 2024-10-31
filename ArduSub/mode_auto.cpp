@@ -50,7 +50,7 @@ void ModeAuto::run()
         break;
 
     case Auto_NavGuided:
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
         auto_nav_guided_run();
 #endif
         break;
@@ -187,8 +187,8 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
-    sub.circle_nav.get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
+    float dist_to_edge;
+    sub.circle_nav.get_closest_point_on_circle(circle_edge_neu, dist_to_edge);
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -252,7 +252,7 @@ void ModeAuto::auto_circle_run()
     attitude_control->input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw(), true);
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::auto_nav_guided_start()
 {
@@ -426,6 +426,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 // Return true if it is possible to recover from a rangefinder failure
 bool ModeAuto::auto_terrain_recover_start()
 {
+#if AP_RANGEFINDER_ENABLED
     // Check rangefinder status to see if recovery is possible
     switch (sub.rangefinder.status_orient(ROTATION_PITCH_270)) {
 
@@ -462,6 +463,9 @@ bool ModeAuto::auto_terrain_recover_start()
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
+#else
+    return false;
+#endif
 }
 
 // Attempt recovery from terrain failsafe
@@ -470,7 +474,6 @@ bool ModeAuto::auto_terrain_recover_start()
 void ModeAuto::auto_terrain_recover_run()
 {
     float target_climb_rate = 0;
-    static uint32_t rangefinder_recovery_ms = 0;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -483,6 +486,8 @@ void ModeAuto::auto_terrain_recover_run()
         return;
     }
 
+#if AP_RANGEFINDER_ENABLED
+    static uint32_t rangefinder_recovery_ms = 0;
     switch (sub.rangefinder.status_orient(ROTATION_PITCH_270)) {
 
     case RangeFinder::Status::OutOfRangeLow:
@@ -529,6 +534,10 @@ void ModeAuto::auto_terrain_recover_run()
         rangefinder_recovery_ms = 0;
         return;
     }
+#else
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
+    sub.failsafe_terrain_act();
+#endif
 
     // exit on failure (timeout)
     if (AP_HAL::millis() > sub.fs_terrain_recover_start_ms + FS_TERRAIN_RECOVER_TIMEOUT_MS) {

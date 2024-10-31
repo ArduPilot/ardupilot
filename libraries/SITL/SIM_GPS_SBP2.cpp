@@ -77,9 +77,9 @@ void GPS_SBP2::publish(const GPS_Data *d)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    pos.h_accuracy = d->horizontal_acc*1000;
+    pos.v_accuracy = d->vertical_acc*1000;
+    pos.n_sats = d->have_lock ? d->num_sats : 3;
 
     // Send single point position solution
     pos.flags = 1;
@@ -94,7 +94,7 @@ void GPS_SBP2::publish(const GPS_Data *d)
     velned.d = 1e3 * d->speedD;
     velned.h_accuracy = 1e3 * 0.5;
     velned.v_accuracy = 1e3 * 0.5;
-    velned.n_sats = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    velned.n_sats = d->have_lock ? d->num_sats : 3;
     velned.flags = 1;
     sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
 

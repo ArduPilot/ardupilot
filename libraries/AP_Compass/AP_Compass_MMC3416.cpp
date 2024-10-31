@@ -99,7 +99,7 @@ bool AP_Compass_MMC3416::init()
     
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a MMC3416 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
+    printf("Found a MMC3416 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), compass_instance);
     
     set_rotation(compass_instance, rotation);
 

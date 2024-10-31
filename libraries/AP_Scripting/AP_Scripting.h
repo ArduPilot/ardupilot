@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#include "AP_Scripting/AP_Scripting_config.h"
+
 #if AP_SCRIPTING_ENABLED
 
 #include <GCS_MAVLink/GCS_config.h>
@@ -39,6 +41,10 @@
 class SocketAPM;
 #endif
 
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+#include "AP_Scripting_SerialDevice.h"
+#endif
+
 class AP_Scripting
 {
 public:
@@ -48,6 +54,10 @@ public:
     CLASS_NO_COPY(AP_Scripting);
 
     void init(void);
+
+#if AP_SCRIPTING_SERIALDEVICE_ENABLED
+    void init_serialdevice_ports(void);
+#endif
 
     void update();
 
@@ -110,8 +120,8 @@ public:
     // PWMSource storage
     uint8_t num_pwm_source;
     AP_HAL::PWMSource *_pwm_source[SCRIPTING_MAX_NUM_PWM_SOURCE];
-    int get_current_ref() { return current_ref; }
-    void set_current_ref(int ref) { current_ref = ref; }
+    int get_current_env_ref() { return current_env_ref; }
+    void set_current_env_ref(int ref) { current_env_ref = ref; }
 
 #if AP_NETWORKING_ENABLED
     // SocketAPM storage
@@ -137,6 +147,10 @@ public:
     };
     command_block_list *mavlink_command_block_list;
     HAL_Semaphore mavlink_command_block_list_sem;
+
+    #if AP_SCRIPTING_SERIALDEVICE_ENABLED
+        AP_Scripting_SerialDevice _serialdevice;
+    #endif
 
 private:
 
@@ -177,7 +191,7 @@ private:
     bool _stop; // true if scripts should be stopped
 
     static AP_Scripting *_singleton;
-    int current_ref;
+    int current_env_ref;
 };
 
 namespace AP {

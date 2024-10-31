@@ -26,7 +26,7 @@ BASE_PKGS="base-devel ccache git gsfonts tk wget gcc"
 SITL_PKGS="python-pip python-setuptools python-wheel python-wxpython opencv python-numpy python-scipy"
 PX4_PKGS="lib32-glibc zip zlib ncurses"
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect argparse matplotlib pyparsing geocoder pyserial empy==3.3.4 dronecan setuptools wheel"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect argparse matplotlib pyparsing geocoder pyserial empy==3.3.4 dronecan packaging setuptools wheel"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
@@ -54,7 +54,7 @@ sudo usermod -a -G uucp "$USER"
 
 sudo pacman -Syu --noconfirm --needed $BASE_PKGS $SITL_PKGS $PX4_PKGS
 
-python3 -m venv "$HOME"/venv-ardupilot
+python3 -m venv --system-site-packages "$HOME"/venv-ardupilot
 
 # activate it:
 SOURCE_LINE="source $HOME/venv-ardupilot/bin/activate"
@@ -66,6 +66,8 @@ fi
 
 if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
     echo "$SOURCE_LINE" >> ~/.bashrc
+else
+    echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
 fi
 
 pip3 -q install -U $PYTHON_PKGS

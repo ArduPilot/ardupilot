@@ -116,3 +116,6 @@
 // other big things..
 #define HAL_QUADPLANE_ENABLED 0
 #define HAL_GYROFFT_ENABLED 0
+
+// remove once ESP32 isn't so chronically slow
+#define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL

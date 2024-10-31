@@ -4,6 +4,7 @@
 //
 
 #include <AP_DAL/AP_DAL.h>
+#include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Logger/AP_Logger.h>
 

@@ -149,9 +149,11 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # one BARO
 BARO BMP280 I2C:0:0x76
 BARO SPL06  I2C:0:0x76
+BARO DPS310 I2C:0:0x76
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 define AP_BARO_SPL06_ENABLED 1
 define AP_BARO_BMP280_ENABLED 1
+define AP_BARO_DPS280_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1
@@ -161,10 +163,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 # FFT option (disabled by default)
 # define HAL_GYROFFT_ENABLED 1
 # define AP_OAPATHPLANNER_ENABLED 0
-
-# EK2 options (disabled by default)
-# define HAL_NAVEKF2_AVAILABLE 1
-# define HAL_NAVEKF3_AVAILABLE 0
 
 # save some flash
 include ../include/minimize_fpv_osd.inc

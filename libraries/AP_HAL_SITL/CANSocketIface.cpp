@@ -219,10 +219,14 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     case SITL::SIM::CANTransport::MulticastUDP:
         transport = NEW_NOTHROW CAN_Multicast();
         break;
-    case SITL::SIM::CANTransport::SocketCAN:
 #if HAL_CAN_WITH_SOCKETCAN
+    case SITL::SIM::CANTransport::SocketCAN:
         transport = NEW_NOTHROW CAN_SocketCAN();
+        break;
 #endif
+    case SITL::SIM::CANTransport::None:
+    default: // if user supplies an invalid value for the parameter
+        transport = nullptr;
         break;
     }
     if (transport == nullptr) {

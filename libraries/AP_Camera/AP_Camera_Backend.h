@@ -37,12 +37,15 @@ public:
     CLASS_NO_COPY(AP_Camera_Backend);
 
     // camera options parameter values
-    enum class Options : int8_t {
+    enum class Option : uint8_t {
         RecordWhileArmed = (1 << 0U)
     };
+    bool option_is_enabled(Option option) const {
+        return ((uint8_t)_params.options.get() & (uint8_t)option) != 0;
+    }
 
     // init - performs any required initialisation
-    virtual void init() {};
+    virtual void init();
 
     // update - should be called at 50hz
     virtual void update();
@@ -112,6 +115,16 @@ public:
     // send camera information message to GCS
     virtual void send_camera_information(mavlink_channel_t chan) const;
 
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    // send video stream information message to GCS
+    virtual void send_video_stream_information(mavlink_channel_t chan) const;
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    void set_camera_information(mavlink_camera_information_t camera_info);
+    void set_stream_information(mavlink_video_stream_information_t stream_info);
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const;
 
@@ -123,10 +136,18 @@ public:
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const;
 
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    virtual void send_camera_thermal_range(mavlink_channel_t chan) const {};
+#endif
+
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     virtual bool get_state(AP_Camera::camera_state_t& cam_state) { return false; }
+
+    // change camera settings not normally used by autopilot
+    virtual bool change_setting(CameraSetting setting, float value) { return false; }
 #endif
 
 protected:
@@ -169,6 +190,11 @@ protected:
 
     // get mavlink gimbal device id which is normally mount_instance+1
     uint8_t get_gimbal_device_id() const;
+
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    mavlink_camera_information_t _camera_info;
+    mavlink_video_stream_information_t _stream_info;
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
     // internal members
     uint8_t _instance;      // this instance's number

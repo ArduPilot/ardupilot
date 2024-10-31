@@ -96,7 +96,7 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 
 void *Util::allocate_heap_memory(size_t size)
 {
@@ -227,7 +227,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 #endif // HAL_USE_PWM
 #if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
-    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
+    if (!(_toneAlarm_types & uint8_t(AP_Notify::BuzzerType::DSHOT)) || get_soft_armed() || hal.rcout->get_dshot_esc_type() == RCOutput::DSHOT_ESC_NONE) {
         return;
     }
 
@@ -269,7 +269,7 @@ uint64_t Util::get_hw_rtc() const
 
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS.h>
-#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#define Debug(fmt, args ...)  do { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
 
 #ifndef Debug
@@ -641,8 +641,11 @@ void Util::apply_persistent_params(void) const
                   been done by whether the IDs are configured in
                   storage
                  */
-                if (strncmp(pname, "INS_ACC", 7) == 0 &&
-                    strcmp(pname+strlen(pname)-3, "_ID") == 0) {
+                bool legacy_acc_id = strncmp(pname, "INS_ACC", 7) == 0 &&
+                    strcmp(pname+strlen(pname)-3, "_ID") == 0;
+                bool new_acc_id = strncmp(pname, "INS", 3) == 0 &&
+                    strcmp(pname+strlen(pname)-6, "ACC_ID") == 0;
+                if (legacy_acc_id || new_acc_id) {
                     enum ap_var_type ptype;
                     AP_Int32 *ap = (AP_Int32 *)AP_Param::find(pname, &ptype);
                     if (ap && ptype == AP_PARAM_INT32) {

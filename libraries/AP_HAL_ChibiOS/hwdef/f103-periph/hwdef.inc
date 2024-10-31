@@ -98,9 +98,6 @@ define HAL_UART_STACK_SIZE 256
 define STORAGE_THD_WA_SIZE 300
 define IO_THD_WA_SIZE      300
 
-define HAL_NO_MONITOR_THREAD
-
-
 # only one I2C bus
 I2C_ORDER I2C1
 

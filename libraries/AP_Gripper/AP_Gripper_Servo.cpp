@@ -104,8 +104,10 @@ void AP_Gripper_Servo::update_gripper()
     // Check for successful grabbed or released
     if (config.state == AP_Gripper::STATE_GRABBING && has_state_pwm(config.grab_pwm)) {
         config.state = AP_Gripper::STATE_GRABBED;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load grabbed");
     } else if (config.state == AP_Gripper::STATE_RELEASING && has_state_pwm(config.release_pwm)) {
         config.state = AP_Gripper::STATE_RELEASED;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load released");
     }
 }
 

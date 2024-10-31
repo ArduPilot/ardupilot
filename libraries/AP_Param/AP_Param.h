@@ -430,6 +430,11 @@ public:
     ///
     static bool load_all();
 
+    // return true if eeprom is full, used for arming check
+    static bool get_eeprom_full(void) {
+        return eeprom_full;
+    }
+
     // returns storage space used:
     static uint16_t storage_used() { return sentinal_offset; }
 
@@ -865,6 +870,8 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+
+    static bool eeprom_full;
 };
 
 namespace AP {

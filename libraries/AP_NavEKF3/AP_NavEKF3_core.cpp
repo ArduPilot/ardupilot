@@ -8,9 +8,9 @@
 #include <AP_DAL/AP_DAL.h>
 
 // constructor
-NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
+NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
+    dal(_dal),
     frontend(_frontend),
-    dal(AP::dal()),
     public_origin(frontend->common_EKF_origin)
 {
     firstInitTime_ms = 0;
@@ -131,10 +131,12 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
         return false;
     }
+#if AP_RANGEFINDER_ENABLED
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
     if(dal.rangefinder() && !storedRange.init(MIN(2*obs_buffer_length , imu_buffer_length))) {
         return false;
     }
+#endif
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
 #if EK3_FEATURE_BEACON_FUSION
     if(dal.beacon() && !rngBcn.storedRange.init(imu_buffer_length+1)) {
@@ -201,7 +203,7 @@ void NavEKF3_core::InitialiseVariables()
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
-    lastPosPassTime_ms = 0;
+    lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
@@ -247,7 +249,9 @@ void NavEKF3_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
+#if EK3_FEATURE_OPTFLOW_FUSION
     Popt = 0.0f;
+#endif
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
@@ -316,7 +320,9 @@ void NavEKF3_core::InitialiseVariables()
     ZERO_FARRAY(statesArray);
     memset(&vertCompFiltState, 0, sizeof(vertCompFiltState));
     posVelFusionDelayed = false;
+#if EK3_FEATURE_OPTFLOW_FUSION
     optFlowFusionDelayed = false;
+#endif
     flowFusionActive = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
@@ -338,9 +344,11 @@ void NavEKF3_core::InitialiseVariables()
     memset(&filterStatus, 0, sizeof(filterStatus));
     activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     prevHgtSource = activeHgtSource;
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
     memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
+#endif
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
     ekfGpsRefHgt = 0.0;
@@ -390,7 +398,9 @@ void NavEKF3_core::InitialiseVariables()
     storedGPS.reset();
     storedBaro.reset();
     storedTAS.reset();
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     storedRange.reset();
+#endif
     storedOutput.reset();
 #if EK3_FEATURE_BEACON_FUSION
     rngBcn.storedRange.reset();
@@ -446,6 +456,7 @@ void NavEKF3_core::InitialiseVariablesMag()
 #endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
+    magFusionSel = MagFuseSel::NOT_FUSING;
 }
 
 /*
@@ -471,7 +482,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     }
 
     // read all the sensors required to start the EKF the states
-    readIMUData();
+    readIMUData(false);  // don't allow prediction
     readMagData();
     readGpsData();
     readGpsYawData();
@@ -602,8 +613,10 @@ void NavEKF3_core::CovarianceInit()
     P[23][23]  = P[22][22];
 
 
+#if EK3_FEATURE_OPTFLOW_FUSION
     // optical flow ground height covariance
     Popt = 0.25f;
+#endif
 
 }
 
@@ -613,9 +626,6 @@ void NavEKF3_core::CovarianceInit()
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF3_core::UpdateFilter(bool predict)
 {
-    // Set the flag to indicate to the filter that the front-end has given permission for a new state prediction cycle to be started
-    startPredictEnabled = predict;
-
     // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
         return;
@@ -632,7 +642,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
     controlFilterModes();
 
     // read IMU data as delta angles and velocities
-    readIMUData();
+    readIMUData(predict);
 
     // Run the EKF equations to estimate at the fusion time horizon if new IMU data is available in the buffer
     if (runUpdates) {
@@ -663,8 +673,10 @@ void NavEKF3_core::UpdateFilter(bool predict)
         SelectRngBcnFusion();
 #endif
 
+#if EK3_FEATURE_OPTFLOW_FUSION
         // Update states using optical flow data
         SelectFlowFusion();
+#endif
 
 #if EK3_FEATURE_BODY_ODOM
         // Update states using body frame odometry data
@@ -990,8 +1002,8 @@ void NavEKF3_core::calcOutputStates()
 
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
- * See AP_NavEKF3/derivation/main.py for derivation
- * Output for change reference: AP_NavEKF3/derivation/generated/covariance_generated.cpp
+ * See derivation/generate_1.py for derivation
+ * Output for change reference: derivation/generated/covariance_generated.cpp
  * Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
  * used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
 */
@@ -2110,7 +2122,7 @@ void NavEKF3_core::calcTiltErrorVariance()
     const ftype &q2 = stateStruct.quat[2];
     const ftype &q3 = stateStruct.quat[3];
 
-    // equations generated by quaternion_error_propagation(): in AP_NavEKF3/derivation/main.py
+    // equations generated by quaternion_error_propagation(): in derivation/generate_2.py
     // only diagonals have been used
     // dq0 ... dq3  terms have been zeroed
     const ftype PS1 = q0*q1 + q2*q3;

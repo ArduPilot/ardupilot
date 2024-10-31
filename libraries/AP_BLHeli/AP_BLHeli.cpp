@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 #endif
     // @Param: RVMASK
     // @DisplayName: BLHeli bitmask of reversed channels
-    // @Description: Mask of channels which are reversed. This is used to configure ESCs to reverse motor direction for unidirectional rotation.Do not use for channels selected with SERVO_BLH_RVMASK.Do not use for channels selected with SERVO_BLH_3DMASK.
+    // @Description: Mask of channels which are reversed. This is used to configure ESCs to reverse motor direction for unidirectional rotation. Do not use for channels selected with SERVO_BLH_3DMASK.
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
     // @User: Advanced
     // @RebootRequired: True
@@ -400,13 +400,17 @@ void AP_BLHeli::msp_process_command(void)
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
         break;
 
+        // a literal "4" is used for the PWMType here to allow Rover
+        // to use the same number for the same protocol.  At time of
+        // writing the AP_MotorsUGV::PWMType has not been unified with
+        // AP_Motors::PWMType.
     case MSP_ADVANCED_CONFIG: {
         debug("MSP_ADVANCED_CONFIG");
         uint8_t buf[10];
         buf[0] = 1; // gyro sync denom
         buf[1] = 4; // pid process denom
         buf[2] = 0; // use unsynced pwm
-        buf[3] = (uint8_t)PWM_TYPE_DSHOT150; // motor PWM protocol
+        buf[3] = 4; // (uint8_t)AP_Motors::PWMType::DSHOT150;
         putU16(&buf[4], 480); // motor PWM Rate
         putU16(&buf[6], 450); // idle offset value
         buf[8] = 0; // use 32kHz

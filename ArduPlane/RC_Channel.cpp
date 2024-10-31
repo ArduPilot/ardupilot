@@ -43,7 +43,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     switch(ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
+        plane.set_mode_by_number(number, ModeReason::AUX_FUNCTION);
         break;
     }
     default:
@@ -95,9 +95,9 @@ void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
         }    
 }
 
+#if HAL_SOARING_ENABLED
 void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
 {
-#if HAL_SOARING_ENABLED
     SoaringController::ActiveStatus desired_state = SoaringController::ActiveStatus::SOARING_DISABLED;
 
     switch (ch_flag) {
@@ -113,8 +113,8 @@ void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
         }
 
     plane.g2.soaring_controller.set_pilot_desired_state(desired_state);
-#endif
 }
+#endif
 
 void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 {
@@ -157,7 +157,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::FWD_THR:
     case AUX_FUNC::LANDING_FLARE:
+#if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_RELEASE:
+#endif
     case AUX_FUNC::MODE_SWITCH_RESET:
     case AUX_FUNC::CRUISE:
 #if HAL_QUADPLANE_ENABLED
@@ -169,6 +171,12 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
     case AUX_FUNC::FW_AUTOTUNE:
     case AUX_FUNC::VFWD_THR_OVERRIDE:
     case AUX_FUNC::PRECISION_LOITER:
+#if AP_ICENGINE_ENABLED
+    case AUX_FUNC::ICE_START_STOP:
+#endif
+#if QAUTOTUNE_ENABLED
+    case AUX_FUNC::AUTOTUNE_TEST_GAINS:
+#endif
         break;
 
     case AUX_FUNC::SOARING:
@@ -275,13 +283,18 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     }
 #endif
 
+#if HAL_SOARING_ENABLED
     case AUX_FUNC::SOARING:
         do_aux_function_soaring_3pos(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::FLAP:
     case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::AIRBRAKE:
+#if AP_ICENGINE_ENABLED
+    case AUX_FUNC::ICE_START_STOP:
+#endif
         break; // input labels, nothing to do
 
 #if HAL_QUADPLANE_ENABLED
@@ -333,8 +346,8 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         break;
 #endif
 
-    case AUX_FUNC::ARSPD_CALIBRATE:
 #if AP_AIRSPEED_AUTOCAL_ENABLE
+    case AUX_FUNC::ARSPD_CALIBRATE:
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
             plane.airspeed.set_calibration_enabled(true);
@@ -345,20 +358,20 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
             plane.airspeed.set_calibration_enabled(false);
             break;
         }
-#endif
         break;
+#endif
 
     case AUX_FUNC::LANDING_FLARE:
         do_aux_function_flare(ch_flag);
         break;
 
+#if HAL_PARACHUTE_ENABLED
     case AUX_FUNC::PARACHUTE_RELEASE:
-#if PARACHUTE == ENABLED
         if (ch_flag == AuxSwitchPos::HIGH) {
             plane.parachute_manual_release();
         }
-#endif
         break;
+#endif
 
     case AUX_FUNC::MODE_SWITCH_RESET:
         rc().reset_mode_switch();
@@ -438,6 +451,12 @@ bool RC_Channel_Plane::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
     case AUX_FUNC::PRECISION_LOITER:
         // handled by lua scripting, just ignore here
         break;
+
+#if QAUTOTUNE_ENABLED
+    case AUX_FUNC::AUTOTUNE_TEST_GAINS:
+        plane.quadplane.qautotune.do_aux_function(ch_flag);
+        break;
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

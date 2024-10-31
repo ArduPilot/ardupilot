@@ -37,7 +37,7 @@ void AP_Periph_FW::rpm_sensor_send(void)
                 pkt.flags |= DRONECAN_SENSORS_RPM_RPM_FLAGS_UNHEALTHY;
             }
 
-            uint8_t buffer[DRONECAN_SENSORS_RPM_RPM_MAX_SIZE] {};
+            uint8_t buffer[DRONECAN_SENSORS_RPM_RPM_MAX_SIZE];
             const uint16_t total_size = dronecan_sensors_rpm_RPM_encode(&pkt, buffer, !canfdout());
 
             canard_broadcast(DRONECAN_SENSORS_RPM_RPM_SIGNATURE,

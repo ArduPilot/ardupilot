@@ -6,6 +6,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "SRV_Channel/SRV_Channel.h"
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Logger/AP_Logger.h>
@@ -173,6 +174,10 @@ public:
     void send_relposheading_msg();
     void can_baro_update();
     void can_airspeed_update();
+#ifdef HAL_PERIPH_ENABLE_IMU
+    void can_imu_update();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     void can_rangefinder_update();
 #endif
@@ -228,6 +233,10 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_BARO
     AP_Baro baro;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_IMU
+    AP_InertialSensor imu;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RPM
@@ -334,9 +343,15 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+    uint8_t get_motor_number(const uint8_t esc_number) const;
     uint32_t last_esc_telem_update_ms;
     void esc_telem_update();
     uint32_t esc_telem_update_period_ms;
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    void esc_telem_extended_update(const uint32_t &now_ms);
+    uint32_t last_esc_telem_extended_update;
+    uint8_t last_esc_telem_extended_sent_id;
+#endif
 #endif
 
     SRV_Channels servo_channels;
@@ -577,6 +592,8 @@ public:
 #if AP_AHRS_ENABLED
     AP_AHRS ahrs;
 #endif
+
+    HAL_Semaphore canard_broadcast_semaphore;
 };
 
 #ifndef CAN_APP_NODE_NAME

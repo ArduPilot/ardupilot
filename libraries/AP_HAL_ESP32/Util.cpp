@@ -35,6 +35,7 @@
 #include "esp_heap_caps.h"
 #include <AP_Common/ExpandingString.h>
 
+#include "esp_mac.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -90,7 +91,7 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 
 void *Util::allocate_heap_memory(size_t size)
 {
@@ -200,7 +201,7 @@ uint64_t Util::get_hw_rtc() const
 #define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
 #else
 #include <GCS_MAVLink/GCS.h>
-#define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#define Debug(fmt, args ...)  do { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif
 
 Util::FlashBootloader Util::flash_bootloader()
@@ -243,15 +244,13 @@ bool Util::get_system_id(char buf[50])
 
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
-    len = MIN(12, len);
-
-
     uint8_t base_mac_addr[6] = {0};
     esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
     if (ret != ESP_OK) {
         ret = esp_efuse_mac_get_default(base_mac_addr);
     }
 
+    len = MIN(len, ARRAY_SIZE(base_mac_addr));
     memcpy(buf, (const void *)base_mac_addr, len);
 
     return true;

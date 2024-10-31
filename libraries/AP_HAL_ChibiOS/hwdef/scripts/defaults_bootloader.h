@@ -15,11 +15,6 @@
 #define HAL_GCS_ENABLED 0
 #endif
 
-// by default bootloaders don't use INS:
-#ifndef AP_INERTIALSENSOR_ENABLED
-#define AP_INERTIALSENSOR_ENABLED 0
-#endif
-
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 
 // bootloader does not save temperature cals etc:
@@ -38,9 +33,9 @@
 
 // less LWIP functionality in the bootloader
 #define LWIP_DHCP 0
-#define LWIP_UDP 0
+#define LWIP_UDP 1
 #define LWIP_PPP 0
-#define LWIP_IGMP 0
+#define LWIP_IGMP 1
 #define LWIP_ALTCP 0
 #define IP_FORWARD 0
 #define LWIP_SINGLE_NETIF 1

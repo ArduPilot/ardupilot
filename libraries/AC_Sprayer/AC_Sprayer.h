@@ -14,6 +14,10 @@
 **/
 #pragma once
 
+#include "AC_Sprayer_config.h"
+
+#if HAL_SPRAYER_ENABLED
+
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -24,12 +28,6 @@
 #define AC_SPRAYER_DEFAULT_SPEED_MIN        100     ///< we must be travelling at least 1m/s to begin spraying
 #define AC_SPRAYER_DEFAULT_TURN_ON_DELAY    100     ///< delay between when we reach the minimum speed and we begin spraying.  This reduces the likelihood of constantly turning on/off the pump
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
-
-#ifndef HAL_SPRAYER_ENABLED
-#define HAL_SPRAYER_ENABLED 1
-#endif
-
-#if HAL_SPRAYER_ENABLED
 
 /// @class  AC_Sprayer
 /// @brief  Object managing a crop sprayer comprised of a spinner and a pump both controlled by pwm

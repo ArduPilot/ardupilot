@@ -40,6 +40,7 @@ struct PACKED log_TYP2 {
     uint8_t   M;   // flight mode
     int64_t   q;
     uint64_t  Q;
+    Float16_t g;
 };
 
 
@@ -74,10 +75,10 @@ static const struct LogStructure log_structure[] = {
     { LOG_TYP2_MSG,
       sizeof(log_TYP2),
       "TYP2",
-      "QcCeELMqQ",
-      "TimeUS,c,C,e,E,L,M,q,Q",
-      "s--------",
-      "F--------"
+      "QcCeELMqQg",
+      "TimeUS,c,C,e,E,L,M,q,Q,g",
+      "s---------",
+      "F---------"
     },
     { LOG_MESSAGE_MSG,
       sizeof(log_Message),
@@ -93,8 +94,8 @@ static const struct LogStructure log_structure[] = {
 // structure and that in LogStructure.h
 #define TYP1_FMT "QabBhHiIfdnNZ"
 #define TYP1_LBL "TimeUS,b,B,h,H,i,I,f,d,n,N,Z"
-#define TYP2_FMT "QcCeELMqQ"
-#define TYP2_LBL "TimeUS,c,C,e,E,L,M,q,Q"
+#define TYP2_FMT "QcCeELMqQg"
+#define TYP2_LBL "TimeUS,c,C,e,E,L,M,q,Q,g"
 
 static uint16_t log_num;
 
@@ -158,8 +159,12 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
               'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
               'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P' }
     };
-    logger.WriteBlock(&typ1, sizeof(typ1));
+    if (!logger.WriteBlock_first_succeed(&typ1, sizeof(typ1))) {
+        abort();
+    }
 
+    Float16_t f16;
+    f16.set(13.54f);
     struct log_TYP2 typ2 = {
         LOG_PACKET_HEADER_INIT(LOG_TYP2_MSG),
         time_us : AP_HAL::micros64(),
@@ -170,7 +175,8 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages()
         L : -3576543,   // uint32_t latitude/longitude;
         M : 5,          //   uint8_t;   // flight mode;
         q : -98239832498328,   // int64_t
-        Q : 3432345232233432   // uint64_t
+        Q : 3432345232233432,  // uint64_t
+        g : f16              // float16_t
     };
     logger.WriteBlock(&typ2, sizeof(typ2));
 
@@ -232,7 +238,8 @@ void AP_LoggerTest_AllTypes::Log_Write_TypeMessages_Log_Write()
                  -3576543,   // uint32_t latitude/longitude;
                  5,          //   uint8_t;   // flight mode;
                  -98239832498328,   // int64_t
-                 3432345232233432   // uint64_t
+                 3432345232233432,   // uint64_t
+                 13.54               // float16_t
         );
 
     // emit a message which contains NaNs:

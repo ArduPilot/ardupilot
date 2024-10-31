@@ -7,8 +7,8 @@
 // Write an attitude packet
 void Rover::Log_Write_Attitude()
 {
-    float desired_pitch_cd = degrees(g2.attitude_control.get_desired_pitch()) * 100.0f;
-    const Vector3f targets(0.0f, desired_pitch_cd, 0.0f);
+    float desired_pitch = degrees(g2.attitude_control.get_desired_pitch());
+    const Vector3f targets(0.0f, desired_pitch, 0.0f);
 
     ahrs.Write_Attitude(targets);
 
@@ -29,6 +29,7 @@ void Rover::Log_Write_Attitude()
     }
 }
 
+#if AP_RANGEFINDER_ENABLED
 // Write a range finder depth message
 void Rover::Log_Write_Depth()
 {
@@ -83,6 +84,7 @@ void Rover::Log_Write_Depth()
     gcs().send_message(MSG_WATER_DEPTH);
 #endif
 }
+#endif
 
 // guided mode logging
 struct PACKED log_GuidedTarget {
@@ -235,9 +237,11 @@ void Rover::Log_Write_RC(void)
 {
     logger.Write_RCIN();
     logger.Write_RCOUT();
+#if AP_RSSI_ENABLED
     if (rssi.enabled()) {
         logger.Write_RSSI();
     }
+#endif
 }
 
 void Rover::Log_Write_Vehicle_Startup_Messages()

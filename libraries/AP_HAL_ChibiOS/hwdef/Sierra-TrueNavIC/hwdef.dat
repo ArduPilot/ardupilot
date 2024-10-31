@@ -37,7 +37,6 @@ PROCESS_STACK 0xA00
 
 # save memory
 define HAL_GCS_ENABLED 0
-define HAL_NO_MONITOR_THREAD
 define HAL_NO_LOGGING
 define HAL_USE_ADC FALSE
 

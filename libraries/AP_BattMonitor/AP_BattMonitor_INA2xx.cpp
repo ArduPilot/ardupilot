@@ -46,6 +46,17 @@ extern const AP_HAL::HAL& hal;
 #define REG_238_DIETEMP       0x06
 #define INA_238_TEMP_C_LSB    7.8125e-3 // need to mask bottom 4 bits
 
+// INA231 specific registers
+#define REG_231_CONFIG        0x00
+#define REG_231_SHUNT_VOLTAGE 0x01
+#define REG_231_BUS_VOLTAGE   0x02
+#define REG_231_POWER         0x03
+#define REG_231_CURRENT       0x04
+#define REG_231_CALIBRATION   0x05
+#define REG_231_MASK          0x06
+#define REG_231_ALERT         0x07
+
+
 #ifndef DEFAULT_BATTMON_INA2XX_MAX_AMPS
 #define DEFAULT_BATTMON_INA2XX_MAX_AMPS 90.0
 #endif
@@ -144,7 +155,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
     case DevType::INA228: {
         // configure for MAX_AMPS
         voltage_LSB = 195.3125e-6; // 195.3125 uV/LSB
-        current_LSB = max_amps / (1<<19);
+        current_LSB = max_amps / (1U<<19);
         const uint16_t shunt_cal = uint16_t(13107.2e6 * current_LSB * rShunt) & 0x7FFF;
         if (write_word(REG_228_CONFIG, REG_228_CONFIG_RESET) && // reset
             write_word(REG_228_CONFIG, 0) &&
@@ -158,7 +169,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
     case DevType::INA238: {
         // configure for MAX_AMPS
         voltage_LSB = 3.125e-3; // 3.125mV/LSB
-        current_LSB = max_amps / (1<<15);
+        current_LSB = max_amps / (1U<<15);
         const uint16_t shunt_cal = uint16_t(819.2e6 * current_LSB * rShunt) & 0x7FFF;
         if (write_word(REG_238_CONFIG, REG_238_CONFIG_RESET) && // reset
             write_word(REG_238_CONFIG, 0) &&
@@ -167,6 +178,16 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
             return true;
         }
         break;
+    }
+
+    case DevType::INA231: {
+        // no configuration needed
+        voltage_LSB = 1.25e-3;
+        current_LSB = max_amps / (1U<<15);
+        const uint16_t cal = 0.00512 / (current_LSB * rShunt);
+        if (write_word(REG_231_CALIBRATION, cal)) {
+            return true;
+        }
     }
         
     }
@@ -281,6 +302,11 @@ bool AP_BattMonitor_INA2XX::detect_device(void)
         id == REG_226_CONFIG_DEFAULT) {
         return configure(DevType::INA226);
     }
+    if (read_word16(REG_231_CONFIG, id) && id == 0x4127) {
+        // no manufacturer ID for 231
+        return configure(DevType::INA231);
+    }
+
     return false;
 }
 
@@ -349,6 +375,22 @@ void AP_BattMonitor_INA2XX::timer(void)
         voltage = bus_voltage16 * voltage_LSB;
         current = current16 * current_LSB;
         temperature = (temp16&0xFFF0) * INA_238_TEMP_C_LSB;
+        break;
+    }
+
+    case DevType::INA231: {
+        int16_t bus_voltage16, current16;
+        if (!read_word16(REG_231_SHUNT_VOLTAGE, bus_voltage16) ||
+            !read_word16(REG_231_CURRENT, current16)) {
+            failed_reads++;
+            if (failed_reads > 10) {
+                // device has disconnected, we need to reconfigure it
+                dev_type = DevType::UNKNOWN;
+            }
+            return;
+        }
+        voltage = bus_voltage16 * voltage_LSB;
+        current = current16 * current_LSB;
         break;
     }
     }

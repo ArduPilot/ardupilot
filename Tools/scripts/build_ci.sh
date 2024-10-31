@@ -40,7 +40,7 @@ function install_pymavlink() {
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive --depth 1
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        (cd modules/mavlink/pymavlink && python3 -m pip install --user .)
         pymavlink_installed=1
     fi
 }
@@ -51,7 +51,7 @@ function install_mavproxy() {
         pushd /tmp
           git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
-            python setup.py build install --user --force
+            python3 -m pip install --user --force .
           popd
         popd
         mavproxy_installed=1
@@ -135,8 +135,12 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
         continue
     fi
-    if [ "$t" == "sitltest-plane" ]; then
-        run_autotest "Plane" "build.Plane" "test.Plane"
+    if [ "$t" == "sitltest-plane-tests1a" ]; then
+        run_autotest "Plane" "build.Plane" "test.PlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-plane-tests1b" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
     if [ "$t" == "sitltest-quadplane" ]; then
@@ -321,7 +325,15 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "CubeOrange-PPP" ]; then
         echo "Building CubeOrange-PPP"
-        $waf configure --board CubeOrange --enable-ppp
+        $waf configure --board CubeOrange --enable-PPP
+        $waf clean
+        $waf copter
+        continue
+    fi
+
+    if [ "$t" == "CubeRed-EKF2" ]; then
+        echo "Building CubeRed with EKF2 enabled"
+        $waf configure --board CubeRedPrimary --enable-EKF2
         $waf clean
         $waf copter
         continue
@@ -398,6 +410,14 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board navigator --toolchain=arm-linux-musleabihf
         $waf sub --static
         ./Tools/scripts/firmware_version_decoder.py -f build/navigator/bin/ardusub --expected-hash $GIT_VERSION
+        continue
+    fi
+
+    if [ "$t" == "navigator64" ]; then
+        echo "Building navigator64"
+        $waf configure --board navigator64 --toolchain=aarch64-linux-gnu
+        $waf sub
+        ./Tools/scripts/firmware_version_decoder.py -f build/navigator64/bin/ardusub --expected-hash $GIT_VERSION
         continue
     fi
 

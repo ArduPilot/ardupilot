@@ -45,9 +45,6 @@
 #define AP_MISSION_RESTART_DEFAULT          0       // resume the mission from the last command run by default
 
 #define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
-#define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
-#define AP_MISSION_MASK_DIST_TO_LAND_CALC   (1<<1)  // Allow distance to best landing calculation to be run on failsafe
-#define AP_MISSION_MASK_CONTINUE_AFTER_LAND (1<<2)  // Allow mission to continue after land
 
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
@@ -709,6 +706,9 @@ public:
         _force_resume = force_resume;
     }
 
+    // returns true if configured to resume
+    bool is_resume() const { return _restart == 0 || _force_resume; }
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore &get_semaphore(void)
@@ -729,14 +729,23 @@ public:
     void reset_wp_history(void);
 
     /*
-      return true if MIS_OPTIONS is set to allow continue of mission
-      logic after a land and the next waypoint is a takeoff. If this
+      Option::FailsafeToBestLanding -  continue mission
+      logic after a land if the next waypoint is a takeoff. If this
       is false then after a landing is complete the vehicle should 
       disarm and mission logic should stop
      */
+    enum class Option {
+        CLEAR_ON_BOOT            =  0,  // clear mission on vehicle boot
+        FAILSAFE_TO_BEST_LANDING =  1,  // on failsafe, find fastest path along mission home
+        CONTINUE_AFTER_LAND      =  2,  // continue running mission (do not disarm) after land if takeoff is next waypoint
+    };
+    bool option_is_set(Option option) const {
+        return (_options.get() & (uint16_t)option) != 0;
+    }
+
     bool continue_after_land_check_for_takeoff(void);
     bool continue_after_land(void) const {
-        return (_options.get() & AP_MISSION_MASK_CONTINUE_AFTER_LAND) != 0;
+        return option_is_set(Option::CONTINUE_AFTER_LAND);
     }
 
     // user settable parameters
@@ -767,6 +776,10 @@ public:
     bool failed_sdcard_storage(void) const {
         return _failed_sdcard_storage;
     }
+#endif
+
+#if HAL_LOGGING_ENABLED
+    void set_log_start_mission_item_bit(uint32_t bit) { log_start_mission_item_bit = bit; }
 #endif
 
 private:
@@ -933,12 +946,18 @@ private:
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
+    bool start_command_fence(const AP_Mission::Mission_Command& cmd);
 
     /*
       handle format conversion of storage format to allow us to update
       format to take advantage of new packing
      */
     void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
+
+#if HAL_LOGGING_ENABLED
+    // if not -1, this bit in LOG_BITMASK specifies whether to log a message each time we start a command:
+    uint32_t log_start_mission_item_bit = -1;
+#endif
 };
 
 namespace AP

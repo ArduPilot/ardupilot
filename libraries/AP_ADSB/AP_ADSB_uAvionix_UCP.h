@@ -24,11 +24,6 @@
 
 #define AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS         1
 
-
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_AHRS/AP_AHRS.h>
-
 #include "GDL90_protocol/GDL90_Message_Structs.h"
 #include "GDL90_protocol/hostGDL90Support.h"
 

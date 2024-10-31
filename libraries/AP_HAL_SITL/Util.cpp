@@ -85,7 +85,7 @@ bool HALSITL::Util::get_system_id(char buf[50])
     return get_system_id_unformatted((uint8_t *)buf, len);
 }
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
 void *HALSITL::Util::allocate_heap_memory(size_t size)
 {
     struct heap *new_heap = (struct heap*)malloc(sizeof(struct heap));

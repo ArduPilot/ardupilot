@@ -12,6 +12,7 @@
 #include <SITL/SIM_Helicopter.h>
 #include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_Glider.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_BalanceBot.h>
@@ -130,7 +131,7 @@ void SIMState::fdm_input_local(void)
     // output JSON state to ride along flight controllers
     // ride_along.send(_sitl->state,sitl_model->get_position_relhome());
 
-#if HAL_SIM_GIMBAL_ENABLED
+#if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
         gimbal->update();
     }

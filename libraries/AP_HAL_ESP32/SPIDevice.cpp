@@ -60,7 +60,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     set_device_bus(bus.bus);
     set_device_address(_device_desc.device);
     set_speed(AP_HAL::Device::SPEED_LOW);
-    gpio_pad_select_gpio(device_desc.cs);
+    esp_rom_gpio_pad_select_gpio(device_desc.cs);
     gpio_set_direction(device_desc.cs, GPIO_MODE_OUTPUT);
     gpio_set_level(device_desc.cs, 1);
 

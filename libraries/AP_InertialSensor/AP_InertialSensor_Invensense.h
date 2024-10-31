@@ -115,10 +115,6 @@ private:
 
     int16_t _raw_temp;
     
-    // instance numbers of accel and gyro data
-    uint8_t _gyro_instance;
-    uint8_t _accel_instance;
-
     float temp_sensitivity = 1.0f/340; // degC/LSB
     float temp_zero = 36.53f; // degC
     
@@ -186,7 +182,7 @@ private:
         Vector3f gyro;
         uint8_t accel_count;
         uint8_t gyro_count;
-        LowPassFilterVector3f accel_filter{4000, 188};
+        LowPassFilterConstDtVector3f accel_filter{4000, 188};
     } _accum;
 };
 

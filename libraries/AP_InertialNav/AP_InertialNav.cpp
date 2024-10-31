@@ -1,6 +1,6 @@
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Baro/AP_Baro.h>
 #include "AP_InertialNav.h"
+
+#include <AP_AHRS/AP_AHRS.h>
 
 /*
   A wrapper around the AP_InertialNav class which uses the NavEKF
