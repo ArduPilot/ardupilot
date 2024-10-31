@@ -44,7 +44,7 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3_WINDEST', 'EK3_FEATURE_DRAG_FUSION', 'Enable Wind Estimation for EKF3', 0, 'EKF3'),
     Feature('AHRS', 'EKF3_OPTFLOW', 'EK3_FEATURE_OPTFLOW_FUSION', 'Enable OpticalFlow Fusion for EKF3', 0, 'EKF3,OPTICALFLOW'),
     Feature('AHRS', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro Wind Compensation', 0, None),
-    Feature('AHRS', 'CINS', 'AP_EXTERNAL_AHRS_CINS_ENABLED', 'Enable CINS state estimator', 0, None),
+    Feature('AHRS', 'CINS', 'AP_EXTERNAL_AHRS_CINS_ENABLED', 'Enable CINS state estimator', 0, 'AHRS_EXT'),
 
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
     Feature('Safety', 'FENCE', 'AP_FENCE_ENABLED', 'Enable Geofences', 2, None),
