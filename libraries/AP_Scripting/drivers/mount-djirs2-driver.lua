@@ -1,5 +1,4 @@
 -- mount-djirs2-driver.lua: DJIRS2 mount/gimbal driver
--- luacheck: only 0
 
 --[[
   How to use
@@ -71,8 +70,6 @@
 
 --]]
 
----@diagnostic disable: cast-local-type
-
 
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
@@ -143,14 +140,14 @@ local parse_length = 0                  -- incoming message's packet length
 local parse_buff = {}                   -- message buffer holding roll, pitch and yaw angles from gimbal
 local parse_bytes_recv = 0              -- message buffer length.  count of the number of bytes received in the message so far
 local last_send_seq = 0                 -- last sequence number sent
-local last_req_attitude_ms = 0          -- system time of last request for attitude
-local last_set_attitude_ms = 0          -- system time of last set attitude call
+local last_req_attitude_ms = uint32_t(0)  -- system time of last request for attitude
+local last_set_attitude_ms = uint32_t(0)  -- system time of last set attitude call
 local REPLY_TYPE = {NONE=0, ATTITUDE=1, POSITION_CONTROL=2, SPEED_CONTROL=3} -- enum of expected reply types
 local expected_reply = REPLY_TYPE.NONE  -- currently expected reply type
-local expected_reply_ms = 0             -- system time that reply is first expected.  used for timeouts
+local expected_reply_ms = uint32_t(0)   -- system time that reply is first expected.  used for timeouts
 
 -- parsing status reporting variables
-local last_print_ms = 0                 -- system time that debug output was last printed
+local last_print_ms = uint32_t(0)       -- system time that debug output was last printed
 local bytes_read = 0                    -- number of bytes read from gimbal
 local bytes_written = 0                 -- number of bytes written to gimbal
 local bytes_error = 0                   -- number of bytes read that could not be parsed
@@ -519,7 +516,6 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   roll_rate_degs = roll_rate_degs or 0
   pitch_rate_degs = pitch_rate_degs or 0
   yaw_rate_degs = yaw_rate_degs or 0
-  time_sec = time_sec or 2
 
   -- ensure rates are integers. invert roll direction
   roll_rate_degs = -math.floor(roll_rate_degs + 0.5)
@@ -790,8 +786,8 @@ function update()
       return update, UPDATE_INTERVAL_MS
     end
 
-    -- send rate target
-    local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
+    -- send rate target (ignoring earth-frame flag as the gimbal doesn't use it)
+    local roll_degs, pitch_degs, yaw_degs, _ = mount:get_rate_target(MOUNT_INSTANCE)
     if roll_degs and pitch_degs and yaw_degs then
       send_target_rates(roll_degs, pitch_degs, yaw_degs)
       return update, UPDATE_INTERVAL_MS
