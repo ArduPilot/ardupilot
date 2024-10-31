@@ -305,7 +305,7 @@ Changes from 4.5.0-beta1:
  - broaden acceptance criteria for GPS yaw measurement for moving baseline yaw
 
 ------------------------------------------------------------------
-Copter 4.5.0-beta1 30-Jan-2025
+Copter 4.5.0-beta1 30-Jan-2024
 Changes from 4.4.4
 1) New autopilots supported
     - ACNS-F405AIO
@@ -989,7 +989,7 @@ Changes from 4.3.6
     e) Memory corruption bug in the STM32H757 (very rare)
     f) RC input on IOMCU bug fix (RC might not be regained if lost)
 ------------------------------------------------------------------
-Copter 4.3.6 05-Apr-2023 / 4.3.6-beta1, 4.3.6--beta2 27-Mar-2023
+Copter 4.3.6 05-Apr-2023 / 4.3.6-beta1, 4.3.6-beta2 27-Mar-2023
 Changes from 4.3.5
 1) Bi-directional DShot fix for possible motor stop approx 72min after startup 
 ------------------------------------------------------------------
