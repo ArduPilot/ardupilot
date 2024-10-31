@@ -732,7 +732,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Standard
     GSCALAR(imu_sample_rate, "INS_SAMPLE_RATE", 0),
 
-    // @Group: INS_
+    // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(imu, "INS", AP_InertialSensor),
 #endif
