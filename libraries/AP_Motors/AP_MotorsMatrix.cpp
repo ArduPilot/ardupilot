@@ -15,14 +15,14 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h> //// 引入 AP_Vehicle_Type 头文件，用于定义不同类型的飞行器，例如四旋翼、六旋翼等。这些类型用于电机混合器的初始化和配置。
 
-extern const AP_HAL::HAL& hal;
+extern const AP_HAL::HAL& hal; //extern 告诉编译器 hal 是在其他地方定义的，而不是在当前文件中进行定义。这样，这个文件可以直接引用 hal 对象，而不需要再次定义它。
 
 // init
-void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame_type)
+void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame_type) //初始化电机的配置和控制参数
 {
-    // record requested frame class and type
+    // record requested frame class and type //// 记录请求的框架类型和框架类别
     _active_frame_class = frame_class;
     _active_frame_type = frame_type;
 
@@ -32,9 +32,9 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
     }
 
     // setup the motors
-    setup_motors(frame_class, frame_type);
+    setup_motors(frame_class, frame_type); //// 设置电机的配置，根据框架类别和类型进行初始化
 
-    // enable fast channels or instant pwm
+    // enable fast channels or instant pwm //// 启用快速通道或即时 PWM，设置电机控制的更新速率
     set_update_rate(_speed_hz);
 }
 
@@ -62,7 +62,7 @@ bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
         return false;
     }
 
-    switch (num_motors) {
+    switch (num_motors) {   //// 根据电机数量设置 MAV 类型
         case 3:
             _mav_type = MAV_TYPE_TRICOPTER;
             break;
@@ -92,7 +92,7 @@ bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
     return true;
 }
 
-// Set throttle factor from scripting
+// Set throttle factor from scripting //// 设置电机的油门因子（供脚本使用）
 bool AP_MotorsMatrix::set_throttle_factor(int8_t motor_num, float throttle_factor)
 {
     if ((_active_frame_class != MOTOR_FRAME_SCRIPTING_MATRIX) ) {
@@ -105,13 +105,13 @@ bool AP_MotorsMatrix::set_throttle_factor(int8_t motor_num, float throttle_facto
         return false;
     }
 
-    _throttle_factor[motor_num] = throttle_factor;
+    _throttle_factor[motor_num] = throttle_factor; //// 设置指定电机的油门因子
     return true;
 }
 
 #endif // AP_SCRIPTING_ENABLED
 
-// set update rate to motors - a value in hertz
+// set update rate to motors - a value in hertz //// 设置电机的更新频率 - 以赫兹为单位
 void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)
 {
     // record requested speed
@@ -126,7 +126,7 @@ void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)
     rc_set_freq(mask, _speed_hz);
 }
 
-// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus) //// 设置飞行器框架类别（例如四旋翼、六旋翼、直升机）和类型（例如 X 型、十字型）
 void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // exit immediately if armed or no change
@@ -140,11 +140,11 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
 
 }
 
-void AP_MotorsMatrix::output_to_motors()
+void AP_MotorsMatrix::output_to_motors() //// 将控制信号输出到电机
 {
     int8_t i;
 
-    switch (_spool_state) {
+    switch (_spool_state) { //// 根据电机的状态设置输出
         case SpoolState::SHUT_DOWN: {
             // no output
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -154,7 +154,7 @@ void AP_MotorsMatrix::output_to_motors()
             }
             break;
         }
-        case SpoolState::GROUND_IDLE:
+        case SpoolState::GROUND_IDLE: //// 地面怠速状态，电机已经上锁但尚未飞行时输出怠速信号
             // sends output to motors when armed but not flying
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
@@ -165,16 +165,16 @@ void AP_MotorsMatrix::output_to_motors()
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
         case SpoolState::SPOOLING_DOWN:
-            // set motor output based on thrust requests
+            // set motor output based on thrust requests  // 启动、无节流限制和停止中的状态，设置基于推力请求的电机输出
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    set_actuator_with_slew(_actuator[i], thr_lin.thrust_to_actuator(_thrust_rpyt_out[i]));
+                    set_actuator_with_slew(_actuator[i], thr_lin.thrust_to_actuator(_thrust_rpyt_out[i])); //此set函数在AP_MotorsMulticopter.cpp中定义
                 }
             }
             break;
     }
 
-    // convert output to PWM and send to each motor
+    // convert output to PWM and send to each motor //// 将输出转换为 PWM 并发送到每个电机
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             rc_write(i, output_to_pwm(_actuator[i]));
@@ -182,8 +182,8 @@ void AP_MotorsMatrix::output_to_motors()
     }
 }
 
-// get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+// get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used) // 获取电机掩码 - 返回一个位掩码，表示哪些输出正在被电机使用（1 表示使用中）
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict // 这个掩码可以用于确保其他 PWM 输出（例如舵机）不会发生冲突
 uint32_t AP_MotorsMatrix::get_motor_mask()
 {
     uint32_t motor_mask = 0;
@@ -200,8 +200,8 @@ uint32_t AP_MotorsMatrix::get_motor_mask()
     return mask;
 }
 
-// helper to return value scaled between boost and normal based on the value of _thrust_boost_ratio
-// _thrust_boost_ratio of 1 -> return = boost_value
+// helper to return value scaled between boost and normal based on the value of _thrust_boost_ratio //boost_ratio 函数用于在提升模式（boost）和正常模式（normal）之间返回一个比例缩放值。
+// _thrust_boost_ratio of 1 -> return = boost_value //该函数的输出是根据内部变量 _thrust_boost_ratio 计算得到的，表示在提升推力和正常推力之间取一个加权值。
 // _thrust_boost_ratio of 0 -> return = normal_value
 float AP_MotorsMatrix::boost_ratio(float boost_value, float normal_value) const
 {

@@ -16,14 +16,14 @@
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <SRV_Channel/SRV_Channel.h>
+#include <SRV_Channel/SRV_Channel.h> //包含用于伺服控制通道的内容
 #include <AP_Logger/AP_Logger.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     #define AP_MOTORS_PARAM_PREFIX "Q_M_"
 #else
-    #define AP_MOTORS_PARAM_PREFIX "MOT_"
+    #define AP_MOTORS_PARAM_PREFIX "MOT_" //常规的多旋翼无人机的电机参数前缀
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -234,45 +234,45 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     AP_GROUPEND
 };
 
-// Constructor
+// Constructor //构造函数
 AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t speed_hz) :
-                AP_Motors(speed_hz),
-                _throttle_limit(1.0f)
+                AP_Motors(speed_hz), //接受一个 speed_hz 参数，表示电机更新的频率（单位为 Hz），调用父类 AP_Motors 的构造函数，初始化 speed_hz，以确保电机的 PWM 信号以指定的频率更新。
+                _throttle_limit(1.0f) //初始化 AP_MotorsMulticopter 类的成员变量
 {
     AP_Param::setup_object_defaults(this, var_info);
 };
 
 // output - sends commands to the motors
-void AP_MotorsMulticopter::output()
+void AP_MotorsMulticopter::output() //将飞行控制器的输出转化为电机的控制信号。该函数会在位置和姿态控制中调用。下面的一系列子函数有的在下下文中定义
 {
     // update throttle filter
-    update_throttle_filter();
+    update_throttle_filter(); //更新油门滤波器。这一操作用于平滑油门输入
 
-    // calc filtered battery voltage and lift_max
+    // calc filtered battery voltage and lift_max 根据当前的电池电压计算最大推力。
     thr_lin.update_lift_max_from_batt_voltage();
 
-    // run spool logic
+    // run spool logic //运行卷绕逻辑（spool logic）。卷绕逻辑主要管理电机的起停行为
     output_logic();
 
-    // calculate thrust
+    // calculate thrust //计算推力输出。该函数的目的是在飞行器处于“解锁（armed）”状态下，生成推力指令，以便保持飞行器的姿态稳定。它会基于姿态控制器的输出来确定各个电机的推力大小。
     output_armed_stabilizing();
 
-    // apply any thrust compensation for the frame
+    // apply any thrust compensation for the frame //应用对框架的推力补偿。多旋翼飞行器的框架结构不同（例如 X 形或 + 形），在提供推力时可能需要额外的补偿
     thrust_compensation();
 
-    // convert rpy_thrust values to pwm
+    // convert rpy_thrust values to pwm //将 roll、pitch、yaw 和 thrust 的控制信号转换为电机的 PWM 信号，并将其输出到电机。
     output_to_motors();
 
-    // output any booster throttle
+    // output any booster throttle //输出任何额外的助推油门（boost throttle）。
     output_boost_throttle();
 
-    // output raw roll/pitch/yaw/thrust
+    // output raw roll/pitch/yaw/thrust //输出原始的 roll、pitch、yaw 和 thrust 值。这些值可以用于日志记录或者调试
     output_rpyt();
 
-    // check for any external limit flags
+    // check for any external limit flags //检查任何外部限制标志，例如飞行模式切换或者安全功能可能带来的限制
     update_external_limits();
 
-    // clear mask of overridden motors
+    // clear mask of overridden motors //清除覆盖电机的掩码。此处将其重置为 0，表示当前没有电机被特殊控制，所有电机处于正常控制状态。
     _motor_mask_override = 0;
 };
 

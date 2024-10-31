@@ -15,22 +15,22 @@
 
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <GCS_MAVLink/GCS.h>
-#include <AP_Notify/AP_Notify.h>
+#include <SRV_Channel/SRV_Channel.h> //// 引入伺服通道管理，用于控制电机的PWM输出通道
+#include <GCS_MAVLink/GCS.h>         //// 引入地面控制站通信接口，用于与GCS通过MAVLink协议进行通信
+#include <AP_Notify/AP_Notify.h>     //// 引入通知模块，用于控制LED、蜂鸣器等通知设备
 
-#define AP_MOTORS_SLEW_FILTER_CUTOFF 50.0f
+#define AP_MOTORS_SLEW_FILTER_CUTOFF 50.0f //// 定义斜率限制滤波器的截止频率为50Hz，用于平滑电机控制信号
 
 extern const AP_HAL::HAL& hal;
 
 // singleton instance
-AP_Motors *AP_Motors::_singleton;
+AP_Motors *AP_Motors::_singleton; //// 定义AP_Motors类的单例实例，用于确保系统中只有一个AP_Motors对象存在，方便集中管理电机控制
 
-// Constructor
+// Constructor //构造函数
 AP_Motors::AP_Motors(uint16_t speed_hz) :
     _speed_hz(speed_hz),
-    _throttle_filter(),
-    _throttle_slew(),
+    _throttle_filter(), //// 初始化油门滤波器，用于平滑油门控制信号
+    _throttle_slew(),   //// 初始化油门斜率检测器，用于检测油门变化的速率
     _throttle_slew_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
     _spool_state(SpoolState::SHUT_DOWN)
@@ -39,7 +39,7 @@ AP_Motors::AP_Motors(uint16_t speed_hz) :
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
-    _throttle_filter.reset(0.0f);
+    _throttle_filter.reset(0.0f); //// 设置油门滤波器的截止频率为 0，表示当前没有滤波
 
     _throttle_slew_filter.set_cutoff_frequency(AP_MOTORS_SLEW_FILTER_CUTOFF);
     _throttle_slew_filter.reset(0.0f);
@@ -57,7 +57,7 @@ AP_Motors::AP_Motors(uint16_t speed_hz) :
     _thrust_balanced = true;
 };
 
-void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
+void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const //获取飞行器框架和类型
 {
     const char *frame_str = get_frame_string();
     const char *type_str = get_type_string();
@@ -72,7 +72,7 @@ void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
     }
 }
 
-void AP_Motors::armed(bool arm)
+void AP_Motors::armed(bool arm) //设置电机的上锁（arm）或解锁（disarm）状态。
 {
     if (_armed != arm) {
         _armed = arm;
@@ -83,24 +83,25 @@ void AP_Motors::armed(bool arm)
     }
 };
 
-void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
+void AP_Motors::set_desired_spool_state(DesiredSpoolState spool) //设置电机的期望状态。该函数的作用是管理电机的状态
 {
     if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
         _spool_desired = spool;
     }
 };
 
-// pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
+// pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle //// 设置来自遥控器的直接通道输入值
 void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input)
 {
-    _roll_radio_passthrough = roll_input;
-    _pitch_radio_passthrough = pitch_input;
-    _throttle_radio_passthrough = throttle_input;
-    _yaw_radio_passthrough = yaw_input;
+    _roll_radio_passthrough = roll_input; //// 设置滚转输入，范围为 -1 到 +1
+    _pitch_radio_passthrough = pitch_input; //// 设置俯仰输入，范围为 -1 到 +1
+    _throttle_radio_passthrough = throttle_input; //// 设置油门输入，范围为 0 到 1
+    _yaw_radio_passthrough = yaw_input; //// 设置偏航输入，范围为 -1 到 +1
 }
 
 /*
   write to an output channel
+  向输出通道写入 PWM 信号
  */
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
@@ -115,6 +116,7 @@ void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 
 /*
   write to an output channel for an angle actuator
+   向输出通道写入角度控制信号
  */
 void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
 {
@@ -124,6 +126,7 @@ void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
 
 /*
   set frequency of a set of channels
+  用于设置一组通道的频率，以及根据不同的电机输出类型（如 PWM、Oneshot、DShot 等）配置相应的输出模式。
  */
 void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
 {
@@ -203,6 +206,7 @@ void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
   map an internal motor mask to real motor mask, accounting for
   SERVOn_FUNCTION mappings, and allowing for multiple outputs per
   motor number
+   将内部电机掩码映射到实际电机掩码，考虑到 SERVOn_FUNCTION 映射，并允许每个电机编号具有多个输出
  */
 uint32_t AP_Motors::motor_mask_to_srv_channel_mask(uint32_t mask) const
 {
@@ -219,6 +223,7 @@ uint32_t AP_Motors::motor_mask_to_srv_channel_mask(uint32_t mask) const
 
 /*
   add a motor, setting up default output function as needed
+  添加一个电机，按需设置默认的输出功能
  */
 void AP_Motors::add_motor_num(int8_t motor_num)
 {
@@ -229,7 +234,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     }
 }
 
-    // set limit flag for pitch, roll and yaw
+    // set limit flag for pitch, roll and yaw // 设置俯仰、滚转和偏航的限制标志位
 void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
 {
     limit.roll = flag;
@@ -237,7 +242,7 @@ void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
     limit.yaw = flag;
 }
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_ENABLED //外部限制（External Limits）
 void AP_Motors::set_external_limits(bool roll, bool pitch, bool yaw, bool throttle_lower, bool throttle_upper)
 {
     external_limits.roll = roll;
@@ -248,7 +253,7 @@ void AP_Motors::set_external_limits(bool roll, bool pitch, bool yaw, bool thrott
 }
 #endif
 
-// returns true if the configured PWM type is digital and should have fixed endpoints
+// returns true if the configured PWM type is digital and should have fixed endpoints //判断当前配置的 PWM 类型 是否是数字类型，并根据类型的特性决定是否应该具有固定端点。
 bool AP_Motors::is_digital_pwm_type() const
 {
     switch ((PWMType)_pwm_type) {
