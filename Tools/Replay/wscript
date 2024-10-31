@@ -7,9 +7,14 @@ def configure(cfg):
     cfg.env.HAL_GCS_ENABLED = 0
 
 def build(bld):
-    if isinstance(bld.get_board(), boards.chibios) and bld.env['WITH_FATFS'] != '1':
-        # we need a filesystem for replay
-        return
+    print(bld.env)
+    if isinstance(bld.get_board(), boards.chibios):
+        if bld.env['WITH_FATFS'] != '1':
+            # we need a filesystem for replay
+            return
+        if not bld.env['APJ_BOARD_TYPE'].startswith('STM32H7'):
+            # need an H7
+            return
 
     vehicle = bld.path.name
 
