@@ -11,6 +11,12 @@
     Reboot the autopilot
     Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
     set DJIR_DEBUG to 1 to display parsing and errors stats at 5sec.  Set to 2 to display gimbal angles
+
+  Advanced usage
+    The gimbal can be connected to an existing DroneCAN bus (on ArduPilot 4.6 or later) by setting CAN_Dx_PROTOCOL2=10 on that bus's driver
+    The gimbal can be used as the Nth mount (instead of the first) by setting MNTn_TYPE = 9 and modifying the script's user definitions
+    The gimbal can be used with the Scripting2 protocol by modifying the script's user definitions
+    Multiple gimbals can be used at once by duplicating the script and connecting them to different buses
  
   The following sources were used as a reference during the development of this script
     Constant Robotics DJIR SDK: https://github.com/ConstantRobotics/DJIR_SDK
@@ -70,6 +76,9 @@
 
 --]]
 
+-- user definitions
+local MOUNT_INSTANCE = 0                -- default to MNT1
+local CAN_INSTANCE = 0                  -- default to first scripting CAN protocol
 
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
@@ -77,7 +86,6 @@ local UPDATE_INTERVAL_MS = 1            -- update interval in millis
 local REPLY_TIMEOUT_MS = 100            -- timeout waiting for reply after 0.1 sec
 local REQUEST_ATTITUDE_INTERVAL_MS = 100-- request attitude at 10hz
 local SET_ATTITUDE_INTERVAL_MS = 100    -- set attitude at 10hz
-local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
 local SEND_FRAMEID = 0x223              -- send CAN messages with this frame id
 local RECEIVE_FRAMEID = 0x222           -- receive CAN messages with this frame id
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -105,15 +113,6 @@ local DJIR_DEBUG = Parameter("DJIR_DEBUG")              -- debug level. 0:disabl
   // @User: Standard
 --]]
 local DJIR_UPSIDEDOWN = Parameter("DJIR_UPSIDEDOWN")    -- 0:rightsideup, 1:upsidedown
-
--- bind parameters to variables
-local CAN_P1_DRIVER = Parameter("CAN_P1_DRIVER")        -- If using CAN1, should be 1:First driver
-local CAN_P1_BITRATE = Parameter("CAN_P1_BITRATE")      -- If using CAN1, should be 1000000
-local CAN_D1_PROTOCOL = Parameter("CAN_D1_PROTOCOL")    -- If using CAN1, should be 10:Scripting
-local CAN_P2_DRIVER = Parameter("CAN_P2_DRIVER")        -- If using CAN2, should be 2:Second driver
-local CAN_P2_BITRATE = Parameter("CAN_P2_BITRATE")      -- If using CAN2, should be 1000000
-local CAN_D2_PROTOCOL = Parameter("CAN_D2_PROTOCOL")    -- If using CAN2, should be 10:Scripting
-local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
 
 -- message definitions
 local HEADER = 0xAA
@@ -309,42 +308,20 @@ end
 
 -- perform any require initialisation
 function init()
-  -- check parameter settings
-  if CAN_D1_PROTOCOL:get() ~= 10 and CAN_D2_PROTOCOL:get() ~= 10 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_D1_PROTOCOL or CAN_D2_PROTOCOL=10")
-    do return end
-  end
-  if CAN_D1_PROTOCOL:get() == 10 and CAN_D2_PROTOCOL:get() == 10 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_D1_PROTOCOL or CAN_D2_PROTOCOL=0")
-    do return end
-  end
-  if CAN_D1_PROTOCOL:get() == 10 then
-    if CAN_P1_DRIVER:get() <= 0 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P1_DRIVER=1")
-      do return end
-    end
-    if CAN_P1_BITRATE:get() ~= 1000000 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P1_BITRATE=1000000")
-      do return end
-    end
-  end
-  if CAN_D2_PROTOCOL:get() == 10 then
-    if CAN_P2_DRIVER:get() <= 0 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P2_DRIVER=2")
-      do return end
-    end
-    if CAN_P2_BITRATE:get() ~= 1000000 then
-      gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set CAN_P2_BITRATE=1000000")
-      do return end
-    end
-  end
-  if MNT1_TYPE:get() ~= 9 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: set MNT1_TYPE=9")   
+  local mnt_type_name = ("MNT%d_TYPE"):format(MOUNT_INSTANCE+1)
+  local mnt_type = param:get(mnt_type_name)
+  if mnt_type ~= 9 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, ("DJIR: set %s=9"):format(mnt_type_name))
     do return end
   end
 
   -- get CAN device and filter to receive only replies from the gimbal
-  driver = CAN:get_device(8) -- buffer up to two replies
+  local buffer_size = 8 -- buffer up to two replies
+  if CAN_INSTANCE == 0 then
+    driver = CAN:get_device(buffer_size)
+  elseif CAN_INSTANCE == 1 then
+    driver = CAN:get_device2(buffer_size)
+  end
   if driver and driver:add_filter(-1, RECEIVE_FRAMEID) then
     initialised = true
     gcs:send_text(MAV_SEVERITY.INFO, "DJIR: mount driver started")   
