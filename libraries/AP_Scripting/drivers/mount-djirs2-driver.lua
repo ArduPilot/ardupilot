@@ -151,7 +151,6 @@ local last_print_ms = uint32_t(0)       -- system time that debug output was las
 local bytes_read = 0                    -- number of bytes read from gimbal
 local bytes_written = 0                 -- number of bytes written to gimbal
 local bytes_error = 0                   -- number of bytes read that could not be parsed
-local msg_ignored = 0                   -- number of ignored messages (because frame id does not match)
 local write_fails = 0                   -- number of times write failed
 local execute_fails = 0                 -- number of times that gimbal was unable to execute the command
 local reply_timeouts = 0                -- number of timeouts waiting for replies
@@ -344,9 +343,9 @@ function init()
     do return end
   end
 
-  -- get CAN device
-  driver = CAN:get_device(25)
-  if driver then
+  -- get CAN device and filter to receive only replies from the gimbal
+  driver = CAN:get_device(8) -- buffer up to two replies
+  if driver and driver:add_filter(-1, RECEIVE_FRAMEID) then
     initialised = true
     gcs:send_text(MAV_SEVERITY.INFO, "DJIR: mount driver started")   
   else
@@ -560,18 +559,13 @@ end
 -- consume incoming CAN packets
 function read_incoming_packets()
   local canframe
-  repeat
+  while true do
     canframe = driver:read_frame()
-    if canframe then
-      if uint32_t(canframe:id()) == uint32_t(RECEIVE_FRAMEID) then
-        for i = 0, canframe:dlc()-1 do
-          parse_byte(canframe:data(i))
-        end
-      else
-        msg_ignored = msg_ignored + 1
-      end
+    if not canframe then return end
+    for i = 0, canframe:dlc()-1 do
+      parse_byte(canframe:data(i))
     end
-  until not canframe
+  end
 end
 
 -- parse an byte from the gimbal
@@ -742,12 +736,7 @@ function update()
   -- report parsing status
   if (DJIR_DEBUG:get() > 0) and ((now_ms - last_print_ms) > 5000) then
     last_print_ms = now_ms
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: r:%u w:%u fail:%u,%u perr:%u to:%u ign:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, reply_timeouts, msg_ignored))
-  end
-
-  -- do not send any messages until CAN traffic has been seen
-  if msg_ignored == 0 and bytes_read == 0 then
-    return update, UPDATE_INTERVAL_MS
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: r:%u w:%u fail:%u,%u perr:%u to:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, reply_timeouts))
   end
 
   -- handle expected reply timeouts
