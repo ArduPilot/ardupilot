@@ -44,7 +44,7 @@ function update()
       local pwm_mid = 0.5*(pwm_min+pwm_max)
       local pwm = math.floor(pwm_mid + (pwm_max-pwm_mid) * output)
       SRV_Channels:set_output_pwm_chan_timeout(chan-1, pwm, 100)
-      logger.write('ESLW', 'PWM,Freq', 'If', pwm, freq)
+      logger:write('ESLW', 'PWM,Freq', 'If', pwm, freq)
       gcs:send_named_float('PWN',pwm)
       gcs:send_named_float('FREQ',freq)
    end
