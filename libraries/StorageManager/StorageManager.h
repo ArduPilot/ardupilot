@@ -42,7 +42,7 @@
 #elif HAL_STORAGE_SIZE > 0
 #define STORAGE_NUM_AREAS 1
 #else
-#error "Unsupported storage size"
+#error "Unsupported storage size HAL_STORAGE_SIZE"
 #endif
 
 /*
