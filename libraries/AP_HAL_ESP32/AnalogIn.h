@@ -48,6 +48,8 @@ private:
     //ADC number (1 or 2). ADC2 is unavailable when WIFI on
     adc_unit_t _adc_unit;
 
+    //adc Pin number (usable range: 0-7 on esp32 classic), (0-9 on S3).
+    // S3: see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/adc.html   search for 'enum adc1_channel_t'
     //ADC channel
     adc_channel_t _adc_channel;
 

@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Common/ExpandingString.h>
 
 #include "driver/rtc_io.h"
 
@@ -380,3 +381,25 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 {
     //RIP (not the pointer)
 }
+
+void RCOutput::timer_info(ExpandingString &str)
+{
+    // a header to allow for machine parsers to determine format
+    str.printf("TIMERV1\n");
+
+    //for (auto &group : pwm_group_list) {
+        uint32_t target_freq;
+        //if (&group == serial_group) {
+            target_freq = 19200 * 10;
+        // } else if (is_dshot_protocol(group.current_mode)) {
+        //     target_freq = protocol_bitrate(group.current_mode) * DSHOT_BIT_WIDTH_TICKS;
+        // } else {
+        //     target_freq = protocol_bitrate(group.current_mode) * NEOP_BIT_WIDTH_TICKS;
+        // }
+        //const uint32_t prescaler = 0;//calculate_bitrate_prescaler(group.pwm_drv->clock, target_freq, false);
+        str.printf("TIM%-2u CLK=%4uMhz MODE=%5s FREQ=%8u TGT=%8u\n", 0, 0,
+            get_output_mode_string((enum output_mode)1),
+            unsigned(0), unsigned(target_freq));//todo
+   // }
+}
+

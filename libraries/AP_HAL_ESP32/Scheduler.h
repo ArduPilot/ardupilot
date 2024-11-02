@@ -108,6 +108,7 @@ private:
 
     static bool _initialized;
 
+    int run_timer_state = 0;
     tskTaskControlBlock* _main_task_handle;
     tskTaskControlBlock* _timer_task_handle;
     tskTaskControlBlock* _rcin_task_handle;
@@ -140,4 +141,7 @@ private:
     bool _in_io_proc;
     void _run_io();
     Semaphore _io_sem;
+public:
+    Semaphore sem;
+
 };
