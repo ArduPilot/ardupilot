@@ -72,7 +72,9 @@
 #endif
 
 #ifdef HAL_BUILD_AP_PERIPH
+#ifndef HAL_BARO_ALLOW_INIT_NO_BARO
 #define HAL_BARO_ALLOW_INIT_NO_BARO
+#endif
 #endif
 
 #ifndef AP_FIELD_ELEVATION_ENABLED
