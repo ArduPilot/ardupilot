@@ -12,10 +12,12 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <AP_HAL/AP_HAL.h>
+#include "AP_HAL_ESP32.h"
 
-#include "AP_HAL_ESP32/Scheduler.h"
-#include "AP_HAL_ESP32/RCInput.h"
-#include "AP_HAL_ESP32/AnalogIn.h"
+#include "Scheduler.h"
+#include "RCInput.h"
+#include "AnalogIn.h"
 #include "AP_Math/AP_Math.h"
 #include "SdCard.h"
 #include "Profile.h"
@@ -31,6 +33,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <stdio.h>
+#include "Semaphores.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_log.h"
 
 //#define SCHEDULERDEBUG 1
 
