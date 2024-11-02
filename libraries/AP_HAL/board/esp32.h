@@ -1,5 +1,11 @@
 #pragma once
 
+//generated header
+#include <hwdef.h>
+
+// coming from their respective esp-idf/sdkconfig files ...
+// also note that '#ifdef CONFIG_IDF_TARGET_ESP32' is only true on Classic esp32 targets, not s3.
+// also note that '#ifdef CONFIG_IDF_TARGET_ESP32S3' is only true on esp32s3 targets, not classic.
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
 #include "esp32diy.h" // Charles
@@ -17,6 +23,10 @@
 #include "esp32s3devkit.h" //Nick K. on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
 #include "esp32s3empty.h"
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3BUZZ
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DYNAMIC
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3BUZZ_PERIPH
+// nothing here. both these use hwdef.h from hwdef.dat, not this - todo maybe stop requring SUBTYPES for hwdef.dat boards?
 #else
 #error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
 #endif
@@ -26,9 +36,22 @@
 #define HAL_WITH_DRONECAN 0
 #define HAL_WITH_UAVCAN 0
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
+
+// boards derived from hwdef.dat dont necessarily have this so make a reasonable fallback
+#ifndef HAL_ESP32_BOARD_NAME 
+#define HAL_ESP32_BOARD_NAME "esp32generic"
+#endif
+
+// some of these are optionally defined in the *generated* hwdef.h from hwdef.dat so we wrap them here
+#ifndef HAL_HAVE_SAFETY_SWITCH
 #define HAL_HAVE_SAFETY_SWITCH 0
+#endif
+#ifndef HAL_HAVE_BOARD_VOLTAGE
 #define HAL_HAVE_BOARD_VOLTAGE 0
+#endif
+#ifndef HAL_HAVE_SERVO_VOLTAGE
 #define HAL_HAVE_SERVO_VOLTAGE 0
+#endif
 
 #define HAL_WITH_IO_MCU 0
 
@@ -37,12 +60,18 @@
 
 #ifdef __cplusplus
 // allow for static semaphores
+#include <type_traits>
 #include <AP_HAL_ESP32/Semaphores.h>
 #define HAL_Semaphore ESP32::Semaphore
 #define HAL_BinarySemaphore ESP32::BinarySemaphore
 #endif
 
+
+// assume no-can unless added elsewhere.  eg esp32_hwdef.py currently only adds it for periph builds.
+#ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
+#endif
+
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
 // disable uncommon stuff that we'd otherwise get 
@@ -51,6 +80,13 @@
 
 #define __LITTLE_ENDIAN  1234
 #define __BYTE_ORDER     __LITTLE_ENDIAN
+
+//- these are missing from esp-idf......will not be needed later
+#define RTC_WDT_STG_SEL_OFF             0
+#define RTC_WDT_STG_SEL_INT             1
+#define RTC_WDT_STG_SEL_RESET_CPU       2
+#define RTC_WDT_STG_SEL_RESET_SYSTEM    3
+#define RTC_WDT_STG_SEL_RESET_RTC       4
 
 // whenver u get ... error: "xxxxxxx" is not defined, evaluates to 0 [-Werror=undef]  just define it below as 0
 #define CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY 0
@@ -79,6 +115,10 @@
 //#define CONFIG_ESP32_WIFI_TX_BA_WIN 0
 //#define CONFIG_ESP32_WIFI_RX_BA_WIN 0
 
+// absolutely essential, as it defualts to 1324 in AP_Logger/AP_Logger.cpp, and that NOT enough.
+// ....with stack checking enabled in FreRTOS and GDB connected, GDB reports:
+// 0x4037ba21 in panic_abort (details=0x3fccdbb1 "***ERROR*** A stack overflow in task log_io has been detected.")
+#define HAL_LOGGING_STACK_SIZE 1024*3
 
 // turn off all the compasses by default.. 
 #ifndef AP_COMPASS_BACKEND_DEFAULT_ENABLED
@@ -119,3 +159,41 @@
 
 // remove once ESP32 isn't so chronically slow
 #define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL
+
+#ifndef HAL_UART_STATS_ENABLED
+#define HAL_UART_STATS_ENABLED 1
+#endif
+
+#ifndef HAL_WITH_DSP
+#define HAL_WITH_DSP 0
+#endif
+
+#ifndef BOARD_SAFETY_ENABLE_DEFAULT
+# define BOARD_SAFETY_ENABLE_DEFAULT 0
+#endif
+
+// buzz todo on the devkitm boards there's a led, maybe we can drive it with RCOutputRGBLed(HAL_RCOUT_RGBLED_RED, HAL_RCOUT_RGBLED_GREEN, HAL_RCOUT_RGBLED_BLUE));  ?
+// right-now LEDs on the esp32 are untested and unsupported.
+#ifndef BUILD_DEFAULT_LED_TYPE
+#define BUILD_DEFAULT_LED_TYPE (Notify_LED_None)
+#endif
+
+
+// three hardware serial + two virtual for tcp and udp
+#ifndef HAL_UART_NUM_SERIAL_PORTS 
+#define HAL_UART_NUM_SERIAL_PORTS 5
+#endif
+
+// unwanted features
+#ifndef HAL_LANDING_DEEPSTALL_ENABLED
+#define HAL_LANDING_DEEPSTALL_ENABLED 0
+#endif
+#ifndef HAL_PICCOLO_CAN_ENABLED
+#define HAL_PICCOLO_CAN_ENABLED 0
+#endif
+#ifndef HAL_PERIPH_ENABLE_EFI
+#define HAL_PERIPH_ENABLE_EFI 0
+#endif
+#ifndef AP_CHECK_FIRMWARE_ENABLED
+#define AP_CHECK_FIRMWARE_ENABLED 0
+#endif
