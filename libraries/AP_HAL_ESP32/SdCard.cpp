@@ -125,16 +125,32 @@ void mount_sdcard_mmc()
 
     // This initializes the slot without card detect (CD) and write protect (WP) signals.
     // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
-    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
 
-    // To use 1-line SD mode (this driver does), uncomment the following line:
-    slot_config.width = 1;
+#ifdef SOC_SDMMC_USE_GPIO_MATRIX
+    sdmmc_slot_config_t slot_config = { \
+                                .clk = GPIO_NUM_14, \
+                                .cmd = GPIO_NUM_15, \
+                                .d0 = GPIO_NUM_2, \
+                                .d1 = GPIO_NUM_NC, \
+                                .d2 = GPIO_NUM_NC, \
+                                .d3 = GPIO_NUM_NC, \
+                                .d4 = GPIO_NUM_NC, \
+                                .d5 = GPIO_NUM_NC, \
+                                .d6 = GPIO_NUM_NC, \
+                                .d7 = GPIO_NUM_NC, \
+                                .gpio_cd = GPIO_NUM_NC, \
+                                .gpio_wp = GPIO_NUM_NC,  \
+                                .width = 1, \  
+                                .flags = 0\
+                                };
+
+    // this driver uses 1-line SD mode because of .width = 1 above.
 
     // GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
     // Internal pull-ups are not sufficient. However, enabling internal pull-ups
     // does make a difference some boards, so we do that here.
-    gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
-    gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+    gpio_set_pull_mode(slot_config.cmd, GPIO_PULLUP_ONLY);   // GPIO_NUM_15 CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode(slot_config.d0, GPIO_PULLUP_ONLY);    // GPIO_NUM_2 D0, needed in 4- and 1-line modes
     //gpio_set_pull_mode(GPIO_NUM_4, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
     //gpio_set_pull_mode(GPIO_NUM_12, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
     //
@@ -144,6 +160,19 @@ void mount_sdcard_mmc()
     //   which means pin 13 on micro can be re-used elsewhere. If one of these isnt true for u,
     //   then uncomment this line and connect it electrically to the CS pin on the SDcard.
     //gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+
+#else
+    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+    slot_config.width = 1; //this driver uses 1-line SD mode
+    gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);   // GPIO_NUM_15 CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);    // GPIO_NUM_2  D0,  needed in 4- and 1-line modes
+    //gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+#endif
+    // https://www.esp32.com/viewtopic.php?t=3155 says that this might prevent a spirious error-msg, but without these lines
+    // we are still able to mount the SD in 1-wire mode, so this is more to quieten the boot message then to fix any bug:
+    // E (1904) sdmmc_req: sdmmc_host_wait_for_event returned 0x107
+    //gpio_pulldown_dis(GPIO_NUM_13);
+    //gpio_pullup_en(GPIO_NUM_13);
 
 
     // Options for mounting the filesystem.
