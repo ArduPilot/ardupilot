@@ -831,6 +831,7 @@ def _build_recursion(bld):
             dirs_to_recurse.append('libraries/AP_IOMCU/iofirmware')
 
     if bld.env.PERIPH_FW is not None:
+        bld.env['PERIPH_FW'] = 1
         if bld.env.PERIPH_FW:
             dirs_to_recurse.append('Tools/AP_Periph')
 
