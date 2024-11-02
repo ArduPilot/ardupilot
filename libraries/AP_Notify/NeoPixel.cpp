@@ -21,7 +21,9 @@
 #include "SRV_Channel/SRV_Channel.h"
 
 // This limit is from the dshot driver rcout groups limit
+#ifndef AP_NOTIFY_NEOPIXEL_MAX_INSTANCES
 #define AP_NOTIFY_NEOPIXEL_MAX_INSTANCES        4
+#endif
 
 // Datasheet: https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
 // 24bit msg as 3 byte GRB (not RGB) where first bit is G7, and last bit is B0
