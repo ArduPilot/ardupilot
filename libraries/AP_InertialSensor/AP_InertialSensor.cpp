@@ -1692,6 +1692,7 @@ AP_InertialSensor::_init_gyro()
 
     // exit immediately if calibration is already in progress
     if (calibrating()) {
+        hal.console->printf("%s:%d\n _init_gyro calibrating", __PRETTY_FUNCTION__, __LINE__);
         return;
     }
 
