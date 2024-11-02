@@ -69,10 +69,12 @@
 #  define FALLTHROUGH
 #endif
 
+#ifndef WARN_IF_UNUSED
 #ifdef __GNUC__
  #define WARN_IF_UNUSED __attribute__ ((warn_unused_result))
 #else
  #define WARN_IF_UNUSED
+#endif
 #endif
 
 #define NORETURN __attribute__ ((noreturn))
