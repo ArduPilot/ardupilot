@@ -171,7 +171,7 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
 #if HAL_GCS_ENABLED
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
-#if AP_AIRSPEED_AUTOCAL_ENABLE
+#if AP_AIRSPEED_AUTOCAL_ENABLE && HAL_GCS_ENABLED
     const mavlink_airspeed_autocal_t packet{
         vx: vground.x,
         vy: vground.y,
