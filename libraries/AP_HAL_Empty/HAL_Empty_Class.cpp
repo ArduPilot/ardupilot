@@ -13,7 +13,10 @@ static UARTDriver serial0Driver;
 static UARTDriver serial1Driver;
 static UARTDriver serial2Driver;
 static UARTDriver serial3Driver;
+//serial4Driver-serial9Driver is not used here.
+//i2cDeviceManager is not used here.
 static SPIDeviceManager spiDeviceManager;
+//wspiDeviceManager is not used here.
 static AnalogIn analogIn;
 static Storage storageDriver;
 static GPIO gpioDriver;
@@ -36,7 +39,9 @@ HAL_Empty::HAL_Empty() :
         nullptr,            /* no SERIAL7 */
         nullptr,            /* no SERIAL8 */
         nullptr,            /* no SERIAL9 */
+        nullptr,            /* no i2cDeviceManager */
         &spiDeviceManager,
+        nullptr,            /* no wspiDeviceManager */
         &analogIn,
         &storageDriver,
         &serial0Driver,
@@ -47,7 +52,18 @@ HAL_Empty::HAL_Empty() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
-        nullptr)            /* no DSP */
+#if AP_SIM_ENABLED
+        &xsimstate,
+#endif
+#if HAL_WITH_DSP
+        &dspDriver,
+#endif
+#if HAL_NUM_CAN_IFACES
+        (AP_HAL::CANIface**)canDrivers
+#else
+        nullptr
+#endif
+    )            /* no DSP */
 {}
 
 void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
