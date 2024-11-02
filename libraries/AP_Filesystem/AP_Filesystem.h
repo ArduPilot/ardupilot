@@ -60,6 +60,7 @@ struct dirent {
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "AP_Filesystem_ESP32.h"
+#define DT_LNK 10
 #endif
 
 #include "AP_Filesystem_backend.h"
