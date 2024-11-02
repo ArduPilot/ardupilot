@@ -92,6 +92,8 @@
     {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },\
 	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
 	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
+// the classic esp32 hardware has three uarts, and we also add a virtual tcp, and a virtual udp port to that list 
+#define HAL_UART_NUM_SERIAL_PORTS 5
 
 #define AP_FILESYSTEM_ESP32_ENABLED 1
 #define HAL_ESP32_SDCARD 1

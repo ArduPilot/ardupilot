@@ -58,3 +58,6 @@
 #define HAL_DISABLE_ADC_DRIVER 1
 #define HAL_USE_ADC 0
 #define HAL_ESP32_RMT_RX_PIN_NUMBER 36
+
+// the classic esp32 hardware has three uarts, and we also add a virtual tcp, and a virtual udp port to that list 
+#define HAL_UART_NUM_SERIAL_PORTS 5

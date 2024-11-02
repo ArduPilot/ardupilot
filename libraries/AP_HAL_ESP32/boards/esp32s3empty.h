@@ -93,3 +93,6 @@
 #define AP_SCRIPTING_ENABLED 0
 #define HAL_USE_EMPTY_STORAGE 1
 
+
+// the s3 esp32 hardware has three uarts, and we also add a virtual tcp, and a virtual udp port to that list 
+#define HAL_UART_NUM_SERIAL_PORTS 5
