@@ -15,33 +15,33 @@
 
 #pragma once
 
+#include "AP_HAL_ESP32.h"
+
 #include <AP_HAL/UARTDriver.h>
 #include <AP_HAL/utility/RingBuffer.h>
-#include <AP_HAL_ESP32/AP_HAL_ESP32.h>
-#include <AP_HAL_ESP32/Semaphores.h>
+#include "Semaphores.h" 
 
 #include "driver/gpio.h"
 #include "driver/uart.h"
 
-namespace ESP32
-{
 
 struct UARTDesc {
     uart_port_t port;
     gpio_num_t rx;
     gpio_num_t tx;
 };
+#define UART_MAX_DRIVERS 11
 
-class UARTDriver : public AP_HAL::UARTDriver
+
+class ESP32::UARTDriver : public AP_HAL::UARTDriver
 {
 public:
 
-    UARTDriver(uint8_t serial_num)
-        : AP_HAL::UARTDriver()
-    {
-        _initialized = false;
-        uart_num = serial_num;
-    }
+    UARTDriver(uint8_t serial_num);
+
+    /* todo Do not allow copies */
+    //UARTDriver(const UARTDriver &other) = delete;
+    //UARTDriver &operator=(const UARTDriver&) = delete;
 
     virtual ~UARTDriver() = default;
 
@@ -59,6 +59,25 @@ public:
         return 10*1024;
     }
 
+    // disable TX/RX pins for unusued uart?
+    void disable_rxtx(void) const override;
+
+    // unused stuff from chibios - do we want it in the future?
+    // struct SerialDef {
+    //     void* serial;
+    //     uint8_t instance;
+    //     bool is_usb;
+    //     uint8_t port;
+    //     uint8_t rx;
+    //     uint8_t tx;
+    //     uint8_t rts_line;
+    //     uint8_t cts_line;
+    //     uint32_t _baudrate;
+    //     uint8_t get_index(void) const {
+    //         return uint8_t(this - &_serial_tab[0]);
+    //     }
+    // };
+    //bool lock_port(uint32_t write_key, uint32_t read_key) override;
     /*
       return timestamp estimate in microseconds for when the start of
       a nbytes packet arrived on the uart. This should be treated as a
@@ -86,6 +105,17 @@ private:
     void write_data();
 
     uint8_t uart_num;
+    HAL_Semaphore sem;
+
+    // table to find UARTDrivers from serial number, used for event handling
+    static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+
+    // unused stuff from chibios - do we want it in the future?
+    //const SerialDef &sdef;
+    //static const SerialDef _serial_tab[];
+
+    // index into uart_drivers table
+    uint8_t serial_num;
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
@@ -93,6 +123,7 @@ private:
     uint32_t _baudrate;
 
     void _receive_timestamp_update(void);
+    void begin(uint32_t b, uint16_t rxS, uint16_t txS) ;
 
 protected:
     void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
@@ -104,4 +135,3 @@ protected:
     bool _discard_input() override; // discard all bytes available for reading
 };
 
-}
