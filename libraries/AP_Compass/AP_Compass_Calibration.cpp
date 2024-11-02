@@ -370,6 +370,7 @@ uint8_t Compass::_get_cal_mask()
     return cal_mask;
 }
 
+#if HAL_MAVLINK_BINDINGS_ENABLED
 /*
   handle an incoming MAG_CAL command
  */
@@ -450,6 +451,7 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
     
     return result;
 }
+#endif
 
 #endif // COMPASS_CAL_ENABLED
 
