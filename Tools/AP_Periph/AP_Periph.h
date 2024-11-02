@@ -118,11 +118,16 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void stm32_watchdog_init();
 void stm32_watchdog_pat();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+void stm32_watchdog_init();
+void stm32_watchdog_pat();
 #endif
 /*
   app descriptor for firmware checking
  */
+#if AP_CHECK_FIRMWARE_ENABLED
 extern const app_descriptor_t app_descriptor;
+#endif
 
 extern "C" {
     void can_vprintf(uint8_t severity, const char *fmt, va_list arg);
@@ -204,11 +209,15 @@ public:
     static ChibiOS::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     static HALSITL::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    static ESP32::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
 #if AP_CAN_SLCAN_ENABLED
     static SLCAN::CANIface slcan_interface;
 #endif
+
+    static bool no_iface_finished_dna;
 
     AP_SerialManager serial_manager;
 
@@ -492,7 +501,7 @@ public:
     // show stack as DEBUG msgs
     void show_stack_free();
 
-    static bool no_iface_finished_dna;
+    static uint8_t has_any_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
 
     bool canard_broadcast(uint64_t data_type_signature,
@@ -597,7 +606,13 @@ public:
 };
 
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+    #if  defined(CHIBIOS_BOARD_NAME)
+    #define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+    #elif defined(HAL_ESP32_BOARD_NAME)
+    #define CAN_APP_NODE_NAME "org.ardupilot." HAL_ESP32_BOARD_NAME
+    #else
+    #define CAN_APP_NODE_NAME "org.ardupilot.generic"
+    #endif
 #endif
 
 namespace AP
