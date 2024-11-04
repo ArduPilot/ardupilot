@@ -43,25 +43,25 @@ vtypes = []
 # boolean indicating whether we have read and processed hwdef yet
 processed_hwdefs = False
 
-#esp32 full pis list
-esp32allpins = [
+#classic_esp32 full pis list
+classic_esp32_allpins = [
     0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,8,19, 
      21,22,23, 
      25,26,27, 
      32,33,34,35,36,37,38,39
      ]
 
-allowedoutpins = [
+classic_esp32_allowedoutpins = [
      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,8,19,  
      21,22,23, 
      25,26,27,
      32,33
     ]
-inonlypins = [
+classic_esp32_inonlypins = [
 34,35,36,37,38,39
 ]
 
-# according to 'Figure 7' in esp32 ref man, the connection from peripheral/s to digital pads is:
+# according to 'Figure 7' in 'classic' esp32 ref man, the connection from peripheral/s to digital pads is:
 # peripheral (eg uart,i2c,pwm, led etc)[162 possible signals] -> gpio_matrix
 # gpio_matrix[34 gpios] -> io_mux
 # io_mux[pad control signals] -> digital pads
@@ -79,7 +79,7 @@ inonlypins = [
 #digital performance. In this case, the IO_MUX is used to connect these pads directly to the peripheral.)
 
 
-# esp32 gpio matrix...
+# esp32 'classic' gpio matrix...
 # For input to the chip: Each of the 162 internal peripheral inputs can select any GPIO pad as the input source
 #
 # For output from the chip: The output signal of each of the 34 GPIO pads can be from one of the 176
@@ -88,7 +88,7 @@ inonlypins = [
 
 # table 17 in ref man
 #Signal Input_Signal Output_Signal Direct_I/O_in_IO_MUX
-esp32_gpio_matrix = {
+classic_esp32__gpio_matrix = {
 '0': ['SPICLK_in' ,'SPICLK_out'             ,'YES'],
 '1': ['SPIQ_in' ,'SPIQ_out'                 ,'YES'],
 '2': ['SPID_in' ,'SPID_out'                 ,'YES'],
@@ -290,8 +290,7 @@ esp32_gpio_matrix = {
 '228':['-' ,'sig_in_func228', '-']
 }
 
-
-# tbl 18 in ref man
+# tbl 18 in 'classic' esp32 ref man  has mux-pad-summary.
 
 #GPIO Pad_Name Function_0 Function_1 Function_2 Function_3 Function_4 Function_5 Reset Notes
 # 'Reset' column shows each pads default configurations after reset:
@@ -301,104 +300,197 @@ esp32_gpio_matrix = {
 #  3=input-enabled-pull-up
 # "Notes" : R => RTC/analog functions via RTC_MUX. ; I => Pad can only be configured as input GPIO,  no pullup/down avail.
 
-esp32_io_mux_pad_list = {
+classic_esp32_io_mux_pad_list = {
 
 #GPIO Pad_Name   Function_0 Function_1 Function_2 Function_3 Function_4   Function_5    Reset Notes
 # esp32 doesn't really have a concept of a 'port' like stm32, its got pads and pad labels, so we'll group them in 8's and call them ports where we have to
-# "virtual port A":
-'0':['GPIO0'     ,'GPIO0'  ,'CLK_OUT1','GPIO0'   ,'-'         ,'-'       ,'EMAC_TX_CLK' ,'3','R'],
-'1':['U0TXD'     ,'U0TXD'  ,'CLK_OUT3','GPIO1'   ,'-'         ,'-'       ,'EMAC_RXD2'   ,'3','-'],
-'2':['GPIO2'     ,'GPIO2'  ,'HSPIWP'  ,'GPIO2'   ,'HS2_DATA0' ,'SD_DATA0','-'           ,'2','R'],
-'3':['U0RXD'     ,'U0RXD'  ,'CLK_OUT2','GPIO3'   ,'-'         ,'-'       ,'-'           ,'3','-'],
-'4':['GPIO4'     ,'GPIO4'   ,'HSPIHD' ,'GPIO4'   ,'HS2_DATA1' ,'SD_DATA1','EMAC_TX_ER'  ,'2','R'],
-'5':['GPIO5'     ,'GPIO5'   ,'VSPICS0','GPIO5'   ,'HS1_DATA6' ,'-'       ,'EMAC_RX_CLK' ,'3','-'],
-'6':['SD_CLK'    ,'SD_CLK'  ,'SPICLK' ,'GPIO6'   ,'HS1_CLK'   ,'U1CTS'   ,'-'           ,'3','-'],
-'7':['SD_DATA_0' ,'SD_DATA0','SPIQ'   ,'GPIO7'   ,'HS1_DATA0' ,'U2RTS'   ,'-'           ,'3','-'],
+# "virtual port A":                                                                                  #our virtual pin name
+'0':['GPIO0'     ,'GPIO0'  ,'CLK_OUT1','GPIO0'   ,'-'         ,'-'       ,'EMAC_TX_CLK' ,'3','R'],    # PA0
+'1':['U0TXD'     ,'U0TXD'  ,'CLK_OUT3','GPIO1'   ,'-'         ,'-'       ,'EMAC_RXD2'   ,'3','-'],    # PA1
+'2':['GPIO2'     ,'GPIO2'  ,'HSPIWP'  ,'GPIO2'   ,'HS2_DATA0' ,'SD_DATA0','-'           ,'2','R'],    # PA2
+'3':['U0RXD'     ,'U0RXD'  ,'CLK_OUT2','GPIO3'   ,'-'         ,'-'       ,'-'           ,'3','-'],    # PA3
+'4':['GPIO4'     ,'GPIO4'   ,'HSPIHD' ,'GPIO4'   ,'HS2_DATA1' ,'SD_DATA1','EMAC_TX_ER'  ,'2','R'],    # PA4
+'5':['GPIO5'     ,'GPIO5'   ,'VSPICS0','GPIO5'   ,'HS1_DATA6' ,'-'       ,'EMAC_RX_CLK' ,'3','-'],    # PA5
+'6':['SD_CLK'    ,'SD_CLK'  ,'SPICLK' ,'GPIO6'   ,'HS1_CLK'   ,'U1CTS'   ,'-'           ,'3','-'],    # PA6
+'7':['SD_DATA_0' ,'SD_DATA0','SPIQ'   ,'GPIO7'   ,'HS1_DATA0' ,'U2RTS'   ,'-'           ,'3','-'],    # PA7
 # "virtual port B":
-'8':['SD_DATA_1' ,'SD_DATA1','SPID'   ,'GPIO8'   ,'HS1_DATA1' ,'U2CTS'   ,'-'           ,'3','-'],
-'9':['SD_DATA_2' ,'SD_DATA2','SPIHD'  ,'GPIO9'   ,'HS1_DATA2' ,'U1RXD'   ,'-'           ,'3','-'],
-'10':['SD_DATA_3','SD_DATA3','SPIWP'  ,'GPIO10'  ,'HS1_DATA3' ,'U1TXD'   ,'-'           ,'3','-'],
-'11':['SD_CMD'   ,'SD_CMD'  ,'SPICS0' ,'GPIO11'  ,'HS1_CMD'   ,'U1RTS'   ,'-'           ,'3','-'],
-'12':['MTDI'     ,'MTDI'    ,'HSPIQ'  ,'GPIO12'  ,'HS2_DATA2' ,'SD_DATA2','EMAC_TXD3'   ,'2','R'],
-'13':['MTCK'     ,'MTCK'    ,'HSPID'  ,'GPIO13'  , 'HS2_DATA3' ,'SD_DATA3','EMAC_RX_ER'  ,'2','R'],
-'14':['MTMS'     ,'MTMS'    ,'HSPICLK','GPIO14'  ,'HS2_CLK'   ,'SD_CLK'  ,'EMAC_TXD2'   ,'3','R'],
-'15':['MTDO'     ,'MTDO'    ,'HSPICS0','GPIO15'  ,'HS2_CMD'   ,'SD_CMD'  ,'EMAC_RXD3'   ,'3','R'],
+'8':['SD_DATA_1' ,'SD_DATA1','SPID'   ,'GPIO8'   ,'HS1_DATA1' ,'U2CTS'   ,'-'           ,'3','-'],    # PB0
+'9':['SD_DATA_2' ,'SD_DATA2','SPIHD'  ,'GPIO9'   ,'HS1_DATA2' ,'U1RXD'   ,'-'           ,'3','-'],    # PB1
+'10':['SD_DATA_3','SD_DATA3','SPIWP'  ,'GPIO10'  ,'HS1_DATA3' ,'U1TXD'   ,'-'           ,'3','-'],    # PB2
+'11':['SD_CMD'   ,'SD_CMD'  ,'SPICS0' ,'GPIO11'  ,'HS1_CMD'   ,'U1RTS'   ,'-'           ,'3','-'],    # PB3
+'12':['MTDI'     ,'MTDI'    ,'HSPIQ'  ,'GPIO12'  ,'HS2_DATA2' ,'SD_DATA2','EMAC_TXD3'   ,'2','R'],    # PB4
+'13':['MTCK'     ,'MTCK'    ,'HSPID'  ,'GPIO13'  , 'HS2_DATA3' ,'SD_DATA3','EMAC_RX_ER'  ,'2','R'],   # PB5
+'14':['MTMS'     ,'MTMS'    ,'HSPICLK','GPIO14'  ,'HS2_CLK'   ,'SD_CLK'  ,'EMAC_TXD2'   ,'3','R'],    # PB6
+'15':['MTDO'     ,'MTDO'    ,'HSPICS0','GPIO15'  ,'HS2_CMD'   ,'SD_CMD'  ,'EMAC_RXD3'   ,'3','R'],    # PB7
 # "virtual port C":
-'16':['GPIO16'   ,'GPIO16'  ,'-'      ,'GPIO16'  ,'HS1_DATA4' ,'U2RXD'   ,'EMAC_CLK_OUT','1','-'],
-'17':['GPIO17'   ,'GPIO17'  ,'-'      ,'GPIO17'  ,'HS1_DATA5' ,'U2TXD'   ,'EMAC_CLK_180','1','-'],
-'18':['GPIO18'   ,'GPIO18'  ,'VSPICLK','GPIO18'  ,'HS1_DATA7' ,'-'       ,'-'           ,'1','-'],
-'19':['GPIO19'   ,'GPIO19'  ,'VSPIQ'  ,'GPIO19'  ,'U0CTS'     ,'-'       ,'EMAC_TXD0'   ,'1','-'],
-'21':['GPIO21'   ,'GPIO21'  ,'VSPIHD' ,'GPIO21'  ,'-'         ,'-'       ,'EMAC_TX_EN'  ,'1','-'],
-'22':['GPIO22'   ,'GPIO22'  ,'VSPIWP' ,'GPIO22'  ,'U0RTS'     ,'-'       ,'EMAC_TXD1'   ,'1','-'],
-'23':['GPIO23'   ,'GPIO23'  ,'VSPID'  ,'GPIO23'  ,'HS1_STROBE','-'       ,'-'           ,'1','-'],
-'25':['GPIO25'   ,'GPIO25'  ,'-'      ,'GPIO25'  ,'-'         ,'-'       ,'EMAC_RXD0'   ,'0','R'],
+'16':['GPIO16'   ,'GPIO16'  ,'-'      ,'GPIO16'  ,'HS1_DATA4' ,'U2RXD'   ,'EMAC_CLK_OUT','1','-'],    # PC0
+'17':['GPIO17'   ,'GPIO17'  ,'-'      ,'GPIO17'  ,'HS1_DATA5' ,'U2TXD'   ,'EMAC_CLK_180','1','-'],    # PC1
+'18':['GPIO18'   ,'GPIO18'  ,'VSPICLK','GPIO18'  ,'HS1_DATA7' ,'-'       ,'-'           ,'1','-'],    # PC2
+'19':['GPIO19'   ,'GPIO19'  ,'VSPIQ'  ,'GPIO19'  ,'U0CTS'     ,'-'       ,'EMAC_TXD0'   ,'1','-'],    # PC3
+'21':['GPIO21'   ,'GPIO21'  ,'VSPIHD' ,'GPIO21'  ,'-'         ,'-'       ,'EMAC_TX_EN'  ,'1','-'],    # PC4
+'22':['GPIO22'   ,'GPIO22'  ,'VSPIWP' ,'GPIO22'  ,'U0RTS'     ,'-'       ,'EMAC_TXD1'   ,'1','-'],    # PC5
+'23':['GPIO23'   ,'GPIO23'  ,'VSPID'  ,'GPIO23'  ,'HS1_STROBE','-'       ,'-'           ,'1','-'],    # PC6
+'25':['GPIO25'   ,'GPIO25'  ,'-'      ,'GPIO25'  ,'-'         ,'-'       ,'EMAC_RXD0'   ,'0','R'],    # PC7
 # "virtual port D":
-'26':['GPIO26'   ,'GPIO26'  ,'-'      ,'GPIO26'  ,'-'         ,'-'       ,'EMAC_RXD1'   ,'0','R'],
-'27':['GPIO27'   ,'GPIO27'  ,'-'      ,'GPIO27'  ,'-'         ,'-'       ,'EMAC_RX_DV'  ,'0','R'],
+'26':['GPIO26'   ,'GPIO26'  ,'-'      ,'GPIO26'  ,'-'         ,'-'       ,'EMAC_RXD1'   ,'0','R'],    # PD0
+'27':['GPIO27'   ,'GPIO27'  ,'-'      ,'GPIO27'  ,'-'         ,'-'       ,'EMAC_RX_DV'  ,'0','R'],    # PD1
 '28': [], # not in table
 '29': [], # not in table
 '30': [], # not in table
 '31': [], # not in table
 # there is 28,29,30,31 in this table, but they are implied to be part of port D just unused.
 # "virtual port E":
-'32':['32K_XP'   ,'GPIO32'  ,'-'      ,'GPIO32'  ,'-'         ,'-'       ,'-'           ,'0','R'],
-'33':['32K_XN'   ,'GPIO33'  ,'-'      ,'GPIO33'  ,'-'         ,'-'       ,'-'           ,'0','R'],
-'34':['VDET_1'   ,'GPIO34'  ,'-'      ,'GPIO34'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],
-'35':['VDET_2'   ,'GPIO35'  ,'-'      ,'GPIO35'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],
-'36':['SENSOR_VP','GPIO36'  ,'-'      ,'GPIO36'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],
-'37':['SENSOR_CAPP','GPIO37','-'      ,'GPIO37'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],
-'38':['SENSOR_CAPN','GPIO38','-'      ,'GPIO38'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],
-'39':['SENSOR_VN','GPIO39'  ,'-'      ,'GPIO39'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],
+'32':['32K_XP'   ,'GPIO32'  ,'-'      ,'GPIO32'  ,'-'         ,'-'       ,'-'           ,'0','R'],         # PE0
+'33':['32K_XN'   ,'GPIO33'  ,'-'      ,'GPIO33'  ,'-'         ,'-'       ,'-'           ,'0','R'],         # PE1
+'34':['VDET_1'   ,'GPIO34'  ,'-'      ,'GPIO34'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],    # PE2
+'35':['VDET_2'   ,'GPIO35'  ,'-'      ,'GPIO35'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],    # PE3
+'36':['SENSOR_VP','GPIO36'  ,'-'      ,'GPIO36'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],    # PE4
+'37':['SENSOR_CAPP','GPIO37','-'      ,'GPIO37'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],    # PE5
+'38':['SENSOR_CAPN','GPIO38','-'      ,'GPIO38'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],    # PE6
+'39':['SENSOR_VN','GPIO39'  ,'-'      ,'GPIO39'  ,'-'         ,'-'       ,'-'           ,'0','R,','I'],    # PE7
+
+# this is a S3 only pin, so shouldnt be here, but we havnt separated the s3 to using a different table yet - this lets a hwdef.dat use , say 'PF7 CAN1_TX CAN1' on a s3 without error for pin 47
+# "virtual port F":
+'40':['GPIO40','','','','','','','',''],    # PF0
+'41':['GPIO41','','','','','','','',''],    # PF1
+'42':['GPIO42','','','','','','','',''],    # PF2
+'43':['GPIO43','','','','','','','',''],    # PF3
+'44':['GPIO44','','','','','','','',''],    # PF4
+'45':['GPIO45','','','','','','','',''],    # PF5
+'46':['GPIO46','','','','','','','',''],    # PF6
+'47':['GPIO47','','','','','','','',''],    # PF7
+
+# todo 48-52 on s3 , not added here as we dont use them yet.
+
 }
 
 # PA, PB, PC, PD, PE
-esp32_virtual_ports = {
+classic_esp32_virtual_ports = {
     'A': [0,1,2,3,4,5,6,7],
     'B': [8,9,10,11,12,13,14,15],
     'C': [16,17,18,19,21,22,23,25],
     'D': [26,27,28,29,30,31],
-    'E': [32,33,34,35,36,37,38,39]
+    'E': [32,33,34,35,36,37,38,39],
+    'F': [40,41,42,43,44,45,46,47], # S3 only, todo separate
 }
 
-# pass in a number ranging from 0-39 and used as index here: esp32_io_mux_pad_list
+
+# s3 manual/s:
+# https://www.espressif.com/sites/default/files/documentation/esp32-s3_technical_reference_manual_en.pdf
+# https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf
+
+# TODO - how do we handle pins on S3 with numbers 40,41,42,45,46,47,48 ? 
+# warning pins 39 and 40 behave as jtag pins on boot.?
+# use any of these pins as normal in idf, and the jtag will simply be disabled on first use.
+
+# derived from Appendix A – ESP32-S3   's3' datasheet 
+#
+
+# colnames: 
+#Pin Pin   Pin Pin-Providing Pin-Settings Pin-Settings  RTC-Function    Analog-Function    ---------------IOMUX-Function----------------
+#No. Name Type Power         At-Reset     After-Reset     0   3             0   1          0 Type    1 Type    2 Type    3 Type    4 Type
+
+# esp32s3_colnames = ['Pin-No.','Pin-Name','Pin-Type', 'Pin-Providing-Power', 'Pin-Settings-At-Reset', 'Pin-Settings-After-Reset', 
+#                                 'RTC-Function-0', 'RTC-Function-3', 'Analog-Function-0', 'Analog-Function-1',
+#                                   'IOMUX-F-0', 'IOMUX-F-0-Type','IOMUX-F-1', 'IOMUX-F-1-Type','IOMUX-F-2', 'IOMUX-F-2-Type',
+#                                   'IOMUX-F-3', 'IOMUX-F-3-Type','IOMUX-F-4', 'IOMUX-F-4-Type']
+
+# esp32s3_consolidated_pin_overview = { 
+# #Appendix A – ESP32-S3 Consolidated Pin Overview
+# # Pin  Pin           Pin      Pin-Providing     Pin-Settings Pin-Settings -RTC-Function---------   Analog-Function----   -IO-MUX-Function-----------------------------------------------------------------------------
+# # No.  Name          Type     Power              At-Reset    After-Reset   0          3               0         1          0         0-Type     1     1-Type     2       2-Type      3        3-Type     4      4-Type
+# '1': ['LNA_IN',     'Analog'],
+# '2': ['VDD3P3',     'Power'],
+# '3': ['VDD3P3',     'Power'],
+# '4': ['CHIP_PU',    'Analog','VDD3P3_RTC'],
+# '5': ['GPIO0',      'IO',    'VDD3P3_RTC',         'IE-WPU',  'IE-WPU','RTC_GPIO0','sar_i2c_scl_0','GPIO0',  'I/O/T',   'GPIO0',   'I/O/T'],
+# '6': ['GPIO1',      'IO',    'VDD3P3_RTC',         'IE',      'IE',    'RTC_GPIO1','sar_i2c_sda_0','TOUCH1', 'ADC1_CH0','GPIO1',   'I/O/T', 'GPIO1', 'I/O/T'],
+# '7': ['GPIO2',      'IO',    'VDD3P3_RTC',         'IE',      'IE',    'RTC_GPIO2','sar_i2c_scl_1','TOUCH2', 'ADC1_CH1','GPIO2',   'I/O/T', 'GPIO2', 'I/O/T'],
+# '8': ['GPIO3',      'IO',    'VDD3P3_RTC',         'IE',      'IE',    'RTC_GPIO3','sar_i2c_sda_1','TOUCH3', 'ADC1_CH2','GPIO3',   'I/O/T', 'GPIO3', 'I/O/T'],
+# '9': ['GPIO4',      'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO4', '',            'TOUCH4', 'ADC1_CH3','GPIO4',   'I/O/T', 'GPIO4', 'I/O/T'],
+# '10':['GPIO5',      'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO5', '',            'TOUCH5', 'ADC1_CH4','GPIO5',   'I/O/T', 'GPIO5', 'I/O/T'],
+# '11':['GPIO6',      'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO6', '',            'TOUCH6', 'ADC1_CH5','GPIO6',   'I/O/T', 'GPIO6', 'I/O/T'],
+# '12':['GPIO7',      'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO7', '',            'TOUCH7', 'ADC1_CH6','GPIO7',   'I/O/T', 'GPIO7', 'I/O/T'],
+# '13':['GPIO8',      'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO8', '',            'TOUCH8', 'ADC1_CH7','GPIO8',   'I/O/T', 'GPIO8', 'I/O/T','',        '',      'SUBSPICS1','O/T'],
+# '14':['GPIO9',      'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO9', '',            'TOUCH9', 'ADC1_CH8','GPIO9',   'I/O/T', 'GPIO9', 'I/O/T','',        '',      'SUBSPIHD', 'I1/O/T','FSPIHD', 'I1/O/T'],
+# '15':['GPIO10',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO10','',            'TOUCH10','ADC1_CH9','GPIO10',  'I/O/T', 'GPIO10','I/O/T','FSPIIO4', 'I1/O/T','SUBSPICS0','O/T',   'FSPICS0','I1/O/T'],
+# '16':['GPIO11',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO11','',            'TOUCH11','ADC2_CH0','GPIO11',  'I/O/T', 'GPIO11','I/O/T','FSPIIO5', 'I1/O/T','SUBSPID',  'I1/O/T','FSPID',  'I1/O/T'],
+# '17':['GPIO12',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO12','',            'TOUCH12','ADC2_CH1','GPIO12',  'I/O/T', 'GPIO12','I/O/T','FSPIIO6', 'I1/O/T','SUBSPICLK','O/T',   'FSPICLK','I1/O/T'],
+# '18':['GPIO13',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO13','',            'TOUCH13','ADC2_CH2','GPIO13',  'I/O/T', 'GPIO13','I/O/T','FSPIIO7', 'I1/O/T','SUBSPIQ',  'I1/O/T','FSPIQ',  'I1/O/T'],
+# '19':['GPIO14',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO14','',            'TOUCH14','ADC2_CH3','GPIO14',  'I/O/T', 'GPIO14','I/O/T','FSPIDQS', 'O/T',   'SUBSPIWP', 'I1/O/T','FSPIWP', 'I1/O/T'],
+# '20':['VDD3P3_RTC', 'Power'],
+# '21':['XTAL_32K_P', 'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO15','',         'XTAL_32K_P','ADC2_CH4','GPIO15',  'I/O/T', 'GPIO15','I/O/T','U0RTS',   'O'],
+# '22':['XTAL_32K_N', 'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO16','',         'XTAL_32K_N','ADC2_CH5','GPIO16',  'I/O/T', 'GPIO16','I/O/T','U0CTS',   'I1'],
+# '23':['GPIO17',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO17','',            '',       'ADC2_CH6','GPIO17',  'I/O/T', 'GPIO17','I/O/T','U1TXD',   'O'],
+# '24':['GPIO18',     'IO',    'VDD3P3_RTC',         '',        'IE',    'RTC_GPIO18','',            '',       'ADC2_CH7','GPIO18',  'I/O/T', 'GPIO18','I/O/T','U1RXD',   'I1',    'CLK_OUT3', 'O'],
+# '25':['GPIO19',     'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO19','',            'USB_D-', 'ADC2_CH8','GPIO19',  'I/O/T', 'GPIO19','I/O/T','U1RTS',   'O',     'CLK_OUT2', 'O'],
+# '26':['GPIO20',     'IO',    'VDD3P3_RTC',         'USB_PU',  'USB_PU','RTC_GPIO20','',            'USB_D+', 'ADC2_CH9','GPIO20',  'I/O/T', 'GPIO20','I/O/T','U1CTS',   'I1',    'CLK_OUT1', 'O'],
+# '27':['GPIO21',     'IO',    'VDD3P3_RTC',         '',        '',      'RTC_GPIO21','',            '',       '',        'GPIO21',  'I/O/T', 'GPIO21','I/O/T'],
+# '28':['SPICS1',     'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPICS1',  'O/T',   'GPIO26','I/O/T'],
+# '29':['VDD_SPI',    'Power'],
+# '30':['SPIHD',      'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPIHD',   'I1/O/T','GPIO27','I/O/T'],
+# '31':['SPIWP',      'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPIWP',   'I1/O/T','GPIO28','I/O/T'],
+# '32':['SPICS0',     'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPICS0',  'O/T',   'GPIO29','I/O/T'],
+# '33':['SPICLK',     'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPICLK',  'O/T',   'GPIO30','I/O/T'],
+# '34':['SPIQ',       'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPIQ',    'I1/O/T','GPIO31','I/O/T'],
+# '35':['SPID',       'IO',    'VDD_SPI',            'IE-WPU',  'IE-WPU','',          '',            '',       '',        'SPID',    'I1/O/T','GPIO32','I/O/T'],
+# '36':['SPICLK_N',   'IO',    'VDD_SPI/VDD3P3_CPU', 'IE',      'IE',    '',          '',            '',       '',  'SPI_CLK_N_DIFF','O/T',   'GPIO48','I/O/T','SUBSPI',  'CLK_N_DIFF','O/T'],
+# '37':['SPICLK_P',   'IO',    'VDD_SPI/VDD3P3_CPU', 'IE',      'IE',    '',          '',            '',       '',  'SPI_CLK_P_DIFF','O/T',   'GPIO47','I/O/T','SUBSPI',  'CLK_P_DIFF','O/T'],
+# '38':['GPIO33',     'IO',    'VDD_SPI/VDD3P3_CPU', '',        'IE',    '',          '',            '',       '',        'GPIO33',  'I/O/T', 'GPIO33','I/O/T','FSPIHD',  'I1/O/T',   'SUBSPIHD', 'I1/O/T','SPIIO4','I1/O/T'],
+# '39':['GPIO34',     'IO',    'VDD_SPI/VDD3P3_CPU', '',        'IE',    '',          '',            '',       '',        'GPIO34',  'I/O/T', 'GPIO34','I/O/T','FSPICS0', 'I1/O/T',   'SUBSPICS0','O/T',   'SPIIO5','I1/O/T'],
+# '40':['GPIO35',     'IO',    'VDD_SPI/VDD3P3_CPU', '',        'IE',    '',          '',            '',       '',        'GPIO35',  'I/O/T', 'GPIO35','I/O/T','FSPID',   'I1/O/T',   'SUBSPID',  'I1/O/T','SPIIO6','I1/O/T'],
+# '41':['GPIO36',     'IO',    'VDD_SPI/VDD3P3_CPU', '',        'IE',    '',          '',            '',       '',        'GPIO36',  'I/O/T', 'GPIO36','I/O/T','FSPICLK', 'I1/O/T',   'SUBSPICLK','O/T',   'SPIIO7','I1/O/T'],
+# '42':['GPIO37',     'IO',    'VDD_SPI/VDD3P3_CPU', '',        'IE',    '',          '',            '',       '',        'GPIO37',  'I/O/T', 'GPIO37','I/O/T','FSPIQ',   'I1/O/T',   'SUBSPIQ',  'I1/O/T','SPIDQS','I0/O/T'],
+# '43':['GPIO38',     'IO',    'VDD3P3_CPU',         '',        'IE',    '',          '',            '',       '',        'GPIO38',  'I/O/T', 'GPIO38','I/O/T','FSPIWP',  'I1/O/T',   'SUBSPIWP', 'I1/O/T'],
+# '44':['MTCK',       'IO',    'VDD3P3_CPU',         '',        'IE*',   '',          '',            '',       '',        'MTCK',    'I1',    'GPIO39','I/O/T','CLK_OUT3','O',        'SUBSPICS1','O/T'],
+# '45':['MTDO',       'IO',    'VDD3P3_CPU',         '',        'IE',    '',          '',            '',       '',        'MTDO',    'O/T',   'GPIO40','I/O/T','CLK_OUT2','O'],
+# '46':['VDD3P3_CPU', 'Power'],
+# '47':['MTDI',       'IO',    'VDD3P3_CPU',         '',        'IE',    '',          '',            '',       '',        'MTDI',    'I1',    'GPIO41','I/O/T','CLK_OUT1','O'],
+# '48':['MTMS',       'IO',    'VDD3P3_CPU',         '',        'IE',    '',          '',            '',       '',        'MTMS',    'I1',    'GPIO42','I/O/T'],
+# '49':['U0TXD',      'IO',    'VDD3P3_CPU',         'IE-WPU',  'IE-WPU','',          '',            '',       '',        'U0TXD',   'O',     'GPIO43','I/O/T','CLK_OUT1','O'],
+# '50':['U0RXD',      'IO',    'VDD3P3_CPU',         'IE-WPU',  'IE-WPU','',          '',            '',       '',        'U0RXD',   'I1',    'GPIO44','I/O/T','CLK_OUT2','O'],
+# '51':['GPIO45',     'IO',    'VDD3P3_CPU',         'IE-WPD',  'IE-WPD','',          '',            '',       '',        'GPIO45',  'I/O/T', 'GPIO45','I/O/T'],
+# '52':['GPIO46',     'IO',    'VDD3P3_CPU',         'IE-WPD',  'IE-WPD','',          '',            '',       '',        'GPIO46',  'I/O/T', 'GPIO46','I/O/T'],
+# '53':['XTAL_N',     'Analog'],
+# '54':['XTAL_P',     'Analog'],
+# '55':['VDDA',       'Power'],
+# '56':['VDDA',       'Power'],
+# '57':['GND',        'Power'],
+# }
+
+
+# pass in a number ranging from 0-39 and used as index here: classic_esp32_io_mux_pad_list
 def from_mux_pad_idx_to_compat_name(pidx):
     '''return the compat name for a given pad index'''
-     # we gonna scan all the sub values in esp32_virtual_ports and do a reverse look from there with two loops
-    for p in esp32_virtual_ports:
-        for pnum in esp32_virtual_ports[p]:
+     # we gonna scan all the sub values in classic_esp32_virtual_ports and do a reverse look from there with two loops
+    for p in classic_esp32_virtual_ports:
+        for pnum in classic_esp32_virtual_ports[p]:
             if pnum == pidx:
                 return p
 
 def from_mux_pad_idx_to_compat_short_idx(pidx):
     '''return the compat idx 0-7 for a given pad index 0-39'''
-     # we gonna scan all the sub values in esp32_virtual_ports and do a reverse look from there with two loops
-    for p in esp32_virtual_ports:
+     # we gonna scan all the sub values in classic_esp32_virtual_ports and do a reverse look from there with two loops
+    for p in classic_esp32_virtual_ports:
         shrtidx=0
-        for pnum in esp32_virtual_ports[p]:
+        for pnum in classic_esp32_virtual_ports[p]:
             if pnum == pidx:
                 return str(shrtidx)
             shrtidx+=1
 
-# def get_port_name(port):
-#     '''return the port name for a given port number'''
-#     for p in esp32_virtual_ports:
-#         if port in esp32_virtual_ports[p]:
-#             return p
-#     return None
-
 def get_port_pins(port):
     '''return the pins for a given port'''
-    return esp32_virtual_ports[port]
+    return classic_esp32_virtual_ports[port]
 
 # x  = PA , PB etc
 esp32_mux_pad_lookup = {}
 def port_lookup(pname) :
-    for pnum in esp32_virtual_ports[pname]:
+    for pnum in classic_esp32_virtual_ports[pname]:
          #print ("Zport_lookup:%s" % pnum)
          # compat_port_name => A0 
          compat_port_name = pname+str(pnum)
-               #for pidx,mux_pad_info in esp32_io_mux_pad_list.items():
-         mux_pad_info = esp32_io_mux_pad_list[str(pnum)] # go from classic name to esp idx and get pad_name and functions etc
+               #for pidx,mux_pad_info in classic_esp32_io_mux_pad_list.items():
+         mux_pad_info = classic_esp32_io_mux_pad_list[str(pnum)] # go from classic name to esp idx and get pad_name and functions etc
          if len(mux_pad_info) == 0:
                 continue   # skips empty entries 
          Pad_Name=mux_pad_info[0]
@@ -407,12 +499,13 @@ def port_lookup(pname) :
          Function_2=mux_pad_info[3]
          Function_3=mux_pad_info[4]
          Function_4=mux_pad_info[5]
-         Reset=mux_pad_info[6]
-         Notes=mux_pad_info[7]
+         Function_5=mux_pad_info[6]
+         Reset=mux_pad_info[7]
+         Notes=mux_pad_info[8]
          # we make all the printed values fixed-width
-         #print("compat_name:%-5s \tPad_Name:%-10s \tFunction_0:%-10s \tFunction_1:%-10s \tFunction_2:%-10s \tFunction_3:%-10s \tFunction_4:%-10s \tReset:%-10s \tNotes:%-10s" % (compat_port_name,Pad_Name,Function_0,Function_1,Function_2,Function_3, Function_4,Reset,Notes))
+         #print("compat_name:%-5s \tPad_Name:%-10s \tFunction_0:%-10s \tFunction_1:%-10s \tFunction_2:%-10s \tFunction_3:%-10s \tFunction_4:%-10s \tFunction_5:%-10s \tReset:%-10s \tNotes:%-10s" % (compat_port_name,Pad_Name,Function_0,Function_1,Function_2,Function_3, Function_4,Function_5,Reset,Notes))
          # save the data in a dictionary
-         esp32_mux_pad_lookup[compat_port_name]= [Pad_Name,Function_0,Function_1,Function_2,Function_3,Function_4,Reset,Notes]
+         esp32_mux_pad_lookup[compat_port_name]= [Pad_Name,Function_0,Function_1,Function_2,Function_3,Function_4,Function_5,Reset,Notes]
     # implicit return value is in esp32_mux_pad_lookup
 
 # ref tbl 19 is RTC_MUX not included here yet - appears to be mostly to do with ADC's, xtals ?
@@ -420,7 +513,7 @@ def port_lookup(pname) :
 esp32_alt_functions = {}
 # build a dictionary of alternate functions kinda like above but for alternate functions
 def esp32_altfunc_lookup():
-    for pidx,mux_pad_info in esp32_io_mux_pad_list.items():
+    for pidx,mux_pad_info in classic_esp32_io_mux_pad_list.items():
         if len(mux_pad_info) == 0:
             continue   # skips empty entries 
         compat_port_name =  from_mux_pad_idx_to_compat_name(int(pidx))
@@ -433,14 +526,15 @@ def esp32_altfunc_lookup():
         Function_2=mux_pad_info[3]
         Function_3=mux_pad_info[4]
         Function_4=mux_pad_info[5]
-        Reset=mux_pad_info[6]
-        Notes=mux_pad_info[7]
+        Function_5=mux_pad_info[6]
+        Reset=mux_pad_info[7]
+        Notes=mux_pad_info[8]
         # we make all the printed values fixed-width
-        #print("espidx:%-5s compat_name:P%-5s \tPad_Name:%-10s \tFunction_0:%-10s \tFunction_1:%-10s \tFunction_2:%-10s \tFunction_3:%-10s \tFunction_4:%-10s \tReset:%-10s \tNotes:%-10s" % (pidx,compat_port_name,Pad_Name,Function_0,Function_1,Function_2,Function_3, Function_4,Reset,Notes))
+        #print("espidx:%-5s compat_name:P%-5s \tPad_Name:%-10s \tFunction_0:%-10s \tFunction_1:%-10s \tFunction_2:%-10s \tFunction_3:%-10s \tFunction_4:%-10s \tFunction_5:%-10s \tReset:%-10s \tNotes:%-10s" % (pidx,compat_port_name,Pad_Name,Function_0,Function_1,Function_2,Function_3, Function_4,Function_5,Reset,Notes))
 
         #iterate over the function_0 to function_4 , not using a range, but just a list of values
         fnidx=0
-        for fname in [Function_0,Function_1,Function_2,Function_3,Function_4]:
+        for fname in [Function_0,Function_1,Function_2,Function_3,Function_4,Function_5]:
             newidx = 'F'+str(fnidx)
             esp32_alt_functions[zzidx][newidx]= fname
             #print("esp32_altfunc_lookup:%s => %s => %s" % (zzidx,newidx,fname))
@@ -448,10 +542,10 @@ def esp32_altfunc_lookup():
     # implicit return value is in esp32_mux_pad_lookup
 
 
-# esp32
+# esp32 classic
 # number of pins in each port, lets call them A and B due to no better names
-# GPIO_OUT_REG GPIO 0-31 output register 0x3FF44004 R/W
-# GPIO_OUT1_REG GPIO 32-39 output register 0x3FF44010 R/W
+# GPIO_OUT_REG GPIO 0-31 output register 0x3FF44004 R/W - classic
+# GPIO_OUT1_REG GPIO 32-39 output register 0x3FF44010 R/W - classic
 pincount = {
     'A': 8,  #0-7   of 31
     'B': 8,  #8-15  of 31
