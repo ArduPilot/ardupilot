@@ -21,9 +21,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 #include <stdio.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include <drivers/stm32/canard_stm32.h>
-#endif
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
@@ -34,14 +31,26 @@
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#include <drivers/stm32/canard_stm32.h>
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL_SITL/CANSocketIface.h>
 #include <AP_HAL_SITL/AP_HAL_SITL.h>
+
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#include <AP_HAL/CANIface.h>
 #include <AP_HAL_ESP32/CANIface.h>
+
 #endif
 
-#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES))-1U)
+// never allow zero interfaces or well get a divide-by-zero
+#if HAL_NUM_CAN_IFACES == 0
+#define HAL_NUM_CAN_IFACES_NONZERO 1
+#else
+#define HAL_NUM_CAN_IFACES_NONZERO HAL_NUM_CAN_IFACES
+#endif
+
+#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES_NONZERO))-1U)
 
 #include "i2c.h"
 #include <utility>
@@ -113,7 +122,7 @@ static struct instance_t {
     ObjectBuffer<AP_HAL::CANFrame> *mirror_queue;
     uint8_t mirror_fail_count;
 #endif // HAL_PERIPH_CAN_MIRROR
-} instances[HAL_NUM_CAN_IFACES];
+} instances[HAL_NUM_CAN_IFACES_NONZERO]; // NONZERO here, or we might get.. error: array subscript 0 is outside array bounds of 'ESP32::CANIface* [0]
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1) && (HAL_NUM_CAN_IFACES >= 2)
@@ -150,11 +159,11 @@ uint8_t user_set_node_id = HAL_CAN_DEFAULT_NODE_ID;
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-ChibiOS::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
+ChibiOS::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES_NONZERO];
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
+HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES_NONZERO];
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-ESP32::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
+ESP32::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES_NONZERO];
 #endif
 
 #if AP_CAN_SLCAN_ENABLED
@@ -502,7 +511,7 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
 #if defined(HAL_PERIPH_ENABLE_GPS) && (HAL_NUM_CAN_IFACES >= 2) && GPS_MOVING_BASELINE
         if (g.gps_mb_only_can_port) {
             // we need to assign the unallocated port to be used for Moving Baseline only
-            gps_mb_can_port = (dronecan.dna_interface+1)%HAL_NUM_CAN_IFACES;
+            gps_mb_can_port = (dronecan.dna_interface+1)%HAL_NUM_CAN_IFACES_NONZERO;
             if (canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
                 // copy node id from the primary iface
                 canardSetLocalNodeID(&dronecan.canard, msg.node_id);
@@ -1490,6 +1499,8 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
      */
     node_status_send();
 
+// cant do the (void*)0xE000ED38 on esp32 or flash_bootloader voodoo or signing.
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     if (g.flash_bootloader.get()) {
         const uint8_t flash_bl = g.flash_bootloader.get();
@@ -1530,6 +1541,7 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
         }
     }
 #endif
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (hal.run_in_maintenance_mode()) {
@@ -1559,18 +1571,18 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
 /*
   wait for dynamic allocation of node ID
  */
-bool AP_Periph_FW::no_iface_finished_dna = true;
+bool AP_Periph_FW::has_any_iface_finished_dna = true;
 
 bool AP_Periph_FW::can_do_dna()
 {
     if (canardGetLocalNodeID(&dronecan.canard) != CANARD_BROADCAST_NODE_ID) {
-        AP_Periph_FW::no_iface_finished_dna = false;
+        AP_Periph_FW::has_any_iface_finished_dna = false;
         return true;
     }
 
     const uint32_t now = AP_HAL::millis();
 
-    if (AP_Periph_FW::no_iface_finished_dna) {
+    if (AP_Periph_FW::has_any_iface_finished_dna) {
         printf("Waiting for dynamic node ID allocation %x... (pool %u)\n",  IFACE_ALL, pool_peak_percent());
     } else {
         // hack to pretend we were assigned a DNA number after 10 secs:
@@ -1591,7 +1603,9 @@ bool AP_Periph_FW::can_do_dna()
         allocation_request[0] |= 1;     // First part of unique ID
         // set interface to try
         dronecan.dna_interface++;
-        dronecan.dna_interface %= HAL_NUM_CAN_IFACES;
+        // dont divide-by-zero
+        dronecan.dna_interface %= HAL_NUM_CAN_IFACES_NONZERO;
+
     }
 
     uint8_t my_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
@@ -1634,7 +1648,7 @@ void AP_Periph_FW::can_start()
 
 #if AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz && HAL_NUM_CAN_IFACES >= 2
     bool has_uavcan_at_1MHz = false;
-    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES_NONZERO; i++) {
         if (g.can_protocol[i] == AP_CAN::Protocol::DroneCAN && g.can_baudrate[i] == 1000000) {
             has_uavcan_at_1MHz = true;
         }
@@ -1655,13 +1669,14 @@ void AP_Periph_FW::can_start()
     palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, g.can_terminate[2]);
 #endif
 
-    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+    
+    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES_NONZERO; i++) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         can_iface_periph[i] = NEW_NOTHROW ChibiOS::CANIface();
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
         can_iface_periph[i] = NEW_NOTHROW HALSITL::CANIface();
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-        can_iface_periph[i] = new ESP32::CANIface();
+        can_iface_periph[i] = new ESP32::CANIface();// this sort of thing requires can_iface_periph to be at least a length 1.
 #endif
         instances[i].iface = can_iface_periph[i];
         instances[i].index = i;
@@ -1685,7 +1700,7 @@ void AP_Periph_FW::can_start()
 
 #if AP_CAN_SLCAN_ENABLED
     const uint8_t slcan_selected_index = g.can_slcan_cport - 1;
-    if (slcan_selected_index < HAL_NUM_CAN_IFACES) {
+    if (slcan_selected_index < HAL_NUM_CAN_IFACES_NONZERO) {
         slcan_interface.set_can_iface(can_iface_periph[slcan_selected_index]);
         instances[slcan_selected_index].iface = (AP_HAL::CANIface*)&slcan_interface;
 

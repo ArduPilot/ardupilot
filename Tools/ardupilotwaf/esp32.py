@@ -110,7 +110,7 @@ def pre_build(bld):
         bld.get_board().with_can = True
 
     bld.env.ROMFS_FILES = list(set(bld.env.ROMFS_FILES)) #dedupe
-    print("esp32.py pre_build ROMFS_FILES?=",bld.env.ROMFS_FILES)
+    print("esp32.py: pre_build ROMFS_FILES?=",bld.env.ROMFS_FILES)
     if bld.env.ROMFS_FILES:
             romfs_src = [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
 
@@ -156,25 +156,30 @@ def pre_build(bld):
         bld.add_to_group(tsk)
 
 
-#makes two .a files into a single .a file....
+# this command takes the bottom THREE .a files and smashes them together into one .a file. 
+# libraries/AP_HAL_ESP32/utils/periph.mri contains:
+# create bin/AP_Periph.a
+# addlib lib/bin/libAP_Periph.a
+# addlib lib/libAP_Periph_libs.a
+# addlib Tools/AP_Periph/liblibcanard.a
+# save
+# end
 class build_esp32_image_periph(Task.Task):
-    '''build an esp32 image'''
     color='CYAN'
-    # this command takes the bottom THREE .a files and smashes them together into one .a file. 
-    # libraries/AP_HAL_ESP32/utils/periph.mri contains:
-    # create bin/AP_Periph.a
-    # addlib lib/bin/libAP_Periph.a
-    # addlib lib/libAP_Periph_libs.a
-    # addlib Tools/AP_Periph/liblibcanard.a
-    # save
-    # end
-    run_str="xtensa-esp32s3-elf-ar -M < ../../libraries/AP_HAL_ESP32/utils/periph.mri"
+    run_str="xtensa-esp32-elf-ar -M < ../../libraries/AP_HAL_ESP32/utils/periph.mri ; cp bin/AP_Periph.a lib/AP_Periph.a"
     always_run = True
     def keyword(self):
-        return "turning periph triple-libs into a single one with AR and custom target...\n"
+        return "turning classic periph triple-libs into a single one with AR and custom target...\n"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
-
+class build_esp32s3_image_periph(Task.Task):
+    color='CYAN'
+    run_str="xtensa-esp32s3-elf-ar -M < ../../libraries/AP_HAL_ESP32/utils/periph.mri ; cp bin/AP_Periph.a lib/AP_Periph.a"
+    always_run = True
+    def keyword(self):
+        return "turning s3 periph triple-libs into a single one with AR and custom target...\n"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 @feature('esp32_ap_program')
 @after_method('process_source')
@@ -195,13 +200,14 @@ def esp32_firmware(self):
     # periph:
     print("esp32_firmware:",self.link_task.outputs[0])
     if str(self.link_task.outputs[0]).endswith('libAP_Periph.a'):
-        #build final image
         src_in = [self.bld.bldnode.find_or_declare('lib/libAP_Periph_libs.a'),
                   self.bld.bldnode.find_or_declare('lib/bin/libAP_Periph.a')]
         img_out0 = self.bld.bldnode.find_or_declare('bin/AP_Periph.a')
-        # img_out1 = self.bld.bldnode.find_or_declare('bin/AP_Periph.elf')
-        # img_out2 = self.bld.bldnode.find_or_declare('bin/AP_Periph.bin')
-        self.generate_bin_task = self.create_task('build_esp32_image_periph', src=src_in, tgt=img_out0)
+        if self.bld.env.s3:
+            self.generate_bin_task = self.create_task('build_esp32s3_image_periph', src=src_in, tgt=img_out0)
+        else:
+            self.generate_bin_task = self.create_task('build_esp32_image_periph', src=src_in, tgt=img_out0)
+            
         self.generate_bin_task.set_run_after(self.link_task)
         build.cmake_build_task.set_run_after(self.generate_bin_task)
 
