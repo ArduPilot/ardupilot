@@ -242,6 +242,14 @@ public:
         float relPosD;                     ///< Reported Vertical distance in meters
         float accHeading;                  ///< Reported Heading Accuracy in degrees
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
+
+        uint8_t satellites_visible;
+        uint8_t satellites_svid[20];
+        uint8_t satellites_used[20];
+        uint8_t satellites_elevation[20];
+        uint8_t satellites_azimuth[20];
+        uint8_t satellites_snr[20];
+        uint8_t satellites_prn[20];
     };
 
     /// Startup initialisation.
@@ -501,6 +509,7 @@ public:
     void lock_port(uint8_t instance, bool locked);
 
     //MAVLink Status Sending
+    void send_mavlink_gps_status(mavlink_channel_t chan);
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 

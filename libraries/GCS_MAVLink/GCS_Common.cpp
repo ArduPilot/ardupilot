@@ -1021,6 +1021,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_RC_CHANNELS_RAW,       MSG_RC_CHANNELS_RAW},
 #endif
         { MAVLINK_MSG_ID_RAW_IMU,               MSG_RAW_IMU},
+        { MAVLINK_MSG_ID_GPS_STATUS,            MSG_GPS_STATUS},
         { MAVLINK_MSG_ID_SCALED_IMU,            MSG_SCALED_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
         { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
@@ -6337,6 +6338,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_RAW_IMU:
         CHECK_PAYLOAD_SIZE(RAW_IMU);
         send_raw_imu();
+        break;
+
+    case MSG_GPS_STATUS:
+        CHECK_PAYLOAD_SIZE(GPS_STATUS);
+        AP::gps().send_mavlink_gps_status(chan);
         break;
 
     case MSG_SCALED_IMU:

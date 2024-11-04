@@ -314,11 +314,11 @@ bool AP_GPS_NMEA::_term_complete()
                     state.satellites_visible = 20;
                 }
                 for (int y = 0; y < end; y++) {
-                    state.satellites_svid[y + (_gsv.this_page_num - 1) * 4]        = _gsv.satellites_svid[y];
-                    state.satellites_used[y + (_gsv.this_page_num - 1) * 4]        = (_gsv.satellites_snr[y] > 0);
-                    state.satellites_snr[y + (_gsv.this_page_num - 1) * 4]         = _gsv.satellites_snr[y];
-                    state.satellites_elevation[y + (_gsv.this_page_num - 1) * 4]   = _gsv.satellites_elevation[y];
-                    state.satellites_azimuth[y + (_gsv.this_page_num - 1) * 4]     = _gsv.satellites_azimuth[y];
+                    state.satellites_svid[y + (_gsv.this_page_num - 1) * 4]        = _gsv.svid[y];
+                    state.satellites_used[y + (_gsv.this_page_num - 1) * 4]        = (_gsv.snr[y] > 0);
+                    state.satellites_snr[y + (_gsv.this_page_num - 1) * 4]         = _gsv.snr[y];
+                    state.satellites_elevation[y + (_gsv.this_page_num - 1) * 4]   = _gsv.elevation[y];
+                    state.satellites_azimuth[y + (_gsv.this_page_num - 1) * 4]     = _gsv.azimuth[y];
                 }
                 break;
             }
