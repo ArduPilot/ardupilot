@@ -48,7 +48,7 @@
 
 //#include "CAN/CAN.h"
 
-#if HAL_NUM_CAN_IFACES > 0
+//#if HAL_NUM_CAN_IFACES > 0
 
 //#include "bxcan.hpp" ChibiOs uses bxcan as low-level interface, esp32 uses twai,
 // see https://github.com/espressif/esp-idf/blob/master/components/driver/include/driver/twai.h
@@ -71,7 +71,8 @@
 #define HAL_CAN_RX_QUEUE_SIZE 128
 #endif
 
-
+namespace ESP32
+{
 
 static_assert(HAL_CAN_RX_QUEUE_SIZE <= 254, "Invalid CAN Rx queue size");
 
@@ -79,7 +80,7 @@ static_assert(HAL_CAN_RX_QUEUE_SIZE <= 254, "Invalid CAN Rx queue size");
  * Single CAN iface.
  * The application shall not use this directly.
  */
-class ESP32::CANIface : public AP_HAL::CANIface
+class CANIface : public AP_HAL::CANIface
 {
     static constexpr unsigned long IDE = (0x40000000U); // Identifier Extension
     static constexpr unsigned long STID_MASK = (0x1FFC0000U); // Standard Identifier Mask
@@ -270,5 +271,6 @@ protected:
         return self_index_;
     }
 };
-#endif //HAL_NUM_CAN_IFACES
+//#endif //HAL_NUM_CAN_IFACES
 
+}

@@ -140,7 +140,7 @@ void mount_sdcard_mmc()
                                 .d7 = GPIO_NUM_NC, \
                                 .gpio_cd = GPIO_NUM_NC, \
                                 .gpio_wp = GPIO_NUM_NC,  \
-                                .width = 1, \  
+                                .width = 1, \
                                 .flags = 0\
                                 };
 

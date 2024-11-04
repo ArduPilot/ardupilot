@@ -2,7 +2,16 @@
 
 #include "AP_HAL_ESP32.h"
 
+#ifndef HAL_NUM_CAN_IFACES
+#error "HAL_NUM_CAN_IFACES must be defined for this driver, set it to 0 to not use CAN"
+#endif
+
 #if HAL_NUM_CAN_IFACES > 0
+
+#ifndef HAL_CAN_DEFAULT_NODE_ID
+#error "HAL_CAN_DEFAULT_NODE_ID must be defined for this driver, set it to 0 if not using CAN"
+#endif
+
 #include <cassert>
 #include <cstring>
 #include <AP_Math/AP_Math.h>
@@ -64,8 +73,11 @@ uint8_t CANIface::next_interface;
 
 // on -S3 devkit-M rgb LED on pin GPIO48
 // esp32:
-#define TX_GPIO_NUM           GPIO_NUM_47
-#define RX_GPIO_NUM           GPIO_NUM_38
+#define TX_GPIO_NUM         (gpio_num_t)47 
+//--  GPIO_NUM_47
+#define RX_GPIO_NUM         (gpio_num_t)38
+//--  GPIO_NUM_38
+
 //static const twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(TX_GPIO_NUM, RX_GPIO_NUM, TWAI_MODE_NORMAL);
 // A workaround is to mark the ISR with IRAM_ATTR attribute to place it into RAM - todo 
 // default LEVEL1 intr flag bug.?  https://github.com/espressif/arduino-esp32/issues/489  
