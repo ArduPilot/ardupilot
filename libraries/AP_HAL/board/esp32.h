@@ -67,10 +67,7 @@
 #endif
 
 
-// assume no-can unless added elsewhere.  eg esp32_hwdef.py currently only adds it for periph builds.
-#ifndef HAL_NUM_CAN_IFACES
-#define HAL_NUM_CAN_IFACES 0
-#endif
+
 
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
@@ -196,4 +193,102 @@
 #endif
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED 0
+#endif
+#ifndef HAL_NMEA_OUTPUT_ENABLED
+#define HAL_NMEA_OUTPUT_ENABLED 0
+#endif
+
+
+// periphs need compass and calibration and other stuff disabled - esp32_hwdef.py does this for s3 builds, but this is for classic esp32 and safer.
+// these were all worked out by repeated linker errors on classic esp32 periph builds and working out how to disable the related subsystem.
+#ifdef HAL_BUILD_AP_PERIPH
+    // assume can-enabled on periph unless added elsewhere.  eg esp32_hwdef.py currently adds it for s3 periph builds.
+    #ifndef HAL_NUM_CAN_IFACES
+    #define HAL_NUM_CAN_IFACES 1
+    #endif
+    #ifndef COMPASS_CAL_ENABLED
+    #define COMPASS_CAL_ENABLED 0
+    #endif
+    #ifndef AP_COMPASS_ENABLED
+    #define AP_COMPASS_ENABLED 0
+    #endif
+    #ifndef HAL_MISSION_ENABLED
+    #define HAL_MISSION_ENABLED 0
+    #endif
+    #ifndef AP_MISSION_ENABLED
+    #define AP_MISSION_ENABLED 0
+    #endif
+    #ifndef HAL_RALLY_ENABLED
+    #define HAL_RALLY_ENABLED 0
+    #endif
+    #ifndef AP_FETTEC_ONEWIRE_ENABLED
+    #define AP_FETTEC_ONEWIRE_ENABLED 0
+    #endif
+    #ifndef HAL_SCHEDULER_ENABLED
+    #define HAL_SCHEDULER_ENABLED 0
+    #endif
+    #ifndef HAL_LOGGING_ENABLED
+    #define HAL_LOGGING_ENABLED 0
+    #endif
+    #ifndef HAL_GCS_ENABLED
+    #define HAL_GCS_ENABLED 0
+    #endif
+    // weird link error if this is disabled, scripting enabled for now, and a bunch of other lua_generated_bindings.cpp stuff disabled.
+    #ifndef AP_SCRIPTING_ENABLED
+        #define AP_SCRIPTING_ENABLED 1
+    #endif
+    #ifndef HAL_ENABLE_DRONECAN_DRIVERS
+    #define HAL_ENABLE_DRONECAN_DRIVERS 0
+    #endif
+    #ifndef AP_NETWORKING_ENABLED
+    #define AP_NETWORKING_ENABLED 0
+    #endif
+    #ifndef HAL_VISUALODOM_ENABLED
+    #define HAL_VISUALODOM_ENABLED 0
+    #endif
+    #ifndef AP_FRSKY_SPORT_TELEM_ENABLED
+    #define AP_FRSKY_SPORT_TELEM_ENABLED 0
+    #endif
+    #ifndef AP_RCPROTOCOL_ENABLED
+    #define AP_RCPROTOCOL_ENABLED 0
+    #endif
+    #ifndef AP_RC_CHANNEL_ENABLED
+    #define AP_RC_CHANNEL_ENABLED 0
+    #endif
+    #ifndef AP_RANGEFINDER_ENABLED
+    #define AP_RANGEFINDER_ENABLED 0
+    #endif
+    #ifndef AP_AHRS_DCM_ENABLED
+    #define AP_AHRS_DCM_ENABLED 0
+    #endif
+    // turn off ekfs as well
+    #ifndef AP_AHRS_ENABLED
+    #define AP_AHRS_ENABLED 0
+    #endif
+    // esp32 doesnt use AP_FILESYSTEM_SYS_ENABLED yet, as it needs integration.
+    #ifndef AP_FILESYSTEM_SYS_ENABLED
+    #define AP_FILESYSTEM_SYS_ENABLED 0
+    #endif
+    #ifndef AP_ARMING_ENABLED
+    #define AP_ARMING_ENABLED 0
+    #endif
+    #ifndef AP_CUSTOMROTATIONS_ENABLED
+    #define AP_CUSTOMROTATIONS_ENABLED 0
+    #endif
+    #define PERIPH_FW TRUE
+
+# else 
+    // non-periph build....
+    // non-periph builds dont have CAN by default
+    #ifndef HAL_NUM_CAN_IFACES
+    #define HAL_NUM_CAN_IFACES 0
+#endif
+
+
+
+#ifndef HAL_CAN_DEFAULT_NODE_ID
+#define HAL_CAN_DEFAULT_NODE_ID 0
+#endif
+
+
 #endif
