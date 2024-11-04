@@ -1,0 +1,4 @@
+# you can turn an old-style build into a periph build by this next line, just remove the XXXs and add some periph-related defines in esp32xxxx.h
+env AP_PEXXXRIPH 1
+# this particular one is here so i can do a 'periph' build on esp32-classic 
+# dont add anything else here if you are using the esp32xxxx.h as that file takes precendence if it exists.

@@ -16,6 +16,15 @@
 
 #define HAL_ESP32_BOARD_NAME "esp32-buzz"
 
+// if u are mad enough to try a periph build on the esp32 classic you'll need these, and also need 'env AP_PERIPH 1' in esp32buzz/hwdef.dat 
+//  to enable the new periph build
+// #define AP_PERIPH 1
+// #define HAL_CAN_DEFAULT_NODE_ID 42
+// #define HAL_BUILD_AP_PERIPH 1
+
+// board ID for firmware load
+#define APJ_BOARD_ID 4242
+
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))

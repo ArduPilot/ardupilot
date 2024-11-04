@@ -156,6 +156,7 @@ the defaults for the peripheral class are used.
 PE2 SPI3_CS SPI3 MPU_CS
 SPIDEV mpu9250        SPI3 DEVID4  MPU_CS       MODE0  2*MHZ  8*MHZ
 
+# todo CAN on pins 38-Rec and 47-Data
 
 # --------------------------------
 #        #define HAL_ESP32_RCOUT { GPIO_NUM_11,GPIO_NUM_10, GPIO_NUM_9, GPIO_NUM_8, GPIO_NUM_7, GPIO_NUM_6 }
@@ -297,6 +298,14 @@ PB3 FMU_SW0 INPUT
 #PC12 SDIO_CK SDIO
 #PD2 SDIO_CMD SDIO
 
+# s3 readme says for SDCARD:
+# 2=D0
+# 14=clk
+# 15=cmd
+PA2 SDIO_D0 SDIO
+PB6 SDIO_CK SDIO
+PB7 SDIO_CMD SDIO
+
 # More CS pins for more sensors. The labels for all CS pins need to
 # match the SPI device table later in this file.
 #PC13 GYRO_EXT_CS CS
@@ -305,9 +314,10 @@ PB3 FMU_SW0 INPUT
 #PD7 BARO_CS CS
 #PE4 MPU_EXT_CS CS
 
-# the first CAN bus
-#PD0 CAN1_RX CAN1
-#PD1 CAN1_TX CAN1
+# the first CAN bus - correct pins for s3
+# 38=rx=PE6 and 47=tx=PF7 right now
+PE6 CAN1_RX CAN1
+PF7 CAN1_TX CAN1
 
 # Another USART, this one for telem1. This one has RTS and CTS lines.
 # USART2 serial2 telem1
@@ -473,17 +483,31 @@ define WIFI_PWD "ardupilot123"
 
 // 48 is actually for the neopixel
 define HAL_USE_PWM 1
-define HAL_ESP32_RCOUT { GPIO_NUM_35,GPIO_NUM_36, GPIO_NUM_37 }
+define HAL_ESP32_RCOUT { GPIO_NUM_8,GPIO_NUM_9, GPIO_NUM_10 }
+# define HAL_ESP32_RCOUT { GPIO_NUM_8,GPIO_NUM_9, GPIO_NUM_10,GPIO_NUM_16,GPIO_NUM_17, GPIO_NUM_18 }
 
-define HAL_ESP32_UART_DEVICES {.port=UART_NUM_0, .rx=GPIO_NUM_6, .tx=GPIO_NUM_7 }
+// s3
+// pins 19=tx and 20=rx are for usb-console 
+// pins 7=tx and 6=rx  are for "gps 1" aka gps
+// optional 3rd serial is 43=tx,44=rx
+define HAL_ESP32_UART_DEVICES {.port=UART_NUM_0, .rx=GPIO_NUM_20, .tx=GPIO_NUM_19 },{.port=UART_NUM_1, .rx=GPIO_NUM_6, .tx=GPIO_NUM_7 },{.port=UART_NUM_2, .rx=GPIO_NUM_44, .tx=GPIO_NUM_43 }
 
 define HAL_USE_I2C 1
-define HAL_ESP32_I2C_BUSES	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_1, .speed=400*KHZ, .internal=true}
+#define HAL_ESP32_I2C_BUSES	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_1, .speed=400*KHZ, .internal=true}
+define HAL_ESP32_I2C_BUSES	{}
+
+// buzz todo RC-in on both esp32 and esp32s3 readme says D4
 
 // buzz todo derive the HAL_USE_* in esp32_hwdefpy/write_SPI_config and friends
 define HAL_USE_SPI 1
 define HAL_ESP32_SPI_BUSES   {.host=SPI3_HOST, .dma_ch=SPI_DMA_CH_AUTO, .mosi=GPIO_NUM_11, .miso=GPIO_NUM_13, .sclk=GPIO_NUM_12}
-define HAL_ESP32_SPI_DEVICES {.name="bmp280", .bus=0, .device=0, .cs=GPIO_NUM_33,  .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_21,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+
+# commented out but this is close to the two-spi-device setup
+# define HAL_ESP32_SPI_DEVICES {.name="bmp280", .bus=0, .device=0, .cs=GPIO_NUM_33,  .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_21,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+
+# ... next line the chip-select for the spi imu on pin 33 matches the readme for esp32s3
+define HAL_ESP32_SPI_DEVICES {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_33,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+
 
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
 #--dxefine HAL_USE_ADC 1
@@ -494,7 +518,8 @@ define HAL_ESP32_SPI_DEVICES {.name="bmp280", .bus=0, .device=0, .cs=GPIO_NUM_33
 // {the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s}
 define HAL_ESP32_ADC_PINS {{ADC1_GPIO4_CHANNEL, 11, 1},{ADC1_GPIO8_CHANNEL, 11, 2},{ADC1_GPIO9_CHANNEL, 11, 3},{ADC1_GPIO10_CHANNEL, 11, 4}}
 
-define HAL_ESP32_RCIN GPIO_NUM_34
+// buzz todo RC-in on both esp32 and esp32s3 readme says D4
+define HAL_ESP32_RCIN GPIO_NUM_4
 
 define HAVE_FILESYSTEM_SUPPORT 1
 
