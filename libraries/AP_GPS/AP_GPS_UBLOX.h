@@ -28,6 +28,7 @@
 #include "GPS_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
@@ -55,6 +56,7 @@
 // a variant with 460800 baudrate
 #define UBLOX_SET_BINARY_460800 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,460800,0*11\r\n"
 
+#define UBLOX_NAV_SAT_MAX_SATELLITES 20
 #define UBLOX_RXM_RAW_LOGGING 1
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #define UBLOX_MAX_RXM_RAWX_SATS 32
@@ -421,6 +423,22 @@ private:
         int16_t magDec;
         uint16_t magAcc;
     };
+    struct PACKED ubx_nav_sat {
+        uint32_t iTOW;      /**< GPS Time of Week [ms] */
+        uint8_t version;    /**< Message version (1) */
+        uint8_t numSvs;     /**< Number of Satellites  */
+        uint16_t reserved;
+        
+        struct PACKED {
+            uint8_t gnssId;     /**< GNSS identifier */
+            uint8_t svId;       /**< Satellite ID */
+            uint8_t cno;        /**< Carrier to Noise Ratio (Signal Strength) [dbHz] */
+            int8_t elev;        /**< Elevation [deg] range: +/-90 */
+            int16_t azim;       /**< Azimuth [deg] range: 0-360 */
+            int16_t prRes;      /**< Pseudo range residual [0.1m] */
+            uint32_t flags;
+        } sat_block[UBLOX_NAV_SAT_MAX_SATELLITES];
+    };
     struct PACKED ubx_nav_relposned {
         uint8_t version;
         uint8_t reserved1;
@@ -623,6 +641,7 @@ private:
 #if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
 #endif
+        ubx_nav_sat sat;
         ubx_cfg_sbas sbas;
         ubx_cfg_valget valget;
         ubx_nav_svinfo_header svinfo_header;
@@ -668,6 +687,7 @@ private:
         MSG_SOL = 0x6,
         MSG_PVT = 0x7,
         MSG_TIMEGPS = 0x20,
+        MSG_SAT = 0x35,
         MSG_RELPOSNED = 0x3c,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,
@@ -738,6 +758,7 @@ private:
         STEP_VELNED,
         STEP_TIMEGPS,
         STEP_POLL_SVINFO, // poll svinfo
+        STEP_POLL_NAVSAT, // poll navsat
         STEP_POLL_SBAS, // poll SBAS
         STEP_POLL_NAV, // poll NAV settings
         STEP_POLL_GNSS, // poll GNSS

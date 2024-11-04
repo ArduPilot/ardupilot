@@ -315,6 +315,11 @@ AP_GPS_UBLOX::_request_next_config(void)
             }
         }
         break;
+    case STEP_POLL_NAVSAT:
+        if (!_configure_message_rate(CLASS_NAV, MSG_SAT, 10)) {
+            _next_message--;
+        }
+        break;
     case STEP_POLL_SBAS:
         if (gps._sbas_mode != AP_GPS::SBAS_Mode::DoNotChange) {
             _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
@@ -1596,6 +1601,68 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.hdop = 130;
 #endif
         break;
+
+    case MSG_SAT:
+    {
+        memset(state.satellites_svid,  0,  sizeof(state.satellites_svid));
+        memset(state.satellites_used,  0,  sizeof(state.satellites_used));
+        memset(state.satellites_snr,  0,  sizeof(state.satellites_snr));
+        memset(state.satellites_elevation,  0,  sizeof(state.satellites_elevation));
+        memset(state.satellites_azimuth,  0,  sizeof(state.satellites_azimuth));
+        state.satellites_visible = MIN(_buffer.sat.numSvs, UBLOX_NAV_SAT_MAX_SATELLITES);
+        for(int i = 0; i < state.satellites_visible; i++)
+        {
+            uint8_t ubx_sat_gnssId = _buffer.sat.sat_block[i].gnssId;
+            uint8_t ubx_sat_svId = _buffer.sat.sat_block[i].svId;
+            uint8_t svinfo_svid = 255;
+            switch (ubx_sat_gnssId) {
+            case 0:  // GPS: G1-G23 -> 1-32
+                if (ubx_sat_svId >= 1 && ubx_sat_svId <= 32) {
+                    svinfo_svid = ubx_sat_svId;
+                }
+                break;
+            case 1:  // SBAS: S120-S158 -> 120-158
+                if (ubx_sat_svId >= 120 && ubx_sat_svId <= 158) {
+                    svinfo_svid = ubx_sat_svId;
+                }
+                break;
+            case 2:  // Galileo: E1-E36 -> 211-246
+                if (ubx_sat_svId >= 1 && ubx_sat_svId <= 36) {
+                    svinfo_svid = ubx_sat_svId + 210;
+                }
+                break;
+            case 3:  // BeiDou: B1-B37 -> 159-163,33-64
+                if (ubx_sat_svId >= 1 && ubx_sat_svId <= 4) {
+                    svinfo_svid = ubx_sat_svId + 158;
+                } else if (ubx_sat_svId >= 5 && ubx_sat_svId <= 37) {
+                    svinfo_svid = ubx_sat_svId + 28;
+                }
+                break;
+            case 4:  // IMES: I1-I10 -> 173-182
+                if (ubx_sat_svId >= 1 && ubx_sat_svId <= 10) {
+                    svinfo_svid = ubx_sat_svId + 172;
+                }
+                break;
+            case 5:  // QZSS: Q1-A10 -> 193-202
+                if (ubx_sat_svId >= 1 && ubx_sat_svId <= 10) {
+                    svinfo_svid = ubx_sat_svId + 192;
+                }
+                break;
+            case 6:  // GLONASS: R1-R32 -> 65-96, R? -> 255
+                if (ubx_sat_svId >= 1 && ubx_sat_svId <= 32) {
+                    svinfo_svid = ubx_sat_svId + 64;
+                }
+                break;
+            }
+            state.satellites_svid[i]       = svinfo_svid;
+            state.satellites_used[i]       = static_cast<uint8_t>(_buffer.sat.sat_block[i].flags & 0x01);
+            state.satellites_elevation[i]  = static_cast<uint8_t>(_buffer.sat.sat_block[i].elev);
+            state.satellites_azimuth[i]    = static_cast<uint8_t>(static_cast<float>(_buffer.sat.sat_block[i].azim) * 255.0f/360.0f);
+            state.satellites_snr[i]        = static_cast<uint8_t>(_buffer.sat.sat_block[i].cno);
+            state.satellites_prn[i]        = svinfo_svid;
+        }
+    }
+    break;
 
 #if GPS_MOVING_BASELINE
     case MSG_RELPOSNED:
