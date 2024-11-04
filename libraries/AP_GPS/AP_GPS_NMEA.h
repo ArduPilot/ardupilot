@@ -89,6 +89,7 @@ private:
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
         _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
+        _GPS_SENTENCE_GSV = 320,
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -139,6 +140,8 @@ private:
 
     // parse VERSIONA field
     void parse_versiona_field(uint16_t term_number, const char *term);
+
+    void parse_gsv_field(uint16_t term_number, const char *term);
 
 #if GPS_MOVING_BASELINE
     // parse UNIHEADINGA field
@@ -221,6 +224,16 @@ private:
     struct {
         double fields[21];
     } _ksxt;
+
+    struct {
+        int all_page_num = 0;
+        int this_page_num = 0;
+        int tot_sv_visible = 0;
+        int svid[4];
+        int elevation[4];
+        int azimuth[4];
+        int snr[4];
+    } _gsv;
 
 #if AP_GPS_NMEA_UNICORE_ENABLED
     /*

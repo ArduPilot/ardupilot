@@ -300,6 +300,29 @@ bool AP_GPS_NMEA::_term_complete()
         if (crc_ok) {
             uint32_t now = AP_HAL::millis();
             switch (_sentence_type) {
+            case _GPS_SENTENCE_GSV: {
+                int end = 4;
+                if (_gsv.this_page_num == 0) {
+                    memset(state.satellites_svid,  0,  sizeof(state.satellites_svid));
+                    memset(state.satellites_used,  0,  sizeof(state.satellites_used));
+                    memset(state.satellites_snr,  0,  sizeof(state.satellites_snr));
+                    memset(state.satellites_elevation,  0,  sizeof(state.satellites_elevation));
+                    memset(state.satellites_azimuth,  0,  sizeof(state.satellites_azimuth));
+                }
+                if (_gsv.this_page_num == _gsv.all_page_num) {
+                    end = _gsv.tot_sv_visible - (_gsv.this_page_num - 1) * 4;
+                    state.satellites_visible = 20;
+                }
+                for (int y = 0; y < end; y++) {
+                    state.satellites_svid[y + (_gsv.this_page_num - 1) * 4]        = _gsv.satellites_svid[y];
+                    state.satellites_used[y + (_gsv.this_page_num - 1) * 4]        = (_gsv.satellites_snr[y] > 0);
+                    state.satellites_snr[y + (_gsv.this_page_num - 1) * 4]         = _gsv.satellites_snr[y];
+                    state.satellites_elevation[y + (_gsv.this_page_num - 1) * 4]   = _gsv.satellites_elevation[y];
+                    state.satellites_azimuth[y + (_gsv.this_page_num - 1) * 4]     = _gsv.satellites_azimuth[y];
+                }
+                break;
+            }
+
             case _GPS_SENTENCE_RMC:
                 _last_RMC_ms = now;
                 //time                        = _new_time;
@@ -564,6 +587,8 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_THS;
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
+        } else if (strcmp(term_type, "GSV") == 0) {
+            _sentence_type = _GPS_SENTENCE_GSV;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -670,6 +695,9 @@ bool AP_GPS_NMEA::_term_complete()
             break;
 #endif
 #endif
+        case _GPS_SENTENCE_GSV + 1 ... _GPS_SENTENCE_GSV + 19: 
+            parse_gsv_field(_term_number, _term);
+            break;
         }
     }
 
@@ -731,6 +759,42 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
     case 52:
         ag.undulation = atof(term);
         break;
+    }
+}
+
+void AP_GPS_NMEA::parse_gsv_field(uint16_t term_number, const char *term)
+{
+    auto &gsv = _gsv;
+    if (term_number == 1) {
+        memset(gsv.svid,  0,  sizeof(gsv.svid));
+        memset(gsv.snr,  0,  sizeof(gsv.snr));
+        memset(gsv.elevation,  0,  sizeof(gsv.elevation));
+        memset(gsv.azimuth,  0,  sizeof(gsv.azimuth));
+        gsv.all_page_num = atoi(term);
+    } else if (term_number == 2) {
+        gsv.this_page_num = atoi(term);
+    } else if (term_number == 3) {
+        gsv.tot_sv_visible = atoi(term);
+    } else {
+        // GSV 메시지에서 4번 필드부터는 위성 정보가 나옴
+        int sat_index = (term_number - 4) / 4; // 위성 인덱스 (0~3)
+        int field_index = (term_number - 4) % 4; // 필드 인덱스 (0 = SVID, 1 = Elevation, 2 = Azimuth, 3 = SNR)
+        if (sat_index < 4) { // 최대 4개의 위성 정보만 처리
+            switch (field_index) {
+                case 0:
+                    gsv.svid[sat_index] = atoi(term);
+                    break;
+                case 1:
+                    gsv.elevation[sat_index] = atoi(term);
+                    break;
+                case 2:
+                    gsv.azimuth[sat_index] = atoi(term);
+                    break;
+                case 3:
+                    gsv.snr[sat_index] = atoi(term);
+                    break;
+            }
+        }
     }
 }
 
