@@ -776,10 +776,10 @@ void AP_GPS_NMEA::parse_gsv_field(uint16_t term_number, const char *term)
     } else if (term_number == 3) {
         gsv.tot_sv_visible = atoi(term);
     } else {
-        // GSV 메시지에서 4번 필드부터는 위성 정보가 나옴
-        int sat_index = (term_number - 4) / 4; // 위성 인덱스 (0~3)
-        int field_index = (term_number - 4) % 4; // 필드 인덱스 (0 = SVID, 1 = Elevation, 2 = Azimuth, 3 = SNR)
-        if (sat_index < 4) { // 최대 4개의 위성 정보만 처리
+        
+        int sat_index = (term_number - 4) / 4;
+        int field_index = (term_number - 4) % 4;
+        if (sat_index < 4) {
             switch (field_index) {
                 case 0:
                     gsv.svid[sat_index] = atoi(term);
