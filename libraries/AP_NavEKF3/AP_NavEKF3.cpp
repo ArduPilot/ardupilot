@@ -810,8 +810,8 @@ bool NavEKF3::InitialiseFilter(void)
         }
 
         // check if there is enough memory to create the EKF cores
-        uint16_t x = AP::dal().available_memory();
-        printf("ekf3 stats: avail:%d numcores:%d sizeof:%d\n",x,num_cores,sizeof(NavEKF3_core)*num_cores + 4096);
+        uint32_t x = AP::dal().available_memory();
+        printf("ekf3 stats: avail:%lu numcores:%d sizeof:%lu\n",(unsigned long)x,num_cores,(unsigned long)(sizeof(NavEKF3_core)*num_cores + 4096));
         if (x < (sizeof(NavEKF3_core)*num_cores + 4096)) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory: %d",(unsigned int)x);
             _enable.set(0);
