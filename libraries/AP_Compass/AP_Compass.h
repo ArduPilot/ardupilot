@@ -115,7 +115,11 @@ public:
     /// @returns heading in radians
     ///
     float calculate_heading(const Matrix3f &dcm_matrix) const {
+        #if AP_COMPASS_ENABLED
         return calculate_heading(dcm_matrix, _first_usable);
+        #else
+        return 0.0f;
+        #endif
     }
     float calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const;
 
