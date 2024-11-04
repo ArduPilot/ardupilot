@@ -973,8 +973,12 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
         float new_target_heading = radians(wrap_180(packet.param2));
 
+        // Default value = no heading track
+        if ( int(packet.param1) == HEADING_TYPE_DEFAULT) {
+            plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+            return MAV_RESULT_ACCEPTED;
         // course over ground
-        if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
+        } else if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
             plane.guided_state.target_heading_type = GUIDED_HEADING_COG;
             plane.prev_WP_loc = plane.current_loc;
         // normal vehicle heading
