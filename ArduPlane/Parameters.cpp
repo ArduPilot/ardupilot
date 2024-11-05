@@ -1288,7 +1288,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_ORNT", 36, ParametersG2, rangefinder_land_orient, ROTATION_PITCH_270),
 #endif
-    
+
+    // @Param: GUIDED_UPD_LIM
+    // @DisplayName: Guided Update Limit
+    // @Description: The maximum frequency that an guided mode commands sent by external system such as lua or mavlink can update roll, pitch and throttle.
+    // @Units: ms
+    // @User: Standard
+    AP_GROUPINFO("GUIDED_UPD_LIM", 37, ParametersG2, guided_update_frequency_limit, 3000),
+
     AP_GROUPEND
 };
 
