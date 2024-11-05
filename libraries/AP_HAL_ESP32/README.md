@@ -92,6 +92,8 @@ If you want to make changes to sdkconfig (sdkconfig is in the build dir) permane
 ESPBAUD=921600 ./waf plane --upload
 ```
 
+If the port isn't autodetected, it can be manually specified, e.g. `ESPPORT=/dev/tty<port> ESPBAUD=921600 ./waf plane --upload`.
+
 6. The espressif esp-idf original project is built at `cd build/esp32{BOARD}/esp-idf_build/`.
 You can use your default build system (make or ninja) to build other esp-idf target.
 
