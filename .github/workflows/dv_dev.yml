@@ -35,9 +35,9 @@ jobs:
       matrix:
         board: [
             sitl, # For simulation
-            CubeOrangePlus-bdshot, # Legacy support
+            # CubeOrangePlus-bdshot, # Legacy support
             CubeOrangePlus-dv, # CubeOrangePlus with bdshot and ODID enabled
-            CubeOrange-dv, # For my obsolete devkit
+            # CubeOrange-dv, # For my obsolete devkit
         ]
 
     steps:
@@ -85,5 +85,6 @@ jobs:
           path: |
             build/${{ matrix.board }}/bin/arducopter
             build/${{ matrix.board }}/bin/arducopter.apj
-          retention-days: 7
+            dv/parameters/${{ matrix.board }}.param
+            retention-days: 7
           compression-level: 0

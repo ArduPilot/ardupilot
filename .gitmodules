@@ -6,7 +6,7 @@
 	url = https://github.com/google/benchmark.git
 [submodule "modules/mavlink"]
 	path = modules/mavlink
-	url = git@github.com:Drone-Volt/mavlink.git
+	url = https://github.com/Drone-Volt/mavlink.git
 [submodule "gtest"]
 	path = modules/gtest
 	url = https://github.com/ArduPilot/googletest
