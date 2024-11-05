@@ -863,6 +863,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
         plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+        plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+#endif
 
         // add home alt if needed
         if (requested_position.relative_alt) {
@@ -973,14 +976,20 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
         float new_target_heading = radians(wrap_180(packet.param2));
 
-        // course over ground
-        if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
+        switch(HEADING_TYPE(packet.param1)) {
+        case HEADING_TYPE_COURSE_OVER_GROUND:
+            // course over ground
             plane.guided_state.target_heading_type = GUIDED_HEADING_COG;
             plane.prev_WP_loc = plane.current_loc;
-        // normal vehicle heading
-        } else if (int(packet.param1) == HEADING_TYPE_HEADING) { // compare as nearest int
+            break;
+        case HEADING_TYPE_HEADING:
+            // normal vehicle heading
             plane.guided_state.target_heading_type = GUIDED_HEADING_HEADING;
-        } else {
+            break;
+        case HEADING_TYPE_DEFAULT:
+            plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+            return MAV_RESULT_ACCEPTED;
+        default:
             //  MAV_RESULT_DENIED  means Command is invalid (is supported but has invalid parameters).
             return MAV_RESULT_DENIED;
         }
