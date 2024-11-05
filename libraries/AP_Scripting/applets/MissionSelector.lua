@@ -84,4 +84,6 @@ function update()
   return update, 1000
 end
 
+gcs:send_text(5,"Loaded MissionSelector.lua")
+
 return update, 5000
