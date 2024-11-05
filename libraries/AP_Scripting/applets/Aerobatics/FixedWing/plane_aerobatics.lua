@@ -688,18 +688,18 @@ end
 --[[
    rotate a vector by a quaternion
 --]]
-local function quat_earth_to_body(quat, v)
+local function quat_rotate(quat, v)
    local v2 = v:copy()
-   quat:earth_to_body(v2)
+   quat:body_to_earth(v2)
    return v2
 end
 
 --[[
    rotate a vector by a inverse quaternion
 --]]
-local function quat_body_to_earth(quat, v)
+local function quat_inv_rotate(quat, v)
    local v2 = v:copy()
-   quat:inverse():earth_to_body(v2)
+   quat:inverse():body_to_earth(v2)
    return v2
 end
 
@@ -1062,7 +1062,7 @@ function _path_cylinder:get_pos(t)
    local v = makeVector3f(self.length*t, math.abs(self.radius)*math.sin(t2ang+math.pi), -math.abs(self.radius)*(1.0 - math.cos(t2ang)))
    local qrot = Quaternion()
    qrot:from_axis_angle(makeVector3f(0,0,1), (0.5*math.pi)-self.gamma)
-   v = quat_earth_to_body(qrot, v)
+   v = quat_rotate(qrot, v)
    if self.radius < 0 then
       -- mirror for reverse radius
       v:y(-v:y())
@@ -1194,7 +1194,7 @@ end
 function _path_composer:get_pos(t)
    local subpath_t, i = self:get_subpath_t(t)
    local sp = self:subpath(i)
-   return quat_earth_to_body(self.start_orientation[i], sp:get_pos(subpath_t)) + self.start_pos[i]
+   return quat_rotate(self.start_orientation[i], sp:get_pos(subpath_t)) + self.start_pos[i]
 end
 
 -- return angle for the composed path at time t
@@ -1372,7 +1372,7 @@ local function path_composer(name, subpaths)
 
       self.total_length = self.total_length + self.lengths[i]
 
-      local spos = quat_earth_to_body(orientation, sp:get_pos(1.0))
+      local spos = quat_rotate(orientation, sp:get_pos(1.0))
 
       pos = pos + spos
       orientation = sp:get_final_orientation() * orientation
@@ -1476,7 +1476,7 @@ end
 --]]
 function straight_align(distance, arg2, arg3, arg4, start_pos, start_orientation)
    local d2 = distance - start_pos:x()
-   local v = quat_earth_to_body(start_orientation, makeVector3f(d2, 0, 0))
+   local v = quat_rotate(start_orientation, makeVector3f(d2, 0, 0))
    local len = math.max(v:x(),0.01)
    return make_paths("straight_align", {
          { path_straight(len), roll_angle(0) },
@@ -2046,7 +2046,7 @@ function rotate_path(path_f, t0, orientation, offset)
       attrib[v] = path_f:get_attribute(t, v)
    end
    point = point + path_var.path_shift
-   point = quat_earth_to_body(orientation, point)
+   point = quat_rotate(orientation, point)
 
    local scale = AEROM_PATH_SCALE:get()
    point = point:scale(math.abs(scale))
@@ -2057,7 +2057,7 @@ function rotate_path(path_f, t0, orientation, offset)
       angle = -angle
       -- compensate path orientation for the mirroring
       local orient = orientation:inverse()
-      point = quat_body_to_earth((orient * orient), point)
+      point = quat_inv_rotate((orient * orient), point)
    end
 
    return point+offset, math.rad(angle+roll_correction), attrib
@@ -2403,7 +2403,7 @@ function do_path()
    local ahrs_velned = ahrs:get_velocity_NED()
    local ahrs_airspeed = ahrs:airspeed_estimate()
    --[[
-      ahrs_quat is the quaterion which when used with quat_earth_to_body() rotates a vector
+      ahrs_quat is the quaterion which when used with quat_rotate() rotates a vector
       from earth to body frame. It needs to be the inverse of ahrs:get_quaternion()
    --]]
    local ahrs_quat = ahrs:get_quaternion():inverse()
@@ -2520,12 +2520,12 @@ function do_path()
       --[[
          we have entered a new sub-element with a shift_xy
       --]]
-      local curpos_mf = quat_body_to_earth(path_var.initial_ori, current_measured_pos_ef)
-      local pathpos_mf = quat_body_to_earth(path_var.initial_ori, p1)
+      local curpos_mf = quat_inv_rotate(path_var.initial_ori, current_measured_pos_ef)
+      local pathpos_mf = quat_inv_rotate(path_var.initial_ori, p1)
       local shift = curpos_mf - pathpos_mf
       shift:z(0)
       path_var.path_shift = path_var.path_shift + shift
-      local shift_ef = quat_earth_to_body(path_var.initial_ori, shift)
+      local shift_ef = quat_rotate(path_var.initial_ori, shift)
       p1 = p1 + shift_ef
       p0:y(p1:y())
       p0:x(p1:x())
@@ -2643,7 +2643,7 @@ function do_path()
    -- scale by per-maneuver error correction scale factor
    acc_err_ef = acc_err_ef:scale(attrib.pos_corr or 1.0)
 
-   local acc_err_bf = quat_earth_to_body(ahrs_quat, acc_err_ef)
+   local acc_err_bf = quat_rotate(ahrs_quat, acc_err_ef)
 
    local TAS = constrain(ahrs:get_EAS2TAS()*airspeed_constrained, 3, 100)
    local corr_rate_bf_y_rads = -acc_err_bf:z()/TAS
@@ -2672,7 +2672,7 @@ function do_path()
       -- cope with small initial misalignment
       path_rate_ef_dps:z(0)
    end
-   local path_rate_bf_dps = quat_earth_to_body(ahrs_quat, path_rate_ef_dps)
+   local path_rate_bf_dps = quat_rotate(ahrs_quat, path_rate_ef_dps)
 
    -- set the path roll rate
    path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/actual_dt))
@@ -2687,7 +2687,7 @@ function do_path()
    path_var.accumulated_orientation_rel_ef = zero_roll_angle_delta*path_var.accumulated_orientation_rel_ef
    path_var.accumulated_orientation_rel_ef:normalize()
 
-   local mf_axis = quat_earth_to_body(path_var.accumulated_orientation_rel_ef, makeVector3f(1, 0, 0))
+   local mf_axis = quat_rotate(path_var.accumulated_orientation_rel_ef, makeVector3f(1, 0, 0))
 
    local orientation_rel_mf_with_roll_angle = Quaternion()
    orientation_rel_mf_with_roll_angle:from_axis_angle(mf_axis, r1)
@@ -2701,7 +2701,7 @@ function do_path()
    local err_axis_ef, err_angle_rad = to_axis_and_angle(roll_error)
    local time_const_roll = ROLL_CORR_TC:get()
    local err_angle_rate_ef_rads = err_axis_ef:scale(err_angle_rad/time_const_roll)
-   local err_angle_rate_bf_dps = quat_earth_to_body(ahrs_quat,err_angle_rate_ef_rads):scale(math.deg(1))
+   local err_angle_rate_bf_dps = quat_rotate(ahrs_quat,err_angle_rate_ef_rads):scale(math.deg(1))
    -- zero any non-roll components
    err_angle_rate_bf_dps:y(0)
    err_angle_rate_bf_dps:z(0)
@@ -2721,7 +2721,7 @@ function do_path()
       -- scale for airspeed
       lk_ef_rads = lk_ef_rads:scale(sq(vel_length/path_var.target_speed))
 
-      local lookahead_bf_rads = quat_earth_to_body(ahrs_quat, lk_ef_rads)
+      local lookahead_bf_rads = quat_rotate(ahrs_quat, lk_ef_rads)
       local lookahead_bf_dps = lookahead_bf_rads:scale(math.deg(1))
       logger.write('AELK','Py,Ly,Pz,Lz', 'ffff',
                    path_rate_bf_dps:y(),

@@ -407,9 +407,9 @@ void QuaternionT<T>::rotate(enum Rotation rotation)
     *this *= q_from_rot;
 }
 
-// convert a vector from earth to body frame
+// convert a vector from body to earth frame
 template <typename T>
-void QuaternionT<T>::earth_to_body(Vector3<T> &v) const
+void QuaternionT<T>::body_to_earth(Vector3<T> &v) const
 {
     Matrix3<T> m;
     rotation_matrix(m);
