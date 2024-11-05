@@ -1268,13 +1268,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: SID
     // @Path: systemid.cpp
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
+#endif
     
-    // @Param: GUIDED_UPD_LIM
-    // @DisplayName: Guided Update Limit
-    // @Description: The maximum frequency that an guided mode commands sent by external system such as lua or mavlink can update roll, pitch and throttle.
-    // @Units: ms
+    // @Param: GUIDED_TIMEOUT
+    // @DisplayName: Guided Timeout
+    // @Description: The maximum amount of to use the input guided mode commands sent by external system such as lua or mavlink that can update roll, pitch and throttle. If no update is received after this timeout, control reverts to standard navigation. 
+    // @Units: s
     // @User: Standard
-    AP_GROUPINFO("GUIDED_UPD_LIM", 39, ParametersG2, guided_update_frequency_limit, 3000),
+    AP_GROUPINFO("GUIDED_TIMEOUT", 39, ParametersG2, guided_timeout, 3),
 
     AP_GROUPEND
 };

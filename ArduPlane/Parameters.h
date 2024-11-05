@@ -566,6 +566,8 @@ public:
     AP_Follow follow;
 #endif
 
+    AP_Int32        guided_timeout;
+
     AP_Float        fs_ekf_thresh;
 
     // min initial climb in RTL
