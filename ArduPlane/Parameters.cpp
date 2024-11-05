@@ -1323,6 +1323,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: SID
     // @Path: systemid.cpp
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
+#endif
     
     // @Param: GUIDED_UPD_LIM
     // @DisplayName: Guided Update Limit
