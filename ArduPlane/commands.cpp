@@ -87,6 +87,7 @@ void Plane::set_guided_WP(const Location &loc)
     fix_terrain_WP(next_WP_loc, __LINE__);
 
     // used to control FBW and limit the rate of climb
+    // cannot be applied in Guided as this prevents the guided set altitude from working correctly
     // -----------------------------------------------
     set_target_altitude_current();
 
