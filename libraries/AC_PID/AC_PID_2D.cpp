@@ -4,7 +4,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AC_PID_2D.h"
 
-#define AC_PID_2D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency
+#define AC_PID_2D_FILT_D_HZ_MIN      0.005f   // minimum input filter frequency 作为提醒定义的宏，在别处好像没有被调用
 
 const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     // @Param: P
@@ -47,7 +47,7 @@ const AP_Param::GroupInfo AC_PID_2D::var_info[] = {
     AP_GROUPEND
 };
 
-// Constructor
+// Constructor 构造函数
 AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_E_hz, float initial_filt_D_hz) :
     default_kp(initial_kP),
     default_ki(initial_kI),
@@ -58,9 +58,9 @@ AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float
     default_filt_D_hz(initial_filt_D_hz)
 {
     // load parameter values from eeprom
-    AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info); //读取eeprom存储参数值，也可以不用eeprom，选择在代码中直接定义硬编码参数值，坏处是调试后每次都会重置，不会保存。
 
-    // reset input filter to first value received
+    // reset input filter to first value received 重置滤波器
     _reset_filter = true;
 }
 
@@ -70,13 +70,13 @@ AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float
 //  the integral is then updated if it does not increase in the direction of the limit vector
 Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measurement, float dt, const Vector2f &limit)
 {
-    // don't process inf or NaN
+    // don't process inf or NaN //检查输入的有效性，避免处理空值NaN与无穷大inf的值
     if (target.is_nan() || target.is_inf() ||
         measurement.is_nan() || measurement.is_inf()) {
         return Vector2f{};
     }
 
-    _target = target;
+    _target = target; //_target 是一个私有成员变量，作为内部使用的值
 
     // reset input filter to value received
     if (_reset_filter) {
@@ -84,17 +84,17 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
         _error = _target - measurement;
         _derivative.zero();
     } else {
-        Vector2f error_last{_error};
-        _error += ((_target - measurement) - _error) * get_filt_E_alpha(dt);
+        Vector2f error_last{_error}; //将当前的误差 _error 存储到一个临时变量 error_last 中，用于后续的微分项计算。
+        _error += ((_target - measurement) - _error) * get_filt_E_alpha(dt); //低通滤波：误差变化量*滤波系数
 
         // calculate and filter derivative
-        if (is_positive(dt)) {
-            const Vector2f derivative{(_error - error_last) / dt};
-            _derivative += (derivative - _derivative) * get_filt_D_alpha(dt);
+        if (is_positive(dt)) { //检查时间步长是否有效
+            const Vector2f derivative{(_error - error_last) / dt}; //_error - error_last：计算当前误差与上一时刻误差之间的差，表示误差的变化量。计算误差变化量除以时间步长 dt，得到误差变化的速率，即微分项。
+            _derivative += (derivative - _derivative) * get_filt_D_alpha(dt); //低通滤波：微分项变化量*滤波系数。使用低通滤波来对微分项进行平滑处理
         }
     }
 
-    // update I term
+    // update I term 更新积分项
     update_i(dt, limit);
 
     // calculate slew limit

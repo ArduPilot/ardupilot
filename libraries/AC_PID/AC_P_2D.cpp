@@ -20,14 +20,19 @@ AC_P_2D::AC_P_2D(float initial_p) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// update_all - set target and measured inputs to P controller and calculate outputs
+// update_all - set target and measured inputs to P controller and calculate outputs //二维位置控制器的更新函数
 Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement)
 {
     // calculate distance _error
+    // 计算当前目标位置与测量位置之间的误差
+    // 使用Vector2p类型构造目标位置，并将测量值转换为相同类型后计算差值
+    // 将误差转换为浮点数格式并赋值给成员变量 _error
     _error = (Vector2p{target_x, target_y} - measurement.topostype()).tofloat();
 
     // Constrain _error and target position
     // Constrain the maximum length of _vel_target to the maximum position correction velocity
+    // 限制误差的大小和目标位置
+    // 如果 _error_max 大于 0 并且 _error 的长度超过了 _error_max，限制误差的长度
     if (is_positive(_error_max) && _error.limit_length(_error_max)) {
         target_x = measurement.x + _error.x;
         target_y = measurement.y + _error.y;
@@ -39,6 +44,7 @@ Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vec
 
 // set_limits - sets the maximum error to limit output and first and second derivative of output
 // when using for a position controller, lim_err will be position error, lim_out will be correction velocity, lim_D will be acceleration, lim_D2 will be jerk
+//平方根约束
 void AC_P_2D::set_limits(float output_max, float D_Out_max, float D2_Out_max)
 {
     _D1_max = 0.0f;
@@ -60,6 +66,7 @@ void AC_P_2D::set_limits(float output_max, float D_Out_max, float D2_Out_max)
 
 // set_error_max - reduce maximum position error to error_max
 // to be called after setting limits
+//误差最大值约束
 void AC_P_2D::set_error_max(float error_max)
 {
     if (is_positive(error_max)) {
