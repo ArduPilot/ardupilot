@@ -22,7 +22,7 @@ STM32_ST_USE_TIMER 5
 # enable watchdog
 
 # crystal frequency
-OSCILLATOR_HZ 16000000
+OSCILLATOR_HZ 8000000
 
 define CH_CFG_ST_FREQUENCY 1000000
 
