@@ -58,7 +58,7 @@ def get_tcp_master(connection='tcp:127.0.0.1:5760'):
 
 
 def get_serial_master(lport):
-    for baud_flightstack in [921600, 500000, 115200, 57600]:
+    for baud_flightstack in [921600, 115200, 57600]:
         logger.info(f"Probing autopilot at {lport}:{baud_flightstack}")
         some_master = mavutil.mavlink_connection(lport, baud=baud_flightstack)
 

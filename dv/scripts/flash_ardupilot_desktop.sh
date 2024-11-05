@@ -2,21 +2,14 @@
 
 set -ex
 
-if [ -z "$1" ]
-  then
-    PORT=/dev/ttyACM0
-    echo "No argument supplied, using default port: ${PORT}"
-  else
-    PORT="$1"
-    echo "Flashing cube at: ${PORT}"
-fi
+python3 ./Tools/scripts/uploader.py --baud-flightstack 921600,115200,57600  --baud-bootloader 115200 --identify
+python3 ./Tools/scripts/uploader.py --baud-flightstack 921600,115200,57600  --baud-bootloader 115200 ./build/CubeOrangePlus-dv/bin/arducopter.apj
 
-python3 ./Tools/scripts/uploader.py --port "${PORT}" --baud-flightstack 921600,115200,57600  --baud-bootloader 115200 --identify
-python3 ./Tools/scripts/uploader.py --port "${PORT}" --baud-flightstack 921600,115200,57600  --baud-bootloader 115200 ./build/CubeOrangePlus-dv/bin/arducopter.apj
+sleep 5
+
+PORT="/dev/serial/by-id/$(ls /dev/serial/by-id | grep Cube | grep if00)"
 
 ./dv/scripts/wait_online.py "${PORT}"
 ./dv/scripts/request_default_params.py "${PORT}"
-
-sleep 5 # This prevents renaming of the port from ttyACM0 to ttyACM1 for example.
-
+sleep 2
 ./dv/scripts/wait_online.py "${PORT}"
