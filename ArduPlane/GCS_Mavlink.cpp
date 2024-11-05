@@ -1004,6 +1004,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         plane.g2.guidedHeading.reset_I();
 
         plane.guided_state.target_heading = new_target_heading;
+        //plane.guided_state.target_heading_accel_limit = MAX(is_zero(packet.param3)? 10.0f : packet.param3 , 10.0f); // the, previous limit of 0.05 was 0.29 degrees, not very useful
         plane.guided_state.target_heading_accel_limit = MAX(packet.param3, 0.05f);
         plane.guided_state.target_heading_time_ms = AP_HAL::millis();
         return MAV_RESULT_ACCEPTED;
