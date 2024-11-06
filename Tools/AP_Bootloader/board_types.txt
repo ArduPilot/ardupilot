@@ -401,7 +401,7 @@ AP_HW_DroneBuild_G2                  5701
 # IDs 7000-7099 reserved for CUAV
 AP_HW_CUAV-7-NANO                    7000
 
-# IDs 7100-7109 reserved for VIEWPRO
+# IDs 7100-7109 reserved for V-UAV
 AP_HW_VUAV-V7pro                     7100
 
 # please fill gaps in the above ranges rather than adding past ID #7109
