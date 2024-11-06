@@ -226,6 +226,13 @@ private:
     } _ksxt;
 
     struct {
+        int satellite_system;
+        int num_gps;
+        int num_glonass;
+        int num_galileo;
+        int num_baidou;
+        int num_others;
+
         int all_page_num = 0;
         int this_page_num = 0;
         int tot_sv_visible = 0;

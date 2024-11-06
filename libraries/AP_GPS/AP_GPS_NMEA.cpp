@@ -312,7 +312,7 @@ bool AP_GPS_NMEA::_term_complete()
                 }
                 if (_gsv.this_page_num == _gsv.all_page_num) {
                     end = _gsv.tot_sv_visible - (_gsv.this_page_num - 1) * 4;
-                    state.satellites_visible = 20;
+                    state.satellites_visible = _gsv.num_gps + _gsv.num_glonass + _gsv.num_galileo + _gsv.num_baidou + _gsv.num_others;    
                 }
                 for (int y = 0; y < end; y++) {
                     state.satellites_prn[y + (_gsv.this_page_num - 1) * 4]        = _gsv.svid[y];
@@ -589,6 +589,11 @@ bool AP_GPS_NMEA::_term_complete()
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
         } else if (strcmp(term_type, "GSV") == 0) {
+            if(strncmp(_term, "GP",2) == 0) _gsv.satellite_system = 1;
+            else if(strncmp(_term, "GL",2) == 0) _gsv.satellite_system = 2;
+            else if(strncmp(_term, "GA",2) == 0) _gsv.satellite_system = 3;
+            else if(strncmp(_term, "GB",2) == 0 || strncmp(_term, "BD",2) == 0) _gsv.satellite_system = 4;
+            else _gsv.satellite_system = 0;
             _sentence_type = _GPS_SENTENCE_GSV;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
@@ -776,6 +781,11 @@ void AP_GPS_NMEA::parse_gsv_field(uint16_t term_number, const char *term)
         gsv.this_page_num = atoi(term);
     } else if (term_number == 3) {
         gsv.tot_sv_visible = atoi(term);
+        if(gsv.satellite_system == 1) gsv.num_gps = gsv.tot_sv_visible;
+        else if(gsv.satellite_system == 2) gsv.num_glonass = gsv.tot_sv_visible;
+        else if(gsv.satellite_system == 3) gsv.num_galileo = gsv.tot_sv_visible;
+        else if(gsv.satellite_system == 4) gsv.num_baidou = gsv.tot_sv_visible;
+        else gsv.num_others = gsv.tot_sv_visible;
     } else {
         
         int sat_index = (term_number - 4) / 4;
