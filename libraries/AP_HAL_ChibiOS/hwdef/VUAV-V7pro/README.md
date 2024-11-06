@@ -1,6 +1,6 @@
 # VUAV-V7pro Flight Controller
 
-The VUAV-V7pro  flight controller is manufactured and sold by [VIEWPRO](http://www.viewprotech.com/).
+The VUAV-V7pro  flight controller is manufactured and sold by [V-UAV](http://www.v-uav.com/).
 
 ## Features
 
