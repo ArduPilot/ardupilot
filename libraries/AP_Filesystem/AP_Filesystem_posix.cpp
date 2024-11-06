@@ -24,7 +24,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__OpenBSD__)
 #include <sys/mount.h>
 #elif CONFIG_HAL_BOARD != HAL_BOARD_QURT
 #include <sys/vfs.h>
