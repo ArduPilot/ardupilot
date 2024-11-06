@@ -110,7 +110,7 @@ void ModeRTL::run(bool disarm_on_land)
     switch (_state) {
 
     case SubMode::BUILD_PATH:
-        build_path();
+        build_path_run();
         break;
 
     case SubMode::INITIAL_CLIMB:
@@ -385,8 +385,21 @@ void ModeRTL::land_run(bool disarm_on_land)
 
 // build RTL return path
 // _state_complete set to true on success
-void ModeRTL::build_path()
+void ModeRTL::build_path_run()
 {
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // run waypoint controller
+    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
+    pos_control->update_z_controller();
+
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+
     // compute return target
     if (!compute_return_target()) {
         return;
