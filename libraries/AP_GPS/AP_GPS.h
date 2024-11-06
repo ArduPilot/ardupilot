@@ -244,7 +244,6 @@ public:
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
 
         uint8_t satellites_visible;
-        uint8_t satellites_svid[20];
         uint8_t satellites_used[20];
         uint8_t satellites_elevation[20];
         uint8_t satellites_azimuth[20];

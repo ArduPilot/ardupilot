@@ -299,11 +299,12 @@ bool AP_GPS_NMEA::_term_complete()
         const bool crc_ok = _is_unicore? (_crc32 == crc) : (_parity == crc);
         if (crc_ok) {
             uint32_t now = AP_HAL::millis();
+            int end;
             switch (_sentence_type) {
             case _GPS_SENTENCE_GSV: {
-                int end = 4;
+                end = 4;
                 if (_gsv.this_page_num == 0) {
-                    memset(state.satellites_svid,  0,  sizeof(state.satellites_svid));
+                    memset(state.satellites_prn,  0,  sizeof(state.satellites_prn));
                     memset(state.satellites_used,  0,  sizeof(state.satellites_used));
                     memset(state.satellites_snr,  0,  sizeof(state.satellites_snr));
                     memset(state.satellites_elevation,  0,  sizeof(state.satellites_elevation));
@@ -314,7 +315,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.satellites_visible = 20;
                 }
                 for (int y = 0; y < end; y++) {
-                    state.satellites_svid[y + (_gsv.this_page_num - 1) * 4]        = _gsv.svid[y];
+                    state.satellites_prn[y + (_gsv.this_page_num - 1) * 4]        = _gsv.svid[y];
                     state.satellites_used[y + (_gsv.this_page_num - 1) * 4]        = (_gsv.snr[y] > 0);
                     state.satellites_snr[y + (_gsv.this_page_num - 1) * 4]         = _gsv.snr[y];
                     state.satellites_elevation[y + (_gsv.this_page_num - 1) * 4]   = _gsv.elevation[y];

@@ -1604,7 +1604,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 
     case MSG_SAT:
     {
-        memset(state.satellites_svid,  0,  sizeof(state.satellites_svid));
+        memset(state.satellites_prn,  0,  sizeof(state.satellites_prn));
         memset(state.satellites_used,  0,  sizeof(state.satellites_used));
         memset(state.satellites_snr,  0,  sizeof(state.satellites_snr));
         memset(state.satellites_elevation,  0,  sizeof(state.satellites_elevation));
@@ -1654,7 +1654,6 @@ AP_GPS_UBLOX::_parse_gps(void)
                 }
                 break;
             }
-            state.satellites_svid[i]       = svinfo_svid;
             state.satellites_used[i]       = static_cast<uint8_t>(_buffer.sat.sat_block[i].flags & 0x01);
             state.satellites_elevation[i]  = static_cast<uint8_t>(_buffer.sat.sat_block[i].elev);
             state.satellites_azimuth[i]    = static_cast<uint8_t>(static_cast<float>(_buffer.sat.sat_block[i].azim) * 255.0f/360.0f);
