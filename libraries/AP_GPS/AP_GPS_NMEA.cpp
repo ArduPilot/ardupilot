@@ -299,8 +299,14 @@ bool AP_GPS_NMEA::_term_complete()
         const bool crc_ok = _is_unicore? (_crc32 == crc) : (_parity == crc);
         if (crc_ok) {
             uint32_t now = AP_HAL::millis();
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
             int end;
+#endif
+
             switch (_sentence_type) {
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
             case _GPS_SENTENCE_GSV: {
                 end = 4;
                 if (_gsv.this_page_num == 0) {
@@ -323,6 +329,7 @@ bool AP_GPS_NMEA::_term_complete()
                 }
                 break;
             }
+#endif
 
             case _GPS_SENTENCE_RMC:
                 _last_RMC_ms = now;
@@ -588,6 +595,7 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_THS;
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
         } else if (strcmp(term_type, "GSV") == 0) {
             if(strncmp(_term, "GP",2) == 0) _gsv.satellite_system = 1;
             else if(strncmp(_term, "GL",2) == 0) _gsv.satellite_system = 2;
@@ -595,6 +603,7 @@ bool AP_GPS_NMEA::_term_complete()
             else if(strncmp(_term, "GB",2) == 0 || strncmp(_term, "BD",2) == 0) _gsv.satellite_system = 4;
             else _gsv.satellite_system = 0;
             _sentence_type = _GPS_SENTENCE_GSV;
+#endif
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -701,9 +710,11 @@ bool AP_GPS_NMEA::_term_complete()
             break;
 #endif
 #endif
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
         case _GPS_SENTENCE_GSV + 1 ... _GPS_SENTENCE_GSV + 19: 
             parse_gsv_field(_term_number, _term);
             break;
+#endif
         }
     }
 
@@ -768,6 +779,7 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
     }
 }
 
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
 void AP_GPS_NMEA::parse_gsv_field(uint16_t term_number, const char *term)
 {
     auto &gsv = _gsv;
@@ -808,6 +820,7 @@ void AP_GPS_NMEA::parse_gsv_field(uint16_t term_number, const char *term)
         }
     }
 }
+#endif
 
 #if GPS_MOVING_BASELINE
 /*

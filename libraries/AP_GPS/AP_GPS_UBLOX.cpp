@@ -315,11 +315,13 @@ AP_GPS_UBLOX::_request_next_config(void)
             }
         }
         break;
+#if AP_GPS_UBLOX_SATELITES_INFO_ENABLED
     case STEP_POLL_NAVSAT:
         if (!_configure_message_rate(CLASS_NAV, MSG_SAT, 10)) {
             _next_message--;
         }
         break;
+#endif
     case STEP_POLL_SBAS:
         if (gps._sbas_mode != AP_GPS::SBAS_Mode::DoNotChange) {
             _send_message(CLASS_CFG, MSG_CFG_SBAS, nullptr, 0);
@@ -1602,6 +1604,7 @@ AP_GPS_UBLOX::_parse_gps(void)
 #endif
         break;
 
+#if AP_GPS_UBLOX_SATELITES_INFO_ENABLED
     case MSG_SAT:
     {
         memset(state.satellites_prn,  0,  sizeof(state.satellites_prn));
@@ -1662,6 +1665,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
     }
     break;
+#endif
 
 #if GPS_MOVING_BASELINE
     case MSG_RELPOSNED:

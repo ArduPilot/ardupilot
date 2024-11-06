@@ -24,12 +24,17 @@
 
 #if AP_GPS_UBLOX_ENABLED
 
+#ifndef AP_GPS_UBLOX_SATELITES_INFO_ENABLED
+#define AP_GPS_UBLOX_SATELITES_INFO_ENABLED (BOARD_FLASH_SIZE > 2048)
+#endif
+
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
+#if AP_GPS_UBLOX_SATELITES_INFO_ENABLED
 #include <AP_Math/AP_Math.h>
-
+#endif
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
  *
@@ -423,6 +428,7 @@ private:
         int16_t magDec;
         uint16_t magAcc;
     };
+#if AP_GPS_UBLOX_SATELITES_INFO_ENABLED
     struct PACKED ubx_nav_sat {
         uint32_t iTOW;      /**< GPS Time of Week [ms] */
         uint8_t version;    /**< Message version (1) */
@@ -439,6 +445,7 @@ private:
             uint32_t flags;
         } sat_block[UBLOX_NAV_SAT_MAX_SATELLITES];
     };
+#endif
     struct PACKED ubx_nav_relposned {
         uint8_t version;
         uint8_t reserved1;
@@ -641,7 +648,9 @@ private:
 #if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
 #endif
+#if AP_GPS_UBLOX_SATELITES_INFO_ENABLED
         ubx_nav_sat sat;
+#endif
         ubx_cfg_sbas sbas;
         ubx_cfg_valget valget;
         ubx_nav_svinfo_header svinfo_header;
@@ -687,7 +696,9 @@ private:
         MSG_SOL = 0x6,
         MSG_PVT = 0x7,
         MSG_TIMEGPS = 0x20,
+#if AP_GPS_UBLOX_SATELITES_INFO_ENABLED
         MSG_SAT = 0x35,
+#endif
         MSG_RELPOSNED = 0x3c,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,

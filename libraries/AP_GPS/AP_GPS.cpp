@@ -1369,6 +1369,7 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
 
 void AP_GPS::send_mavlink_gps_status(mavlink_channel_t chan)
 {
+#if GPS_SATELITES_INFO_ENABLED
     mavlink_gps_status_t msg{};
     
     msg.satellites_visible = state[0].satellites_visible;
@@ -1382,6 +1383,7 @@ void AP_GPS::send_mavlink_gps_status(mavlink_channel_t chan)
     }
         
    mavlink_msg_gps_status_send_struct(chan, &msg);
+#endif
 }
 
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
