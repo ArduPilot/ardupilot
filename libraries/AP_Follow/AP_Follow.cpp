@@ -389,7 +389,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
         Location new_loc = _target_location;
         new_loc.lat = packet.lat;
         new_loc.lng = packet.lon;
-        new_loc.set_alt_cm(packet.alt*100, Location::AltFrame::ABSOLUTE);
+        new_loc.set_alt_m(packet.alt, Location::AltFrame::ABSOLUTE);
 
         // FOLLOW_TARGET is always AMSL, change the provided alt to
         // above home if we are configured for relative alt
