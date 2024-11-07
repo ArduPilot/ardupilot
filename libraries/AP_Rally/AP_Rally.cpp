@@ -10,6 +10,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
