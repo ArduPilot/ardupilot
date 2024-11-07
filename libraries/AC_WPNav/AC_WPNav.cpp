@@ -613,7 +613,10 @@ bool AC_WPNav::update_wpnav()
         ret = false;
     }
 
-    _pos_control.update_xy_controller();
+    _pos_control.update_xy_controller(); //调用水平位置控制循环
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rd期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`~~~~~~~~~~~~~
 
     _wp_last_update = AP_HAL::millis();
 

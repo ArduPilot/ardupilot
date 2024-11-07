@@ -322,6 +322,9 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn 参数表~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    AP_SUBGROUPINFO(_pdnn_pos, "_PDNN_", 11, AC_PosControl, AC_PDNN_3D),
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     AP_GROUPEND
 };
@@ -344,10 +347,13 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _vel_max_xy_cms(POSCONTROL_SPEED),
     _vel_max_up_cms(POSCONTROL_SPEED_UP),
     _vel_max_down_cms(POSCONTROL_SPEED_DOWN),
-    _accel_max_xy_cmss(POSCONTROL_ACCEL_XY),
+    _accel_max_xy_cmss(POSCONTROL_ACCEL_XY), 
     _accel_max_z_cmss(POSCONTROL_ACCEL_Z),
     _jerk_max_xy_cmsss(POSCONTROL_JERK_XY * 100.0),
-    _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0)
+    _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0),
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn初始化~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    _pdnn_pos(POSCONTROL_PDNN_XY_P, POSCONTROL_PDNN_XY_D, 0.0f, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 {
     AP_Param::setup_object_defaults(this, var_info);
 

@@ -84,7 +84,7 @@ Vector2f AC_PID_2D::update_all(const Vector2f &target, const Vector2f &measureme
         _error = _target - measurement;
         _derivative.zero();
     } else {
-        Vector2f error_last{_error}; //将当前的误差 _error 存储到一个临时变量 error_last 中，用于后续的微分项计算。
+        Vector2f error_last{_error}; //将上一个循环计算出的误差 _error 存储到一个临时变量 error_last 中，用于后续的微分项计算。
         _error += ((_target - measurement) - _error) * get_filt_E_alpha(dt); //低通滤波：误差变化量*滤波系数
 
         // calculate and filter derivative

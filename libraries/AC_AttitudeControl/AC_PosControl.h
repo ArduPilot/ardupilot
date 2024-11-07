@@ -10,6 +10,9 @@
 #include <AC_PID/AC_PI_2D.h>        // PI library (2-axis)
 #include <AC_PID/AC_PID_Basic.h>    // PID library (1-axis)
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PDNN Controller~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#include <AC_PID/AC_PDNN_3D.h>  
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include <AP_Scripting/AP_Scripting_config.h>
 #include "AC_AttitudeControl.h"     // Attitude control library
@@ -35,6 +38,12 @@
 #define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
 
 #define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second.
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define POSCONTROL_PDNN_XY_P                  1.0f    // horizontal pdnn controller P gain default
+#define POSCONTROL_PDNN_XY_D                  1.0f    // horizontal pdnn controller D gain default
+//在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 class AC_PosControl
 {
@@ -393,12 +402,15 @@ public:
 
     /// Other
 
-    /// get pid controllers
+    /// get pid controllers 为封装外部提供访问位置控制中pid控制器的事实数据
     AC_P_2D& get_pos_xy_p() { return _p_pos_xy; }
     AC_P_1D& get_pos_z_p() { return _p_pos_z; }
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
     AC_PID_Basic& get_vel_z_pid() { return _pid_vel_z; }
     AC_PID& get_accel_z_pid() { return _pid_accel_z; }
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn的getter~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    AC_PDNN_3D& get_pos_pdnn() { return _pdnn_pos; }
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
@@ -510,7 +522,7 @@ protected:
     const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
 
-    // parameters
+    // parameters  //用各种PID类创建位置控制pid对象
     AP_Float        _lean_angle_max;    // Maximum autopilot commanded angle (in degrees). Set to zero for Angle Max
     AP_Float        _shaping_jerk_xy;   // Jerk limit of the xy kinematic path generation in m/s^3 used to determine how quickly the aircraft varies the acceleration target
     AP_Float        _shaping_jerk_z;    // Jerk limit of the z kinematic path generation in m/s^3 used to determine how quickly the aircraft varies the acceleration target
@@ -519,6 +531,10 @@ protected:
     AC_PID_2D       _pid_vel_xy;        // XY axis velocity controller to convert velocity error to desired acceleration
     AC_PID_Basic    _pid_vel_z;         // Z axis velocity controller to convert climb rate error to desired acceleration
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~创建PDNN控制器对象~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    AC_PDNN_3D      _pdnn_pos;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
