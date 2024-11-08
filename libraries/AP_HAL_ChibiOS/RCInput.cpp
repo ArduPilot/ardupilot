@@ -152,7 +152,6 @@ void RCInput::_timer_tick(void)
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
         _rx_link_quality = rcprot.get_rx_link_quality();
-        last_protocol = rcprot.protocol_name();
     }
 
 #endif  // AP_RCPROTOCOL_ENABLED
@@ -161,16 +160,4 @@ void RCInput::_timer_tick(void)
     // and a timeout for the last valid input to handle failsafe
 }
 
-/*
-  start a bind operation, if supported
- */
-bool RCInput::rc_bind(int dsmMode)
-{
-#if AP_RCPROTOCOL_ENABLED
-    // ask AP_RCProtocol to start a bind; only the IOMCU backend cares about dsmMode
-    AP::RC().start_bind(dsmMode);
-#endif
-
-    return true;
-}
 #endif //#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
