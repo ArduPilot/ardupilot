@@ -45,7 +45,7 @@ list some basic and more used commands as example.
 
     ```sh
     ./waf configure --board bebop --static
-    ./waf copter
+    ./waf copter 
     ```    
 
     The "arducopter" binary should appear in the `build/<board-name>/bin` directory.
