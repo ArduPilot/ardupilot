@@ -20,7 +20,6 @@
 #include "AP_PitchController.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
-#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -174,7 +173,8 @@ AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
         .filt_D_hz = 12.0,
         .srmax     = 150.0,
         .srtau     = 1.0
-    })
+    },
+    AP_AutoTune::ATType::AUTOTUNE_PITCH)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -332,23 +332,4 @@ void AP_PitchController::convert_pid()
     rate_pid.kP().set_and_save_ifchanged(old_d);
     rate_pid.kD().set_and_save_ifchanged(0);
     rate_pid.kIMAX().set_and_save_ifchanged(old_imax/4500.0);
-}
-
-/*
-  start an autotune
- */
-void AP_PitchController::autotune_start(void)
-{
-    if (autotune == nullptr) {
-        autotune = NEW_NOTHROW AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_PITCH, aparm, rate_pid);
-        if (autotune == nullptr) {
-            if (!failed_autotune_alloc) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed pitch allocation");
-            }
-            failed_autotune_alloc = true;
-        }
-    }
-    if (autotune != nullptr) {
-        autotune->start();
-    }
 }
