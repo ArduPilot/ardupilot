@@ -20,10 +20,12 @@
 #include "AP_FW_Controller.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
-AP_FW_Controller::AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defaults &defaults)
+AP_FW_Controller::AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defaults &defaults, AP_AutoTune::ATType _autotune_type)
     : aparm(parms),
-      rate_pid(defaults)
+      rate_pid(defaults),
+      autotune_type(_autotune_type)
 {
     rate_pid.set_slew_limit_scale(45);
 }
@@ -133,3 +135,23 @@ void AP_FW_Controller::autotune_restore(void)
         autotune->stop();
     }
 }
+
+/*
+  start an autotune
+ */
+void AP_FW_Controller::autotune_start(void)
+{
+    if (autotune == nullptr) {
+        autotune = NEW_NOTHROW AP_AutoTune(gains, autotune_type, aparm, rate_pid);
+        if (autotune == nullptr) {
+            if (!failed_autotune_alloc) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed %s allocation", AP_AutoTune::axis_string(autotune_type));
+            }
+            failed_autotune_alloc = true;
+        }
+    }
+    if (autotune != nullptr) {
+        autotune->start();
+    }
+}
+

@@ -12,8 +12,6 @@ public:
 
     float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode) override;
 
-    void autotune_start(void) override;
-
     static const struct AP_Param::GroupInfo var_info[];
 
     void convert_pid();

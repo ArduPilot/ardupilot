@@ -7,7 +7,7 @@
 class AP_FW_Controller
 {
 public:
-    AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defaults &defaults);
+    AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defaults &defaults, AP_AutoTune::ATType _autotune_type);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_FW_Controller);
@@ -26,7 +26,7 @@ public:
     */
     void decay_I();
 
-    virtual void autotune_start(void) = 0;
+    void autotune_start(void);
     void autotune_restore(void);
 
     const AP_PIDInfo& get_pid_info(void) const
@@ -62,4 +62,6 @@ protected:
     virtual float get_airspeed() const = 0;
 
     virtual float get_measured_rate() const = 0;
+
+    const AP_AutoTune::ATType autotune_type;
 };
