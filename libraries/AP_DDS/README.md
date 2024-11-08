@@ -364,10 +364,10 @@ for additional details.
 ### Development Requirements
 
 Astyle is used to format the C++ code in AP_DDS. This is required for CI to pass the build.
-See [Tools/CodeStyle/ardupilot-astyle.sh](../../Tools/CodeStyle/ardupilot-astyle.sh).
+To run the automated formatter, run:
 
 ```bash
-./Tools/CodeStyle/ardupilot-astyle.sh libraries/AP_DDS/*.h libraries/AP_DDS/*.cpp
+./Tools/scripts/run_astyle.py
 ```
 
 Pre-commit is used for other things like formatting python and XML code.
