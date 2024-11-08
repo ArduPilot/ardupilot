@@ -69,6 +69,7 @@ class BoardList(object):
             Board("obal"),
             Board("pxf"),
             Board("bbbmini"),
+            Board("bebop"),
             Board("blue"),
             Board("pxfmini"),
             Board("canzero"),
