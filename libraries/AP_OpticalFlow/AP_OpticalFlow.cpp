@@ -19,11 +19,7 @@
 extern const AP_HAL::HAL& hal;
 
 #ifndef OPTICAL_FLOW_TYPE_DEFAULT
- #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-  #define OPTICAL_FLOW_TYPE_DEFAULT Type::BEBOP
- #else
   #define OPTICAL_FLOW_TYPE_DEFAULT Type::NONE
- #endif
 #endif
 
 const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
