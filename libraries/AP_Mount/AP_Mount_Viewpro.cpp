@@ -1,6 +1,9 @@
-#include "AP_Mount_Viewpro.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_VIEWPRO_ENABLED
+
+#include "AP_Mount_Viewpro.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>

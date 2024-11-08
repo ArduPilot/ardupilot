@@ -1,6 +1,9 @@
-#include "AP_Mount_SToRM32.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
+
+#include "AP_Mount_SToRM32.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 

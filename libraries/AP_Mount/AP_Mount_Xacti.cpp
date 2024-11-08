@@ -1,6 +1,9 @@
-#include "AP_Mount_Xacti.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_XACTI_ENABLED
+
+#include "AP_Mount_Xacti.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>

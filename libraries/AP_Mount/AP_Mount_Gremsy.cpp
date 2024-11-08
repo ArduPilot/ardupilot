@@ -1,6 +1,8 @@
-#include "AP_Mount_Gremsy.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_GREMSY_ENABLED
+
+#include "AP_Mount_Gremsy.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
