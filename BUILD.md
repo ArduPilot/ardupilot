@@ -28,7 +28,7 @@ list some basic and more used commands as example.
 
     ```sh
     ./waf configure --board CubeBlack
-    ./waf copter
+    ./waf copter 
     ```
 
     The first command should be called only once or when you want to change a
