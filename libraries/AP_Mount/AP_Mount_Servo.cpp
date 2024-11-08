@@ -1,5 +1,8 @@
-#include "AP_Mount_Servo.h"
+#include "AP_Mount_config.h"
+
 #if HAL_MOUNT_SERVO_ENABLED
+
+#include "AP_Mount_Servo.h"
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>

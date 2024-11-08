@@ -1,6 +1,8 @@
-#include "AP_Mount_Topotek.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
+
+#include "AP_Mount_Topotek.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>

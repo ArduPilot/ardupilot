@@ -1,6 +1,9 @@
-#include "AP_Mount_Alexmos.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
+
+#include "AP_Mount_Alexmos.h"
+
 #include <AP_SerialManager/AP_SerialManager.h>
 
 //definition of the commands id for the Alexmos Serial Protocol

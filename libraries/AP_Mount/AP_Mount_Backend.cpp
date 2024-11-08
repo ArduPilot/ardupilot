@@ -1,5 +1,9 @@
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
+
 #if HAL_MOUNT_ENABLED
+
+#include "AP_Mount_Backend.h"
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
