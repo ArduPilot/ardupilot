@@ -1199,6 +1199,33 @@ private:
 
     // guided mode is paused or not
     bool _paused;
+
+    Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
+    bool guided_pos_terrain_alt;                // true if guided_pos_target_cm.z is an alt above terrain
+    Vector3f guided_vel_target_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
+    Vector3f guided_accel_target_cmss;   // acceleration target (used by pos_vel_accel controller vel_accel controller and accel controller)
+    uint32_t update_time_ms;             // system time of last target update to pos_vel_accel, vel_accel or accel controller
+
+    struct {
+        uint32_t update_time_ms;
+        Quaternion attitude_quat;
+        Vector3f ang_vel_body;
+        float yaw_rate_cds;
+        float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
+        float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
+        bool use_yaw_rate;
+        bool use_thrust;
+    } guided_angle_state;
+
+    struct Guided_Limit {
+        uint32_t timeout_ms;  // timeout (in seconds) from the time that guided is invoked
+        float alt_min_cm;   // lower altitude limit in cm above home (0 = no limit)
+        float alt_max_cm;   // upper altitude limit in cm above home (0 = no limit)
+        float horiz_max_cm; // horizontal position limit in cm from where guided mode was initiated (0 = no limit)
+        uint32_t start_time;// system time in milliseconds that control was handed to the external computer
+        Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
+    } guided_limit;
+
 };
 
 
