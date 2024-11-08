@@ -781,10 +781,13 @@ include AP_Follow/AP_Follow.h
 singleton AP_Follow depends AP_FOLLOW_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI||APM_BUILD_TYPE(APM_BUILD_Rover))
 singleton AP_Follow rename follow
 singleton AP_Follow method have_target boolean
+singleton AP_Follow method get_target_sysid uint8_t
 singleton AP_Follow method get_last_update_ms uint32_t
+singleton AP_Follow method get_distance_to_target float
 singleton AP_Follow method get_target_location_and_velocity boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_heading_deg boolean float'Null
+singleton AP_Follow method get_target_dist_and_vel_ned boolean Vector3f'Null Vector3f'Null Vector3f'Null
 
 include AC_PrecLand/AC_PrecLand.h
 singleton AC_PrecLand depends AC_PRECLAND_ENABLED && (APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI)
