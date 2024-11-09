@@ -412,6 +412,10 @@ public:
     void send_uavionix_adsb_out_status() const;
     void send_autopilot_state_for_gimbal_device() const;
 
+    // Send the mode with the given index (not mode number!) return the total number of modes
+    // Index starts at 1
+    virtual uint8_t send_available_mode(uint8_t index) const = 0;
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
@@ -1126,6 +1130,16 @@ private:
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
     bool _locked;
+
+    // Handling of AVAILABLE_MODES
+    struct {
+        bool should_send;
+        // Note these start at 1
+        uint8_t requested_index;
+        uint8_t next_index;
+    } available_modes;
+    bool send_available_modes();
+
 };
 
 /// @class GCS

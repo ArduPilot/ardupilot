@@ -1148,6 +1148,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_AIRSPEED_ENABLED
         { MAVLINK_MSG_ID_AIRSPEED, MSG_AIRSPEED},
 #endif
+        { MAVLINK_MSG_ID_AVAILABLE_MODES, MSG_AVAILABLE_MODES},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3199,6 +3200,18 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
     if (id == MSG_LAST) {
         return MAV_RESULT_FAILED;
     }
+
+    switch(id) {
+    case MSG_AVAILABLE_MODES:
+        available_modes.should_send = true;
+        available_modes.next_index = 1;
+        available_modes.requested_index = (uint8_t)packet.param2;
+        break;
+
+    default:
+        break;
+    }
+
     send_message(id);
     return MAV_RESULT_ACCEPTED;
 }
@@ -6092,6 +6105,39 @@ void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message
     send_text(MAV_SEVERITY_INFO, "Received message (%s) is deprecated", message);
 }
 
+bool GCS_MAVLINK::send_available_modes()
+{
+    if (!available_modes.should_send) {
+        // must only return false if out of space
+        return true;
+    }
+
+    CHECK_PAYLOAD_SIZE(AVAILABLE_MODES);
+
+    // Zero is a special case for send all.
+    const bool send_all = available_modes.requested_index == 0;
+    uint8_t request_index;
+    if (!send_all) {
+        // Single request
+        request_index = available_modes.requested_index;
+        available_modes.should_send = false;
+
+    } else {
+        // Request all modes
+        request_index = available_modes.next_index;
+        available_modes.next_index += 1;
+    }
+
+    const uint8_t mode_count = send_available_mode(request_index);
+
+    if (send_all && (available_modes.next_index > mode_count)) {
+        // Sending all and just sent the last
+        available_modes.should_send = false;
+    }
+
+    return true;
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -6517,6 +6563,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = send_relay_status();
         break;
 #endif
+
+    case MSG_AVAILABLE_MODES:
+        ret = send_available_modes();
+        break;
 
     default:
         // try_send_message must always at some stage return true for
