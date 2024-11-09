@@ -107,7 +107,7 @@ void Plane::init_rc_out_main()
  */
 void Plane::init_rc_out_aux()
 {
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     servos_output();
     
