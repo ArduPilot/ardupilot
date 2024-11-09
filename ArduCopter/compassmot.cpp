@@ -148,7 +148,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         // pass through throttle to motors
         SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
-        SRV_Channels::push();
+        AP::srv().push();
 
         // read some compass values
         compass.read();
