@@ -270,7 +270,7 @@ void SRV_Channels::enable_aux_servos()
     hal.rcout->update_channel_masks();
 
 #if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr->update();
+    blheli.update();
 #endif
 }
 
