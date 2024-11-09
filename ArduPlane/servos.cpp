@@ -1050,7 +1050,7 @@ void Plane::servos_output(void)
 
     SRV_Channels::output_ch_all();
 
-    SRV_Channels::push();
+    AP::srv().push();
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();
