@@ -435,7 +435,7 @@ void Rover::one_second_loop(void)
     set_control_channels();
 
     // cope with changes to aux functions
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
