@@ -613,7 +613,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM
+    MSG_NEXT_PARAM,
+    MSG_AVAILABLE_MODES
 };
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
@@ -1148,3 +1149,54 @@ uint8_t GCS_MAVLINK_Rover::high_latency_wind_direction() const
     return 0;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+// Send the mode with the given index (not mode number!) return the total number of modes
+// Index starts at 1
+uint8_t GCS_MAVLINK_Rover::send_available_mode(uint8_t index) const
+{
+    const Mode* modes[] {
+        &rover.mode_manual,
+        &rover.mode_acro,
+        &rover.mode_steering,
+        &rover.mode_hold,
+        &rover.mode_loiter,
+#if MODE_FOLLOW_ENABLED
+        &rover.mode_follow,
+#endif
+        &rover.mode_simple,
+        &rover.g2.mode_circle,
+        &rover.mode_auto,
+        &rover.mode_rtl,
+        &rover.mode_smartrtl,
+        &rover.mode_guided,
+        &rover.mode_initializing,
+#if MODE_DOCK_ENABLED
+        (Mode *)rover.g2.mode_dock_ptr,
+#endif
+    };
+
+    const uint8_t mode_count = ARRAY_SIZE(modes);
+
+    // Convert to zero indexed
+    const uint8_t index_zero = index - 1;
+    if (index_zero >= mode_count) {
+        // Mode does not exist!?
+        return mode_count;
+    }
+
+    // Ask the mode for its name and number
+    const char* name = modes[index_zero]->name4();
+    const uint8_t mode_number = (uint8_t)modes[index_zero]->mode_number();
+
+    mavlink_msg_available_modes_send(
+        chan,
+        mode_count,
+        index,
+        MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
+        mode_number,
+        0, // MAV_MODE_PROPERTY bitmask
+        name
+    );
+
+    return mode_count;
+}
