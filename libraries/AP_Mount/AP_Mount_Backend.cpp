@@ -66,6 +66,29 @@ bool AP_Mount_Backend::set_mode(MAV_MOUNT_MODE mode)
     return true;
 }
 
+// called when mount mode is RC-targetting, updates the mnt_target object from RC inputs:
+void AP_Mount_Backend::update_mnt_target_from_rc_target()
+{
+    if (rc().in_rc_failsafe()) {
+        if (option_set(Options::NEUTRAL_ON_RC_FS)) {
+            mnt_target.angle_rad.set(_params.neutral_angles.get() * DEG_TO_RAD, false);
+            mnt_target.target_type = MountTargetType::ANGLE;
+            return;
+        }
+    }
+
+    MountTarget rc_target;
+    get_rc_target(mnt_target.target_type, rc_target);
+    switch (mnt_target.target_type) {
+    case MountTargetType::ANGLE:
+        mnt_target.angle_rad = rc_target;
+        break;
+    case MountTargetType::RATE:
+        mnt_target.rate_rads = rc_target;
+        break;
+    }
+}
+
 // set angle target in degrees
 // roll and pitch are in earth-frame
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame

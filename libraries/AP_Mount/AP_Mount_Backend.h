@@ -253,6 +253,9 @@ protected:
     };
     bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
 
+    // called when mount mode is RC-targetting, updates the mnt_target object from RC inputs:
+    void update_mnt_target_from_rc_target();
+
     // returns true if user has configured a valid roll angle range
     // allows user to disable roll even on 3-axis gimbal
     bool roll_range_valid() const { return (_params.roll_angle_min < _params.roll_angle_max); }
