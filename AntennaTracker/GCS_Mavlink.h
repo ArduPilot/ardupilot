@@ -30,6 +30,10 @@ protected:
     void send_nav_controller_output() const override;
     void send_pid_tuning() override;
 
+    // Send the mode with the given index (not mode number!) return the total number of modes
+    // Index starts at 1
+    uint8_t send_available_mode(uint8_t index) const override;
+
 private:
 
     void packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg) override;
