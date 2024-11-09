@@ -88,5 +88,5 @@ void Blimp::motors_output()
     motors->output();
 
     // push all channels
-    SRV_Channels::push();
+    AP::srv().push();
 }

@@ -38,7 +38,7 @@ void Blimp::init_rc_in()
 void Blimp::init_rc_out()
 {
     // enable aux servos to cope with multiple output channels per motor
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
