@@ -518,7 +518,7 @@ void stability_test()
     // arm motors
     motors->armed(true);
     motors->set_interlock(true);
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     hal.console->printf("Roll,Pitch,Yaw,Thr,");
     for (uint8_t i=0; i<num_outputs; i++) {
