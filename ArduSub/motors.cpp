@@ -22,7 +22,7 @@ void Sub::motors_output()
         SRV_Channels::calc_pwm();
         SRV_Channels::output_ch_all();
         motors.output();
-        SRV_Channels::push();
+        AP::srv().push();
     }
 }
 
