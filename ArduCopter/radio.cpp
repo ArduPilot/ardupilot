@@ -45,7 +45,7 @@ void Copter::init_rc_out()
     motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
 
     // enable aux servos to cope with multiple output channels per motor
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // update rate must be set after motors->init() to allow for motor mapping
     motors->set_update_rate(g.rc_speed);
