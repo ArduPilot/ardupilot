@@ -1061,11 +1061,27 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_DO_GO_AROUND:
         return plane.trigger_land_abort(packet.param1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 
+    case MAV_CMD_DO_RETURN_PATH_START:
+        // attempt to rejoin after the next DO_RETURN_PATH_START command in the mission
+        if (plane.have_position && plane.mission.jump_to_closest_mission_leg(plane.current_loc)) {
+            plane.mission.set_force_resume(true);
+            if (plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            // mode change failed, revert force resume flag
+            plane.mission.set_force_resume(false);
+        }
+        return MAV_RESULT_FAILED;
+
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-            plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
-            return MAV_RESULT_ACCEPTED;
+            plane.mission.set_force_resume(true);
+            if (plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            // mode change failed, revert force resume flag
+            plane.mission.set_force_resume(false);
         }
         return MAV_RESULT_FAILED;
 
