@@ -1367,6 +1367,7 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
     return yaw_cd;
 }
 
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
     const Location &loc = location(0);
@@ -1400,8 +1401,9 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         0,                    // TODO one-sigma heading accuracy standard deviation
         gps_yaw_cdeg(0));
 }
+#endif  // AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 
-#if GPS_MAX_RECEIVERS > 1
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
     // always send the message if 2nd GPS is configured
@@ -1442,9 +1444,9 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         sacc * 1000,          // one-sigma standard deviation in mm/s
         0);                    // TODO one-sigma heading accuracy standard deviation
 }
-#endif // GPS_MAX_RECEIVERS
+#endif // AP_GPS_GPS2_RAW_SENDING_ENABLED
 
-#if HAL_GCS_ENABLED
+#if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
     if (inst >= GPS_MAX_RECEIVERS) {
