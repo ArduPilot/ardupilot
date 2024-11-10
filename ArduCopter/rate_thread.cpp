@@ -248,7 +248,6 @@ void Copter::rate_controller_thread()
         const float dt = dt_us * 1.0e-6;
         last_run_us = now_us;
 
-        motors->set_dt(sensor_dt);
         // check if we are falling behind
         if (ins.get_num_gyro_samples() > 2) {
             running_slow++;
@@ -420,7 +419,7 @@ void Copter::rate_controller_filter_update()
 /*
   update rate controller rates and return the logging rate
 */
-uint8_t Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high)
+void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high)
 {
     const uint32_t attitude_rate = ins.get_raw_gyro_rate_hz() / rate_decimation;
     attitude_control->set_notch_sample_rate(attitude_rate);
@@ -439,8 +438,6 @@ uint8_t Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControlle
 #endif
     rates.main_loop_rate = calc_gyro_decimation(rate_decimation, AP::scheduler().get_filtered_loop_rate_hz());
     rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_raw_gyro_rate_hz() / 2);
-
-    return 0;
 }
 
 // enable the fast rate thread using the provided decimation rate and record the new output rates
