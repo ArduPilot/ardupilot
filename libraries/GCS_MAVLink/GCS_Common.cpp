@@ -1205,7 +1205,10 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR, MSG_AVAILABLE_MODES_MONITOR},
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
         { MAVLINK_MSG_ID_FLIGHT_INFORMATION, MSG_FLIGHT_INFORMATION},
-#endif
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+#if AP_GPS_GNSS_SENDING_ENABLED
+        { MAVLINK_MSG_ID_GNSS, MSG_GNSS},
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -6508,7 +6511,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         AP::gps().send_mavlink_gps_rtk(chan, 1);
         break;
 #endif  // AP_GPS_GPS2_RTK_SENDING_ENABLED
-
+#if AP_GPS_GNSS_SENDING_ENABLED
+    case MSG_GNSS:
+        CHECK_PAYLOAD_SIZE(GNSS);
+        AP::gps().send_mavlink_gnss(*this);
+        break;
+#endif
 #if AP_AHRS_ENABLED
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
