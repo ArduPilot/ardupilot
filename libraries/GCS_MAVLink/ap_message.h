@@ -10,6 +10,7 @@
 
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Terrain/AP_Terrain_config.h>
+#include <AP_GPS/AP_GPS_config.h>
 
 enum ap_message : uint8_t {
     MSG_HEARTBEAT                      =   0,
@@ -114,6 +115,9 @@ enum ap_message : uint8_t {
     MSG_AVAILABLE_MODES_MONITOR        =  99,
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
     MSG_FLIGHT_INFORMATION             = 100,
-#endif
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+#if AP_GPS_GNSS_SENDING_ENABLED
+    MSG_GNSS                           = 101,
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };

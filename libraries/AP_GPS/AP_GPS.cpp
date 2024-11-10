@@ -1465,6 +1465,28 @@ void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 }
 #endif
 
+#if AP_GPS_GNSS_SENDING_ENABLED
+void AP_GPS::send_mavlink_gnss(GCS_MAVLINK &link)
+{
+    // don't bother doing anything if we can't fit a message in the
+    // outbound queue:
+    if (!link.check_payload_size(MAVLINK_MSG_ID_GNSS_LEN)) {
+        return;
+    }
+
+    // wrap next-to-send if required:
+    if (next_backend_to_send_gnss >= num_instances) {
+        next_backend_to_send_gnss = 0;
+    }
+
+    if (drivers[next_backend_to_send_gnss] != nullptr) {
+        drivers[next_backend_to_send_gnss]->send_mavlink_gnss(link);
+    }
+
+    next_backend_to_send_gnss++;
+}
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
 bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 {
     for (int i = 0; i < GPS_MAX_RECEIVERS; i++) {
