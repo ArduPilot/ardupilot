@@ -751,7 +751,7 @@ private:
     void rate_controller_thread();
     void rate_controller_filter_update();
     void rate_controller_log_update();
-    uint8_t rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
+    void rate_controller_set_rates(uint8_t rate_decimation, RateControllerRates& rates, bool warn_cpu_high);
     void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
     void disable_fast_rate_loop(RateControllerRates& rates);
     void update_dynamic_notch_at_specified_rate_main();
