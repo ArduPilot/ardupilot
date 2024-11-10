@@ -45,6 +45,7 @@ enum failsafe_action_long {
     FS_ACTION_LONG_GLIDE = 2,
     FS_ACTION_LONG_PARACHUTE = 3,
     FS_ACTION_LONG_AUTO = 4,
+    FS_ACTION_LONG_AUTO_SATISFY_JUMP_REPEATS = 5,
 };
 
 // type of stick mixing enabled
