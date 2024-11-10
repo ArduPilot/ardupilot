@@ -1030,13 +1030,17 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
         { MAVLINK_MSG_ID_SCALED_PRESSURE2,      MSG_SCALED_PRESSURE2},
         { MAVLINK_MSG_ID_SCALED_PRESSURE3,      MSG_SCALED_PRESSURE3},
-#if AP_GPS_ENABLED
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
         { MAVLINK_MSG_ID_GPS_RAW_INT,           MSG_GPS_RAW},
-        { MAVLINK_MSG_ID_GPS_RTK,               MSG_GPS_RTK},
-#if GPS_MAX_RECEIVERS > 1
-        { MAVLINK_MSG_ID_GPS2_RAW,              MSG_GPS2_RAW},
-        { MAVLINK_MSG_ID_GPS2_RTK,              MSG_GPS2_RTK},
 #endif
+#if AP_GPS_GPS_RTK_SENDING_ENABLED
+        { MAVLINK_MSG_ID_GPS_RTK,               MSG_GPS_RTK},
+#endif
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
+        { MAVLINK_MSG_ID_GPS2_RAW,              MSG_GPS2_RAW},
+#endif
+#if AP_GPS_GPS2_RTK_SENDING_ENABLED
+        { MAVLINK_MSG_ID_GPS2_RTK,              MSG_GPS2_RTK},
 #endif
         { MAVLINK_MSG_ID_SYSTEM_TIME,           MSG_SYSTEM_TIME},
         { MAVLINK_MSG_ID_RC_CHANNELS_SCALED,    MSG_SERVO_OUT},
@@ -6237,28 +6241,32 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
         send_system_time();
         break;
-#if AP_GPS_ENABLED
+
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
     case MSG_GPS_RAW:
         CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
         AP::gps().send_mavlink_gps_raw(chan);
         break;
+#endif  // AP_GPS_GPS_RAW_INT_SENDING_ENABLED
+#if AP_GPS_GPS_RTK_SENDING_ENABLED
     case MSG_GPS_RTK:
         CHECK_PAYLOAD_SIZE(GPS_RTK);
         AP::gps().send_mavlink_gps_rtk(chan, 0);
         break;
-#if GPS_MAX_RECEIVERS > 1
+#endif  // AP_GPS_GPS_RTK_SENDING_ENABLED
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
     case MSG_GPS2_RAW:
         CHECK_PAYLOAD_SIZE(GPS2_RAW);
         AP::gps().send_mavlink_gps2_raw(chan);
         break;
-#endif
-#if GPS_MAX_RECEIVERS > 1
+#endif  // AP_GPS_GPS2_RAW_SENDING_ENABLED
+#if AP_GPS_GPS2_RTK_SENDING_ENABLED
     case MSG_GPS2_RTK:
         CHECK_PAYLOAD_SIZE(GPS2_RTK);
         AP::gps().send_mavlink_gps_rtk(chan, 1);
         break;
-#endif
-#endif  // AP_GPS_ENABLED
+#endif  // AP_GPS_GPS2_RTK_SENDING_ENABLED
+
 #if AP_AHRS_ENABLED
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
