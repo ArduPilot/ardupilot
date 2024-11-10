@@ -215,6 +215,39 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 #endif  // AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 
 
+#if AP_GPS_GNSS_SENDING_ENABLED
+void AP_GPS_Backend::send_mavlink_gnss(GCS_MAVLINK &link)
+{
+    float alt_ellipsoid = NaNf;
+    if (state.have_undulation) {
+        alt_ellipsoid = state.location.alt*0.1 - state.undulation;
+    }
+    const uint8_t fix_type = state.status;
+    float alt_amsl = NaNf;
+    if (fix_type >= 3) {
+        alt_amsl = state.location.alt * 0.1;  // cm -> m
+    }
+    mavlink_msg_gnss_send(
+        link.get_chan(),
+        AP_HAL::micros64(),
+        state.instance,
+        (uint8_t)state.status,
+        state.location.lat,
+        state.location.lng,
+        alt_amsl,
+        alt_ellipsoid,
+        state.ground_speed,
+        state.ground_course * 100,  // degrees*100
+        state.num_sats,
+        AP::gps().gps_yaw_cdeg(state.instance),
+        state.horizontal_accuracy, // one-sigma standard deviation in m
+        state.vertical_accuracy,   // one-sigma standard deviation in m
+        state.speed_accuracy,      // one-sigma standard deviation in m/s
+        NaNf                       // TODO one-sigma heading accuracy standard deviation
+        );
+}
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
+
 
 /*
   set a timestamp based on arrival time on uart at current byte,
