@@ -659,6 +659,11 @@ public:
         return _last_change_time_ms;
     }
 
+    // set all jump counters to the repeat count, so we no longer loop
+    void satisfy_jump_repeats() {
+        all_loops_satisified = true;
+    }
+
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
@@ -958,6 +963,8 @@ private:
     // if not -1, this bit in LOG_BITMASK specifies whether to log a message each time we start a command:
     uint32_t log_start_mission_item_bit = -1;
 #endif
+
+    bool all_loops_satisified;
 };
 
 namespace AP
