@@ -268,7 +268,6 @@ local function _update_begin_test()
         rf_state:range_valid_count(10)
         rf_state:distance(dist_m_in)
         rf_state:signal_quality(signal_quality_pct_in)
-        rf_state:voltage(0)
         result = rngfnd_backend:handle_script_msg(rf_state) -- state as arg
     end
 

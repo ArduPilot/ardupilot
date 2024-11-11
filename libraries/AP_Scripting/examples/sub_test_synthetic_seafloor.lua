@@ -548,7 +548,6 @@ local function range_finder_driver(sub_loc)
 
     -- The full state udata must be initialized.
     rf_state:last_reading(millis():toint())
-    rf_state:voltage(0)
 
     -- If no location, then return no data
     if not sub_loc then

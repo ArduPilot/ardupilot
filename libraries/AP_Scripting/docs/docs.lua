@@ -3137,14 +3137,6 @@ function RangeFinder_State_ud:signal_quality() end
 ---@param value integer
 function RangeFinder_State_ud:signal_quality(value) end
 
--- get voltage in millivolts, if applicable, otherwise 0
----@return integer
-function RangeFinder_State_ud:voltage() end
-
--- set voltage in millivolts, if applicable, otherwise 0
----@param value integer
-function RangeFinder_State_ud:voltage(value) end
-
 
 -- RangeFinder backend
 ---@class (exact) AP_RangeFinder_Backend_ud
