@@ -110,9 +110,6 @@ private:
     uint32_t wind_start_delay_micros;
     uint32_t last_wind_update_us;
 
-    // simulated GPS devices
-    SITL::GPS *gps[2];  // constrained by # of parameter sets
-
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor
     float _sonar_pin_voltage() const;
