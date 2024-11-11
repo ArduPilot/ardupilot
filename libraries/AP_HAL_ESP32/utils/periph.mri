@@ -1,0 +1,6 @@
+create bin/AP_Periph.a
+addlib lib/bin/libAP_Periph.a
+addlib lib/libAP_Periph_libs.a
+addlib Tools/AP_Periph/liblibcanard.a
+save
+end

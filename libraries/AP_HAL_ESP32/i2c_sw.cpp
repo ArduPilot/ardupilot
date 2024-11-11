@@ -34,9 +34,17 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "esp_attr.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
-#include "rom/ets_sys.h" // seems to work for both...for now..deprecated
+
+#include "esp_attr.h"
+// if an S3 target..?
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKITPERIPH || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3BUZZ || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3BUZZ_PERIPH || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
+#include "esp32s3/rom/ets_sys.h"
+#else
+#include "esp32/rom/ets_sys.h"
+#endif
 
 #include "soc/gpio_reg.h"
 #include "soc/gpio_struct.h"
@@ -48,11 +56,11 @@
 #include "esp_types.h"
 #include "esp_attr.h"
 #include "esp_intr_alloc.h"
-#include "esp_log.h"
+//#include "esp_log.h" ets_sys.h:64:5: error: redeclaration of enumerator 'ETS_OK'
 #include "malloc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-#include "freertos/xtensa_api.h"
+#include "xtensa_api.h" // #include <freertos/xtensa_api.h>` is deprecated. Please use `#include <xtensa_api.h>` instead"
 #include "freertos/task.h"
 #include "freertos/ringbuf.h"
 #include "soc/dport_reg.h"
@@ -61,7 +69,7 @@
 //#include "hal/i2c_hal.h"
 #include "soc/i2c_periph.h"
 #include "driver/i2c.h"
-#include "driver/periph_ctrl.h"
+//#include "driver/periph_ctrl.h" //warning: #warning driver/periph_ctrl.h header is no longer used, and will be removed in future versions.
 #include "lwip/netdb.h"
 #include "i2c_sw.h"
 
@@ -136,6 +144,7 @@ void i2c_init(_i2c_bus_t* bus)
           bus->scl, bus->sda, bus->speed);
 
     /* reset the GPIO usage if the pins were used for I2C before */
+    printf("i2c sda: %d i2c scl:%d\n",bus->sda,bus->scl);
     gpio_reset_pin(bus->scl);
     gpio_reset_pin(bus->sda);
 

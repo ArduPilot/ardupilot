@@ -1,0 +1,3 @@
+#default for this specific ESP32 board
+LOG_DISARMED 1
+

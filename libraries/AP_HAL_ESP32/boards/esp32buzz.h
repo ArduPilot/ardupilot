@@ -16,6 +16,15 @@
 
 #define HAL_ESP32_BOARD_NAME "esp32-buzz"
 
+// if u are mad enough to try a periph build on the esp32 classic you'll need these, and also need 'env AP_PERIPH 1' in esp32buzz/hwdef.dat 
+//  to enable the new periph build
+// #define AP_PERIPH 1
+// #define HAL_CAN_DEFAULT_NODE_ID 42
+// #define HAL_BUILD_AP_PERIPH 1
+
+// board ID for firmware load
+#define APJ_BOARD_ID 4242
+
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
@@ -33,6 +42,8 @@
 
 //#define CONFIG_HAL_BOARD 12
 //#define HAL_BOARD_ESP32 12
+
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_ESP32_BUZZ
 
 //INS choices:
 #define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
@@ -147,11 +158,12 @@
 // SPI BUS setup, including gpio, dma, etc
 // note... we use 'vspi' for the bmp280 and mpu9250
 #define HAL_ESP32_SPI_BUSES \
-    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+    {.host=SPI3_HOST, .dma_ch=SPI_DMA_CH_AUTO, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
 // tip:  VSPI_HOST  is an alternative name for esp's SPI3
 //#define HAL_ESP32_SPI_BUSES {}
 
 // SPI per-device setup, including speeds, etc.
+// device=x must start from ZERO and increment.
 #define HAL_ESP32_SPI_DEVICES \
     {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_26, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, \
     {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_5,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
@@ -170,6 +182,8 @@
 //HARDWARE UARTS
 #define HAL_ESP32_UART_DEVICES \
   {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17 }
+// the classic esp32 hardware has three uarts, and we also add a virtual tcp, and a virtual udp port to that list 
+#define HAL_UART_NUM_SERIAL_PORTS 5
 
 #define AP_FILESYSTEM_ESP32_ENABLED 1
 

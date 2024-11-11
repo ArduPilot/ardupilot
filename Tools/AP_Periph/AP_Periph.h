@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <canard.h>
+#include <../../modules/DroneCAN/libcanard/canard.h>  //explicit as esp32 periph cant find it otherwise
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
@@ -27,6 +27,9 @@
 #include <AP_CANManager/AP_SLCANIface.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#include <AP_HAL_ESP32/CANIface.h> // we dont want freertos/FreeRTOS.h outside of the esp32 build
+#endif
 #include <AP_Stats/AP_Stats.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -118,11 +121,16 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void stm32_watchdog_init();
 void stm32_watchdog_pat();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+void stm32_watchdog_init();
+void stm32_watchdog_pat();
 #endif
 /*
   app descriptor for firmware checking
  */
+#if AP_CHECK_FIRMWARE_ENABLED
 extern const app_descriptor_t app_descriptor;
+#endif
 
 extern "C" {
     void can_vprintf(uint8_t severity, const char *fmt, va_list arg);
@@ -145,6 +153,13 @@ struct CanardRxTransfer;
 #else
     #define HAL_CAN_POOL_SIZE 4000
 #endif
+#endif
+
+// never allow zero interfaces or well get a divide-by-zero
+#if HAL_NUM_CAN_IFACES == 0
+#define HAL_NUM_CAN_IFACES_NONZERO 1
+#else
+#define HAL_NUM_CAN_IFACES_NONZERO HAL_NUM_CAN_IFACES
 #endif
 
 class AP_Periph_FW {
@@ -201,14 +216,18 @@ public:
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    static ChibiOS::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
+    static ChibiOS::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES_NONZERO];
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static HALSITL::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
+    static HALSITL::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES_NONZERO];
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    static ESP32::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES_NONZERO];
 #endif
 
 #if AP_CAN_SLCAN_ENABLED
     static SLCAN::CANIface slcan_interface;
 #endif
+
+    static bool has_any_iface_finished_dna;
 
     AP_SerialManager serial_manager;
 
@@ -262,7 +281,7 @@ public:
     // This allows you to change the protocol and it continues to use the one at boot.
     // Without this, changing away from UAVCAN causes loss of comms and you can't
     // change the rest of your params or verify it succeeded.
-    AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES];
+    AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES_NONZERO];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
@@ -492,7 +511,6 @@ public:
     // show stack as DEBUG msgs
     void show_stack_free();
 
-    static bool no_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
 
     bool canard_broadcast(uint64_t data_type_signature,
@@ -597,7 +615,13 @@ public:
 };
 
 #ifndef CAN_APP_NODE_NAME
-#define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+    #if  defined(CHIBIOS_BOARD_NAME)
+    #define CAN_APP_NODE_NAME "org.ardupilot." CHIBIOS_BOARD_NAME
+    #elif defined(HAL_ESP32_BOARD_NAME)
+    #define CAN_APP_NODE_NAME "org.ardupilot." HAL_ESP32_BOARD_NAME
+    #else
+    #define CAN_APP_NODE_NAME "org.ardupilot.generic"
+    #endif
 #endif
 
 namespace AP

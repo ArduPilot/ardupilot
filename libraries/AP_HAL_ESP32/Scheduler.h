@@ -85,16 +85,16 @@ public:
     static const int IO_PRIO      = 5;
     static const int STORAGE_PRIO = 4;
 
-    static const int TIMER_SS 	  = 4096;
-    static const int MAIN_SS      = 8192;
-    static const int RCIN_SS      = 4096;
-    static const int RCOUT_SS     = 4096;
-    static const int WIFI_SS1     = 6192;
-    static const int WIFI_SS2     = 6192;
-    static const int UART_SS      = 2048;
-    static const int DEVICE_SS    = 4096;
-    static const int IO_SS        = 4096;
-    static const int STORAGE_SS   = 8192;
+    static const int TIMER_SS   = 1024*3;
+    static const int MAIN_SS    = 1024*5;
+    static const int RCIN_SS    = 1024*3;
+    static const int RCOUT_SS   = 1024*1.5;
+    static const int WIFI_SS1    = 1024*2.25;
+    static const int WIFI_SS2    = 1024*2.25;
+    static const int UART_SS    = 1024*2.25;
+    static const int DEVICE_SS  = 1024*4;   //       (DEVICEBUS/s)
+    static const int IO_SS      = 1024*3.5; //       (APM_IO)
+    static const int STORAGE_SS = 1024*2;   //       (APM_STORAGE)
 
 private:
     AP_HAL::HAL::Callbacks *callbacks;
@@ -108,6 +108,7 @@ private:
 
     static bool _initialized;
 
+    int run_timer_state = 0;
     tskTaskControlBlock* _main_task_handle;
     tskTaskControlBlock* _timer_task_handle;
     tskTaskControlBlock* _rcin_task_handle;
@@ -140,4 +141,7 @@ private:
     bool _in_io_proc;
     void _run_io();
     Semaphore _io_sem;
+public:
+    Semaphore sem;
+
 };

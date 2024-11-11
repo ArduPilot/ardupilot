@@ -146,7 +146,9 @@ void AP_Frsky_SPort::send(void)
                     send_sport_frame(SPORT_DATA_FRAME, TEMP2_ID, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                     break;
                 case 1:
+                #if HAL_GCS_ENABLED
                     send_sport_frame(SPORT_DATA_FRAME, TEMP1_ID, gcs().custom_mode()); // send flight mode
+                #endif
                     break;
                 }
                 if (++_SPort.various_call > 1) {

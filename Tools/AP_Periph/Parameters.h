@@ -5,6 +5,13 @@
 
 #define AP_PARAM_VEHICLE_NAME periph
 
+// never allow zero interfaces or well get a divide-by-zero
+#if HAL_NUM_CAN_IFACES == 0
+#define HAL_NUM_CAN_IFACES_NONZERO 1
+#else
+#define HAL_NUM_CAN_IFACES_NONZERO HAL_NUM_CAN_IFACES
+#endif
+
 // Global parameter class.
 //
 class Parameters {
@@ -104,9 +111,9 @@ public:
     AP_Int16 format_version;
     AP_Int16 can_node;
     
-    AP_Int32 can_baudrate[HAL_NUM_CAN_IFACES];
+    AP_Int32 can_baudrate[HAL_NUM_CAN_IFACES_NONZERO];
 #if HAL_NUM_CAN_IFACES >= 2
-    AP_Enum<AP_CAN::Protocol> can_protocol[HAL_NUM_CAN_IFACES];
+    AP_Enum<AP_CAN::Protocol> can_protocol[HAL_NUM_CAN_IFACES_NONZERO];
 #endif
 
 #if AP_CAN_SLCAN_ENABLED
@@ -231,14 +238,14 @@ public:
 
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
-    AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
+    AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES_NONZERO];
 #else
     static constexpr uint8_t can_fdmode = 0;
 #endif
 
     AP_Int32 options;
 
-    AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
+    AP_Int8 can_terminate[HAL_NUM_CAN_IFACES_NONZERO];
 
     AP_Int8 node_stats;
     Parameters() {}

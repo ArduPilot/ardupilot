@@ -177,7 +177,9 @@ void AP_InertialSensor_Invensense::_fifo_reset(bool log_error)
         reset_count++;
         if (reset_count == 10) {
             // 10 resets, each happening within 10s, triggers an internal error
+            #if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
             INTERNAL_ERROR(AP_InternalError::error_t::imu_reset);
+            #endif
             reset_count = 0;
         }
     } else if (log_error &&

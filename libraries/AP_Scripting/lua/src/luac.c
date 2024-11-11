@@ -188,7 +188,9 @@ static int pmain(lua_State* L)
  }
  return 0;
 }
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+// leave out main for ESP32 as it is provided by the IDF and gives linker issues.
+#else
 int main(int argc, char* argv[])
 {
  lua_State* L;
@@ -204,6 +206,7 @@ int main(int argc, char* argv[])
  lua_close(L);
  return EXIT_SUCCESS;
 }
+#endif
 
 /*
 ** $Id: luac.c,v 1.76 2018/06/19 01:32:02 lhf Exp $

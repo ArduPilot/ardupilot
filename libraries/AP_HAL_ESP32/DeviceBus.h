@@ -21,6 +21,8 @@
 #include "AP_HAL_ESP32.h"
 #include "Scheduler.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

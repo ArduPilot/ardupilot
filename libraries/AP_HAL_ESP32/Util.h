@@ -38,6 +38,7 @@ public:
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) override;
     virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
+    void *heap_realloc(void *heap, void *ptr, size_t new_size);
     virtual void *std_realloc(void *ptr, size_t new_size) override;
 #endif // ENABLE_HEAP
 
@@ -57,9 +58,22 @@ public:
 
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
+    
 
     // request information on running threads
     void thread_info(ExpandingString &str) override;
+    // request information on dma contention
+    void dma_info(ExpandingString &str) override;
+    void mem_info(ExpandingString &str) override;
+
+#if HAL_UART_STATS_ENABLED
+    // request information on uart I/O
+    virtual void uart_info(ExpandingString &str) override;
+#endif
+
+#if HAL_USE_PWM == TRUE
+    void timer_info(ExpandingString &str) override;
+#endif
 
 private:
 #ifdef HAL_PWM_ALARM

@@ -80,6 +80,8 @@ MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_int
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HAL_SITL::actually_reboot();
 #endif
+
+return MAV_RESULT_ACCEPTED;
 }
 
 #endif // #if HAL_GCS_ENABLED

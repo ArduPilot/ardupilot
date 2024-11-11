@@ -149,3 +149,6 @@
 #define HAL_LOGGING_BACKENDS_DEFAULT 1
 
 #define AP_RCPROTOCOL_ENABLED 0
+
+// the classic esp32 hardware has three uarts, and we also add a virtual tcp, and a virtual udp port to that list 
+#define HAL_UART_NUM_SERIAL_PORTS 5

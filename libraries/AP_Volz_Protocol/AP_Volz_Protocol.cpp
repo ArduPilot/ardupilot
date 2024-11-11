@@ -16,6 +16,9 @@
 
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_Math/AP_Math.h> // for constrain_float
+
+
 // Extended Position Data Format defines -100 as 0x0080 decimal 128, we map this to a PWM of 1000 (if range is default)
 #define PWM_POSITION_MIN               1000
 #define ANGLE_POSITION_MIN            -100.0

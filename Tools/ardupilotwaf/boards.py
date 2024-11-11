@@ -546,6 +546,7 @@ class Board:
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
+        print("boards.py: pre_build ROMFS check..",bld.env.ROMFS_FILES)
         if bld.env.ROMFS_FILES:
             self.embed_ROMFS_files(bld)
 
@@ -606,23 +607,33 @@ def add_dynamic_boards_esp32():
         if os.path.exists(hwdef):
             mcu_esp32s3 = True if (d[0:7] == "esp32s3") else False
             if mcu_esp32s3:
+                #print(hwdef,"ESP32: located S3 variant")
                 newclass = type(d, (esp32s3,), {'name': d})
             else:
+                #print(hwdef,"ESP32: located old/classic ESP32 variant")
                 newclass = type(d, (esp32,), {'name': d})
 
 def get_boards_names():
     add_dynamic_boards_chibios()
     add_dynamic_boards_esp32()
+    nodupes = sorted(list(_board_classes.keys()), key=str.lower)
+    #print("get_boards_names?",nodupes)
+    return nodupes
 
-    return sorted(list(_board_classes.keys()), key=str.lower)
+def get_ap_periph_boards():
+    list1 = __get_ap_periph_boards('libraries/AP_HAL_ChibiOS/hwdef')
+    list2 = __get_ap_periph_boards('libraries/AP_HAL_ESP32/hwdef')
+    nodupes = list(set(list1)|set(list2))
+    #print("get_ap_periph_boards?",nodupes)
+    return nodupes
 
 def is_board_based(board, cls):
     return issubclass(_board_classes[board], cls)
 
-def get_ap_periph_boards():
+def __get_ap_periph_boards(defs_folder):
     '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
     list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
+    dirname, dirlist, filenames = next(os.walk(defs_folder))
     for d in dirlist:
         if d in list_ap:
             continue
@@ -985,30 +996,50 @@ class sitl_periph_battmon(sitl_periph):
 class esp32(Board):
     abstract = True
     toolchain = 'xtensa-esp32-elf'
+    s3 = False
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
 
         def expand_path(p):
             print("USING EXPRESSIF IDF:"+str(env.idf))
             return cfg.root.find_dir(env.IDF+p).abspath()
-        try:
-            env.IDF = os.environ['IDF_PATH'] 
-        except:
-            env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
 
+        if not self.s3:
+            env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
+            print("Checking for if ESP target is S3           : NO")
+            env.s3 = False
+        else :
+            env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
+            print("Checking for if ESP target is S3             : YES")
+            env.s3 = True
+        
         super(esp32, self).configure_env(cfg, env)
         cfg.load('esp32')
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
+            AP_SIM_ENABLED = 0,
+            HAL_ENABLE_LIBUAVCAN_DRIVERS = 0
         )
 
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
 
-        # this makes sure we get the correct subtype
+        # this makes sure we get the correct subtype - todo can we not use subtypes for hwdef.dat builds, or just use one subtype?
+        print('CONFIG_HAL_BOARD_SUBTYPE = HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() )
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
             HAL_HAVE_HARDWARE_DOUBLE = '1',
         )
+
+        if self.with_can:
+            cfg.define('HAL_NUM_CAN_IFACES', 1)
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
+            cfg.define('UAVCAN_SUPPORT_CANFD', 0)
+
+        if cfg.env.AP_PERIPH:
+            #if cfg.env.HAL_CANFD_SUPPORTED:
+            #    env.DEFINES.update(CANARD_ENABLE_CANFD=1)
+            #else:
+            env.DEFINES.update(CANARD_ENABLE_TAO_OPTION=1)
 
         if self.name.endswith("empty"):
             # for empty targets build as SIM-on-HW
@@ -1052,6 +1083,8 @@ class esp32(Board):
 
         # wrap malloc to ensure memory is zeroed
         env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        bldnode = cfg.bldnode.make_node(self.name)
+        env.BUILDROOT = bldnode.make_node('').abspath()
 
         env.INCLUDES += [
                 cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
@@ -1060,6 +1093,17 @@ class esp32(Board):
         #if cfg.options.enable_profile:
         #    env.CXXFLAGS += ['-pg',
         #                     '-DENABLE_PROFILE=1']
+
+        defaults_file = 'libraries/AP_HAL_ESP32/hwdef/%s/defaults.parm' % self.name
+        if os.path.exists(defaults_file):
+            print("ESP32: USING CUSTOM BOARD DEFAULTS: ",defaults_file)
+            env.ROMFS_FILES += [('defaults.parm', defaults_file)]
+            env.DEFINES.update(
+                HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
+            )
+        if len(env.ROMFS_FILES) > 0:
+            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
         from waflib.Context import load_tool
@@ -1067,6 +1111,7 @@ class esp32(Board):
         fun = getattr(module, 'pre_build', None)
         if fun:
             fun(bld)
+            print("calling esp32 prebuild from boards.py")
         super(esp32, self).pre_build(bld)
 
 
@@ -1080,7 +1125,7 @@ class esp32(Board):
 class esp32s3(esp32):
     abstract = True
     toolchain = 'xtensa-esp32s3-elf'
-
+    s3 = True
 class chibios(Board):
     abstract = True
     toolchain = 'arm-none-eabi'

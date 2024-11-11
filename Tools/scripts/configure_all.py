@@ -12,24 +12,29 @@ import shutil
 
 import argparse
 
-# modify our search path:
+# modify our search path - esp32 doesn't need this.
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
 import chibios_hwdef
 
-parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
+parser = argparse.ArgumentParser(description='configure all ChibiOS (or ESP32) boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
 parser.add_argument('--build-target', default='copter', help='build target')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on configure or build failure')
+parser.add_argument('--esp32', action='store_true', default=False, help='do only ESP32 builds')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
 parser.add_argument('--only-bl', action='store_true', default=False, help="only check bootloader builds")
 parser.add_argument('--Werror', action='store_true', default=False, help="build with -Werror")
-parser.add_argument('--pattern', default='*')
+parser.add_argument('--pattern', default='*') # eg --stop --pattern '*esp32*'
 parser.add_argument('--start', default=None, type=int, help='continue from specified build number')
 parser.add_argument('--python', default='python')
 parser.add_argument('--copy-hwdef-incs-to-directory', default=None, help='directory hwdefs should be copied to')
 args = parser.parse_args()
 
 os.environ['PYTHONUNBUFFERED'] = '1'
+
+# note --esp32 is separate as it requires you also have done, and most ppl havent
+# ./Tools/scripts/esp32_get_idf.sh
+# source ./modules/esp_idf/export.sh
 
 failures = []
 done = []
@@ -41,10 +46,17 @@ def get_board_list():
     # these are base builds, and don't build directly
     omit = []
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    for d in dirlist:
-        hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef) and d not in omit:
-            board_list.append(d)
+    if not args.esp32:
+        for d in dirlist:
+            hwdef = os.path.join(dirname, d, 'hwdef.dat')
+            if os.path.exists(hwdef) and d not in omit:
+                board_list.append(d)
+    if args.esp32:
+        dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ESP32/hwdef'))
+        for d in dirlist:
+            hwdef = os.path.join(dirname, d, 'hwdef.dat')
+            if os.path.exists(hwdef) and d not in omit:
+                board_list.append(d)
     return board_list
 
 def run_program(cmd_list, build):
@@ -69,10 +81,30 @@ if args.start is not None:
     board_list = board_list[args.start-1:]
 
 def is_ap_periph(board):
-    hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
-    ch = chibios_hwdef.ChibiOSHWDef()
-    ch.process_file(hwdef)
-    return ch.is_periph_fw()
+    # try both chibios and esp32 folders looking for periph
+    hal = 'AP_HAL_ChibiOS'
+    found = __is_ap_periph(board,hal)
+    if found:
+        ch = chibios_hwdef.ChibiOSHWDef()
+        ch.process_file(hwdef)
+        return ch.is_periph_fw()
+    if args.esp32:
+        # now try esp32
+        hal = 'AP_HAL_ESP32'
+        found2 = __is_ap_periph(board,hal)
+        if found2: 
+            return True # not as thorough as chibios, but ok, we're basically just grepping the file in __is_ap_periph
+
+def __is_ap_periph(board,hal):
+    hwdef = os.path.join('libraries/%s/hwdef/%s/hwdef.dat' % (hal,board))
+    try:
+        r = open(hwdef, 'r').read()
+        if r.find('periph/hwdef.dat') != -1 or r.find('AP_PERIPH') != -1:
+            print("%s is AP_Periph" % board)
+            return True
+    except Exception as ex:
+        pass
+    return False
 
 if args.copy_hwdef_incs_to_directory is not None:
     os.makedirs(args.copy_hwdef_incs_to_directory)

@@ -69,6 +69,9 @@ ELSEIF(${ARDUPILOT_CMD} STREQUAL "sub")
     message("Building for submarine")
     target_link_libraries(${elf_file} "${ARDUPILOT_BIN}/libardusub.a")
     target_link_libraries(${elf_file} "${ARDUPILOT_LIB}/libArduSub_libs.a")
+ELSEIF(${ARDUPILOT_CMD} STREQUAL "AP_Periph")
+    message("Building for AP_Periph")
+    target_link_libraries(${elf_file} "${ARDUPILOT_LIB}/AP_Periph.a")
 ENDIF()
 
 add_custom_target(showinc ALL

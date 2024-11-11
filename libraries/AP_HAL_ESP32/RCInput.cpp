@@ -93,8 +93,11 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
+#ifndef HAL_BUILD_AP_PERIPH
     AP_RCProtocol &rcprot = AP::RC();
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
 #ifdef HAL_ESP32_RCIN
     uint32_t width_s0, width_s1;
     while (sig_reader.read(width_s0, width_s1)) {
@@ -125,6 +128,7 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
+#endif
 #endif
 #endif // AP_RCPROTOCOL_ENABLED
 }
