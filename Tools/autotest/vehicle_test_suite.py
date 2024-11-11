@@ -3665,7 +3665,7 @@ class TestSuite(ABC):
         if (m.failure_flags & mavutil.mavlink.HL_FAILURE_FLAG_GPS) != 0:
             raise NotAchievedException("Expected GPS to be OK")
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True)
-        self.set_parameter("SIM_GPS_TYPE", 0)
+        self.set_parameter("SIM_GPS1_TYPE", 0)
         self.delay_sim_time(10)
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, False, False, False)
         m = self.poll_message("HIGH_LATENCY2")
@@ -3674,7 +3674,7 @@ class TestSuite(ABC):
             raise NotAchievedException("Expected GPS to be failed")
 
         self.start_subtest("HIGH_LATENCY2 location")
-        self.set_parameter("SIM_GPS_TYPE", 1)
+        self.set_parameter("SIM_GPS1_TYPE", 1)
         self.delay_sim_time(10)
         m = self.poll_message("HIGH_LATENCY2")
         self.progress(self.dump_message_verbose(m))
@@ -8471,7 +8471,7 @@ Also, ignores heartbeats not from our target system'''
 
     def wait_gps_disable(self, position_horizontal=True, position_vertical=False, timeout=30):
         """Disable GPS and wait for EKF to report the end of assistance from GPS."""
-        self.set_parameter("SIM_GPS_DISABLE", 1)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
         tstart = self.get_sim_time()
 
         """ if using SITL estimates directly """
@@ -10683,7 +10683,7 @@ Also, ignores heartbeats not from our target system'''
                     p1=1,  # ARM
                     want_result=mavutil.mavlink.MAV_RESULT_FAILED,
                 )
-                self.set_parameter("SIM_GPS_DISABLE", 0)
+                self.set_parameter("SIM_GPS1_ENABLE", 1)
                 self.wait_ekf_happy() # EKF may stay unhappy for a while
                 self.progress("PASS not able to arm without Position in mode : %s" % mode)
             if mode in self.get_no_position_not_settable_modes_list():
@@ -10693,10 +10693,10 @@ Also, ignores heartbeats not from our target system'''
                 try:
                     self.change_mode(mode, timeout=15)
                 except AutoTestTimeoutException:
-                    self.set_parameter("SIM_GPS_DISABLE", 0)
+                    self.set_parameter("SIM_GPS1_ENABLE", 1)
                     self.progress("PASS not able to set mode without Position : %s" % mode)
                 except ValueError:
-                    self.set_parameter("SIM_GPS_DISABLE", 0)
+                    self.set_parameter("SIM_GPS1_ENABLE", 1)
                     self.progress("PASS not able to set mode without Position : %s" % mode)
             if mode == "FOLLOW":
                 self.set_parameter("FOLL_ENABLE", 0)
@@ -12531,7 +12531,7 @@ switch value'''
             self.context_collect("STATUSTEXT")
             self.set_parameters({
                 "AFS_MAX_GPS_LOSS": 1,
-                "SIM_GPS_DISABLE": 1,
+                "SIM_GPS1_ENABLE": 0,
             })
             self.wait_statustext("AFS State: GPS_LOSS", check_context=True)
             self.context_pop()
@@ -14160,7 +14160,7 @@ switch value'''
         self.context_collect("STATUSTEXT")
         for (sim_gps_type, name, gps_type, detect_name, serial_protocol, detect_prefix) in sim_gps:
             self.start_subtest("Checking GPS type %s" % name)
-            self.set_parameter("SIM_GPS_TYPE", sim_gps_type)
+            self.set_parameter("SIM_GPS1_TYPE", sim_gps_type)
             self.set_parameter("SERIAL3_PROTOCOL", serial_protocol)
             if gps_type is None:
                 gps_type = 1  # auto-detect
@@ -14265,7 +14265,7 @@ switch value'''
 
         self.start_subtest("Ensure detection when sim gps connected")
         self.set_parameter("SIM_GPS2_TYPE", 1)
-        self.set_parameter("SIM_GPS2_DISABLE", 0)
+        self.set_parameter("SIM_GPS2_ENABLE", 1)
         # a reboot is required after setting GPS2_TYPE.  We start
         # sending GPS2_RAW out, once the parameter is set, but a
         # reboot is required because _port[1] is only set in
@@ -14281,9 +14281,9 @@ switch value'''
             raise NotAchievedException("Incorrect fix type")
 
         self.start_subtest("Check parameters are per-GPS")
-        self.assert_parameter_value("SIM_GPS_NUMSATS", 10)
+        self.assert_parameter_value("SIM_GPS1_NUMSATS", 10)
         self.assert_gps_satellite_count("GPS_RAW_INT", 10)
-        self.set_parameter("SIM_GPS_NUMSATS", 13)
+        self.set_parameter("SIM_GPS1_NUMSATS", 13)
         self.assert_gps_satellite_count("GPS_RAW_INT", 13)
 
         self.assert_parameter_value("SIM_GPS2_NUMSATS", 10)
@@ -14311,7 +14311,7 @@ switch value'''
         if abs(gpi_alt - new_gpi_alt) > 100:
             raise NotAchievedException("alt moved unexpectedly")
         self.progress("Killing first GPS")
-        self.set_parameter("SIM_GPS_DISABLE", 1)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
         self.delay_sim_time(1)
         self.progress("Checking altitude now matches second GPS")
         m = self.assert_receive_message("GLOBAL_POSITION_INT")
