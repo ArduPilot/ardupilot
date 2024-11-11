@@ -5,7 +5,9 @@ Mode::AutoYaw Mode::auto_yaw;
 // roi_yaw - returns heading towards location held in roi
 float Mode::AutoYaw::roi_yaw() const
 {
-    return get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
+    float yaw = get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
+    yaw += copter.g2.roi_yaw_offset;
+    return wrap_360_cd(yaw);
 }
 
 // returns a yaw in degrees, direction of vehicle travel:
