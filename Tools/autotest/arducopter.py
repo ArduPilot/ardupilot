@@ -11178,14 +11178,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def GPSBlendingLog(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
+
         # configure:
         self.set_parameters({
             "GPS2_TYPE": 1,
             "SIM_GPS2_TYPE": 1,
             "SIM_GPS2_ENABLE": 1,
             "GPS_AUTO_SWITCH": 2,
+            "GPS3_TYPE": 27,
         })
         self.reboot_sitl()
+
+        # ensure we're seeing the second GPS:
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get good GPS2_RAW message")
+            m = self.assert_receive_message('GPS2_RAW', verbose=True)
+            if m.lat == 0:
+                continue
+            break
+
+        # create a log we can expect blended data to appear in:
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(5)
+        self.disarm_vehicle()
+
+        # inspect generated log for messages:
+        dfreader = self.dfreader_for_current_onboard_log()
+        wanted = set([0, 1, 2])
+        seen_primary_change = False
+        while True:
+            m = dfreader.recv_match(type=["GPS", "EV"]) # disarmed
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'GPS':
+                try:
+                    wanted.remove(m.I)
+                except KeyError:
+                    continue
+            elif mtype == 'EV':
+                if m.Id == 67:  # GPS_PRIMARY_CHANGED
+                    seen_primary_change = True
+            if len(wanted) == 0 and seen_primary_change:
+                break
+
+        if len(wanted):
+            raise NotAchievedException("Did not get all three GPS types")
+        if not seen_primary_change:
+            raise NotAchievedException("Did not see primary change")
 
         # ensure we're seeing the second GPS:
         tstart = self.get_sim_time()
@@ -15586,6 +15630,81 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
+    def ManyGPS(self):
+        '''check many gps support'''
+        self.set_parameters({
+            'GPS2_TYPE': 1,
+            'GPS3_TYPE': 1,
+            'GPS4_TYPE': 1,
+
+            'SIM_GPS1_NUMSATS': 21,
+
+            'SIM_GPS2_ENABLE': 1,
+            'SIM_GPS2_NUMSATS': 22,
+
+            'SIM_GPS3_TYPE': 1,
+            'SIM_GPS3_ENABLE': 1,
+            'SIM_GPS3_NUMSATS': 23,
+
+            'SIM_GPS4_TYPE': 1,
+            'SIM_GPS4_ENABLE': 1,
+            'SIM_GPS4_NUMSATS': 24,
+
+            'SERIAL5_PROTOCOL': 5,
+            'SERIAL6_PROTOCOL': 5,
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:gps:3:",
+            "--serial6=sim:gps:4:",
+        ])
+
+        tstart = self.get_sim_time()
+        i = 0
+        while i < 4:
+            if self.get_sim_time_cached() - tstart > 200:
+                raise NotAchievedException(f"Did not get GNSS message {i}")
+            m = self.assert_receive_message('GNSS')
+            if m.id != i:
+                continue
+            self.dump_message_verbose(m)
+            self.assert_message_field_values(m, {
+                'satellites_visible': 20 + i + 1,
+                'yaw': 0,
+            })
+            i += 1
+
+        self.start_subtest("GPS-for-yaw")
+        self.set_parameters({
+            "GPS3_TYPE": 17,  # RTK base
+            "GPS3_POS_X": -0.5,
+            "GPS3_POS_Y": -0.5,
+            "SIM_GPS3_HDG": 4,
+            "SIM_GPS3_POS_X": -0.5,
+            "SIM_GPS3_POS_Y": -0.5,
+
+            "GPS4_TYPE": 18,  # RTK rover
+            "SIM_GPS4_HDG": 2,
+            "GPS4_POS_X": 0.5,
+            "GPS4_POS_Y": 0.5,
+            "SIM_GPS4_POS_X": 0.5,
+            "SIM_GPS4_POS_Y": 0.5,
+        })
+        self.reboot_sitl()
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not get GNSS yaw")
+
+            m = self.assert_receive_message('GNSS', verbose=True, timeout=120)
+
+#            if m.id != 4:
+#                continue
+
+            if m.yaw != 0 and m.yaw != 65535:
+                self.progress(f"GPS{m.id+1} provided yaw")
+                break
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -15682,6 +15801,7 @@ return update, 1000
             self.SafetySwitch,
             self.RCProtocolFailsafe,
             self.BrakeZ,
+            self.ManyGPS,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
