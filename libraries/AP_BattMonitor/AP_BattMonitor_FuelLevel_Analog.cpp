@@ -63,28 +63,28 @@ const AP_Param::GroupInfo AP_BattMonitor_FuelLevel_Analog::var_info[] = {
     // @Param: FL_FF
     // @DisplayName: First order term
     // @Description: First order polynomial fit term
-    // @Range: 0 10
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("FL_FF", 45, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_first_order_coeff, 1),
 
     // @Param: FL_FS
     // @DisplayName: Second order term
     // @Description: Second order polynomial fit term
-    // @Range: 0 10
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("FL_FS", 46, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_second_order_coeff, 0),
 
     // @Param: FL_FT
     // @DisplayName: Third order term
     // @Description: Third order polynomial fit term
-    // @Range: 0 10
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("FL_FT", 47, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_third_order_coeff, 0),
 
     // @Param: FL_OFF
     // @DisplayName: Offset term
     // @Description: Offset polynomial fit term
-    // @Range: 0 10
+    // @Range: -10 10
     // @User: Advanced
     AP_GROUPINFO("FL_OFF", 48, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_offset, 0),    
 
