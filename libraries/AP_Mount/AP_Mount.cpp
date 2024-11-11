@@ -743,6 +743,19 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
+// called by a vehicle to indicate the vehicle has moved into a
+// landing phase.  For example, a Copter moving into LAND mode
+// should call this method.
+void AP_Mount::vehicle_has_started_to_land()
+{
+    // each instance writes log
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->vehicle_has_started_to_land();
+        }
+    }
+}
+
 #if HAL_LOGGING_ENABLED
 // write mount log packet for all backends
 void AP_Mount::write_log()

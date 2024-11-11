@@ -168,7 +168,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: Mount options
     // @Description: Mount options bitmask
-    // @Bitmask: 0:RC lock state from previous mode
+    // @Bitmask: 0:RC lock state from previous mode, 1:Retract mount on land start
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 

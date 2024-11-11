@@ -221,6 +221,11 @@ public:
     // enable/disable rangefinder.  Returns true on success
     virtual bool set_rangefinder_enable(bool enable) { return false; }
 
+    // called by a vehicle to indicate the vehicle has moved into a
+    // landing phase.  For example, a Copter moving into LAND mode
+    // should call this method.
+    void vehicle_has_started_to_land();
+
 protected:
 
     enum class MountTargetType {
@@ -249,6 +254,7 @@ protected:
     // options parameter bitmask handling
     enum class Options : uint8_t {
         RCTARGETING_LOCK_FROM_PREVMODE = (1U << 0), // RC_TARGETING mode's lock/follow state maintained from previous mode
+        RETRACT_ON_LANDING = (1U << 1), // Retract the gimbal when vehicle enters landing mode
     };
     bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
 
