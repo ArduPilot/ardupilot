@@ -54,7 +54,7 @@ public:
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     float distance() const { return state.distance_m; }
     int8_t signal_quality_pct() const  WARN_IF_UNUSED { return state.signal_quality_pct; }
-    uint16_t voltage_mv() const { return state.voltage_mv; }
+    virtual uint16_t voltage_mv() const { return 0; }
     virtual float max_distance() const { return params.max_distance; }
     virtual float min_distance() const { return params.min_distance; }
     float ground_clearance() const { return params.ground_clearance; }

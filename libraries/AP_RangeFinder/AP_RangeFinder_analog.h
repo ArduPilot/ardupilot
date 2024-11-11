@@ -20,6 +20,8 @@ public:
     // update state
     void update(void) override;
 
+    uint16_t voltage_mv() const override { return _voltage_mv; }
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -31,6 +33,8 @@ private:
     void update_voltage(void);
 
     AP_HAL::AnalogSource *source;
+
+    uint16_t _voltage_mv;            // voltage in millivolts
 };
 
 #endif  // AP_RANGEFINDER_ANALOG_ENABLED
