@@ -371,6 +371,7 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
+    MSG_GPS_STATUS,
 #if GPS_MAX_RECEIVERS > 1
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,

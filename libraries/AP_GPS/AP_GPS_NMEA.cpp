@@ -299,7 +299,38 @@ bool AP_GPS_NMEA::_term_complete()
         const bool crc_ok = _is_unicore? (_crc32 == crc) : (_parity == crc);
         if (crc_ok) {
             uint32_t now = AP_HAL::millis();
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+            int end;
+#endif
+
             switch (_sentence_type) {
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+            case _GPS_SENTENCE_GSV: {
+                end = 4;
+                if (_gsv.this_page_num == 0) {
+                    memset(state.satellites_prn,  0,  sizeof(state.satellites_prn));
+                    memset(state.satellites_used,  0,  sizeof(state.satellites_used));
+                    memset(state.satellites_snr,  0,  sizeof(state.satellites_snr));
+                    memset(state.satellites_elevation,  0,  sizeof(state.satellites_elevation));
+                    memset(state.satellites_azimuth,  0,  sizeof(state.satellites_azimuth));
+                }
+                if (_gsv.this_page_num == _gsv.all_page_num) {
+                    end = _gsv.tot_sv_visible - (_gsv.this_page_num - 1) * 4;
+                    state.satellites_visible = _gsv.num_gps + _gsv.num_glonass + _gsv.num_galileo + _gsv.num_baidou + _gsv.num_others;    
+                }
+                for (int y = 0; y < end; y++) {
+                    state.satellites_prn[y + (_gsv.this_page_num - 1) * 4]        = _gsv.svid[y];
+                    state.satellites_used[y + (_gsv.this_page_num - 1) * 4]        = (_gsv.snr[y] > 0);
+                    state.satellites_snr[y + (_gsv.this_page_num - 1) * 4]         = _gsv.snr[y];
+                    state.satellites_elevation[y + (_gsv.this_page_num - 1) * 4]   = _gsv.elevation[y];
+                    state.satellites_azimuth[y + (_gsv.this_page_num - 1) * 4]     = _gsv.azimuth[y];
+                }
+                break;
+            }
+#endif
+
             case _GPS_SENTENCE_RMC:
                 _last_RMC_ms = now;
                 //time                        = _new_time;
@@ -564,6 +595,15 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_THS;
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+        } else if (strcmp(term_type, "GSV") == 0) {
+            if(strncmp(_term, "GP",2) == 0) _gsv.satellite_system = 1;
+            else if(strncmp(_term, "GL",2) == 0) _gsv.satellite_system = 2;
+            else if(strncmp(_term, "GA",2) == 0) _gsv.satellite_system = 3;
+            else if(strncmp(_term, "GB",2) == 0 || strncmp(_term, "BD",2) == 0) _gsv.satellite_system = 4;
+            else _gsv.satellite_system = 0;
+            _sentence_type = _GPS_SENTENCE_GSV;
+#endif
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -670,6 +710,11 @@ bool AP_GPS_NMEA::_term_complete()
             break;
 #endif
 #endif
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+        case _GPS_SENTENCE_GSV + 1 ... _GPS_SENTENCE_GSV + 19: 
+            parse_gsv_field(_term_number, _term);
+            break;
+#endif
         }
     }
 
@@ -733,6 +778,49 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
         break;
     }
 }
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+void AP_GPS_NMEA::parse_gsv_field(uint16_t term_number, const char *term)
+{
+    auto &gsv = _gsv;
+    if (term_number == 1) {
+        memset(gsv.svid,  0,  sizeof(gsv.svid));
+        memset(gsv.snr,  0,  sizeof(gsv.snr));
+        memset(gsv.elevation,  0,  sizeof(gsv.elevation));
+        memset(gsv.azimuth,  0,  sizeof(gsv.azimuth));
+        gsv.all_page_num = atoi(term);
+    } else if (term_number == 2) {
+        gsv.this_page_num = atoi(term);
+    } else if (term_number == 3) {
+        gsv.tot_sv_visible = atoi(term);
+        if(gsv.satellite_system == 1) gsv.num_gps = gsv.tot_sv_visible;
+        else if(gsv.satellite_system == 2) gsv.num_glonass = gsv.tot_sv_visible;
+        else if(gsv.satellite_system == 3) gsv.num_galileo = gsv.tot_sv_visible;
+        else if(gsv.satellite_system == 4) gsv.num_baidou = gsv.tot_sv_visible;
+        else gsv.num_others = gsv.tot_sv_visible;
+    } else {
+        
+        int sat_index = (term_number - 4) / 4;
+        int field_index = (term_number - 4) % 4;
+        if (sat_index < 4) {
+            switch (field_index) {
+                case 0:
+                    gsv.svid[sat_index] = atoi(term);
+                    break;
+                case 1:
+                    gsv.elevation[sat_index] = atoi(term);
+                    break;
+                case 2:
+                    gsv.azimuth[sat_index] = atoi(term);
+                    break;
+                case 3:
+                    gsv.snr[sat_index] = atoi(term);
+                    break;
+            }
+        }
+    }
+}
+#endif
 
 #if GPS_MOVING_BASELINE
 /*

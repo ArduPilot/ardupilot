@@ -1367,6 +1367,25 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
     return yaw_cd;
 }
 
+void AP_GPS::send_mavlink_gps_status(mavlink_channel_t chan)
+{
+#if GPS_SATELITES_INFO_ENABLED
+    mavlink_gps_status_t msg{};
+    
+    msg.satellites_visible = state[0].satellites_visible;
+    size_t sat_count = MIN(static_cast<size_t>(state[0].satellites_visible), sizeof(msg.satellite_used) / sizeof(msg.satellite_used[0]));
+    for (size_t i = 0; i < sat_count; i++) {
+        msg.satellite_used[i]      = state[0].satellites_used[i];
+        msg.satellite_elevation[i] = state[0].satellites_elevation[i];
+        msg.satellite_azimuth[i]   = state[0].satellites_azimuth[i];
+        msg.satellite_snr[i]       = state[0].satellites_snr[i];
+        msg.satellite_prn[i]       = state[0].satellites_prn[i];
+    }
+        
+   mavlink_msg_gps_status_send_struct(chan, &msg);
+#endif
+}
+
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
     const Location &loc = location(0);

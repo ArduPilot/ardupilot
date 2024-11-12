@@ -29,6 +29,7 @@ enum ap_message : uint8_t {
     MSG_RC_CHANNELS,
     MSG_RC_CHANNELS_RAW,
     MSG_RAW_IMU,
+    MSG_GPS_STATUS,
     MSG_SCALED_IMU,
     MSG_SCALED_IMU2,
     MSG_SCALED_IMU3,

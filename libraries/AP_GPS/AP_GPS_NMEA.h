@@ -47,6 +47,11 @@
 #include "GPS_Backend.h"
 
 #if AP_GPS_NMEA_ENABLED
+
+#ifndef AP_GPS_NMEA_SATELITES_INFO_ENABLED
+#define AP_GPS_NMEA_SATELITES_INFO_ENABLED (BOARD_FLASH_SIZE > 2048)
+#endif
+
 /// NMEA parser
 ///
 class AP_GPS_NMEA : public AP_GPS_Backend
@@ -89,6 +94,9 @@ private:
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
         _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+        _GPS_SENTENCE_GSV = 320,
+#endif
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -139,6 +147,10 @@ private:
 
     // parse VERSIONA field
     void parse_versiona_field(uint16_t term_number, const char *term);
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+    void parse_gsv_field(uint16_t term_number, const char *term);
+#endif
 
 #if GPS_MOVING_BASELINE
     // parse UNIHEADINGA field
@@ -221,6 +233,25 @@ private:
     struct {
         double fields[21];
     } _ksxt;
+
+#if AP_GPS_NMEA_SATELITES_INFO_ENABLED
+    struct {
+        int satellite_system;
+        int num_gps;
+        int num_glonass;
+        int num_galileo;
+        int num_baidou;
+        int num_others;
+
+        int all_page_num = 0;
+        int this_page_num = 0;
+        int tot_sv_visible = 0;
+        int svid[4];
+        int elevation[4];
+        int azimuth[4];
+        int snr[4];
+    } _gsv;
+#endif
 
 #if AP_GPS_NMEA_UNICORE_ENABLED
     /*
