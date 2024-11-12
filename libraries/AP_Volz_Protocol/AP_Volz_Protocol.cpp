@@ -405,7 +405,7 @@ void AP_Volz_Protocol::update()
                 "TimeUS,I,Dang,ang,pc,sc,pv,sv,mt,pt",
                 "s#ddAAvvOO",
                 "F000000000",
-                "QBffffffHH",
+                "QBffffffhh",
                 AP_HAL::micros64(),
                 i + 1, // convert to 1 indexed to match actuator IDs and SERVOx numbering
                 telem.data[i].desired_angle,

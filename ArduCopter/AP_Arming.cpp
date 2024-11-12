@@ -1,7 +1,7 @@
 #include "Copter.h"
 
 #pragma GCC diagnostic push
-#if defined(__clang__)
+#if defined(__clang_major__) && __clang_major__ >= 14
 #pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
 #endif
 

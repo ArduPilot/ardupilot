@@ -535,11 +535,7 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
     }
 
     // calculate velocity-only based lean angle
-    if (velocity >= 0) {
-        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (velocity + 60.0f));
-    } else {
-        lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (-velocity + 60.0f));
-    }
+    lean_angle = -brake.gain * velocity * (1.0f + 500.0f / (fabsf(velocity) + 60.0f));
 
     // do not let lean_angle be too far from brake_angle
     brake_angle = constrain_float(lean_angle, brake_angle - brake_rate, brake_angle + brake_rate);
@@ -592,7 +588,7 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // limit acceleration
-    const float accel_lim_cmss = tanf(radians(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max * 0.01f)) * 981.0f;
+    const float accel_lim_cmss = tanf(radians(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max * 0.01f)) * (GRAVITY_MSS*100);
     const float wind_comp_ef_len = wind_comp_ef.length();
     if (!is_zero(accel_lim_cmss) && (wind_comp_ef_len > accel_lim_cmss)) {
         wind_comp_ef *= accel_lim_cmss / wind_comp_ef_len;

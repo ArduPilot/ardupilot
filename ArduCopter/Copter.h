@@ -137,7 +137,7 @@
  #include <AP_OSD/AP_OSD.h>
 #endif
 
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
  # include "afs_copter.h"
 #endif
 #if TOY_MODE_ENABLED
@@ -183,7 +183,7 @@ public:
     friend class ParametersG2;
     friend class AP_Avoidance_Copter;
 
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     friend class AP_AdvancedFailsafe_Copter;
 #endif
     friend class AP_Arming_Copter;
@@ -804,7 +804,7 @@ private:
     // failsafe.cpp
     void failsafe_enable();
     void failsafe_disable();
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
 

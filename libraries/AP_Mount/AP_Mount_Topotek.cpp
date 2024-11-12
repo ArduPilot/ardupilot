@@ -1,6 +1,8 @@
-#include "AP_Mount_Topotek.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
+
+#include "AP_Mount_Topotek.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -31,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 # define AP_MOUNT_TOPOTEK_ID3CHAR_START_TRACKING "LOC"          // start image tracking
 # define AP_MOUNT_TOPOTEK_ID3CHAR_LRF           "LRF"           // laser rangefinder control, data bytes: 00:ranging stop, 01:ranging start, 02:single measurement, 03:continuous measurement
 # define AP_MOUNT_TOPOTEK_ID3CHAR_PIP           "PIP"           // set picture-in-picture setting, data bytes: // 00:main only, 01:main+sub, 02:sub+main, 03:sub only, 0A:next
-# define AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_ATT    "GAA"           // get gimbal attitude, data bytes: 00:stop, 01:start
+# define AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_ATT    "GIA"           // get gimbal attitude, data bytes: 00:stop, 01:start
 # define AP_MOUNT_TOPOTEK_ID3CHAR_SD_CARD       "SDC"           // get SD card state, data bytes: 00:get remaining capacity, 01:get total capacity
 # define AP_MOUNT_TOPOTEK_ID3CHAR_TIME          "UTC"           // set time and date, data bytes: HHMMSSDDMMYY
 # define AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION   "VSN"           // get firmware version, data bytes always 00
@@ -156,20 +158,9 @@ void AP_Mount_Topotek::update()
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
+        case MAV_MOUNT_MODE_RC_TARGETING:
+            update_mnt_target_from_rc_target();
             break;
-        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
@@ -765,7 +756,7 @@ void AP_Mount_Topotek::read_incoming_packets()
 // request gimbal attitude
 void AP_Mount_Topotek::request_gimbal_attitude()
 {
-    // sample command: #TPUG2wGAA01
+    // sample command: #TPUG2wGIA01
     send_fixedlen_packet(AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_ATT, true, 1);
 }
 
@@ -811,7 +802,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 
     // calculate and send yaw target
     // sample command #tpUG6wGIY
-    const char* format_str = "%04x%02x";
+    const char* format_str = "%04X%02X";
     const uint8_t speed = 99;
     const uint16_t yaw_angle_cd = (uint16_t)constrain_int16(degrees(angle_rad.get_bf_yaw()) * 100, MAX(-18000, _params.yaw_angle_min * 100), MIN(18000, _params.yaw_angle_max * 100));
 
@@ -872,7 +863,7 @@ void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
     // prepare and send command
     // sample command: #tpUG6wYPR
     uint8_t databuff[7];
-    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02x%02x%02x", yaw_angle_speed, pitch_angle_speed, roll_angle_speed);
+    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02X%02X%02X", yaw_angle_speed, pitch_angle_speed, roll_angle_speed);
     send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_YPR_RATE, true, databuff, ARRAY_SIZE(databuff)-1);
 }
 
@@ -1150,7 +1141,7 @@ int16_t AP_Mount_Topotek::hexchar4_to_int16(char high, char mid_high, char mid_l
 bool AP_Mount_Topotek::send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value)
 {
     uint8_t databuff[3];
-    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02x", value);
+    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02X", value);
     return send_variablelen_packet(HeaderType::FIXED_LEN, address, id, write, databuff, ARRAY_SIZE(databuff)-1);
 }
 

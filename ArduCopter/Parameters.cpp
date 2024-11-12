@@ -771,7 +771,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
 
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     AP_SUBGROUPINFO(afs, "AFS_", 6, ParametersG2, AP_AdvancedFailsafe),
@@ -1251,7 +1251,7 @@ ParametersG2::ParametersG2(void)
 #if HAL_PROXIMITY_ENABLED
     , proximity()
 #endif
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     ,afs()
 #endif
 #if MODE_SMARTRTL_ENABLED

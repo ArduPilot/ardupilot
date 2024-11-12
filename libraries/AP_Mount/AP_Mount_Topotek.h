@@ -272,7 +272,7 @@ private:
 
     // stores command ID and corresponding member functions that are compared with the command received by the gimbal
     UartCmdFunctionHandler uart_recv_cmd_compare_list[AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM] = {
-        {{"GAC"}, &AP_Mount_Topotek::gimbal_angle_analyse},
+        {{"GIA"}, &AP_Mount_Topotek::gimbal_angle_analyse},
         {{"REC"}, &AP_Mount_Topotek::gimbal_record_analyse},
         {{"SDC"}, &AP_Mount_Topotek::gimbal_sdcard_analyse},
         {{"LRF"}, &AP_Mount_Topotek::gimbal_dist_info_analyse},

@@ -185,12 +185,12 @@ AP_InertialSensor_Invensensev3::~AP_InertialSensor_Invensensev3()
 #if HAL_INS_HIGHRES_SAMPLE
     if (highres_sampling) {
         if (fifo_buffer != nullptr) {
-            hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+            hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
         }
     } else
 #endif
     if (fifo_buffer != nullptr) {
-        hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
     }
 }
 
@@ -358,10 +358,10 @@ void AP_InertialSensor_Invensensev3::start()
     // allocate fifo buffer
 #if HAL_INS_HIGHRES_SAMPLE
     if (highres_sampling) {
-        fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
     } else
 #endif
-    fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
 
     if (fifo_buffer == nullptr) {
         AP_HAL::panic("Invensensev3: Unable to allocate FIFO buffer");
@@ -519,6 +519,8 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     uint8_t reg_counth;
     uint8_t reg_data;
+    uint8_t* samples = nullptr;
+    uint8_t* tfr_buffer = (uint8_t*)fifo_buffer;
 
     switch (inv3_type) {
     case Invensensev3_Type::ICM45686:
@@ -555,18 +557,28 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
-        if (!block_read(reg_data, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
+
+        // we don't use read_registers() here to ensure that the fifo buffer that we have allocated
+        // gets passed all the way down to the SPI DMA handling. This involves one transfer to send
+        // the register read and then another using the same buffer and length which is handled specially
+        // for the read
+        tfr_buffer[0] = reg_data | BIT_READ_FLAG;
+        // transfer will also be sending data, make sure that data is zero
+        memset(tfr_buffer + 1, 0, n * fifo_sample_size);
+        if (!dev->transfer(tfr_buffer, n * fifo_sample_size + 1, tfr_buffer, n * fifo_sample_size + 1)) {
             goto check_registers;
         }
+        samples = tfr_buffer + 1;
+
 #if HAL_INS_HIGHRES_SAMPLE
         if (highres_sampling) {
-            if (!accumulate_highres_samples((FIFODataHighRes*)fifo_buffer, n)) {
+            if (!accumulate_highres_samples((FIFODataHighRes*)samples, n)) {
                 need_reset = true;
                 break;
             }
         } else
 #endif
-        if (!accumulate_samples((FIFOData*)fifo_buffer, n)) {
+        if (!accumulate_samples((FIFOData*)samples, n)) {
             need_reset = true;
             break;
         }
