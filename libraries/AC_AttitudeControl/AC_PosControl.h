@@ -42,6 +42,8 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #define POSCONTROL_PDNN_XY_P                  1.0f    // horizontal pdnn controller P gain default
 #define POSCONTROL_PDNN_XY_D                  1.0f    // horizontal pdnn controller D gain default
+#define POSCONTROL_PDNN_Z_P                  1.0f    // veritical pdnn controller P gain default
+#define POSCONTROL_PDNN_Z_D                  1.0f    // veritical pdnn controller D gain default
 //在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

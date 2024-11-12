@@ -352,7 +352,7 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _jerk_max_xy_cmsss(POSCONTROL_JERK_XY * 100.0),
     _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0),
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn初始化~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    _pdnn_pos(POSCONTROL_PDNN_XY_P, POSCONTROL_PDNN_XY_D, 0.0f, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ)
+    _pdnn_pos(POSCONTROL_PDNN_XY_P, POSCONTROL_PDNN_XY_D, POSCONTROL_PDNN_Z_P, POSCONTROL_PDNN_Z_D, 0.0f, POSCONTROL_VEL_XY_FILT_HZ, POSCONTROL_VEL_XY_FILT_D_HZ)
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -1047,6 +1047,16 @@ void AC_PosControl::update_z_controller()
 
     _pos_target.z = pos_target_zf; //局部变量的赋值还原
     _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    const Vector3f &pos_meas = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
+    Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
+    _pos_desired_3f.x = _pos_desired.x;
+    _pos_desired_3f.y = _pos_desired.y;
+    _pos_desired_3f.z = _pos_desired.z;
+    Vector3f f_d;
+    f_d = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // add feed forward component //目标速度，添加一些前馈
     _vel_target.z += _vel_desired.z + _vel_offset.z + _vel_terrain;

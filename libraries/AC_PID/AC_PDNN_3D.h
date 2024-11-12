@@ -15,7 +15,7 @@ class AC_PDNN_3D {
 public:
 
 // Constructor for PDNN //构造函数
-    AC_PDNN_3D(float initial_kP, float initial_kD, float initial_kFF, float initial_filt_hz, float initial_filt_d_hz);
+    AC_PDNN_3D(float initial_kP, float initial_kD, float initial_kP_z, float initial_kD_z, float initial_kFF, float initial_filt_hz, float initial_filt_d_hz);
 
     CLASS_NO_COPY(AC_PDNN_3D); //CLASS_NO_COPY 是一个宏，常用于禁止类的复制行为
 
@@ -40,6 +40,8 @@ public:
     // get accessors
     AP_Float &kP() { return _kp; }
     AP_Float &kD() { return _kd; }
+    AP_Float &kP_z() { return _kp_z; }
+    AP_Float &kD_z() { return _kd_z; }
     AP_Float &ff() { return _kff;}
     AP_Float &filt_E_hz() { return _filt_E_hz; } //输入误差的滤波器截止频率 
     AP_Float &filt_D_hz() { return _filt_D_hz; } //微分项的滤波器截止频率 
@@ -49,6 +51,8 @@ public:
     // set accessors
     void set_kP(float v) { _kp.set(v); }
     void set_kD(float v) { _kd.set(v); }
+    void set_kP_z(float v) { _kp_z.set(v); }
+    void set_kD_z(float v) { _kd_z.set(v); }
     void set_ff(float v) { _kff.set(v); }
     void set_filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }  //设置误差滤波截止频率
     void set_filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }  //设置微分项滤波截止频率
@@ -68,6 +72,8 @@ public:
     // parameters
     AP_Float _kp;
     AP_Float _kd;
+    AP_Float _kp_z;
+    AP_Float _kd_z;
     AP_Float _kff;
     AP_Float _filt_E_hz;         // PDNN error filter frequency in Hz
     AP_Float _filt_D_hz;         // PDNN derivative filter frequency in Hz
@@ -77,6 +83,9 @@ public:
     Vector3f    _error;         // error value to enable filtering
     Vector3f    _derivative;    // last derivative from low-pass filter
     Vector3f    _integrator;    // integrator value
+    Vector3f    _pdnn_output;    //pdnn控制器输出
+    Vector3f    _pdnn_output_P;  //pdnn控制器输出P
+    Vector3f    _pdnn_output_D;   //pdnn控制器输出P
     bool        _reset_filter;  // true when input filter should be reset during next call to update_all
 
     AP_PDNNInfo _pdnn_info_x;
@@ -88,6 +97,8 @@ public:
     private:
     const float default_kp;
     const float default_kd;
+    const float default_kp_z;
+    const float default_kd_z;
     const float default_kff;
     const float default_filt_E_hz;
     const float default_filt_D_hz;

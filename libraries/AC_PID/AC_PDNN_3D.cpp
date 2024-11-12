@@ -35,13 +35,19 @@ const AP_Param::GroupInfo AC_PDNN_3D::var_info[] = {
     // @Description: FF Gain which produces an output that is proportional to the magnitude of the target
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FF",    4, AC_PDNN_3D, _kff, default_kff),
 
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    5, AC_PDNN_3D, _kp_z, default_kp_z),
+    
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    6, AC_PDNN_3D, _kd_z, default_kd_z),
+
     AP_GROUPEND
 };
 
 // Constructor 构造函数
-AC_PDNN_3D::AC_PDNN_3D(float initial_kP, float initial_kD, float initial_kFF, float initial_filt_E_hz, float initial_filt_D_hz) :
+AC_PDNN_3D::AC_PDNN_3D(float initial_kP, float initial_kD, float initial_kP_z, float initial_kD_z, float initial_kFF, float initial_filt_E_hz, float initial_filt_D_hz) :
     default_kp(initial_kP),
     default_kd(initial_kD),
+    default_kp_z(initial_kP_z),
+    default_kd_z(initial_kD_z),
     default_kff(initial_kFF),
     default_filt_E_hz(initial_filt_E_hz),
     default_filt_D_hz(initial_filt_D_hz)
@@ -104,21 +110,33 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _pdnn_info_z.target = _target.z;
     _pdnn_info_z.actual = measurement.z;
     _pdnn_info_z.error = _error.z;
-    _pdnn_info_z.P = _error.z * _kp;
-    _pdnn_info_z.D = _derivative.z * _kd;
-    _pdnn_info_z.FF = _target.z * _kff;//这里应该改成期望加速度前馈ddotYd
+    _pdnn_info_z.P = _error.z * _kp_z;
+    _pdnn_info_z.D = _derivative.z * _kd_z;
+    _pdnn_info_z.FF = _target.z * _kff;//这里应该改成期望加速度前馈ddotZd
 
-    return _error * _kp + _derivative * _kd + _target * _kff; //返回pdnn控制器输出
+    _pdnn_output_P.x = _error.x * _kp; //计算P项输出
+    _pdnn_output_P.y = _error.y * _kp;
+    _pdnn_output_P.z = _error.z * _kp_z;
+
+    _pdnn_output_D.x = _error.x * _kd; //计算D项输出
+    _pdnn_output_D.y = _error.y * _kd;
+    _pdnn_output_D.z = _error.z * _kd_z;
+
+    _pdnn_output.x = _error.x * _kp + _derivative.x * _kd + _target.x * _kff; //计算总输出
+    _pdnn_output.y = _error.y * _kp + _derivative.y * _kd + _target.y * _kff;
+    _pdnn_output.z = _error.z * _kp_z + _derivative.z * _kd_z + _target.z * _kff;
+
+    return _pdnn_output; //返回pdnn控制器输出
 }
 
 Vector3f AC_PDNN_3D::get_p() const
 {
-    return _error * _kp;
+    return _pdnn_output_P;
 }
 
 Vector3f AC_PDNN_3D::get_d() const
 {
-    return _derivative * _kd;
+    return _pdnn_output_D;
 }
 
 Vector3f AC_PDNN_3D::get_ff()
@@ -134,6 +152,8 @@ void AC_PDNN_3D::save_gains()
 {
     _kp.save();
     _kd.save();
+    _kp_z.save();
+    _kd_z.save();
     _kff.save();
     _filt_E_hz.save();
     _filt_D_hz.save();
