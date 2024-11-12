@@ -91,8 +91,10 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         return false;
     }
 
+#if HAL_LOGGING_ENABLED
     // let logger know that we're armed (it may open logs e.g.)
     AP::logger().set_vehicle_armed(true);
+#endif
 
     // disable cpu failsafe because initialising everything takes a while
     sub.mainloop_failsafe_disable();
@@ -105,7 +107,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
+    send_arm_disarm_statustext("Arming motors");
 #endif
 
     AP_AHRS &ahrs = AP::ahrs();
@@ -118,7 +120,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         // Always use absolute altitude for ROV
         // ahrs.resetHeightDatum();
         // AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
-    } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
+    } else if (!ahrs.home_is_locked()) {
         // Reset home position if it has already been set before (but not locked)
         if (!sub.set_home_to_current_location(false)) {
             // ignore this failure
@@ -133,8 +135,10 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // finally actually arm the motors
     sub.motors.armed(true);
 
+#if HAL_LOGGING_ENABLED
     // log flight mode in case it was changed while vehicle was disarmed
-    AP::logger().Write_Mode(sub.control_mode, sub.control_mode_reason);
+    AP::logger().Write_Mode((uint8_t)sub.control_mode, sub.control_mode_reason);
+#endif
 
     // reenable failsafe
     sub.mainloop_failsafe_enable();
@@ -145,6 +149,14 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // flag exiting this function
     in_arm_motors = false;
 
+    // if we do not have an ekf origin then we can't use the WMM tables
+    if (!sub.ensure_ekf_origin()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Compass performance degraded");
+        if (check_enabled(ARMING_CHECK_PARAMETERS)) {
+            check_failed(ARMING_CHECK_PARAMETERS, true, "No world position, check ORIGIN_* parameters");
+            return false;
+        }
+    }
     // return success
     return true;
 }
@@ -161,7 +173,7 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
+    send_arm_disarm_statustext("Disarming motors");
 #endif
 
     auto &ahrs = AP::ahrs();
@@ -182,7 +194,9 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     // reset the mission
     sub.mission.reset();
 
+#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(false);
+#endif
 
     hal.util->set_soft_armed(false);
 

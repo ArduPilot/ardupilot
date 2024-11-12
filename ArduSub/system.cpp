@@ -14,16 +14,6 @@ static void failsafe_check_static()
 
 void Sub::init_ardupilot()
 {
-    BoardConfig.init();
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    can_mgr.init();
-#endif
-
-    // init cargo gripper
-#if AP_GRIPPER_ENABLED
-    g2.gripper.init();
-#endif
-
     // initialise notify system
     notify.init();
 
@@ -57,10 +47,6 @@ void Sub::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if LOGGING_ENABLED == ENABLED
-    log_init();
-#endif
-
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
@@ -70,7 +56,9 @@ void Sub::init_ardupilot()
     init_rc_out();              // sets up motors and output to escs
     init_joystick();            // joystick initialization
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
@@ -80,7 +68,7 @@ void Sub::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init(serial_manager);
+    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -97,7 +85,7 @@ void Sub::init_ardupilot()
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
-    // This step ncessary so the servo is properly initialized
+    // This step is necessary so that the servo is properly initialized
     camera_mount.set_angle_target(0, 0, 0, false);
     // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
     camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
@@ -141,7 +129,7 @@ void Sub::init_ardupilot()
     last_pilot_heading = ahrs.yaw_sensor;
 
     // initialise rangefinder
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     init_rangefinder();
 #endif
 
@@ -152,22 +140,16 @@ void Sub::init_ardupilot()
 
     // initialise mission library
     mission.init();
+#if HAL_LOGGING_ENABLED
+    mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 
     // initialise AP_Logger library
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(FUNCTOR_BIND(&sub, &Sub::Log_Write_Vehicle_Startup_Messages, void));
 #endif
 
     startup_INS_ground();
-
-#if AP_SCRIPTING_ENABLED
-    g2.scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we are
-    // ready to fly
-    serial_manager.set_blocking_writes_all(false);
 
     // enable CPU failsafe
     mainloop_failsafe_enable();
@@ -187,6 +169,7 @@ void Sub::startup_INS_ground()
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
     ahrs.set_vehicle_class(AP_AHRS::VehicleClass::SUBMARINE);
+    ahrs.set_fly_forward(false);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());
@@ -262,18 +245,16 @@ bool Sub::optflow_position_ok()
     return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
  */
 bool Sub::should_log(uint32_t mask)
 {
-#if LOGGING_ENABLED == ENABLED
     ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
-#else
-    return false;
-#endif
 }
+#endif
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_Avoidance/AP_Avoidance.h>

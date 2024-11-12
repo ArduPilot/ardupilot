@@ -1,0 +1,58 @@
+# MPC Configuration Parameters
+
+# Q matrix - State Cost Matrix (Weight for state deviations)
+Q:
+  - [50000, 0, 0, 0, 0, 0]
+  - [0, 50000, 0, 0, 0, 0]
+  - [0, 0, 50000, 0, 0, 0]
+  - [0, 0, 0, 50000, 0, 0]
+  - [0, 0, 0, 0, 50000, 0]
+  - [0, 0, 0, 0, 0, 50000]
+
+# F matrix - Control State Cost Matrix (Weight for desired state)
+F:
+  - [500, 0, 0, 0, 0, 0]
+  - [0, 500, 0, 0, 0, 0]
+  - [0, 0, 500, 0, 0, 0]
+  - [0, 0, 0, 500, 0, 0]
+  - [0, 0, 0, 0, 500, 0]
+  - [0, 0, 0, 0, 0, 500]
+
+# R matrix - Control Input Cost Matrix (Weight for control effort)
+R:
+  - [5, 0, 0, 0, 0, 0]
+  - [0, 5, 0, 0, 0, 0]
+  - [0, 0, 5, 0, 0, 0]
+  - [0, 0, 0, 5, 0, 0]
+  - [0, 0, 0, 0, 5, 0]
+  - [0, 0, 0, 0, 0, 5]
+
+# Prediction Horizon and Sampling Time
+prediction_horizon: 20
+sampling_time: 0.1
+
+# System Constraints
+control_bounds:
+  lower: -5
+  upper: 5
+
+# Trajectory Information
+trajectory:
+  - time: 0
+    position: [0, 0, 0]
+    attitude: [0, 0, 0]
+  - time: 1
+    position: [1, 0, 0]
+    attitude: [0, 0, 0.1]
+  - time: 2
+    position: [2, 1, 0]
+    attitude: [0, 0, 0.2]
+  - time: 3
+    position: [3, 2, 0]
+    attitude: [0, 0, 0.3]
+  - time: 4
+    position: [4, 3, 0]
+    attitude: [0, 0, 0.4]
+  - time: 5
+    position: [5, 4, 0]
+    attitude: [0, 0, 0.5]

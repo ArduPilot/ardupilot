@@ -24,11 +24,9 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
   constructor for main Sub class
  */
 Sub::Sub()
-    : logger(g.log_bitmask),
-          control_mode(MANUAL),
+    :
+          control_mode(Mode::Number::MANUAL),
           motors(MAIN_LOOP_RATE),
-          auto_mode(Auto_WP),
-          guided_mode(Guided_WP),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           inertial_nav(ahrs),
           ahrs_view(ahrs, ROTATION_NONE),
@@ -37,12 +35,21 @@ Sub::Sub()
           wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           loiter_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           circle_nav(inertial_nav, ahrs_view, pos_control),
-          param_loader(var_info)
+          param_loader(var_info),
+          flightmode(&mode_manual),
+          auto_mode(Auto_WP),
+          guided_mode(Guided_WP)
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.pilot_input = true;
 #endif
+    if (_singleton != nullptr) {
+        AP_HAL::panic("Can only be one Sub");
+    }
+    _singleton = this;
 }
+
+Sub *Sub::_singleton = nullptr;
 
 Sub sub;
 AP_Vehicle& vehicle = sub;

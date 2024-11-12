@@ -7,7 +7,7 @@ static uint32_t bottom_detector_count = 0;
 static uint32_t surface_detector_count = 0;
 static float current_depth = 0;
 
-// checks if we have have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
+// checks if we have hit bottom or surface and updates the ap.at_bottom and ap.at_surface flags
 // called at MAIN_LOOP_RATE
 // ToDo: doesn't need to be called this fast
 void Sub::update_surface_and_bottom_detector()
@@ -90,9 +90,9 @@ void Sub::set_surfaced(bool at_surface)
     surface_detector_count = 0;
 
     if (ap.at_surface) {
-        AP::logger().Write_Event(LogEvent::SURFACED);
+        LOGGER_WRITE_EVENT(LogEvent::SURFACED);
     } else {
-        AP::logger().Write_Event(LogEvent::NOT_SURFACED);
+        LOGGER_WRITE_EVENT(LogEvent::NOT_SURFACED);
     }
 }
 
@@ -108,8 +108,8 @@ void Sub::set_bottomed(bool at_bottom)
     bottom_detector_count = 0;
 
     if (ap.at_bottom) {
-        AP::logger().Write_Event(LogEvent::BOTTOMED);
+        LOGGER_WRITE_EVENT(LogEvent::BOTTOMED);
     } else {
-        AP::logger().Write_Event(LogEvent::NOT_BOTTOMED);
+        LOGGER_WRITE_EVENT(LogEvent::NOT_BOTTOMED);
     }
 }
