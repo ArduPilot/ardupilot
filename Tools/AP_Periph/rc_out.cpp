@@ -156,10 +156,11 @@ void AP_Periph_FW::rcout_update()
     }
     rcout_has_new_data_to_update = false;
 
+    auto &srv = AP::srv();
     SRV_Channels::calc_pwm();
-    SRV_Channels::cork();
+    srv.cork();
     SRV_Channels::output_ch_all();
-    AP::srv().push();
+    srv.push();
 #if HAL_WITH_ESC_TELEM
     if (now_ms - last_esc_telem_update_ms >= esc_telem_update_period_ms) {
         last_esc_telem_update_ms = now_ms;
