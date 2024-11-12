@@ -72,15 +72,6 @@
 #endif
 
 // CODE_REMOVAL
-// handling of HIL_GPS is slated to be removed in 4.7; GPS_INPUT can be used
-// in its place
-// ArduPilot 4.6 stops compiling support in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_MSG_HIL_GPS_ENABLED
-#define AP_MAVLINK_MSG_HIL_GPS_ENABLED 0
-#endif
-
-// CODE_REMOVAL
 // ArduPilot 4.5 sends deprecation warnings for MOUNT_CONTROL/MOUNT_CONFIGURE
 // ArduPilot 4.6 stops compiling them in
 // ArduPilot 4.7 removes the code entirely
