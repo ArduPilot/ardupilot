@@ -955,8 +955,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
-        uint8_t reply_buffer[reply_size] {};
+        const uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
+        uint8_t reply_buffer[reply_size];
+        memset(reply_buffer, 0, reply_size * sizeof(uint8_t));
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
@@ -1040,8 +1041,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
-        uint8_t reply_buffer[reply_size] {};
+        const uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
+        uint8_t reply_buffer[reply_size];
+        memset(reply_buffer, 0, reply_size * sizeof(uint8_t));
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
