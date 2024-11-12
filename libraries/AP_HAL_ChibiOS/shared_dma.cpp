@@ -87,6 +87,9 @@ void Shared_DMA::unregister()
 // lock one stream
 bool Shared_DMA::lock_stream(uint8_t stream_id)
 {
+    if (!is_shared(stream_id)) {
+        return false;
+    }
     bool cont = false;
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         const thread_t* curr_owner = locks[stream_id].mutex.owner;
@@ -99,6 +102,9 @@ bool Shared_DMA::lock_stream(uint8_t stream_id)
 // unlock one stream
 void Shared_DMA::unlock_stream(uint8_t stream_id, bool success)
 {
+    if (!is_shared(stream_id)) {
+        return;
+    }
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         chMtxUnlock(&locks[stream_id].mutex);
         if (success && _contention_stats != nullptr) {
@@ -110,6 +116,9 @@ void Shared_DMA::unlock_stream(uint8_t stream_id, bool success)
 // lock one stream, non-blocking
 bool Shared_DMA::lock_stream_nonblocking(uint8_t stream_id)
 {
+    if (!is_shared(stream_id)) {
+        return true;
+    }
     if (stream_id < SHARED_DMA_MAX_STREAM_ID) {
         return chMtxTryLock(&locks[stream_id].mutex);
     }

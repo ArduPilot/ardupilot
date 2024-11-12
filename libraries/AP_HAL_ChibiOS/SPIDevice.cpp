@@ -374,6 +374,15 @@ void SPIBus::start_peripheral(void)
         return;
     }
 
+    // cache configuration to check if we need to reset the peripheral later
+#if defined(STM32H7)
+    last_spicfg.cfg1 = spicfg.cfg1;
+    last_spicfg.cfg2 = spicfg.cfg2;
+#else
+    last_spicfg.cr1 = spicfg.cr1;
+    last_spicfg.cr2 = spicfg.cr2;
+#endif
+
     /* start driver and setup transfer parameters */
     spiStart(spi_devices[bus].driver, &spicfg);
 #if HAL_SPI_SCK_SAVE_RESTORE
@@ -381,6 +390,25 @@ void SPIBus::start_peripheral(void)
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
 #endif
     spi_started = true;
+}
+
+/*
+    check if the SPI configuration has changed since the last time
+*/
+bool SPIBus::config_changed(void)
+{
+    if (
+#if defined(STM32H7)
+        last_spicfg.cfg1 == spicfg.cfg1 &&
+        last_spicfg.cfg2 == spicfg.cfg2
+#else
+        last_spicfg.cr1 == spicfg.cr1 &&
+        last_spicfg.cr2 == spicfg.cr2
+#endif
+    ) {
+        return false;
+    }
+    return true;
 }
 
 /*
@@ -425,7 +453,9 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         bus.spicfg.cr2 = 0;
 #endif
         bus.spi_mode = device_desc.mode;
-        bus.stop_peripheral();
+        if (bus.config_changed()) {
+            bus.stop_peripheral();
+        }
         bus.start_peripheral();
         if(!skip_cs) {
             spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
