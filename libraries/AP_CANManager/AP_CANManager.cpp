@@ -426,33 +426,42 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
 {
     WITH_SEMAPHORE(can_forward.sem);
     const int8_t bus = int8_t(packet.param1)-1;
+
     if (bus == -1) {
-        for (auto can_iface : hal.can) {
-            if (can_iface && can_forward.callback_id != 0) {
-                can_iface->unregister_frame_callback(can_forward.callback_id);
-            }
+        /*
+          a request to stop forwarding
+         */
+        if (can_forward.callback_id != 0) {
+            hal.can[can_forward.callback_bus]->unregister_frame_callback(can_forward.callback_id);
+            can_forward.callback_id = 0;
         }
         return true;
     }
+
     if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
         return false;
     }
+
+    if (can_forward.callback_id != 0 && can_forward.callback_bus != bus) {
+        /*
+          the client is changing which bus they are monitoring, unregister from the previous bus
+         */
+        hal.can[can_forward.callback_bus]->unregister_frame_callback(can_forward.callback_id);
+        can_forward.callback_id = 0;
+    }
+
     if (can_forward.callback_id == 0 &&
         !hal.can[bus]->register_frame_callback(
             FUNCTOR_BIND_MEMBER(&AP_CANManager::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &), can_forward.callback_id)) {
+        // failed to register the callback
         return false;
     }
+
+    can_forward.callback_bus = bus;
     can_forward.last_callback_enable_ms = AP_HAL::millis();
     can_forward.chan = chan;
     can_forward.system_id = msg.sysid;
     can_forward.component_id = msg.compid;
-
-    // remove registration on other buses, allowing for bus change in the GUI tool
-    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
-        if (i != bus && hal.can[i] != nullptr && can_forward.callback_id != 0) {
-            hal.can[i]->unregister_frame_callback(can_forward.callback_id);
-        }
-    }
 
     return true;
 }
@@ -640,6 +649,10 @@ void AP_CANManager::handle_can_filter_modify(const mavlink_message_t &msg)
 void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(can_forward.sem);
+    if (bus != can_forward.callback_bus) {
+        // we are not registered for forwarding this bus, discard frame
+        return;
+    }
     if (can_forward.frame_counter++ == 100) {
         // check every 100 frames for disabling CAN_FRAME send
         // we stop sending after 5s if the client stops
@@ -647,6 +660,7 @@ void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
         if (can_forward.callback_id != 0 &&
             AP_HAL::millis() - can_forward.last_callback_enable_ms > 5000) {
             hal.can[bus]->unregister_frame_callback(can_forward.callback_id);
+            can_forward.callback_id = 0;
             return;
         }
         can_forward.frame_counter = 0;

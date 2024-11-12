@@ -161,7 +161,7 @@ void ModeZigZag::run()
 void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
     // get current position as an offset from EKF origin
-    const Vector2f curr_pos {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos = pos_control->get_pos_desired_cm().xy().tofloat();
 
     // handle state machine changes
     switch (stage) {
@@ -245,8 +245,8 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
             const Vector3f& wp_dest = wp_nav->get_wp_destination();
             loiter_nav->init_target(wp_dest.xy());
 #if AP_RANGEFINDER_ENABLED
-            if (wp_nav->origin_and_destination_are_terrain_alt()) {
-                copter.surface_tracking.set_target_alt_cm(wp_dest.z);
+            if (copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy()) {
+                copter.surface_tracking.external_init();
             }
 #endif
         } else {
@@ -264,7 +264,7 @@ void ModeZigZag::auto_control()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
     }
 
     // set motors to full range
@@ -305,7 +305,7 @@ void ModeZigZag::manual_control()
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -431,7 +431,7 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     }
 
     // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
     Vector2f veh_to_start_pos = curr_pos2d - start_pos;
 
     // lengthen AB_diff so that it is at least as long as vehicle is from start point
@@ -455,16 +455,10 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
         terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
         next_dest.z = wp_nav->get_wp_destination().z;
     } else {
-        // if we have a downward facing range finder then use terrain altitude targets
         terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-        if (terrain_alt) {
-#if AP_RANGEFINDER_ENABLED
-            if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
-                next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
-            }
-#endif
-        } else {
-            next_dest.z = pos_control->is_active_z() ? pos_control->get_pos_target_z_cm() : inertial_nav.get_position_z_up_cm();
+        next_dest.z = pos_control->get_pos_desired_z_cm();
+        if (!terrain_alt) {
+            next_dest.z += pos_control->get_pos_terrain_cm();
         }
     }
 
@@ -505,21 +499,12 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
     float scalar = constrain_float(_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
 
     // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d {inertial_nav.get_position_xy_cm()};
-    next_dest.x = curr_pos2d.x + (AB_side.x * scalar);
-    next_dest.y = curr_pos2d.y + (AB_side.y * scalar);
+    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
+    next_dest.xy() = curr_pos2d + (AB_side * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
     terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-    if (terrain_alt) {
-#if AP_RANGEFINDER_ENABLED
-        if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
-            next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
-        }
-#endif
-    } else {
-        next_dest.z = pos_control->is_active_z() ? pos_control->get_pos_target_z_cm() : inertial_nav.get_position_z_up_cm();
-    }
+    next_dest.z = pos_control->get_pos_desired_z_cm();
 
     return true;
 }

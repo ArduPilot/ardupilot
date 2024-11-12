@@ -280,6 +280,13 @@ TEST(Location, Tests)
     EXPECT_EQ(0, test_location4.loiter_xtrack);
     EXPECT_TRUE(test_location4.initialised());
 
+    // test set_alt_m API:
+    Location loc = test_home;
+    loc.set_alt_m(1.71, Location::AltFrame::ABSOLUTE);
+    int32_t alt_in_cm_from_m;
+    EXPECT_TRUE(loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_in_cm_from_m));
+    EXPECT_EQ(171, alt_in_cm_from_m);
+
     // can't create a Location using a vector here as there's no origin for the vector to be relative to:
     // const Location test_location_empty{test_vect, Location::AltFrame::ABOVE_HOME};
     // EXPECT_FALSE(test_location_empty.get_vector_from_origin_NEU(test_vec3));

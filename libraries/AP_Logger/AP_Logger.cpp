@@ -833,7 +833,7 @@ uint16_t AP_Logger::get_max_num_logs() {
 }
 
 /* we're started if any of the backends are started */
-bool AP_Logger::logging_started(void) {
+bool AP_Logger::logging_started(void) const {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
@@ -896,9 +896,10 @@ void AP_Logger::Write_Parameter(const char *name, float value)
 }
 
 void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
-                                            const AP_Mission::Mission_Command &cmd)
+                                  const AP_Mission::Mission_Command &cmd,
+                                  LogMessages id)
 {
-    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
+    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd, id));
 }
 
 #if HAL_RALLY_ENABLED

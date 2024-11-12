@@ -249,8 +249,12 @@ protected:
     // options parameter bitmask handling
     enum class Options : uint8_t {
         RCTARGETING_LOCK_FROM_PREVMODE = (1U << 0), // RC_TARGETING mode's lock/follow state maintained from previous mode
+        NEUTRAL_ON_RC_FS               = (1U << 1), // move mount to netral position on RC failsafe
     };
     bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
+
+    // called when mount mode is RC-targetting, updates the mnt_target object from RC inputs:
+    void update_mnt_target_from_rc_target();
 
     // returns true if user has configured a valid roll angle range
     // allows user to disable roll even on 3-axis gimbal

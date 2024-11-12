@@ -71,8 +71,8 @@ private:
     class PACKED PackedMessage {
     public:
         PackedMessage(T _msg, uint16_t _flags) :
-            msg(_msg),
-            flags(_flags)
+            flags(_flags),
+            msg(_msg)
         {
             flags |= (sizeof(T)) << 6;
         }

@@ -140,9 +140,9 @@ const uint32_t CANIface::TSR_ABRQx[CANIface::NumTxMailboxes] = {
 
 
 CANIface::CANIface(uint8_t index) :
-    self_index_(index),
     rx_bytebuffer_((uint8_t*)rx_buffer, sizeof(rx_buffer)),
-    rx_queue_(&rx_bytebuffer_)
+    rx_queue_(&rx_bytebuffer_),
+    self_index_(index)
 {
     if (index >= HAL_NUM_CAN_IFACES) {
         AP_HAL::panic("Bad CANIface index.");

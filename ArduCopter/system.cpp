@@ -160,6 +160,9 @@ void Copter::init_ardupilot()
 #if MODE_AUTO_ENABLED
     // initialise mission library
     mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 #endif
 
 #if MODE_SMARTRTL_ENABLED
@@ -344,7 +347,6 @@ void Copter::update_auto_armed()
  */
 bool Copter::should_log(uint32_t mask)
 {
-    ap.logging_started = logger.logging_started();
     return logger.should_log(mask);
 }
 #endif

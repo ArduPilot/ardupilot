@@ -16,9 +16,11 @@
 
 #pragma once
 
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_VIEWPRO_ENABLED
+
+#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>

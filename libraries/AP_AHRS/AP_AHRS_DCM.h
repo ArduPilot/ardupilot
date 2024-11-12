@@ -41,8 +41,8 @@ public:
           _kp(kp),
           gps_gain(_gps_gain),
           beta(_beta),
-          _gps_use(gps_use),
-          _gps_minsats(gps_minsats)
+          _gps_minsats(gps_minsats),
+          _gps_use(gps_use)
     {
         _dcm_matrix.identity();
     }
@@ -267,8 +267,6 @@ private:
 
     // estimated wind in m/s
     Vector3f _wind;
-
-    float _imu1_weight{0.5f};
 
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;

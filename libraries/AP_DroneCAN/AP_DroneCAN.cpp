@@ -128,7 +128,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -521,6 +521,10 @@ void AP_DroneCAN::loop(void)
             continue;
         }
 
+        // ensure that the DroneCAN thread cannot completely saturate
+        // the CPU, preventing low priority threads from running
+        hal.scheduler->delay_microseconds(100);
+
         canard_iface.process(1);
 
         safety_state_send();
@@ -840,9 +844,9 @@ void AP_DroneCAN::SRV_send_esc(void)
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
-
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
+            if (armed && ((((uint32_t) 1U) << i) & _ESC_armed_mask)) {
                 esc_msg.cmd.data[k] = scale_esc_output(i);
             } else {
                 esc_msg.cmd.data[k] = static_cast<unsigned>(0);
@@ -893,9 +897,9 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
     // if at least one is active (update) we need to send to all
     if (active_esc_num > 0) {
         k = 0;
-
+        const bool armed = hal.util->get_soft_armed();
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
+            if (armed && ((((uint32_t) 1U) << i) & _ESC_armed_mask)) {
                 esc_msg.command.data[k] = scale_esc_output(i);
             } else {
                 esc_msg.command.data[k] = static_cast<unsigned>(0);
@@ -1498,6 +1502,62 @@ bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     }
     return true;
 }
+
+#if AP_SCRIPTING_ENABLED
+/*
+  handle FlexDebug message, holding a copy locally for a lua script to access
+ */
+void AP_DroneCAN::handle_FlexDebug(const CanardRxTransfer& transfer, const dronecan_protocol_FlexDebug &msg)
+{
+    if (!option_is_set(Options::ENABLE_FLEX_DEBUG)) {
+        return;
+    }
+
+    // find an existing element in the list
+    const uint8_t source_node = transfer.source_node_id;
+    for (auto *p = flexDebug_list; p != nullptr; p = p->next) {
+        if (p->node_id == source_node && p->msg.id == msg.id) {
+            p->msg = msg;
+            p->timestamp_us = uint32_t(transfer.timestamp_usec);
+            return;
+        }
+    }
+
+    // new message ID, add to the list. Note that this gets called
+    // only from one thread, so no lock needed
+    auto *p = NEW_NOTHROW FlexDebug;
+    if (p == nullptr) {
+        return;
+    }
+    p->node_id = source_node;
+    p->msg = msg;
+    p->timestamp_us = uint32_t(transfer.timestamp_usec);
+    p->next = flexDebug_list;
+
+    // link into the list
+    flexDebug_list = p;
+}
+
+/*
+  get the last FlexDebug message from a node
+ */
+bool AP_DroneCAN::get_FlexDebug(uint8_t node_id, uint16_t msg_id, uint32_t &timestamp_us, dronecan_protocol_FlexDebug &msg) const
+{
+    for (const auto *p = flexDebug_list; p != nullptr; p = p->next) {
+        if (p->node_id == node_id && p->msg.id == msg_id) {
+            if (timestamp_us == p->timestamp_us) {
+                // stale message
+                return false;
+            }
+            timestamp_us = p->timestamp_us;
+            msg = p->msg;
+            return true;
+        }
+    }
+    return false;
+}
+
+#endif // AP_SCRIPTING_ENABLED
 
 /*
   handle LogMessage debug

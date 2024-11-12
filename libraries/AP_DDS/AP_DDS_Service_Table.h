@@ -1,8 +1,17 @@
 #include "uxr/client/client.h"
+#include <AP_DDS/AP_DDS_config.h>
 
 enum class ServiceIndex: uint8_t {
+#if AP_DDS_ARM_SERVER_ENABLED
     ARMING_MOTORS,
-    MODE_SWITCH
+#endif // #if AP_DDS_ARM_SERVER_ENABLED
+#if AP_DDS_MODE_SWITCH_SERVER_ENABLED
+    MODE_SWITCH,
+#endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_PARAMETER_SERVER_ENABLED
+    SET_PARAMETERS,
+    GET_PARAMETERS
+#endif // AP_DDS_PARAMETER_SERVER_ENABLED
 };
 
 static inline constexpr uint8_t to_underlying(const ServiceIndex index)
@@ -12,6 +21,7 @@ static inline constexpr uint8_t to_underlying(const ServiceIndex index)
 }
 
 constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
+#if AP_DDS_ARM_SERVER_ENABLED
     {
         .req_id = to_underlying(ServiceIndex::ARMING_MOTORS),
         .rep_id = to_underlying(ServiceIndex::ARMING_MOTORS),
@@ -28,6 +38,8 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
             .depth = 5,
         },
     },
+#endif // AP_DDS_ARM_SERVER_ENABLED
+#if AP_DDS_MODE_SWITCH_SERVER_ENABLED
     {
         .req_id = to_underlying(ServiceIndex::MODE_SWITCH),
         .rep_id = to_underlying(ServiceIndex::MODE_SWITCH),
@@ -38,4 +50,27 @@ constexpr struct AP_DDS_Client::Service_table AP_DDS_Client::services[] = {
         .request_topic_name = "rq/ap/mode_switchRequest",
         .reply_topic_name = "rr/ap/mode_switchReply",
     },
+#endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_PARAMETER_SERVER_ENABLED
+    {
+        .req_id = to_underlying(ServiceIndex::SET_PARAMETERS),
+        .rep_id = to_underlying(ServiceIndex::SET_PARAMETERS),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/set_parametersService",
+        .request_type = "rcl_interfaces::srv::dds_::SetParameters_Request_",
+        .reply_type = "rcl_interfaces::srv::dds_::SetParameters_Response_",
+        .request_topic_name = "rq/ap/set_parametersRequest",
+        .reply_topic_name = "rr/ap/set_parametersReply",
+    },
+    {
+        .req_id = to_underlying(ServiceIndex::GET_PARAMETERS),
+        .rep_id = to_underlying(ServiceIndex::GET_PARAMETERS),
+        .service_rr = Service_rr::Replier,
+        .service_name = "rs/ap/get_parameterService",
+        .request_type = "rcl_interfaces::srv::dds_::GetParameters_Request_",
+        .reply_type = "rcl_interfaces::srv::dds_::GetParameters_Response_",
+        .request_topic_name = "rq/ap/get_parametersRequest",
+        .reply_topic_name = "rr/ap/get_parametersReply",
+    },
+#endif // AP_DDS_PARAMETER_SERVER_ENABLED
 };

@@ -6,17 +6,20 @@
  */
 #pragma once
 
+// @LoggerEnum: HAL_BOARD
 #define HAL_BOARD_SITL     3
-#define HAL_BOARD_SMACCM   4  // unused
-#define HAL_BOARD_PX4      5  // unused
+// #define HAL_BOARD_SMACCM   4  // unused
+// #define HAL_BOARD_PX4      5  // unused
 #define HAL_BOARD_LINUX    7
-#define HAL_BOARD_VRBRAIN  8
+// #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
-#define HAL_BOARD_F4LIGHT  11 // reserved
+// #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
 #define HAL_BOARD_EMPTY    99
+// @LoggerEnumEnd
 
+// @LoggerEnum: HAL_BOARD_SUBTYPE
 /* Default board subtype is -1 */
 #define HAL_BOARD_SUBTYPE_NONE -1
 
@@ -70,6 +73,7 @@
 #define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
 #define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 #define HAL_BOARD_SUBTYPE_ESP32_S3EMPTY         6008
+// @LoggerEnumEnd
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -134,8 +138,6 @@
     #include <AP_HAL/board/linux.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
     #include <AP_HAL/board/empty.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32

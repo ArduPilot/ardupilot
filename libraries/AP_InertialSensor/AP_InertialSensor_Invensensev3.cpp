@@ -136,6 +136,7 @@ extern const AP_HAL::HAL& hal;
 #define INV3_ID_ICM42605      0x42
 #define INV3_ID_ICM42688      0x47
 #define INV3_ID_IIM42652      0x6f
+#define INV3_ID_IIM42653      0x56
 #define INV3_ID_ICM42670      0x67
 #define INV3_ID_ICM45686      0xE9
 
@@ -185,12 +186,12 @@ AP_InertialSensor_Invensensev3::~AP_InertialSensor_Invensensev3()
 #if HAL_INS_HIGHRES_SAMPLE
     if (highres_sampling) {
         if (fifo_buffer != nullptr) {
-            hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+            hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
         }
     } else
 #endif
     if (fifo_buffer != nullptr) {
-        hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        hal.util->free_type(fifo_buffer, INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
     }
 }
 
@@ -258,6 +259,12 @@ void AP_InertialSensor_Invensensev3::start()
         devtype = DEVTYPE_INS_IIM42652;
         temp_sensitivity = 1.0 / 2.07;
         break;
+    case Invensensev3_Type::IIM42653:
+        devtype = DEVTYPE_INS_IIM42653;
+        temp_sensitivity = 1.0 / 2.07;
+        gyro_scale = GYRO_SCALE_4000DPS;
+        accel_scale = ACCEL_SCALE_32G;
+        break;
     case Invensensev3_Type::ICM42688:
         devtype = DEVTYPE_INS_ICM42688;
         temp_sensitivity = 1.0 / 2.07;
@@ -294,6 +301,7 @@ void AP_InertialSensor_Invensensev3::start()
         switch (inv3_type) {
             case Invensensev3_Type::ICM42688: // HiRes 19bit
             case Invensensev3_Type::IIM42652: // HiRes 19bit
+            case Invensensev3_Type::IIM42653: // HiRes 19bit
             case Invensensev3_Type::ICM45686: // HiRes 20bit
                 highres_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
                 break;
@@ -358,10 +366,10 @@ void AP_InertialSensor_Invensensev3::start()
     // allocate fifo buffer
 #if HAL_INS_HIGHRES_SAMPLE
     if (highres_sampling) {
-        fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+        fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_HIGHRES_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
     } else
 #endif
-    fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
+    fifo_buffer = hal.util->malloc_type(INV3_FIFO_BUFFER_LEN * INV3_SAMPLE_SIZE + 1, AP_HAL::Util::MEM_DMA_SAFE);
 
     if (fifo_buffer == nullptr) {
         AP_HAL::panic("Invensensev3: Unable to allocate FIFO buffer");
@@ -519,6 +527,8 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     uint8_t reg_counth;
     uint8_t reg_data;
+    uint8_t* samples = nullptr;
+    uint8_t* tfr_buffer = (uint8_t*)fifo_buffer;
 
     switch (inv3_type) {
     case Invensensev3_Type::ICM45686:
@@ -555,18 +565,28 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
-        if (!block_read(reg_data, (uint8_t*)fifo_buffer, n * fifo_sample_size)) {
+
+        // we don't use read_registers() here to ensure that the fifo buffer that we have allocated
+        // gets passed all the way down to the SPI DMA handling. This involves one transfer to send
+        // the register read and then another using the same buffer and length which is handled specially
+        // for the read
+        tfr_buffer[0] = reg_data | BIT_READ_FLAG;
+        // transfer will also be sending data, make sure that data is zero
+        memset(tfr_buffer + 1, 0, n * fifo_sample_size);
+        if (!dev->transfer(tfr_buffer, n * fifo_sample_size + 1, tfr_buffer, n * fifo_sample_size + 1)) {
             goto check_registers;
         }
+        samples = tfr_buffer + 1;
+
 #if HAL_INS_HIGHRES_SAMPLE
         if (highres_sampling) {
-            if (!accumulate_highres_samples((FIFODataHighRes*)fifo_buffer, n)) {
+            if (!accumulate_highres_samples((FIFODataHighRes*)samples, n)) {
                 need_reset = true;
                 break;
             }
         } else
 #endif
-        if (!accumulate_samples((FIFOData*)fifo_buffer, n)) {
+        if (!accumulate_samples((FIFOData*)samples, n)) {
             need_reset = true;
             break;
         }
@@ -812,6 +832,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
     case Invensensev3_Type::ICM42688:
     case Invensensev3_Type::ICM42605:
     case Invensensev3_Type::IIM42652:
+    case Invensensev3_Type::IIM42653:
     case Invensensev3_Type::ICM42670: {
         /*
           fix for the "stuck gyro" issue, which affects all IxM42xxx
@@ -955,6 +976,9 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_IIM42652:
         inv3_type = Invensensev3_Type::IIM42652;
         return true;
+    case INV3_ID_IIM42653:
+        inv3_type = Invensensev3_Type::IIM42653;
+        return true;
     case INV3_ID_ICM42670:
         inv3_type = Invensensev3_Type::ICM42670;
         return true;
@@ -1030,6 +1054,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
     switch (inv3_type) {
     case Invensensev3_Type::ICM45686:
     case Invensensev3_Type::ICM40609:
+    case Invensensev3_Type::IIM42653:
         _clip_limit = 29.5f * GRAVITY_MSS;
         break;
     case Invensensev3_Type::ICM42688:

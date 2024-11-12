@@ -292,20 +292,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() &&
-        (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN)) {
-        #if MODE_AUTOROTATE_ENABLED
-            //if the mode being exited is the autorotation mode allow mode change despite rotor not being at
-            //full speed.  This will reduce altitude loss on bail-outs back to non-manual throttle modes
-            bool in_autorotation_check = (flightmode != &mode_autorotate || new_flightmode != &mode_autorotate);
-        #else
-            bool in_autorotation_check = false;
-        #endif
-
-        if (!in_autorotation_check) {
-            mode_change_failed(new_flightmode, "runup not complete");
-            return false;
-        }
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()) {
+        mode_change_failed(new_flightmode, "runup not complete");
+        return false;
     }
 #endif
 
@@ -368,9 +357,6 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
-
-    // store previous flight mode (only used by tradeheli's autorotation)
-    prev_control_mode = flightmode->mode_number();
 
     // update flight mode
     flightmode = new_flightmode;
@@ -1035,12 +1021,15 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
 // transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Mode::get_pilot_desired_yaw_rate(float yaw_in)
+float Mode::get_pilot_desired_yaw_rate() const
 {
     // throttle failsafe check
     if (copter.failsafe.radio || !rc().has_ever_seen_rc_input()) {
         return 0.0f;
     }
+
+    // Get yaw input
+    const float yaw_in = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
     return g2.command_model_pilot.get_rate() * 100.0 * input_expo(yaw_in, g2.command_model_pilot.get_expo());

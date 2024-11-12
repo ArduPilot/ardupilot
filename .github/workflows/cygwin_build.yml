@@ -177,7 +177,7 @@ jobs:
           source ~/ccache.conf &&
           ccache -s
       - name: ccache cache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: D:/a/ardupilot/ardupilot/ccache
           key: ${{ steps.ccache_cache_timestamp.outputs.cache-key }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -188,8 +188,8 @@ jobs:
         shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
         run: >-
           ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip &&
-          python -m pip install --progress-bar off empy==3.3.4 pexpect &&
-          python -m pip install --progress-bar off dronecan --upgrade &&
+          python3 -m pip install --progress-bar off empy==3.3.4 pexpect &&
+          python3 -m pip install --progress-bar off dronecan --upgrade &&
           cp /usr/bin/ccache /usr/local/bin/ &&
           cd /usr/local/bin && ln -s ccache /usr/local/bin/gcc &&
           ln -s ccache /usr/local/bin/g++ &&
@@ -215,7 +215,7 @@ jobs:
           fail: true
 
       - name: Archive build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: artifacts

@@ -449,7 +449,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
+    if (auto_yaw.mode() != AutoYaw::Mode::ROI && !(auto_yaw.mode() == AutoYaw::Mode::FIXED && copter.g.wp_yaw_behavior == WP_YAW_BEHAVIOR_NONE)) {
         auto_yaw.set_mode_to_default(false);
     }
 
@@ -498,7 +498,7 @@ void ModeAuto::land_start()
     set_submode(SubMode::LAND);
 }
 
-// auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
+// circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has performed all required GPS_ok checks
 void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn)
 {
@@ -517,8 +517,8 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
-    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
+    float dist_to_edge;
+    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu, dist_to_edge);
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -671,13 +671,6 @@ bool ModeAuto::set_speed_down(float speed_down_cms)
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_LOGGING_ENABLED
-    // To-Do: logging when new commands start/end
-    if (copter.should_log(MASK_LOG_CMD)) {
-        copter.logger.Write_Mission_Cmd(mission, cmd);
-    }
-#endif
-
     switch(cmd.id) {
 
     ///
@@ -778,10 +771,12 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_roi(cmd);
         break;
 
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
+#endif
 
 #if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 220  accept guided mode limits
@@ -998,10 +993,18 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_SET_ROI:
+#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
+#endif
+#if AC_NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:
+#endif
+#if AP_FENCE_ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
+#endif
+#if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:
+#endif
     case MAV_CMD_DO_RETURN_PATH_START:
     case MAV_CMD_DO_LAND_START:
         cmd_complete = true;
@@ -1248,7 +1251,6 @@ void PayloadPlace::run()
 
     auto &g2 = copter.g2;
     const auto &g = copter.g;
-    auto &inertial_nav = copter.inertial_nav;
     auto *attitude_control = copter.attitude_control;
     const auto &pos_control = copter.pos_control;
     const auto &wp_nav = copter.wp_nav;
@@ -1290,7 +1292,7 @@ void PayloadPlace::run()
         case State::Descent_Start:
             gcs().send_text(MAV_SEVERITY_INFO, "%s Abort: Gripper Open", prefix_str);
             // Descent_Start has not run so we must also initalise descent_start_altitude_cm
-            descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
+            descent_start_altitude_cm = pos_control->get_pos_desired_z_cm();
             state = State::Done;
             break;
         case State::Descent:
@@ -1317,7 +1319,7 @@ void PayloadPlace::run()
 
     case State::Descent_Start:
         descent_established_time_ms = now_ms;
-        descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
+        descent_start_altitude_cm = pos_control->get_pos_desired_z_cm();
         // limiting the decent rate to the limit set in wp_nav is not necessary but done for safety
         descent_speed_cms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms * 100.0 : abs(g.land_speed), wp_nav->get_default_speed_down());
         descent_thrust_level = 1.0;
@@ -1327,7 +1329,7 @@ void PayloadPlace::run()
     case State::Descent:
         // check maximum decent distance
         if (!is_zero(descent_max_cm) &&
-            descent_start_altitude_cm - inertial_nav.get_position_z_up_cm() > descent_max_cm) {
+            descent_start_altitude_cm - pos_control->get_pos_desired_z_cm() > descent_max_cm) {
             state = State::Ascent_Start;
             gcs().send_text(MAV_SEVERITY_WARNING, "%s Reached maximum descent", prefix_str);
             break;
@@ -1416,7 +1418,7 @@ void PayloadPlace::run()
         // vel_threshold_fraction * max velocity
         const float vel_threshold_fraction = 0.1;
         const float stop_distance = 0.5 * sq(vel_threshold_fraction * copter.pos_control->get_max_speed_up_cms()) / copter.pos_control->get_max_accel_z_cmss();
-        bool reached_altitude = copter.pos_control->get_pos_target_z_cm() >= descent_start_altitude_cm - stop_distance;
+        bool reached_altitude = pos_control->get_pos_desired_z_cm() >= descent_start_altitude_cm - stop_distance;
         if (reached_altitude) {
             state = State::Done;
         }
@@ -1469,6 +1471,8 @@ bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
         (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER)) {
         int32_t curr_rngfnd_alt_cm;
         if (copter.get_rangefinder_height_interpolated_cm(curr_rngfnd_alt_cm)) {
+            // subtract position offset (if any)
+            curr_rngfnd_alt_cm -= pos_control->get_pos_offset_z_cm();
             // wp_nav is using rangefinder so use current rangefinder alt
             target_loc.set_alt_cm(MAX(curr_rngfnd_alt_cm, 200), Location::AltFrame::ABOVE_TERRAIN);
             return true;
@@ -1483,9 +1487,19 @@ bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
         return false;
     }
 
-    // set target_loc's alt
-    target_loc.set_alt_cm(currloc.alt, currloc.get_alt_frame());
+    // set target_loc's alt minus position offset (if any)
+    target_loc.set_alt_cm(currloc.alt - pos_control->get_pos_offset_z_cm(), currloc.get_alt_frame());
     return true;
+}
+
+// subtract position controller offsets from target location
+// should be used when the location will be used as a target for the position controller
+void ModeAuto::subtract_pos_offsets(Location& target_loc) const
+{
+    // subtract position controller offsets from target location
+    const Vector3p& pos_ofs_neu_cm = pos_control->get_pos_offset_cm();
+    Vector3p pos_ofs_ned_m = Vector3p{pos_ofs_neu_cm.x * 0.01, pos_ofs_neu_cm.y * 0.01, -pos_ofs_neu_cm.z * 0.01};
+    target_loc.offset(-pos_ofs_ned_m);
 }
 
 /********************************************************************************/
@@ -1499,6 +1513,7 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
+// return the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
 Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const
 {
     Location ret(cmd.content.location);
@@ -1528,6 +1543,10 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // calculate default location used when lat, lon or alt is zero
     Location default_loc = copter.current_loc;
+
+    // subtract position offsets
+    subtract_pos_offsets(default_loc);
+
     if (wp_nav->is_active() && wp_nav->reached_wp_destination()) {
         if (!wp_nav->get_wp_destination_loc(default_loc)) {
             // this should never happen
@@ -1648,32 +1667,22 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 // note: caller should set yaw_mode
 void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
-    // convert back to location
-    Location target_loc(cmd.content.location);
+    // calculate default location used when lat, lon or alt is zero
+    Location default_loc = copter.current_loc;
 
-    // use current location if not provided
-    if (target_loc.lat == 0 && target_loc.lng == 0) {
-        // To-Do: make this simpler
-        Vector3f temp_pos;
-        copter.wp_nav->get_wp_stopping_point_xy(temp_pos.xy());
-        const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
-        target_loc.lat = temp_loc.lat;
-        target_loc.lng = temp_loc.lng;
-    }
+    // subtract position offsets
+    subtract_pos_offsets(default_loc);
 
-    // use current altitude if not provided
-    // To-Do: use z-axis stopping point instead of current alt
-    if (target_loc.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (copter.current_loc.get_alt_cm(target_loc.get_alt_frame(),curr_alt)) {
-            target_loc.set_alt_cm(curr_alt, target_loc.get_alt_frame());
-        } else {
-            // default to current altitude as alt-above-home
-            target_loc.set_alt_cm(copter.current_loc.alt,
-                                  copter.current_loc.get_alt_frame());
+    // use previous waypoint destination as default if available
+    if (wp_nav->is_active() && wp_nav->reached_wp_destination()) {
+        if (!wp_nav->get_wp_destination_loc(default_loc)) {
+            // this should never happen
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         }
     }
+
+    // get waypoint's location from command and send to wp_nav
+    const Location target_loc = loc_from_cmd(cmd, default_loc);
 
     // start way point navigator and provide it the desired location
     if (!wp_start(target_loc)) {
@@ -1686,7 +1695,13 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // do_circle - initiate moving in a circle
 void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    const Location circle_center = loc_from_cmd(cmd, copter.current_loc);
+    // calculate default location used when lat, lon or alt is zero
+    Location default_loc = copter.current_loc;
+
+    // subtract position offsets
+    subtract_pos_offsets(default_loc);
+
+    const Location circle_center = loc_from_cmd(cmd, default_loc);
 
     // calculate radius
     uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1754,6 +1769,10 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // calculate default location used when lat, lon or alt is zero
     Location default_loc = copter.current_loc;
+
+    // subtract position offsets
+    subtract_pos_offsets(default_loc);
+
     if (wp_nav->is_active() && wp_nav->reached_wp_destination()) {
         if (!wp_nav->get_wp_destination_loc(default_loc)) {
             // this should never happen
@@ -1785,7 +1804,7 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
+    if (auto_yaw.mode() != AutoYaw::Mode::ROI && !(auto_yaw.mode() == AutoYaw::Mode::FIXED && copter.g.wp_yaw_behavior == WP_YAW_BEHAVIOR_NONE)) {
         auto_yaw.set_mode_to_default(false);
     }
 
@@ -1957,19 +1976,21 @@ void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
     auto_yaw.set_roi(cmd.content.location);
 }
 
+#if HAL_MOUNT_ENABLED
 // point the camera to a specified angle
 void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_MOUNT_ENABLED
     // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
     if ((copter.camera_mount.get_mount_type() != AP_Mount::Type::None) &&
         !copter.camera_mount.has_pan_control()) {
-        auto_yaw.set_yaw_angle_rate(cmd.content.mount_control.yaw,0.0f);
+        // Per the handler in AP_Mount, DO_MOUNT_CONTROL yaw angle is in body frame, which is
+        // equivalent to an offset to the current yaw demand.
+        auto_yaw.set_yaw_angle_offset(cmd.content.mount_control.yaw);
     }
     // pass the target angles to the camera mount
     copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
-#endif
 }
+#endif  // HAL_MOUNT_ENABLED
 
 #if AP_WINCH_ENABLED
 // control winch based on mission command

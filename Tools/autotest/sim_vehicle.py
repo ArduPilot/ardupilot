@@ -964,6 +964,8 @@ def start_mavproxy(opts, stuff):
         cmd.extend(['--aircraft', opts.aircraft])
     if opts.moddebug:
         cmd.append('--moddebug=%u' % opts.moddebug)
+    if opts.mavcesium:
+        cmd.extend(["--load-module", "cesium"])
 
     if opts.fresh_params:
         # these were built earlier:
@@ -985,6 +987,17 @@ def start_mavproxy(opts, stuff):
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
+
+    if opts.gdb:
+        # in the case that MAVProxy exits (as opposed to being
+        # killed), restart it if we are running under GDB.  This
+        # allows ArduPilot to stop (eg. via a very early panic call)
+        # and have you debugging session not be killed.
+        while True:
+            progress("Running under GDB; restarting MAVProxy")
+            run_cmd_blocking("Run MavProxy", cmd, env=env)
+            progress("MAVProxy exited; sleeping 10")
+            time.sleep(10)
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -1362,6 +1375,11 @@ group.add_option("", "--map",
                  default=False,
                  action='store_true',
                  help="load map module on startup")
+group.add_option("", "--mavcesium",
+                 default=False,
+                 action='store_true',
+                 help="load MAVCesium module on startup")
+
 group.add_option("", "--console",
                  default=False,
                  action='store_true',

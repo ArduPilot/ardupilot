@@ -359,28 +359,41 @@ void ModeAuto::wiggle_servos()
         return;
     }
 
-    int16_t servo_value;
-    // move over full range for 2 seconds
+    int16_t servo_valueElevator;
+    int16_t servo_valueAileronRudder;
+    // Wiggle the control surfaces in stages: elevators first, then rudders + ailerons, through the full range over 4 seconds
     if (wiggle.stage != 0) {
-        wiggle.stage += 2;
+        wiggle.stage += 1;
     }
     if (wiggle.stage == 0) {
-        servo_value = 0;
-    } else if (wiggle.stage < 50) {
-        servo_value = wiggle.stage * (4500 / 50);
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 25) { 
+        servo_valueElevator = wiggle.stage * (4500 / 25);      
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 75) {
+        servo_valueElevator = (50 - wiggle.stage) * (4500 / 25);        
+        servo_valueAileronRudder = 0;
     } else if (wiggle.stage < 100) {
-        servo_value = (100 - wiggle.stage) * (4500 / 50);        
-    } else if (wiggle.stage < 150) {
-        servo_value = (100 - wiggle.stage) * (4500 / 50);        
+        servo_valueElevator = (wiggle.stage - 100) * (4500 / 25);        
+        servo_valueAileronRudder = 0;
+    } else if (wiggle.stage < 125) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (wiggle.stage - 100) * (4500 / 25);
+    } else if (wiggle.stage < 175) {
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (150 - wiggle.stage) * (4500 / 25);  
     } else if (wiggle.stage < 200) {
-        servo_value = (wiggle.stage-200) * (4500 / 50);        
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = (wiggle.stage - 200) * (4500 / 25); 
     } else {
         wiggle.stage = 0;
-        servo_value = 0;
+        servo_valueElevator = 0;
+        servo_valueAileronRudder = 0;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_value);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_value);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, servo_valueAileronRudder);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, servo_valueElevator);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_valueAileronRudder);
 
 }
 
@@ -519,6 +532,7 @@ float Plane::apply_throttle_limits(float throttle_in)
         min_throttle = 0;
     }
 
+    // Handle throttle limits for takeoff conditions.
     // Query the conditions where TKOFF_THR_MAX applies.
     const bool use_takeoff_throttle =
         (flight_stage == AP_FixedWing::FlightStage::TAKEOFF) ||
@@ -526,27 +540,9 @@ float Plane::apply_throttle_limits(float throttle_in)
 
     // Handle throttle limits for takeoff conditions.
     if (use_takeoff_throttle) {
-        if (aparm.takeoff_throttle_max != 0) {
-            // Replace max throttle with the takeoff max throttle setting.
-            // This is typically done to protect against long intervals of large power draw.
-            // Or (in contrast) to give some extra throttle during the initial climb.
-            max_throttle = aparm.takeoff_throttle_max.get();
-        }
-        // Do not allow min throttle to go below a lower threshold.
-        // This is typically done to protect against premature stalls close to the ground.
-        const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
-        if (!use_throttle_range || !ahrs.using_airspeed_sensor()) {
-            // Use a constant max throttle throughout the takeoff or when airspeed readings are not available.
-            if (aparm.takeoff_throttle_max.get() == 0) {
-                min_throttle = MAX(min_throttle, aparm.throttle_max.get());
-            } else {
-                min_throttle = MAX(min_throttle, aparm.takeoff_throttle_max.get());
-            }
-        } else if (use_throttle_range) { // Use a throttle range through the takeoff.
-            if (aparm.takeoff_throttle_min.get() != 0) { // This is enabled by TKOFF_MODE==1.
-                min_throttle = MAX(min_throttle, aparm.takeoff_throttle_min.get());
-            }
-        }
+        // Read from takeoff_state
+        max_throttle = takeoff_state.throttle_lim_max;
+        min_throttle = takeoff_state.throttle_lim_min;
     } else if (landing.is_flaring()) {
         // Allow throttle cutoff when flaring.
         // This is to allow the aircraft to bleed speed faster and land with a shut off thruster.
@@ -587,6 +583,7 @@ float Plane::apply_throttle_limits(float throttle_in)
     min_throttle = MIN(min_throttle, max_throttle);
 
     // Let TECS know about the updated throttle limits.
+    // These will be taken into account on the next iteration.
     TECS_controller.set_throttle_min(0.01f*min_throttle);
     TECS_controller.set_throttle_max(0.01f*max_throttle);
     return constrain_float(throttle_in, min_throttle, max_throttle);

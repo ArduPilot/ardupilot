@@ -1,6 +1,9 @@
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_ENABLED
+
+#include "AP_Mount_Backend_Serial.h"
+
 #include <AP_SerialManager/AP_SerialManager.h>
 
 // Default init function for every mount

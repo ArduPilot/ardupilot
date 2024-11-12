@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel_config.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -400,6 +401,15 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 
 bool AP_Mission::start_command(const Mission_Command& cmd)
 {
+#if HAL_LOGGING_ENABLED
+    if (log_start_mission_item_bit != (uint32_t)-1) {
+        auto &logger = AP::logger();
+        if (logger.should_log(log_start_mission_item_bit)) {
+            logger.Write_MISE(*this, cmd);
+        }
+    }
+#endif
+
     // check for landing related commands and set flags
     if (is_landing_type_cmd(cmd.id) || cmd.id == MAV_CMD_DO_LAND_START) {
         _flags.in_landing_sequence = true;
@@ -414,10 +424,17 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 
     }
 
-    if (cmd.id == MAV_CMD_DO_JUMP || cmd.id == MAV_CMD_JUMP_TAG || cmd.id == MAV_CMD_DO_JUMP_TAG) {
+    switch (cmd.id) {
+    case MAV_CMD_DO_JUMP:
+    case MAV_CMD_JUMP_TAG:
+    case MAV_CMD_DO_JUMP_TAG:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s %u", cmd.index, cmd.type(), (unsigned)cmd.p1);
-    } else {
+        break;
+
+    default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
+        break;
+
     }
 
     switch (cmd.id) {
@@ -550,13 +567,18 @@ int32_t AP_Mission::get_next_ground_course_cd(int32_t default_angle)
         return default_angle;
     }
     // special handling for nav commands with no target location
-    if (cmd.id == MAV_CMD_NAV_GUIDED_ENABLE ||
-        cmd.id == MAV_CMD_NAV_DELAY) {
+    switch (cmd.id) {
+    case MAV_CMD_NAV_GUIDED_ENABLE:
+    case MAV_CMD_NAV_DELAY:
         return default_angle;
-    }
-    if (cmd.id == MAV_CMD_NAV_SET_YAW_SPEED) {
+
+    case MAV_CMD_NAV_SET_YAW_SPEED:
         return (_nav_cmd.content.set_yaw_speed.angle_deg * 100);
+
+    default:
+        break;
     }
+
     return _nav_cmd.content.location.get_bearing_to(cmd.content.location);
 }
 
@@ -570,11 +592,17 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     // read command to check for DO_LAND_START and DO_RETURN_PATH_START
     Mission_Command cmd;
     if (read_cmd_from_storage(index, cmd)) {
-        if (cmd.id == MAV_CMD_DO_LAND_START) {
+        switch (cmd.id) {
+        case MAV_CMD_DO_LAND_START:
             _flags.in_landing_sequence = true;
+            break;
 
-        } else if (cmd.id == MAV_CMD_DO_RETURN_PATH_START) {
+        case MAV_CMD_DO_RETURN_PATH_START:
             _flags.in_return_path = true;
+            break;
+
+        default:
+            break;
 
         }
     }
@@ -1223,6 +1251,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_DO_MOUNT_CONTROL:                      // MAV ID: 205
+        // TODO: this is only valid if packet.z == MAV_MOUNT_MODE_MAVLINK_TARGETING
         cmd.content.mount_control.pitch = packet.param1;
         cmd.content.mount_control.roll = packet.param2;
         cmd.content.mount_control.yaw = packet.param3;
@@ -1739,6 +1768,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param1 = cmd.content.mount_control.pitch;
         packet.param2 = cmd.content.mount_control.roll;
         packet.param3 = cmd.content.mount_control.yaw;
+        packet.z = MAV_MOUNT_MODE_MAVLINK_TARGETING;
         break;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206

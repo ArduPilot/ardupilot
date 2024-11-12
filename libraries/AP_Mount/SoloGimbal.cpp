@@ -1,8 +1,10 @@
+#include "AP_Mount_config.h"
+
+#if HAL_SOLO_GIMBAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include "SoloGimbal.h"
-
-#if HAL_SOLO_GIMBAL_ENABLED
 
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>

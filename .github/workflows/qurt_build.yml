@@ -157,9 +157,12 @@ jobs:
           cp -a build/QURT/bin/arducopter build/QURT/ArduPilot_Copter.so
           cp -a build/QURT/bin/arduplane build/QURT/ArduPilot_Plane.so
           cp -a build/QURT/bin/ardurover build/QURT/ArduPilot_Rover.so
+          libraries/AP_HAL_QURT/packaging/make_package.sh ArduCopter arducopter
+          libraries/AP_HAL_QURT/packaging/make_package.sh ArduPlane arduplane
+          libraries/AP_HAL_QURT/packaging/make_package.sh Rover ardurover
 
       - name: Archive build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: qurt-binaries
           path: |
@@ -168,4 +171,5 @@ jobs:
             build/QURT/ArduPilot_Plane.so
             build/QURT/ArduPilot_Rover.so
             build/QURT/ArduPilot.so
+            libraries/AP_HAL_QURT/packaging/*.deb
           retention-days: 7

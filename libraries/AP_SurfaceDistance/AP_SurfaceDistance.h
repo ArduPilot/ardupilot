@@ -7,7 +7,11 @@
 
 class AP_SurfaceDistance {
 public:
-    AP_SurfaceDistance(Rotation rot, const AP_InertialNav& inav, uint8_t i) : rotation(rot), inertial_nav(inav), instance(i) {};
+    AP_SurfaceDistance(Rotation rot, const AP_InertialNav& inav, uint8_t i) :
+        instance(i),
+        inertial_nav(inav),
+        rotation(rot)
+    {};
 
     void update();
 

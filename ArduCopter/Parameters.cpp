@@ -249,7 +249,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL,28:Turtle
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
 
@@ -771,7 +771,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
 
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     AP_SUBGROUPINFO(afs, "AFS_", 6, ParametersG2, AP_AdvancedFailsafe),
@@ -1240,8 +1240,11 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 /*
   constructor for g2 object
  */
-ParametersG2::ParametersG2(void)
-    : command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
+ParametersG2::ParametersG2(void) :
+    unused_integer{17}
+#if HAL_BUTTON_ENABLED
+    ,button_ptr(&copter.button)
+#endif
 #if AP_TEMPCALIBRATION_ENABLED
     , temp_calibration()
 #endif
@@ -1251,20 +1254,20 @@ ParametersG2::ParametersG2(void)
 #if HAL_PROXIMITY_ENABLED
     , proximity()
 #endif
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     ,afs()
 #endif
 #if MODE_SMARTRTL_ENABLED
     ,smart_rtl()
+#endif
+#if USER_PARAMS_ENABLED
+    ,user_parameters()
 #endif
 #if MODE_FLOWHOLD_ENABLED
     ,mode_flowhold_ptr(&copter.mode_flowhold)
 #endif
 #if MODE_FOLLOW_ENABLED
     ,follow()
-#endif
-#if USER_PARAMS_ENABLED
-    ,user_parameters()
 #endif
 #if AUTOTUNE_ENABLED
     ,autotune_ptr(&copter.mode_autotune.autotune)
@@ -1275,13 +1278,9 @@ ParametersG2::ParametersG2(void)
 #if MODE_AUTOROTATE_ENABLED
     ,arot()
 #endif
-#if HAL_BUTTON_ENABLED
-    ,button_ptr(&copter.button)
-#endif
 #if MODE_ZIGZAG_ENABLED
     ,mode_zigzag_ptr(&copter.mode_zigzag)
 #endif
-
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     ,command_model_acro_rp(ACRO_RP_RATE_DEFAULT, ACRO_RP_EXPO_DEFAULT, 0.0f)
 #endif
@@ -1289,6 +1288,8 @@ ParametersG2::ParametersG2(void)
 #if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
     ,command_model_acro_y(ACRO_Y_RATE_DEFAULT, ACRO_Y_EXPO_DEFAULT, 0.0f)
 #endif
+
+    ,command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
 
 #if WEATHERVANE_ENABLED
     ,weathervane()

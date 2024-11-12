@@ -81,7 +81,7 @@ public:
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
 
-    // Reset rate and steering controllers
+    // Reset rate and steering and TECS controllers
     void reset_controllers();
 
     //
@@ -158,6 +158,9 @@ protected:
 
     // Output pilot throttle, this is used in stabilized modes without auto throttle control
     void output_pilot_throttle();
+
+    // makes the initialiser list in the constructor manageable
+    uint8_t unused_integer;
 
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes

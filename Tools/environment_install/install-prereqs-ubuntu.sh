@@ -162,9 +162,9 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect astyle"
 PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
-PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
+PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
@@ -397,6 +397,8 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
 
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/$SHELL_LOGIN
+    else
+        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
 

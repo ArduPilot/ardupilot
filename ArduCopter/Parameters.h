@@ -499,6 +499,11 @@ public:
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
 
+    // unused_integer simply exists so that the constructor for
+    // ParametersG2 can be created with a relatively easy syntax in
+    // the face of many #ifs:
+    uint8_t unused_integer;
+
     // button checking
 #if HAL_BUTTON_ENABLED
     AP_Button *button_ptr;
@@ -530,8 +535,8 @@ public:
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
-    
-#if ADVANCED_FAILSAFE
+
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Copter afs;
 #endif

@@ -5825,6 +5825,49 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def AutoYawDO_MOUNT_CONTROL(self):
+        '''test AutoYaw behaviour when MAV_CMD_DO_MOUNT_CONTROL sent to Mount without Yaw control'''
+
+        # setup mount parameters
+        self.context_push()
+
+        yaw_servo = 7
+        self.setup_servo_mount(roll_servo=5, pitch_servo=6, yaw_servo=yaw_servo)
+        # Disable Mount Yaw servo
+        self.set_parameters({
+            "SERVO%u_FUNCTION" % yaw_servo: 0,
+        })
+        self.reboot_sitl() # to handle MNT_TYPE changing
+
+        self.takeoff(20, mode='GUIDED')
+
+        for mount_yaw in [-45, 0, 45]:
+            heading = 330
+            self.guided_achieve_heading(heading)
+            self.assert_heading(heading)
+
+            self.neutralise_gimbal()
+
+            r = 15
+            p = 20
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+                p1=p,
+                p2=r,
+                p3=mount_yaw,
+                p7=mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING,
+            )
+            self.delay_sim_time(5)
+            # We have disabled yaw servo, so expect mount yaw to be zero
+            self.assert_mount_rpy(r, p, 0)
+            # But we expect the copter to yaw instead
+            self.assert_heading(heading + mount_yaw)
+
+        self.do_RTL()
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE(self):
         '''test MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE mavlink command'''
         # setup mount parameters
@@ -9354,6 +9397,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test replay correctness'''
         self.progress("Building Replay")
         util.build_SITL('tool/Replay', clean=False, configure=False)
+        self.set_parameters({
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        })
 
         bits = [
             ('GPS', self.test_replay_gps_bit),
@@ -10208,6 +10255,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameters({
                 "LOG_BITMASK": new,
                 "LOG_DISARMED": 1,
+                "LOG_DARM_RATEMAX": 0,
+                "LOG_FILE_RATEMAX": 0,
             })
             path = self.generate_rate_sample_log()
 
@@ -10230,6 +10279,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def BaseLoggingRates(self):
         '''ensure messages come out at specific rates'''
+        self.set_parameters({
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        })
         path = self.generate_rate_sample_log()
         self.delay_sim_time(10)  # NFI why this is required
         self.check_dflog_message_rates(path, {
@@ -10630,6 +10683,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetpointBadVel,
              self.SplineTerrain,
              self.TakeoffCheck,
+             self.GainBackoffTakeoff,
         ])
         return ret
 
@@ -10684,6 +10738,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MountYawVehicleForMountROI,
              self.MAV_CMD_DO_MOUNT_CONTROL,
              self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
+             self.AutoYawDO_MOUNT_CONTROL,
              self.Button,
              self.ShipTakeoff,
              self.RangeFinder,
@@ -10755,6 +10810,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def ScriptCopterPosOffsets(self):
+        '''test the copter-posoffset.lua example script'''
+        self.context_push()
+
+        # enable scripting and arming/takingoff in Auto mode
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "AUTO_OPTIONS": 3,
+            "RC12_OPTION": 300
+        })
+        self.reboot_sitl()
+
+        # install copter-posoffset script
+        self.install_example_script_context('copter-posoffset.lua')
+        self.reboot_sitl()
+
+        # create simple mission with a single takeoff command
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20)
+        ])
+
+        # switch to loiter to wait for position estimate (aka GPS lock)
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        # arm and takeoff in Auto mode
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+
+        # wait for vehicle to climb to at least 10m
+        self.wait_altitude(8, 12, relative=True)
+
+        # add position offset to East and confirm vehicle moves
+        self.set_parameter("PSC_OFS_POS_E", 20)
+        self.set_rc(12, 2000)
+        self.wait_distance(18)
+
+        # remove position offset and wait for vehicle to return home
+        self.set_parameter("PSC_OFS_POS_E", 0)
+        self.wait_distance_to_home(distance_min=0, distance_max=4, timeout=20)
+
+        # add velocity offset and confirm vehicle moves
+        self.set_parameter("PSC_OFS_VEL_N", 5)
+        self.wait_groundspeed(4.8, 5.2, minimum_duration=5, timeout=20)
+
+        # remove velocity offset and switch to RTL
+        self.set_parameter("PSC_OFS_VEL_N", 0)
+        self.set_rc(12, 1000)
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
     def AHRSTrimLand(self):
         '''test land detector with significant AHRS trim'''
         self.context_push()
@@ -10766,6 +10873,126 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.takeoff(alt_min=20, mode='LOITER')
         self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def GainBackoffTakeoff(self):
+        '''test gain backoff on takeoff'''
+        self.context_push()
+        self.progress("Test gains are fully backed off")
+        self.set_parameters({
+            "ATC_LAND_R_MULT": 0.0,
+            "ATC_LAND_P_MULT": 0.0,
+            "ATC_LAND_Y_MULT": 0.0,
+            "GCS_PID_MASK" : 7,
+            "LOG_BITMASK": 180222,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('ALT_HOLD')
+
+        class ValidatePDZero(vehicle_test_suite.TestSuite.MessageHook):
+            '''asserts correct values in PID_TUNING'''
+
+            def __init__(self, suite, axis):
+                super(ValidatePDZero, self).__init__(suite)
+                self.pid_tuning_count = 0
+                self.p_sum = 0
+                self.d_sum = 0
+                self.i_sum = 0
+                self.axis = axis
+
+            def hook_removed(self):
+                if self.pid_tuning_count == 0:
+                    raise NotAchievedException("Did not get PID_TUNING")
+                if self.i_sum == 0:
+                    raise ValueError("I sum is zero")
+                print(f"ValidatePDZero: PID_TUNING count: {self.pid_tuning_count}")
+
+            def process(self, mav, m):
+                if m.get_type() != 'PID_TUNING' or m.axis != self.axis:
+                    return
+                self.pid_tuning_count += 1
+                self.p_sum += m.P
+                self.d_sum += m.D
+                self.i_sum += m.I
+                if self.p_sum > 0:
+                    raise ValueError("P sum is not zero")
+                if self.d_sum > 0:
+                    raise ValueError("D sum is not zero")
+
+        self.progress("Check that PD values are zero")
+        self.install_message_hook_context(ValidatePDZero(self, mavutil.mavlink.PID_TUNING_ROLL))
+        self.install_message_hook_context(ValidatePDZero(self, mavutil.mavlink.PID_TUNING_PITCH))
+        self.install_message_hook_context(ValidatePDZero(self, mavutil.mavlink.PID_TUNING_YAW))
+        # until the context pop happens, all received PID_TUNINGS will be verified as good
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.delay_sim_time(2)
+        self.set_rc(2, 1250)
+        self.delay_sim_time(5)
+        self.assert_receive_message('PID_TUNING', timeout=5)
+        self.set_rc_default()
+        self.zero_throttle()
+        self.disarm_vehicle()
+        self.context_pop()
+
+        self.context_push()
+        self.progress("Test gains are not backed off")
+        self.set_parameters({
+            "ATC_LAND_R_MULT": 1.0,
+            "ATC_LAND_P_MULT": 1.0,
+            "ATC_LAND_Y_MULT": 1.0,
+            "GCS_PID_MASK" : 7,
+            "LOG_BITMASK": 180222,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('ALT_HOLD')
+
+        class ValidatePDNonZero(vehicle_test_suite.TestSuite.MessageHook):
+            '''asserts correct values in PID_TUNING'''
+
+            def __init__(self, suite, axis):
+                super(ValidatePDNonZero, self).__init__(suite)
+                self.pid_tuning_count = 0
+                self.p_sum = 0
+                self.d_sum = 0
+                self.i_sum = 0
+                self.axis = axis
+
+            def hook_removed(self):
+                if self.pid_tuning_count == 0:
+                    raise NotAchievedException("Did not get PID_TUNING")
+                if self.p_sum == 0:
+                    raise ValueError("P sum is zero")
+                if self.i_sum == 0:
+                    raise ValueError("I sum is zero")
+                print(f"ValidatePDNonZero: PID_TUNING count: {self.pid_tuning_count}")
+
+            def process(self, mav, m):
+                if m.get_type() != 'PID_TUNING' or m.axis != self.axis:
+                    return
+                self.pid_tuning_count += 1
+                self.p_sum += m.P
+                self.d_sum += m.D
+                self.i_sum += m.I
+
+        self.progress("Check that PD values are non-zero")
+        self.install_message_hook_context(ValidatePDNonZero(self, mavutil.mavlink.PID_TUNING_ROLL))
+        self.install_message_hook_context(ValidatePDNonZero(self, mavutil.mavlink.PID_TUNING_PITCH))
+        self.install_message_hook_context(ValidatePDNonZero(self, mavutil.mavlink.PID_TUNING_YAW))
+        # until the context pop happens, all received PID_TUNINGS will be verified as good
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.delay_sim_time(2)
+        self.set_rc(2, 1250)
+        self.delay_sim_time(5)
+        self.assert_receive_message('PID_TUNING', timeout=5)
+        self.set_rc_default()
+        self.zero_throttle()
+        self.disarm_vehicle()
+
         self.context_pop()
         self.reboot_sitl()
 
@@ -12002,6 +12229,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.TerrainDBPreArm,
             self.ThrottleGainBoost,
             self.ScriptMountPOI,
+            self.ScriptCopterPosOffsets,
             self.MountSolo,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,

@@ -735,15 +735,15 @@ ParametersG2::ParametersG2(void)
 #if AP_BEACON_ENABLED
     beacon(),
 #endif
-    motors(wheel_rate_control),
     wheel_rate_control(wheel_encoder),
+    motors(wheel_rate_control),
     attitude_control(),
     smart_rtl(),
-#if MODE_DOCK_ENABLED
-    mode_dock_ptr(&rover.mode_dock),
-#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
+#endif
+#if MODE_DOCK_ENABLED
+    mode_dock_ptr(&rover.mode_dock),
 #endif
 #if AP_AVOIDANCE_ENABLED
     avoid(),
@@ -752,9 +752,9 @@ ParametersG2::ParametersG2(void)
     follow(),
 #endif
     windvane(),
-    pos_control(attitude_control),
     wp_nav(attitude_control, pos_control),
-    sailboat()
+    sailboat(),
+    pos_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

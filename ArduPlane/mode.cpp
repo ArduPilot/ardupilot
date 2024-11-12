@@ -1,14 +1,15 @@
 #include "Plane.h"
 
 Mode::Mode() :
-    ahrs(plane.ahrs)
+    unused_integer{17},
 #if HAL_QUADPLANE_ENABLED
-    , quadplane(plane.quadplane),
     pos_control(plane.quadplane.pos_control),
     attitude_control(plane.quadplane.attitude_control),
     loiter_nav(plane.quadplane.loiter_nav),
-    poscontrol(plane.quadplane.poscontrol)
+    quadplane(plane.quadplane),
+    poscontrol(plane.quadplane.poscontrol),
 #endif
+    ahrs(plane.ahrs)
 {
 }
 
@@ -58,9 +59,8 @@ bool Mode::enter()
     plane.guided_state.target_heading = -4; // radians here are in range -3.14 to 3.14, so a default value needs to be outside that range
     plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
     plane.guided_state.target_airspeed_cm = -1; // same as above, although an airspeed of -1 is rare on plane.
-    plane.guided_state.target_alt = -1; // same as above, although a target alt of -1 is rare on plane.
     plane.guided_state.target_alt_time_ms = 0;
-    plane.guided_state.last_target_alt = 0;
+    plane.guided_state.target_location.set_alt_cm(-1, Location::AltFrame::ABSOLUTE); 
 #endif
 
 #if AP_CAMERA_ENABLED
@@ -141,6 +141,14 @@ bool Mode::enter()
 
         // Make sure the flight stage is correct for the new mode
         plane.update_flight_stage();
+
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.enabled()) {
+            float aspeed;
+            bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+            quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
+        }
+#endif
     }
 
     return enter_result;
@@ -248,6 +256,9 @@ void Mode::reset_controllers()
     // reset steering controls
     plane.steer_state.locked_course = false;
     plane.steer_state.locked_course_err = 0;
+
+    // reset TECS
+    plane.TECS_controller.reset();
 }
 
 bool Mode::is_taking_off() const

@@ -19,7 +19,9 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#ifndef AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
 #define AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED (!(APM_BUILD_TYPE(APM_BUILD_ArduSub) || (AP_TEMPERATURE_SENSOR_ENABLED == 1)))
+#endif
 
 
 #if !AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
@@ -137,7 +139,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 9_
     // @Path: AP_TemperatureSensor_Analog.cpp
-    AP_SUBGROUPVARPTR(drivers[8], "9_", 26, AP_TemperatureSensor, backend_var_info[8]),
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 27, AP_TemperatureSensor, backend_var_info[8]),
 #endif
 
     AP_GROUPEND

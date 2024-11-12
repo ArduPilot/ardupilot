@@ -26,6 +26,12 @@ public:
         RANGE = 1,
     };
 
+    // ch returns the radio channel be read, starting at 1.  so
+    // typically Roll=1, Pitch=2, throttle=3, yaw=4.  If this returns
+    // 0 then this is the dummy object which means that one of roll,
+    // pitch, yaw or throttle has not been configured correctly.
+    uint8_t ch() const { return ch_in + 1; }
+
     // setup the control preferences
     void        set_range(uint16_t high);
     uint16_t    get_range() const { return high_in; }
