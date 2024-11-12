@@ -912,7 +912,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 #endif
 }
 
-#if AP_MISSION_ENABLED
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
 void GCS_MAVLINK::handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int)
 {
         const uint8_t current = mission_item_int.current;
@@ -971,7 +971,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     }
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
-#if AP_MISSION_ENABLED
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
     const uint8_t current = mission_item_int.current;
 
     if (type == MAV_MISSION_TYPE_MISSION && (current == 2 || current == 3)) {
