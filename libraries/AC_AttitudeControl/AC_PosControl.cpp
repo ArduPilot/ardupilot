@@ -323,7 +323,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn 参数表~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    AP_SUBGROUPINFO(_pdnn_pos, "_PDNN_", 11, AC_PosControl, AC_PDNN_3D),
+    AP_SUBGROUPINFO(_pdnn_pos, "_PDNN_", 12, AC_PosControl, AC_PDNN_3D),
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     AP_GROUPEND
@@ -992,11 +992,11 @@ bool AC_PosControl::is_active_z() const
 
  ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DIYWrench get_DIYwrench(float thr_out)
+DIYWrench get_DIYwrench(Vector3f f_d)  //记得修改这里的参数后要在.h文件中也修改一下
 {
     
 // 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(1.0f, 2.0f, thr_out); // 假设的力值
+Vector3f force(f_d.x, f_d.y, f_d.z); // 假设的力值
 
 Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
   
@@ -1109,7 +1109,7 @@ void AC_PosControl::update_z_controller()
         _limit_vector.z = 0.0f; //如果油门既不受上限也不受下限的限制，则限制向量为 `0.0`，表示没有垂直方向上的限制。
     }
 
-     current_DIYwrench = get_DIYwrench(thr_out); //用于ROS2推力话题
+     current_DIYwrench = get_DIYwrench(f_d); //用于ROS2推力话题
 }
 
 

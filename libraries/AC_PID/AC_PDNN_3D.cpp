@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AC_PDNN_3D::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    0, AC_PDNN_3D, _kp, default_kp),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P_xy",    0, AC_PDNN_3D, _kp, default_kp),
 
     // @Param: FLTE
     // @DisplayName: PID Input filter frequency in Hz
@@ -22,7 +22,7 @@ const AP_Param::GroupInfo AC_PDNN_3D::var_info[] = {
     // @Param: D
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    2, AC_PDNN_3D, _kd, default_kd),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D_xy",    2, AC_PDNN_3D, _kd, default_kd),
 
     // @Param: FLTD
     // @DisplayName: D term filter frequency in Hz
@@ -35,9 +35,9 @@ const AP_Param::GroupInfo AC_PDNN_3D::var_info[] = {
     // @Description: FF Gain which produces an output that is proportional to the magnitude of the target
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FF",    4, AC_PDNN_3D, _kff, default_kff),
 
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    5, AC_PDNN_3D, _kp_z, default_kp_z),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P_z",    5, AC_PDNN_3D, _kp_z, default_kp_z),
     
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D",    6, AC_PDNN_3D, _kd_z, default_kd_z),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D_z",    6, AC_PDNN_3D, _kd_z, default_kd_z),
 
     AP_GROUPEND
 };
