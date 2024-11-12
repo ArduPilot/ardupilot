@@ -545,11 +545,12 @@ void SRV_Channels::zero_rc_outputs()
      * send an invalid signal to all channels to prevent
      * undesired/unexpected behavior
      */
-    cork();
+    auto &srv = AP::srv();
+    srv.cork();
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         hal.rcout->write(i, 0);
     }
-    AP::srv().push();
+    srv.push();
 }
 
 /*

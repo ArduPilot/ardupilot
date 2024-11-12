@@ -538,9 +538,8 @@ public:
         }
         return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
     }
-    
-    static void cork();
 
+    void cork();
     void push();
 
     // disable PWM output to a set of channels given by a mask. This is used by the AP_BLHeli code
