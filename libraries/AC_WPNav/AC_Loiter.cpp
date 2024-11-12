@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_Loiter.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AC_Avoidance/AC_Avoid.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -106,7 +107,7 @@ void AC_Loiter::init_target(const Vector2f& position)
     _brake_accel = 0.0f;
 
     // set target position
-    _pos_control.set_pos_target_xy_cm(position.x, position.y);
+    _pos_control.set_pos_desired_xy_cm(position);
 }
 
 /// initialize's position and feed-forward velocity from current pos and velocity
@@ -122,8 +123,7 @@ void AC_Loiter::init_target()
     _pos_control.relax_velocity_controller_xy();
 
     // initialise predicted acceleration and angles from the position controller
-    _predicted_accel.x = _pos_control.get_accel_target_cmss().x;
-    _predicted_accel.y = _pos_control.get_accel_target_cmss().y;
+    _predicted_accel = _pos_control.get_accel_target_cmss().xy();
     _predicted_euler_angle.x = radians(_pos_control.get_roll_cd()*0.01f);
     _predicted_euler_angle.y = radians(_pos_control.get_pitch_cd()*0.01f);
     _brake_accel = 0.0f;
@@ -221,12 +221,10 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     }
 
     // get loiters desired velocity from the position controller where it is being stored.
-    const Vector3f &desired_vel_3d = _pos_control.get_vel_desired_cms();
-    Vector2f desired_vel{desired_vel_3d.x,desired_vel_3d.y};
+    Vector2f desired_vel = _pos_control.get_vel_desired_cms().xy();
 
     // update the desired velocity using our predicted acceleration
-    desired_vel.x += _predicted_accel.x * dt;
-    desired_vel.y += _predicted_accel.y * dt;
+    desired_vel += _predicted_accel * dt;
 
     Vector2f loiter_accel_brake;
     float desired_speed = desired_vel.length();
@@ -261,11 +259,10 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     // Apply EKF limit to desired velocity -  this limit is calculated by the EKF and adjusted as required to ensure certain sensor limits are respected (eg optical flow sensing)
     float horizSpdDem = desired_vel.length();
     if (horizSpdDem > gnd_speed_limit_cms) {
-        desired_vel.x = desired_vel.x * gnd_speed_limit_cms / horizSpdDem;
-        desired_vel.y = desired_vel.y * gnd_speed_limit_cms / horizSpdDem;
+        desired_vel = desired_vel * gnd_speed_limit_cms / horizSpdDem;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {
         // Limit the velocity to prevent fence violations
         // TODO: We need to also limit the _desired_accel
@@ -279,11 +276,11 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 #endif // !APM_BUILD_ArduPlane
 
     // get loiters desired velocity from the position controller where it is being stored.
-    Vector2p target_pos = _pos_control.get_pos_target_cm().xy();
+    Vector2p desired_pos = _pos_control.get_pos_desired_cm().xy();
 
-    // update the target position using our predicted velocity
-    target_pos += (desired_vel * dt).topostype();
+    // update the desired position using our desired velocity and acceleration
+    desired_pos += (desired_vel * dt).topostype();
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
-    _pos_control.set_pos_vel_accel_xy(target_pos, desired_vel, _desired_accel);
+    _pos_control.set_pos_vel_accel_xy(desired_pos, desired_vel, _desired_accel);
 }

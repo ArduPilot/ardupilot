@@ -37,6 +37,10 @@ class Mode
 {
 
 public:
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     // Auto Pilot Modes enumeration
     enum class Number : uint8_t {
         STABILIZE =     0,  // manual angle with manual depth/throttle
@@ -49,11 +53,17 @@ public:
         POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
+<<<<<<< HEAD
         SURFTRAK =     21,  // Track distance above seafloor (hold range)
         MPC =          22   // Model Predictive Control (MPC) Mode
     };
 
 
+=======
+        SURFTRAK =     21   // Track distance above seafloor (hold range)
+    };
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     // constructor
     Mode(void);
 
@@ -275,6 +285,7 @@ protected:
     const char *name4() const override { return "ALTH"; }
 };
 
+<<<<<<< HEAD
 class ModeMPC : public Mode
 {
 public:
@@ -298,6 +309,8 @@ protected:
     void run_post(); // 如果需要，可以增加后置运行的控制逻辑
 };
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 class ModeSurftrak : public ModeAlthold
 {

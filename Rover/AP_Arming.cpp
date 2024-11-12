@@ -59,7 +59,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return false;
     }
 
-    // ensure position esetimate is ok
+    // ensure position estimate is ok
     if (!rover.ekf_position_ok()) {
         // vehicle level position estimate checks
         check_failed(display_failure, "Need Position Estimate");
@@ -78,11 +78,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     //are arming checks disabled?
     if (checks_to_perform == 0) {
-        return true;
-    }
-    if (SRV_Channels::get_emergency_stop()) {
-        check_failed(report, "Motors Emergency Stopped");
-        return false;
+        return mandatory_checks(report);
     }
 
     if (rover.g2.sailboat.sail_enabled() && !rover.g2.windvane.enabled()) {
@@ -92,7 +88,9 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     return (AP_Arming::pre_arm_checks(report)
             & motor_checks(report)
+#if AP_OAPATHPLANNER_ENABLED
             & oa_check(report)
+#endif
             & parameter_checks(report)
             & mode_checks(report));
 }
@@ -110,7 +108,9 @@ void AP_Arming_Rover::update_soft_armed()
 {
     hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+#endif
 }
 
 /*
@@ -134,7 +134,7 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     update_soft_armed();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
+    send_arm_disarm_statustext("Throttle armed");
 
     return true;
 }
@@ -154,11 +154,12 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
 
     update_soft_armed();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
+    send_arm_disarm_statustext("Throttle disarmed");
 
     return true;
 }
 
+#if AP_OAPATHPLANNER_ENABLED
 // check object avoidance has initialised correctly
 bool AP_Arming_Rover::oa_check(bool report)
 {
@@ -167,14 +168,10 @@ bool AP_Arming_Rover::oa_check(bool report)
         return true;
     }
 
-    // display failure
-    if (strlen(failure_msg) == 0) {
-        check_failed(report, "Check Object Avoidance");
-    } else {
-        check_failed(report, "%s", failure_msg);
-    }
+    check_failed(report, "%s", failure_msg);
     return false;
 }
+#endif  // AP_OAPATHPLANNER_ENABLED
 
 // perform parameter checks
 bool AP_Arming_Rover::parameter_checks(bool report)

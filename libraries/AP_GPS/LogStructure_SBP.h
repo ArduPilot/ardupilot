@@ -74,7 +74,7 @@ struct PACKED log_SbpEvent {
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
       "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" , true }, \
     { LOG_MSG_SBPRAWH, sizeof(log_SbpRAWH), \
-      "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s--b----", "F--0----" , true }, \
+      "SBRH", "QQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6", "s-------", "F-------" , true }, \
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
       "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" , true }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \

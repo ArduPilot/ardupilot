@@ -16,6 +16,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsUGV.h"
+#include <AP_Relay/AP_Relay.h>
 
 #define SERVO_MAX 4500  // This value represents 45 degrees and is just an arbitrary representation of servo max travel.
 
@@ -32,7 +33,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
+    AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWMType::NORMAL),
 
     // @Param: PWM_FREQ
     // @DisplayName: Motor Output PWM freq for brushed motors
@@ -120,9 +121,8 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     AP_GROUPEND
 };
 
-AP_MotorsUGV::AP_MotorsUGV(AP_ServoRelayEvents &relayEvents, AP_WheelRateControl& rate_controller) :
-        _relayEvents(relayEvents),
-        _rate_controller(rate_controller)
+AP_MotorsUGV::AP_MotorsUGV(AP_WheelRateControl& rate_controller) :
+    _rate_controller(rate_controller)
 {
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
@@ -142,15 +142,42 @@ void AP_MotorsUGV::init(uint8_t frtype)
     setup_safety_output();
 
     // setup for omni vehicles
-    if (is_omni()) {
+    if (_frame_type != FRAME_TYPE_UNDEFINED) {
         setup_omni();
     }
+}
+
+bool AP_MotorsUGV::get_legacy_relay_index(int8_t &index1, int8_t &index2, int8_t &index3, int8_t &index4) const
+{
+    if (_pwm_type != PWMType::BRUSHED_WITH_RELAY) {
+        // Relays only used if PWM type is set to brushed with relay
+        return false;
+    }
+
+    // First relay is always used, throttle, throttle left or motor 1
+    index1 = 0;
+
+    // Second relay is used for right throttle on skid steer and motor 2 for omni
+    if (have_skid_steering()) {
+        index2 = 1;
+    }
+
+    // Omni can have a variable number of motors
+    if (is_omni()) {
+        // Omni has at least 3 motors
+        index2 = 2;
+        if (_motors_num >= 4) {
+            index2 = 3;
+        }
+    }
+
+    return true;
 }
 
 // setup output in case of main CPU failure
 void AP_MotorsUGV::setup_safety_output()
 {
-    if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
+    if (_pwm_type == PWMType::BRUSHED_WITH_RELAY) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         // ignore servo revese flag, it is used by the relay
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle, true);
@@ -457,17 +484,34 @@ bool AP_MotorsUGV::output_test_pwm(motor_test_order motor_seq, float pwm)
 //  returns true if checks pass, false if they fail.  report should be true to send text messages to GCS
 bool AP_MotorsUGV::pre_arm_check(bool report) const
 {
-    // check if only one of skid-steering output has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft) != SRV_Channels::function_assigned(SRV_Channel::k_throttleRight)) {
+    const bool have_throttle = SRV_Channels::function_assigned(SRV_Channel::k_throttle);
+    const bool have_throttle_left = SRV_Channels::function_assigned(SRV_Channel::k_throttleLeft);
+    const bool have_throttle_right = SRV_Channels::function_assigned(SRV_Channel::k_throttleRight);
+
+    // check that there's defined outputs, inc scripting and sail
+    if(!have_throttle_left &&
+       !have_throttle_right &&
+       !have_throttle &&
+       !SRV_Channels::function_assigned(SRV_Channel::k_steering) &&
+       !SRV_Channels::function_assigned(SRV_Channel::k_scripting1) &&
+       !has_sail() &&
+       !is_omni()) {
         if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: no motor, sail or scripting outputs defined");
+        }
+        return false;
+    }
+    // check if only one of skid-steering output has been configured
+    if (have_throttle_left != have_throttle_right) {
+        if (report) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check skid steering config");
         }
         return false;
     }
     // check if only one of throttle or steering outputs has been configured, if has a sail allow no throttle
-    if ((has_sail() || SRV_Channels::function_assigned(SRV_Channel::k_throttle)) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+    if ((has_sail() || have_throttle) != SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
         if (report) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: check steering and throttle config");
         }
         return false;
     }
@@ -476,11 +520,40 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
         if (!SRV_Channels::function_assigned(function)) {
             if (report) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: servo function %u unassigned", function);
             }
             return false;
         }
     }
+
+    // Check relays are configured for brushed with relay outputs
+#if AP_RELAY_ENABLED
+    AP_Relay*relay = AP::relay();
+    if ((_pwm_type == PWMType::BRUSHED_WITH_RELAY) && (relay != nullptr)) {
+        // If a output is configured its relay must be enabled
+        struct RelayTable {
+            bool output_assigned;
+            AP_Relay_Params::FUNCTION fun;
+        };
+
+        const RelayTable relay_table[] = {
+            { have_throttle || have_throttle_left || (SRV_Channels::function_assigned(SRV_Channel::k_motor1) && (_motors_num >= 1)), AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1 },
+            { have_throttle_right || (SRV_Channels::function_assigned(SRV_Channel::k_motor2) && (_motors_num >= 2)),                 AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2 },
+            { SRV_Channels::function_assigned(SRV_Channel::k_motor3) && (_motors_num >= 3),                                          AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3 },
+            { SRV_Channels::function_assigned(SRV_Channel::k_motor4) && (_motors_num >= 4),                                          AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4 },
+        };
+
+        for (uint8_t i=0; i<ARRAY_SIZE(relay_table); i++) {
+            if (relay_table[i].output_assigned && !relay->enabled(relay_table[i].fun)) {
+                if (report) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: relay function %u unassigned", uint8_t(relay_table[i].fun));
+                }
+                return false;
+            }
+        }
+    }
+#endif
+
     return true;
 }
 
@@ -508,27 +581,27 @@ void AP_MotorsUGV::setup_pwm_type()
     }
 
     switch (_pwm_type) {
-    case PWM_TYPE_ONESHOT:
+    case PWMType::ONESHOT:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
-    case PWM_TYPE_ONESHOT125:
+    case PWMType::ONESHOT125:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         break;
-    case PWM_TYPE_BRUSHED_WITH_RELAY:
-    case PWM_TYPE_BRUSHED_BIPOLAR:
+    case PWMType::BRUSHED_WITH_RELAY:
+    case PWMType::BRUSHED_BIPOLAR:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(_motor_mask, uint16_t(_pwm_freq * 1000));
         break;
-    case PWM_TYPE_DSHOT150:
+    case PWMType::DSHOT150:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
         break;
-    case PWM_TYPE_DSHOT300:
+    case PWMType::DSHOT300:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
         break;
-    case PWM_TYPE_DSHOT600:
+    case PWMType::DSHOT600:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
         break;
-    case PWM_TYPE_DSHOT1200:
+    case PWMType::DSHOT1200:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
     default:
@@ -574,6 +647,13 @@ void AP_MotorsUGV::setup_omni()
         add_omni_motor(2, 0.0f, -1.0f, 1.0f);
         add_omni_motor(3, 1.0f, 0.0f, 0.0f);
         break;
+
+    case FRAME_TYPE_OMNI3MECANUM:
+        _motors_num = 3;
+        add_omni_motor(0,  -1.0f,    1.0f,  -0.26795f);
+        add_omni_motor(1,  0.73205f, 1.0f,  -0.73205f);
+        add_omni_motor(2,  0.26795f, 1.0f,   1.0f);
+        break;
     }
 }
 
@@ -601,7 +681,7 @@ void AP_MotorsUGV::add_omni_motor_num(int8_t motor_num)
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
         }
     }
 }
@@ -852,7 +932,7 @@ void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float
         const float scaled_steering = steering / 4500.0f;
         const float scaled_lateral = lateral * 0.01f;
 
-        float thr_str_ltr_out[AP_MOTORS_NUM_MOTORS_MAX];
+        float thr_str_ltr_out[_motors_num];
         float thr_str_ltr_max = 1;
         for (uint8_t i=0; i<_motors_num; i++) {
             // Each motor outputs throttle + steering + lateral
@@ -906,7 +986,10 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     throttle = get_rate_controlled_throttle(function, throttle, dt);
 
     // set relay if necessary
-    if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
+#if AP_RELAY_ENABLED
+    AP_Relay*relay = AP::relay();
+    if ((_pwm_type == PWMType::BRUSHED_WITH_RELAY) && (relay != nullptr)) {
+
         // find the output channel, if not found return
         const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
         if (out_chan == nullptr) {
@@ -915,29 +998,31 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
         const int8_t reverse_multiplier = out_chan->get_reversed() ? -1 : 1;
         bool relay_high = is_negative(reverse_multiplier * throttle);
 
+        AP_Relay_Params::FUNCTION relay_function;
         switch (function) {
             case SRV_Channel::k_throttle:
             case SRV_Channel::k_throttleLeft:
             case SRV_Channel::k_motor1:
-                _relayEvents.do_set_relay(0, relay_high);
+            default:
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_1;
                 break;
             case SRV_Channel::k_throttleRight:
             case SRV_Channel::k_motor2:
-                _relayEvents.do_set_relay(1, relay_high);
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_2;
                 break;
             case SRV_Channel::k_motor3:
-                _relayEvents.do_set_relay(2, relay_high);
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_3;
                 break;
             case SRV_Channel::k_motor4:
-                _relayEvents.do_set_relay(3, relay_high);
-                break;
-            default:
-                // do nothing
+                relay_function = AP_Relay_Params::FUNCTION::BRUSHED_REVERSE_4;
                 break;
         }
+        relay->set(relay_function, relay_high);
+
         // invert the output to always have positive value calculated by calc_pwm
         throttle = reverse_multiplier * fabsf(throttle);
     }
+#endif  // AP_RELAY_ENABLED
 
     // output to servo channel
     switch (function) {
@@ -1068,17 +1153,17 @@ bool AP_MotorsUGV::active() const
 bool AP_MotorsUGV::is_digital_pwm_type() const
 {
     switch (_pwm_type) {
-        case PWM_TYPE_DSHOT150:
-        case PWM_TYPE_DSHOT300:
-        case PWM_TYPE_DSHOT600:
-        case PWM_TYPE_DSHOT1200:
-            return true;
-        case PWM_TYPE_NORMAL:
-        case PWM_TYPE_ONESHOT:
-        case PWM_TYPE_ONESHOT125:
-        case PWM_TYPE_BRUSHED_WITH_RELAY:
-        case PWM_TYPE_BRUSHED_BIPOLAR:
-            break;
+    case PWMType::DSHOT150:
+    case PWMType::DSHOT300:
+    case PWMType::DSHOT600:
+    case PWMType::DSHOT1200:
+        return true;
+    case PWMType::NORMAL:
+    case PWMType::ONESHOT:
+    case PWMType::ONESHOT125:
+    case PWMType::BRUSHED_WITH_RELAY:
+    case PWMType::BRUSHED_BIPOLAR:
+        break;
     }
     return false;
 }

@@ -7,7 +7,6 @@ AP_FLAKE8_CLEAN
 import atexit
 import math
 import os
-import random
 import re
 import shlex
 import signal
@@ -15,11 +14,9 @@ import subprocess
 import sys
 import tempfile
 import time
-from math import acos, atan2, cos, pi, sqrt
+
 
 import pexpect
-
-from pymavlink.rotmat import Vector3, Matrix3
 
 if sys.version_info[0] >= 3:
     ENCODING = 'ascii'
@@ -30,24 +27,6 @@ RADIUS_OF_EARTH = 6378100.0  # in meters
 
 # List of open terminal windows for macosx
 windowID = []
-
-
-def m2ft(x):
-    """Meters to feet."""
-    return float(x) / 0.3048
-
-
-def ft2m(x):
-    """Feet to meters."""
-    return float(x) * 0.3048
-
-
-def kt2mps(x):
-    return x * 0.514444444
-
-
-def mps2kt(x):
-    return x / 0.514444444
 
 
 def topdir():
@@ -112,12 +91,13 @@ def waf_configure(board,
                   coverage=False,
                   ekf_single=False,
                   postype_single=False,
-                  sitl_32bit=False,
+                  force_32bit=False,
                   extra_args=[],
                   extra_hwdef=None,
                   ubsan=False,
                   ubsan_abort=False,
                   num_aux_imus=0,
+                  dronecan_tests=False,
                   extra_defines={}):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
@@ -130,14 +110,16 @@ def waf_configure(board,
         cmd_configure.append('--ekf-single')
     if postype_single:
         cmd_configure.append('--postype-single')
-    if sitl_32bit:
-        cmd_configure.append('--sitl-32bit')
+    if force_32bit:
+        cmd_configure.append('--force-32bit')
     if ubsan:
         cmd_configure.append('--ubsan')
     if ubsan_abort:
         cmd_configure.append('--ubsan-abort')
     if num_aux_imus > 0:
         cmd_configure.append('--num-aux-imus=%u' % num_aux_imus)
+    if dronecan_tests:
+        cmd_configure.append('--enable-dronecan-tests')
     if extra_hwdef is not None:
         cmd_configure.extend(['--extra-hwdef', extra_hwdef])
     for nv in extra_defines.items():
@@ -174,10 +156,11 @@ def build_SITL(
         j=None,
         math_check_indexes=False,
         postype_single=False,
-        sitl_32bit=False,
+        force_32bit=False,
         ubsan=False,
         ubsan_abort=False,
         num_aux_imus=0,
+        dronecan_tests=False,
 ):
 
     # first configure
@@ -189,11 +172,12 @@ def build_SITL(
                       ekf_single=ekf_single,
                       postype_single=postype_single,
                       coverage=coverage,
-                      sitl_32bit=sitl_32bit,
+                      force_32bit=force_32bit,
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
                       extra_defines=extra_defines,
                       num_aux_imus=num_aux_imus,
+                      dronecan_tests=dronecan_tests,
                       extra_args=extra_configure_args,)
 
     # then clean
@@ -209,7 +193,8 @@ def build_SITL(
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
-                   ekf_single=False, postype_single=False, sitl_32bit=False, ubsan=False, ubsan_abort=False, num_aux_imus=0,
+                   ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
+                   num_aux_imus=0, dronecan_tests=False,
                    extra_configure_args=[]):
     # first configure
     if configure:
@@ -220,10 +205,11 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
                       ekf_single=ekf_single,
                       postype_single=postype_single,
                       coverage=coverage,
-                      sitl_32bit=sitl_32bit,
+                      force_32bit=force_32bit,
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
-                      extra_args=extra_configure_args)
+                      extra_args=extra_configure_args,
+                      dronecan_tests=dronecan_tests)
 
     # then clean
     if clean:
@@ -258,10 +244,11 @@ def build_tests(board,
                 coverage=False,
                 ekf_single=False,
                 postype_single=False,
-                sitl_32bit=False,
+                force_32bit=False,
                 ubsan=False,
                 ubsan_abort=False,
                 num_aux_imus=0,
+                dronecan_tests=False,
                 extra_configure_args=[]):
 
     # first configure
@@ -273,10 +260,12 @@ def build_tests(board,
                       ekf_single=ekf_single,
                       postype_single=postype_single,
                       coverage=coverage,
-                      sitl_32bit=sitl_32bit,
+                      force_32bit=force_32bit,
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
-                      extra_args=extra_configure_args)
+                      num_aux_imus=num_aux_imus,
+                      dronecan_tests=dronecan_tests,
+                      extra_args=extra_configure_args,)
 
     # then clean
     if clean:
@@ -408,7 +397,14 @@ class PSpawnStdPrettyPrinter(object):
 
     def write(self, data):
         self.buffer += data
+<<<<<<< HEAD
         for line in self.buffer.split("\n"):
+=======
+        lines = self.buffer.split("\n")
+        self.buffer = lines[-1]
+        lines.pop()
+        for line in lines:
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
             self.print_prefixed_line(line)
 
     def print_prefixed_line(self, line):
@@ -428,14 +424,19 @@ def start_SITL(binary,
                home=None,
                model=None,
                speedup=1,
-               defaults_filepath=None,
+               sim_rate_hz=None,
+               defaults_filepath=[],
                unhide_parameters=False,
                gdbserver=False,
                breakpoints=[],
                disable_breakpoints=False,
                customisations=[],
                lldb=False,
+<<<<<<< HEAD
                enable_fgview_output=False,
+=======
+               enable_fgview=False,
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
                supplementary=False,
                stdout_prefix=None):
 
@@ -495,7 +496,7 @@ def start_SITL(binary,
                         '-d',
                         '-m',
                         '-S', 'ardupilot-gdb',
-                        'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
+                        'gdb', '--cd', os.getcwd(), '-x', '/tmp/x.gdb', binary, '--args'])
     elif lldb:
         f = open("/tmp/x.lldb", "w")
         for breakingpoint in breakpoints:
@@ -513,6 +514,13 @@ def start_SITL(binary,
             raise RuntimeError("DISPLAY was not set")
 
     cmd.append(binary)
+
+    if defaults_filepath is None:
+        defaults_filepath = []
+    if not isinstance(defaults_filepath, list):
+        defaults_filepath = [defaults_filepath]
+    defaults = [reltopdir(path) for path in defaults_filepath]
+
     if not supplementary:
         if wipe:
             cmd.append('-w')
@@ -521,24 +529,33 @@ def start_SITL(binary,
         if home is not None:
             cmd.extend(['--home', home])
         cmd.extend(['--model', model])
-        if speedup != 1:
-            cmd.extend(['--speedup', str(speedup)])
-        if defaults_filepath is not None:
-            if type(defaults_filepath) == list:
-                defaults = [reltopdir(path) for path in defaults_filepath]
-                if len(defaults):
-                    cmd.extend(['--defaults', ",".join(defaults)])
-            else:
-                cmd.extend(['--defaults', reltopdir(defaults_filepath)])
+        if speedup is not None and speedup != 1:
+            ntf = tempfile.NamedTemporaryFile(mode="w", delete=False)
+            print(f"SIM_SPEEDUP {speedup}", file=ntf)
+            ntf.close()
+            # prepend it so that a caller can override the speedup in
+            # passed-in defaults:
+            defaults = [ntf.name] + defaults
+        if sim_rate_hz is not None:
+            cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
-        cmd.append('--uartC=tcp:2')
-        if not enable_fgview_output:
-            cmd.append("--disable-fgview")
+        cmd.append('--serial1=tcp:2')
+        if enable_fgview:
+            cmd.append("--enable-fgview")
+
+    if len(defaults):
+        cmd.extend(['--defaults', ",".join(defaults)])
 
     cmd.extend(customisations)
 
+<<<<<<< HEAD
+=======
+    if "--defaults" in customisations:
+        raise ValueError("--defaults must be passed in via defaults_filepath keyword argument, not as part of customisation list")  # noqa
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     pexpect_logfile_prefix = stdout_prefix
     if pexpect_logfile_prefix is None:
         pexpect_logfile_prefix = os.path.basename(binary)
@@ -591,8 +608,6 @@ def start_SITL(binary,
         rest = cmd[1:]
         child = pexpect.spawn(first, rest, logfile=pexpect_logfile, encoding=ENCODING, timeout=5)
         pexpect_autoclose(child)
-    # give time for parameters to properly setup
-    time.sleep(3)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
         # connection" is never going to appear on xterm's output.
@@ -624,11 +639,15 @@ def MAVProxy_version():
 def start_MAVProxy_SITL(atype,
                         aircraft=None,
                         setup=False,
-                        master='tcp:127.0.0.1:5762',
+                        master=None,
                         options=[],
+                        sitl_rcin_port=5501,
                         pexpect_timeout=60,
                         logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
+    if master is None:
+        raise ValueError("Expected a master")
+
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
@@ -637,11 +656,11 @@ def start_MAVProxy_SITL(atype,
     if old is not None:
         env['PYTHONPATH'] += os.path.pathsep + old
 
-    import pexpect
     global close_list
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
+    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
     if setup:
         cmd.append('--setup')
     if aircraft is None:
@@ -659,11 +678,23 @@ def start_MAVProxy_SITL(atype,
     return ret
 
 
+def start_PPP_daemon(ips, sockaddr):
+    """Start pppd for networking"""
+
+    global close_list
+    cmd = "sudo pppd socket %s debug noauth nodetach %s" % (sockaddr, ips)
+    cmd = cmd.split()
+    print("Running: %s" % cmd_as_shell(cmd))
+
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding=ENCODING, timeout=30)
+    ret.delaybeforesend = 0
+    pexpect_autoclose(ret)
+    return ret
+
+
 def expect_setup_callback(e, callback):
     """Setup a callback that is called once a second while waiting for
        patterns."""
-    import pexpect
-
     def _expect_callback(pattern, timeout=e.timeout):
         tstart = time.time()
         while time.time() < tstart + timeout:
@@ -728,51 +759,6 @@ def check_parent(parent_pid=None):
         sys.exit(1)
 
 
-def EarthRatesToBodyRates(dcm, earth_rates):
-    """Convert the angular velocities from earth frame to
-    body frame. Thanks to James Goppert for the formula
-
-    all inputs and outputs are in radians
-
-    returns a gyro vector in body frame, in rad/s .
-    """
-    from math import sin, cos
-
-    (phi, theta, psi) = dcm.to_euler()
-    phiDot   = earth_rates.x
-    thetaDot = earth_rates.y
-    psiDot   = earth_rates.z
-
-    p = phiDot - psiDot * sin(theta)
-    q = cos(phi) * thetaDot + sin(phi) * psiDot * cos(theta)
-    r = cos(phi) * psiDot * cos(theta) - sin(phi) * thetaDot
-    return Vector3(p, q, r)
-
-
-def BodyRatesToEarthRates(dcm, gyro):
-    """Convert the angular velocities from body frame to
-    earth frame.
-
-    all inputs and outputs are in radians/s
-
-    returns a earth rate vector.
-    """
-    from math import sin, cos, tan, fabs
-
-    p      = gyro.x
-    q      = gyro.y
-    r      = gyro.z
-
-    (phi, theta, psi) = dcm.to_euler()
-
-    phiDot   = p + tan(theta) * (q * sin(phi) + r * cos(phi))
-    thetaDot = q * cos(phi) - r * sin(phi)
-    if fabs(cos(theta)) < 1.0e-20:
-        theta += 1.0e-10
-    psiDot   = (q * sin(phi) + r * cos(phi)) / cos(theta)
-    return Vector3(phiDot, thetaDot, psiDot)
-
-
 def gps_newpos(lat, lon, bearing, distance):
     """Extrapolate latitude/longitude given a heading and distance
     thanks to http://www.movable-type.co.uk/scripts/latlong.html .
@@ -823,132 +809,6 @@ def gps_bearing(lat1, lon1, lat2, lon2):
     return bearing
 
 
-class Wind(object):
-    """A wind generation object."""
-    def __init__(self, windstring, cross_section=0.1):
-        a = windstring.split(',')
-        if len(a) != 3:
-            raise RuntimeError("Expected wind in speed,direction,turbulance form, not %s" % windstring)
-        self.speed      = float(a[0])  # m/s
-        self.direction  = float(a[1])  # direction the wind is going in
-        self.turbulance = float(a[2])  # turbulance factor (standard deviation)
-
-        # the cross-section of the aircraft to wind. This is multiplied by the
-        # difference in the wind and the velocity of the aircraft to give the acceleration
-        self.cross_section = cross_section
-
-        # the time constant for the turbulance - the average period of the
-        # changes over time
-        self.turbulance_time_constant = 5.0
-
-        # wind time record
-        self.tlast = time.time()
-
-        # initial turbulance multiplier
-        self.turbulance_mul = 1.0
-
-    def current(self, deltat=None):
-        """Return current wind speed and direction as a tuple
-        speed is in m/s, direction in degrees."""
-        if deltat is None:
-            tnow = time.time()
-            deltat = tnow - self.tlast
-            self.tlast = tnow
-
-        # update turbulance random walk
-        w_delta = math.sqrt(deltat) * (1.0 - random.gauss(1.0, self.turbulance))
-        w_delta -= (self.turbulance_mul - 1.0) * (deltat / self.turbulance_time_constant)
-        self.turbulance_mul += w_delta
-        speed = self.speed * math.fabs(self.turbulance_mul)
-        return speed, self.direction
-
-    # Calculate drag.
-    def drag(self, velocity, deltat=None):
-        """Return current wind force in Earth frame.  The velocity parameter is
-           a Vector3 of the current velocity of the aircraft in earth frame, m/s ."""
-        from math import radians
-
-        # (m/s, degrees) : wind vector as a magnitude and angle.
-        (speed, direction) = self.current(deltat=deltat)
-        # speed = self.speed
-        # direction = self.direction
-
-        # Get the wind vector.
-        w = toVec(speed, radians(direction))
-
-        obj_speed = velocity.length()
-
-        # Compute the angle between the object vector and wind vector by taking
-        # the dot product and dividing by the magnitudes.
-        d = w.length() * obj_speed
-        if d == 0:
-            alpha = 0
-        else:
-            alpha = acos((w * velocity) / d)
-
-        # Get the relative wind speed and angle from the object.  Note that the
-        # relative wind speed includes the velocity of the object; i.e., there
-        # is a headwind equivalent to the object's speed even if there is no
-        # absolute wind.
-        (rel_speed, beta) = apparent_wind(speed, obj_speed, alpha)
-
-        # Return the vector of the relative wind, relative to the coordinate
-        # system.
-        relWindVec = toVec(rel_speed, beta + atan2(velocity.y, velocity.x))
-
-        # Combine them to get the acceleration vector.
-        return Vector3(acc(relWindVec.x, drag_force(self, relWindVec.x)), acc(relWindVec.y, drag_force(self, relWindVec.y)), 0)
-
-
-def apparent_wind(wind_sp, obj_speed, alpha):
-    """http://en.wikipedia.org/wiki/Apparent_wind
-
-    Returns apparent wind speed and angle of apparent wind.  Alpha is the angle
-    between the object and the true wind.  alpha of 0 rads is a headwind; pi a
-    tailwind.  Speeds should always be positive."""
-    delta = wind_sp * cos(alpha)
-    x = wind_sp**2 + obj_speed**2 + 2 * obj_speed * delta
-    rel_speed = sqrt(x)
-    if rel_speed == 0:
-        beta = pi
-    else:
-        beta = acos((delta + obj_speed) / rel_speed)
-
-    return rel_speed, beta
-
-
-def drag_force(wind, sp):
-    """See http://en.wikipedia.org/wiki/Drag_equation
-
-    Drag equation is F(a) = cl * p/2 * v^2 * a, where cl : drag coefficient
-    (let's assume it's low, .e.g., 0.2), p : density of air (assume about 1
-    kg/m^3, the density just over 1500m elevation), v : relative speed of wind
-    (to the body), a : area acted on (this is captured by the cross_section
-    parameter).
-
-    So then we have
-    F(a) = 0.2 * 1/2 * v^2 * cross_section = 0.1 * v^2 * cross_section."""
-    return (sp**2.0) * 0.1 * wind.cross_section
-
-
-def acc(val, mag):
-    """ Function to make the force vector.  relWindVec is the direction the apparent
-    wind comes *from*.  We want to compute the accleration vector in the direction
-    the wind blows to."""
-    if val == 0:
-        return mag
-    else:
-        return (val / abs(val)) * (0 - mag)
-
-
-def toVec(magnitude, angle):
-    """Converts a magnitude and angle (radians) to a vector in the xy plane."""
-    v = Vector3(magnitude, 0, 0)
-    m = Matrix3()
-    m.from_euler(0, 0, angle)
-    return m.transposed() * v
-
-
 def constrain(value, minv, maxv):
     """Constrain a value to a range."""
     if value < minv:
@@ -970,6 +830,14 @@ def load_local_module(fname):
         import imp
         ret = imp.load_source("local_module", fname)
     return ret
+
+
+def get_git_hash(short=False):
+    short_v = "--short=8 " if short else ""
+    githash = run_cmd(f'git rev-parse {short_v}HEAD', output=True, directory=reltopdir('.')).strip()
+    if sys.version_info.major >= 3:
+        githash = githash.decode('utf-8')
+    return githash
 
 
 if __name__ == "__main__":

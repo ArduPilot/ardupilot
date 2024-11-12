@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 script to build the latest binaries for each vehicle type, ready to upload
@@ -104,7 +104,7 @@ class build_binaries(object):
             waf = "./waf"
         else:
             waf = os.path.join(".", "modules", "waf", "waf-light")
-        cmd_list = [waf]
+        cmd_list = ["python3", waf]
         cmd_list.extend(args)
         env = None
         if compiler is not None:
@@ -124,7 +124,7 @@ class build_binaries(object):
     def run_program(self, prefix, cmd_list, show_output=True, env=None, force_success=False):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
+        p = subprocess.Popen(cmd_list, stdin=None,
                              stdout=subprocess.PIPE, close_fds=True,
                              stderr=subprocess.STDOUT, env=env)
         output = ""
@@ -221,7 +221,7 @@ is bob we will attempt to checkout bob-AVR'''
         try:
             out = self.run_program(
                 'waf',
-                ['./waf', 'configure', '--board=BOARDTEST'],
+                ["python3", './waf', 'configure', '--board=BOARDTEST'],
                 show_output=False,
                 force_success=True
             )
@@ -493,7 +493,7 @@ is bob we will attempt to checkout bob-AVR'''
                                          "".join([binaryname, framesuffix]))
                 files_to_copy = []
                 extensions = [".apj", ".abin", "_with_bl.hex", ".hex"]
-                if vehicle == 'AP_Periph':
+                if vehicle == 'AP_Periph' or board == "Here4FC":
                     # need bin file for uavcan-gui-tool and MissionPlanner
                     extensions.append('.bin')
                 for extension in extensions:
@@ -538,8 +538,14 @@ is bob we will attempt to checkout bob-AVR'''
                                 self.mkpath(ddir)
                             self.addfwversion(ddir, vehicle)
                             features_filepath = os.path.join(ddir, "features.txt",)
+<<<<<<< HEAD
                             self.progress("Writing (%s)" % features_filepath)
                             self.write_string_to_filepath(features_text, features_filepath)
+=======
+                            if features_text is not None:
+                                self.progress("Writing (%s)" % features_filepath)
+                                self.write_string_to_filepath(features_text, features_filepath)
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
@@ -550,8 +556,14 @@ is bob we will attempt to checkout bob-AVR'''
                         # exists as we re-use the "beta" directories
                         self.addfwversion(tdir, vehicle)
                         features_filepath = os.path.join(tdir, "features.txt")
+<<<<<<< HEAD
                         self.progress("Writing (%s)" % features_filepath)
                         self.write_string_to_filepath(features_text, features_filepath)
+=======
+                        if features_text is not None:
+                            self.progress("Writing (%s)" % features_filepath)
+                            self.write_string_to_filepath(features_text, features_filepath)
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
                         shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
@@ -565,7 +577,7 @@ is bob we will attempt to checkout bob-AVR'''
 
         self.checkout(vehicle, "latest")
 
-    def get_exception_stacktrace(self, e):
+    def _get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
             ret = "%s\n" % e
             ret += ''.join(traceback.format_exception(type(e),
@@ -575,6 +587,12 @@ is bob we will attempt to checkout bob-AVR'''
 
         # Python2:
         return traceback.format_exc(e)
+
+    def get_exception_stacktrace(self, e):
+        try:
+            return self._get_exception_stacktrace(e)
+        except Exception:
+            return "FAILED TO GET EXCEPTION STACKTRACE"
 
     def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
@@ -656,6 +674,7 @@ is bob we will attempt to checkout bob-AVR'''
         generator.run()
 
         generator.write_manifest_json(os.path.join(self.binaries, "manifest.json"))
+        generator.write_features_json(os.path.join(self.binaries, "features.json"))
         self.progress("Manifest generation successful")
 
         self.progress("Generating stable releases")
@@ -758,7 +777,7 @@ if __name__ == '__main__':
     tags = cmd_opts.tags
     if len(tags) == 0:
         # FIXME: wedge this defaulting into parser somehow
-        tags = ["stable", "beta", "latest"]
+        tags = ["stable", "beta-4.3", "beta", "latest"]
 
     bb = build_binaries(tags)
     bb.run()

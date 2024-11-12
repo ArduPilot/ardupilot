@@ -20,250 +20,301 @@
   find which serial port they should use
  */
 
+#include "AP_SerialManager_config.h"
+
+#if AP_SERIALMANAGER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_MSP/AP_MSP.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "AP_SerialManager.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef DEFAULT_SERIAL0_PROTOCOL
+#define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_MAVLink2
+#endif
+#ifndef DEFAULT_SERIAL0_BAUD
+#define DEFAULT_SERIAL0_BAUD AP_SERIALMANAGER_CONSOLE_BAUD
+#endif
+#ifdef HAL_SERIAL0_PROTOCOL
+#error "Please use DEFAULT_SERIAL0_PROTOCOL"
+#endif
+
+#ifndef DEFAULT_SERIAL1_PROTOCOL
+#define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MAVLink2
+#endif
+#ifndef DEFAULT_SERIAL1_BAUD
+#define DEFAULT_SERIAL1_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL1_OPTIONS
+#define DEFAULT_SERIAL1_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL1_PROTOCOL
+#error "Please use DEFAULT_SERIAL1_PROTOCOL"
+#endif
+
+#ifndef DEFAULT_SERIAL2_PROTOCOL
+#define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+#endif
+#ifndef DEFAULT_SERIAL2_BAUD
+#define DEFAULT_SERIAL2_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL2_OPTIONS
+#define DEFAULT_SERIAL2_OPTIONS 0
+#endif
 #ifdef HAL_SERIAL2_PROTOCOL
-#define SERIAL2_PROTOCOL HAL_SERIAL2_PROTOCOL
-#else
-#define SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+#error "Please use DEFAULT_SERIAL2_PROTOCOL"
 #endif
 
-#ifndef HAL_SERIAL3_PROTOCOL
-#define SERIAL3_PROTOCOL SerialProtocol_GPS
-#else
-#define SERIAL3_PROTOCOL HAL_SERIAL3_PROTOCOL
+#ifndef DEFAULT_SERIAL3_PROTOCOL
+#define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
+#endif
+#ifndef DEFAULT_SERIAL3_BAUD
+#define DEFAULT_SERIAL3_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL3_OPTIONS
+#define DEFAULT_SERIAL3_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL3_PROTOCOL
+#error "Please use DEFAULT_SERIAL3_PROTOCOL"
 #endif
 
-#ifndef HAL_SERIAL4_PROTOCOL
-#define SERIAL4_PROTOCOL SerialProtocol_GPS
-#else
-#define SERIAL4_PROTOCOL HAL_SERIAL4_PROTOCOL
+#ifndef DEFAULT_SERIAL4_PROTOCOL
+#define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_GPS
+#endif
+#ifndef DEFAULT_SERIAL4_BAUD
+#define DEFAULT_SERIAL4_BAUD AP_SERIALMANAGER_GPS_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL4_OPTIONS
+#define DEFAULT_SERIAL4_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL4_PROTOCOL
+#error "Please use DEFAULT_SERIAL4_PROTOCOL"
 #endif
 
+#ifndef DEFAULT_SERIAL5_PROTOCOL
+#define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL5_BAUD
+#define DEFAULT_SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL5_OPTIONS
+#define DEFAULT_SERIAL5_OPTIONS 0
+#endif
 #ifdef HAL_SERIAL5_PROTOCOL
-#define SERIAL5_PROTOCOL HAL_SERIAL5_PROTOCOL
-#define SERIAL5_BAUD HAL_SERIAL5_BAUD
-#else
-#define SERIAL5_PROTOCOL SerialProtocol_None
-#define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#error "Please use DEFAULT_SERIAL5_PROTOCOL"
 #endif
 
-#ifndef HAL_SERIAL6_PROTOCOL
-#define SERIAL6_PROTOCOL SerialProtocol_None
-#define SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-#else
-#define SERIAL6_PROTOCOL HAL_SERIAL6_PROTOCOL
-#define SERIAL6_BAUD HAL_SERIAL6_BAUD
+#ifndef DEFAULT_SERIAL6_PROTOCOL
+#define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL6_BAUD
+#define DEFAULT_SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL6_OPTIONS
+#define DEFAULT_SERIAL6_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL6_PROTOCOL
+#error "Please use DEFAULT_SERIAL6_PROTOCOL"
 #endif
 
-#ifndef HAL_SERIAL7_PROTOCOL
-#define SERIAL7_PROTOCOL SerialProtocol_None
-#define SERIAL7_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-#else
-#define SERIAL7_PROTOCOL HAL_SERIAL7_PROTOCOL
-#define SERIAL7_BAUD HAL_SERIAL7_BAUD
+#ifndef DEFAULT_SERIAL7_PROTOCOL
+#define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL7_BAUD
+#define DEFAULT_SERIAL7_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL7_OPTIONS
+#define DEFAULT_SERIAL7_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL7_PROTOCOL
+#error "Please use DEFAULT_SERIAL7_PROTOCOL"
 #endif
 
-#ifndef HAL_SERIAL8_PROTOCOL
-#define SERIAL8_PROTOCOL SerialProtocol_None
-#define SERIAL8_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-#else
-#define SERIAL8_PROTOCOL HAL_SERIAL8_PROTOCOL
-#define SERIAL8_BAUD HAL_SERIAL8_BAUD
+#ifndef DEFAULT_SERIAL8_PROTOCOL
+#define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
+#endif
+#ifndef DEFAULT_SERIAL8_BAUD
+#define DEFAULT_SERIAL8_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL8_OPTIONS
+#define DEFAULT_SERIAL8_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL8_PROTOCOL
+#error "Please use DEFAULT_SERIAL8_PROTOCOL"
 #endif
 
-#ifndef HAL_SERIAL9_PROTOCOL
-#define SERIAL9_PROTOCOL SerialProtocol_None
-#define SERIAL9_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
-#else
-#define SERIAL9_PROTOCOL HAL_SERIAL9_PROTOCOL
-#define SERIAL9_BAUD HAL_SERIAL9_BAUD
+#ifndef DEFAULT_SERIAL9_PROTOCOL
+#define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
 #endif
-
-#ifdef HAL_BUILD_AP_PERIPH
-/*
-  AP_Periph doesn't include the SERIAL parameter tree, instead each
-  supported serial device type has it's own parameter within AP_Periph
-  for which port is used.
- */
-#undef SERIAL0_PROTOCOL
-#undef SERIAL1_PROTOCOL
-#undef SERIAL2_PROTOCOL
-#undef SERIAL3_PROTOCOL
-#undef SERIAL4_PROTOCOL
-#undef SERIAL5_PROTOCOL
-#undef SERIAL6_PROTOCOL
-#undef SERIAL7_PROTOCOL
-#undef SERIAL8_PROTOCOL
-#undef SERIAL9_PROTOCOL
-#define SERIAL0_PROTOCOL SerialProtocol_None
-#define SERIAL1_PROTOCOL SerialProtocol_None
-#define SERIAL2_PROTOCOL SerialProtocol_None
-#define SERIAL3_PROTOCOL SerialProtocol_None
-#define SERIAL4_PROTOCOL SerialProtocol_None
-#define SERIAL5_PROTOCOL SerialProtocol_None
-#define SERIAL6_PROTOCOL SerialProtocol_None
-#define SERIAL7_PROTOCOL SerialProtocol_None
-#define SERIAL8_PROTOCOL SerialProtocol_None
-#define SERIAL9_PROTOCOL SerialProtocol_None
-#endif // HAL_BUILD_AP_PERIPH
+#ifndef DEFAULT_SERIAL9_BAUD
+#define DEFAULT_SERIAL9_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+#ifndef DEFAULT_SERIAL9_OPTIONS
+#define DEFAULT_SERIAL9_OPTIONS 0
+#endif
+#ifdef HAL_SERIAL9_PROTOCOL
+#error "Please use DEFAULT_SERIAL9_PROTOCOL"
+#endif
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
-#if SERIALMANAGER_NUM_PORTS > 0
+#if HAL_HAVE_SERIAL0
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
     // @Description: The baud rate used on the USB console. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000,2000:2000000
     // @User: Standard
-    AP_GROUPINFO("0_BAUD",  0, AP_SerialManager, state[0].baud, AP_SERIALMANAGER_CONSOLE_BAUD/1000),
+    AP_GROUPINFO("0_BAUD",  0, AP_SerialManager, state[0].baud, DEFAULT_SERIAL0_BAUD/1000),
 
     // @Param: 0_PROTOCOL
     // @DisplayName: Console protocol selection
     // @Description: Control what protocol to use on the console. 
-    // @Values: 1:MAVlink1, 2:MAVLink2
+    // @Values: 1:MAVLink1, 2:MAVLink2
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 1
+#if HAL_HAVE_SERIAL1
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
+<<<<<<< HEAD
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp
+=======
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp, 45:DDS XRCE, 46:IMUDATA, 48:PPP
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink2),
+    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, DEFAULT_SERIAL1_PROTOCOL),
 
     // @Param: 1_BAUD
     // @DisplayName: Telem1 Baud Rate
     // @Description: The baud rate used on the Telem1 port. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
     // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000,2000:2000000
     // @User: Standard
-    AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, AP_SERIALMANAGER_MAVLINK_BAUD/1000),
+    AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, DEFAULT_SERIAL1_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 2
+#if HAL_HAVE_SERIAL2
     // @Param: 2_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
     // @Description: Control what protocol to use on the Telem2 port. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SERIAL2_PROTOCOL),
+    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, DEFAULT_SERIAL2_PROTOCOL),
 
     // @Param: 2_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Telemetry 2 Baud Rate
     // @Description: The baud rate of the Telem2 port. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, AP_SERIALMANAGER_MAVLINK_BAUD/1000),
+    AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, DEFAULT_SERIAL2_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 3
+#if HAL_HAVE_SERIAL3
     // @Param: 3_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
     // @Description: Control what protocol Serial 3 (GPS) should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, SERIAL3_PROTOCOL),
+    AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, DEFAULT_SERIAL3_PROTOCOL),
 
     // @Param: 3_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 3 (GPS) Baud Rate
     // @Description: The baud rate used for the Serial 3 (GPS). Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, AP_SERIALMANAGER_GPS_BAUD/1000),
+    AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, DEFAULT_SERIAL3_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 4
+#if HAL_HAVE_SERIAL4
     // @Param: 4_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial4 protocol selection
     // @Description: Control what protocol Serial4 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, SERIAL4_PROTOCOL),
+    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, DEFAULT_SERIAL4_PROTOCOL),
 
     // @Param: 4_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 4 Baud Rate
     // @Description: The baud rate used for Serial4. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, AP_SERIALMANAGER_GPS_BAUD/1000),
+    AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, DEFAULT_SERIAL4_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 5
+#if HAL_HAVE_SERIAL5
     // @Param: 5_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial5 protocol selection
     // @Description: Control what protocol Serial5 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("5_PROTOCOL",  9, AP_SerialManager, state[5].protocol, SERIAL5_PROTOCOL),
+    AP_GROUPINFO("5_PROTOCOL",  9, AP_SerialManager, state[5].protocol, DEFAULT_SERIAL5_PROTOCOL),
 
     // @Param: 5_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 5 Baud Rate
     // @Description: The baud rate used for Serial5. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, SERIAL5_BAUD),
+    AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, DEFAULT_SERIAL5_BAUD),
 #endif
 
     // index 11 used by 0_PROTOCOL
         
-#if SERIALMANAGER_NUM_PORTS > 6
+#if HAL_HAVE_SERIAL6
     // @Param: 6_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial6 protocol selection
     // @Description: Control what protocol Serial6 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("6_PROTOCOL",  12, AP_SerialManager, state[6].protocol, SERIAL6_PROTOCOL),
+    AP_GROUPINFO("6_PROTOCOL",  12, AP_SerialManager, state[6].protocol, DEFAULT_SERIAL6_PROTOCOL),
 
     // @Param: 6_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 6 Baud Rate
     // @Description: The baud rate used for Serial6. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, SERIAL6_BAUD),
+    AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, DEFAULT_SERIAL6_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 1
+#if HAL_HAVE_SERIAL1
     // @Param: 1_OPTIONS
     // @DisplayName: Telem1 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
     // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:SwapTXRX, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from, 11: DisableFIFO, 12: Ignore Streamrate
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, 0),
+    AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, DEFAULT_SERIAL1_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 2
+#if HAL_HAVE_SERIAL2
     // @Param: 2_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Telem2 options
-    AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, 0),
+    AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, DEFAULT_SERIAL2_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 3
+#if HAL_HAVE_SERIAL3
     // @Param: 3_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial3 options
-    AP_GROUPINFO("3_OPTIONS",  16, AP_SerialManager, state[3].options, 0),
+    AP_GROUPINFO("3_OPTIONS",  16, AP_SerialManager, state[3].options, DEFAULT_SERIAL3_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 4
+#if HAL_HAVE_SERIAL4
     // @Param: 4_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial4 options
-    AP_GROUPINFO("4_OPTIONS",  17, AP_SerialManager, state[4].options, 0),
+    AP_GROUPINFO("4_OPTIONS",  17, AP_SerialManager, state[4].options, DEFAULT_SERIAL4_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 5
+#if HAL_HAVE_SERIAL5
     // @Param: 5_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial5 options
-    AP_GROUPINFO("5_OPTIONS",  18, AP_SerialManager, state[5].options, 0),
+    AP_GROUPINFO("5_OPTIONS",  18, AP_SerialManager, state[5].options, DEFAULT_SERIAL5_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 6
+#if HAL_HAVE_SERIAL6
     // @Param: 6_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial6 options
-    AP_GROUPINFO("6_OPTIONS",  19, AP_SerialManager, state[6].options, 0),
+    AP_GROUPINFO("6_OPTIONS",  19, AP_SerialManager, state[6].options, DEFAULT_SERIAL6_OPTIONS),
 #endif
 
     // @Param: _PASS1
@@ -288,18 +339,18 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
 
-#if SERIALMANAGER_NUM_PORTS > 7
+#if HAL_HAVE_SERIAL7
     // @Param: 7_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial7 protocol selection
     // @Description: Control what protocol Serial7 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("7_PROTOCOL",  23, AP_SerialManager, state[7].protocol, SERIAL7_PROTOCOL),
+    AP_GROUPINFO("7_PROTOCOL",  23, AP_SerialManager, state[7].protocol, DEFAULT_SERIAL7_PROTOCOL),
 
     // @Param: 7_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 7 Baud Rate
     // @Description: The baud rate used for Serial7. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("7_BAUD", 24, AP_SerialManager, state[7].baud, SERIAL7_BAUD),
+    AP_GROUPINFO("7_BAUD", 24, AP_SerialManager, state[7].baud, DEFAULT_SERIAL7_BAUD),
 
     // @Param: 7_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
@@ -307,18 +358,18 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("7_OPTIONS",  25, AP_SerialManager, state[7].options, 0),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 8
+#if HAL_HAVE_SERIAL8
     // @Param: 8_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial8 protocol selection
     // @Description: Control what protocol Serial8 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("8_PROTOCOL",  26, AP_SerialManager, state[8].protocol, SERIAL8_PROTOCOL),
+    AP_GROUPINFO("8_PROTOCOL",  26, AP_SerialManager, state[8].protocol, DEFAULT_SERIAL8_PROTOCOL),
 
     // @Param: 8_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 8 Baud Rate
     // @Description: The baud rate used for Serial8. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("8_BAUD", 27, AP_SerialManager, state[8].baud, SERIAL8_BAUD),
+    AP_GROUPINFO("8_BAUD", 27, AP_SerialManager, state[8].baud, DEFAULT_SERIAL8_BAUD),
 
     // @Param: 8_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
@@ -326,23 +377,23 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("8_OPTIONS",  28, AP_SerialManager, state[8].options, 0),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 9
+#if HAL_HAVE_SERIAL9
     // @Param: 9_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial9 protocol selection
     // @Description: Control what protocol Serial9 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
-    AP_GROUPINFO("9_PROTOCOL",  29, AP_SerialManager, state[9].protocol, SERIAL9_PROTOCOL),
+    AP_GROUPINFO("9_PROTOCOL",  29, AP_SerialManager, state[9].protocol, DEFAULT_SERIAL9_PROTOCOL),
 
     // @Param: 9_BAUD
     // @CopyFieldsFrom: SERIAL1_BAUD
     // @DisplayName: Serial 9 Baud Rate
     // @Description: The baud rate used for Serial8. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
-    AP_GROUPINFO("9_BAUD", 30, AP_SerialManager, state[9].baud, SERIAL9_BAUD),
+    AP_GROUPINFO("9_BAUD", 30, AP_SerialManager, state[9].baud, DEFAULT_SERIAL9_BAUD),
 
     // @Param: 9_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial9 options
-    AP_GROUPINFO("9_OPTIONS",  31, AP_SerialManager, state[9].options, 0),
+    AP_GROUPINFO("9_OPTIONS",  31, AP_SerialManager, state[9].options, DEFAULT_SERIAL9_OPTIONS),
 #endif
 
     AP_GROUPEND
@@ -366,7 +417,7 @@ void AP_SerialManager::init_console()
 #if SERIALMANAGER_NUM_PORTS > 0
     if (!init_console_done) {
         init_console_done = true;
-        hal.serial(0)->begin(AP_SERIALMANAGER_CONSOLE_BAUD,
+        hal.serial(0)->begin(DEFAULT_SERIAL0_BAUD,
                              AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX,
                              AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
     }
@@ -396,6 +447,8 @@ void AP_SerialManager::init()
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
         auto *uart = hal.serial(i);
+
+        state[i].idx = i;
 
         if (uart != nullptr) {
             set_options(i);
@@ -453,14 +506,9 @@ void AP_SerialManager::init()
                     state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
                     break;
                 case SerialProtocol_Volz:
-                                    // Note baudrate is hardcoded to 115200
-                                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
-                                    uart->begin(state[i].baudrate(),
-                                    		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
-											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
-                                    uart->set_unbuffered_writes(true);
-                                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                                    break;
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
+                    break;
                 case SerialProtocol_Sbus1:
                     state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
                     uart->begin(state[i].baudrate(),
@@ -493,10 +541,12 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
                 case SerialProtocol_RCIN:
                     if (!AP::RC().has_uart()) {
                         AP::RC().add_uart(uart);
+                    } else {
+                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "SERIAL%u_PROTOCOL: duplicate RCIN not permitted", i);
                     }
 
                     break;
@@ -525,6 +575,24 @@ void AP_SerialManager::init()
                     // Note init is handled by AP_MSP
                     break;
 #endif
+
+#if AP_SERIALMANAGER_IMUOUT_ENABLED
+                case SerialProtocol_IMUOUT:
+                    uart->begin(state[i].baudrate(),
+                                AP_SERIALMANAGER_IMUOUT_BUFSIZE_RX,
+                                AP_SERIALMANAGER_IMUOUT_BUFSIZE_TX);
+                    AP::ins().set_imu_out_uart(uart);
+                    uart->set_unbuffered_writes(true);
+                    break;
+#endif
+#if AP_NETWORKING_BACKEND_PPP
+                case SerialProtocol_PPP:
+                    uart->begin(state[i].baudrate(),
+                                         AP_SERIALMANAGER_PPP_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_PPP_BUFSIZE_TX);
+                    break;
+#endif
+                    
                 default:
                     uart->begin(state[i].baudrate());
             }
@@ -547,6 +615,17 @@ const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum
         }
     }
 
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    for (auto p = registered_ports; p; p = p->next) {
+        if (protocol_match(protocol, (enum SerialProtocol)p->state.protocol.get())) {
+            if (found_instance == instance) {
+                return &p->state;
+            }
+            found_instance++;
+        }
+    }
+#endif
+
     // if we got this far we did not find the uart
     return nullptr;
 }
@@ -560,10 +639,23 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     if (_state == nullptr) {
         return nullptr;
     }
-    const uint8_t serial_idx = _state - &state[0];
+    const uint8_t serial_idx = _state->idx;
 
     // set options before any user does begin()
     AP_HAL::UARTDriver *port = hal.serial(serial_idx);
+
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    if (port == nullptr) {
+        // look for a registered port
+        for (auto p = registered_ports; p; p = p->next) {
+            if (p->state.idx == serial_idx) {
+                port = p;
+                break;
+            }
+        }
+    }
+#endif
+
     if (port) {
         port->set_options(_state->options);
     }
@@ -595,7 +687,7 @@ int8_t AP_SerialManager::find_portnum(enum SerialProtocol protocol, uint8_t inst
     if (_state == nullptr) {
         return -1;
     }
-    return int8_t(_state - &state[0]);
+    return int8_t(_state->idx);
 }
 
 // get_serial_by_id - gets serial by serial id
@@ -604,19 +696,32 @@ AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
     if (id < SERIALMANAGER_NUM_PORTS) {
         return hal.serial(id);
     }
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->state.idx == id) {
+            return (AP_HAL::UARTDriver *)p;
+        }
+    }
+#endif
     return nullptr;
 }
 
-// set_blocking_writes_all - sets block_writes on or off for all serial channels
-void AP_SerialManager::set_blocking_writes_all(bool blocking)
+/*
+  get a UARTState by index
+*/
+const AP_SerialManager::UARTState *AP_SerialManager::get_state_by_id(uint8_t id) const
 {
-    // set block_writes for all initialised serial ports
-    for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        auto *uart = hal.serial(i);
-        if (uart != nullptr) {
-            uart->set_blocking_writes(blocking);
+    if (id < SERIALMANAGER_NUM_PORTS) {
+        return &state[id];
+    }
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->state.idx == id) {
+            return &p->state;
         }
     }
+#endif
+    return nullptr;
 }
 
 /*
@@ -694,18 +799,24 @@ void AP_SerialManager::set_options(uint16_t i)
 
 // get the passthru ports if enabled
 bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                                    uint32_t &baud1, uint32_t &baud2) const
+                                    uint32_t &baud1, uint32_t &baud2)
 {
     if (passthru_port2 < 0 ||
-        passthru_port2 >= SERIALMANAGER_NUM_PORTS ||
-        passthru_port1 < 0 ||
-        passthru_port1 >= SERIALMANAGER_NUM_PORTS) {
+        passthru_port1 < 0) {
         return false;
     }
-    port1 = hal.serial(passthru_port1);
-    port2 = hal.serial(passthru_port2);
-    baud1 = state[passthru_port1].baudrate();
-    baud2 = state[passthru_port2].baudrate();
+    port1 = get_serial_by_id(passthru_port1);
+    port2 = get_serial_by_id(passthru_port2);
+    if (port1 == nullptr || port2 == nullptr) {
+        return false;
+    }
+    const auto *state1 = get_state_by_id(passthru_port1);
+    const auto *state2 = get_state_by_id(passthru_port2);
+    if (!state1 || !state2) {
+        return false;
+    }
+    baud1 = state1->baudrate();
+    baud2 = state2->baudrate();
     timeout_s = MAX(passthru_timeout, 0);
     return true;
 }
@@ -725,6 +836,33 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
     }
 }
 
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+/*
+  register an external network port. It is up to the caller to use a unique id field
+  using AP_SERIALMANAGER_NET_PORT_1 as the base id for NET_P1_*
+ */
+void AP_SerialManager::register_port(RegisteredPort *port)
+{
+    const auto idx = port->state.idx;
+    WITH_SEMAPHORE(port_sem);
+    /*
+      maintain the list in ID order
+     */
+    if (registered_ports == nullptr ||
+        registered_ports->state.idx >= idx) {
+        port->next = registered_ports;
+        registered_ports = port;
+        return;
+    }
+    for (auto p = registered_ports; p; p = p->next) {
+        if (p->next == nullptr || p->next->state.idx >= idx) {
+            port->next = p->next;
+            p->next = port;
+            break;
+        }
+    }
+}
+#endif // AP_SERIALMANAGER_REGISTER_ENABLED
 
 namespace AP {
 
@@ -734,3 +872,5 @@ AP_SerialManager &serialmanager()
 }
 
 }
+
+#endif  // AP_SERIALMANAGER_ENABLED

@@ -8,8 +8,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-base:latest
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.1.3
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -17,11 +17,13 @@ jobs:
             check_autotest_options,
             param_parse,
             python-cleanliness,
+            astyle-cleanliness,
             validate_board_list,
+            logger_metadata,
        ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - name: test ${{matrix.config}}
@@ -29,4 +31,5 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           Tools/scripts/build_ci.sh

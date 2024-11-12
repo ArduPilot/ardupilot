@@ -20,8 +20,6 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 
 static AP_SerialManager serial_manager;
-AP_Int32 logger_bitmask;
-static AP_Logger logger{logger_bitmask};
 
 class DummyVehicle : public AP_Vehicle {
 public:
@@ -36,7 +34,17 @@ public:
         ins.init(100);
         ahrs.init();
     }
+    AP_Int32 unused_log_bitmask;
+    struct LogStructure log_structure[1] = {
+    };
+    const AP_Int32 &get_log_bitmask() override { return unused_log_bitmask; }
 
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override {
+        return 0;
+    }
 };
 
 static DummyVehicle vehicle;
@@ -53,7 +61,7 @@ void setup(void)
     if (!AP::compass().read()) {
         hal.console->printf("No compass detected\n");
     }
-    AP::gps().init(serial_manager);
+    AP::gps().init();
 }
 
 void loop(void)
@@ -84,9 +92,9 @@ void loop(void)
         hal.console->printf(
                 "r:%4.1f  p:%4.1f y:%4.1f "
                     "drift=(%5.1f %5.1f %5.1f) hdg=%.1f rate=%.1f\n",
-                (double)ToDeg(ahrs.roll),
-                (double)ToDeg(ahrs.pitch),
-                (double)ToDeg(ahrs.yaw),
+                (double)ToDeg(ahrs.get_roll()),
+                (double)ToDeg(ahrs.get_pitch()),
+                (double)ToDeg(ahrs.get_yaw()),
                 (double)ToDeg(drift.x),
                 (double)ToDeg(drift.y),
                 (double)ToDeg(drift.z),

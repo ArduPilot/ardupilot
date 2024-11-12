@@ -356,7 +356,7 @@ PE6 SPI4_MOSI SPI4
 # timing affecting sensor stability. We pull it high by default.
 PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+# UART7 maps to SERIAL5.
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 
@@ -424,10 +424,6 @@ SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
 # define. Any line starting with 'define' is copied literally as
 # a #define in the hwdef.h header.
 define HAL_CHIBIOS_ARCH_FMUV3 1
-
-# Nnow some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # We need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes).

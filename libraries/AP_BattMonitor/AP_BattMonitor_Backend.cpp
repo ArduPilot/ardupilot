@@ -13,10 +13,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
+
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+#include "AP_ESC_Telem/AP_ESC_Telem.h"
+#endif
 
 /*
   base class constructor.
@@ -41,6 +49,9 @@ bool AP_BattMonitor_Backend::capacity_remaining_pct(uint8_t &percentage) const
 
     // the monitor must have current readings in order to estimate consumed_mah and be healthy
     if (!has_current() || !_state.healthy) {
+        return false;
+    }
+    if (isnan(_state.consumed_mah) || _params._pack_capacity <= 0) {
         return false;
     }
 
@@ -100,6 +111,16 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
     _state.voltage_resting_estimate = _state.voltage + _state.current_amps * _state.resistance;
 }
 
+// return true if state of health can be provided and fills in soh_pct argument
+bool AP_BattMonitor_Backend::get_state_of_health_pct(uint8_t &soh_pct) const
+{
+    if (!_state.has_state_of_health_pct) {
+        return false;
+    }
+    soh_pct = _state.state_of_health_pct;
+    return true;
+}
+
 float AP_BattMonitor_Backend::voltage_resting_estimate() const
 {
     // resting voltage should always be greater than or equal to the raw voltage
@@ -145,6 +166,11 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Backend::update_failsafes(void)
 
     if (low_capacity) {
         return AP_BattMonitor::Failsafe::Low;
+    }
+
+    // 5 second health timeout
+    if ((now - _state.last_healthy_ms) > 5000) {
+        return AP_BattMonitor::Failsafe::Unhealthy;
     }
 
     // if we've gotten this far then battery is ok
@@ -233,6 +259,56 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
     }
 }
 
+#if AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED
+void AP_BattMonitor_Backend::update_esc_telem_outbound()
+{
+    const uint8_t esc_index = _params._esc_telem_outbound_index;
+    if (esc_index == 0 || !_state.healthy) {
+        // Disabled if there's no ESC identified to route the data to or if the battery is unhealthy
+        return;
+    }
+
+    AP_ESC_Telem_Backend::TelemetryData telem {};
+
+    uint16_t type = AP_ESC_Telem_Backend::TelemetryType::VOLTAGE;
+    telem.voltage = _state.voltage; // all battery backends have voltage
+
+    if (has_current()) {
+        telem.current = _state.current_amps;
+        type |= AP_ESC_Telem_Backend::TelemetryType::CURRENT;
+    }
+
+    if (has_consumed_energy()) {
+        telem.consumption_mah = _state.consumed_mah;
+        type |= AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION;
+    }
+
+    float temperature_c;
+    if (_mon.get_temperature(temperature_c, _state.instance)) {
+        // get the temperature from the frontend so we check for external temperature
+        telem.temperature_cdeg = temperature_c * 100;
+        type |= AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE;
+    }
+
+    AP::esc_telem().update_telem_data(esc_index-1, telem, type);
+}
+#endif
+
+// returns true if battery monitor provides temperature
+bool AP_BattMonitor_Backend::get_temperature(float &temperature) const
+{
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    if (_state.temperature_external_use) {
+        temperature = _state.temperature_external;
+        return true;
+    }
+#endif
+
+    temperature = _state.temperature;
+
+    return has_temperature();
+}
+
 /*
   default implementation for reset_remaining(). This sets consumed_wh
   and consumed_mah based on the given percentage. Use percentage=100
@@ -267,3 +343,5 @@ void AP_BattMonitor_Backend::update_consumed(AP_BattMonitor::BattMonitor_State &
         state.consumed_wh  += 0.001 * mah * state.voltage;
     }
 }
+
+#endif  // AP_BATTERY_ENABLED

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import re
@@ -62,6 +62,7 @@ class BoardList(object):
         self.boards = [
             Board("erlebrain2"),
             Board("navigator"),
+            Board("navigator64"),
             Board("navio"),
             Board("navio2"),
             Board("edge"),
@@ -70,6 +71,7 @@ class BoardList(object):
             Board("bbbmini"),
             Board("blue"),
             Board("pxfmini"),
+            Board("canzero"),
             Board("SITL_x86_64_linux_gnu"),
             Board("SITL_arm_linux_gnueabihf"),
         ]
@@ -178,7 +180,6 @@ class BoardList(object):
             "f103-HWESC",
             "f103-Trigger",
             "G4-ESC",
-            "HerePro",
         ]
         ret = []
         for x in self.boards:

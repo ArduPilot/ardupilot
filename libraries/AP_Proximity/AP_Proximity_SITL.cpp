@@ -13,14 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_SITL_ENABLED
+
 #include "AP_Proximity_SITL.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_Param/AP_Param.h>
-
 #include <AC_Fence/AC_Fence.h>
 #include <stdio.h>
 
@@ -131,10 +131,8 @@ float AP_Proximity_SITL::distance_min() const
 bool AP_Proximity_SITL::get_upward_distance(float &distance) const
 {
     // return distance to fence altitude
-    distance = MAX(0.0f, fence_alt_max->get() - sitl->height_agl);
+    distance = MAX(0.0f, fence_alt_max->get() - sitl->state.height_agl);
     return true;
 }
 
-#endif // CONFIG_HAL_BOARD
-
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_SITL_ENABLED

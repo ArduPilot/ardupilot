@@ -29,7 +29,7 @@ vehicle-related headers and fails the build if they do.
 import os
 import re
 
-from waflib import Errors, Task, Utils
+from waflib import Errors, Task, Utils, Logs
 from waflib.Configure import conf
 from waflib.TaskGen import after_method, before_method, feature
 from waflib.Tools import c_preproc
@@ -52,7 +52,7 @@ def _vehicle_index(vehicle):
     return _vehicle_indexes[vehicle]
 
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
-_vehicle_macros = ['SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
+_vehicle_macros = ['APM_BUILD_DIRECTORY', 'AP_BUILD_TARGET_NAME',
                    'APM_BUILD_TYPE', 'APM_BUILD_COPTER_OR_HELI',
                    'AP_NavEKF3_core.h', 'lua_generated_bindings.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
@@ -206,6 +206,8 @@ class ap_library_check_headers(Task.Task):
 
         # force dependency scan, if necessary
         self.compiled_task.signature()
+        if not self.compiled_task.uid() in self.generator.bld.node_deps:
+            return r, []
         for n in self.generator.bld.node_deps[self.compiled_task.uid()]:
             # using common Node methods doesn't work here
             p = n.abspath()
@@ -239,6 +241,25 @@ class ap_library_check_headers(Task.Task):
     def keyword(self):
         return 'Checking included headers'
 
+def custom_flags_check(tgen):
+    '''
+     check for tasks marked as having custom cpp or c flags
+     a library can do this by setting AP_LIB_EXTRA_CXXFLAGS and AP_LIB_EXTRA_CFLAGS
+
+     For example add this is the configure section of the library, using AP_DDS as an example:
+
+        cfg.env.AP_LIB_EXTRA_CXXFLAGS['AP_DDS'] = ['-DSOME_CXX_FLAG']
+        cfg.env.AP_LIB_EXTRA_CFLAGS['AP_DDS'] = ['-DSOME_C_FLAG']
+    '''
+    if not tgen.name.startswith("objs/"):
+        return
+    libname = tgen.name[5:]
+    if libname in tgen.env.AP_LIB_EXTRA_CXXFLAGS:
+        tgen.env.CXXFLAGS.extend(tgen.env.AP_LIB_EXTRA_CXXFLAGS[libname])
+    if libname in tgen.env.AP_LIB_EXTRA_CFLAGS:
+        tgen.env.CFLAGS.extend(tgen.env.AP_LIB_EXTRA_CFLAGS[libname])
+
+
 def double_precision_check(tasks):
     '''check for tasks marked as double precision'''
 
@@ -251,11 +272,15 @@ def double_precision_check(tasks):
                     double_tasks.append([library, s])
 
             src = str(t.inputs[0]).split('/')[-2:]
-            if src in double_tasks:
-                single_precision_option='-fsingle-precision-constant'
+            double_library = t.env.DOUBLE_PRECISION_LIBRARIES.get(src[0],False)
+
+            if double_library or src in double_tasks:
                 t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-                if single_precision_option in t.env.CXXFLAGS:
-                    t.env.CXXFLAGS.remove(single_precision_option)
+                for opt in ['-fsingle-precision-constant', '-cl-single-precision-constant']:
+                    try:
+                        t.env.CXXFLAGS.remove(opt)
+                    except ValueError:
+                        pass
                 t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
 
 
@@ -284,6 +309,7 @@ def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
         return
 
+    custom_flags_check(self)
     double_precision_check(self.compiled_tasks)
     if self.env.ENABLE_ONVIF:
         gsoap_library_check(self.bld, self.compiled_tasks)
@@ -295,7 +321,129 @@ def ap_library_register_for_check(self):
         tsk = self.create_task('ap_library_check_headers')
         tsk.compiled_task = t
 
+def write_compilation_database(bld):
+    """
+    Write the compilation database as JSON
+    """
+    database_file = bld.bldnode.find_or_declare('compile_commands.json')
+    # don't remove the file at clean
+
+    Logs.info('Build commands will be stored in %s', database_file.path_from(bld.path))
+    try:
+        root = database_file.read_json()
+    except IOError:
+        root = []
+    compile_cmd_db = dict((x['file'], x) for x in root)
+    for task in bld.compilation_database_tasks:
+        try:
+            cmd = task.last_cmd
+        except AttributeError:
+            continue
+        f_node = task.inputs[0]
+        filename = f_node.path_from(task.get_cwd())
+        entry = {
+            "directory": task.get_cwd().abspath(),
+            "arguments": cmd,
+            "file": filename,
+        }
+        compile_cmd_db[filename] = entry
+    root = list(compile_cmd_db.values())
+    database_file.write_json(root)
+
+def target_list_changed(bld, targets):
+    """
+    Check if the list of targets has changed recorded in target_list file
+    """
+    # target_list file is in the root build directory
+    target_list_file = bld.bldnode.find_or_declare('target_list')
+    try:
+        with open(target_list_file.abspath(), 'r') as f:
+            old_targets = f.read().strip().split(',')
+    except IOError:
+        Logs.info('No target_list file found, creating')
+        old_targets = []
+    if old_targets != targets:
+        with open(target_list_file.abspath(), 'w') as f:
+            f.write(','.join(targets))
+        return True
+    return False
+
+@conf
+def remove_target_list(cfg):
+    target_list_file = cfg.bldnode.make_node(cfg.options.board + '/target_list')
+    try:
+        Logs.info('Removing target_list file %s', target_list_file.abspath())
+        os.remove(target_list_file.abspath())
+    except OSError:
+        pass
+
+@feature('cxxprogram', 'cxxstlib')
+@after_method('propagate_uselib_vars')
+def dry_run_compilation_database(self):
+    if not hasattr(self, 'bld'):
+        return
+    bld = self.bld
+    bld.compilation_database_tasks = []
+    targets = bld.targets.split(',')
+    use = self.use
+    if isinstance(use, str):
+        use = [use]
+    # if targets have not changed and neither has configuration, 
+    # we can skip compilation database generation
+    if not target_list_changed(bld, targets + use):
+        Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')
+        return
+    Logs.info('Generating compile_commands.json')
+    # we need only to generate last_cmd, so override
+    # exec_command temporarily
+    def exec_command(bld, *k, **kw):
+        return 0
+
+    for g in bld.groups:
+        for tg in g:
+            # we only care to list targets and library objects
+            if not hasattr(tg, 'name'):
+                continue
+            if (tg.name not in targets) and (tg.name not in self.use):
+                continue
+            try:
+                f = tg.post
+            except AttributeError:
+                pass
+            else:
+                f()
+
+            if isinstance(tg, Task.Task):
+                lst = [tg]
+            else:
+                lst = tg.tasks
+            for tsk in lst:
+                if tsk.__class__.__name__ == "swig":
+                    tsk.runnable_status()
+                    if hasattr(tsk, 'more_tasks'):
+                        lst.extend(tsk.more_tasks)
+                # Not all dynamic tasks can be processed, in some cases
+                # one may have to call the method "run()" like this:
+                # elif tsk.__class__.__name__ == 'src2c':
+                #    tsk.run()
+                #    if hasattr(tsk, 'more_tasks'):
+                #        lst.extend(tsk.more_tasks)
+
+                tup = tuple(y for y in [Task.classes.get(x) for x in ('c', 'cxx')] if y)
+                if isinstance(tsk, tup):
+                    bld.compilation_database_tasks.append(tsk)
+                    tsk.nocache = True
+                    old_exec = tsk.exec_command
+                    tsk.exec_command = exec_command
+                    tsk.run()
+                    tsk.exec_command = old_exec
+
+    write_compilation_database(bld)
+
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
     cfg.env.AP_LIB_EXTRA_SOURCES = dict()
+    cfg.env.AP_LIB_EXTRA_CXXFLAGS = dict()
+    cfg.env.AP_LIB_EXTRA_CFLAGS = dict()
     cfg.env.DOUBLE_PRECISION_SOURCES = dict()
+    cfg.env.DOUBLE_PRECISION_LIBRARIES = dict()

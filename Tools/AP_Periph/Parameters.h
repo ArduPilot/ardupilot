@@ -25,18 +25,18 @@ public:
         k_param_airspeed,
         k_param_rangefinder,
         k_param_flash_bootloader,
-        k_param_rangefinder_baud,
+        k_param_rangefinder_baud0,
         k_param_adsb_baudrate,
         k_param_hardpoint_id,
         k_param_hardpoint_rate,
         k_param_baro_enable,
-        k_param_esc_number,
-        k_param_battery,
+        k_param_esc_number0,
+        k_param_battery_lib,
         k_param_debug,
         k_param_serial_number,
         k_param_adsb_port,
         k_param_servo_channels,
-        k_param_rangefinder_port,
+        k_param_rangefinder_port0,
         k_param_gps_port,
         k_param_msp_port,
         k_param_notify,
@@ -70,6 +70,35 @@ public:
         k_param_proximity_port,
         k_param_proximity_max_rate,
         k_param_nmea,
+        k_param_kdecan,
+        k_param_pole_count0,
+        k_param_esc_serial_port0,
+        k_param_esc_number1,
+        k_param_pole_count1,
+        k_param_esc_serial_port1,
+        k_param_networking_periph,
+        k_param_rpm_sensor,
+        k_param_g_rcin,
+        k_param_sitl,
+        k_param_ahrs,
+        k_param_battery_balance,
+        k_param_battery_hide_mask,
+        k_param_can_mirror_ports,
+        k_param_rtc,
+        k_param_can_terminate0,
+        k_param_can_terminate1,
+        k_param_can_terminate2,
+        k_param_serial_options,
+        k_param_relay,
+        k_param_temperature_msg_rate,
+        k_param_rangefinder_baud1,
+        k_param_rangefinder_port1,
+        k_param_options,
+        k_param_rpm_msg_rate,
+        k_param_esc_rate,
+        k_param_esc_extended_telem_rate,
+        k_param_imu_sample_rate,
+        k_param_imu,
     };
 
     AP_Int16 format_version;
@@ -77,7 +106,7 @@ public:
     
     AP_Int32 can_baudrate[HAL_NUM_CAN_IFACES];
 #if HAL_NUM_CAN_IFACES >= 2
-    AP_Enum<AP_CANManager::Driver_Type> can_protocol[HAL_NUM_CAN_IFACES];
+    AP_Enum<AP_CAN::Protocol> can_protocol[HAL_NUM_CAN_IFACES];
 #endif
 
 #if AP_CAN_SLCAN_ENABLED
@@ -98,12 +127,12 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-    AP_Int32 rangefinder_baud;
-    AP_Int8 rangefinder_port;
+    AP_Int32 rangefinder_baud[RANGEFINDER_MAX_INSTANCES];
+    AP_Int8 rangefinder_port[RANGEFINDER_MAX_INSTANCES];
     AP_Int16 rangefinder_max_rate;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     AP_Int32 proximity_baud;
     AP_Int8 proximity_port;
     AP_Int16 proximity_max_rate;
@@ -120,8 +149,21 @@ public:
     AP_Int8 hardpoint_rate;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
-    AP_Int8 esc_number;
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
+    #if defined ESC_NUMBERS
+        #error "ESC_NUMBERS should not have been previously defined"
+    #endif
+    #if defined(APD_ESC_INSTANCES)
+        #define ESC_NUMBERS APD_ESC_INSTANCES
+    #else
+        #define ESC_NUMBERS 2
+    #endif // defined(APD_ESC_INSTANCES)
+    AP_Int8 esc_number[ESC_NUMBERS];
+    AP_Int8 esc_serial_port[ESC_NUMBERS];
+#endif
+
+#if defined(ESC_NUMBERS)
+    AP_Int8 pole_count[ESC_NUMBERS];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
@@ -136,6 +178,7 @@ public:
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
+    AP_Int16 esc_rate;
     AP_Int8 esc_pwm_type;
     AP_Int16 esc_command_timeout_ms;
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
@@ -143,6 +186,9 @@ public:
 #endif
 #if HAL_WITH_ESC_TELEM
     AP_Int32 esc_telem_rate;
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    AP_Int16 esc_extended_telem_rate;
+#endif
 #endif
 #endif
 
@@ -158,17 +204,43 @@ public:
     AP_Int16 sysid_this_mav;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    AP_Int32 battery_hide_mask;
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_EFI
     AP_Int32 efi_baudrate;
     AP_Int8 efi_port;
 #endif
-    
+
+#ifdef HAL_PERIPH_ENABLE_IMU
+    AP_Int16 imu_sample_rate;
+#endif
+
+#if HAL_PERIPH_CAN_MIRROR
+    AP_Int8 can_mirror_ports;
+#endif // HAL_PERIPH_CAN_MIRROR
+
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    AP_Int8 temperature_msg_rate;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    AP_Int16 rpm_msg_rate;
+#endif
+
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
     AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
 #else
     static constexpr uint8_t can_fdmode = 0;
 #endif
+
+    AP_Int32 options;
+
+    AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
+
+    AP_Int8 node_stats;
     Parameters() {}
 };
 

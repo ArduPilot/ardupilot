@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_MODERNDEVICE_ENABLED
+
 #include "AP_WindVane_Backend.h"
 
 class AP_WindVane_ModernDevice : public AP_WindVane_Backend
@@ -33,3 +37,5 @@ private:
     AP_HAL::AnalogSource *_speed_analog_source;
     AP_HAL::AnalogSource *_temp_analog_source;
 };
+
+#endif  // AP_WINDVANE_MODERNDEVICE_ENABLED

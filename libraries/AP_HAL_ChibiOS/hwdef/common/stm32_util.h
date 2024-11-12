@@ -41,7 +41,9 @@ size_t mem_available(void);
 void *malloc_dma(size_t size);
 void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
+void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
 struct memory_region {
     void *address;
@@ -103,7 +105,7 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS)
 iomode_t palReadLineMode(ioline_t line);
 
 enum PalPushPull {
@@ -177,14 +179,19 @@ bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
 #endif
 
+// To be defined in HAL code
+extern uint32_t chibios_rand_generate(void);
+
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
 
 // allow stack view code to show free ISR stack
-extern uint32_t __main_stack_base__;
-extern uint32_t __main_stack_end__;
-extern uint32_t __main_thread_stack_base__;
-extern uint32_t __main_thread_stack_end__;
+extern stkalign_t __main_stack_base__;
+extern stkalign_t __main_stack_end__;
+extern stkalign_t __main_thread_stack_base__;
+extern stkalign_t __main_thread_stack_end__;
+
+void stm32_disable_cm4_core(void);
 
 #ifdef __cplusplus
 }

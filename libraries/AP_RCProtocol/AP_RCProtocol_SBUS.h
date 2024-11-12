@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SBUS_ENABLED
+
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
@@ -26,10 +30,11 @@ public:
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
+    static bool sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
+                            bool &sbus_failsafe, uint16_t max_values);
+    
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    bool sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
-                     bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values);
 
     bool inverted;
     SoftSerial ss;
@@ -41,3 +46,5 @@ private:
         uint32_t last_byte_us;
     } byte_input;
 };
+
+#endif  // AP_RCPROTOCOL_SBUS_ENABLED

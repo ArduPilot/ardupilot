@@ -6,7 +6,7 @@
     Set SERIALx_PROTOCOL = 28 (Scripting) where "x" corresponds to the serial port connected to the gimbal
     Set SCR_ENABLE = 1 to enable scripting and reboot the autopilot
     Set MNT1_TYPE = 9 (Scripting) to enable the mount/gimbal scripting driver
-    Set CAM_TRIGG_TYPE = 3 (Mount) to enable the camera driver
+    Set CAM1_TYPE = 7 (Scripting) to enable the camera scripting driver
     Set RCx_OPTION = 300 (Scripting1) to allow real-time selection of the video feed and camera control
     Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
     Set VIEP_CAM_SWLOW, VIEP_CAM_SWMID, VIEP_CAM_SWHIGH to which cameras are controlled by the auxiliary switch
@@ -19,7 +19,8 @@
         6: IR1 13mm
         7: IR2 52mm
     Set VIEP_ZOOM_SPEED to control speed of zoom (value between 0 and 7)
-    Set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
+    Set VIEP_ZOOM_MAX to the maximum zoom.  E.g. for a camera with 20x zoom, set to 20
+    Optionally set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
  
   Packet format
      byte      description     notes
@@ -30,22 +31,76 @@
      n+2       checksum        XOR of byte3 to n+1 (inclusive)
 --]]
 
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
+
 -- parameters
 local PARAM_TABLE_KEY = 39
-assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 5), "could not add param table")
+assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 6), "could not add param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DEBUG", 0), "could not add VIEP_DEBUG param")
 assert(param:add_param(PARAM_TABLE_KEY, 2, "CAM_SWLOW", 1), "could not add VIEP_CAM_SWLOW param")
 assert(param:add_param(PARAM_TABLE_KEY, 3, "CAM_SWMID", 2), "could not add VIEP_CAM_SWMID param")
 assert(param:add_param(PARAM_TABLE_KEY, 4, "CAM_SWHIGH", 6), "could not add VIEP_CAM_CAM_SWHIGH param")
 assert(param:add_param(PARAM_TABLE_KEY, 5, "ZOOM_SPEED", 7), "could not add VIEP_ZOOM_SPEED param")
+assert(param:add_param(PARAM_TABLE_KEY, 6, "ZOOM_MAX", 20), "could not add VIEP_ZOOM_MAX param")
 
 -- bind parameters to variables
 local MNT1_TYPE = Parameter("MNT1_TYPE")    -- should be 9:Scripting
+local CAM1_TYPE = Parameter("CAM1_TYPE")    -- should be 7:Scripting
+
+--[[
+  // @Param: VIEP_DEBUG
+  // @DisplayName: ViewPro debug
+  // @Description: ViewPro debug
+  // @Values: 0:Disabled, 1:Enabled, 2:Enabled including attitude reporting
+  // @User: Advanced
+--]]
 local VIEP_DEBUG = Parameter("VIEP_DEBUG")  -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
+
+--[[
+  // @Param: VIEP_CAM_SWLOW
+  // @DisplayName: ViewPro Camera For Switch Low
+  // @Description: Camera selection when switch is in low position
+  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
+  // @User: Standard
+--]]
 local VIEP_CAM_SWLOW = Parameter("VIEP_CAM_SWLOW")      -- RC swith low position's camera selection
+
+--[[
+  // @Param: VIEP_CAM_SWMID
+  // @DisplayName: ViewPro Camera For Switch Mid
+  // @Description: Camera selection when switch is in middle position
+  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
+  // @User: Standard
+--]]
 local VIEP_CAM_SWMID = Parameter("VIEP_CAM_SWMID")      -- RC swith middle position's camera selection
+
+--[[
+  // @Param: VIEP_CAM_SWHIGH
+  // @DisplayName: ViewPro Camera For Switch High
+  // @Description: Camera selection when switch is in high position
+  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
+  // @User: Standard
+--]]
 local VIEP_CAM_SWHIGH = Parameter("VIEP_CAM_SWHIGH")    -- RC swith high position's camera selection
+
+--[[
+  // @Param: VIEP_ZOOM_SPEED
+  // @DisplayName: ViewPro Zoom Speed
+  // @Description: ViewPro Zoom Speed.  Higher numbers result in faster zooming
+  // @Range: 0 7
+  // @User: Standard
+--]]
 local VIEP_ZOOM_SPEED = Parameter("VIEP_ZOOM_SPEED")    -- zoom speed from 0 (slow) to 7 (fast)
+
+--[[
+  // @Param: VIEP_ZOOM_MAX
+  // @DisplayName: ViewPro Zoom Times Max
+  // @Description: ViewPro Zoom Times Max
+  // @Range: 0 30
+  // @User: Standard
+--]]
+local VIEP_ZOOM_MAX = Parameter("VIEP_ZOOM_MAX")        -- zoom times max
 
 -- global definitions
 local CAM_SELECT_RC_OPTION = 300        -- rc channel option used to control which camera/video is used. RCx_OPTION = 300 (scripting1)
@@ -53,6 +108,7 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 100          -- update at 10hz
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
+local CAMERA_INSTANCE = 0               -- always use the first camera
 
 -- packet parsing definitions
 local HEADER1 = 0x55                    -- 1st header byte
@@ -85,6 +141,16 @@ local CAM_COMMAND_STOP_RECORD = 0x15
 local CAM_COMMAND_AUTO_FOCUS = 0x19
 local CAM_COMMAND_MANUAL_FOCUS = 0x1A
 
+-- tracking commands
+local TRACK_COMMAND_STOP = 0x01
+local TRACK_COMMAND_START = 0x03
+local TRACK_COMMAND2_SET_POINT = 0x0A
+local TRACK_COMMAND2_SET_RECT_TOPLEFT = 0x0B
+local TRACK_COMMAND2_SET_RECT_BOTTOMRIGHT = 0x0C
+
+-- camera control2 commands
+local CAM_COMMAND2_SET_EO_ZOOM = 0x53
+
 -- hardcoded outgoing messages
 local HEARTBEAT_MSG = {0x55,0xAA,0xDC,0x44,0x00,0x00,0x44}
 
@@ -101,9 +167,16 @@ local last_frame_counter = 0            -- last frame counter sent to gimbal.  a
 local cam_choice = 0                    -- last camera choice (see VIEP_CAM_SWLOW/MID/HIGH parameters)
 local cam_pic_count = 0                 -- last picture count.  used to detect trigger pic
 local cam_rec_video = false             -- last record video state.  used to detect record video
-local cam_zoom_step = 0                 -- last zoom step state.  zoom out = -1, hold = 0, zoom in = 1
-local cam_focus_step = 0                -- last focus step state.  focus in = -1, focus hold = 0, focus out = 1
-local cam_autofocus = false             -- last auto focus state
+local cam_zoom_type = 0                 -- last zoom type 1:Rate 2:Pct
+local cam_zoom_value = 0                -- last zoom value.  If rate, zoom out = -1, hold = 0, zoom in = 1.  If Pct then value from 0 to 100
+local cam_focus_type = 0                -- last focus type 1:Rate, 2:Pct, 4:Auto
+local cam_focus_value = 0               -- last focus value.  If Rate then focus in = -1, focus hold = 0, focus out = 1
+local last_tracking_type = 0            -- last recorded tracking type (0:None, 1:Point, 2:Rectangle)
+local last_tracking_p1x = 0             -- last recorded tracking point1 (used for center or top-left)
+local last_tracking_p1y = 0             -- last recorded tracking point1 (used for center or top-left)
+local last_tracking_p2x = 0             -- last recorded tracking point2 (bottom-right)
+local last_tracking_p2y = 0             -- last recorded tracking point2 (bottom-right)
+local tracking_active = false           -- true when tracking is active (rate and angle controls are disabled)
 
 -- parsing status reporting variables
 local last_print_ms = 0                 -- system time that debug output was last printed
@@ -170,6 +243,12 @@ function init()
   -- check mount parameter
   if MNT1_TYPE:get() ~= 9 then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "ViewPro: set MNT1_TYPE=9")
+    do return end
+  end
+
+  -- check cam type parametr
+  if CAM1_TYPE:get() ~= 7 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "ViewPro: set CAM1_TYPE=7")
     do return end
   end
 
@@ -303,7 +382,7 @@ function parse_byte(b)
             local servo_status = (parse_data_buff[24] & 0xF0 >> 4)
             local roll_deg = int16_value(parse_data_buff[24] & 0x0F, parse_data_buff[25]) * (180.0/4095.0) - 90.0
             local yaw_deg = int16_value(parse_data_buff[26], parse_data_buff[27]) * (360.0 / 65536.0)
-            local pitch_deg = int16_value(parse_data_buff[28], parse_data_buff[29]) * (360.0 / 65536.0)
+            local pitch_deg = -int16_value(parse_data_buff[28], parse_data_buff[29]) * (360.0 / 65536.0)
             mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
 
             if VIEP_DEBUG:get() > 0 then
@@ -441,6 +520,92 @@ function send_camera_control(camera_choice, cam_command)
   write_byte(checksum, 0)                               -- checksum
 end
 
+-- send camera commands using C2 message
+function send_camera_control2(cam_command, cam_value)
+
+  -- ensure cam_value is an integer
+  cam_value = math.floor(cam_value + 0.5)
+
+  -- prepare C2 message, FrameId 0x2C
+  -- byte0 : command (0x50:set brightness, 0x51:set contrast, 0x52: set aperture, 0x53:set EO zoom, 0x54:set focus, 0x55:set ISO, 0x56:set thermal cam digital zoom)
+  -- byte1~2 : value related to command
+  local length_and_frame_counter = calc_length_and_frame_byte(0x06)
+  cam_command = cam_command & 0xFF
+  local data_bytes = cam_value & 0xFFFF
+
+  write_byte(HEADER1, 0)
+  write_byte(HEADER2, 0)
+  write_byte(HEADER3, 0)
+  local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
+  checksum = write_byte(0x2C, checksum)                 -- 0x2C: C2 FrameId
+  checksum = write_byte(cam_command, checksum)          -- command
+  checksum = write_byte(highbyte(data_bytes), checksum) -- msb
+  checksum = write_byte(lowbyte(data_bytes), checksum)  -- lsb
+  write_byte(checksum, 0)                               -- checksum
+end
+
+-- send tracking commands using E1 message
+function send_tracking_control(camera_choice, tracking_command, param2)
+
+  -- prepare E1 message, FrameId 0x1E
+  -- byte0 : tracking source (0x01:EO 1, 0x02: IR, 0x03:EO 2)
+  -- byte1 : basic command
+  --         0x02: Search (Bring up the cross
+  --         0x03: Turn on tracking
+  --         0x04: Switch tracking point to cross position(take placed by enable tracking)
+  --         0X05: AI function ON/OFF
+  --         0X08: For AI. Auto track target once identified
+  --         0x09: For AI. Change target when click targets identified
+  --         0x0A: For AI. Not change target when click identified targets.
+  --         0X21: 32× 32 small template
+  --         0X22: 64× 64 medium template
+  --         0X23: 128× 128 big template
+  --         0X24: Self-adapt between small and medium template
+  --         0X25: Self-adapt between small and big template
+  --         0X26: Self-adapt between medium and big template
+  --         0X28: Self-adaption between small, medium and big template
+  --  byte2 : parameter 2, value related to above command
+
+  local length_and_frame_counter = calc_length_and_frame_byte(0x06)
+  write_byte(HEADER1, 0)
+  write_byte(HEADER2, 0)
+  write_byte(HEADER3, 0)
+  local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
+  checksum = write_byte(0x1E, checksum)                 -- 0x1E: E1 FrameId
+  checksum = write_byte(camera_choice, checksum)        -- camera choice
+  checksum = write_byte(tracking_command & 0xFF, checksum)  -- tracking command
+  checksum = write_byte(param2 & 0xFF, checksum)        -- param2
+  write_byte(checksum, 0)                               -- checksum
+end
+
+-- send tracking commands using E2 message
+function send_tracking_control2(tracking_command2, param1, param2)
+
+  -- prepare E2 message, FrameId 0x2E
+  -- byte0 : tracking source (0x01:EO 1, 0x02: IR, 0x03:EO 2)
+  -- byte1 : basic command
+  --         0x0A: The tracking point moves to the commanded position
+  --         0x0B: Rectangular tracking area, top left corner point set
+  --         0x0C: Rectangular tracking area, lower right corner point set
+  --  byte2~3 : Tracking point yaw, 1bit=1pixel, -960~960, 0 is center, negative is left, positive is right
+  --  byte4~5 : Tracking point pitch, 1bit=1pixel, -540~540, 0 is center, negative is up, positive is down
+
+  param1 = math.floor(param1 + 0.5) & 0xFFFF
+  param2 = math.floor(param2 + 0.5) & 0xFFFF
+  local length_and_frame_counter = calc_length_and_frame_byte(0x08)
+  write_byte(HEADER1, 0)
+  write_byte(HEADER2, 0)
+  write_byte(HEADER3, 0)
+  local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
+  checksum = write_byte(0x2E, checksum)             -- 0x2E: E2 FrameId
+  checksum = write_byte(tracking_command2 & 0xFF, checksum) -- tracking command2
+  checksum = write_byte(highbyte(param1), checksum) -- param1 msb
+  checksum = write_byte(lowbyte(param1), checksum)  -- param1 lsb
+  checksum = write_byte(highbyte(param2), checksum) -- param2 msb
+  checksum = write_byte(lowbyte(param2), checksum)  -- param2 lsb
+  write_byte(checksum, 0)                           -- checksum
+end
+
 -- return camera selection according to RC switch position and VIEW_CAM_SWxxx parameter
 -- used in C1 message's "video choose" to specify which cameras should be controlled
 function get_camera_choice()
@@ -464,12 +629,15 @@ function check_camera_state()
     send_camera_control(cam_choice, CAM_COMMAND_NO_ACTION)
   end
 
-  -- get latest state from AP driver
-  local pic_count, rec_video, zoom_step, focus_step, auto_focus = mount:get_camera_state(MOUNT_INSTANCE)
+  -- get latest camera state from AP driver
+  local cam_state = camera:get_state(CAMERA_INSTANCE)
+  if not cam_state then
+    return
+  end
 
   -- check for take picture
-  if pic_count and pic_count ~= cam_pic_count then
-    cam_pic_count = pic_count
+  if cam_state:take_pic_incr() and cam_state:take_pic_incr() ~= cam_pic_count then
+    cam_pic_count = cam_state:take_pic_incr()
     send_camera_control(cam_choice, CAM_COMMAND_TAKE_PICTURE)
     if VIEP_DEBUG:get() > 0 then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("ViewPro: took pic %u", pic_count))
@@ -477,61 +645,134 @@ function check_camera_state()
   end
 
   -- check for start/stop recording video
-  if rec_video ~= cam_rec_video then
-    cam_rec_video = rec_video
-    if cam_rec_video == true then
+  if cam_state:recording_video() ~= cam_rec_video then
+    cam_rec_video = cam_state:recording_video()
+    if cam_rec_video > 0 then
       send_camera_control(cam_choice, CAM_COMMAND_START_RECORD)
-    elseif cam_rec_video == false then
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: start recording")
+    else
       send_camera_control(cam_choice, CAM_COMMAND_STOP_RECORD)
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: stop recording")
     end
     if VIEP_DEBUG:get() > 0 then
       gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: rec video:" .. tostring(cam_rec_video))
     end
   end
-    
-  -- check manual zoom
+
+  -- check zoom
   -- zoom out = -1, hold = 0, zoom in = 1
-  if zoom_step ~= cam_zoom_step then
-    cam_zoom_step = zoom_step
-    if cam_zoom_step < 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
-    elseif cam_zoom_step == 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
-    elseif cam_zoom_step > 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_ZOOM_IN)
+  local zoom_type_changed = cam_state:zoom_type() and (cam_state:zoom_type() ~= cam_zoom_type)
+  local zoom_value_changed = cam_state:zoom_value() and (cam_state:zoom_value() ~= cam_zoom_value)
+  if (zoom_type_changed or zoom_value_changed) then
+    cam_zoom_type = cam_state:zoom_type()
+    cam_zoom_value = cam_state:zoom_value()
+
+    -- zoom rate
+    if cam_zoom_type == 1 then
+      if cam_zoom_value < 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
+      elseif cam_zoom_value > 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_ZOOM_IN)
+      else
+        send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
+      end
     end
+
+    -- zoom percent
+    if cam_zoom_type == 2 then
+      -- convert zoom percentage (in the range 0 to 100) to value in the range of 0 to VIEW_ZOOM_MAX * 10
+      send_camera_control2(CAM_COMMAND2_SET_EO_ZOOM, VIEP_ZOOM_MAX:get() * cam_zoom_value * 0.1)
+    end
+
     if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: zoom:" .. tostring(cam_zoom_step))
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: zoom type:" .. tostring(cam_zoom_type) .. " value:" .. tostring(cam_zoom_value))
     end
   end
 
   -- check manual focus
   -- focus in = -1, focus hold = 0, focus out = 1
-  if focus_step ~= cam_focus_step then
-    cam_focus_step = focus_step
-    if cam_focus_step < 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
-      send_camera_control(cam_choice, CAM_COMMAND_FOCUS_MINUS)
-    elseif cam_focus_step == 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
-    elseif cam_focus_step > 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
-      send_camera_control(cam_choice, CAM_COMMAND_FOCUS_PLUS)
+  local focus_type_changed = cam_state:focus_type() and (cam_state:focus_type() ~= cam_focus_type)
+  local focus_value_changed = cam_state:focus_value() and (cam_state:focus_value() ~= cam_focus_value)
+  if (focus_type_changed or focus_value_changed) then
+    cam_focus_type = cam_state:focus_type()
+    cam_focus_value = cam_state:focus_value()
+
+    -- focus rate
+    if cam_focus_type == 1 then
+      if cam_focus_value < 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
+        send_camera_control(cam_choice, CAM_COMMAND_FOCUS_MINUS)
+      elseif cam_focus_value == 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
+      elseif cam_focus_value > 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
+        send_camera_control(cam_choice, CAM_COMMAND_FOCUS_PLUS)
+      end
+      if VIEP_DEBUG:get() > 0 then
+        gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: focus:" .. tostring(cam_focus_step))
+      end
     end
-    if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: focus:" .. tostring(cam_focus_step))
+
+    -- check auto focus
+    if cam_focus_type == 4 then
+      send_camera_control(cam_choice, CAM_COMMAND_AUTO_FOCUS)
+      if VIEP_DEBUG:get() > 0 then
+        gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: auto focus:" .. tostring(cam_autofocus))
+      end
     end
   end
+end
 
-  -- check auto focus
-  if auto_focus ~= cam_autofocus then
-    cam_autofocus = auto_focus
-    if cam_autofocus then
-      send_camera_control(cam_choice, CAM_COMMAND_AUTO_FOCUS)
-    end
-    if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: auto focus:" .. tostring(cam_autofocus))
-    end
+-- check for changes in tracking state and send messages to gimbal if required
+function check_tracking_state()
+
+  -- get latest camera state from AP driver
+  local cam_state = camera:get_state(CAMERA_INSTANCE)
+  if not cam_state then
+    return
+  end
+
+  -- get current camera choice
+  local curr_cam_choice = get_camera_choice()
+
+  -- check for change in tracking state
+  local tracking_type_changed = cam_state:tracking_type() ~= last_tracking_type
+  local tracking_type_p1_changed = (cam_state:tracking_p1():x() ~= last_tracking_p1x) or (cam_state:tracking_p1():y() ~= last_tracking_p1y)
+  local tracking_type_p2_changed = (cam_state:tracking_p2():x() ~= last_tracking_p2x) or (cam_state:tracking_p2():y() ~= last_tracking_p2y)
+  last_tracking_type = cam_state:tracking_type()
+  last_tracking_p1x = cam_state:tracking_p1():x()
+  last_tracking_p1y = cam_state:tracking_p1():y()
+  last_tracking_p2x = cam_state:tracking_p2():x()
+  last_tracking_p2y = cam_state:tracking_p2():y()
+
+  if (last_tracking_type == 0) and tracking_type_changed then
+    -- turn off tracking
+    send_tracking_control(curr_cam_choice, TRACK_COMMAND_STOP, 0)
+    tracking_active = false
+    gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: tracking OFF")
+  end
+
+  if (last_tracking_type == 1) and (tracking_type_changed or tracking_type_p1_changed) then
+    -- turn tracking point on
+    local yaw_value = (last_tracking_p1x - 0.5) * 960
+    local pitch_value = (last_tracking_p1y - 0.5) * 540
+    send_tracking_control(curr_cam_choice, TRACK_COMMAND_START, 0)
+    send_tracking_control2(TRACK_COMMAND2_SET_POINT, yaw_value, pitch_value)
+    tracking_active = true
+    gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: tracking point ON")
+  end
+
+  if (last_tracking_type == 2) and (tracking_type_changed or tracking_type_p1_changed or tracking_type_p2_changed) then
+    -- turn tracking rectangle on
+    local yaw_value1 = (last_tracking_p1x - 0.5) * 960
+    local pitch_value1 = (last_tracking_p1y - 0.5) * 540
+    local yaw_value2 = (last_tracking_p2x - 0.5) * 960
+    local pitch_value2 = (last_tracking_p2y - 0.5) * 540
+    send_tracking_control(curr_cam_choice, TRACK_COMMAND_START, 0)
+    send_tracking_control2(TRACK_COMMAND2_SET_RECT_TOPLEFT, yaw_value1, pitch_value1)
+    send_tracking_control2(TRACK_COMMAND2_SET_RECT_BOTTOMRIGHT, yaw_value2, pitch_value2)
+    tracking_active = true
+    gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: tracking rectangle ON")
   end
 end
 
@@ -559,6 +800,9 @@ function update()
   -- check camera state and send control messages
   check_camera_state()
 
+  -- check tracking state and send tracking control messages
+  check_tracking_state()
+
   -- send heartbeat, gimbal should respond with T1+F1+B1+D1
   send_msg(HEARTBEAT_MSG)
 
@@ -568,21 +812,23 @@ function update()
     send_msg(HEARTBEAT_MSG)
   end
 
-  -- send target angle to gimbal
-  local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
-  if roll_deg and pitch_deg and yaw_deg then
-    if yaw_is_ef then
-      yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+  if not tracking_active then
+    -- send target angle to gimbal
+    local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
+    if roll_deg and pitch_deg and yaw_deg then
+      if yaw_is_ef then
+        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+      end
+      send_target_angles(pitch_deg, yaw_deg)
+      return update, UPDATE_INTERVAL_MS
     end
-    send_target_angles(pitch_deg, yaw_deg)
-    return update, UPDATE_INTERVAL_MS
-  end
 
-  -- send target rate to gimbal
-  local roll_degs, pitch_degs, yaw_degs, _ = mount:get_rate_target(MOUNT_INSTANCE)
-  if roll_degs and pitch_degs and yaw_degs then
-    send_target_rates(pitch_degs, yaw_degs)
-    return update, UPDATE_INTERVAL_MS
+    -- send target rate to gimbal
+    local roll_degs, pitch_degs, yaw_degs, _ = mount:get_rate_target(MOUNT_INSTANCE)
+    if roll_degs and pitch_degs and yaw_degs then
+      send_target_rates(pitch_degs, yaw_degs)
+      return update, UPDATE_INTERVAL_MS
+    end
   end
 
   return update, UPDATE_INTERVAL_MS

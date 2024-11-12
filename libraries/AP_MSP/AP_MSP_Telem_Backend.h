@@ -16,6 +16,10 @@
 */
 #pragma once
 
+#include "AP_MSP_config.h"
+
+#if HAL_MSP_ENABLED
+
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD.h>
@@ -23,8 +27,6 @@
 #include "msp.h"
 
 #include <time.h>
-
-#if HAL_MSP_ENABLED
 
 #define MSP_TIME_SLOT_MAX 12
 #define CELLFULL 4.35
@@ -55,7 +57,7 @@ public:
         int32_t lon;
         uint16_t alt_m;
         uint16_t speed_cms;
-        int16_t ground_course_cd;
+        uint16_t ground_course_dd;
     } gps_state_t;
 
     typedef struct airspeed_state_s {

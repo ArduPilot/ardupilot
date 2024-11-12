@@ -16,16 +16,22 @@
 
 #pragma once
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_IBUS_ENABLED
+
 #define IBUS_FRAME_SIZE		32
 #define IBUS_INPUT_CHANNELS	14
 
-#include "AP_RCProtocol.h"
+#include "AP_RCProtocol_Backend.h"
+
 #include "SoftSerial.h"
 
 class AP_RCProtocol_IBUS : public AP_RCProtocol_Backend
 {
 public:
-    AP_RCProtocol_IBUS(AP_RCProtocol &_frontend);
+    using AP_RCProtocol_Backend::AP_RCProtocol_Backend;
+
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
@@ -40,3 +46,5 @@ private:
         uint32_t last_byte_us;
     } byte_input;
 };
+
+#endif  // AP_RCPROTOCOL_IBUS_ENABLED

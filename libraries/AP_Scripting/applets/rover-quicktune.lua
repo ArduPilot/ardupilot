@@ -18,6 +18,12 @@ See the accompanying rover-quiktune.md file for instructions on how to use
 
 --]]
 
+<<<<<<< HEAD
+=======
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 -- global definitions
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 

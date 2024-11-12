@@ -466,6 +466,7 @@
 #define STM32_SDC_READ_TIMEOUT_MS           1000
 #define STM32_SDC_CLOCK_ACTIVATION_DELAY    10
 #define STM32_SDC_SDIO_UNALIGNED_SUPPORT    TRUE
+#define STM32_SDC_SDIO_PWRSAV               TRUE
 
 /*
  * SERIAL driver system settings.

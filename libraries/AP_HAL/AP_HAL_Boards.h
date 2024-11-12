@@ -1,5 +1,5 @@
 /**
- * C preprocesor enumeration of the boards supported by the AP_HAL.
+ * C preprocessor enumeration of the boards supported by the AP_HAL.
  * This list exists so HAL_BOARD == HAL_BOARD_xxx preprocessor blocks
  * can be used to exclude HAL boards from the build when appropriate.
  * It's not an elegant solution but we can improve it in future.
@@ -7,13 +7,14 @@
 #pragma once
 
 #define HAL_BOARD_SITL     3
-#define HAL_BOARD_SMACCM   4  // unused
-#define HAL_BOARD_PX4      5  // unused
+// #define HAL_BOARD_SMACCM   4  // unused
+// #define HAL_BOARD_PX4      5  // unused
 #define HAL_BOARD_LINUX    7
-#define HAL_BOARD_VRBRAIN  8
+// #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
-#define HAL_BOARD_F4LIGHT  11 // reserved
+// #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
+#define HAL_BOARD_QURT     13
 #define HAL_BOARD_EMPTY    99
 
 /* Default board subtype is -1 */
@@ -42,6 +43,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR  1023
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
 #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
+#define HAL_BOARD_SUBTYPE_LINUX_CANZERO    1026
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
@@ -51,19 +53,23 @@
 */
 #define HAL_BOARD_SUBTYPE_CHIBIOS_SKYVIPER_F412	5000
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3         5001
-#define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4         5002
 #define HAL_BOARD_SUBTYPE_CHIBIOS_GENERIC       5009
 #define HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5         5013
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51   5016
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52   5017
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
-#define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V51   5016
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V52   5017
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
+// #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
 
 #define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
 #define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
 #define HAL_BOARD_SUBTYPE_ESP32_BUZZ            6003
 #define HAL_BOARD_SUBTYPE_ESP32_EMPTY           6004
+#define HAL_BOARD_SUBTYPE_ESP32_TOMTE76         6005
+#define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
+#define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
+#define HAL_BOARD_SUBTYPE_ESP32_S3EMPTY         6008
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -128,22 +134,18 @@
     #include <AP_HAL/board/linux.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_EMPTY
     #include <AP_HAL/board/empty.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
-    #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
     #include <AP_HAL/board/esp32.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_QURT
+    #include <AP_HAL/board/qurt.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
 
 #ifndef CONFIG_HAL_BOARD_SUBTYPE
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
-#endif
-
-#ifndef HAL_OS_POSIX_IO
-#define HAL_OS_POSIX_IO 0
 #endif
 
 #ifndef HAL_OS_SOCKETS
@@ -162,19 +164,29 @@
 #define HAL_NUM_CAN_IFACES 0
 #endif
 
-#ifndef HAL_RCINPUT_WITH_AP_RADIO
-#define HAL_RCINPUT_WITH_AP_RADIO 0
-#endif
-
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU 0
 #endif
 
-// this is used as a general mechanism to make a 'small' build by
-// dropping little used features. We use this to allow us to keep
-// FMUv2 going for as long as possible
-#ifndef HAL_MINIMIZE_FEATURES
-#define HAL_MINIMIZE_FEATURES       0
+#ifndef HAL_WITH_IO_MCU_BIDIR_DSHOT
+#define HAL_WITH_IO_MCU_BIDIR_DSHOT 0
+#endif
+
+#ifndef HAL_WITH_IO_MCU_DSHOT
+#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
+#endif
+
+#ifndef HAL_REQUIRES_BDSHOT_SUPPORT
+#define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
+#endif
+
+// support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
+// can in principle arrive, either from servo outputs or from IOMCU
+
+// if not desired, set to 0 - and if IOMCU has bidirectional DShot enabled, recompile it too,
+// otherwise the communication to IOMCU breaks!
+#ifndef AP_EXTENDED_DSHOT_TELEM_V2_ENABLED
+#define AP_EXTENDED_DSHOT_TELEM_V2_ENABLED HAL_REQUIRES_BDSHOT_SUPPORT
 #endif
 
 #ifndef BOARD_FLASH_SIZE
@@ -202,8 +214,8 @@
 #define HAL_INS_DEFAULT HAL_INS_NONE
 #endif
 
-#ifndef HAL_GPS_TYPE_DEFAULT
-#define HAL_GPS_TYPE_DEFAULT 1
+#ifndef HAL_GPS1_TYPE_DEFAULT
+#define HAL_GPS1_TYPE_DEFAULT 1
 #endif
 
 #ifndef HAL_CAN_DRIVER_DEFAULT
@@ -218,12 +230,12 @@
 #define HAL_CANMANAGER_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS > 0)
 #endif
 
-#ifndef HAL_ENABLE_LIBUAVCAN_DRIVERS
-#define HAL_ENABLE_LIBUAVCAN_DRIVERS HAL_CANMANAGER_ENABLED
+#ifndef HAL_ENABLE_DRONECAN_DRIVERS
+#define HAL_ENABLE_DRONECAN_DRIVERS HAL_CANMANAGER_ENABLED
 #endif
 
-#ifndef AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
-#define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 1
+#ifndef AP_TEST_DRONECAN_DRIVERS
+#define AP_TEST_DRONECAN_DRIVERS 0
 #endif
 
 #ifdef HAVE_LIBDL
@@ -236,15 +248,20 @@
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
 
+#ifndef HAL_FORWARD_OTG2_SERIAL
+#define HAL_FORWARD_OTG2_SERIAL 0
+#endif
 
 #ifndef HAL_HAVE_DUAL_USB_CDC
 #define HAL_HAVE_DUAL_USB_CDC 0
 #endif
 
+#ifndef AP_CAN_SLCAN_ENABLED
 #if HAL_NUM_CAN_IFACES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#define AP_UAVCAN_SLCAN_ENABLED 1
+#define AP_CAN_SLCAN_ENABLED 1
 #else
-#define AP_UAVCAN_SLCAN_ENABLED 0
+#define AP_CAN_SLCAN_ENABLED 0
+#endif
 #endif
 
 #ifndef USE_LIBC_REALLOC
@@ -279,6 +296,22 @@
 #define HAL_DSHOT_ALARM_ENABLED 0
 #endif
 
+#ifndef HAL_DSHOT_ENABLED
+#define HAL_DSHOT_ENABLED 1
+#endif
+
+#ifndef HAL_SERIALLED_ENABLED
+#define HAL_SERIALLED_ENABLED HAL_DSHOT_ENABLED
+#endif
+
+#ifndef HAL_SERIAL_ESC_COMM_ENABLED
+#define HAL_SERIAL_ESC_COMM_ENABLED 1
+#endif
+
+#ifndef AP_BOOTLOADER_FLASHING_ENABLED
+#define AP_BOOTLOADER_FLASHING_ENABLED 0
+#endif
+
 #ifndef HAL_HNF_MAX_FILTERS
 // On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
@@ -294,7 +327,8 @@
 #else
 // Enough for a notch per motor on an octa quad using two IMUs and one harmonic
 // plus one static notch with one harmonic
-#define HAL_HNF_MAX_FILTERS 18
+// Or triple-notch per motor on one IMU with one harmonic
+#define HAL_HNF_MAX_FILTERS 24
 #endif
 #endif // HAL_HNF_MAX_FILTERS
 
@@ -302,6 +336,14 @@
 #define HAL_CANFD_SUPPORTED 8
 #elif !defined(HAL_CANFD_SUPPORTED)
 #define HAL_CANFD_SUPPORTED 0
+#endif
+
+#ifndef HAL_USE_QUADSPI
+#define HAL_USE_QUADSPI 0
+#endif
+
+#ifndef HAL_USE_OCTOSPI
+#define HAL_USE_OCTOSPI 0
 #endif
 
 #ifndef __RAMFUNC__
@@ -312,14 +354,31 @@
 #define __FASTRAMFUNC__
 #endif
 
+#ifndef __EXTFLASHFUNC__
+#define __EXTFLASHFUNC__
+#endif
+
 #ifndef HAL_ENABLE_DFU_BOOT
 #define HAL_ENABLE_DFU_BOOT 0
 #endif
 
 
-// sanity checks for the configuration.  This can't test everything as
-// the libraries can do their own definitions - but we can catch some
-// things:
-#if HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#error "2MB board with minimize features?!"
+#ifndef HAL_ENABLE_SENDING_STATS
+#define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
 #endif
+
+#ifndef HAL_GPIO_LED_ON
+#define HAL_GPIO_LED_ON 0
+#elif HAL_GPIO_LED_ON == 0
+#error "Do not specify HAL_GPIO_LED_ON if you are setting it to the default, 0"
+#endif
+
+#ifdef HAL_GPIO_LED_OFF
+#error "HAL_GPIO_LED_OFF must not be defined, it is implicitly !HAL_GPIO_LED_ON"
+#endif
+
+#ifndef HAL_WITH_POSTYPE_DOUBLE
+#define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
+#endif
+
+#define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)

@@ -18,14 +18,6 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#ifndef HAL_GPIO_LED_ON
-#define HAL_GPIO_LED_ON 0
-#endif
-
-#ifndef HAL_GPIO_LED_OFF
-#define HAL_GPIO_LED_OFF 1
-#endif
-
 /*
   pin types for alternative configuration
  */
@@ -77,6 +69,9 @@ public:
 #ifndef IOMCU_FW
     // timer tick
     void timer_tick(void) override;
+
+    // Check for ISR floods
+    bool arming_checks(size_t buflen, char *buffer) const override;
 #endif
 
     // check if a pin number is valid
@@ -91,7 +86,7 @@ public:
      */
     static ioline_t resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance);
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     // allow for save and restore of pin settings
     bool    get_mode(uint8_t pin, uint32_t &mode) override;
     void    set_mode(uint8_t pin, uint32_t mode) override;

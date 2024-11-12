@@ -26,6 +26,8 @@ void ModeAcro::update()
 
 void ModeAcro::run()
 {
+    output_pilot_throttle();
+
     if (plane.g.acro_locking == 2 && plane.g.acro_yaw_rate > 0 &&
         plane.yawController.rate_control_enabled()) {
         // we can do 3D acro locking
@@ -68,7 +70,7 @@ void ModeAcro::stabilize()
         int32_t roll_error_cd = -ToDeg(acro_state.locked_roll_err)*100;
         plane.nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
-        // 'stabilze' to true, which disables the roll integrator
+        // 'stabilize' to true, which disables the roll integrator
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_servo_out(roll_error_cd,
                                                                                              speed_scaler,
                                                                                              true, false));
@@ -104,22 +106,24 @@ void ModeAcro::stabilize()
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.get_rate_out(pitch_rate, speed_scaler));
     }
 
-    plane.steering_control.steering = plane.rudder_input();
-
+    float rudder_output;
     if (plane.g.acro_yaw_rate > 0 && plane.yawController.rate_control_enabled()) {
         // user has asked for yaw rate control with yaw rate scaled by ACRO_YAW_RATE
         const float rudd_expo = plane.rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * plane.g.acro_yaw_rate;
-        plane.steering_control.steering = plane.steering_control.rudder = plane.yawController.get_rate_out(yaw_rate,  speed_scaler, false);
-    } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+        rudder_output = plane.yawController.get_rate_out(yaw_rate,  speed_scaler, false);
+    } else if (plane.flight_option_enabled(FlightOptions::ACRO_YAW_DAMPER)) {
         // use yaw controller
-        plane.calc_nav_yaw_coordinated();
+        rudder_output = plane.calc_nav_yaw_coordinated();
     } else {
         /*
           manual rudder
         */
-        plane.steering_control.rudder = plane.steering_control.steering;
+        rudder_output = plane.rudder_input();
     }
+
+    output_rudder_and_steering(rudder_output);
+
 }
 
 /*
@@ -215,7 +219,7 @@ void ModeAcro::stabilize_quaternion()
     // call to rate controllers
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  plane.rollController.get_rate_out(desired_rates.x, speed_scaler));
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.get_rate_out(desired_rates.y, speed_scaler));
-    plane.steering_control.steering = plane.steering_control.rudder = plane.yawController.get_rate_out(desired_rates.z,  speed_scaler, false);
+    output_rudder_and_steering(plane.yawController.get_rate_out(desired_rates.z,  speed_scaler, false));
 
     acro_state.roll_active_last = roll_active;
     acro_state.pitch_active_last = pitch_active;

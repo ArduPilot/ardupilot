@@ -46,6 +46,8 @@ void Chirp::init(float time_record, float frequency_start_hz, float frequency_st
 
     B = logf(wMax / wMin);
 
+    // Mark as incomplete
+    complete = false;
 }
 
 // determine chirp signal output at the specified time and amplitude
@@ -83,5 +85,8 @@ float Chirp::update(float time, float waveform_magnitude)
         waveform_freq_rads = wMax;
         output = 0.0f;
     }
+
+    complete = time > record;
+
     return output;
 }

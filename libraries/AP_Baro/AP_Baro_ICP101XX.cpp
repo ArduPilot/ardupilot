@@ -61,7 +61,7 @@ AP_Baro_Backend *AP_Baro_ICP101XX::probe(AP_Baro &baro,
     if (!dev) {
         return nullptr;
     }
-    AP_Baro_ICP101XX *sensor = new AP_Baro_ICP101XX(baro, std::move(dev));
+    AP_Baro_ICP101XX *sensor = NEW_NOTHROW AP_Baro_ICP101XX(baro, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -109,7 +109,7 @@ bool AP_Baro_ICP101XX::init()
     
     dev->get_semaphore()->give();
 
-    dev->register_periodic_callback(measure_interval/2, FUNCTOR_BIND_MEMBER(&AP_Baro_ICP101XX::timer, void));
+    dev->register_periodic_callback(measure_interval, FUNCTOR_BIND_MEMBER(&AP_Baro_ICP101XX::timer, void));
 
     return true;
 

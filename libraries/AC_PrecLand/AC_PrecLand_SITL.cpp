@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_SITL.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AC_PRECLAND_SITL_ENABLED
 
 #include "AP_AHRS/AP_AHRS.h"
 // init - perform initialisation of this backend
@@ -39,19 +39,4 @@ void AC_PrecLand_SITL::update()
     _have_los_meas = _have_los_meas && AP_HAL::millis() - _los_meas_time_ms <= 1000;
 }
 
-bool AC_PrecLand_SITL::have_los_meas() {
-    return AP_HAL::millis() - _los_meas_time_ms < 1000;
-}
-
-// provides a unit vector towards the target in body frame
-//  returns same as have_los_meas()
-bool AC_PrecLand_SITL::get_los_body(Vector3f& ret) {
-    if (AP_HAL::millis() - _los_meas_time_ms > 1000) {
-        // no measurement for a full second; no vector available
-        return false;
-    }
-    ret = _los_meas_body;
-    return true;
-}
-
-#endif
+#endif  // AC_PRECLAND_SITL_ENABLED

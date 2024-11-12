@@ -139,23 +139,26 @@ public:
       microseconds, and represent minimum and maximum PWM values which
       will be used to convert channel writes into a percentage
      */
-    virtual void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {}
+    void set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) {
+        _esc_pwm_min = min_pwm;
+        _esc_pwm_max = max_pwm;
+    }
 
-    /*
-      return ESC scaling value from set_esc_scaling()
-     */
-    virtual bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) { return false; }
-    
     /*
       returns the pwm value scaled to [-1;1] regrading to set_esc_scaling ranges range without constraints.
      */
-    virtual float    scale_esc_to_unity(uint16_t pwm) { return 0; }
+    float scale_esc_to_unity(uint16_t pwm) const;
 
     /*
       return the erpm and error rate for a channel if available
      */
     virtual uint16_t get_erpm(uint8_t chan) const { return 0; }
     virtual float get_erpm_error_rate(uint8_t chan) const { return 100.0f; }
+    /*
+      allow all erpm values to be read and for new updates to be detected - primarily for IOMCU
+     */
+    virtual bool  new_erpm() { return false; }
+    virtual uint32_t  read_erpm(uint16_t* erpm, uint8_t len) { return 0; }
 
     /*
       enable PX4IO SBUS out at the given rate
@@ -217,6 +220,7 @@ public:
         MODE_PWM_DSHOT1200,
         MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
         MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
+        MODE_NEOPIXELRGB,  // same as MODE_NEOPIXEL but RGB ordering
     };
     // true when the output mode is of type dshot
     // static to allow use in the ChibiOS thread stuff
@@ -225,6 +229,10 @@ public:
     static bool is_led_protocol(const enum output_mode mode) {
       switch (mode) {
       case MODE_NEOPIXEL:
+<<<<<<< HEAD
+=======
+      case MODE_NEOPIXELRGB:
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
       case MODE_PROFILED:
         return true;
       default:
@@ -247,6 +255,8 @@ public:
       DSHOT_3D_OFF = 9,
       DSHOT_3D_ON = 10,
       DSHOT_SAVE = 12,
+      DSHOT_EXTENDED_TELEMETRY_ENABLE = 13,
+      DSHOT_EXTENDED_TELEMETRY_DISABLE = 14,
       DSHOT_NORMAL = 20,
       DSHOT_REVERSE = 21,
       // The following options are only available on BLHeli32
@@ -265,10 +275,18 @@ public:
     enum DshotEscType {
       DSHOT_ESC_NONE = 0,
       DSHOT_ESC_BLHELI = 1,
-      DSHOT_ESC_BLHELI_S = 2
+      DSHOT_ESC_BLHELI_S = 2,
+      DSHOT_ESC_BLHELI_EDT = 3,
+      DSHOT_ESC_BLHELI_EDT_S = 4
     };
 
     virtual void    set_output_mode(uint32_t mask, enum output_mode mode) {}
+
+    virtual enum output_mode get_output_mode(uint32_t& mask) {
+      mask = 0;
+      return MODE_PWM_NORMAL;
+    }
+
 
     /*
      * get output mode banner to inform user of how outputs are configured
@@ -308,6 +326,12 @@ public:
     virtual void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) {}
 
     /*
+      Set the dshot period in us, only for use by the IOMCU
+     */
+    virtual void set_dshot_period(uint32_t period_us, uint8_t dshot_rate) {}
+    virtual uint32_t get_dshot_period_us() const { return 0; }
+
+    /*
       Set the dshot ESC type
      */
     virtual void set_dshot_esc_type(DshotEscType esc_type) {}
@@ -316,7 +340,7 @@ public:
 
     const static uint32_t ALL_CHANNELS = 255;
     /*
-      Send a dshot command, if command timout is 0 then 10 commands are sent
+      Send a dshot command, if command timeout is 0 then 10 commands are sent
       chan is the servo channel to send the command to
      */
     virtual void send_dshot_command(uint8_t command, uint8_t chan = ALL_CHANNELS, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) {}
@@ -358,7 +382,7 @@ public:
     /*
      * calculate the prescaler required to achieve the desire bitrate
      */
-    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
+    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool at_least_freq = false);
 
     /*
      * bit width values for different protocols
@@ -368,7 +392,7 @@ public:
      * Options are (ticks, percentage):
      * 20/7/14, 35/70
      * 11/4/8, 36/72
-     * 8/3/6, 37/75
+     * 8/3/6, 37/75 <-- this is the preferred duty cycle and has some support on the interwebs
      */
     // bitwidths: 8/3/6 == 37%/75%
     static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_DEFAULT = 8;
@@ -385,7 +409,7 @@ public:
 
     // See WS2812B spec for expected pulse widths
     static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 8;
-    static constexpr uint32_t NEOP_BIT_0_TICKS = 3;
+    static constexpr uint32_t NEOP_BIT_0_TICKS = 2;
     static constexpr uint32_t NEOP_BIT_1_TICKS = 6;
     // neopixel does not use pulse widths at all
     static constexpr uint32_t PROFI_BIT_0_TICKS = 7;
@@ -400,4 +424,7 @@ protected:
     // helper functions for implementation of get_output_mode_banner
     void append_to_banner(char banner_msg[], uint8_t banner_msg_len, output_mode out_mode, uint8_t low_ch, uint8_t high_ch) const;
     const char* get_output_mode_string(enum output_mode out_mode) const;
+
+    uint16_t _esc_pwm_min = 1000;
+    uint16_t _esc_pwm_max = 2000;
 };

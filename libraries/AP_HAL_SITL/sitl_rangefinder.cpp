@@ -51,7 +51,7 @@ float SITL_State::_sonar_pin_voltage() const
  */
 void SITL_State::_update_rangefinder()
 {
-    sonar_pin_value = 1023 * (_sonar_pin_voltage() / 5.0f);
+    sonar_pin_voltage = _sonar_pin_voltage();
 }
 
 #endif

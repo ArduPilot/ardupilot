@@ -12,16 +12,14 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "AP_OpticalFlow_Onboard.h"
+
+#include "AP_OpticalFlow_config.h"
 
 #if AP_OPTICALFLOW_ONBOARD_ENABLED
 
+#include "AP_OpticalFlow_Onboard.h"
+
 #include <AP_HAL/AP_HAL.h>
-
-#include "AP_OpticalFlow.h"
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
 #ifndef OPTICALFLOW_ONBOARD_DEBUG
 #define OPTICALFLOW_ONBOARD_DEBUG 0
@@ -94,7 +92,5 @@ void AP_OpticalFlow_Onboard::update()
                         data_frame.delta_time);
 #endif
 }
-
-#endif
 
 #endif  // AP_OPTICALFLOW_ONBOARD_ENABLED

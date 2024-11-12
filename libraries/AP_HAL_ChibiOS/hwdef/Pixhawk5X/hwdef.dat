@@ -25,9 +25,6 @@ env OPTIMIZE -O2
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
-# default the 2nd interface to MAVLink2
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
@@ -40,17 +37,22 @@ PA9 VBUS INPUT OPENDRAIN
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-# ethernet (not implemented yet)
-#PA1 ETH_RMII_REF_CLK ETH
-#PA2 ETH_MDIO         ETH
-#PA7 ETH_RMII_CRS_DV  ETH
-#PB11 ETH_RMII_TX_EN OUTPUT LOW
-#PB13 ETH_RMII_TXD1 ETH
-#PC1  ETH_MDC ETH
-#PC4 ETH_RMII_RXD0 ETH
-#PC5 ETH_RMII_RXD1 ETH
-#PG15 ETH_PWR_EN OUTPUT LOW
-#PG13 ETH_RMII_TXD0 ETH
+# Ethernet
+#PC1  ETH_MDC            ETH1
+#PA2  ETH_MDIO           ETH1
+#PC4  ETH_RMII_RXD0      ETH1
+#PC5  ETH_RMII_RXD1      ETH1
+#PG13 ETH_RMII_TXD0      ETH1
+#PB13 ETH_RMII_TXD1      ETH1
+#PB11 ETH_RMII_TX_EN     ETH1
+#PA7  ETH_RMII_CRS_DV    ETH1
+#PA1  ETH_RMII_REF_CLK   ETH1
+
+#PG15 GPIO_ETH_ENABLE OUTPUT HIGH GPIO(113)
+#define HAL_GPIO_ETH_ENABLE 113
+
+#define BOARD_PHY_ID  MII_LAN8720_ID
+#define BOARD_PHY_RMII
 
 # ADC
 PA0 SCALED1_V3V3 ADC1 SCALE(2)
@@ -149,11 +151,6 @@ PH8 I2C3_SDA I2C3
 PF14 I2C4_SCL I2C4
 PF15 I2C4_SDA I2C4
 
-# this board is very tight on DMA channels. To allow for more UART DMA
-# we disable DMA on I2C
-NODMA I2C*
-define STM32_I2C_USE_DMA FALSE
-
 # order of I2C buses
 I2C_ORDER I2C4 I2C1 I2C2 I2C3
 define HAL_I2C_INTERNAL_MASK 1
@@ -217,11 +214,9 @@ PD15 VDD_3V3_SENSORS2_EN OUTPUT HIGH
 PE7  VDD_3V3_SENSORS3_EN OUTPUT HIGH
 PG8  VDD_3V3_SENSORS4_EN OUTPUT HIGH
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
-PF12 nVDD_5V_HIPOWER_EN OUTPUT HIGH
-PG4  nVDD_5V_PERIPH_EN OUTPUT HIGH
+# start peripheral power on
+PF12 nVDD_5V_HIPOWER_EN OUTPUT LOW
+PG4  nVDD_5V_PERIPH_EN OUTPUT LOW
 
 # Control of Spektrum power pin
 PH2 SPEKTRUM_PWR OUTPUT HIGH GPIO(73)
@@ -256,9 +251,9 @@ PE4 LED_GREEN OUTPUT OPENDRAIN GPIO(91) HIGH
 PE5 LED_BLUE OUTPUT OPENDRAIN GPIO(92) HIGH
 
 # setup for BoardLED2
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
-define HAL_GPIO_LED_ON 0
 
 # ID pins
 PG0 HW_VER_REV_DRIVE OUTPUT LOW
@@ -321,7 +316,7 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1

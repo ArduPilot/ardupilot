@@ -48,7 +48,7 @@ AP_Baro_Backend * AP_Baro_BMP085::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::De
         return nullptr;
     }
 
-    AP_Baro_BMP085 *sensor = new AP_Baro_BMP085(baro, std::move(dev));
+    AP_Baro_BMP085 *sensor = NEW_NOTHROW AP_Baro_BMP085(baro, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -70,7 +70,7 @@ bool AP_Baro_BMP085::_init()
     // get pointer to i2c bus semaphore
     AP_HAL::Semaphore *sem = _dev->get_semaphore();
 
-    // take i2c bus sempahore
+    // take i2c bus semaphore
     WITH_SEMAPHORE(sem);
 
     if (BMP085_EOC >= 0) {
@@ -177,7 +177,7 @@ bool AP_Baro_BMP085::_read_prom(uint16_t *prom)
 }
 
 /*
-  This is a state machine. Acumulate a new sensor reading.
+  This is a state machine. Accumulate a new sensor reading.
  */
 void AP_Baro_BMP085::_timer(void)
 {

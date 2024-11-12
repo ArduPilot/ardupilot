@@ -17,6 +17,7 @@
 #include <AP_Param/AP_Param.h>
 #include "transition.h"
 #include <AP_Motors/AP_MotorsTailsitter.h>
+#include <AP_Logger/LogStructure.h>
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -66,9 +67,11 @@ public:
     // return true if pitch control should be relaxed
     bool relax_pitch();
 
+    // Write tailsitter specific log
+    void write_log();
+
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
-    float log_spd_scaler; // for QTUN log
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -111,6 +114,23 @@ public:
     AP_MotorsTailsitter* tailsitter_motors;
 
 private:
+
+    // Tailsitter specific log message
+    struct PACKED log_tailsitter {
+        LOG_PACKET_HEADER;
+        uint64_t time_us;
+        float throttle_scaler;
+        float speed_scaler;
+        float min_throttle;
+    };
+
+    // Data to be logged
+    struct {
+        float throttle_scaler;
+        float speed_scaler;
+        float min_throttle;
+    } log_data;
+
 
     bool setup_complete;
 
@@ -155,11 +175,13 @@ public:
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
-    bool active() const override { return transition_state != TRANSITION_DONE; }
+    bool active_frwd() const override { return transition_state == TRANSITION_ANGLE_WAIT_FW; }
 
     bool show_vtol_view() const override;
 
-    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing) override;
+    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd) override;
+
+    bool allow_stick_mixing() const override;
 
     MAV_VTOL_STATE get_mav_vtol_state() const override;
 

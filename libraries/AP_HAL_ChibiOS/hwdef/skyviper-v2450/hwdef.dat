@@ -24,8 +24,6 @@ undef AP_FEATURE_RTSCTS
 undef HAL_WITH_RAMTRON
 undef IOMCU_UART
 undef SDIO
-undef HAL_BOARD_LOG_DIRECTORY
-undef HAL_BOARD_TERRAIN_DIRECTORY
 
 # short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
 define CHIBIOS_SHORT_BOARD_NAME "skyviper-v245"
@@ -33,7 +31,10 @@ define CHIBIOS_SHORT_BOARD_NAME "skyviper-v245"
 SERIAL_ORDER OTG1 USART2 EMPTY UART4
 
 # enable AP_Radio support
-define HAL_RCINPUT_WITH_AP_RADIO 1
+define AP_RADIO_ENABLED 1
+define AP_RADIO_BACKEND_DEFAULT_ENABLED 0
+define AP_RADIO_CC2500_ENABLED 1
+define AP_RADIO_CYRF6936_ENABLED 1
 
 define HAL_GPIO_RADIO_RESET      1 // PB0 GPIO from FMU3
 
@@ -43,7 +44,7 @@ PD15 MPU_DRDY INPUT GPIO(100)
 define HAL_GPIO_RADIO_IRQ       100
 
 # setup defines for ArduCopter config
-define TOY_MODE_ENABLED ENABLED
+define TOY_MODE_ENABLED 1
 define ARMING_DELAY_SEC 0
 define LAND_START_ALT 700
 define LAND_DETECTOR_ACCEL_MAX 2.0f
@@ -63,18 +64,14 @@ PA1 UART4_RX UART4 NODMA
 # use flash storage
 STORAGE_FLASH_PAGE 22
 
-env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
-
 # the web UI uses an abin file for firmware uploads
 env BUILD_ABIN True
 
 # Disable un-needed hardware drivers
-define AP_AIRSPEED_ENABLED 0
+include ../include/skyviper.inc
 define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 define AP_FRSKY_TELEM_ENABLED 0
-define BEACON_ENABLED 0
-define GPS_MOVING_BASELINE 0
 define HAL_ADSB_SAGETECH_ENABLED 0
 define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED 0
 define AP_AIS_ENABLED 0
@@ -115,6 +112,8 @@ define AP_BARO_ICM20789_ENABLED 1
 define AP_GPS_BACKEND_DEFAULT_ENABLED 0
 define AP_GPS_UBLOX_ENABLED 1
 define AP_GPS_MAV_ENABLED 1
+define GPS_MOVING_BASELINE 0
+define GPS_MAX_RECEIVERS 1  # removes blended support
 
 # enable only the QUAD frame
 define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
@@ -132,8 +131,9 @@ define BARO_MAX_INSTANCES 1
 define INS_MAX_INSTANCES 1
 
 # SkyViper doesn't have any rangefinder, but might get mavlink?
+define AP_RANGEFINDER_ENABLED 1
 define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED 0
-define AP_RANGEFINDER_MAVLINK_ENABLED 1
+define AP_RANGEFINDER_MAVLINK_ENABLED AP_RANGEFINDER_ENABLED
 
 # SkyViper doesn't have RPM sensors:
 define AP_RPM_ENABLED 0
@@ -170,7 +170,54 @@ define AP_WINCH_ENABLED 0
 define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
 define AP_CAMERA_MAVLINK_ENABLED 1
 
-// remove RC Protocol support:
+# SkyViper uses AP_Radio, which does its own RC protocol decoding:
+define AP_RCPROTOCOL_ENABLED 1
 define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0
+define AP_RCPROTOCOL_RADIO_ENABLED 1
+
+// few prelcnad backends are applicable
+define AC_PRECLAND_BACKEND_DEFAULT_ENABLED 0
+define AC_PRECLAND_COMPANION_ENABLED 1
+
+// no proximity sensors are applicable:
+define AP_PROXIMITY_BACKEND_DEFAULT_ENABLED 0
+define AP_PROXIMITY_MAV_ENABLED 1
+
+# can't fit visual odometry cameras on!
+define AP_VISUALODOM_BACKEND_DEFAULT_ENABLED 0
+define AP_VISUALODOM_MAV_ENABLED 1
+
+// no OSD on SkyViper
+define OSD_ENABLED 0
+define OSD_PARAM_ENABLED 0
+
+// no MSP:
+define HAL_WITH_MSP_DISPLAYPORT 0
+define HAL_MSP_ENABLED 0
+
+// no UCP ADSB sensors:
+define HAL_ADSB_UCP_ENABLED 0
+
+// no auxiliary temperature sensors:
+define AP_TEMPERATURE_SENSOR_ENABLED 0
+
+// no LTM telemetry
+define AP_LTM_TELEM_ENABLED 0
+
+// no buttons on SkyViper:
+define HAL_BUTTON_ENABLED 0
+
+// disable scripting on SkyViper (should we enable this?)
+define AP_SCRIPTING_ENABLED 0
+
+// SkyViper does not have a second battery....
+define AP_BATT_MONITOR_MAX_INSTANCES 1
+define AP_MAVLINK_BATTERY2_ENABLED 0
+
+# SkyViper doesn't use the Plane landing library:
+define HAL_LANDING_DEEPSTALL_ENABLED 0
+
+# bootloader embedding / bootloader flashing not available
+define AP_BOOTLOADER_FLASHING_ENABLED 0
 
 AUTOBUILD_TARGETS Copter

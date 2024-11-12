@@ -16,7 +16,7 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.2.0
+      rev: v4.4.0
       hooks:
         #-   id: trailing-whitespace
         #-   id: end-of-file-fixer
@@ -24,6 +24,11 @@ repos:
             name: Check line ending character (LF)
             args: ["--fix=lf"]
             types_or: [python, c, c++, shell]
+            exclude: |
+              (?x)^(
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.cpp |
+                libraries/AP_ADSB/AP_ADSB_Sagetech_MXS.h
+              )$
         -   id: check-added-large-files
         -   id: check-executables-have-shebangs
         -   id: check-shebang-scripts-are-executable
@@ -36,10 +41,19 @@ repos:
         -   id: check-xml
         -   id: check-yaml
 
-# Disable isort and mypy temporarily due to config conflicts
+  -   repo: https://github.com/psf/black
+      rev: 23.7.0
+      hooks:
+        - id: black
+          files: |
+            (?x)^(
+              libraries\/AP_DDS\/(wscript|.*\.py)$ |
+              Tools/ros2/.*\.py
+            )$
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
-#       rev: 5.10.1
+#       rev: 5.12.0
 #       hooks:
 #         - id: isort
 #           args: [--check-only]

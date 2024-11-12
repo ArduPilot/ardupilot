@@ -17,10 +17,8 @@
 
 #if HAL_VISUALODOM_ENABLED
 
-#include <AP_Logger/AP_Logger.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
-
-extern const AP_HAL::HAL &hal;
 
 /*
   base class constructor. 
@@ -38,6 +36,7 @@ bool AP_VisualOdom_Backend::healthy() const
     return ((AP_HAL::millis() - _last_update_ms) < AP_VISUALODOM_TIMEOUT_MS);
 }
 
+#if HAL_GCS_ENABLED
 // consume vision_position_delta mavlink messages
 void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_message_t &msg)
 {
@@ -56,7 +55,10 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
     _last_update_ms = now_ms;
 
     // send to EKF
+#if AP_AHRS_ENABLED || HAL_LOGGING_ENABLED
     const float time_delta_sec = packet.time_delta_usec * 1.0E-6;
+#endif
+#if AP_AHRS_ENABLED
     AP::ahrs().writeBodyFrameOdom(packet.confidence,
                                   position_delta,
                                   angle_delta,
@@ -64,13 +66,17 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
                                   now_ms,
                                   _frontend.get_delay_ms(),
                                   _frontend.get_pos_offset());
+#endif
 
+#if HAL_LOGGING_ENABLED
     // log sensor data
     Write_VisualOdom(time_delta_sec,
                                   angle_delta,
                                   position_delta,
                                   packet.confidence);
+#endif
 }
+#endif  // HAL_GCS_ENABLED
 
 // returns the system time of the last reset if reset_counter has not changed
 // updates the reset timestamp to the current system time if the reset_counter has changed

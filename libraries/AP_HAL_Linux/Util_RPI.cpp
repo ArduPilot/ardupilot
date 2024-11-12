@@ -8,7 +8,8 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
 
 #include <errno.h>
 #include <stdarg.h>
@@ -61,25 +62,47 @@ void UtilRPI::_get_board_type_using_peripheral_base()
             _linux_board_version = LINUX_BOARD_TYPE::UNKNOWN_BOARD;
             printf("Cannot detect board-type \r\n");
         break;
+<<<<<<< HEAD
         case 0x20000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_ZERO_1;
             printf("RPI Zero / 1 \r\n");
             printf("Peripheral base address is %x\n", base);
+=======
+        case 0x10:
+            _linux_board_version = LINUX_BOARD_TYPE::RPI_5;
+            printf("RPI 5 \r\n");
+        break;
+        case 0x20000000:
+            _linux_board_version = LINUX_BOARD_TYPE::RPI_ZERO_1;
+            printf("RPI Zero / 1 \r\n");
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
         break;
         case 0x3f000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_2_3_ZERO2;
             printf("RPI 2, 3 or Zero-2 \r\n");
+<<<<<<< HEAD
             printf("Peripheral base address is %x\n", base);
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
         break;
         case 0xfe000000:
             _linux_board_version = LINUX_BOARD_TYPE::RPI_4;
             printf("RPI 4 \r\n");
+<<<<<<< HEAD
             printf("Peripheral base address is %x\n", base);
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
         break;
         case 0x40000000:
             _linux_board_version = LINUX_BOARD_TYPE::ALLWINNWER_H616;
             printf("AllWinner-H616 \r\n");
         break;
+<<<<<<< HEAD
+=======
+        default:
+            printf("Unknown board \n\r");
+            printf("Peripheral base address is %x\n", base);
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     }
 
     return ;

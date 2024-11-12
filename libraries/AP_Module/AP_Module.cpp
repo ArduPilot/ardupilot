@@ -17,6 +17,8 @@
 
 #if AP_MODULE_SUPPORTED
 
+#include <AP_AHRS/AP_AHRS.h>
+
 /*
   support for external modules
  */
@@ -55,7 +57,7 @@ void AP_Module::module_scan(const char *path)
         void *s = dlsym(m, hook_names[i]);
         if (s != nullptr) {
             // found a hook in this module, add it to the list
-            struct hook_list *h = new hook_list;
+            struct hook_list *h = NEW_NOTHROW hook_list;
             if (h == nullptr) {
                 AP_HAL::panic("Failed to allocate hook for %s", hook_names[i]);
             }
@@ -165,9 +167,9 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
     state.quat[2] = q[2];
     state.quat[3] = q[3];
 
-    state.eulers[0] = ahrs.roll;
-    state.eulers[1] = ahrs.pitch;
-    state.eulers[2] = ahrs.yaw;
+    state.eulers[0] = ahrs.get_roll();
+    state.eulers[1] = ahrs.get_pitch();
+    state.eulers[2] = ahrs.get_yaw();
 
     Location loc;
     if (ahrs.get_origin(loc)) {

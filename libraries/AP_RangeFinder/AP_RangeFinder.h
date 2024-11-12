@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
@@ -21,14 +25,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
-
-#ifndef AP_RANGEFINDER_ENABLED
-#define AP_RANGEFINDER_ENABLED 1
-#endif
-
-#ifndef AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED AP_RANGEFINDER_ENABLED
-#endif
 
 // Maximum number of range finder instances available on this platform
 #ifndef RANGEFINDER_MAX_INSTANCES 
@@ -47,17 +43,13 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 #endif
 
-#ifndef HAL_MSP_RANGEFINDER_ENABLED
-#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
-#endif
-
 class AP_RangeFinder_Backend;
 
 class RangeFinder
 {
     friend class AP_RangeFinder_Backend;
     //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
-    friend class AP_RangeFinder_UAVCAN;
+    friend class AP_RangeFinder_DroneCAN;
 public:
     RangeFinder();
 
@@ -67,43 +59,132 @@ public:
     // RangeFinder driver types
     enum class Type {
         NONE   = 0,
+#if AP_RANGEFINDER_ANALOG_ENABLED
         ANALOG = 1,
+#endif
+#if AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
         MBI2C  = 2,
+#endif
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
         PLI2C  = 3,
+#endif
 //        PX4    = 4, // no longer used, but may be in some user's parameters
+#if AP_RANGEFINDER_PWM_ENABLED
         PX4_PWM= 5,
+#endif
+#if AP_RANGEFINDER_BBB_PRU_ENABLED
         BBB_PRU= 6,
+#endif
+#if AP_RANGEFINDER_LWI2C_ENABLED
         LWI2C  = 7,
+#endif
+#if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
         LWSER  = 8,
+#endif
+#if AP_RANGEFINDER_BEBOP_ENABLED
         BEBOP  = 9,
+#endif
+#if AP_RANGEFINDER_MAVLINK_ENABLED
         MAVLink = 10,
+#endif
+#if AP_RANGEFINDER_USD1_SERIAL_ENABLED
         USD1_Serial = 11,
+#endif
+#if AP_RANGEFINDER_LEDDARONE_ENABLED
         LEDDARONE = 12,
+#endif
+#if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
         MBSER  = 13,
+#endif
+#if AP_RANGEFINDER_TRI2C_ENABLED
         TRI2C  = 14,
+#endif
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
         PLI2CV3= 15,
+#endif
         VL53L0X = 16,
+#if AP_RANGEFINDER_NMEA_ENABLED
         NMEA = 17,
+#endif
+#if AP_RANGEFINDER_WASP_ENABLED
         WASP = 18,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TF02_ENABLED
         BenewakeTF02 = 19,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED
         BenewakeTFmini = 20,
+#endif
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
         PLI2CV3HP = 21,
+#endif
+#if AP_RANGEFINDER_PWM_ENABLED
         PWM = 22,
+#endif
+#if AP_RANGEFINDER_BLPING_ENABLED
         BLPing = 23,
+#endif
+#if AP_RANGEFINDER_DRONECAN_ENABLED
         UAVCAN = 24,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
         BenewakeTFminiPlus = 25,
+#endif
+#if AP_RANGEFINDER_LANBAO_ENABLED
         Lanbao = 26,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TF03_ENABLED
         BenewakeTF03 = 27,
+#endif
         VL53L1X_Short = 28,
+#if AP_RANGEFINDER_LEDDARVU8_ENABLED
         LeddarVu8_Serial = 29,
+#endif
+#if AP_RANGEFINDER_HC_SR04_ENABLED
         HC_SR04 = 30,
+#endif
+#if AP_RANGEFINDER_GYUS42V2_ENABLED
         GYUS42v2 = 31,
+#endif
+#if HAL_MSP_RANGEFINDER_ENABLED
         MSP = 32,
+#endif
+#if AP_RANGEFINDER_USD1_CAN_ENABLED
         USD1_CAN = 33,
+#endif
+#if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
         Benewake_CAN = 34,
+#endif
+#if AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
         TeraRanger_Serial = 35,
+#endif
+#if AP_RANGEFINDER_LUA_ENABLED
         Lua_Scripting = 36,
+#endif
+#if AP_RANGEFINDER_NOOPLOOP_ENABLED
+        NoopLoop_P = 37,
+#endif
+#if AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
+        TOFSenseP_CAN = 38,
+#endif
+#if AP_RANGEFINDER_NRA24_CAN_ENABLED
+        NRA24_CAN = 39,
+#endif
+#if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
+        TOFSenseF_I2C = 40,
+#endif
+#if AP_RANGEFINDER_JRE_SERIAL_ENABLED
+        JRE_Serial = 41,
+#endif
+#if AP_RANGEFINDER_AINSTEIN_LR_D1_ENABLED
+        Ainstein_LR_D1 = 42,
+#endif
+#if AP_RANGEFINDER_RDS02UF_ENABLED
+        RDS02UF = 43,
+#endif
+#if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,
+#endif
     };
 
     enum class Function {
@@ -113,16 +194,21 @@ public:
     };
 
     enum class Status {
-        NotConnected = 0,
-        NoData,
-        OutOfRangeLow,
-        OutOfRangeHigh,
-        Good
+        NotConnected   = 0,
+        NoData         = 1,
+        OutOfRangeLow  = 2,
+        OutOfRangeHigh = 3,
+        Good           = 4,
     };
+
+    static constexpr int8_t SIGNAL_QUALITY_MIN = 0;
+    static constexpr int8_t SIGNAL_QUALITY_MAX = 100;
+    static constexpr int8_t SIGNAL_QUALITY_UNKNOWN = -1;
 
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
         float distance_m;               // distance in meters
+        int8_t signal_quality_pct;      // measurement quality in percent 0-100, -1 -> quality is unknown
         uint16_t voltage_mv;            // voltage in millivolts, if applicable, otherwise 0
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
@@ -187,6 +273,7 @@ public:
     // any sensor which can current supply it
     float distance_orient(enum Rotation orientation) const;
     uint16_t distance_cm_orient(enum Rotation orientation) const;
+    int8_t signal_quality_pct_orient(enum Rotation orientation) const;
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
@@ -234,3 +321,5 @@ private:
 namespace AP {
     RangeFinder *rangefinder();
 };
+
+#endif  // AP_RANGEFINDER_ENABLED

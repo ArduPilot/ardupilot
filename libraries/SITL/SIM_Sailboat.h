@@ -34,13 +34,14 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Sailboat(frame_str);
+        return NEW_NOTHROW Sailboat(frame_str);
     }
 
     bool on_ground() const override {return true;};
 
 protected:
     bool motor_connected;       // true if this frame has a motor
+    bool skid_steering;         // true if this vehicle is a skid-steering vehicle
     float sail_area; // 1.0 for normal area
 
 private:

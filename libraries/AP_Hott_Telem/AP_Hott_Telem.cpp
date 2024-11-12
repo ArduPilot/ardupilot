@@ -109,6 +109,7 @@ void AP_Hott_Telem::send_EAM(void)
         uint8_t stop_byte = 0x7D;     //#44 stop
     } msg {};
 
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
     if (battery.num_instances() > 0) {
         msg.batt1_voltage = uint16_t(battery.voltage(0) * 10);
@@ -125,6 +126,7 @@ void AP_Hott_Telem::send_EAM(void)
     if (battery.consumed_mah(used_mah)) {
         msg.batt_used = used_mah * 0.1;
     }
+#endif  // AP_BATTERY_ENABLED
 
     const AP_Baro &baro = AP::baro();
     msg.temp1 = uint8_t(baro.get_temperature(0) + 20.5);
@@ -289,12 +291,14 @@ void AP_Hott_Telem::send_GPS(void)
 
     msg.home_direction = degrees(atan2f(home_vec.y, home_vec.x)) * 0.5 + 0.5;
 
+#if AP_RTC_ENABLED
     AP_RTC &rtc = AP::rtc();
     {
         WITH_SEMAPHORE(rtc.get_semaphore());
         uint16_t ms;
         rtc.get_system_clock_utc(msg.gps_time_h, msg.gps_time_m, msg.gps_time_s, ms);
     }
+#endif
 
     send_packet((const uint8_t *)&msg, sizeof(msg));
 }
@@ -407,7 +411,6 @@ void AP_Hott_Telem::loop(void)
 {
     uart->begin(19200, 10, 10);
     uart->set_unbuffered_writes(true);
-    uart->set_blocking_writes(true);
 
     while (true) {
         hal.scheduler->delay_microseconds(1500);

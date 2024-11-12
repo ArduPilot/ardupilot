@@ -28,11 +28,10 @@ public:
     int16_t get_hs_set_point(void) { return _param_head_speed_set_point; }
     float get_col_entry_freq(void) { return _param_col_entry_cutoff_freq; }
     float get_col_glide_freq(void) { return _param_col_glide_cutoff_freq; }
-    float get_bail_time(void) { return _param_bail_time; }
     float get_last_collective() const { return _collective_out; }
     bool is_enable(void) { return _param_enable; }
     void Log_Write_Autorotation(void) const;
-    void update_forward_speed_controller(void);  // Update foward speed controller
+    void update_forward_speed_controller(void);  // Update forward speed controller
     void set_desired_fwd_speed(void) { _vel_target = _param_target_speed; } // Overloaded: Set desired speed for forward controller to parameter value
     void set_desired_fwd_speed(float speed) { _vel_target = speed; } // Overloaded: Set desired speed to argument value
     int32_t get_pitch(void) const { return _pitch_target; }  // Get pitch target
@@ -81,7 +80,6 @@ private:
     AP_Float _param_col_entry_cutoff_freq;
     AP_Float _param_col_glide_cutoff_freq;
     AP_Int16 _param_accel_max;
-    AP_Float _param_bail_time;
     AP_Int8  _param_rpm_instance;
     AP_Float _param_fwd_k_ff;
 

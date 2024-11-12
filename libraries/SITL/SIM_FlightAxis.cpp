@@ -18,7 +18,7 @@
 
 #include "SIM_FlightAxis.h"
 
-#if HAL_SIM_FLIGHTAXIS_ENABLED
+#if AP_SIM_FLIGHTAXIS_ENABLED
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -35,6 +35,19 @@
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
+
+const AP_Param::GroupInfo FlightAxis::var_info[] = {
+    // @Param: OPTS
+    // @DisplayName: FlightAxis options
+    // @Description: Bitmask of FlightAxis options
+    // @Bitmask: 0: Reset position on startup
+    // @Bitmask: 1: Swap first 4 and last 4 servos (for quadplane testing)
+    // @Bitmask: 2: Demix heli servos and send roll/pitch/collective/yaw
+    // @Bitmask: 3: Don't print frame rate stats
+    // @User: Advanced
+    AP_GROUPINFO("OPTS", 1, FlightAxis, _options, uint32_t(Option::ResetPosition)),
+    AP_GROUPEND
+};
 
 /*
   we use a thread for socket creation to reduce the impact of socket
@@ -108,10 +121,18 @@ static double timestamp_sec()
 FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
+    AP::sitl()->models.flightaxis_ptr = this;
+    AP_Param::setup_object_defaults(this, var_info);
+
     use_time_sync = false;
     rate_hz = 250 / target_speedup;
-    heli_demix = strstr(frame_str, "helidemix") != nullptr;
-    rev4_servos = strstr(frame_str, "rev4") != nullptr;
+    if(strstr(frame_str, "helidemix") != nullptr) {
+        _options.set(_options | uint32_t(Option::HeliDemix));
+    }
+    if(strstr(frame_str, "rev4") != nullptr) {
+        _options.set(_options | uint32_t(Option::Rev4Servos));
+    }
+
     const char *colon = strchr(frame_str, ':');
     if (colon) {
         controller_ip = colon+1;
@@ -284,6 +305,15 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
 </soap:Body>
 </soap:Envelope>)");
         soap_request_end(1000);
+        if(option_is_set(Option::ResetPosition)) {
+            soap_request_start("ResetAircraft", R"(<?xml version='1.0' encoding='UTF-8'?>
+<soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+<soap:Body>
+<ResetAircraft><a>1</a><b>2</b></ResetAircraft>
+</soap:Body>
+</soap:Envelope>)");
+            soap_request_end(1000);
+        }
         soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
@@ -301,7 +331,7 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
     }
 
-    if (rev4_servos) {
+    if (option_is_set(Option::Rev4Servos)) {
         // swap first 4 and last 4 servos, for quadplane testing
         float saved[4];
         memcpy(saved, &scaled_servos[0], sizeof(saved));
@@ -309,17 +339,19 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         memcpy(&scaled_servos[4], saved, sizeof(saved));
     }
 
-    if (heli_demix) {
+    if (option_is_set(Option::HeliDemix)) {
         // FlightAxis expects "roll/pitch/collective/yaw" input
         float swash1 = scaled_servos[0];
         float swash2 = scaled_servos[1];
         float swash3 = scaled_servos[2];
 
         float roll_rate = swash1 - swash2;
-        float pitch_rate = -((swash1+swash2) / 2.0f - swash3);
+        float pitch_rate = ((swash1+swash2) / 2.0f - swash3);
+        float col = (swash1 + swash2 + swash3) / 3.0;
 
         scaled_servos[0] = constrain_float(roll_rate + 0.5, 0, 1);
         scaled_servos[1] = constrain_float(pitch_rate + 0.5, 0, 1);
+        scaled_servos[2] = constrain_float(col, 0, 1);
     }
 
     const uint16_t channels = hal.scheduler->is_system_initialized()?4095:0;
@@ -556,7 +588,7 @@ void FlightAxis::update(const struct sitl_input &input)
     if (is_positive(dcm.c.z)) {
         rangefinder_m[0] = state.m_altitudeAGL_MTR / dcm.c.z;
     } else {
-        rangefinder_m[0] = -1;
+        rangefinder_m[0] = nanf("");
     }
 
     report_FPS();
@@ -572,8 +604,10 @@ void FlightAxis::report_FPS(void)
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
-            printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
-                   frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
+            if(!option_is_set(Option::SilenceFPS)) {
+                printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
+                    frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
+            }
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
@@ -590,12 +624,16 @@ void FlightAxis::socket_creator(void)
             pthread_cond_wait(&sockcond2, &sockmtx);
         }
         pthread_mutex_unlock(&sockmtx);
-        auto *sck = new SocketAPM(false);
+        auto *sck = NEW_NOTHROW SocketAPM_native(false);
         if (sck == nullptr) {
             usleep(500);
             continue;
         }
-        if (!sck->connect(controller_ip, controller_port)) {
+        /*
+          don't let the connection take more than 100ms (10Hz). Longer
+          than this and we are better off trying for a new socket
+         */
+        if (!sck->connect_timeout(controller_ip, controller_port, 100)) {
             ::printf("connect failed\n");
             delete sck;
             usleep(5000);
@@ -609,4 +647,4 @@ void FlightAxis::socket_creator(void)
     }
 }
 
-#endif // HAL_SIM_FLIGHTAXIS_ENABLED
+#endif // AP_SIM_FLIGHTAXIS_ENABLED

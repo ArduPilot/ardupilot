@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 tool to manipulate ArduPilot firmware files, changing default parameters
 '''
@@ -108,7 +108,7 @@ class embedded_defaults(object):
         magic_str = "PARMDEF".encode('ascii')
         param_magic = [ 0x55, 0x37, 0xf4, 0xa0, 0x38, 0x5d, 0x48, 0x5b ]
         def u_ord(c):
-	        return ord(c) if sys.version_info.major < 3 else c
+            return ord(c) if sys.version_info.major < 3 else c
 
         while True:
             i = self.firmware[self.offset:].find(magic_str)
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     have_defaults = defaults.find()
 
     if not have_defaults and not args.extract:
-        print("Error: Param defaults support not found in firmware")
+        print("Error: Param defaults support not found in firmware; see https://ardupilot.org/copter/docs/common-oem-customizations.html for embedding defaults.parm")
         sys.exit(1)
 
     if have_defaults:

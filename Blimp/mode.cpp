@@ -16,9 +16,10 @@ Mode::Mode(void) :
     inertial_nav(blimp.inertial_nav),
     ahrs(blimp.ahrs),
     motors(blimp.motors),
+    loiter(blimp.loiter),
     channel_right(blimp.channel_right),
     channel_front(blimp.channel_front),
-    channel_down(blimp.channel_down),
+    channel_up(blimp.channel_up),
     channel_yaw(blimp.channel_yaw),
     G_Dt(blimp.G_Dt)
 { };
@@ -40,6 +41,9 @@ Mode *Blimp::mode_from_mode_num(const Mode::Number mode)
         break;
     case Mode::Number::LOITER:
         ret = &mode_loiter;
+        break;
+    case Mode::Number::RTL:
+        ret = &mode_rtl;
         break;
     default:
         break;
@@ -74,7 +78,7 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
         new_flightmode->requires_GPS() &&
         !blimp.position_ok()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -85,27 +89,26 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
         flightmode->has_manual_throttle() &&
         !new_flightmode->has_manual_throttle()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
 
-    // store previous flight mode (only used by tradeheli's autorotation)
-    prev_control_mode = control_mode;
-
     // update flight mode
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode((uint8_t)control_mode, reason);
+#endif
     gcs().send_message(MSG_HEARTBEAT);
 
     // update notify object
@@ -136,7 +139,7 @@ void Blimp::update_flight_mode()
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
 void Blimp::exit_mode(Mode *&old_flightmode,
-                      Mode *&new_flightmode){}
+                      Mode *&new_flightmode) {}
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Blimp::notify_flight_mode()
@@ -152,18 +155,23 @@ void Mode::update_navigation()
     run_autopilot();
 }
 
-// returns desired angle in centi-degrees
-void Mode::get_pilot_desired_accelerations(float &right_out, float &front_out) const
+// returns desired thrust/acceleration
+void Mode::get_pilot_input(Vector3f &pilot, float &yaw)
 {
     // throttle failsafe check
-    if (blimp.failsafe.radio || !blimp.ap.rc_receiver_present) {
-        right_out = 0;
-        front_out = 0;
+    if (blimp.failsafe.radio || !rc().has_ever_seen_rc_input()) {
+        pilot.y = 0;
+        pilot.x = 0;
+        pilot.z = 0;
+        yaw = 0;
         return;
     }
-    // fetch roll and pitch inputs
-    right_out = channel_right->get_control_in();
-    front_out = channel_front->get_control_in();
+    // fetch pilot inputs
+    pilot.y = channel_right->get_control_in() / float(RC_SCALE);
+    pilot.x = channel_front->get_control_in() / float(RC_SCALE);
+    //TODO: need to make this channel_up instead, and then have it .negative. before being sent to pilot.z -> this is "throttle" channel, so higher = up.
+    pilot.z = -channel_up->get_control_in() / float(RC_SCALE);
+    yaw = channel_yaw->get_control_in() / float(RC_SCALE);
 }
 
 bool Mode::is_disarmed_or_landed() const

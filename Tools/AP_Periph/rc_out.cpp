@@ -28,8 +28,12 @@ extern const AP_HAL::HAL &hal;
 
 void AP_Periph_FW::rcout_init()
 {
+#if AP_PERIPH_SAFETY_SWITCH_ENABLED
     // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
     hal.rcout->force_safety_on();
+#else
+    hal.rcout->force_safety_off();
+#endif
 
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     if (g.esc_telem_port >= 0) {
@@ -58,6 +62,13 @@ void AP_Periph_FW::rcout_init()
 
     // run this once and at 1Hz to configure aux and esc ranges
     rcout_init_1Hz();
+
+#if HAL_DSHOT_ENABLED
+    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
+#endif
+
+    // run PWM ESCs at configured rate
+    hal.rcout->set_freq(esc_mask, g.esc_rate.get());
 
     // setup ESCs with the desired PWM type, allowing for DShot
     SRV_Channels::init(esc_mask, (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get());
@@ -132,7 +143,8 @@ void AP_Periph_FW::rcout_update()
     const bool has_esc_rawcommand_timed_out = esc_timeout_ms != 0 && ((now_ms - last_esc_raw_command_ms) >= esc_timeout_ms);
     if (last_esc_num_channels > 0 && has_esc_rawcommand_timed_out) {
         // If we've seen ESCs previously, and a timeout has occurred, then zero the outputs
-        int16_t esc_output[last_esc_num_channels] {};
+        int16_t esc_output[last_esc_num_channels];
+        memset(esc_output, 0, sizeof(esc_output));
         rcout_esc(esc_output, last_esc_num_channels);
 
         // register that the output has been changed
@@ -153,6 +165,9 @@ void AP_Periph_FW::rcout_update()
         last_esc_telem_update_ms = now_ms;
         esc_telem_update();
     }
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    esc_telem_extended_update(now_ms);
+#endif
 #endif
 }
 

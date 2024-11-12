@@ -32,21 +32,54 @@ public:
     // Get model/type name
     virtual const char* get_name() const = 0;
 
-    // accessors for AP_AHRS
+    // Accessors for AP_AHRS
+
+    // If not healthy, none of the other API's can be trusted.
+    // Example: Serial cable is severed.
     virtual bool healthy(void) const = 0;
+    // The communication interface is up and the device has sent valid data.
     virtual bool initialised(void) const = 0;
     virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const = 0;
     virtual void get_filter_status(nav_filter_status &status) const {}
-    virtual void send_status_report(class GCS_MAVLINK &link) const {}
+    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const { return false; }
 
-    // check for new data
+    // Check for new data.
+    // This is used when there's not a separate thread for EAHRS.
+    // This can also copy interim state protected by locking.
     virtual void update() = 0;
-    
+
+    // Return the number of GPS sensors sharing data to AP_GPS.
+    virtual uint8_t num_gps_sensors(void) const = 0;
+
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;
     bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
+    // set default of EAHRS_SENSORS
+    void set_default_sensors(uint16_t sensors) {
+        frontend.set_default_sensors(sensors);
+    }
+
+    /*
+      return true if the GNSS is disabled
+     */
+    bool gnss_is_disabled(void) const {
+        return frontend.gnss_is_disabled;
+    }
+
+    /*
+      return true when we are in fixed wing flight
+     */
+    bool in_fly_forward(void) const;
+
+    /*
+      scale factors for get_variances() to return normalised values from SI units
+     */
+    const float vel_gate_scale = 0.2;
+    const float pos_gate_scale = 0.2;
+    const float hgt_gate_scale = 0.2;
+    
 private:
     AP_ExternalAHRS &frontend;
 };

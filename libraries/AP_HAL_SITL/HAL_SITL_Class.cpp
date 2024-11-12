@@ -6,6 +6,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -29,47 +32,48 @@
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 using namespace HALSITL;
 
-HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL();
+HAL_SITL& hal_sitl = (HAL_SITL&)AP_HAL::get_HAL_mutable();
 
 static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
-#if !defined(HAL_BUILD_AP_PERIPH)
-static RCInput  sitlRCInput(&sitlState);
-static RCOutput sitlRCOutput(&sitlState);
-static GPIO sitlGPIO(&sitlState);
+#if AP_RCPROTOCOL_ENABLED
+static RCInput sitlRCInput(&sitlState);
 #else
 static Empty::RCInput  sitlRCInput;
-static Empty::RCOutput sitlRCOutput;
-static Empty::GPIO sitlGPIO;
 #endif
+static RCOutput sitlRCOutput(&sitlState);
+static GPIO sitlGPIO(&sitlState);
 static AnalogIn sitlAnalogIn(&sitlState);
+#if HAL_WITH_DSP
 static DSP dspDriver;
+#endif
 
 
 // use the Empty HAL for hardware we don't emulate
 static Empty::OpticalFlow emptyOpticalFlow;
 static Empty::Flash emptyFlash;
 
-static UARTDriver sitlUart0Driver(0, &sitlState);
-static UARTDriver sitlUart1Driver(1, &sitlState);
-static UARTDriver sitlUart2Driver(2, &sitlState);
-static UARTDriver sitlUart3Driver(3, &sitlState);
-static UARTDriver sitlUart4Driver(4, &sitlState);
-static UARTDriver sitlUart5Driver(5, &sitlState);
-static UARTDriver sitlUart6Driver(6, &sitlState);
-static UARTDriver sitlUart7Driver(7, &sitlState);
-static UARTDriver sitlUart8Driver(8, &sitlState);
-static UARTDriver sitlUart9Driver(9, &sitlState);
+static UARTDriver sitlSerial0Driver(0, &sitlState);
+static UARTDriver sitlSerial1Driver(1, &sitlState);
+static UARTDriver sitlSerial2Driver(2, &sitlState);
+static UARTDriver sitlSerial3Driver(3, &sitlState);
+static UARTDriver sitlSerial4Driver(4, &sitlState);
+static UARTDriver sitlSerial5Driver(5, &sitlState);
+static UARTDriver sitlSerial6Driver(6, &sitlState);
+static UARTDriver sitlSerial7Driver(7, &sitlState);
+static UARTDriver sitlSerial8Driver(8, &sitlState);
+static UARTDriver sitlSerial9Driver(9, &sitlState);
+
+static I2CDeviceManager i2c_mgr_instance;
 
 #if defined(HAL_BUILD_AP_PERIPH)
-static Empty::I2CDeviceManager i2c_mgr_instance;
 static Empty::SPIDeviceManager spi_mgr_instance;
 #else
-static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
 #endif
 static Util utilInstance(&sitlState);
@@ -78,26 +82,26 @@ static Util utilInstance(&sitlState);
 static HALSITL::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 #endif
 
-static Empty::QSPIDeviceManager qspi_mgr_instance;
+static Empty::WSPIDeviceManager wspi_mgr_instance;
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
-        &sitlUart0Driver,   /* uartA */
-        &sitlUart1Driver,   /* uartB */
-        &sitlUart2Driver,   /* uartC */
-        &sitlUart3Driver,   /* uartD */
-        &sitlUart4Driver,   /* uartE */
-        &sitlUart5Driver,   /* uartF */
-        &sitlUart6Driver,   /* uartG */
-        &sitlUart7Driver,   /* uartH */
-        &sitlUart8Driver,   /* uartI */
-        &sitlUart9Driver,   /* uartJ */
+        &sitlSerial0Driver,
+        &sitlSerial1Driver,
+        &sitlSerial2Driver,
+        &sitlSerial3Driver,
+        &sitlSerial4Driver,
+        &sitlSerial5Driver,
+        &sitlSerial6Driver,
+        &sitlSerial7Driver,
+        &sitlSerial8Driver,
+        &sitlSerial9Driver,
         &i2c_mgr_instance,
         &spi_mgr_instance,  /* spi */
-        &qspi_mgr_instance,
+        &wspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
-        &sitlUart0Driver,   /* console */
+        &sitlSerial0Driver, /* console */
         &sitlGPIO,          /* gpio */
         &sitlRCInput,       /* rcinput */
         &sitlRCOutput,      /* rcoutput */
@@ -105,7 +109,9 @@ HAL_SITL::HAL_SITL() :
         &utilInstance,      /* util */
         &emptyOpticalFlow,  /* onboard optical flow */
         &emptyFlash,        /* flash driver */
+#if HAL_WITH_DSP
         &dspDriver,         /* dsp driver */
+#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
@@ -199,6 +205,11 @@ bool HAL_SITL::run_in_maintenance_mode() const
     return _sitl_state->run_in_maintenance_mode();
 }
 #endif
+
+uint32_t HAL_SITL::get_uart_output_full_queue_count() const
+{
+    return _sitl_state->_serial_0_outqueue_full_count;
+}
 
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
@@ -300,9 +311,14 @@ void HAL_SITL::actually_reboot()
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
 
+static HAL_SITL hal_sitl_inst;
+
 const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_SITL hal;
-    return hal;
+    return hal_sitl_inst;
+}
+
+AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
+    return hal_sitl_inst;
 }
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

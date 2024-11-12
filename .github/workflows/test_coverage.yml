@@ -13,9 +13,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-${{ matrix.type }}:latest
+      image: ardupilot/ardupilot-dev-${{ matrix.type }}:v0.1.3
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -38,7 +38,7 @@ jobs:
             type: coverage
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -56,14 +56,6 @@ jobs:
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
-      - name: Configure CAN
-        if: ${{ matrix.config == 'sitltest-can'}}
-        run: |
-          sudo apt update
-          sudo apt -y linux-modules-extra-$(uname -r)
-          sudo modprobe vcan
-          sudo ip link add dev vcan0 type vcan
-          sudo ip link set up vcan0
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -80,7 +72,7 @@ jobs:
             Tools/scripts/run_coverage.py -f
           else
             Tools/scripts/run_coverage.py -i
-            ./waf configure --board sitl_periph_gps --debug --coverage
+            ./waf configure --board sitl_periph_universal --debug --coverage
             ./waf build --target bin/AP_Periph
             Tools/scripts/run_coverage.py -i
             Tools/autotest/autotest.py test.CAN --debug --coverage
@@ -99,7 +91,7 @@ jobs:
   finish:
     if: always()
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Coveralls Finished
         uses: coverallsapp/github-action@master

@@ -14,11 +14,7 @@ void AP_Camera_Relay::update()
         if (ap_relay == nullptr) {
             return;
         }
-        if (_params.relay_on) {
-            ap_relay->off(0);
-        } else {
-            ap_relay->on(0);
-        }
+        ap_relay->set(AP_Relay_Params::FUNCTION::CAMERA, !_params.relay_on);
     }
 
     // call parent update
@@ -39,11 +35,7 @@ bool AP_Camera_Relay::trigger_pic()
         return false;
     }
 
-    if (_params.relay_on) {
-        ap_relay->on(0);
-    } else {
-        ap_relay->off(0);
-    }
+    ap_relay->set(AP_Relay_Params::FUNCTION::CAMERA, _params.relay_on);
 
     // set counter to move servo to off position after this many iterations of update (assumes 50hz update rate)
     trigger_counter = constrain_float(_params.trigger_duration * 50, 0, UINT16_MAX);

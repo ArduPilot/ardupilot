@@ -1,6 +1,12 @@
+#include "AP_InternalError_config.h"
+
+#if AP_INTERNALERROR_ENABLED
+
 #include "AP_InternalError.h"
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/HAL.h>
+#include <AP_HAL/Util.h>
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
@@ -21,6 +27,9 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
         AP::internalerror().error_to_string(buffer, ARRAY_SIZE(buffer), e);
         AP_HAL::panic("AP_InternalError::error_t::%s", buffer);
     }
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+if (e == AP_InternalError::error_t::imu_reset) return;// don't worry about this for esp32
 #endif
     internal_errors |= uint32_t(e);
     total_error_count++;
@@ -76,22 +85,19 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
 {
     buffer[0] = 0;
     uint32_t buffer_used = 0;
+    const char *format = "%s"; // no comma before the first item
     for (uint8_t i=0; i<ARRAY_SIZE(error_bit_descriptions); i++) {
         if (buffer_used >= len) {
             break;
         }
         if (internal_errors & (1U<<i)) {
-            const char *format;
-            if (buffer_used == 0) {
-                format = "%s";
-            } else {
-                format = ",%s";
-            }
-            const size_t written = hal.util->snprintf((char*)&buffer[buffer_used],
+            const int written = hal.util->snprintf((char*)&buffer[buffer_used],
                                                       len-buffer_used,
                                                       format,
                                                       error_bit_descriptions[i]);
-            if (written <= 0) {
+            format = ",%s"; // once we write something, need commas thereafter
+
+            if (written < 0) {
                 break;
             }
             buffer_used += written;
@@ -134,3 +140,5 @@ void AP_memory_guard_error(uint32_t size)
         AP_HAL::panic("memory guard size=%u\n", unsigned(size));
     }
 }
+
+#endif  // AP_INTERNALERROR_ENABLED

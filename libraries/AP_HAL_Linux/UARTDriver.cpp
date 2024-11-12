@@ -23,7 +23,6 @@
 #include "TCPServerDevice.h"
 #include "UARTDevice.h"
 #include "UDPDevice.h"
-
 #include <GCS_MAVLink/GCS.h>
 #if HAL_GCS_ENABLED
 #include <AP_HAL/utility/packetise.h>
@@ -49,19 +48,11 @@ void UARTDriver::set_device_path(const char *path)
     device_path = path;
 }
 
-/*
-  open the tty
- */
-void UARTDriver::begin(uint32_t b)
-{
-    begin(b, 0, 0);
-}
-
-void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (!_initialised) {
         if (device_path == nullptr && _console) {
-            _device = new ConsoleDevice();
+            _device = NEW_NOTHROW ConsoleDevice();
         } else {
             if (device_path == nullptr) {
                 return;
@@ -72,7 +63,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             if (!_device.get()) {
                 ::fprintf(stderr, "Argument is not valid. Fallback to console.\n"
                           "Launch with --help to see an example.\n");
-                _device = new ConsoleDevice();
+                _device = NEW_NOTHROW ConsoleDevice();
             }
         }
     }
@@ -141,7 +132,7 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
     struct stat st;
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
-        return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
+        return AP_HAL::OwnPtr<SerialDevice>(NEW_NOTHROW UARTDevice(arg));
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
                strncmp(arg, "udpin:", 6)) {
@@ -193,17 +184,17 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
         _packetise = true;
 #endif
         if (strcmp(protocol, "udp") == 0) {
-            device = new UDPDevice(_ip, _base_port, bcast, false);
+            device = NEW_NOTHROW UDPDevice(_ip, _base_port, bcast, false);
         } else {
             if (bcast) {
                 AP_HAL::panic("Can't combine udpin with bcast");
             }
-            device = new UDPDevice(_ip, _base_port, false, true);
+            device = NEW_NOTHROW UDPDevice(_ip, _base_port, false, true);
 
         }
     } else {
         bool wait = (_flag && strcmp(_flag, "wait") == 0);
-        device = new TCPServerDevice(_ip, _base_port, wait);
+        device = NEW_NOTHROW TCPServerDevice(_ip, _base_port, wait);
     }
 
     free(devstr);
@@ -213,7 +204,7 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
 /*
   shutdown a UART
  */
-void UARTDriver::end()
+void UARTDriver::_end()
 {
     _initialised = false;
     _connected = false;
@@ -227,7 +218,7 @@ void UARTDriver::end()
 }
 
 
-void UARTDriver::flush()
+void UARTDriver::_flush()
 {
     // we are not doing any buffering, so flush is a no-op
 }
@@ -243,15 +234,6 @@ bool UARTDriver::is_initialized()
 
 
 /*
-  enable or disable blocking writes
- */
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    _nonblocking_writes = !blocking;
-}
-
-
-/*
   do we have any bytes pending transmission?
  */
 bool UARTDriver::tx_pending()
@@ -262,7 +244,7 @@ bool UARTDriver::tx_pending()
 /*
   return the number of bytes available to be read
  */
-uint32_t UARTDriver::available()
+uint32_t UARTDriver::_available()
 {
     if (!_initialised) {
         return 0;
@@ -281,21 +263,16 @@ uint32_t UARTDriver::txspace()
     return _writebuf.space();
 }
 
-int16_t UARTDriver::read()
+ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
     if (!_initialised) {
-        return -1;
+        return 0;
     }
 
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-
-    return byte;
+    return _readbuf.read(buffer, count);
 }
 
-bool UARTDriver::discard_input()
+bool UARTDriver::_discard_input()
 {
     if (!_initialised) {
         return false;
@@ -304,50 +281,16 @@ bool UARTDriver::discard_input()
     return true;
 }
 
-/* Linux implementations of Print virtual methods */
-size_t UARTDriver::write(uint8_t c)
-{
-    if (!_initialised) {
-        return 0;
-    }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
-
-    while (_writebuf.space() == 0) {
-        if (_nonblocking_writes) {
-            _write_mutex.give();
-            return 0;
-        }
-        hal.scheduler->delay(1);
-    }
-    size_t ret = _writebuf.write(&c, 1);
-    _write_mutex.give();
-    return ret;
-}
-
 /*
   write size bytes to the write buffer
  */
-size_t UARTDriver::write(const uint8_t *buffer, size_t size)
+size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
     if (!_initialised) {
         return 0;
     }
     if (!_write_mutex.take_nonblocking()) {
         return 0;
-    }
-    if (!_nonblocking_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        _write_mutex.give();
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
-        }
-        return ret;
     }
 
     size_t ret = _writebuf.write(buffer, size);
@@ -473,6 +416,7 @@ void UARTDriver::_timer_tick(void)
 }
 
 void UARTDriver::configure_parity(uint8_t v) {
+    UARTDriver::parity = v;
     _device->set_parity(v);
 }
 
@@ -498,4 +442,11 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;
+}
+
+uint32_t UARTDriver::bw_in_bytes_per_second() const
+{
+    // if connected, assume at least a 10/100Mbps connection
+    const uint32_t bitrate = (_connected && _ip != nullptr) ? 10E6 : _baudrate;
+    return bitrate/10; // convert bits to bytes minus overhead
 }

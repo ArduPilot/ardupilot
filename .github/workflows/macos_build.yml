@@ -1,6 +1,139 @@
 name: Macos Build
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths-ignore:
+      # remove other env install scripts
+      - 'Tools/environment_install/APM_install.sh'
+      - 'Tools/environment_install/install-ROS-ubuntu.sh'
+      - 'Tools/environment_install/install-prereqs-arch.sh'
+      - 'Tools/environment_install/install-prereqs-ubuntu.sh'
+      - 'Tools/environment_install/install-prereqs-windows-andAPMSource.ps1'
+      - 'Tools/environment_install/install-prereqs-windows.ps1'
+      # remove non esp32 HAL
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL non stm32 directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
+
+  pull_request:
+    paths-ignore:
+      # remove other env install scripts
+      - 'Tools/environment_install/APM_install.sh'
+      - 'Tools/environment_install/install-ROS-ubuntu.sh'
+      - 'Tools/environment_install/install-prereqs-arch.sh'
+      - 'Tools/environment_install/install-prereqs-ubuntu.sh'
+      - 'Tools/environment_install/install-prereqs-windows-andAPMSource.ps1'
+      - 'Tools/environment_install/install-prereqs-windows.ps1'
+      # remove non esp32 HAL
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL non stm32 directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
@@ -17,7 +150,7 @@ jobs:
         ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
       - name: Install Prerequisites
@@ -53,6 +186,8 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           echo $PATH
           ./waf configure --board ${{matrix.config}}
+          ./waf
+          ./waf configure --board ${{matrix.config}} --debug
           ./waf
           ccache -s
           ccache -z

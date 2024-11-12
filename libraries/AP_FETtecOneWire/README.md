@@ -30,7 +30,7 @@ For purchase, connection and configuration information please see the [ArduPilot
   - check that the ESCs are periodically sending telemetry data
 - re-init and configure an ESC(s) if not armed (motors not spinning) when
   - telemetry communication with the ESC(s) is lost
-- adds a serial simulator (--uartF=sim:fetteconewireesc) of FETtec OneWire ESCs
+- adds a serial simulator (--serial5=sim:fetteconewireesc) of FETtec OneWire ESCs
 - adds autotest (using the simulator) to:
   - simulate telemetry voltage, current, temperature, RPM data using SITL internal variables
   - test the safety switch functionality

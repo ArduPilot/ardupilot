@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdint.h>
+#include <AP_Param/AP_Param.h>
+#include "mode.h"
+
 /*
   class to support "toy" mode for simplified user interaction for
   large volume consumer vehicles

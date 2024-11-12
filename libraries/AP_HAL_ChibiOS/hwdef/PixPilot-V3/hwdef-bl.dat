@@ -30,7 +30,7 @@ USB_STRING_MANUFACTURER "ArduPilot"
 define BOOTLOADER_BAUDRATE 115200
 
 # uarts and USB to run bootloader protocol on
-SERIAL_ORDER OTG1 USART2 USART3 UART7
+SERIAL_ORDER OTG1 USART2 USART3
 
 # this is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN
@@ -56,10 +56,6 @@ PD8 USART3_TX USART3
 PD9 USART3_RX USART3
 PD11 USART3_CTS USART3
 PD12 USART3_RTS USART3
-
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters)
-PE7 UART7_RX UART7
-PE8 UART7_TX UART7
 
 # define a LED
 PE12 LED_BOOTLOADER OUTPUT

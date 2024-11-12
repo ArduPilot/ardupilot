@@ -19,8 +19,7 @@
 
 #if HAL_ADSB_SAGETECH_ENABLED
 #include <GCS_MAVLink/GCS.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_RTC/AP_RTC.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <stdio.h>
 #include <time.h>
@@ -69,11 +68,11 @@ void AP_ADSB_Sagetech::update()
     // -----------------------------
     uint32_t nbytes = MIN(_port->available(), 10 * PAYLOAD_XP_MAX_SIZE);
     while (nbytes-- > 0) {
-        const int16_t data = (uint8_t)_port->read();
-        if (data < 0) {
+        uint8_t data;
+        if (!_port->read(data)) {
             break;
         }
-        if (parse_byte_XP((uint8_t)data)) {
+        if (parse_byte_XP(data)) {
             handle_packet_XP(message_in.packet);
         }
     } // while nbytes
@@ -190,7 +189,7 @@ void AP_ADSB_Sagetech::handle_ack(const Packet_XP &msg)
     if (prev_transponder_mode != last_ack_transponder_mode) {
         static const char *mode_names[] = {"OFF", "STBY", "ON", "ON-ALT"};
         if (last_ack_transponder_mode < ARRAY_SIZE(mode_names)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: RF Mode: %s", mode_names[last_ack_transponder_mode]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB: RF Mode: %s", mode_names[last_ack_transponder_mode]);
         }
     }
 }
@@ -481,8 +480,10 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     pkt.payload_length = 52;
     pkt.id = 0;
 
-    const int32_t longitude = _frontend._my_loc.lng;
-    const int32_t latitude =  _frontend._my_loc.lat;
+    const auto &loc = _frontend._my_loc;
+
+    const int32_t longitude = loc.lng;
+    const int32_t latitude =  loc.lat;
 
     // longitude and latitude
     // NOTE: these MUST be done in double or else we get roundoff in the maths
@@ -495,7 +496,7 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     snprintf((char*)&pkt.payload[11], 11, "%02u%02u.%05u", (unsigned)lat_deg, (unsigned)lat_minutes, unsigned((lat_minutes - (int)lat_minutes) * 1.0E5));
 
     // ground speed
-    const Vector2f speed = AP::ahrs().groundspeed_vector();
+    const Vector2f speed = loc.groundspeed_vector();
     float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     snprintf((char*)&pkt.payload[21], 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
 
@@ -507,15 +508,16 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     uint8_t hemisphere = 0;
     hemisphere |= (latitude >= 0) ? 0x01 : 0;   // isNorth
     hemisphere |= (longitude >= 0) ? 0x02 : 0;  // isEast
-    hemisphere |= (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) ? 0x80 : 0;  // isInvalid
+    hemisphere |= (loc.status() < AP_GPS_FixType::FIX_2D) ? 0x80 : 0;  // isInvalid
     pkt.payload[35] = hemisphere;
 
     // time
-    uint64_t time_usec;
-    if (AP::rtc().get_utc_usec(time_usec)) {
+    uint64_t time_usec = loc.epoch_from_rtc_us;
+    if (loc.have_epoch_from_rtc_us) {
         // not completely accurate, our time includes leap seconds and time_t should be without
         const time_t time_sec = time_usec / 1000000;
-        struct tm* tm = gmtime(&time_sec);
+        struct tm tmd {};
+        struct tm* tm = gmtime_r(&time_sec, &tmd);
 
         // format time string
         snprintf((char*)&pkt.payload[36], 11, "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);

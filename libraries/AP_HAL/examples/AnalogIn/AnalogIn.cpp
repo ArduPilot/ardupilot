@@ -22,7 +22,7 @@ void loop();     //declaration of the loop() function
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();    //create a reference to AP_HAL::HAL object to get access to hardware specific functions. For more info see <https://ardupilot.org/dev/docs/learning-ardupilot-the-example-sketches.html/>  
 
-AP_HAL::AnalogSource* chan;    //delare a pointer to AnalogSource object. AnalogSource class can be found in : AP_HAL->AnalogIn.h
+AP_HAL::AnalogSource* chan;    //declare a pointer to AnalogSource object. AnalogSource class can be found in : AP_HAL->AnalogIn.h
 
 // the setup function runs once when the board powers up
 void setup(void) {

@@ -11,9 +11,11 @@ import numpy
 import math
 
 from pymavlink import mavutil
+from pymavlink.rotmat import Vector3
 
-from common import AutoTest
-from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
+import vehicle_test_suite
+from vehicle_test_suite import Test
+from vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
 import operator
 
@@ -24,7 +26,7 @@ WIND = "0,180,0.2"  # speed,direction,variance
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
 
-class AutoTestQuadPlane(AutoTest):
+class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     @staticmethod
     def get_not_armable_mode_list():
@@ -169,6 +171,10 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_ready_to_arm()
 
         self.start_subtest("Verify that arming with switch does not spin motors in other modes")
+        # disable compass magnetic field arming check that is triggered by the simulated lean of vehicle
+        # this is required because adjusting the AHRS_TRIM values only affects the IMU and not external compasses
+        arming_magthresh = self.get_parameter("ARMING_MAGTHRESH")
+        self.set_parameter("ARMING_MAGTHRESH", 0)
         # introduce a large attitude error to verify that stabilization is not active
         ahrs_trim_x = self.get_parameter("AHRS_TRIM_X")
         self.set_parameter("AHRS_TRIM_X", math.radians(-60))
@@ -207,8 +213,9 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to stop")
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
-        # remove attitude error
+        # remove attitude error and reinstance compass arming check
         self.set_parameter("AHRS_TRIM_X", ahrs_trim_x)
+        self.set_parameter("ARMING_MAGTHRESH", arming_magthresh)
 
         self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
         """set  RC7_OPTION to AIRMODE"""
@@ -345,60 +352,107 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QLAND")
         self.wait_altitude(0, 2, relative=True, timeout=60)
         self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+                                     mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=30)
         self.mav.motors_disarmed_wait()
 
     def EXTENDED_SYS_STATE(self):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
-    def fly_qautotune(self):
-        self.change_mode("QHOVER")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.set_rc(3, 1800)
-        self.wait_altitude(30,
-                           40,
-                           relative=True,
-                           timeout=30)
+    def QAUTOTUNE(self):
+        '''test Plane QAutoTune mode'''
+
+        # this is a list of all parameters modified by QAUTOTUNE.  Set
+        # them so that when the context is popped we get the original
+        # values back:
+        parameter_values = self.get_parameters([
+            "Q_A_RAT_RLL_P",
+            "Q_A_RAT_RLL_I",
+            "Q_A_RAT_RLL_D",
+            "Q_A_ANG_RLL_P",
+            "Q_A_ACCEL_R_MAX",
+            "Q_A_RAT_PIT_P",
+            "Q_A_RAT_PIT_I",
+            "Q_A_RAT_PIT_D",
+            "Q_A_ANG_PIT_P",
+            "Q_A_ACCEL_P_MAX",
+            "Q_A_RAT_YAW_P",
+            "Q_A_RAT_YAW_I",
+            "Q_A_RAT_YAW_FLTE",
+            "Q_A_ANG_YAW_P",
+            "Q_A_ACCEL_Y_MAX",
+        ])
+        self.set_parameters(parameter_values)
+
+        self.takeoff(15, mode='GUIDED')
         self.set_rc(3, 1500)
+        self.change_mode("QLOITER")
         self.change_mode("QAUTOTUNE")
         tstart = self.get_sim_time()
-        sim_time_expected = 5000
-        deadline = tstart + sim_time_expected
-        while self.get_sim_time_cached() < deadline:
+        self.context_collect('STATUSTEXT')
+        while True:
             now = self.get_sim_time_cached()
-            m = self.mav.recv_match(type='STATUSTEXT',
-                                    blocking=True,
-                                    timeout=1)
-            if m is None:
-                continue
-            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
-            if "AutoTune: Success" in m.text:
-                break
-        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
-        self.set_rc(3, 1200)
-        self.wait_altitude(-5, 1, relative=True, timeout=30)
-        while self.get_sim_time_cached() < deadline:
-            self.mavproxy.send('disarm\n')
+            if now - tstart > 5000:
+                raise NotAchievedException("Did not get success message")
             try:
-                self.wait_text("AutoTune: Saved gains for Roll Pitch Yaw", timeout=0.5)
+                self.wait_text("AutoTune: Success", timeout=1, check_context=True)
+            except AutoTestTimeoutException:
+                continue
+            # got success message
+            break
+        self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+        self.context_clear_collection('STATUSTEXT')
+
+        self.progress("Landing to save gains")
+        self.set_rc(3, 1200)
+        self.wait_speed_vector(
+            Vector3(float('nan'), float('nan'), 1.4),
+            timeout=5,
+        )
+        self.wait_speed_vector(
+            Vector3(0.0, 0.0, 0.0),
+            timeout=20,
+        )
+        distance = self.distance_to_home()
+        if distance > 20:
+            raise NotAchievedException("wandered from home (distance=%f)" %
+                                       (distance,))
+        self.set_rc(3, 1000)
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 500:
+                raise NotAchievedException("Did not get success message")
+            self.send_mavlink_disarm_command()
+            try:
+                self.wait_text(
+                    "AutoTune: Saved gains for Roll Pitch Yaw.*",
+                    timeout=0.5,
+                    check_context=True,
+                    regex=True,
+                    )
             except AutoTestTimeoutException:
                 continue
             break
-        self.wait_disarmed()
 
-    def takeoff(self, height, mode):
+        self.wait_disarmed()
+        self.reboot_sitl()  # far from home
+
+    def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        if mode == 'GUIDED':
+            self.user_takeoff(alt_min=height, timeout=timeout)
+            return
         self.set_rc(3, 1800)
         self.wait_altitude(height,
                            height+5,
                            relative=True,
-                           timeout=30)
+                           timeout=timeout)
         self.set_rc(3, 1500)
 
     def do_RTL(self):
@@ -408,14 +462,24 @@ class AutoTestQuadPlane(AutoTest):
         self.zero_throttle()
 
     def fly_home_land_and_disarm(self, timeout=30):
-        self.set_parameter("LAND_TYPE", 0)
-        filename = "flaps.txt"
+        self.context_push()
+        self.change_mode('LOITER')
+        self.set_parameter('RTL_AUTOLAND', 2)
+        filename = "QuadPlaneDalbyRTL.txt"
         self.progress("Using %s to fly home" % filename)
-        self.load_mission(filename)
-        self.change_mode("AUTO")
-        self.set_current_waypoint(7)
+        self.load_generic_mission(filename)
+        self.send_cmd_do_set_mode("RTL")
+        self.wait_mode('AUTO')
+        self.wait_current_waypoint(4)
+        self.wait_statustext('Land descend started')
+        self.wait_statustext('Land final started', timeout=60)
         self.wait_disarmed(timeout=timeout)
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        # the following command is accepted, but doesn't actually
+        # work!  Should be able to remove check_afterwards!
         self.set_current_waypoint(0, check_afterwards=False)
+        self.change_mode('MANUAL')
+        self.context_pop()
 
     def wait_level_flight(self, accuracy=5, timeout=30):
         """Wait for level flight."""
@@ -682,6 +746,40 @@ class AutoTestQuadPlane(AutoTest):
         self.set_rc(4, 1500)
         self.do_RTL()
 
+    def FwdThrInVTOL(self):
+        '''test use of fwd motor throttle into wind'''
+        self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
+                             "SIM_WIND_DIR": 360,
+                             "Q_WVANE_ENABLE": 1,
+                             "Q_WVANE_GAIN": 1,
+                             "STICK_MIXING": 0,
+                             "Q_FWD_THR_USE": 2,
+                             "SIM_ENGINE_FAIL": 2}) # we want to fail the forward thrust motor only
+
+        self.takeoff(10, mode="QLOITER")
+        self.set_rc(2, 1000)
+        self.delay_sim_time(10)
+        # Check that it is using some forward throttle
+        fwd_thr_pwm = self.get_servo_channel_value(3)
+        if fwd_thr_pwm < 1150 :
+            raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
+        # check that pitch is on limit
+        m = self.mav.recv_match(type='ATTITUDE', blocking=True)
+        pitch = math.degrees(m.pitch)
+        if abs(pitch + 3.0) > 0.5 :
+            raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
+        self.set_rc(2, 1500)
+        self.delay_sim_time(5)
+        loc1 = self.mav.location()
+        self.set_parameter("SIM_ENGINE_MUL", 0) # simulate a complete loss of forward motor thrust
+        self.delay_sim_time(20)
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=60)
+        loc2 = self.mav.location()
+        position_drift = self.get_distance(loc1, loc2)
+        if position_drift > 5.0 :
+            raise NotAchievedException("position drift high, want < 5.0 m got %f m" % (position_drift))
+
     def Weathervane(self):
         '''test nose-into-wind functionality'''
         # We test nose into wind code paths and yaw direction in copter autotest,
@@ -710,7 +808,6 @@ class AutoTestQuadPlane(AutoTest):
 
     def QAssist(self):
         '''QuadPlane Assist tests'''
-        # find a motor peak
         self.takeoff(10, mode="QHOVER")
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
@@ -719,7 +816,7 @@ class AutoTestQuadPlane(AutoTest):
         self.set_parameter("STALL_PREVENTION", 0)
 
         thr_min_pwm = self.get_parameter("Q_M_PWM_MIN")
-        lim_roll_deg = self.get_parameter("LIM_ROLL_CD") * 0.01
+        lim_roll_deg = self.get_parameter("ROLL_LIMIT_DEG")
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
@@ -743,6 +840,7 @@ class AutoTestQuadPlane(AutoTest):
                                       comparator=operator.eq)
         self.set_rc(3, 1300)
 
+        # Test angle assist
         self.context_push()
         self.progress("Rolling over to %.0f degrees" % -lim_roll_deg)
         self.set_rc(1, 1000)
@@ -758,9 +856,31 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
         self.set_rc(1, 1500)
-        self.set_parameter("Q_RTL_MODE", 1)
-        self.change_mode("RTL")
-        self.wait_disarmed(timeout=300)
+
+        # Test alt assist, climb to 60m and set assist alt to 50m
+        self.context_push()
+        guided_loc = self.home_relative_loc_ne(0, 0)
+        guided_loc.alt = 60
+        self.change_mode("GUIDED")
+        self.send_do_reposition(guided_loc)
+        self.wait_altitude(58, 62, relative=True)
+        self.set_parameter("Q_ASSIST_ALT", 50)
+
+        # Try and descent to 40m
+        guided_loc.alt = 40
+        self.send_do_reposition(guided_loc)
+
+        # Expect alt assist to kick in, eg "Alt assist 48.9m"
+        self.wait_statustext(r"Alt assist \d*.\d*m", regex=True, timeout=100)
+
+        # Test transition timeout, should switch to QRTL
+        self.set_parameter("Q_TRANS_FAIL_ACT", 1)
+        self.set_parameter("Q_TRANS_FAIL", 10)
+        self.wait_mode("QRTL")
+
+        self.context_pop()
+
+        self.wait_disarmed(timeout=200)
 
     def LoiterAltQLand(self):
         '''test loitering and qland with terrain involved'''
@@ -894,6 +1014,19 @@ class AutoTestQuadPlane(AutoTest):
         self.reset_SITL_commandline()
         self.context_pop()
 
+    def GUIDEDToAUTO(self):
+        '''Test using GUIDED mode for takeoff before shifting to auto'''
+        self.load_mission("mission.txt")
+        self.takeoff(30, mode='GUIDED')
+
+        # extra checks would go here
+        self.assert_not_receiving_message('CAMERA_FEEDBACK')
+
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(3)
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=240)
+
     def Tailsitter(self):
         '''tailsitter test'''
         self.set_parameter('Q_FRAME_CLASS', 10)
@@ -916,19 +1049,38 @@ class AutoTestQuadPlane(AutoTest):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
-    def ICEngine(self):
-        '''Test ICE Engine support'''
-        rc_engine_start_chan = 11
-        self.set_parameters({
-            'ICE_START_CHAN': rc_engine_start_chan,
-        })
-        model = "quadplane-ice"
+    def CopterTailsitter(self):
+        '''copter tailsitter test'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('quadplane-copter_tailsitter'),
+            model="quadplane-copter_tailsitter",
+            wipe=True,
+        )
 
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(60, mode='GUIDED')
+        self.context_collect("STATUSTEXT")
+        self.progress("Starting QLAND")
+        self.change_mode("QLAND")
+        self.wait_statustext("Rangefinder engaged")
+        self.wait_disarmed(timeout=100)
+
+    def setup_ICEngine_vehicle(self):
+        '''restarts SITL with an IC Engine setup'''
+        model = "quadplane-ice"
         self.customise_SITL_commandline(
             [],
             model=model,
             defaults_filepath=self.model_defaults_filepath(model),
-            wipe=False)
+            wipe=False,
+        )
+
+    def ICEngine(self):
+        '''Test ICE Engine support'''
+        rc_engine_start_chan = 11
+        self.setup_ICEngine_vehicle()
 
         self.wait_ready_to_arm()
         self.wait_rpm(1, 0, 0, minimum_duration=1)
@@ -964,27 +1116,139 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode('FBWA')
         self.wait_servo_channel_value(3, 2000)
 
+        self.start_subtest("Testing automatic restart")
+        # Limit start attempts to 4
+        max_tries = 4
+        self.set_parameter("ICE_STRT_MX_RTRY", max_tries)
+        # Make the engine unable to run (by messing up the RPM sensor)
+        rpm_chan = self.get_parameter("ICE_RPM_CHAN")
+        self.set_parameter("ICE_RPM_CHAN", 120) # Set to a non-existent sensor
+        self.set_rc(rc_engine_start_chan, 2000)
+        self.wait_statustext("Uncommanded engine stop")
+        self.wait_statustext("Starting engine")
+        # Restore the engine
+        self.set_parameter("ICE_RPM_CHAN", rpm_chan)
+        # Make sure the engine continues to run for the next 30 seconds
+        try:
+            self.wait_statustext("Uncommanded engine stop", timeout=30)
+            # The desired result is for the wait_statustext raise AutoTestTimeoutException
+            raise NotAchievedException("Engine stopped unexpectedly")
+        except AutoTestTimeoutException:
+            pass
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.start_subtest("Testing automatic starter attempt limit")
+        # Try this test twice.
+        # For the first run, since the engine has been running successfully in
+        # the previous test for 30 seconds, the limit should reset. For the
+        # second run, after commanding an engine stop, the limit should reset.
+        for i in range(2):
+            self.context_collect("STATUSTEXT")
+            self.set_parameter("ICE_RPM_CHAN", 120) # Set to a non-existent sensor
+            self.set_rc(rc_engine_start_chan, 2000)
+            self.wait_statustext("Engine max crank attempts reached", check_context=True, timeout=30)
+            self.delay_sim_time(30) # wait for another 30 seconds to make sure the engine doesn't restart
+            messages = self.context_get().collections["STATUSTEXT"]
+            self.context_stop_collecting("STATUSTEXT")
+            # check for the exact number of starter attempts
+            attempts = 0
+            for m in messages:
+                if "Starting engine" == m.text:
+                    attempts += 1
+            if attempts != max_tries:
+                raise NotAchievedException(f"Run {i+1}: Expected {max_tries} attempts, got {attempts}")
+            # Command an engine stop
+            self.context_collect("STATUSTEXT")
+            self.set_rc(rc_engine_start_chan, 1000)
+            self.wait_statustext("ignition:0", check_context=True)
+            self.context_stop_collecting("STATUSTEXT")
+
     def ICEngineMission(self):
         '''Test ICE Engine Mission support'''
         rc_engine_start_chan = 11
-        self.set_parameters({
-            'ICE_START_CHAN': rc_engine_start_chan,
-        })
-        model = "quadplane-ice"
+        self.setup_ICEngine_vehicle()
 
-        self.customise_SITL_commandline(
-            [],
-            model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
-            wipe=False)
-
-        self.reboot_sitl()
         self.load_mission("mission.txt")
         self.wait_ready_to_arm()
         self.set_rc(rc_engine_start_chan, 2000)
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_disarmed(timeout=300)
+
+    def MAV_CMD_DO_ENGINE_CONTROL(self):
+        '''test MAV_CMD_DO_ENGINE_CONTROL mavlink command'''
+
+        expected_idle_rpm_min = 65
+        expected_idle_rpm_max = 75
+        expected_starter_rpm_min = 345
+        expected_starter_rpm_max = 355
+
+        rc_engine_start_chan = 11
+        self.setup_ICEngine_vehicle()
+
+        self.wait_ready_to_arm()
+
+        for method in self.run_cmd, self.run_cmd_int:
+            self.change_mode('MANUAL')
+            self.set_rc(rc_engine_start_chan, 1500)  # allow motor to run
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+            self.arm_vehicle()
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+            self.start_subtest("Start motor")
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1)
+            self.wait_rpm(1, expected_starter_rpm_min, expected_starter_rpm_max)
+            self.wait_rpm(1, expected_idle_rpm_min, expected_idle_rpm_max, minimum_duration=10)
+
+            # starting the motor while it is running is failure
+            # (probably wrong, but that's how this works):
+            self.start_subtest("try start motor again")
+            self.context_collect('STATUSTEXT')
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("already running", check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+            # shouldn't affect run state:
+            self.wait_rpm(1, expected_idle_rpm_min, expected_idle_rpm_max, minimum_duration=1)
+
+            self.start_subtest("Stop motor")
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=0)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.start_subtest("Stop motor (again)")
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=0)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.start_subtest("Check start chan control disable")
+            old_start_channel_value = self.get_rc_channel_value(rc_engine_start_chan)
+            self.set_rc(rc_engine_start_chan, 1000)
+            self.context_collect('STATUSTEXT')
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("start control disabled", check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+            self.set_rc(rc_engine_start_chan, old_start_channel_value)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.start_subtest("test start-at-height")
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+            self.context_collect('STATUSTEXT')
+            method(
+                mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL,
+                p1=1,  # start
+                p3=15.5, # ... at 15.5 metres
+            )
+            self.wait_statustext("height set to 15.5m", check_context=True)
+            self.wait_rpm(1, 0, 0, minimum_duration=2)
+
+            self.takeoff(20, mode='GUIDED')
+            self.wait_rpm(1, expected_starter_rpm_min, expected_starter_rpm_max, minimum_duration=1)
+            self.wait_statustext("Engine running", check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+
+            # stop the motor again:
+            method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=0)
+            self.wait_rpm(1, 0, 0, minimum_duration=1)
+
+            self.change_mode('QLAND')
+            self.wait_disarmed()
 
     def Ship(self):
         '''Ensure we can take off from simulated ship'''
@@ -1105,9 +1369,7 @@ class AutoTestQuadPlane(AutoTest):
 
     def VTOLQuicktune(self):
         '''VTOL Quicktune'''
-        applet_script = "VTOL-quicktune.lua"
-
-        self.install_applet_script(applet_script)
+        self.install_applet_script_context("VTOL-quicktune.lua")
 
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -1117,7 +1379,6 @@ class AutoTestQuadPlane(AutoTest):
 
         self.reboot_sitl()
 
-        self.context_push()
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "QUIK_ENABLE" : 1,
@@ -1149,10 +1410,108 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("QLAND")
 
         self.wait_disarmed(timeout=120)
-        self.set_parameter("QUIK_ENABLE", 0)
-        self.context_pop()
-        self.remove_installed_script(applet_script)
+
+    def PrecisionLanding(self):
+        '''VTOL precision landing'''
+
+        self.install_applet_script_context("plane_precland.lua")
+
+        here = self.mav.location()
+        target = self.offset_location_ne(here, 20, 0)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 4,
+            "SIM_PLD_ENABLE":   1,
+            "SIM_PLD_LAT" : target.lat,
+            "SIM_PLD_LON" : target.lng,
+            "SIM_PLD_HEIGHT" : 0,
+            "SIM_PLD_ALT_LMT" : 50,
+            "SIM_PLD_DIST_LMT" : 30,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_PIN" : 0,
+            "RNGFND1_SCALING" : 12.2,
+            "RNGFND1_MAX_CM" : 5000,
+            "RNGFND_LANDING" : 1,
+        })
+
         self.reboot_sitl()
+
+        self.set_parameters({
+            "PLND_ALT_CUTOFF" : 5,
+            "SIM_SPEEDUP" : 10,
+            })
+
+        self.context_collect('STATUSTEXT')
+
+        self.scripting_restart()
+        self.wait_text("PLND: Loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("GUIDED")
+        self.arm_vehicle()
+        self.takeoff(60, 'GUIDED')
+        self.wait_altitude(58, 62, relative=True)
+        self.drain_mav()
+        self.change_mode("QRTL")
+
+        self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
+
+        self.wait_disarmed(timeout=180)
+        loc2 = self.mav.location()
+        error = self.get_distance(target, loc2)
+        self.progress("Target error %.1fm" % error)
+        if error > 2:
+            raise NotAchievedException("too far from target %.1fm" % error)
+
+    def ShipLanding(self):
+        '''ship landing test'''
+        self.install_applet_script_context("plane_ship_landing.lua")
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 5,
+            "SIM_SHIP_DSIZE": 10,
+            "FOLL_ENABLE": 1,
+            "FOLL_SYSID": 17,
+            "FOLL_OFS_TYPE": 1,
+            "SIM_TERRAIN" : 0,
+            "TERRAIN_ENABLE" : 0,
+        })
+
+        self.load_mission("takeoff100.txt")
+
+        self.reboot_sitl(check_position=False)
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SHIP_ENABLE" : 1,
+            "SIM_SPEEDUP" : 10,
+            })
+
+        self.scripting_restart()
+        self.wait_text("ShipLanding: loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("AUTO")
+        self.arm_vehicle()
+        self.wait_altitude(95, 105, relative=True, timeout=90)
+        self.drain_mav()
+
+        self.wait_text("Mission complete, changing mode to RTL", check_context=True, timeout=60)
+        self.wait_text("Descending for approach", check_context=True, timeout=60)
+        self.wait_text("Reached target altitude", check_context=True, timeout=120)
+        self.wait_text("Starting approach", check_context=True, timeout=120)
+        self.wait_text("Land complete", check_context=True, timeout=120)
+
+        self.wait_disarmed(timeout=180)
+
+        # we confirm successful landing on the ship from our ground speed. The
+        # deck is just 10m in size, so we must be within 10m if we are moving
+        # with the deck
+        self.wait_groundspeed(4.8, 5.2)
 
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
@@ -1208,31 +1567,561 @@ class AutoTestQuadPlane(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def mission_MAV_CMD_DO_VTOL_TRANSITION(self):
+        '''mission item forces transition'''
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 30),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+                p1=mavutil.mavlink.MAV_VTOL_STATE_MC
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 200, 30),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+                p1=mavutil.mavlink.MAV_VTOL_STATE_FW
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 200, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(4)
+        self.wait_servo_channel_value(5, 1200, comparator=operator.gt)
+        self.wait_current_waypoint(6)
+        self.wait_servo_channel_value(5, 1000, comparator=operator.eq, timeout=90)
+
+        self.fly_home_land_and_disarm()
+
+    def mavlink_MAV_CMD_DO_VTOL_TRANSITION(self):
+        '''mavlink command forces transition during mission'''
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(2)
+        self.wait_servo_channel_value(5, 1000, comparator=operator.eq, timeout=90)
+
+        for command in self.run_cmd, self.run_cmd_int:
+            command(mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION, p1=mavutil.mavlink.MAV_VTOL_STATE_MC)
+            self.wait_servo_channel_value(5, 1200, comparator=operator.gt, timeout=300)
+            command(mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION, p1=mavutil.mavlink.MAV_VTOL_STATE_FW)
+            self.wait_servo_channel_value(5, 1000, comparator=operator.eq, timeout=90)
+
+        self.fly_home_land_and_disarm()
+
+    def TransitionMinThrottle(self):
+        '''Ensure that TKOFF_THR_MIN is applied during the forward transition'''
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.check_mission_upload_download(wps)
+        self.set_parameter('TKOFF_THR_MIN', 80)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(2)
+        # Wait for 5 seconds into the transition.
+        self.delay_sim_time(5)
+        # Ensure TKOFF_THR_MIN is still respected.
+        thr_min = self.get_parameter('TKOFF_THR_MIN')
+        self.wait_servo_channel_value(3, 1000+thr_min*10, comparator=operator.eq)
+
+        self.fly_home_land_and_disarm()
+
+    def BackTransitionMinThrottle(self):
+        '''Ensure min throttle is applied during back transition.'''
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.check_mission_upload_download(wps)
+        self.set_parameter('Q_RTL_MODE', 1)
+
+        trim_pwm = 1000 + 10*self.get_parameter("TRIM_THROTTLE")
+        min_pwm = 1000 + 10*self.get_parameter("THR_MIN")
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+
+        self.wait_statustext("VTOL airbrake", check_context=True, timeout=300)
+        self.wait_servo_channel_value(3, trim_pwm, comparator=operator.le, timeout=1)
+
+        self.wait_statustext("VTOL position1", check_context=True, timeout=10)
+        self.wait_servo_channel_value(3, min_pwm+10, comparator=operator.le, timeout=1)
+
+        self.wait_disarmed(timeout=60)
+
+    def MAV_CMD_NAV_TAKEOFF(self):
+        '''test issuing takeoff command via mavlink'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
+        self.wait_altitude(4.5, 5.5, minimum_duration=5, relative=True)
+        self.change_mode('QLAND')
+        self.wait_disarmed()
+
+        self.start_subtest("Check NAV_TAKEOFF is above current location, not home location")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        # reset home 20 metres above current location
+        current_alt_abs = self.get_altitude(relative=False)
+
+        loc = self.mav.location()
+
+        home_z_ofs = 20
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=current_alt_abs + home_z_ofs,
+        )
+
+        self.arm_vehicle()
+        takeoff_alt = 5
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=takeoff_alt)
+        self.wait_altitude(
+            current_alt_abs + takeoff_alt - 0.5,
+            current_alt_abs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.change_mode('QLAND')
+        self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
+    def Q_GUIDED_MODE(self):
+        '''test moving in VTOL mode with SET_POSITION_TARGET_GLOBAL_INT'''
+        self.set_parameter('Q_GUIDED_MODE', 1)
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=15)
+        self.wait_altitude(14, 16, relative=True)
+
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 50, 50)
+
+        # set position target
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            1,  # reposition flags; 1 means "change to guided"
+            0,
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            30,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+        )
+        self.wait_location(loc, timeout=120)
+
+        self.fly_home_land_and_disarm()
+
+    def DCMClimbRate(self):
+        '''Test the climb rate measurement in DCM with and without GPS'''
+        self.wait_ready_to_arm()
+
+        self.change_mode('QHOVER')
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(30, 50, relative=True)
+
+        # Start Descending
+        self.set_rc(3, 1000)
+        self.wait_climbrate(-5, -0.5, timeout=10)
+
+        # Switch to DCM
+        self.set_parameter('AHRS_EKF_TYPE', 0)
+        self.delay_sim_time(5)
+
+        # Start Climbing
+        self.set_rc(3, 2000)
+        self.wait_climbrate(0.5, 5, timeout=10)
+
+        # Kill any GPSs
+        self.set_parameters({
+            'SIM_GPS_DISABLE': 1,
+            'SIM_GPS2_DISABLE': 1,
+        })
+        self.delay_sim_time(5)
+
+        # Start Descending
+        self.set_rc(3, 1000)
+        self.wait_climbrate(-5, -0.5, timeout=10)
+
+        # Force disarm
+        self.disarm_vehicle(force=True)
+
+    def RTL_AUTOLAND_1(self):
+        '''test behaviour when RTL_AUTOLAND==1'''
+
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+        })
+
+        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
+        # then to the landing sequence.  This mission puts the landing
+        # sequence well to the West of home so if we go directly there
+        # we won't come within 200m of home
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            # fly North
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
+            # add a waypoint 1km North (which we will look for and trigger RTL
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
+
+            # *exciting* landing sequence is ~1km West and points away from Home.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)  # will be 2km North here
+        self.change_mode('RTL')
+
+        self.wait_distance_to_home(100, 200, timeout=120)
+        self.wait_current_waypoint(7)
+
+        self.fly_home_land_and_disarm()
+
+    def send_reposition_to_loc(self, loc):
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            0,
+            1,  # reposition flags; 1 means "change to guided"
+            0,
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            20,    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+
+    def reposition_to_loc(self, loc, accuracy=100):
+        self.send_reposition_to_loc(loc)
+        self.wait_location(
+            loc,
+            accuracy=accuracy,
+            minimum_duration=20,
+            timeout=120,
+        )
+
+    def AHRSFlyForwardFlag(self):
+        '''ensure FlyForward flag is set appropriately'''
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+            "LOG_REPLAY": 1,
+        })
+        self.reboot_sitl()
+
+        self.assert_mode_is('FBWA')
+        self.delay_sim_time(10)
+        self.change_mode('QHOVER')
+        self.delay_sim_time(10)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(20, 50, relative=True)
+        self.context_collect('STATUSTEXT')
+        self.change_mode('CRUISE')
+        self.set_rc(3, 1500)
+        self.wait_statustext('Transition started airspeed', check_context=True)
+        self.wait_statustext('Transition airspeed reached', check_context=True)
+        self.wait_statustext('Transition done', check_context=True)
+        self.delay_sim_time(5)
+        self.change_mode('QHOVER')
+        self.wait_airspeed(0, 5)
+        self.delay_sim_time(5)
+        mlog_path = self.current_onboard_log_filepath()
+        self.fly_home_land_and_disarm(timeout=600)
+
+        mlog = self.dfreader_for_path(mlog_path)
+
+        stage_require_fbwa = "require_fbwa"
+        stage_wait_qhover = "wait_qhover"
+        stage_verify_qhover_ff = "verify_qhover_ff"
+        stage_wait_cruise = "wait_cruise"
+        stage_cruise_wait_ff = "cruise_wait_ff"
+        stage_qhover2 = "qhover2"
+        stage_done = "done"
+        stage = stage_require_fbwa
+        msgs = {}
+        seen_flag_set_in_cruise = False
+        FF_BIT_MASK = (1 << 2)
+        while stage != stage_done:
+            m = mlog.recv_match()
+            if m is None:
+                raise NotAchievedException(f"Stuck in stage {stage}")
+            m_type = m.get_type()
+            msgs[m_type] = m
+
+            if stage == stage_require_fbwa:
+                if m_type == 'MODE':
+                    if m.ModeNum == self.get_mode_from_mode_mapping('MANUAL'):
+                        # manual to start with
+                        continue
+                    fbwa_num = self.get_mode_from_mode_mapping('FBWA')
+                    print(f"{m.ModeNum=} {fbwa_num=}")
+                    if m.ModeNum != fbwa_num:
+                        raise ValueError(f"wanted mode={fbwa_num} got={m.ModeNum}")
+                    continue
+                if m_type == 'RFRN':
+                    if not m.Flags & FF_BIT_MASK:
+                        raise ValueError("Expected FF to be set in FBWA")
+                    stage = stage_wait_qhover
+                    continue
+                continue
+
+            if stage == stage_wait_qhover:
+                if m_type == 'MODE':
+                    qhover_num = self.get_mode_from_mode_mapping('QHOVER')
+                    print(f"want={qhover_num} got={m.ModeNum}")
+                    if m.ModeNum == qhover_num:
+                        stage = stage_verify_qhover_ff
+                        continue
+                    continue
+                continue
+
+            if stage == stage_verify_qhover_ff:
+                if m_type == 'RFRN':
+                    if m.Flags & FF_BIT_MASK:
+                        raise ValueError("Expected FF to be unset in QHOVER")
+                    stage = stage_wait_cruise
+                    continue
+                continue
+
+            if stage == stage_wait_cruise:
+                if m_type == 'MODE':
+                    want_num = self.get_mode_from_mode_mapping('CRUISE')
+                    if m.ModeNum == want_num:
+                        stage = stage_cruise_wait_ff
+                        cruise_wait_ff_start = msgs['ATT'].TimeUS*1e-6
+                        continue
+                    continue
+                continue
+
+            if stage == stage_cruise_wait_ff:
+                if m_type == 'MODE':
+                    want_num = self.get_mode_from_mode_mapping('CRUISE')
+                    if want_num != m.ModeNum:
+                        if not seen_flag_set_in_cruise:
+                            raise ValueError("Never saw FF get set")
+                    if m.ModeNum == self.get_mode_from_mode_mapping('QHOVER'):
+                        stage = stage_qhover2
+                        continue
+                    continue
+                if m_type == 'RFRN':
+                    flag_set = m.Flags & FF_BIT_MASK
+                    now = msgs['ATT'].TimeUS*1e-6
+                    delta_t = now - cruise_wait_ff_start
+                    if delta_t < 8:
+                        if flag_set:
+                            raise ValueError("Should not see bit set")
+                    if delta_t > 10:
+                        if not flag_set and not seen_flag_set_in_cruise:
+                            raise ValueError("Should see bit set")
+                        seen_flag_set_in_cruise = True
+                    continue
+                continue
+
+            if stage == stage_qhover2:
+                '''bit should stay low for qhover 2'''
+                if m_type == 'RFRN':
+                    flag_set = m.Flags & FF_BIT_MASK
+                    if flag_set:
+                        raise ValueError("ff should be low in qhover")
+                    continue
+                if m_type == 'MODE':
+                    if m.ModeNum != self.get_mode_from_mode_mapping('QHOVER'):
+                        stage = stage_done
+                        continue
+                    continue
+                continue
+
+            raise NotAchievedException("Bad stage")
+
+    def RTL_AUTOLAND_1_FROM_GUIDED(self):
+        '''test behaviour when RTL_AUTOLAND==1 and entering from guided'''
+
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+        })
+
+        # when RTL is entered and RTL_AUTOLAND is 1 we should fly home
+        # then to the landing sequence.  This mission puts the landing
+        # sequence well to the West of home so if we go directly there
+        # we won't come within 200m of home
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            # fly North
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 30),
+            # add a waypoint 1km North (which we will look for and trigger RTL
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
+
+            # *exciting* landing sequence is ~1km West and points away from Home.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1000, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1300, 15),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -1600, 5),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0, -1750, 0),
+        ])
+        self.check_mission_upload_download(wps)
+        self.set_current_waypoint(0, check_afterwards=False)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        here = self.mav.location()
+        guided_loc = self.offset_location_ne(here, 500, -500)
+
+        self.arm_vehicle()
+        self.wait_current_waypoint(3)  # will be 2km North here
+        self.reposition_to_loc(guided_loc)
+        self.send_cmd_do_set_mode('RTL')
+
+        self.wait_distance_to_home(100, 200, timeout=120)
+        self.wait_current_waypoint(7)
+
+        self.fly_home_land_and_disarm()
+
+    def WindEstimateConsistency(self):
+        '''test that DCM and EKF3 roughly agree on wind speed and direction'''
+        self.set_parameters({
+            'SIM_WIND_SPD': 10,   # metres/second
+            'SIM_WIND_DIR': 315,  # from the North-West
+        })
+        self.change_mode('TAKEOFF')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.delay_sim_time(180)
+        mlog = self.dfreader_for_current_onboard_log()
+        self.fly_home_land_and_disarm()
+
+        self.progress("Inspecting dataflash log")
+        match_start_time = None
+        dcm = None
+        xkf2 = None
+        while True:
+            m = mlog.recv_match(
+                type=['DCM', 'XKF2'],
+                blocking=True,
+            )
+            if m is None:
+                raise NotAchievedException("Did not see wind estimates match")
+
+            m_type = m.get_type()
+            if m_type == 'DCM':
+                dcm = m
+            else:
+                xkf2 = m
+            if dcm is None or xkf2 is None:
+                continue
+
+            now = m.TimeUS * 1e-6
+
+            matches_east = abs(dcm.VWE-xkf2.VWE) < 1.5
+            matches_north = abs(dcm.VWN-xkf2.VWN) < 1.5
+
+            matches = matches_east and matches_north
+
+            if not matches:
+                match_start_time = None
+                continue
+
+            if match_start_time is None:
+                match_start_time = now
+                continue
+
+            if now - match_start_time > 60:
+                self.progress("Wind estimates correlated")
+                break
+
     def tests(self):
         '''return list of all tests'''
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
+            self.FwdThrInVTOL,
             self.AirMode,
             self.TestMotorMask,
             self.PilotYaw,
             self.ParameterChecks,
-            self.LogDownload,
+            self.QAUTOTUNE,
+            self.TestLogDownload,
+            self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
             self.Mission,
             self.Weathervane,
             self.QAssist,
             self.GyroFFT,
             self.Tailsitter,
+            self.CopterTailsitter,
             self.ICEngine,
             self.ICEngineMission,
+            self.MAV_CMD_DO_ENGINE_CONTROL,
             self.MidAirDisarmDisallowed,
+            self.GUIDEDToAUTO,
             self.BootInAUTO,
             self.Ship,
+            self.WindEstimateConsistency,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
+            self.PrecisionLanding,
+            self.ShipLanding,
+            Test(self.MotorTest, kwargs={  # tests motors 4 and 2
+                "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
+                "mot4_servo_chan": 6,  # quad-x third motor cw from f-r
+                "wait_finish_text": False,
+                "quadplane": True,
+            }),
             self.RCDisableAirspeedUse,
+            self.mission_MAV_CMD_DO_VTOL_TRANSITION,
+            self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
+            self.TransitionMinThrottle,
+            self.BackTransitionMinThrottle,
+            self.MAV_CMD_NAV_TAKEOFF,
+            self.Q_GUIDED_MODE,
+            self.DCMClimbRate,
+            self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
+            self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
+            self.AHRSFlyForwardFlag,
         ])
         return ret

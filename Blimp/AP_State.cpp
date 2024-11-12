@@ -10,7 +10,7 @@ void Blimp::set_auto_armed(bool b)
 
     ap.auto_armed = b;
     if (b) {
-        AP::logger().Write_Event(LogEvent::AUTO_ARMED);
+        LOGGER_WRITE_EVENT(LogEvent::AUTO_ARMED);
     }
 }
 

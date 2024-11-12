@@ -1,0 +1,4 @@
+# setup for LEDs on chan5
+SERVO7_FUNCTION 120
+
+

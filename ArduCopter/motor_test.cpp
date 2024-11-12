@@ -101,6 +101,13 @@ bool Copter::mavlink_motor_control_check(const GCS_MAVLINK &gcs_chan, bool check
         return false;
     }
 
+    // Check Motor test is allowed
+    char failure_msg[100] {};
+    if (!motors->motor_test_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: %s", mode, failure_msg);
+        return false;
+    }
+
     // check rc has been calibrated
     if (check_rc && !arming.rc_calibration_checks(true)) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: RC not calibrated", mode);
@@ -153,7 +160,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             EXPECT_DELAY_MS(3000);
             // enable and arm motors
             if (!motors->armed()) {
-                enable_motor_output();
+                motors->output_min();  // output lowest possible value to motors
                 motors->armed(true);
                 hal.util->set_soft_armed(true);
             }

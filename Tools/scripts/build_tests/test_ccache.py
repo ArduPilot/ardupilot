@@ -9,7 +9,7 @@ import sys
 import os
 
 parser = argparse.ArgumentParser(description='test ccache performance')
-parser.add_argument('--boards', default='MatekF405,MatekF405-bdshot', help='boards to test')
+parser.add_argument('--boards', default='MatekF405-bdshot,MatekF405-TE-bdshot', help='boards to test')
 parser.add_argument('--min-cache-pct', type=int, default=75, help='minimum acceptable ccache hit rate')
 parser.add_argument('--display', action='store_true', help='parse and show ccache stats')
 
@@ -44,7 +44,7 @@ def ccache_stats():
 
 
 def build_board(boardname):
-    subprocess.run(["./waf", "configure", "--board", boardname])
+    subprocess.run(["./waf", "configure", "--board", boardname, '--disable-networking'])
     subprocess.run(["./waf", "clean", "copter"])
 
 

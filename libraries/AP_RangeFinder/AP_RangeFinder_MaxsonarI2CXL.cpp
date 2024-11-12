@@ -54,7 +54,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_MaxsonarI2CXL::detect(RangeFinder::RangeF
     }
 
     AP_RangeFinder_MaxsonarI2CXL *sensor
-        = new AP_RangeFinder_MaxsonarI2CXL(_state, _params, std::move(dev));
+        = NEW_NOTHROW AP_RangeFinder_MaxsonarI2CXL(_state, _params, std::move(dev));
     if (!sensor) {
         return nullptr;
     }
@@ -116,10 +116,10 @@ bool AP_RangeFinder_MaxsonarI2CXL::get_reading(uint16_t &reading_cm)
     if (ret) {
         // combine results into distance
         reading_cm = be16toh(val);
-
-        // trigger a new reading
-        start_reading();
     }
+
+    // trigger a new reading
+    start_reading();
 
     return ret;
 }

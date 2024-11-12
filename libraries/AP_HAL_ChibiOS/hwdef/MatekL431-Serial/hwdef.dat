@@ -1,0 +1,19 @@
+include ../MatekL431/hwdef.inc
+
+define HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+
+# enable serial3 port with DMA
+undef PB10
+undef PB11
+PB10  USART3_TX USART3 SPEED_HIGH
+PB11  USART3_RX USART3 SPEED_HIGH
+
+# larger CAN pool for faster serial
+undef HAL_CAN_POOL_SIZE
+define HAL_CAN_POOL_SIZE 12000
+
+define HAL_USE_ADC FALSE
+
+# make the UARTn numbers in parameters match the silkscreen
+undef SERIAL_ORDER
+SERIAL_ORDER EMPTY USART1 USART2 USART3

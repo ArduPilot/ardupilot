@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AP_OpticalFlow.h"
+#include "AP_OpticalFlow_config.h"
 
 #if AP_OPTICALFLOW_SITL_ENABLED
+
+#include "AP_OpticalFlow.h"
 
 class AP_OpticalFlow_SITL : public OpticalFlow_backend
 {

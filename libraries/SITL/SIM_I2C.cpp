@@ -17,6 +17,7 @@
 */
 
 
+#include "SIM_config.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SITL/SITL.h>
 
@@ -27,10 +28,15 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
+#include "SIM_Temperature_TSYS03.h"
 #include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
+#include "SIM_IS31FL3195.h"
+#include "SIM_LP5562.h"
+#include "SIM_LM2755.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
+#include "SIM_QMC5883L.h"
 
 #include <signal.h>
 
@@ -59,10 +65,26 @@ static Rotoye rotoye;
 static SIM_BattMonitor_SMBus_Generic smbus_generic;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
+#if AP_SIM_TSYS03_ENABLED
+static TSYS03 tsys03;
+#endif
 static MCP9600 mcp9600;
 static ICM40609 icm40609;
 static MS5525 ms5525;
 static MS5611 ms5611;
+#if AP_SIM_LP5562_ENABLED
+static LP5562 lp5562;
+#endif
+#if AP_SIM_LM2755_ENABLED
+static LM2755 lm2755;
+#endif
+#if AP_SIM_IS31FL3195_ENABLED
+static IS31FL3195 is31fl3195;
+#define SIM_IS31FL3195_ADDR 0x54
+#endif
+#if AP_SIM_COMPASS_QMC5883L_ENABLED
+static QMC5883L qmc5883l;
+#endif
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -85,7 +107,22 @@ struct i2c_device_at_address {
     { 2, 0x0B, maxell },        // Maxell: BATTx_MONITOR 16, BATTx_I2C_ADDR 13
     { 3, 0x0B, smbus_generic},  // BATTx_MONITOR 7, BATTx_I2C_ADDR 13
     { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
+#if AP_SIM_LP5562_ENABLED
+    { 2, 0x30, lp5562 },        // LP5562 RGB LED driver
+#endif
+#if AP_SIM_LM2755_ENABLED
+    { 2, 0x67, lm2755 },        // LM2755 RGB LED driver
+#endif
+#if AP_SIM_IS31FL3195_ENABLED
+    { 2, SIM_IS31FL3195_ADDR, is31fl3195 },    // IS31FL3195 RGB LED driver; see page 9
+#endif
+#if AP_SIM_TSYS03_ENABLED
+    { 2, 0x40, tsys03 },
+#endif
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
+#if AP_SIM_COMPASS_QMC5883L_ENABLED
+    { 2, 0x0D, qmc5883l },
+#endif
 };
 
 void I2C::init()
@@ -93,6 +130,11 @@ void I2C::init()
     for (auto &i : i2c_devices) {
         i.device.init();
     }
+
+#if AP_SIM_IS31FL3195_ENABLED
+    // IS31FL3195 needs to know its own address:
+    is31fl3195.set_product_id(SIM_IS31FL3195_ADDR);
+#endif
 
     // sanity check the i2c_devices structure to ensure we don't have
     // two devices at the same address on the same bus:

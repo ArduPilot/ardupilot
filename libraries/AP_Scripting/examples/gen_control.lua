@@ -7,6 +7,8 @@
 --]]
 -- luacheck: only 0
 
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: param-type-mismatch
 
 UPDATE_RATE_HZ = 10
 

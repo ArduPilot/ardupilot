@@ -10,8 +10,10 @@ void Copter::fence_check()
 {
     const uint8_t orig_breaches = fence.get_breaches();
 
+    bool is_landing_or_landed = flightmode->is_landing() || ap.land_complete  || !motors->armed();
+
     // check for new breaches; new_breaches is bitmask of fence types breached
-    const uint8_t new_breaches = fence.check();
+    const uint8_t new_breaches = fence.check(is_landing_or_landed);
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
     // fence pre-arm check actually checks if any fence has been breached 
@@ -24,7 +26,7 @@ void Copter::fence_check()
     if (new_breaches) {
 
         if (!copter.ap.land_complete) {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+            fence.print_fence_message("breached", new_breaches);
         }
 
         // if the user wants some kind of response and motors are armed
@@ -79,11 +81,14 @@ void Copter::fence_check()
             }
         }
 
-        AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode(new_breaches));
 
-    } else if (orig_breaches) {
+    } else if (orig_breaches && fence.get_breaches() == 0) {
+        if (!copter.ap.land_complete) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence breach cleared");
+        }
         // record clearing of breach
-        AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_FENCE, LogErrorCode::ERROR_RESOLVED);
     }
 }
 

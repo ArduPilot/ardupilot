@@ -26,7 +26,7 @@
 
 #if HAL_SIM_LAST_LETTER_ENABLED
 
-#include <AP_HAL/utility/Socket.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 #include "SIM_Aircraft.h"
 
@@ -44,7 +44,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new last_letter(frame_str);
+        return NEW_NOTHROW last_letter(frame_str);
     }
 
 private:
@@ -77,7 +77,7 @@ private:
     void start_last_letter(void);
 
     uint64_t last_timestamp_us;
-    SocketAPM sock;
+    SocketAPM_native sock;
 };
 
 } // namespace SITL

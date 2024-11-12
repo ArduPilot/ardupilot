@@ -165,7 +165,6 @@ void mount_sdcard_mmc()
     sdmmc_card_t* card;
     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
 
-
     if (ret == ESP_OK) {
         mkdir("/SDCARD/APM", 0777);
         mkdir("/SDCARD/APM/LOGS", 0777);
@@ -253,8 +252,8 @@ void mount_sdcard()
 {
     mount_sdcard_spi();
 }
-#endif // end spi
 
+#endif // end spi
 
 bool sdcard_retry(void)
 {
@@ -264,15 +263,13 @@ bool sdcard_retry(void)
     return sdcard_running;
 }
 
-
 void unmount_sdcard()
 {
     if (card != nullptr) {
-        esp_vfs_fat_sdmmc_unmount();
+        esp_vfs_fat_sdcard_unmount( "/SDCARD", card);
     }
     sdcard_running = false;
 }
-
 
 #else
 // empty impl's

@@ -94,8 +94,8 @@ void AP_MotorsSingle::output_to_motors()
             for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
             }
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thrust_to_actuator(_thrust_out));
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thrust_to_actuator(_thrust_out));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thr_lin.thrust_to_actuator(_thrust_out));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thr_lin.thrust_to_actuator(_thrust_out));
             rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
             rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
             break;
@@ -134,7 +134,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     float   actuator_max = 0.0f;        // maximum actuator value
 
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain();
+    const float compensation_gain = thr_lin.get_compensation_gain();
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;

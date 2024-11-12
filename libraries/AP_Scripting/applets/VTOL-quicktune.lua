@@ -6,6 +6,9 @@
 
 --]]
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: missing-parameter
 
 --[[
  - TODO:
@@ -37,7 +40,11 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
+<<<<<<< HEAD
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 13), 'could not add param table')
+=======
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 14), 'could not add param table')
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 --[[
   // @Param: QUIK_ENABLE
@@ -158,6 +165,20 @@ local QUIK_RC_FUNC     = bind_add_param('RC_FUNC',       12, 300)
 --]]
 local QUIK_MAX_REDUCE  = bind_add_param('MAX_REDUCE',    13, 20)
 
+<<<<<<< HEAD
+=======
+--[[
+  // @Param: QUIK_OPTIONS
+  // @DisplayName: Quicktune options
+  // @Description: Additional options. When the Two Position Switch option is enabled then a high switch position will start the tune, low will disable the tune. you should also set a QUIK_AUTO_SAVE time so that you will be able to save the tune.
+  // @Bitmask: 0:UseTwoPositionSwitch
+  // @User: Standard
+--]]
+local QUIK_OPTIONS     = bind_add_param('OPTIONS',       14, 0)
+
+local OPTIONS_TWO_POSITION = (1<<0)
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
 local RCMAP_ROLL       = bind_param("RCMAP_ROLL")
@@ -172,7 +193,7 @@ local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0
 local PILOT_INPUT_DELAY = 4.0
 
-local YAW_FLTE_MAX = 2.0
+local YAW_FLTE_MAX = 8.0
 local FLTD_MUL = 0.5
 local FLTT_MUL = 0.5
 
@@ -277,6 +298,7 @@ end
 -- setup filter frequencies
 function setup_filters(axis)
    if QUIK_AUTO_FILTER:get() <= 0 then
+      filters_done[axis] = true
       return
    end
    local fltd = axis .. "_FLTD"
@@ -286,7 +308,7 @@ function setup_filters(axis)
    adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
    if axis == "YAW" then
       local FLTE = params[flte]
-      if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
+      if FLTE:get() < 0.0 or FLTE:get() > YAW_FLTE_MAX then
          adjust_gain(flte, YAW_FLTE_MAX)
       end
    end
@@ -386,7 +408,7 @@ function adjust_gain(pname, value)
       local FF = params[ffname]
       if FF:get() > 0 then
          -- if we have any FF on an axis then we don't couple I to P,
-         -- usually we want I = FF for a one sectond time constant for trim
+         -- usually we want I = FF for a one second time constant for trim
          return
       end
       param_changed[iname] = true
@@ -490,7 +512,13 @@ function update()
    if not sw_pos then
       return
    end
-   if sw_pos == 1 and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
+   local sw_pos_tune = 1
+   local sw_pos_save = 2
+   if (QUIK_OPTIONS:get() & OPTIONS_TWO_POSITION) ~= 0 then
+      sw_pos_tune = 2
+      sw_pos_save = -1
+   end
+   if sw_pos == sw_pos_tune and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
       gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: Must be flying to tune"))
       last_warning = get_time()
       return
@@ -506,7 +534,7 @@ function update()
       reset_axes_done()
       return
    end
-   if sw_pos == 2 then
+   if sw_pos == sw_pos_save then
       -- save all params
       if need_restore then
          need_restore = false
@@ -514,7 +542,7 @@ function update()
          gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: saved"))
       end
    end
-   if sw_pos ~= 1 then
+   if sw_pos ~= sw_pos_tune then
       return
    end
 

@@ -6,10 +6,12 @@
 
 #define STM32_UNKNOWN 0
 #define STM32_H743    0x450
+#define STM32_H730    0x483
 
 mcu_des_t mcu_descriptions[] = {
-    { STM32_UNKNOWN,     "STM32H7???",    '?'},
-    { STM32_H743,        "STM32H743/753", '?'},
+    { STM32_UNKNOWN,     "STM32H7???"},
+    { STM32_H730,        "STM32H73x/72x"},
+    { STM32_H743,        "STM32H743/753/750"},
 };
 
 const mcu_rev_t silicon_revs[] = {

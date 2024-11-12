@@ -43,12 +43,15 @@ void AP_EFI_Serial_MS::update()
 
     const uint32_t expected_bytes = 2 + (RT_LAST_OFFSET - RT_FIRST_OFFSET) + 4;
     if (port->available() >= expected_bytes && read_incoming_realtime_data()) {
-        last_response_ms = now;
         copy_to_frontend();
     }
 
-    if (port->available() == 0 || now - last_response_ms > 200) {
+    const uint32_t last_request_delta = (now - last_request_ms);
+    const uint32_t available = port->available();
+    if (((last_request_delta > 150) && (available > 0)) || // nothing in our input buffer 150 ms after request
+        ((last_request_delta > 90)  && (available == 0))) { // we requested something over 90 ms ago, but didn't get any data
         port->discard_input();
+        last_request_ms = now;
         // Request an update from the realtime table (7).
         // The data we need start at offset 6 and ends at 129
         send_request(7, RT_FIRST_OFFSET, RT_LAST_OFFSET);
@@ -59,7 +62,7 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
 {
     // Data is parsed directly from the buffer, otherwise we would need to allocate
     // several hundred bytes for the entire realtime data table or request every
-    // value individiually
+    // value individually
     uint16_t message_length = 0;
 
     // reset checksum before reading new data

@@ -3,7 +3,6 @@
 #define AP_PARAM_VEHICLE_NAME plane
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Gripper/AP_Gripper.h>
 
 // Global parameter class.
 //
@@ -43,7 +42,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type, // unused;
-        k_param_num_resets,
+        k_param_num_resets, // unused
         k_param_NavEKF2,
         k_param_g2,
         k_param_avoidance_adsb,
@@ -56,7 +55,7 @@ public:
         //
         k_param_auto_trim      = 10, // unused
         k_param_log_bitmask_old,  // unused
-        k_param_pitch_trim_cd,
+        k_param_pitch_trim,
         k_param_mix_mode,
         k_param_reverse_elevons, // unused
         k_param_reverse_ch1_elevon, // unused
@@ -159,14 +158,14 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,         // stream rates for uartA
-        k_param_gcs1,               // stream rates for uartC
+        k_param_gcs0 = 110,         // stream rates for SERIAL0
+        k_param_gcs1,               // stream rates for SERIAL1
         k_param_sysid_this_mav,
         k_param_sysid_my_gcs,
         k_param_serial1_baud_old,   // deprecated
         k_param_telem_delay,
         k_param_serial0_baud_old,   // deprecated
-        k_param_gcs2,               // stream rates for uartD
+        k_param_gcs2,               // stream rates for SERIAL2
         k_param_serial2_baud_old,   // deprecated
         k_param_serial2_protocol,   // deprecated
 
@@ -174,7 +173,7 @@ public:
         //
         k_param_airspeed_min = 120,
         k_param_airspeed_max,
-        k_param_FBWB_min_altitude_cm,  // 0=disabled, minimum value for altitude in cm (for first time try 30 meters = 3000 cm)
+        k_param_cruise_alt_floor,
         k_param_flybywire_elev_reverse,
         k_param_alt_control_algorithm, // unused
         k_param_flybywire_climb_rate,
@@ -203,7 +202,7 @@ public:
         k_param_curr_amp_offset,
         k_param_NavEKF,  // deprecated - remove
         k_param_mission, // mission library
-        k_param_serial_manager, // serial manager library
+        k_param_serial_manager_old, // serial manager library
         k_param_NavEKF2_old,  // deprecated - remove
         k_param_land_pre_flare_alt, // unused - moved to AP_Landing
         k_param_land_pre_flare_airspeed = 149,  // unused - moved to AP_Landing
@@ -213,13 +212,13 @@ public:
         //
         k_param_crosstrack_gain = 150, // unused
         k_param_crosstrack_entry_angle, // unused
-        k_param_roll_limit_cd,
-        k_param_pitch_limit_max_cd,
-        k_param_pitch_limit_min_cd,
-        k_param_airspeed_cruise_cm,
-        k_param_RTL_altitude_cm,
+        k_param_roll_limit,
+        k_param_pitch_limit_max,
+        k_param_pitch_limit_min,
+        k_param_airspeed_cruise,
+        k_param_RTL_altitude,
         k_param_inverted_flight_ch_unused, // unused
-        k_param_min_gndspeed_cm,
+        k_param_min_groundspeed,
         k_param_crosstrack_use_wind, // unused
 
 
@@ -344,6 +343,7 @@ public:
 
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
+        k_param_airspeed_stall,
 
         k_param_logger = 253, // Logging Group
 
@@ -356,6 +356,11 @@ public:
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
+        k_param_autotune_options,
+        k_param_takeoff_throttle_min,
+        k_param_takeoff_options,
+
+        k_param_pullup = 270,
     };
 
     AP_Int16 format_version;
@@ -420,7 +425,7 @@ public:
     AP_Int8 flight_mode6;
     AP_Int8 initial_mode;
 
-    // Navigational maneuvering limits
+    // Navigational manoeuvring limits
     //
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
@@ -434,11 +439,10 @@ public:
     AP_Float mixing_gain;
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
-    AP_Int16 num_resets;
     AP_Int32 log_bitmask;
-    AP_Int32 RTL_altitude_cm;
-    AP_Int16 pitch_trim_cd;
-    AP_Int16 FBWB_min_altitude_cm;
+    AP_Float RTL_altitude;
+    AP_Float pitch_trim;
+    AP_Float cruise_alt_floor;
 
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
@@ -484,11 +488,6 @@ public:
     AP_Button *button_ptr;
 #endif
 
-#if STATS_ENABLED == ENABLED
-    // vehicle statistics
-    AP_Stats stats;
-#endif
-
 #if AP_ICENGINE_ENABLED
     // internal combustion engine control
     AP_ICEngine ice_control;
@@ -517,16 +516,7 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
-#if AP_GRIPPER_ENABLED
-    // Payload Gripper
-    AP_Gripper gripper;
-#endif
-
     AP_Int32 flight_options;
-
-#if AP_SCRIPTING_ENABLED
-    AP_Scripting scripting;
-#endif // AP_SCRIPTING_ENABLED
 
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
@@ -535,23 +525,44 @@ public:
     AP_LandingGear landing_gear;
 #endif
 
+#if AC_PRECLAND_ENABLED
+    AC_PrecLand precland;
+#endif
+
     // crow flaps weighting
     AP_Int8 crow_flap_weight_outer;
     AP_Int8 crow_flap_weight_inner;
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
 
-    // Forward throttle battery voltage compenstaion
-    AP_Float fwd_thr_batt_voltage_max;
-    AP_Float fwd_thr_batt_voltage_min;
-    AP_Int8  fwd_thr_batt_idx;
+    // Forward throttle battery voltage compensation
+    class FWD_BATT_CMP {
+    public:
+        // Calculate the throttle scale to compensate for battery voltage drop
+        void update();
 
-#if OFFBOARD_GUIDED == ENABLED
+        // Apply throttle scale to min and max limits
+        void apply_min_max(int8_t &min_throttle, int8_t &max_throttle) const;
+
+        // Apply throttle scale to throttle demand
+        float apply_throttle(float throttle) const;
+
+        AP_Float batt_voltage_max;
+        AP_Float batt_voltage_min;
+        AP_Int8  batt_idx;
+
+    private:
+        bool enabled;
+        float ratio;
+    } fwd_batt_cmp;
+
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // guided yaw heading PID
-    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
 
-#if AP_SCRIPTING_ENABLED
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
     AP_Follow follow;
 #endif
 
@@ -570,6 +581,11 @@ public:
 
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
+
+#if AP_RANGEFINDER_ENABLED
+    // orientation of rangefinder to use for landing
+    AP_Int8 rangefinder_land_orient;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

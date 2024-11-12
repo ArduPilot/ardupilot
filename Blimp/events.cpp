@@ -14,7 +14,7 @@ bool Blimp::failsafe_option(FailsafeOption opt) const
 
 void Blimp::failsafe_radio_on_event()
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
     // set desired action based on FS_THR_ENABLE parameter
     Failsafe_Action desired_action;
@@ -59,13 +59,13 @@ void Blimp::failsafe_radio_off_event()
 {
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
     gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
 }
 
 void Blimp::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_BATT, LogErrorCode::FAILSAFE_OCCURRED);
 
     Failsafe_Action desired_action = (Failsafe_Action)action;
 
@@ -98,8 +98,8 @@ void Blimp::failsafe_gcs_check()
 
     const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
-         return;
-     }
+        return;
+    }
 
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
@@ -148,7 +148,7 @@ void Blimp::do_failsafe_action(Failsafe_Action action, ModeReason reason)
     case Failsafe_Action_None:
         return;
     case Failsafe_Action_Land:
-        set_mode_land_with_pause(reason);
+        set_mode_land_failsafe(reason);
         break;
     case Failsafe_Action_Terminate: {
         arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
@@ -168,10 +168,10 @@ void Blimp::gpsglitch_check()
     if (ap.gps_glitching != gps_glitching) {
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
-            AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
         } else {
-            AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
         }
     }

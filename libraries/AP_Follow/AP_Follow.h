@@ -13,6 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "AP_Follow_config.h"
+
+#if AP_FOLLOW_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -27,6 +30,11 @@ class AP_Follow
 {
 
 public:
+
+    // enum for FOLLOW_OPTIONS parameter
+    enum class Option {
+        MOUNT_FOLLOW_ON_ENTER = 1
+    };
 
     // enum for YAW_BEHAVE parameter
     enum YawBehave {
@@ -69,6 +77,9 @@ public:
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
+    // get target sysid
+    uint8_t get_target_sysid() const { return _sysid.get(); }
+
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
     const AC_P& get_pos_p() const { return _p_pos; }
 
@@ -98,11 +109,17 @@ public:
     // get system time of last position update
     uint32_t get_last_update_ms() const { return _last_location_update_ms; }
 
+    // returns true if a follow option enabled
+    bool option_is_enabled(Option option) const { return (_options.get() & (uint16_t)option) != 0; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
     static AP_Follow *_singleton;
+
+    // returns true if we should extract information from msg
+    bool should_handle_message(const mavlink_message_t &msg) const;
 
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
@@ -119,6 +136,13 @@ private:
     // set recorded distance and bearing to target to zero
     void clear_dist_and_bearing_to_target();
 
+    // handle various mavlink messages supplying position:
+    bool handle_global_position_int_message(const mavlink_message_t &msg);
+    bool handle_follow_target_message(const mavlink_message_t &msg);
+
+    // write out an onboard-log message to help diagnose follow problems:
+    void Log_Write_FOLL();
+
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
     AP_Int16    _sysid;             // target's mavlink system id (0 to use first sysid seen)
@@ -128,9 +152,9 @@ private:
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
+    AP_Int16    _options;           // options for mount behaviour follow mode
 
     // local variables
-    bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
     uint32_t _last_location_update_ms;  // system time of last position update
     Location _target_location;      // last known location of target
     Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
@@ -149,3 +173,5 @@ private:
 namespace AP {
     AP_Follow &follow();
 };
+
+#endif

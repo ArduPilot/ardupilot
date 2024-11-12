@@ -35,14 +35,11 @@
 #endif
 #endif
 
-#ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED 1
-#endif
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif
 #ifndef COMPASS_LEARN_ENABLED
-#define COMPASS_LEARN_ENABLED 1
+#define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 #endif
 
 // define default compass calibration fitness and consistency checks
@@ -165,9 +162,6 @@ public:
     /// Return true if we have set a scale factor for a compass
     bool have_scale_factor(uint8_t i) const;
 
-    // compass calibrator interface
-    void cal_update();
-
 #if COMPASS_MOT_ENABLED
     // per-motor calibration access
     void per_motor_calibration_start(void) {
@@ -181,6 +175,10 @@ public:
     }
 #endif
 
+#if COMPASS_CAL_ENABLED
+    // compass calibrator interface
+    void cal_update();
+
     // start_calibration_all will only return false if there are no
     // compasses to calibrate.
     bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
@@ -190,22 +188,25 @@ public:
     bool compass_cal_requires_reboot() const { return _cal_requires_reboot; }
     bool is_calibrating() const;
 
-    // indicate which bit in LOG_BITMASK indicates we should log compass readings
-    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
-
+#if HAL_MAVLINK_BINDINGS_ENABLED
     /*
       handle an incoming MAG_CAL command
     */
-    MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_mag_cal_command(const mavlink_command_int_t &packet);
 
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);
+#endif  // HAL_MAVLINK_BINDINGS_ENABLED
+#endif  // COMPASS_CAL_ENABLED
+
+    // indicate which bit in LOG_BITMASK indicates we should log compass readings
+    void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
     // check if the compasses are pointing in the same direction
     bool consistent() const;
 
     /// Return the health of a compass
-    bool healthy(uint8_t i) const { return _get_state(Priority(i)).healthy; }
+    bool healthy(uint8_t i) const;
     bool healthy(void) const { return healthy(_first_usable); }
     uint8_t get_healthy_mask() const;
 
@@ -244,6 +245,11 @@ public:
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation) {
         _board_orientation = orientation;
+    }
+
+    // get overall board orientation
+    enum Rotation get_board_orientation(void) const {
+        return _board_orientation;
     }
 
     /// Set the motor compensation type
@@ -340,12 +346,14 @@ public:
 
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
 
+#if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
       fast compass calibration given vehicle position and yaw
      */
-    MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
-                                 float lat_deg, float lon_deg,
-                                 bool force_use=false);
+    bool mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
+                           float lat_deg, float lon_deg,
+                           bool force_use=false);
+#endif
 
 #if AP_COMPASS_MSP_ENABLED
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);
@@ -382,7 +390,12 @@ private:
     bool _add_backend(AP_Compass_Backend *backend);
     void _probe_external_i2c_compasses(void);
     void _detect_backends(void);
+    void probe_i2c_spi_compasses(void);
+#if AP_COMPASS_DRONECAN_ENABLED
+    void probe_dronecan_compasses(void);
+#endif
 
+#if COMPASS_CAL_ENABLED
     // compass cal
     void _update_calibration_trampoline();
     bool _accept_calibration(uint8_t i);
@@ -393,30 +406,35 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() const { return _compass_cal_autoreboot; }
+#if HAL_MAVLINK_BINDINGS_ENABLED
     Priority next_cal_progress_idx[MAVLINK_COMM_NUM_BUFFERS];
     Priority next_cal_report_idx[MAVLINK_COMM_NUM_BUFFERS];
+#endif
+#endif  // COMPASS_CAL_ENABLED
 
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
 
+#if AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
     /*
       get mag field with the effects of offsets, diagonals and
       off-diagonals removed
     */
     bool get_uncorrected_field(uint8_t instance, Vector3f &field) const;
-    
+#endif
+
 #if COMPASS_CAL_ENABLED
     //keep track of which calibrators have been saved
     RestrictIDTypeArray<bool, COMPASS_MAX_INSTANCES, Priority> _cal_saved;
     bool _cal_autosave;
-#endif
 
     //autoreboot after compass calibration
     bool _compass_cal_autoreboot;
     bool _cal_requires_reboot;
     bool _cal_has_run;
+#endif  // COMPASS_CAL_ENABLED
 
-    // enum of drivers for COMPASS_TYPEMASK
+    // enum of drivers for COMPASS_DISBLMSK
     enum DriverType {
 #if AP_COMPASS_HMC5843_ENABLED
         DRIVER_HMC5843  =0,
@@ -448,7 +466,7 @@ private:
 #if AP_COMPASS_MMC3416_ENABLED
         DRIVER_MMC3416  =9,
 #endif
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
         DRIVER_UAVCAN   =11,
 #endif
 #if AP_COMPASS_QMC5883L_ENABLED
@@ -475,7 +493,13 @@ private:
 #if AP_COMPASS_MMC5XX3_ENABLED
         DRIVER_MMC5XX3  =19,
 #endif
-    };
+#if AP_COMPASS_QMC5883P_ENABLED
+        DRIVER_QMC5883P =20,
+#endif
+#if AP_COMPASS_BMM350_ENABLED
+        DRIVER_BMM350   =21,
+#endif
+};
 
     bool _driver_enabled(enum DriverType driver_type);
     
@@ -602,7 +626,9 @@ private:
     // bitmask of options
     enum class Option : uint16_t {
         CAL_REQUIRE_GPS = (1U<<0),
+        ALLOW_DRONECAN_AUTO_REPLACEMENT = (1U<<1),
     };
+    bool option_set(Option opt) const { return (_options.get() & uint16_t(opt)) != 0; }
     AP_Int16 _options;
 
 #if COMPASS_CAL_ENABLED
@@ -644,6 +670,8 @@ private:
     uint8_t msp_instance_mask;
 #endif
     bool init_done;
+
+    bool suppress_devid_save;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
 };

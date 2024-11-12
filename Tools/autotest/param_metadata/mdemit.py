@@ -90,7 +90,9 @@ class MDEmit(Emit):
             t += "\n\n%s" % param.Description
             
             for field in param.__dict__.keys():
-                if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
+                if not self.should_emit_field(param, field):
+                    continue
+                if field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues'] and field in known_param_fields:
                     if field == 'Values' and Emit.prog_values_field.match(param.__dict__[field]):
                         values = (param.__dict__[field]).split(',')
                         t += "\n\n|Value|Meaning|"

@@ -8,9 +8,9 @@
 #include <AP_DAL/AP_DAL.h>
 
 // constructor
-NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
+NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
+    dal(_dal),
     frontend(_frontend),
-    dal(AP::dal()),
     public_origin(frontend->common_EKF_origin)
 {
     firstInitTime_ms = 0;
@@ -131,13 +131,15 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
         return false;
     }
+#if AP_RANGEFINDER_ENABLED
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
     if(dal.rangefinder() && !storedRange.init(MIN(2*obs_buffer_length , imu_buffer_length))) {
         return false;
     }
+#endif
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
 #if EK3_FEATURE_BEACON_FUSION
-    if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
+    if(dal.beacon() && !rngBcn.storedRange.init(imu_buffer_length+1)) {
         return false;
     }
 #endif
@@ -172,7 +174,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         }
 
         // try to instantiate
-        yawEstimator = new EKFGSF_yaw();
+        yawEstimator = NEW_NOTHROW EKFGSF_yaw();
         if (yawEstimator == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 IMU%uGSF: allocation failed",(unsigned)imu_index);
             return false;
@@ -201,7 +203,7 @@ void NavEKF3_core::InitialiseVariables()
     prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
-    lastPosPassTime_ms = 0;
+    lastGpsPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
@@ -247,7 +249,9 @@ void NavEKF3_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
+#if EK3_FEATURE_OPTFLOW_FUSION
     Popt = 0.0f;
+#endif
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
@@ -258,6 +262,8 @@ void NavEKF3_core::InitialiseVariables()
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
     velTimeout = true;
+    velAiding = false;
+    waitingForGpsChecks = false;
     memset(&faultStatus, 0, sizeof(faultStatus));
     hgtRate = 0.0f;
     onGround = true;
@@ -266,6 +272,9 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
+    windStateIsObservable = false;
+    treatWindStatesAsTruth = false;
+    lastAspdEstIsValid = false;
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
@@ -311,7 +320,9 @@ void NavEKF3_core::InitialiseVariables()
     ZERO_FARRAY(statesArray);
     memset(&vertCompFiltState, 0, sizeof(vertCompFiltState));
     posVelFusionDelayed = false;
+#if EK3_FEATURE_OPTFLOW_FUSION
     optFlowFusionDelayed = false;
+#endif
     flowFusionActive = false;
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
@@ -333,9 +344,11 @@ void NavEKF3_core::InitialiseVariables()
     memset(&filterStatus, 0, sizeof(filterStatus));
     activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     prevHgtSource = activeHgtSource;
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
     memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
     memset(&storedRngMeas, 0, sizeof(storedRngMeas));
+#endif
     terrainHgtStable = true;
     ekfOriginHgtVar = 0.0f;
     ekfGpsRefHgt = 0.0;
@@ -345,44 +358,7 @@ void NavEKF3_core::InitialiseVariables()
 
     // range beacon fusion variables
 #if EK3_FEATURE_BEACON_FUSION
-    memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
-    lastRngBcnPassTime_ms = 0;
-    rngBcnTestRatio = 0.0f;
-    rngBcnHealth = false;
-    varInnovRngBcn = 0.0f;
-    innovRngBcn = 0.0f;
-    memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
-    rngBcnDataToFuse = false;
-    beaconVehiclePosNED.zero();
-    beaconVehiclePosErr = 1.0f;
-    rngBcnLast3DmeasTime_ms = 0;
-    rngBcnGoodToAlign = false;
-    lastRngBcnChecked = 0;
-    receiverPos.zero();
-    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
-    rngBcnAlignmentStarted =  false;
-    rngBcnAlignmentCompleted = false;
-    lastBeaconIndex = 0;
-    rngBcnPosSum.zero();
-    numBcnMeas = 0;
-    rngSum = 0.0f;
-    N_beacons = 0;
-    maxBcnPosD = 0.0f;
-    minBcnPosD = 0.0f;
-    bcnPosDownOffsetMax = 0.0f;
-    bcnPosOffsetMaxVar = 0.0f;
-    maxOffsetStateChangeFilt = 0.0f;
-    bcnPosDownOffsetMin = 0.0f;
-    bcnPosOffsetMinVar = 0.0f;
-    minOffsetStateChangeFilt = 0.0f;
-    rngBcnFuseDataReportIndex = 0;
-    if (dal.beacon()) {
-        if (rngBcnFusionReport == nullptr) {
-            rngBcnFusionReport = new rngBcnFusionReport_t[dal.beacon()->count()];
-        }
-    }
-    bcnPosOffsetNED.zero();
-    bcnOriginEstInit = false;
+    rngBcn.InitialiseVariables();
 #endif  // EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_BODY_ODOM
@@ -422,10 +398,12 @@ void NavEKF3_core::InitialiseVariables()
     storedGPS.reset();
     storedBaro.reset();
     storedTAS.reset();
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
     storedRange.reset();
+#endif
     storedOutput.reset();
 #if EK3_FEATURE_BEACON_FUSION
-    storedRangeBeacon.reset();
+    rngBcn.storedRange.reset();
 #endif
 #if EK3_FEATURE_BODY_ODOM
     storedBodyOdm.reset();
@@ -450,7 +428,6 @@ void NavEKF3_core::InitialiseVariables()
 
     effectiveMagCal = effective_magCal();
 }
-
 
 // Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.
 void NavEKF3_core::InitialiseVariablesMag()
@@ -479,6 +456,7 @@ void NavEKF3_core::InitialiseVariablesMag()
 #endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
+    magFusionSel = MagFuseSel::NOT_FUSING;
 }
 
 /*
@@ -504,7 +482,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     }
 
     // read all the sensors required to start the EKF the states
-    readIMUData();
+    readIMUData(false);  // don't allow prediction
     readMagData();
     readGpsData();
     readGpsYawData();
@@ -635,8 +613,10 @@ void NavEKF3_core::CovarianceInit()
     P[23][23]  = P[22][22];
 
 
+#if EK3_FEATURE_OPTFLOW_FUSION
     // optical flow ground height covariance
     Popt = 0.25f;
+#endif
 
 }
 
@@ -646,9 +626,6 @@ void NavEKF3_core::CovarianceInit()
 // Update Filter States - this should be called whenever new IMU data is available
 void NavEKF3_core::UpdateFilter(bool predict)
 {
-    // Set the flag to indicate to the filter that the front-end has given permission for a new state prediction cycle to be started
-    startPredictEnabled = predict;
-
     // don't run filter updates if states have not been initialised
     if (!statesInitialised) {
         return;
@@ -665,7 +642,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
     controlFilterModes();
 
     // read IMU data as delta angles and velocities
-    readIMUData();
+    readIMUData(predict);
 
     // Run the EKF equations to estimate at the fusion time horizon if new IMU data is available in the buffer
     if (runUpdates) {
@@ -696,8 +673,10 @@ void NavEKF3_core::UpdateFilter(bool predict)
         SelectRngBcnFusion();
 #endif
 
+#if EK3_FEATURE_OPTFLOW_FUSION
         // Update states using optical flow data
         SelectFlowFusion();
+#endif
 
 #if EK3_FEATURE_BODY_ODOM
         // Update states using body frame odometry data
@@ -822,7 +801,7 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
 #if EK3_FEATURE_BEACON_FUSION
     // If main filter velocity states are valid, update the range beacon receiver position states
     if (filterStatus.flags.horiz_vel) {
-        receiverPos += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+        rngBcn.receiverPos += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
     }
 #endif
 }
@@ -901,7 +880,7 @@ void NavEKF3_core::calcOutputStates()
     if (!accelPosOffset.is_zero()) {
         // calculate the average angular rate across the last IMU update
         // note delAngDT is prevented from being zero in readIMUData()
-        Vector3F angRate = imuDataNew.delAng * (1.0f/imuDataNew.delAngDT);
+        Vector3F angRate = dal.ins().get_gyro(gyro_index_active).toftype();
 
         // Calculate the velocity of the body frame origin relative to the IMU in body frame
         // and rotate into earth frame. Note % operator has been overloaded to perform a cross product
@@ -1023,8 +1002,8 @@ void NavEKF3_core::calcOutputStates()
 
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
- * See AP_NavEKF3/derivation/main.py for derivation
- * Output for change reference: AP_NavEKF3/derivation/generated/covariance_generated.cpp
+ * See derivation/generate_1.py for derivation
+ * Output for change reference: derivation/generated/covariance_generated.cpp
  * Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
  * used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
 */
@@ -1118,10 +1097,25 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
 
     if (!inhibitWindStates) {
         const bool isDragFusionDeadReckoning = filterStatus.flags.dead_reckoning && !dragTimeout;
+<<<<<<< HEAD
         if (isDragFusionDeadReckoning) {
             // when dead reckoning using drag fusion stop learning wind states to provide a more stable velocity estimate
             P[23][23] = P[22][22] = 0.0f;
         } else {
+=======
+        const bool newTreatWindStatesAsTruth = isDragFusionDeadReckoning || !windStateIsObservable;
+        if (newTreatWindStatesAsTruth) {
+            treatWindStatesAsTruth = true;
+            P[23][23] = P[22][22] = 0.0f;
+        } else {
+            if (treatWindStatesAsTruth) {
+                treatWindStatesAsTruth = false;
+                if (windStateIsObservable) {
+                    // allow EKF to relearn wind states rapidly
+                    P[23][23] = P[22][22] = sq(WIND_VEL_VARIANCE_MAX);
+                }
+            }
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
 	        if (!tasDataDelayed.allowFusion) {
 	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
@@ -1979,7 +1973,11 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     if (!inhibitWindStates) {
-        for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
+        if (treatWindStatesAsTruth) {
+            P[23][23] = P[22][22] = 0.0f;
+        } else {
+            for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
+        }
     } else {
         zeroCols(P,22,23);
         zeroRows(P,22,23);
@@ -2061,7 +2059,7 @@ void NavEKF3_core::setYawFromMag()
     Matrix3F Tbn_zeroYaw;
     if (order == rotationOrder::TAIT_BRYAN_321) {
         // rolled more than pitched so use 321 rotation order
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        stateStruct.quat.to_euler(eulerAngles);
         Tbn_zeroYaw.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
     } else if (order == rotationOrder::TAIT_BRYAN_312) {
         // pitched more than rolled so use 312 rotation order
@@ -2131,7 +2129,7 @@ void NavEKF3_core::calcTiltErrorVariance()
     const ftype &q2 = stateStruct.quat[2];
     const ftype &q3 = stateStruct.quat[3];
 
-    // equations generated by quaternion_error_propagation(): in AP_NavEKF3/derivation/main.py
+    // equations generated by quaternion_error_propagation(): in derivation/generate_2.py
     // only diagonals have been used
     // dq0 ... dq3  terms have been zeroed
     const ftype PS1 = q0*q1 + q2*q3;
@@ -2185,6 +2183,7 @@ void NavEKF3_core::bestRotationOrder(rotationOrder &order)
 // and log with value generated by NavEKF3_core::calcTiltErrorVariance()
 void NavEKF3_core::verifyTiltErrorVariance()
 {
+#if HAL_LOGGING_ENABLED
     const Vector3f gravity_ef = Vector3f(0.0f,0.0f,1.0f);
     Matrix3f Tnb;
     const float quat_delta = 0.001f;
@@ -2224,6 +2223,7 @@ void NavEKF3_core::verifyTiltErrorVariance()
         };
         AP::logger().WriteBlock(&msg, sizeof(msg));
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 #endif
 

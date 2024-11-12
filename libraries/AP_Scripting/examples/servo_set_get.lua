@@ -5,7 +5,7 @@
 
 local flipflop = true
 local K_AILERON = 4
-local aileron_channel = SRV_Channels:find_channel(K_AILERON)
+local aileron_channel = assert(SRV_Channels:find_channel(K_AILERON))
 
 function update()
     if flipflop then

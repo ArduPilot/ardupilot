@@ -1,6 +1,7 @@
 #include "Copter.h"
+#include <AP_Mount/AP_Mount.h>
 
-#if MODE_CIRCLE_ENABLED == ENABLED
+#if MODE_CIRCLE_ENABLED
 
 /*
  * Init and run calls for circle flight mode
@@ -19,6 +20,21 @@ bool ModeCircle::init(bool ignore_checks)
 
     // initialise circle controller including setting the circle center based on vehicle speed
     copter.circle_nav->init();
+
+#if HAL_MOUNT_ENABLED
+    // Check if the CIRCLE_OPTIONS parameter have roi_at_center
+    if (copter.circle_nav->roi_at_center()) {
+        const Vector3p &pos { copter.circle_nav->get_center() };
+        Location circle_center;
+        if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, pos * 0.01)) {
+            return false;
+        }
+        // point at the ground:
+        circle_center.set_alt_cm(0, Location::AltFrame::ABOVE_TERRAIN);
+        AP_Mount *s = AP_Mount::get_singleton();
+        s->set_roi_target(circle_center);
+    }
+#endif
 
     // set auto yaw circle mode
     auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
@@ -52,7 +68,7 @@ void ModeCircle::run()
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
-        // skip if using CH6 tuning knob for circle rate
+        // skip if using transmitter based tuning knob for circle rate
         if (g.radio_tuning != TUNING_CIRCLE_RATE) {
             const float roll_stick = channel_roll->norm_input_dz();         // roll stick normalized -1 to 1
 
@@ -98,8 +114,10 @@ void ModeCircle::run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
+#if AP_RANGEFINDER_ENABLED
     // update the vertical offset based on the surface measurement
     copter.surface_tracking.update_surface_offset();
+#endif
 
     copter.failsafe_terrain_set_status(copter.circle_nav->update(target_climb_rate));
     pos_control->update_z_controller();

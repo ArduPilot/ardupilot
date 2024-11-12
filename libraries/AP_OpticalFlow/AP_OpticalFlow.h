@@ -14,19 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_OPTICALFLOW_ENABLED
-#define AP_OPTICALFLOW_ENABLED 1
-#endif
-
-#ifndef HAL_MSP_OPTICALFLOW_ENABLED
-#define HAL_MSP_OPTICALFLOW_ENABLED (AP_OPTICALFLOW_ENABLED && (HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES))
-#endif
-
-#ifndef AP_OPTICALFLOW_SITL_ENABLED
-#define AP_OPTICALFLOW_SITL_ENABLED AP_SIM_ENABLED
-#endif
+#include "AP_OpticalFlow_config.h"
 
 #if AP_OPTICALFLOW_ENABLED
 
@@ -91,10 +79,10 @@ public:
     // quality - returns the surface quality as a measure from 0 ~ 255
     uint8_t quality() const { return _state.surface_quality; }
 
-    // raw - returns the raw movement from the sensor
+    // flowRate - returns the raw movement from the sensor in rad/s
     const Vector2f& flowRate() const { return _state.flowRate; }
 
-    // velocity - returns the velocity in m/s
+    // bodyRate - returns the IMU-adjusted movement in rad/s
     const Vector2f& bodyRate() const { return _state.bodyRate; }
 
     // last_update() - returns system time of last sensor update
@@ -151,9 +139,10 @@ private:
     void Log_Write_Optflow();
     uint32_t _log_bit = -1;     // bitmask bit which indicates if we should log.  -1 means we always log
 
+#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     // calibrator
     AP_OpticalFlow_Calibrator *_calibrator;
-
+#endif
 };
 
 namespace AP {

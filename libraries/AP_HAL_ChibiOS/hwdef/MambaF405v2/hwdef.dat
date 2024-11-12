@@ -41,11 +41,16 @@ PA9 USART1_TX USART1
 
 # Alt config to allow RCIN on UART
 PA10 USART1_RX USART1 ALT(1)
+<<<<<<< HEAD
 define HAL_SERIAL1_PROTOCOL SerialProtocol_RCIN
+=======
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # SBUS inversion control pin, active low
 PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(0)
 
+<<<<<<< HEAD
 define HAL_SERIAL2_PROTOCOL SerialProtocol_None
 
 # USART3 (VTX)
@@ -56,12 +61,27 @@ define HAL_SERIAL3_PROTOCOL SerialProtocol_Tramp
 define HAL_SERIAL4_PROTOCOL SerialProtocol_None
 define HAL_SERIAL5_PROTOCOL SerialProtocol_None
 define HAL_SERIAL5_BAUD 115200
+=======
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+
+# USART3 (VTX)
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Tramp
+
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # USART6 (ESC Telemetry)
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
+<<<<<<< HEAD
 define HAL_SERIAL6_PROTOCOL SerialProtocol_ESCTelemetry
 define HAL_SERIAL6_BAUD 19200
+=======
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_ESCTelemetry
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # The pins for SWD debugging with a STlinkv2 or black-magic probe (not tested)
 PA13 JTMS-SWDIO SWD
@@ -73,12 +93,17 @@ PC2 RSSI_ADC ADC1
 PC3 BATT_CURRENT_SENS ADC1 SCALE(1)
 
 # PWM output. 1 - 4 on ESC header
-PA3 TIM2_CH4 TIM2 PWM(1) GPIO(50)
+PA3 TIM2_CH4 TIM2 PWM(1) GPIO(50) BIDIR
 PB0 TIM3_CH3 TIM3 PWM(2) GPIO(51)
 PB1 TIM3_CH4 TIM3 PWM(3) GPIO(52) BIDIR
+<<<<<<< HEAD
 PA2 TIM2_CH3 TIM2 PWM(4) GPIO(53) BIDIR
+=======
+PA2 TIM2_CH3 TIM2 PWM(4) GPIO(53)
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # Board LEDs
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PB5 LED_BLUE OUTPUT LOW GPIO(1)
 PB4 LED_GREEN OUTPUT LOW GPIO(2)
 define HAL_GPIO_A_LED_PIN 1
@@ -90,8 +115,10 @@ PA0 TIM5_CH1 TIM5 PWM(5) GPIO(54)
 # Buzzer
 PA8 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+# Camera control
+PB9 CAM_C OUTPUT LOW GPIO(81)
+define RELAY2_PIN_DEFAULT 81
 
 # Camera control
 PB9 CAM_C OUTPUT LOW GPIO(81)
@@ -170,10 +197,13 @@ define HAL_OSD_TYPE_DEFAULT 1
 # Font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
+<<<<<<< HEAD
 # VTX
 define AP_TRAMP_ENABLED TRUE
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 DMA_PRIORITY TIM2* TIM3*
 
 # minimal drivers to reduce flash usage
-include ../include/minimal.inc
+include ../include/minimize_fpv_osd.inc

@@ -8,6 +8,10 @@ enum class LINUX_BOARD_TYPE: int {
 	RPI_ZERO_1=0,
     RPI_2_3_ZERO2=1,
 	RPI_4=2,
+<<<<<<< HEAD
+=======
+    RPI_5=3,
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     ALLWINNWER_H616=100,
     UNKNOWN_BOARD=999
 };

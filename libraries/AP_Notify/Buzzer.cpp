@@ -66,6 +66,18 @@ void Buzzer::update_pattern_to_play()
         return;
     }
 
+    // initializing?
+    if (_flags.gyro_calibrated != AP_Notify::flags.gyro_calibrated) {
+        _flags.gyro_calibrated = AP_Notify::flags.gyro_calibrated;
+        play_pattern(INIT_GYRO);
+    }
+
+    // check if prearm check are good
+    if (AP_Notify::flags.pre_arm_check  && !_flags.pre_arm_check) {
+        _flags.pre_arm_check = true;
+        play_pattern(PRE_ARM_GOOD);
+    }
+
     // check if armed status has changed
     if (_flags.armed != AP_Notify::flags.armed) {
         _flags.armed = AP_Notify::flags.armed;

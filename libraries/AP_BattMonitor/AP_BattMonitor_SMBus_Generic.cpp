@@ -88,7 +88,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
         }
     }
 
-    // we loop over something limted by
+    // we loop over something limited by
     // BATTMONITOR_SMBUS_NUM_CELLS_MAX but assign into something
     // limited by AP_BATT_MONITOR_CELLS_MAX - so make sure we won't
     // over-write:

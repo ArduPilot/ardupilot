@@ -18,9 +18,6 @@ public:
     // Constructor
     using AP_Mount_Backend::AP_Mount_Backend;
 
-    // init
-    void init() override {}
-
     // update mount position
     void update() override;
 
@@ -73,6 +70,5 @@ private:
     uint8_t _compid;                // component id of gimbal
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
-    uint32_t _sent_gimbal_device_attitude_status_ms;    // time_boot_ms field of gimbal_device_status message last forwarded to the GCS (used to prevent sending duplicates)
 };
 #endif // HAL_MOUNT_GREMSY_ENABLED

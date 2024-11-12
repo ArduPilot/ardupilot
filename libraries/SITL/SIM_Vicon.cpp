@@ -31,30 +31,41 @@ using namespace SITL;
 Vicon::Vicon() :
     SerialDevice::SerialDevice()
 {
-    if (!valid_channel(mavlink_ch)) {
-        AP_HAL::panic("Invalid mavlink channel");
-    }
 }
 
 void Vicon::maybe_send_heartbeat()
 {
     const uint32_t now = AP_HAL::millis();
 
-    if (now - last_heartbeat_ms < 100) {
+    if (now - last_heartbeat_ms < 500) {
         // we only provide a heartbeat every so often
         return;
     }
+
+    uint8_t msg_buf_index;
+    if (!get_free_msg_buf_index(msg_buf_index)) {
+        return;
+    }
+
     last_heartbeat_ms = now;
 
-    mavlink_message_t msg;
-    mavlink_msg_heartbeat_pack(system_id,
-                               component_id,
-                               &msg,
-                               MAV_TYPE_GCS,
-                               MAV_AUTOPILOT_INVALID,
-                               0,
-                               0,
-                               0);
+    const mavlink_heartbeat_t heartbeat{
+        custom_mode: 0,
+        type : MAV_TYPE_GCS,
+        autopilot : MAV_AUTOPILOT_INVALID,
+        base_mode: 0,
+        system_status: 0,
+        mavlink_version: 0,
+    };
+
+    mavlink_msg_heartbeat_encode_status(
+        system_id,
+        component_id,
+        &mav_status,
+        &msg_buf[msg_buf_index].obs_msg,
+        &heartbeat
+    );
+    msg_buf[msg_buf_index].time_send_us = AP_HAL::millis();
 }
 
 // get unused index in msg_buf
@@ -158,52 +169,60 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // send vision position estimate message
     uint8_t msg_buf_index;
     if (should_send(ViconTypeMask::VISION_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
-        mavlink_msg_vision_position_estimate_pack_chan(
+        const mavlink_vision_position_estimate_t vision_position_estimate{
+        usec: now_us + time_offset_us,
+        x: float(pos_corrected.x),
+        y: float(pos_corrected.y),
+        z: float(pos_corrected.z),
+        roll: roll,
+        pitch: pitch,
+        yaw: yaw
+        };
+        mavlink_msg_vision_position_estimate_encode_status(
             system_id,
             component_id,
-            mavlink_ch,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
-            now_us + time_offset_us,
-            pos_corrected.x,
-            pos_corrected.y,
-            pos_corrected.z,
-            roll,
-            pitch,
-            yaw,
-            NULL, 0);
+            &vision_position_estimate
+        );
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 
     // send older vicon position estimate message
     if (should_send(ViconTypeMask::VICON_POSITION_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
-        mavlink_msg_vicon_position_estimate_pack_chan(
+        const mavlink_vicon_position_estimate_t vicon_position_estimate{
+        usec: now_us + time_offset_us,
+        x: float(pos_corrected.x),
+        y: float(pos_corrected.y),
+        z: float(pos_corrected.z),
+        roll: roll,
+        pitch: pitch,
+        yaw: yaw
+        };
+        mavlink_msg_vicon_position_estimate_encode_status(
             system_id,
             component_id,
-            mavlink_ch,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
-            now_us + time_offset_us,
-            pos_corrected.x,
-            pos_corrected.y,
-            pos_corrected.z,
-            roll,
-            pitch,
-            yaw,
-            NULL);
+            &vicon_position_estimate);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 
     // send vision speed estimate
     if (should_send(ViconTypeMask::VISION_SPEED_ESTIMATE) && get_free_msg_buf_index(msg_buf_index)) {
-        mavlink_msg_vision_speed_estimate_pack_chan(
+        const mavlink_vision_speed_estimate_t vicon_speed_estimate{
+        usec: now_us + time_offset_us,
+        x: vel_corrected.x,
+        y: vel_corrected.y,
+        z: vel_corrected.z
+        };
+        mavlink_msg_vision_speed_estimate_encode_status(
             system_id,
             component_id,
-            mavlink_ch,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
-            now_us + time_offset_us,
-            vel_corrected.x,
-            vel_corrected.y,
-            vel_corrected.z,
-            NULL, 0);
+            &vicon_speed_estimate
+            );
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 
@@ -211,27 +230,32 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // send ODOMETRY message
     if (should_send(ViconTypeMask::ODOMETRY) && get_free_msg_buf_index(msg_buf_index)) {
         const Vector3f vel_corrected_frd = attitude.inverse() * vel_corrected;
-        mavlink_msg_odometry_pack_chan(
+        const mavlink_odometry_t odometry{
+        time_usec: now_us + time_offset_us,
+        x: float(pos_corrected.x),
+        y: float(pos_corrected.y),
+        z: float(pos_corrected.z),
+        q: {attitude[0], attitude[1], attitude[2], attitude[3]},
+        vx: vel_corrected_frd.x,
+        vy: vel_corrected_frd.y,
+        vz: vel_corrected_frd.z,
+        rollspeed: gyro.x,
+        pitchspeed: gyro.y,
+        yawspeed: gyro.z,
+        pose_covariance: {},
+        velocity_covariance: {},
+        frame_id: MAV_FRAME_LOCAL_FRD,
+        child_frame_id: MAV_FRAME_BODY_FRD,
+        reset_counter: 0,
+        estimator_type: MAV_ESTIMATOR_TYPE_VIO,
+        quality: 50, // quality hardcoded to 50%
+        };
+        mavlink_msg_odometry_encode_status(
             system_id,
             component_id,
-            mavlink_ch,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
-            now_us + time_offset_us,
-            MAV_FRAME_LOCAL_FRD,
-            MAV_FRAME_BODY_FRD,
-            pos_corrected.x,
-            pos_corrected.y,
-            pos_corrected.z,
-            &attitude[0],
-            vel_corrected_frd.x,
-            vel_corrected_frd.y,
-            vel_corrected_frd.z,
-            gyro.x,
-            gyro.y,
-            gyro.z,
-            NULL, NULL,
-            0,
-            MAV_ESTIMATOR_TYPE_VIO);
+            &odometry);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 
@@ -243,15 +267,11 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     attitude_curr.invert();
 
     Quaternion attitude_curr_prev = attitude_curr * _attitude_prev.inverse(); // Get rotation to current MAV_FRAME_BODY_FRD from previous MAV_FRAME_BODY_FRD
-    float angle_delta[3] = {attitude_curr_prev.get_euler_roll(),
-                            attitude_curr_prev.get_euler_pitch(),
-                            attitude_curr_prev.get_euler_yaw()};
 
     Matrix3f body_ned_m;
     attitude_curr.rotation_matrix(body_ned_m);
 
     Vector3f pos_delta = body_ned_m * (pos_corrected - _position_prev).tofloat();
-    float postion_delta[3] = {pos_delta.x, pos_delta.y, pos_delta.z};
 
     // send vision position delta
     // time_usec: (usec) Current time stamp
@@ -260,16 +280,22 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // delta_position [3]: (meters) Change in position: To current position from previous position rotated to current MAV_FRAME_BODY_FRD from MAV_FRAME_LOCAL_NED
     // confidence: Normalized confidence level [0, 100]
     if (should_send(ViconTypeMask::VISION_POSITION_DELTA) && get_free_msg_buf_index(msg_buf_index)) {
-        mavlink_msg_vision_position_delta_pack_chan(
+        const mavlink_vision_position_delta_t vision_position_delta{
+        time_usec: now_us + time_offset_us,
+        time_delta_usec: time_delta,
+        angle_delta: { attitude_curr_prev.get_euler_roll(),
+            attitude_curr_prev.get_euler_pitch(),
+            attitude_curr_prev.get_euler_yaw()
+        },
+        position_delta: {pos_delta.x, pos_delta.y, pos_delta.z},
+        confidence: 0
+        };
+        mavlink_msg_vision_position_delta_encode_status(
             system_id,
             component_id,
-            mavlink_ch,
+            &mav_status,
             &msg_buf[msg_buf_index].obs_msg,
-            now_us + time_offset_us,
-            time_delta,
-            angle_delta,
-            postion_delta,
-            0.0f);
+            &vision_position_delta);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 

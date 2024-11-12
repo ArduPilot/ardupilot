@@ -1,8 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if !defined(HAL_BUILD_AP_PERIPH)
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <SITL/SITL.h>
 
 #include "RCOutput.h"
 
@@ -48,6 +49,15 @@ void RCOutput::disable_ch(uint8_t ch)
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
+    if (safety_state == AP_HAL::Util::SAFETY_DISARMED) {
+        const auto *board_config = AP_BoardConfig::get_singleton();
+        const uint32_t safety_mask = board_config != nullptr? board_config->get_safety_mask() : 0;
+        if (!(safety_mask & (1U<<ch))) {
+            // implement safety pwm value
+            period_us = 0;
+        }
+    }
+
     _sitlState->output_ready = true;
     // FIXME: something in sitl is expecting to be able to read and write disabled channels
     if (ch < SITL_NUM_CHANNELS /*&& (_enable_mask & (1U<<ch))*/) {
@@ -91,7 +101,7 @@ void RCOutput::push(void)
     SITL::SIM *sitl = AP::sitl();
     if (sitl && sitl->esc_telem) {
         if (esc_telem == nullptr) {
-            esc_telem = new AP_ESC_Telem_SITL;
+            esc_telem = NEW_NOTHROW AP_ESC_Telem_SITL;
         }
         if (esc_telem != nullptr) {
             esc_telem->update();
@@ -148,23 +158,3 @@ bool RCOutput::serial_led_send(const uint16_t chan)
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
-void RCOutput::force_safety_off(void)
-{
-    SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr) {
-        return;
-    }
-    sitl->force_safety_off();
-}
-
-bool RCOutput::force_safety_on(void)
-{
-    SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr) {
-        return false;
-    }
-    return sitl->force_safety_on();
-}
-
-#endif //!defined(HAL_BUILD_AP_PERIPH)

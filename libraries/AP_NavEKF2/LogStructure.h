@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #define LOG_IDS_FROM_NAVEKF2 \
     LOG_NKF0_MSG,  \
@@ -100,8 +100,8 @@ struct PACKED log_NKF1 {
 // @Field: GSX: Gyro Scale Factor (X-axis)
 // @Field: GSY: Gyro Scale Factor (Y-axis)
 // @Field: GSZ: Gyro Scale Factor (Z-axis)
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
+// @Field: VWN: Estimated wind velocity (moving-to-North component)
+// @Field: VWE: Estimated wind velocity (moving-to-East component)
 // @Field: MN: Magnetic field strength (North component)
 // @Field: ME: Magnetic field strength (East component)
 // @Field: MD: Magnetic field strength (Down component)
@@ -300,7 +300,7 @@ struct PACKED log_NKT {
       "NKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" , true }, \
-    { LOG_NKQ_MSG, sizeof(log_NKQ), "NKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
+    { LOG_NKQ_MSG, sizeof(log_NKQ), "NKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#----", "F-0000" , true }, \
     { LOG_NKT_MSG, sizeof(log_NKT),   \
       "NKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true },
 #endif

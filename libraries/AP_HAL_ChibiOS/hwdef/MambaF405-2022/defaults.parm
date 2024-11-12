@@ -1,8 +1,11 @@
 # setup for LEDs on chan9
 SERVO7_FUNCTION 120
-NTF_LED_TYPES 257
 # Default VTX power to on
+<<<<<<< HEAD
 RELAY_DEFAULT 1
+=======
+RELAY2_DEFAULT 1
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 # UART1 is RX input
 SERIAL1_PROTOCOL 23
 #  UART2 is GPS
@@ -15,3 +18,7 @@ OSD_TYPE 1
 SERIAL4_PROTOCOL -1
 # UART6 is ESC Telem
 SERIAL6_PROTOCOL 16
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86

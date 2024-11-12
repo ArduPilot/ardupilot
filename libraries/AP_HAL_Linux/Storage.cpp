@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 using namespace Linux;
 
@@ -20,7 +19,7 @@ using namespace Linux;
 
 // name the storage file after the sketch so you can use the same board
 // card for ArduCopter and ArduPlane
-#define STORAGE_FILE SKETCHNAME ".stg"
+#define STORAGE_FILE AP_BUILD_TARGET_NAME ".stg"
 
 extern const AP_HAL::HAL& hal;
 
@@ -102,10 +101,7 @@ int Storage::_storage_create(const char *dpath)
         return -1;
     }
 
-    unlinkat(dfd, dpath, 0);
     int fd = openat(dfd, STORAGE_FILE, O_RDWR|O_CREAT|O_CLOEXEC, 0666);
-
-    close(dfd);
 
     if (fd == -1) {
         fprintf(stderr, "Failed to create storage file %s/%s\n", dpath,
@@ -117,6 +113,7 @@ int Storage::_storage_create(const char *dpath)
     if (ftruncate(fd, sizeof(_buffer)) == -1) {
         fprintf(stderr, "Failed to set file size to %u kB (%m)\n",
                 unsigned(sizeof(_buffer) / 1024));
+        close(fd);
         goto fail;
     }
 
@@ -148,26 +145,16 @@ void Storage::init()
         dpath = HAL_BOARD_STORAGE_DIRECTORY;
     }
 
-    int fd = open(dpath, O_RDWR|O_CLOEXEC);
+    int fd = _storage_create(dpath);
     if (fd == -1) {
-        fd = _storage_create(dpath);
-        if (fd == -1) {
-            AP_HAL::panic("Cannot create storage %s (%m)", dpath);
-        }
+        AP_HAL::panic("Cannot create storage %s (%m)", dpath);
     }
 
     ssize_t ret = read(fd, _buffer, sizeof(_buffer));
 
     if (ret != sizeof(_buffer)) {
         close(fd);
-        _storage_create(dpath);
-        fd = open(dpath, O_RDONLY|O_CLOEXEC);
-        if (fd == -1) {
-            AP_HAL::panic("Failed to open %s (%m)", dpath);
-        }
-        if (read(fd, _buffer, sizeof(_buffer)) != sizeof(_buffer)) {
-            AP_HAL::panic("Failed to read %s (%m)", dpath);
-        }
+        AP_HAL::panic("Failed to read %s (%m)", dpath);
     }
 
     _fd = fd;

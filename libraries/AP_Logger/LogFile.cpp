@@ -1,3 +1,7 @@
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
+
 #include <stdlib.h>
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -56,7 +60,11 @@ bool AP_Logger_Backend::Write_Format(const struct LogStructure *s)
 {
     struct log_Format pkt;
     Fill_Format(s, pkt);
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
+    if (!WriteCriticalBlock(&pkt, sizeof(pkt))) {
+        return false;
+    }
+    _formats_written.set(s->msg_type);
+    return true;
 }
 
 /*
@@ -129,6 +137,7 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
     return Write_Parameter(name, ap->cast_to_float(type), default_val);
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
 {
@@ -154,31 +163,25 @@ void AP_Logger::Write_RCIN(void)
     };
     WriteBlock(&pkt, sizeof(pkt));
 
-    const uint16_t override_mask = rc().get_override_mask();
-
-    // don't waste logging bandwidth if we haven't seen non-zero
-    // channels 15/16:
-    if (!should_log_rcin2) {
-        if (values[14] || values[15]) {
-            should_log_rcin2 = true;
-        } else if (override_mask != 0) {
-            should_log_rcin2 = true;
-        }
+    uint8_t flags = 0;
+    if (rc().has_valid_input()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::HAS_VALID_INPUT;
+    }
+    if (rc().in_rc_failsafe()) {
+        flags |= (uint8_t)AP_Logger::RCLoggingFlags::IN_RC_FAILSAFE;
     }
 
-    if (!should_log_rcin2) {
-        return;
-    }
-
-    const struct log_RCIN2 pkt2{
-        LOG_PACKET_HEADER_INIT(LOG_RCIN2_MSG),
+    const struct log_RCI2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_RCI2_MSG),
         time_us       : AP_HAL::micros64(),
         chan15         : values[14],
         chan16         : values[15],
-        override_mask  : override_mask,
+        override_mask  : rc().get_override_mask(),
+        flags          : flags,
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 // Write an SERVO packet
 void AP_Logger::Write_RCOUT(void)
@@ -186,23 +189,25 @@ void AP_Logger::Write_RCOUT(void)
     const uint32_t enabled_mask = ~SRV_Channels::get_output_channel_mask(SRV_Channel::k_GPIO);
 
     if ((enabled_mask & 0x3FFF) != 0) {
+        uint16_t channels[14] {};
+        hal.rcout->read(channels, ARRAY_SIZE(channels));
         const struct log_RCOUT pkt{
             LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
             time_us       : AP_HAL::micros64(),
-            chan1         : hal.rcout->read(0),
-            chan2         : hal.rcout->read(1),
-            chan3         : hal.rcout->read(2),
-            chan4         : hal.rcout->read(3),
-            chan5         : hal.rcout->read(4),
-            chan6         : hal.rcout->read(5),
-            chan7         : hal.rcout->read(6),
-            chan8         : hal.rcout->read(7),
-            chan9         : hal.rcout->read(8),
-            chan10        : hal.rcout->read(9),
-            chan11        : hal.rcout->read(10),
-            chan12        : hal.rcout->read(11),
-            chan13        : hal.rcout->read(12),
-            chan14        : hal.rcout->read(13)
+            chan1         : channels[0],
+            chan2         : channels[1],
+            chan3         : channels[2],
+            chan4         : channels[3],
+            chan5         : channels[4],
+            chan6         : channels[5],
+            chan7         : channels[6],
+            chan8         : channels[7],
+            chan9         : channels[8],
+            chan10        : channels[9],
+            chan11        : channels[10],
+            chan12        : channels[11],
+            chan13        : channels[12],
+            chan14        : channels[13]
         };
         WriteBlock(&pkt, sizeof(pkt));
     }
@@ -247,6 +252,7 @@ void AP_Logger::Write_RCOUT(void)
 
 }
 
+#if AP_RSSI_ENABLED
 // Write an RSSI packet
 void AP_Logger::Write_RSSI()
 {
@@ -263,6 +269,7 @@ void AP_Logger::Write_RSSI()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
                               uint8_t source_system,
@@ -293,12 +300,13 @@ void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
 }
 
 bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
-                                              const AP_Mission::Mission_Command &cmd)
+                                          const AP_Mission::Mission_Command &cmd,
+                                          LogMessages msgid)
 {
     mavlink_mission_item_int_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
-    const struct log_Cmd pkt{
-        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
+    const struct log_CMD pkt{
+        LOG_PACKET_HEADER_INIT(msgid),
         time_us         : AP_HAL::micros64(),
         command_total   : mission.num_commands(),
         sequence        : mav_cmd.seq,
@@ -472,6 +480,27 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
+    enum class log_PID_Flags : uint8_t {
+        LIMIT = 1U<<0, // true if the output is saturated, I term anti windup is active
+        PD_SUM_LIMIT =  1U<<1, // true if the PD sum limit is active
+        RESET = 1U<<2, // true if the controller was reset
+        I_TERM_SET = 1U<<3, // true if the I term has been set externally including reseting to 0
+    };
+
+    uint8_t flags = 0;
+    if (info.limit) {
+        flags |= (uint8_t)log_PID_Flags::LIMIT;
+    }
+    if (info.PD_limit) {
+        flags |= (uint8_t)log_PID_Flags::PD_SUM_LIMIT;
+    }
+    if (info.reset) {
+        flags |= (uint8_t)log_PID_Flags::RESET;
+    }
+    if (info.I_term_set) {
+        flags |= (uint8_t)log_PID_Flags::I_TERM_SET;
+    }
+
     const struct log_PID pkt{
         LOG_PACKET_HEADER_INIT(msg_type),
         time_us         : AP_HAL::micros64(),
@@ -482,9 +511,10 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
         I               : info.I,
         D               : info.D,
         FF              : info.FF,
+        DFF             : info.DFF,
         Dmod            : info.Dmod,
         slew_rate       : info.slew_rate,
-        limit           : info.limit
+        flags           : flags
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
@@ -525,35 +555,4 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// a convenience function for writing out the position controller PIDs
-void AP_Logger::Write_PSCx(LogMessages id, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    const struct log_PSCx pkt{
-        LOG_PACKET_HEADER_INIT(id),
-            time_us         : AP_HAL::micros64(),
-            pos_target    : pos_target * 0.01f,
-            pos           : pos * 0.01f,
-            vel_desired   : vel_desired * 0.01f,
-            vel_target    : vel_target * 0.01f,
-            vel           : vel * 0.01f,
-            accel_desired : accel_desired * 0.01f,
-            accel_target  : accel_target * 0.01f,
-            accel         : accel * 0.01f
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCN_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
-
-void AP_Logger::Write_PSCE(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCE_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
-
-void AP_Logger::Write_PSCD(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel)
-{
-    Write_PSCx(LOG_PSCD_MSG, pos_target, pos, vel_desired, vel_target, vel, accel_desired, accel_target, accel);
-}
+#endif  // HAL_LOGGING_ENABLED

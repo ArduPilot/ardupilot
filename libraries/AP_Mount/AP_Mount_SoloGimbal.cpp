@@ -1,5 +1,8 @@
-#include "AP_Mount_SoloGimbal.h"
+#include "AP_Mount_config.h"
+
 #if HAL_SOLO_GIMBAL_ENABLED
+
+#include "AP_Mount_SoloGimbal.h"
 
 #include "SoloGimbal.h"
 #include <AP_Logger/AP_Logger.h>
@@ -15,7 +18,7 @@ AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount_Params &pa
 void AP_Mount_SoloGimbal::init()
 {
     _initialised = true;
-    set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
+    AP_Mount_Backend::init();
 }
 
 void AP_Mount_SoloGimbal::update_fast()
@@ -31,66 +34,74 @@ void AP_Mount_SoloGimbal::update()
         return;
     }
 
+    // change to RC_TARGETING mode if RC input has changed
+    set_rctargeting_on_rcinput_change();
+
     // update based on mount mode
     switch(get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
             _gimbal.set_lockedToBody(true);
-            // initialise _angle_rad to smooth transition if user changes to RC_TARGETTINg
-            _angle_rad = {0, 0, 0, false};
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             _gimbal.set_lockedToBody(false);
             const Vector3f &target = _params.neutral_angles.get();
-            _angle_rad.roll = radians(target.x);
-            _angle_rad.pitch = radians(target.y);
-            _angle_rad.yaw = radians(target.z);
-            _angle_rad.yaw_is_ef = false;
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(target*DEG_TO_RAD, false);
             break;
         }
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+            // targets are stored while handling the incoming mavlink message
             _gimbal.set_lockedToBody(false);
-            switch (mavt_target.target_type) {
-            case MountTargetType::ANGLE:
-                _angle_rad = mavt_target.angle_rad;
-                break;
-            case MountTargetType::RATE:
-                update_angle_target_from_rate(mavt_target.rate_rads, _angle_rad);
-                break;
+            if (mnt_target.target_type == MountTargetType::RATE) {
+                update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
             }
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING: {
             _gimbal.set_lockedToBody(false);
-            // update targets using pilot's RC inputs
-            MountTarget rc_target {};
-            if (get_rc_rate_target(rc_target)) {
-                update_angle_target_from_rate(rc_target, _angle_rad);
-            } else if (get_rc_angle_target(rc_target)) {
-                _angle_rad = rc_target;
+            MountTarget rc_target;
+            get_rc_target(mnt_target.target_type, rc_target);
+            switch (mnt_target.target_type) {
+            case MountTargetType::ANGLE:
+                mnt_target.angle_rad = rc_target;
+                break;
+            case MountTargetType::RATE:
+                mnt_target.rate_rads = rc_target;
+                break;
             }
             break;
         }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            _gimbal.set_lockedToBody(false);
-            IGNORE_RETURN(get_angle_target_to_roi(_angle_rad));
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+                _gimbal.set_lockedToBody(false);
+            }
             break;
 
+        // point mount to Home location
         case MAV_MOUNT_MODE_HOME_LOCATION:
-            _gimbal.set_lockedToBody(false);
-            IGNORE_RETURN(get_angle_target_to_home(_angle_rad));
+            if (get_angle_target_to_home(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+                _gimbal.set_lockedToBody(false);
+            }
             break;
 
+        // point mount to another vehicle
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            _gimbal.set_lockedToBody(false);
-            IGNORE_RETURN(get_angle_target_to_sysid(_angle_rad));
+            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+                _gimbal.set_lockedToBody(false);
+            }
             break;
 
         default:
@@ -105,7 +116,7 @@ bool AP_Mount_SoloGimbal::get_attitude_quaternion(Quaternion& att_quat)
     if (!_gimbal.aligned()) {
         return false;
     }
-    att_quat.from_euler(_angle_rad.roll, _angle_rad.pitch, get_bf_yaw_angle(_angle_rad));
+    att_quat.from_euler(mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.get_bf_yaw());
     return true;
 }
 
@@ -114,22 +125,29 @@ bool AP_Mount_SoloGimbal::get_attitude_quaternion(Quaternion& att_quat)
  */
 void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
-    _gimbal.update_target(Vector3f{_angle_rad.roll, _angle_rad.pitch, get_bf_yaw_angle(_angle_rad)});
+    _gimbal.update_target(Vector3f{mnt_target.angle_rad.roll, mnt_target.angle_rad.pitch, mnt_target.angle_rad.get_bf_yaw()});
     _gimbal.receive_feedback(chan,msg);
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return;
     }
-
-    if(!_params_saved && logger->logging_started()) {
+#endif
+    if(!_params_saved
+#if HAL_LOGGING_ENABLED
+       && logger->logging_started()
+#endif
+        ) {
         _gimbal.fetch_params();       //last parameter save might not be stored in logger so retry
         _params_saved = true;
     }
 
+#if HAL_LOGGING_ENABLED
     if (_gimbal.get_log_dt() > 1.0f/25.0f) {
         _gimbal.write_logs();
     }
+#endif
 }
 
 void AP_Mount_SoloGimbal::handle_param_value(const mavlink_message_t &msg)

@@ -5,7 +5,8 @@
 
 #ifndef HAL_INS_ACCELCAL_ENABLED
 #if HAL_GCS_ENABLED
-#define HAL_INS_ACCELCAL_ENABLED 1
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
+#define HAL_INS_ACCELCAL_ENABLED AP_INERTIALSENSOR_ENABLED
 #else
 #define HAL_INS_ACCELCAL_ENABLED 0
 #endif

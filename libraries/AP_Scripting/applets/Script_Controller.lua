@@ -3,6 +3,8 @@
     /1 /2 or /3 subdirectories of the scripts directory
 --]]
 -- luacheck: only 0
+---@diagnostic disable: param-type-mismatch
+
 
 local THIS_SCRIPT = "Script_Controller.lua"
 local sel_ch = Parameter("SCR_USER6")

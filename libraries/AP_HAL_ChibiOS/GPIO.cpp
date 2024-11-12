@@ -37,25 +37,35 @@ using namespace ChibiOS;
 extern AP_IOMCU iomcu;
 #endif
 
-
 // GPIO pin table from hwdef.dat
-static struct gpio_entry {
+struct gpio_entry {
     uint8_t pin_num;
     bool enabled;
     uint8_t pwm_num;
     ioline_t pal_line;
     AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
+    thread_reference_t thd_wait;
     bool is_input;
     uint8_t mode;
-    thread_reference_t thd_wait;
     uint16_t isr_quota;
-} _gpio_tab[] = HAL_GPIO_PINS;
+    uint8_t isr_disabled_ticks;
+    AP_HAL::GPIO::INTERRUPT_TRIGGER_TYPE isr_mode;
+};
+
+#ifdef HAL_GPIO_PINS
+#define HAVE_GPIO_PINS 1
+static struct gpio_entry _gpio_tab[] = HAL_GPIO_PINS;
+#else
+#define HAVE_GPIO_PINS 0
+#endif
+
 
 /*
   map a user pin number to a GPIO table entry
  */
 static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=true)
 {
+#if HAVE_GPIO_PINS
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         const auto &t = _gpio_tab[i];
         if (pin_num == t.pin_num) {
@@ -65,6 +75,7 @@ static struct gpio_entry *gpio_by_pin_num(uint8_t pin_num, bool check_enabled=tr
             return &_gpio_tab[i];
         }
     }
+#endif
     return NULL;
 }
 
@@ -77,7 +88,9 @@ GPIO::GPIO()
 void GPIO::init()
 {
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !defined(HAL_BOOTLOADER_BUILD)
+#if HAL_WITH_IO_MCU || HAVE_GPIO_PINS
     uint8_t chan_offset = 0;
+#endif
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         uint8_t GPIO_mask = 0;
@@ -91,12 +104,14 @@ void GPIO::init()
     }
 #endif
     // auto-disable pins being used for PWM output
+#if HAVE_GPIO_PINS
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
             g->enabled = SRV_Channels::is_GPIO((g->pwm_num-1)+chan_offset);
         }
     }
+#endif // HAVE_GPIO_PINS
 #endif // HAL_BOOTLOADER_BUILD
 #ifdef HAL_PIN_ALT_CONFIG
     setup_alt_config();
@@ -137,6 +152,7 @@ void GPIO::setup_alt_config(void)
         if (alt_config == alt.alternate) {
             if (alt.periph_type == PERIPH_TYPE::GPIO) {
                 // enable pin in GPIO table
+#if HAVE_GPIO_PINS
                 for (uint8_t j=0; j<ARRAY_SIZE(_gpio_tab); j++) {
                     struct gpio_entry *g = &_gpio_tab[j];
                     if (g->pal_line == alt.line) {
@@ -144,6 +160,7 @@ void GPIO::setup_alt_config(void)
                         break;
                     }
                 }
+#endif // HAVE_GPIO_PINS
                 continue;
             }
             const iomode_t mode = alt.mode & ~PAL_STM32_HIGH;
@@ -203,7 +220,7 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
             return;
         }
         g->mode = output?PAL_MODE_OUTPUT_PUSHPULL:PAL_MODE_INPUT;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         if (g->mode == PAL_MODE_OUTPUT_PUSHPULL) {
             // retain OPENDRAIN if already set
             iomode_t old_mode = palReadLineMode(g->pal_line);
@@ -224,17 +241,16 @@ uint8_t GPIO::read(uint8_t pin)
     if (g) {
         return palReadLine(g->pal_line);
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        return iomcu.read_virtual_GPIO(pin);
+    }
+#endif
     return 0;
 }
 
 void GPIO::write(uint8_t pin, uint8_t value)
 {
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        iomcu.write_GPIO(pin, value);
-        return;
-    }
-#endif
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
         if (g->is_input) {
@@ -246,36 +262,42 @@ void GPIO::write(uint8_t pin, uint8_t value)
         } else {
             palSetLine(g->pal_line);
         }
+        return;
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        iomcu.write_GPIO(pin, value);
+    }
+#endif
 }
 
 void GPIO::toggle(uint8_t pin)
 {
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        iomcu.toggle_GPIO(pin);
-        return;
-    }
-#endif
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
         palToggleLine(g->pal_line);
+        return;
     }
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
+        iomcu.toggle_GPIO(pin);
+    }
+#endif
 }
 
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO::channel(uint16_t pin)
 {
+    struct gpio_entry *g = gpio_by_pin_num(pin);
+    if (g != nullptr) {
+        return NEW_NOTHROW DigitalSource(g->pal_line);
+    }
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
-        return new IOMCU_DigitalSource(pin);
+        return NEW_NOTHROW IOMCU_DigitalSource(pin);
     }
 #endif
-    struct gpio_entry *g = gpio_by_pin_num(pin);
-    if (!g) {
-        return nullptr;
-    }
-    return new DigitalSource(g->pal_line);
+    return nullptr;
 }
 
 extern const AP_HAL::HAL& hal;
@@ -292,6 +314,8 @@ bool GPIO::attach_interrupt(uint8_t pin,
     if (!g) {
         return false;
     }
+    g->isr_disabled_ticks = 0;
+    g->isr_quota = 0;
     if (!_attach_interrupt(g->pal_line,
                            palcallback_t(fn?pal_interrupt_cb_functor:nullptr),
                            g,
@@ -299,6 +323,7 @@ bool GPIO::attach_interrupt(uint8_t pin,
         return false;
     }
     g->fn = fn;
+    g->isr_mode = mode;
     return true;
 }
 
@@ -317,6 +342,9 @@ bool GPIO::attach_interrupt(uint8_t pin,
     if (!g) {
         return false;
     }
+    g->isr_disabled_ticks = 0;
+    g->isr_quota = 0;
+    g->isr_mode = mode;
     return _attach_interrupt(g->pal_line, proc, mode);
 }
 
@@ -503,19 +531,24 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
 // check if a pin number is valid
 bool GPIO::valid_pin(uint8_t pin) const
 {
+    if (gpio_by_pin_num(pin) != nullptr) {
+        return true;
+    }
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled() && iomcu.valid_GPIO_pin(pin)) {
         return true;
     }
 #endif
-    return gpio_by_pin_num(pin) != nullptr;
+    return false;
 }
 
 // return servo channel associated with GPIO pin.  Returns true on success and fills in servo_ch argument
 // servo_ch uses zero-based indexing
 bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
 {
+#if HAL_WITH_IO_MCU || HAVE_GPIO_PINS
     uint8_t fmu_chan_offset = 0;
+#endif
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         // check if this is one of the main pins
@@ -529,6 +562,7 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
     }
 #endif
 
+#if HAVE_GPIO_PINS
     // search _gpio_tab for matching pin
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         if (_gpio_tab[i].pin_num == pin) {
@@ -539,10 +573,11 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
             return true;
         }
     }
+#endif // HAVE_GPIO_PINS
     return false;
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 
 // allow for save and restore of pin settings
 bool GPIO::get_mode(uint8_t pin, uint32_t &mode)
@@ -573,18 +608,68 @@ void GPIO::timer_tick()
 {
     // allow 100k interrupts/second max for GPIO interrupt sources, which is
     // 10k per 100ms call to timer_tick()
+#if HAVE_GPIO_PINS
     const uint16_t quota = 10000U;
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
-        if (_gpio_tab[i].isr_quota == 1) {
-            // we ran out of ISR quota for this pin since the last
-            // check. This is not really an internal error, but we use
-            // INTERNAL_ERROR() to get the reporting mechanism
+        if (_gpio_tab[i].isr_quota != 1) {
+            // Reset quota for next tick
+            _gpio_tab[i].isr_quota = quota;
+            continue;
+        }
+        // we ran out of ISR quota for this pin since the last
+        // check. This is not really an internal error, but we use
+        // INTERNAL_ERROR() to get the reporting mechanism
+
+        if (_gpio_tab[i].isr_disabled_ticks == 0) {
 #ifndef HAL_NO_UARTDRIVER
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"ISR flood on pin %u", _gpio_tab[i].pin_num);
 #endif
-            INTERNAL_ERROR(AP_InternalError::error_t::gpio_isr);
+            // Only trigger internal error if armed
+            if (hal.util->get_soft_armed()) {
+                INTERNAL_ERROR(AP_InternalError::error_t::gpio_isr);
+            }
         }
-        _gpio_tab[i].isr_quota = quota;
+        if (hal.util->get_soft_armed()) {
+            // Don't start counting until disarmed
+            _gpio_tab[i].isr_disabled_ticks = 1;
+            continue;
+        }
+
+        // Increment disabled ticks, don't wrap
+        if (_gpio_tab[i].isr_disabled_ticks < UINT8_MAX) {
+            _gpio_tab[i].isr_disabled_ticks++;
+        }
+
+        // 100 * 100ms = 10 seconds
+        const uint8_t ISR_retry_ticks = 100U;
+        if ((_gpio_tab[i].isr_disabled_ticks > ISR_retry_ticks) && (_gpio_tab[i].fn != nullptr)) {
+            // Try re-enabling
+#ifndef HAL_NO_UARTDRIVER
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Retrying pin %d after ISR flood", _gpio_tab[i].pin_num);
+#endif
+            if (attach_interrupt(_gpio_tab[i].pin_num, _gpio_tab[i].fn, _gpio_tab[i].isr_mode)) {
+                // Success, reset quota
+                _gpio_tab[i].isr_quota = quota;
+            } else {
+                // Failed, reset disabled count to try again later
+                _gpio_tab[i].isr_disabled_ticks = 1;
+            }
+        }
     }
+#endif // HAVE_GPIO_PINS
+}
+
+// Check for ISR floods
+bool GPIO::arming_checks(size_t buflen, char *buffer) const
+{
+#if HAVE_GPIO_PINS
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        if (_gpio_tab[i].isr_disabled_ticks != 0) {
+            hal.util->snprintf(buffer, buflen, "Pin %u disabled (ISR flood)", _gpio_tab[i].pin_num);
+            return false;
+        }
+    }
+#endif // HAVE_GPIO_PINS
+    return true;
 }
 #endif // IOMCU_FW

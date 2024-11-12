@@ -22,13 +22,20 @@ OSCILLATOR_HZ 8000000
 
 
 # --------------------- LED -----------------------
+<<<<<<< HEAD
+=======
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 PC13 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
 PC15 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
 define HAL_GPIO_A_LED_PIN 91
 define HAL_GPIO_B_LED_PIN 90
 
+<<<<<<< HEAD
 define HAL_GPIO_LED_OFF 1
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # --------------------- PWM -----------------------
 
@@ -43,8 +50,11 @@ PB14 TIM1_CH2N  TIM1   PWM(8)   GPIO(57)
 PA8 TIM1_CH1    TIM1   PWM(9)   GPIO(58) BIDIR
 PA15 TIM2_CH1   TIM2   PWM(10)  GPIO(59) NODMA  # no output
 
+<<<<<<< HEAD
 define STM32_PWM_USE_ADVANCED TRUE
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 # Beeper
 #PA7 TIM3_CH2 TIM3 GPIO(32) ALARM
 
@@ -91,6 +101,10 @@ PA3 TIM9_CH2 TIM9 RCININT PULLDOWN
 
 # alternative with PA3 as USART2_RX
 PA3 USART2_RX USART2 ALT(1)
+<<<<<<< HEAD
+=======
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # USART3 - (labelled UART1 on casing)
 PC10  USART3_TX USART3
@@ -104,7 +118,11 @@ PA1 UART4_RX UART4 NODMA
 PC12 UART5_TX UART5
 PD2  UART5_RX UART5 NODMA
 
+<<<<<<< HEAD
 # USART6 - (NC)
+=======
+# USART6 - (VTX)
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 PC6  USART6_TX USART6 NODMA
 PC7  USART6_RX USART6 NODMA
 
@@ -156,6 +174,7 @@ define HAL_BATT_CURR_SCALE 26.7
 #define BOARD_RSSI_ANA_PIN 8
 #define HAL_DEFAULT_AIRSPEED_PIN 10
 
+<<<<<<< HEAD
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_WITH_DSP FALSE
@@ -194,3 +213,10 @@ define AP_RPM_GENERATOR_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 
 AUTOBUILD_TARGETS Plane
+=======
+define HAL_WITH_DSP FALSE
+
+include ../include/minimize_fpv_osd.inc
+
+AUTOBUILD_TARGETS Plane
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86

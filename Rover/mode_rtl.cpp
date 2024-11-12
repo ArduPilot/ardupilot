@@ -8,10 +8,10 @@ bool ModeRTL::_enter()
     }
 
     // initialise waypoint navigation library
-    g2.wp_nav.init(MAX(0, g2.rtl_speed));
+    g2.wp_nav.init(MAX(0.0f, g2.rtl_speed));
 
     // set target to the closest rally point or home
-#if AP_RALLY == ENABLED
+#if HAL_RALLY_ENABLED
     if (!g2.wp_nav.set_desired_location(g2.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt))) {
         return false;
     }

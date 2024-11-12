@@ -16,11 +16,17 @@
 /// @file	MAVLink_routing.h
 /// @brief	handle routing of MAVLink packets by sysid/componentid
 
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS.h"
 #include "MAVLink_routing.h"
+
+#include <AP_ADSB/AP_ADSB.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -90,11 +96,20 @@ routing table.
 */
 bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg)
 {
+#if HAL_SOLO_GIMBAL_ENABLED
+    // check if a Gopro is connected. If yes, we allow the routing
+    // of mavlink messages to a private channel (Solo Gimbal case)
+    if (!gopro_status_check && (msg.msgid == MAVLINK_MSG_ID_GOPRO_HEARTBEAT)) {
+       gopro_status_check = true;
+       GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "GoPro in Solo gimbal detected");
+    }
+#endif // HAL_SOLO_GIMBAL_ENABLED
+
     // handle the case of loopback of our own messages, due to
     // incorrect serial configuration.
     if (msg.sysid == mavlink_system.sysid &&
         msg.compid == mavlink_system.compid) {
-        return true;
+        return false;
     }
 
     // learn new routes including private channels
@@ -117,10 +132,15 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         return true;
     }
 
+#if HAL_ADSB_ENABLED
     if (msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
-        // ADSB packets are not forwarded, they have their own stream rate
-        return true;
+        // if enabled ADSB packets are not forwarded, they have their own stream rate
+        const AP_ADSB *adsb = AP::ADSB();
+        if ((adsb != nullptr) && (adsb->enabled())) {
+            return true;
+        }
     }
+#endif
 
     // extract the targets for this packet
     int16_t target_system = -1;
@@ -135,7 +155,14 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
     bool process_locally = match_system && match_component;
 
     // don't ever forward data from a private channel
-    if (from_private_channel) {
+    // unless a Gopro camera is connected to a Solo gimbal
+    bool should_process_locally = from_private_channel;
+#if HAL_SOLO_GIMBAL_ENABLED
+    if (gopro_status_check) {
+        should_process_locally = false;
+    }
+#endif
+    if (should_process_locally) {
         return process_locally;
     }
 
@@ -172,7 +199,7 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
 #if ROUTING_DEBUG
                     ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
                              msg.msgid,
-                             (unsigned)in_link->get_chan(),
+                             (unsigned)in_link.get_chan(),
                              (unsigned)routes[i].channel,
                              (int)target_system,
                              (int)target_component);
@@ -405,3 +432,4 @@ void MAVLink_routing::get_targets(const mavlink_message_t &msg, int16_t &sysid, 
     }
 }
 
+#endif  // HAL_GCS_ENABLED

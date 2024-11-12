@@ -564,6 +564,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU,6:SeventhIMU
     AP_GROUPINFO("_ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // @Group: _HNTCH_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[0].params, "_HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
@@ -572,6 +573,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Group: _HNTC2_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(harmonic_notches[1].params, "_HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
+#endif
 #endif
 
     // @Param: _GYRO_RATE
@@ -654,8 +656,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Param: _TCAL_OPTIONS
     // @DisplayName: Options for temperature calibration
-    // @Description: This enables optional temperature calibration features. Setting PersistParams will save the accelerometer and temperature calibration parameters in the bootloader sector on the next update of the bootloader.
-    // @Bitmask: 0:PersistParams
+    // @Description: This enables optional temperature calibration features. Setting of the Persist bits will save the temperature and/or accelerometer calibration parameters in the bootloader sector on the next update of the bootloader.
+    // @Bitmask: 0:PersistTemps, 1:PersistAccels
     // @User: Advanced
     AP_GROUPINFO("_TCAL_OPTIONS", 52, AP_InertialSensor, tcal_options, 0),
     
@@ -673,6 +675,13 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Path: AP_InertialSensor_Params.cpp
     AP_SUBGROUPINFO(params[1], "5_", 55, AP_InertialSensor, AP_InertialSensor_Params),
 #endif
+
+    // @Param: _RAW_LOG_OPT
+    // @DisplayName: Raw logging options
+    // @Description: Raw logging options bitmask
+    // @Bitmask: 0:Log primary gyro only, 1:Log all gyros, 2:Post filter, 3: Pre and post filter
+    // @User: Advanced
+    AP_GROUPINFO("_RAW_LOG_OPT", 56, AP_InertialSensor, raw_logging_options, 0),
 
     /*
       NOTE: parameter indexes have gaps above. When adding new
@@ -712,7 +721,7 @@ AP_InertialSensor::AP_InertialSensor() :
 AP_InertialSensor *AP_InertialSensor::get_singleton()
 {
     if (!_singleton) {
-        _singleton = new AP_InertialSensor();
+        _singleton = NEW_NOTHROW AP_InertialSensor();
     }
     return _singleton;
 }
@@ -725,6 +734,14 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
     if (_gyro_count == INS_MAX_INSTANCES) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to register gyro id %u", unsigned(id));
         return false;
+    }
+
+    // Loop over the existing instances and check if the instance already exists
+    for (uint8_t instance_to_check = 0; instance_to_check < _gyro_count; instance_to_check++) {
+        if ((uint32_t)_gyro_id(instance_to_check) == id) {
+            // if it does, then bail
+            return false;
+        }
     }
 
     _gyro_raw_sample_rates[_gyro_count] = raw_sample_rate_hz;
@@ -754,6 +771,30 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 }
 
 /*
+  get the accel instance number we will get from register_accel()
+ */
+bool AP_InertialSensor::get_accel_instance(uint8_t &instance) const
+{
+    if (_accel_count == INS_MAX_INSTANCES) {
+        return false;
+    }
+    instance = _accel_count;
+    return true;
+}
+
+/*
+  get the gyro instance number we will get from register_accel()
+ */
+bool AP_InertialSensor::get_gyro_instance(uint8_t &instance) const
+{
+    if (_gyro_count == INS_MAX_INSTANCES) {
+        return false;
+    }
+    instance = _gyro_count;
+    return true;
+}
+
+/*
   register a new accel instance
  */
 bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
@@ -761,6 +802,14 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
     if (_accel_count == INS_MAX_INSTANCES) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to register accel id %u", unsigned(id));
         return false;
+    }
+
+    // Loop over the existing instances and check if the instance already exists
+    for (uint8_t instance_to_check = 0; instance_to_check < _accel_count; instance_to_check++) {
+        if ((uint32_t)_accel_id(instance_to_check) == id) {
+            // if it does, then bail
+            return false;
+        }
     }
 
     _accel_raw_sample_rates[_accel_count] = raw_sample_rate_hz;
@@ -805,9 +854,11 @@ void AP_InertialSensor::_start_backends()
         _backends[i]->start();
     }
 
+#if AP_INERTIALSENSOR_ALLOW_NO_SENSORS
     if (_gyro_count == 0 || _accel_count == 0) {
         AP_HAL::panic("INS needs at least 1 gyro and 1 accel");
     }
+#endif
 
     // clear IDs for unused sensor instances
     for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
@@ -841,7 +892,7 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, 
 }
 
 bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     _gyro_window_size = size;
 
     // allocate FFT gyro window
@@ -864,7 +915,7 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
     return true;
 }
 
-#if HAL_WITH_DSP
+#if HAL_WITH_DSP && AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 bool AP_InertialSensor::has_fft_notch() const
 {
     for (auto &notch : harmonic_notches) {
@@ -888,12 +939,19 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // cause divergence of state estimators
     _loop_delta_t_max = 10 * _loop_delta_t;
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+    // Initialize notch params
+    for (auto &notch : harmonic_notches) {
+        notch.params.init();
+    }
+#endif
+
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
     }
 
     // calibrate gyros unless gyro calibration has been disabled
-    if (gyro_calibration_timing() != GYRO_CAL_NEVER) {
+    if (gyro_calibration_timing() != GYRO_CAL_NEVER && _gyro_count > 0) {
         init_gyro();
     }
 
@@ -910,7 +968,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     batchsampler.init();
 #endif
 
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     AP_GyroFFT* fft = AP::fft();
     bool fft_enabled = fft != nullptr && fft->enabled();
     if (fft_enabled) {
@@ -929,6 +987,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     //  Gyro -> Notch1/2 -> LPF -> Filtered Gyro
 
     if (_post_filter_fft) {
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         for (auto &notch : harmonic_notches) {
             if (!notch.params.enabled()) {
                 continue;
@@ -939,10 +998,14 @@ AP_InertialSensor::init(uint16_t loop_rate)
             }
             _fft_window_phase++;
         }
+#endif
     }
 #else
     bool fft_enabled = false;
+    (void)fft_enabled;
 #endif
+
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // the center frequency of the harmonic notch is always taken from the calculated value so that it can be updated
     // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
     // configured value
@@ -950,12 +1013,11 @@ AP_InertialSensor::init(uint16_t loop_rate)
         if (!notch.params.enabled() && !fft_enabled) {
             continue;
         }
-        notch.calculated_notch_freq_hz[0] = notch.params.center_freq_hz();
         notch.num_calculated_notch_frequencies = 1;
         notch.num_dynamic_notches = 1;
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
             if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
                 notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
             } else
@@ -971,21 +1033,22 @@ AP_InertialSensor::init(uint16_t loop_rate)
         }
 #endif
     }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+
     // count number of used sensors
     uint8_t sensors_used = 0;
     for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
         sensors_used += _use(i);
     }
 
-    uint8_t num_filters = 0;
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+    uint16_t num_filters = 0;
     for (auto &notch : harmonic_notches) {
         // calculate number of notches we might want to use for harmonic notch
         if (notch.params.enabled() || fft_enabled) {
-            const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
-            const bool triple_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::TripleNotch);
             const bool all_sensors = notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs);
             num_filters += __builtin_popcount(notch.params.harmonics())
-                * notch.num_dynamic_notches * (double_notch ? 2 : triple_notch ? 3 : 1)
+                * notch.num_dynamic_notches * notch.params.num_composite_notches()
                 * (all_sensors?sensors_used:1);
         }
     }
@@ -1000,17 +1063,15 @@ AP_InertialSensor::init(uint16_t loop_rate)
         if (_use(i)) {
             for (auto &notch : harmonic_notches) {
                 if (notch.params.enabled() || fft_enabled) {
-                    const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
-                    const bool triple_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::TripleNotch);
                     notch.filter[i].allocate_filters(notch.num_dynamic_notches,
-                                                     notch.params.harmonics(), double_notch ? 2 : triple_notch ? 3 : 1);
+                                                     notch.params.harmonics(), notch.params.num_composite_notches());
                     // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
-                    notch.filter[i].init(_gyro_raw_sample_rates[i], notch.calculated_notch_freq_hz[0],
-                                         notch.params.bandwidth_hz(), notch.params.attenuation_dB());
+                    notch.filter[i].init(_gyro_raw_sample_rates[i], notch.params);
                 }
             }
         }
     }
+#endif
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     /*
@@ -1114,7 +1175,7 @@ AP_InertialSensor::detect_backends(void)
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
-        ADD_BACKEND(new AP_InertialSensor_ExternalAHRS(*this, serial_port));
+        ADD_BACKEND(NEW_NOTHROW AP_InertialSensor_ExternalAHRS(*this, serial_port));
     }
 #endif
 
@@ -1265,7 +1326,9 @@ AP_InertialSensor::detect_backends(void)
         #else
         DEV_PRINTF("INS: unable to initialise driver\n");
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
+        #if !AP_INERTIALSENSOR_ALLOW_NO_SENSORS
         AP_BoardConfig::config_error("INS: unable to initialise driver");
+        #endif
         #endif
     }
 }
@@ -1302,7 +1365,7 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &
     if (view != nullptr) {
         // Use pitch to guess which axis the user is trying to trim
         // 5 deg buffer to favor normal AHRS and avoid floating point funny business
-        if (fabsf(view->pitch) < (fabsf(AP::ahrs().pitch)+radians(5)) ) {
+        if (fabsf(view->pitch) < (fabsf(AP::ahrs().get_pitch())+radians(5)) ) {
             // user is trying to calibrate view
             rotation = view->get_rotation();
             if (!is_zero(view->get_pitch_trim())) {
@@ -1383,6 +1446,35 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
     return (get_gyro_count() > 0);
 }
 
+// threshold in degrees/s to be consistent, consistent_time_sec duration for which
+// gyros need to be consistent to be considered consistent
+bool AP_InertialSensor::gyros_consistent(uint8_t threshold) const
+{
+     
+    const uint8_t gyro_count = get_gyro_count();
+    if (gyro_count <= 1) {
+        return true;
+    }
+
+    const Vector3f &prime_gyro_vec = get_gyro();
+    for(uint8_t i=0; i<gyro_count; i++) {
+        if (!use_gyro(i)) {
+            continue;
+        }
+        // get next gyro vector
+        const Vector3f &gyro_vec = get_gyro(i);
+        const Vector3f vec_diff = gyro_vec - prime_gyro_vec;
+        // allow for up to threshold degrees/s difference
+        if (vec_diff.length() > radians(threshold)) {
+            // this sensor disagrees with the primary sensor, so
+            // gyros are inconsistent:
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // gyro_calibration_ok_all - returns true if all gyros were calibrated successfully
 bool AP_InertialSensor::gyro_calibrated_ok_all() const
 {
@@ -1422,21 +1514,76 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     return (get_accel_count() > 0);
 }
 
+// accel_error_threshold in m/s/s to be consistent
+bool AP_InertialSensor::accels_consistent(float accel_error_threshold) const
+{
+    const uint8_t accel_count = get_accel_count();
+    if (accel_count <= 1) {
+        return true;
+    }
 
+    const Vector3f &prime_accel_vec = get_accel();
+    for(uint8_t i=0; i<accel_count; i++) {
+        if (!use_accel(i)) {
+            continue;
+        }
+        // get next accel vector
+        const Vector3f &accel_vec = get_accel(i);
+        Vector3f vec_diff = accel_vec - prime_accel_vec;
+        // allow for user-defined difference, threshold m/s/s. Has to pass in last consistent_time_sec seconds
+        float threshold = accel_error_threshold;
+        if (i >= 2) {
+            /*
+              we allow for a higher threshold for IMU3 as it
+              runs at a different temperature to IMU1/IMU2,
+              and is not used for accel data in the EKF
+            */
+            threshold *= 3;
+        }
+
+        // EKF is less sensitive to Z-axis error
+        vec_diff.z *= 0.5f;
+
+        if (vec_diff.length() > threshold) {
+            // this sensor disagrees with the primary sensor, so
+            // accels are inconsistent:
+            return false;
+        }
+    }
+    return true;
+}
+
+#if HAL_GCS_ENABLED && AP_AHRS_ENABLED
 /*
   calculate the trim_roll and trim_pitch. This is used for redoing the
   trim without needing a full accel cal
  */
-bool AP_InertialSensor::calibrate_trim(Vector3f &trim_rad)
+MAV_RESULT AP_InertialSensor::calibrate_trim()
 {
-    Vector3f level_sample;
-
     // exit immediately if calibration is already in progress
     if (calibrating()) {
-        return false;
+        return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
+    // reject any time we've done a calibration recently
+    const uint32_t now = AP_HAL::millis();
+    if ((now - last_accel_cal_ms) < 5000) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    if (!calibrate_gyros()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector3f trim_rad = ahrs.get_trim();
+
     const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_loop_rate_hz()+0.5f);
+    Vector3f level_sample;
+    uint32_t num_samples = 0;
+
+    _trimming_accel = true;
+
 
     // wait 100ms for ins filter to rise
     for (uint8_t k=0; k<100/update_dt_milliseconds; k++) {
@@ -1445,7 +1592,6 @@ bool AP_InertialSensor::calibrate_trim(Vector3f &trim_rad)
         hal.scheduler->delay(update_dt_milliseconds);
     }
 
-    uint32_t num_samples = 0;
     while (num_samples < 400/update_dt_milliseconds) {
         wait_for_sample();
         // read samples from ins
@@ -1455,7 +1601,7 @@ bool AP_InertialSensor::calibrate_trim(Vector3f &trim_rad)
         samp = get_accel(0);
         level_sample += samp;
         if (!get_accel_health(0)) {
-            return false;
+            goto failed;
         }
         hal.scheduler->delay(update_dt_milliseconds);
         num_samples++;
@@ -1463,11 +1609,22 @@ bool AP_InertialSensor::calibrate_trim(Vector3f &trim_rad)
     level_sample /= num_samples;
 
     if (!_calculate_trim(level_sample, trim_rad)) {
-        return false;
+        goto failed;
     }
 
-    return true;
+    // reset ahrs's trim to suggested values from calibration routine
+    ahrs.set_trim(trim_rad);
+
+    last_accel_cal_ms = AP_HAL::millis();
+    _trimming_accel = false;
+    return MAV_RESULT_ACCEPTED;
+
+failed:
+    last_accel_cal_ms = AP_HAL::millis();
+    _trimming_accel = false;
+    return MAV_RESULT_FAILED;
 }
+#endif  // HAL_GCS_ENABLED && AP_AHRS_ENABLED
 
 /*
   check if the accelerometers are calibrated in 3D and that current number of accels matched number when calibrated
@@ -1676,6 +1833,7 @@ AP_InertialSensor::_init_gyro()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+    AP_Notify::flags.gyro_calibrated = true;
 }
 
 // save parameters to eeprom
@@ -1697,32 +1855,32 @@ void AP_InertialSensor::_save_gyro_calibration()
     }
 }
 
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 /*
   update harmonic notch parameters
  */
 void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool converging, float gyro_rate)
 {
-    const float center_freq = calculated_notch_freq_hz[0];
     if (!is_equal(last_bandwidth_hz[instance], params.bandwidth_hz()) ||
         !is_equal(last_attenuation_dB[instance], params.attenuation_dB()) ||
-        (params.tracking_mode() == HarmonicNotchDynamicMode::Fixed && !is_equal(last_center_freq_hz[instance], center_freq)) ||
+        (params.tracking_mode() == HarmonicNotchDynamicMode::Fixed &&
+         !is_equal(last_center_freq_hz[instance], params.center_freq_hz())) ||
         converging) {
-        filter[instance].init(gyro_rate,
-                              center_freq,
-                              params.bandwidth_hz(),
-                              params.attenuation_dB());
-        last_center_freq_hz[instance] = center_freq;
+        filter[instance].init(gyro_rate, params);
+        last_center_freq_hz[instance] = params.center_freq_hz();
         last_bandwidth_hz[instance] = params.bandwidth_hz();
         last_attenuation_dB[instance] = params.attenuation_dB();
-    } else if (params.tracking_mode() != HarmonicNotchDynamicMode::Fixed) {
+    }
+
+    if (params.tracking_mode() != HarmonicNotchDynamicMode::Fixed) {
         if (num_calculated_notch_frequencies > 1) {
             filter[instance].update(num_calculated_notch_frequencies, calculated_notch_freq_hz);
         } else {
-            filter[instance].update(center_freq);
+            filter[instance].update(calculated_notch_freq_hz[0]);
         }
-        last_center_freq_hz[instance] = center_freq;
     }
 }
+#endif
 
 /*
   update gyro and accel values from backends
@@ -1795,13 +1953,13 @@ void AP_InertialSensor::update(void)
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_gyro_healthy[i] && _use(i)) {
-                _primary_gyro = i;
+                _first_usable_gyro = i;
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_accel_healthy[i] && _use(i)) {
-                _primary_accel = i;
+                _first_usable_accel = i;
                 break;
             }
         }
@@ -1816,6 +1974,11 @@ void AP_InertialSensor::update(void)
         AP_Notify::events.temp_cal_saved = 1;
         tcal_learning = false;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL finished all IMUs");
+    }
+#endif
+#if AP_SERIALMANAGER_IMUOUT_ENABLED
+    if (uart.imu_out_uart) {
+        send_uart_data();
     }
 #endif
 }
@@ -1835,6 +1998,13 @@ void AP_InertialSensor::update(void)
  */
 void AP_InertialSensor::wait_for_sample(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    auto *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        hal.scheduler->delay_microseconds(1000);
+        return;
+    }
+#endif
     if (_have_sample) {
         // the user has called wait_for_sample() again without
         // consuming the sample with update()
@@ -2059,7 +2229,7 @@ void AP_InertialSensor::calc_vibration_and_clipping(uint8_t instance, const Vect
 // peak hold detector for slower mechanisms to detect spikes
 void AP_InertialSensor::set_accel_peak_hold(uint8_t instance, const Vector3f &accel)
 {
-    if (instance != _primary_accel) {
+    if (instance != _first_usable_accel) {
         // we only record for primary accel
         return;
     }
@@ -2098,7 +2268,7 @@ bool AP_InertialSensor::is_still()
 // return true if we are in a calibration
 bool AP_InertialSensor::calibrating() const
 {
-    if (_calibrating_accel || _calibrating_gyro) {
+    if (_calibrating_accel || _calibrating_gyro || _trimming_accel) {
         return true;
     }
 #if HAL_INS_ACCELCAL_ENABLED
@@ -2129,10 +2299,10 @@ void AP_InertialSensor::acal_init()
 {
     // NOTE: these objects are never deallocated because the pre-arm checks force a reboot
     if (_acal == nullptr) {
-        _acal = new AP_AccelCal;
+        _acal = NEW_NOTHROW AP_AccelCal;
     }
     if (_accel_calibrator == nullptr) {
-        _accel_calibrator = new AccelCalibrator[INS_MAX_INSTANCES];
+        _accel_calibrator = NEW_NOTHROW AccelCalibrator[INS_MAX_INSTANCES];
     }
 }
 
@@ -2152,23 +2322,24 @@ void AP_InertialSensor::acal_update()
 }
 #endif
 
-// Update the harmonic notch frequency
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+/*
+  Update the harmonic notch frequency
+
+  Note that zero is a valid value and will disable the notch unless
+  the TreatLowAsMin option is set
+*/
 void AP_InertialSensor::HarmonicNotch::update_freq_hz(float scaled_freq)
 {
-    // protect against zero as the scaled frequency
-    if (is_positive(scaled_freq)) {
-        calculated_notch_freq_hz[0] = scaled_freq;
-    }
+    calculated_notch_freq_hz[0] = fabsf(scaled_freq);
     num_calculated_notch_frequencies = 1;
 }
 
 // Update the harmonic notch frequency
 void AP_InertialSensor::HarmonicNotch::update_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]) {
-    // protect against zero as the scaled frequency
+    // note that we allow zero through, which will disable the notch
     for (uint8_t i = 0; i < num_freqs; i++) {
-        if (is_positive(scaled_freq[i])) {
-            calculated_notch_freq_hz[i] = scaled_freq[i];
-        }
+        calculated_notch_freq_hz[i] = fabsf(scaled_freq[i]);
     }
     // any uncalculated frequencies will float at the previous value or the initialized freq if none
     num_calculated_notch_frequencies = num_freqs;
@@ -2194,6 +2365,7 @@ bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz,
 
     return false;
 }
+#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
 /*
     set and save accelerometer bias along with trim calculation
@@ -2238,7 +2410,7 @@ void AP_InertialSensor::_acal_save_calibrations()
         case 1:
             // The first level step of accel cal will be taken as gnd truth,
             // i.e. trim will be set as per the output of primary accel from the level step
-            get_primary_accel_cal_sample_avg(0,aligned_sample);
+            get_first_usable_accel_cal_sample_avg(0,aligned_sample);
             _trim_rad.zero();
             _calculate_trim(aligned_sample, _trim_rad);
             _new_trim = true;
@@ -2246,7 +2418,7 @@ void AP_InertialSensor::_acal_save_calibrations()
         case 2:
             // Reference accel is truth, in this scenario there is a reference accel
             // as mentioned in ACC_BODY_ALIGNED
-            if (get_primary_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
+            if (get_first_usable_accel_cal_sample_avg(0,misaligned_sample) && get_fixed_mount_accel_cal_sample(0,aligned_sample)) {
                 // determine trim from aligned sample vs misaligned sample
                 Vector3f cross = (misaligned_sample%aligned_sample);
                 float dot = (misaligned_sample*aligned_sample);
@@ -2310,7 +2482,7 @@ bool AP_InertialSensor::get_fixed_mount_accel_cal_sample(uint8_t sample_num, Vec
 /*
     Returns Primary accelerometer level data averaged during accel calibration's first step
 */
-bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const
+bool AP_InertialSensor::get_first_usable_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const
 {
     uint8_t count = 0;
     Vector3f avg = Vector3f(0,0,0);
@@ -2332,12 +2504,30 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
     return true;
 }
 
+#if HAL_GCS_ENABLED
+bool AP_InertialSensor::calibrate_gyros()
+{
+    init_gyro();
+    if (!gyro_calibrated_ok_all()) {
+        return false;
+    }
+#if AP_AHRS_ENABLED
+    AP::ahrs().reset_gyro_drift();
+#endif
+    return true;
+}
+
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
-#if HAL_GCS_ENABLED
 MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
+    const uint32_t now = AP_HAL::millis();
+    if ((now - last_accel_cal_ms) < 5000) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    last_accel_cal_ms = now;
+
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES];
     Vector3f new_accel_offset[INS_MAX_INSTANCES];
@@ -2376,7 +2566,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     }
     
     // remove existing accel offsets and scaling
-    for (uint8_t k=0; k<num_accels; k++) {
+    for (uint8_t k=0; k<INS_MAX_INSTANCES; k++) {
         _accel_offset(k).set(Vector3f());
         _accel_scale(k).set(Vector3f(1,1,1));
         new_accel_offset[k].zero();
@@ -2464,9 +2654,17 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
             caltemp_accel(k).set_and_save(get_temperature(k));
 #endif
         }
+        for (uint8_t k=num_accels; k<INS_MAX_INSTANCES; k++) {
+            _accel_offset(k).set_and_save(Vector3f());
+            _accel_scale(k).set_and_save(Vector3f());
+            _gyro_offset(k).set_and_save(Vector3f());
+            _accel_id(k).set_and_save(0);
+        }
 
+#if AP_AHRS_ENABLED
         // force trim to zero
         AP::ahrs().set_trim(Vector3f(0, 0, 0));
+#endif
     } else {
         DEV_PRINTF("\nFAILED\n");
         // restore old values
@@ -2487,11 +2685,14 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         update();
     }
 
+#if AP_AHRS_ENABLED
     // and reset state estimators
     AP::ahrs().reset();
+#endif
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+    last_accel_cal_ms = AP_HAL::millis ();
 
     return result;
 }
@@ -2508,7 +2709,7 @@ AP_InertialSensor::Gyro_Calibration_Timing AP_InertialSensor::gyro_calibration_t
     return (Gyro_Calibration_Timing)_gyro_cal_timing.get();
 }
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
 /*
   update IMU kill mask, used for testing IMU failover
  */
@@ -2531,8 +2732,52 @@ void AP_InertialSensor::kill_imu(uint8_t imu_idx, bool kill_it)
         imu_kill_mask &= ~(1U<<imu_idx);
     }
 }
-#endif // HAL_MINIMIZE_FEATURES
+#endif // AP_INERTIALSENSOR_KILL_IMU_ENABLED
 
+#if AP_SERIALMANAGER_IMUOUT_ENABLED
+/*
+  setup a UART for sending external data
+ */
+void AP_InertialSensor::set_imu_out_uart(AP_HAL::UARTDriver *_uart)
+{
+    uart.imu_out_uart = _uart;
+    uart.counter = 0;
+}
+
+/*
+  send IMU delta-angle and delta-velocity to a UART
+ */
+void AP_InertialSensor::send_uart_data(void)
+{
+    struct {
+        uint16_t magic = 0x29c4;
+        uint16_t length;
+        uint32_t timestamp_us;
+        Vector3f delta_velocity;
+        Vector3f delta_angle;
+        float    delta_velocity_dt;
+        float    delta_angle_dt;
+        uint16_t counter;
+        uint16_t crc;
+    } data;
+
+    if (uart.imu_out_uart->txspace() < sizeof(data)) {
+        // not enough space
+        return;
+    }
+
+    data.length = sizeof(data);
+    data.timestamp_us = AP_HAL::micros();
+
+    get_delta_angle(get_first_usable_gyro(), data.delta_angle, data.delta_angle_dt);
+    get_delta_velocity(get_first_usable_accel(), data.delta_velocity, data.delta_velocity_dt);
+
+    data.counter = uart.counter++;
+    data.crc = crc_xmodem((const uint8_t *)&data, sizeof(data)-sizeof(uint16_t));
+
+    uart.imu_out_uart->write((const uint8_t *)&data, sizeof(data));
+}
+#endif // AP_SERIALMANAGER_IMUOUT_ENABLED
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)

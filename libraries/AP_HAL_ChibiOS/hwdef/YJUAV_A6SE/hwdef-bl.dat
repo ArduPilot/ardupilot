@@ -29,7 +29,11 @@ PB6  QUADSPI_BK1_NCS QUADSPI1 SPEED_HIGH
 PB2  QUADSPI_CLK     QUADSPI1 SPEED_HIGH
 
 # IFace  Device Name  Bus      QSPI Mode  Clk Freq  Size (Pow2)  NCS Delay
+<<<<<<< HEAD
 QSPIDEV  w25q-dtr     QUADSPI1 MODE3      120*MHZ   24           2
+=======
+QSPIDEV  w25q-dtr     QUADSPI1 MODE3      100*MHZ   24           1
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # order of UARTs (and USB). Allow bootloading on USB and Debug
 SERIAL_ORDER OTG1 UART7

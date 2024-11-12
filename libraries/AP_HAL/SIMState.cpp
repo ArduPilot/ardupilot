@@ -12,6 +12,7 @@
 #include <SITL/SIM_Helicopter.h>
 #include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_Glider.h>
 #include <SITL/SIM_QuadPlane.h>
 #include <SITL/SIM_Rover.h>
 #include <SITL/SIM_BalanceBot.h>
@@ -20,6 +21,7 @@
 #include <SITL/SIM_Tracker.h>
 #include <SITL/SIM_Submarine.h>
 #include <SITL/SIM_Blimp.h>
+#include <SITL/SIM_NoVehicle.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
@@ -35,10 +37,18 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_CLASS MultiCopter
 #elif APM_BUILD_TYPE(APM_BUILD_Heli)
 #define AP_SIM_FRAME_CLASS Helicopter
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define AP_SIM_FRAME_CLASS Tracker
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_CLASS Plane
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_CLASS SimRover
+#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
+#define AP_SIM_FRAME_CLASS Blimp
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define AP_SIM_FRAME_CLASS Submarine
+#else
+#define AP_SIM_FRAME_CLASS NoVehicle
 #endif
 #endif
 
@@ -47,10 +57,18 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_STRING "+"
 #elif APM_BUILD_TYPE(APM_BUILD_Heli)
 #define AP_SIM_FRAME_STRING "heli"
+#elif APM_BUILD_TYPE(APM_BUILD_AntennaTracker)
+#define AP_SIM_FRAME_STRING "tracker"
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_STRING "plane"
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AP_SIM_FRAME_STRING "rover"
+#elif APM_BUILD_TYPE(APM_BUILD_Blimp)
+#define AP_SIM_FRAME_STRING "blimp"
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#define AP_SIM_FRAME_STRING "sub"
+#else
+#define AP_SIM_FRAME_STRING ""
 #endif
 #endif
 
@@ -99,6 +117,7 @@ void SIMState::fdm_input_local(void)
     // ride_along.receive(input);
 
     // update the model
+    sitl_model->update_home();
     sitl_model->update_model(input);
 
     // get FDM output from the model
@@ -107,18 +126,12 @@ void SIMState::fdm_input_local(void)
     }
     if (_sitl) {
         sitl_model->fill_fdm(_sitl->state);
-
-        if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_None) {
-            for (uint8_t i=0; i< _sitl->state.rcin_chan_count; i++) {
-                pwm_input[i] = 1000 + _sitl->state.rcin[i]*1000;
-            }
-        }
     }
 
     // output JSON state to ride along flight controllers
     // ride_along.send(_sitl->state,sitl_model->get_position_relhome());
 
-#if HAL_SIM_GIMBAL_ENABLED
+#if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
         gimbal->update();
     }
@@ -145,6 +158,9 @@ void SIMState::fdm_input_local(void)
     if (benewake_tfmini != nullptr) {
         benewake_tfmini->update(sitl_model->rangefinder_range());
     }
+    if (nooploop != nullptr) {
+        nooploop->update(sitl_model->rangefinder_range());
+    }
     if (teraranger_serial != nullptr) {
         teraranger_serial->update(sitl_model->rangefinder_range());
     }
@@ -162,6 +178,9 @@ void SIMState::fdm_input_local(void)
     }
     if (leddarone != nullptr) {
         leddarone->update(sitl_model->rangefinder_range());
+    }
+    if (rds02uf != nullptr) {
+        rds02uf->update(sitl_model->rangefinder_range());
     }
     if (USD1_v0 != nullptr) {
         USD1_v0->update(sitl_model->rangefinder_range());
@@ -191,12 +210,6 @@ void SIMState::fdm_input_local(void)
     if (frsky_d != nullptr) {
         frsky_d->update();
     }
-    // if (frsky_sport != nullptr) {
-    //     frsky_sport->update();
-    // }
-    // if (frsky_sportpassthrough != nullptr) {
-    //     frsky_sportpassthrough->update();
-    // }
 
 #if AP_SIM_CRSF_ENABLED
     if (crsf != nullptr) {
@@ -226,8 +239,11 @@ void SIMState::fdm_input_local(void)
         vectornav->update();
     }
 
-    if (lord != nullptr) {
-        lord->update();
+    if (microstrain5 != nullptr) {
+        microstrain5->update();
+    }
+    if (inertiallabs != nullptr) {
+        inertiallabs->update();
     }
 
 #if HAL_SIM_AIS_ENABLED
@@ -261,7 +277,6 @@ void SIMState::_simulator_servos(struct sitl_input &input)
 {
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
-    // last_update_usec = now;
 
     // find the barometer object if it exists
     const auto *_barometer = AP_Baro::get_singleton();
@@ -381,7 +396,7 @@ void SIMState::set_height_agl(void)
         AP_Terrain *_terrain = AP_Terrain::get_singleton();
         if (_terrain != nullptr &&
             _terrain->height_amsl(location, terrain_height_amsl)) {
-            _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
+            _sitl->state.height_agl = _sitl->state.altitude - terrain_height_amsl;
             return;
         }
     }
@@ -389,7 +404,7 @@ void SIMState::set_height_agl(void)
 
     if (_sitl != nullptr) {
         // fall back to flat earth model
-        _sitl->height_agl = _sitl->state.altitude - home_alt;
+        _sitl->state.height_agl = _sitl->state.altitude - home_alt;
     }
 }
 

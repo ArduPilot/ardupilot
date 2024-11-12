@@ -2,7 +2,9 @@
 -- the average battery consumption, and the wind to decide when to failsafe
 --
 -- CAUTION: This script only works for Plane
--- luacheck: only 0
+
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: undefined-global
 
 -- store the batt info as { instance, filtered, capacity, margin_mah }
 -- instance: the battery monitor instance (zero indexed)
@@ -31,29 +33,25 @@ local SITL_wind = false
 
 
 -- Read in required params
-local value = param:get('TRIM_ARSPD_CM')
+local value = param:get('AIRSPEED_CRUISE')
 if value then
-  air_speed = value / 100
+  air_speed = value
 else
-  error('LUA: get TRIM_ARSPD_CM failed')
+  error('LUA: get AIRSPEED_CRUISE failed')
 end
-local value = param:get('ARSPD_FBW_MIN')
+value = param:get('AIRSPEED_MIN')
 if value then
   min_air_speed = value
 else
-  error('LUA: get ARSPD_FBW_MIN failed')
+  error('LUA: get AIRSPEED_MIN failed')
 end
-local value = param:get('MIN_GNDSPD_CM')
-if value then
-  min_ground_speed = value / 100
-else
-  error('LUA: get MIN_GNDSPD_CM failed')
+min_ground_speed = param:get('MIN_GROUNDSPEED')
+if not min_groundspeed then
+  error('LUA: get MIN_GROUNDSPEED failed')
 end
-local value = param:get('LIM_ROLL_CD')
-if value then
-  max_bank_angle = value / 100
-else
-  error('LUA: get LIM_ROLL_CD failed')
+max_bank_angle = param:get('ROLL_LIMIT_DEG')
+if not max_bank_angle then
+  error('LUA: get ROLL_LIMIT_DEG failed')
 end
 
 -- https://en.wikipedia.org/wiki/Standard_rate_turn#Radius_of_turn_formula
@@ -62,7 +60,7 @@ local turn_rad = (air_speed^2) / (9.81 * math.tan(math.rad(max_bank_angle)))
 
 -- Read the radius we expect to circle at when we get home
 local home_reached_rad
-local value = param:get('RTL_RADIUS')
+value = param:get('RTL_RADIUS')
 if value then
   value = math.abs(value)
   if value > 0 then
@@ -81,11 +79,10 @@ end
 
 -- internal global variables
 local return_start
-local return_distance
 local return_amps
 local trigger_instance = batt_info[1][1]
-local last_print = 0
-local timer_start_time = 0
+local last_print = uint32_t()
+local timer_start_time = uint32_t()
 local timer_active = true
 
 -- calculates the amount of time it will take for the vehicle to return home
@@ -419,7 +416,7 @@ for i = 1, #batt_info do
       param_string = 'BATT_CRT_MAH'
     end
 
-    local value = param:get(param_string)
+    value = param:get(param_string)
     if  not value then
       error('LUA: get '.. param_string .. ' failed')
     end

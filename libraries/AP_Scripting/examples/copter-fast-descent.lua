@@ -6,6 +6,10 @@
 --    b) slows the spiral and stops at the preset altitude
 --    c) switches to RTL
 
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
+
 -- constants
 local copter_guided_mode_num = 4    -- Guided mode is 4 on copter
 local copter_rtl_mode_num = 6       -- RTL is 6 on copter

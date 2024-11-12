@@ -111,7 +111,7 @@ TEST(Vector2Test, angle)
 {
     EXPECT_FLOAT_EQ(M_PI/2, Vector2f(0, 1).angle());
     EXPECT_FLOAT_EQ(M_PI/4, Vector2f(1, 1).angle());
-    EXPECT_FLOAT_EQ(0.0f, Vector2d(1, 0).angle());
+    EXPECT_TRUE(is_zero(Vector2d(1, 0).angle()));
     EXPECT_FLOAT_EQ(M_PI*5/4, Vector2f(-1, -1).angle());
     EXPECT_FLOAT_EQ(M_PI*5/4, Vector2f(-5, -5).angle());
 

@@ -251,6 +251,18 @@ uint32_t get_usb_baud(uint16_t endpoint_id)
     }
     return 0;
 }
+
+/*
+    get the requested usb parity.  Valid if get_usb_baud() returned non-zero
+*/
+uint8_t get_usb_parity(uint16_t endpoint_id)
+{
+      if (endpoint_id == 0) {
+          return linecoding.bParityType;
+      }
+
+      return 0;
+}
 #endif
 /**
  * @brief   IN EP1 state.
@@ -401,7 +413,11 @@ const USBConfig usbcfg = {
  * Serial over USB driver configuration.
  */
 const SerialUSBConfig serusbcfg1 = {
+#if STM32_OTG2_IS_OTG1
+  &USBD2,
+#else
   &USBD1,
+#endif
   USBD1_DATA_REQUEST_EP,
   USBD1_DATA_AVAILABLE_EP,
   USBD1_INTERRUPT_REQUEST_EP

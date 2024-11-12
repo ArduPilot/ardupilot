@@ -46,6 +46,7 @@ I2CDeviceManager::I2CDeviceManager(void)
             i2c_bus_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
             i2c_bus_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
             i2c_bus_config.master.clk_speed = i2c_bus_desc[i].speed;
+            i2c_bus_config.clk_flags = 0;
             i2c_port_t p = i2c_bus_desc[i].port;
             businfo[i].port = p;
             businfo[i].bus_clock = i2c_bus_desc[i].speed;
@@ -58,9 +59,9 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
+    bus(I2CDeviceManager::businfo[busnum]),
     _retries(10),
-    _address(address),
-    bus(I2CDeviceManager::businfo[busnum])
+    _address(address)
 {
     set_device_bus(busnum);
     set_device_address(address);
@@ -158,7 +159,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     if (bus >= ARRAY_SIZE(i2c_bus_desc)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
 }
 

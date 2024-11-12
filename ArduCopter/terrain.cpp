@@ -8,7 +8,7 @@ void Copter::terrain_update()
 
     // tell the rangefinder our height, so it can go into power saving
     // mode if available
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     float height;
     if (terrain.height_above_terrain(height, true)) {
         rangefinder.set_estimated_terrain_height(height);
@@ -17,6 +17,7 @@ void Copter::terrain_update()
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 // log terrain data - should be called at 1hz
 void Copter::terrain_logging()
 {
@@ -26,3 +27,4 @@ void Copter::terrain_logging()
     }
 #endif
 }
+#endif

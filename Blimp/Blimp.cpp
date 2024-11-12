@@ -53,7 +53,7 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     FAST_TASK_CLASS(AP_InertialSensor, &blimp.ins, update),
     // send outputs to the motors library immediately
     FAST_TASK(motors_output),
-     // run EKF state estimator (expensive)
+    // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
     // Inertial Nav
     FAST_TASK(read_inertia),
@@ -72,9 +72,10 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK(arm_motors_check,      10,     50,  18),
     SCHED_TASK(update_altitude,       10,    100,  21),
     SCHED_TASK(three_hz_loop,          3,     75,  24),
+#if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75,  27),
-    SCHED_TASK_CLASS(AP_Baro,              &blimp.barometer,             accumulate,    50,     90,  30),
-#if LOGGING_ENABLED == ENABLED
+#endif
+#if HAL_LOGGING_ENABLED
     SCHED_TASK(full_rate_logging,     50,    50,  33),
 #endif
     SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90,  36),
@@ -84,15 +85,14 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK(gpsglitch_check,       10,     50,  48),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180,  51),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550,  54),
-#if LOGGING_ENABLED == ENABLED
+#if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,   10,    350,  57),
     SCHED_TASK(twentyfive_hz_logging, 25,    110,  60),
     SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300,  63),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50,  66),
+#if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75,  69),
-#if STATS_ENABLED == ENABLED
-    SCHED_TASK_CLASS(AP_Stats,             &blimp.g2.stats,            update,           1, 100,  75),
 #endif
 };
 
@@ -139,6 +139,7 @@ void Blimp::update_batt_compass(void)
     }
 }
 
+#if HAL_LOGGING_ENABLED
 // Full rate logging of attitude, rate and pid loops
 void Blimp::full_rate_logging()
 {
@@ -164,9 +165,11 @@ void Blimp::ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_RCIN)) {
         logger.Write_RCIN();
+#if AP_RSSI_ENABLED
         if (rssi.enabled()) {
             logger.Write_RSSI();
         }
+#endif
     }
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
@@ -188,6 +191,7 @@ void Blimp::twentyfive_hz_logging()
         AP::ins().Write_IMU();
     }
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // three_hz_loop - 3.3hz loop
 void Blimp::three_hz_loop()
@@ -199,14 +203,18 @@ void Blimp::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Blimp::one_hz_loop()
 {
+#if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
+#endif
 
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
     AP_Notify::flags.flying = !ap.land_complete;
+
+    blimp.pid_pos_yaw.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 }
 
 void Blimp::read_AHRS(void)
@@ -215,12 +223,29 @@ void Blimp::read_AHRS(void)
     ahrs.update(true);
 
     IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
-    IGNORE_RETURN(ahrs.get_relative_position_NED_home(pos_ned));
+    IGNORE_RETURN(ahrs.get_relative_position_NED_origin(pos_ned));
 
     vel_yaw = ahrs.get_yaw_rate_earth();
     Vector2f vel_xy_filtd = vel_xy_filter.apply({vel_ned.x, vel_ned.y});
     vel_ned_filtd = {vel_xy_filtd.x, vel_xy_filtd.y, vel_z_filter.apply(vel_ned.z)};
     vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
+
+#if HAL_LOGGING_ENABLED
+    AP::logger().WriteStreaming("VNF", "TimeUS,X,XF,Y,YF,Z,ZF,Yaw,YawF,PX,PY,PZ,PYaw", "Qffffffffffff",
+                                AP_HAL::micros64(),
+                                vel_ned.x,
+                                vel_ned_filtd.x,
+                                vel_ned.y,
+                                vel_ned_filtd.y,
+                                vel_ned.z,
+                                vel_ned_filtd.z,
+                                vel_yaw,
+                                vel_yaw_filtd,
+                                pos_ned.x,
+                                pos_ned.y,
+                                pos_ned.z,
+                                blimp.ahrs.get_yaw());
+#endif
 }
 
 // read baro and log control tuning
@@ -229,12 +254,16 @@ void Blimp::update_altitude()
     // read in baro altitude
     read_barometer();
 
+#if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
         AP::ins().write_notch_log_messages();
+#endif
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #endif
     }
+#endif
 }
 
 //Conversions are in 2D so that up remains up in world frame when the blimp is not exactly level.
@@ -259,7 +288,7 @@ void Blimp::rotate_NE_to_BF(Vector2f &vec)
   constructor for main Blimp class
  */
 Blimp::Blimp(void)
-    : logger(g.log_bitmask),
+    :
       flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
       rc_throttle_control_in_filter(1.0f),

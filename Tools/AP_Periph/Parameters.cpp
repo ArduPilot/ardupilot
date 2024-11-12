@@ -43,6 +43,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_BARO_ENABLE_DEFAULT 1
 #endif
 
+#ifndef HAL_PERIPH_BATT_HIDE_MASK_DEFAULT
+#define HAL_PERIPH_BATT_HIDE_MASK_DEFAULT 0
+#endif
+
 #ifndef AP_PERIPH_EFI_PORT_DEFAULT
 #define AP_PERIPH_EFI_PORT_DEFAULT 3
 #endif
@@ -55,6 +59,18 @@ extern const AP_HAL::HAL &hal;
 #define MAV_SYSTEM_ID 3
 #else
 #define MAV_SYSTEM_ID HAL_DEFAULT_MAV_SYSTEM_ID
+#endif
+
+#ifndef APD_ESC_SERIAL_0
+  #define APD_ESC_SERIAL_0 -1
+#endif
+
+#ifndef APD_ESC_SERIAL_1
+  #define APD_ESC_SERIAL_1 -1
+#endif
+
+#ifndef AP_PERIPH_PROBE_CONTINUOUS
+#define AP_PERIPH_PROBE_CONTINUOUS 0
 #endif
 
 /*
@@ -70,9 +86,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
     // @Param: CAN_NODE
-    // @DisplayName: UAVCAN node that is used for this network
-    // @Description: UAVCAN node should be set implicitly or 0 for dynamic node allocation
-    // @Range: 0 250
+    // @DisplayName: DroneCAN node ID used by this node on all networks
+    // @Description: Value of 0 requests any ID from a DNA server, any other value sets that ID ignoring DNA
+    // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(can_node,         "CAN_NODE", HAL_CAN_DEFAULT_NODE_ID),
@@ -95,48 +111,56 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_slcan_cport, "CAN_SLCAN_CPORT", 1),
 #endif
 
+#ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
+    // @Param: CAN_TERMINATE
+    // @DisplayName: Enable CAN software temination in this node
+    // @Description: Enable CAN software temination in this node
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_terminate,   0, "CAN_TERMINATE", 0),
+#endif
+
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
+    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    GARRAY(can_protocol,     0, "CAN_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
     
     // @Param: CAN2_BAUDRATE
+    // @CopyFieldsFrom: CAN_BAUDRATE
     // @DisplayName: Bitrate of CAN2 interface
-    // @Description: Bit rate can be set up to from 10000 to 1000000
-    // @Range: 10000 1000000
-    // @User: Advanced
-    // @RebootRequired: True
     GARRAY(can_baudrate,     1, "CAN2_BAUDRATE", 1000000),
 
     // @Param: CAN2_PROTOCOL
-    // @DisplayName: Enable use of specific protocol to be used on this port
-    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
-    // @User: Advanced
-    // @RebootRequired: True
-    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    // @CopyFieldsFrom: CAN_PROTOCOL
+    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM
+    // @Param: CAN2_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    1, "CAN2_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
     // @Param: CAN3_BAUDRATE
     // @DisplayName: Bitrate of CAN3 interface
-    // @Description: Bit rate can be set up to from 10000 to 1000000
-    // @Range: 10000 1000000
-    // @User: Advanced
-    // @RebootRequired: True
+    // @CopyFieldsFrom: CAN_BAUDRATE
     GARRAY(can_baudrate,    2, "CAN3_BAUDRATE", 1000000),
 
     // @Param: CAN3_PROTOCOL
-    // @DisplayName: Enable use of specific protocol to be used on this port
-    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
-    // @User: Advanced
-    // @RebootRequired: True
-    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    // @CopyFieldsFrom: CAN_PROTOCOL
+    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM
+    // @Param: CAN3_TERMINATE
+    // @CopyFieldsFrom: CAN_TERMINATE
+    GARRAY(can_terminate,    2, "CAN3_TERMINATE", 0),
+#endif
 #endif
 
 #if HAL_CANFD_SUPPORTED
@@ -158,11 +182,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN2_FDBAUDRATE
+    // @CopyFieldsFrom: CAN_FDBAUDRATE
     // @DisplayName: Set up bitrate for data section on CAN2
     // @Description: This sets the bitrate for the data section of CAN2.
-    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
-    // @User: Advanced
-    // @RebootRequired: True
     GARRAY(can_fdbaudrate,    1, "CAN2_FDBAUDRATE", HAL_CANFD_SUPPORTED),
 #endif
 #endif
@@ -179,7 +201,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Debug
     // @Description: Debug
-    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec
+    // @Bitmask: 0:Show free stack space, 1:Auto Reboot after 15sec, 2:Enable sending stats
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
 
@@ -231,7 +253,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #ifdef HAL_PERIPH_ENABLE_BATTERY
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
-    GOBJECT(battery, "BATT", AP_BattMonitor),
+    GOBJECT(battery_lib, "BATT", AP_BattMonitor),
+
+    // @Param: BATT_HIDE_MASK
+    // @DisplayName: Battery hide mask
+    // @Description: Instance mask of local battery index(es) to prevent transmitting their status over CAN. This is useful for hiding a "battery" instance that is used locally in the peripheral but don't want them to be treated as a battery source(s) to the autopilot. For example, an AP_Periph battery monitor with multiple batteries that monitors each locally for diagnostic or other purposes, but only reports as a single SUM battery monitor to the autopilot.
+    // @Bitmask: 0:BATT, 1:BATT2, 2:BATT3, 3:BATT4, 4:BATT5, 5:BATT6, 6:BATT7, 7:BATT8, 8:BATT9, 9:BATTA, 10:BATTB, 11:BATTC, 12:BATTD, 13:BATTE, 14:BATTF, 15:BATTG
+    // @User: Advanced
+    GSCALAR(battery_hide_mask, "BATT_HIDE_MASK", HAL_PERIPH_BATT_HIDE_MASK_DEFAULT),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
@@ -280,7 +309,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Standard
     // @RebootRequired: True
-    GSCALAR(rangefinder_baud, "RNGFND_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+    GARRAY(rangefinder_baud, 0, "RNGFND_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
 
     // @Param: RNGFND_PORT
     // @DisplayName: Rangefinder Serial Port
@@ -289,7 +318,27 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    GSCALAR(rangefinder_port, "RNGFND_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+    GARRAY(rangefinder_port, 0, "RNGFND_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+
+#if RANGEFINDER_MAX_INSTANCES > 1
+    // @Param: RNGFND2_BAUDRATE
+    // @DisplayName: Rangefinder serial baudrate
+    // @Description: Rangefinder serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GARRAY(rangefinder_baud, 1, "RNGFND2_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+
+    // @Param: RNGFND2_PORT
+    // @DisplayName: Rangefinder Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Rangefinder.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(rangefinder_port, 1, "RNGFND2_PORT", -1),
+#endif
 
     // @Param: RNGFND_MAX_RATE
     // @DisplayName: Rangefinder max rate
@@ -343,13 +392,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
     // @Param: ESC_NUMBER
     // @DisplayName: ESC number
     // @Description: This is the ESC number to report as in UAVCAN ESC telemetry feedback packets.
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(esc_number, "ESC_NUMBER", 0),
+    GARRAY(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
@@ -357,6 +406,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: OUT
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels, "OUT",     SRV_Channels),
+
+    // @Param: ESC_RATE
+    // @DisplayName: ESC Update Rate
+    // @Description: Rate in Hz that ESC PWM outputs (function is MotorN) will update at
+    // @Units: Hz
+    // @Range: 50 400
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(esc_rate, "ESC_RATE", 400), // effective Copter and QuadPlane default after clamping
 
     // @Param: ESC_PWM_TYPE
     // @DisplayName: Output PWM type
@@ -440,7 +498,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Range: 1 255
     // @User: Advanced
     GSCALAR(sysid_this_mav,         "SYSID_THISMAV",  MAV_SYSTEM_ID),
+#endif
 
+#if HAL_GCS_ENABLED || defined(HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS)
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -483,7 +543,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#ifdef HAL_PERIPH_ENABLE_PROXIMITY
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -513,14 +573,168 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // Proximity driver
     // @Group: PRX
-    // @Path: ../libraries/AP_RangeFinder/AP_Proximity.cpp
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif
+#endif  // HAL_PERIPH_ENABLE_PROXIMITY
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
     // @Path: ../libraries/AP_NMEA_Output/AP_NMEA_Output.cpp
     GOBJECT(nmea, "NMEA_",   AP_NMEA_Output),
+#endif
+
+#if AP_KDECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../libraries/AP_KDECAN/AP_KDECAN.cpp
+    GOBJECT(kdecan, "KDE_",   AP_KDECAN),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    GARRAY(pole_count, 0, "ESC_NUM_POLES", 22),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    // @Param: ESC_APD_SERIAL_1
+    // @DisplayName: ESC APD Serial 1
+    // @Description: Which serial port to use for APD ESC data
+    // @Range: 0 6
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(esc_serial_port, 0, "ESC_APD_SERIAL_1", APD_ESC_SERIAL_0),
+
+  #if APD_ESC_INSTANCES > 1
+    GARRAY(esc_number, 1, "ESC_NUMBER2", 1),
+
+    GARRAY(pole_count, 1, "ESC_NUM_POLES2", 22),
+
+    // @Param: ESC_APD_SERIAL_2
+    // @DisplayName: ESC APD Serial 2
+    // @Description: Which serial port to use for APD ESC data
+    // @Range: 0 6
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(esc_serial_port, 1, "ESC_APD_SERIAL_2", APD_ESC_SERIAL_1),
+  #endif
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_NETWORKING
+    // @Group: NET_
+    // @Path: networking.cpp
+    GOBJECT(networking_periph, "NET_", Networking_Periph),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RPM
+    // @Group: RPM
+    // @Path: ../libraries/AP_RPM/AP_RPM.cpp
+    GOBJECT(rpm_sensor, "RPM", AP_RPM),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    // @Group: RC
+    // @Path: rc_in.cpp
+    GOBJECT(g_rcin, "RC",  Parameters_RCIN),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+    // @Group: BAL
+    // @Path: batt_balance.cpp
+    GOBJECT(battery_balance, "BAL",  BattBalance),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+    // @Group: UART
+    // @Path: serial_options.cpp
+    GOBJECT(serial_options, "UART",  SerialOptions),
+#endif
+    
+    // NOTE: sim parameters should go last
+#if AP_SIM_ENABLED
+    // @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
+    GOBJECT(sitl, "SIM_", SITL::SIM),
+
+#if AP_AHRS_ENABLED
+    // @Group: AHRS_
+    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
+    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
+#endif
+#endif // AP_SIM_ENABLED
+
+#if HAL_PERIPH_CAN_MIRROR
+    // @Param: CAN_MIRROR_PORTS
+    // @DisplayName: CAN ports to mirror traffic between
+    // @Description: Any set ports will participate in blindly mirroring traffic from one port to the other. It is the users responsibility to ensure that no loops exist that cause traffic to be infinitly repeated, and both ports must be running the same baud rates.
+    // @Bitmask: 0:CAN1, 1:CAN2, 2:CAN3
+    // @User: Advanced
+    GSCALAR(can_mirror_ports, "CAN_MIRROR_PORTS", 0),
+#endif // HAL_PERIPH_CAN_MIRROR
+
+#ifdef HAL_PERIPH_ENABLE_RTC
+    // @Group: RTC
+    // @Path: ../libraries/AP_RTC/AP_RTC.cpp
+    GOBJECT(rtc,                   "RTC",    AP_RTC),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RELAY
+    // @Group: RELAY
+    // @Path: ../libraries/AP_Relay/AP_Relay.cpp
+    GOBJECT(relay,                 "RELAY", AP_Relay),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+    // @Param: TEMP_MSG_RATE
+    // @DisplayName: Temperature sensor message rate
+    // @Description: This is the rate Temperature sensor data is sent in Hz. Zero means no send. Each sensor with source DroneCAN is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(temperature_msg_rate, "TEMP_MSG_RATE", 0),
+#endif
+
+    // @Param: OPTIONS
+    // @DisplayName: AP Periph Options
+    // @Description: Bitmask of AP Periph Options
+    // @Bitmask: 0: Enable continuous sensor probe
+    // @User: Standard
+    GSCALAR(options, "OPTIONS", AP_PERIPH_PROBE_CONTINUOUS),
+
+#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+    // @Param: RPM_MSG_RATE
+    // @DisplayName: RPM sensor message rate
+    // @Description: This is the rate RPM sensor data is sent in Hz. Zero means no send. Each sensor with a set ID is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(rpm_msg_rate, "RPM_MSG_RATE", 0),
+#endif
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED && HAL_WITH_ESC_TELEM
+    // @Param: ESC_EXT_TLM_RATE
+    // @DisplayName: ESC Extended telemetry message rate
+    // @Description: This is the rate at which extended ESC Telemetry will be sent across the CAN bus for each ESC
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(esc_extended_telem_rate, "ESC_EXT_TLM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT / 10),
+#endif
+
+
+#ifdef HAL_PERIPH_ENABLE_IMU
+    // @Param: IMU_SAMPLE_RATE
+    // @DisplayName: IMU Sample Rate
+    // @Description: IMU Sample Rate
+    // @Range: 0 1000
+    // @User: Standard
+    GSCALAR(imu_sample_rate, "INS_SAMPLE_RATE", 0),
+
+    // @Group: INS
+    // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
+    GOBJECT(imu, "INS", AP_InertialSensor),
 #endif
 
     AP_VAREND

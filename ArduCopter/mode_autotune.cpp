@@ -4,7 +4,7 @@
   autotune mode is a wrapper around the AC_AutoTune library
  */
 
-#if AUTOTUNE_ENABLED == ENABLED
+#if AUTOTUNE_ENABLED
 
 bool AutoTune::init()
 {
@@ -38,30 +38,20 @@ void AutoTune::run()
     // apply SIMPLE mode transform to pilot inputs
     copter.update_simple_mode();
 
-    // reset target lean angles and heading while landed
-    if (copter.ap.land_complete) {
-        // we are landed, shut down
-        float target_climb_rate = get_pilot_desired_climb_rate_cms();
-
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f) {
-            copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        } else {
-            copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-        }
-        copter.attitude_control->reset_rate_controller_I_terms_smoothly();
-        copter.attitude_control->reset_yaw_target_and_rate();
-
-        float target_roll, target_pitch, target_yaw_rate;
-        get_pilot_desired_rp_yrate_cd(target_roll, target_pitch, target_yaw_rate);
-
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-        copter.pos_control->relax_z_controller(0.0f);
-        copter.pos_control->update_z_controller();
-    } else {
-        // run autotune mode
-        AC_AutoTune::run();
+    // disarm when the landing detector says we've landed and spool state is ground idle
+    if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+        copter.arming.disarm(AP_Arming::Method::LANDED);
     }
+
+    // if not armed set throttle to zero and exit immediately
+    if (copter.ap.land_complete) {
+        copter.flightmode->make_safe_ground_handling();
+        return;
+    }
+
+    // run autotune mode
+    AC_AutoTune::run();
+
 }
 
 
@@ -85,7 +75,7 @@ void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitc
 {
     copter.mode_autotune.get_pilot_desired_lean_angles(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
                                                        copter.attitude_control->get_althold_lean_angle_max_cd());
-    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate();
 }
 
 /*
@@ -98,12 +88,14 @@ void AutoTune::init_z_limits()
     copter.pos_control->set_correction_speed_accel_z(-copter.get_pilot_speed_dn(), copter.g.pilot_speed_up, copter.g.pilot_accel_z);
 }
 
+#if HAL_LOGGING_ENABLED
 void AutoTune::log_pids()
 {
     copter.logger.Write_PID(LOG_PIDR_MSG, copter.attitude_control->get_rate_roll_pid().get_pid_info());
     copter.logger.Write_PID(LOG_PIDP_MSG, copter.attitude_control->get_rate_pitch_pid().get_pid_info());
     copter.logger.Write_PID(LOG_PIDY_MSG, copter.attitude_control->get_rate_yaw_pid().get_pid_info());
 }
+#endif
 
 /*
   check if we have a good position estimate
@@ -126,19 +118,9 @@ void ModeAutoTune::run()
     autotune.run();
 }
 
-void ModeAutoTune::save_tuning_gains()
-{
-    autotune.save_tuning_gains();
-}
-
 void ModeAutoTune::exit()
 {
     autotune.stop();
 }
 
-void ModeAutoTune::reset()
-{
-    autotune.reset();
-}
-
-#endif  // AUTOTUNE_ENABLED == ENABLED
+#endif  // AUTOTUNE_ENABLED

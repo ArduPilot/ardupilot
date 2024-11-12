@@ -1,3 +1,7 @@
+#include "GCS_config.h"
+
+#if HAL_GCS_ENABLED
+
 #include "MissionItemProtocol.h"
 
 #include "GCS.h"
@@ -29,7 +33,7 @@ void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
                                                    const mavlink_message_t &msg)
 {
     bool success = true;
-    success = success && !receiving;
+    success = success && cancel_upload(_link, msg);
     success = success && clear_all_items();
     send_mission_ack(_link, msg, success ? MAV_MISSION_ACCEPTED : MAV_MISSION_ERROR);
 }
@@ -43,9 +47,32 @@ bool MissionItemProtocol::mavlink2_requirement_met(const GCS_MAVLINK &_link, con
     if (!_link.sending_mavlink1()) {
         return true;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "Need mavlink2 for item transfer");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Need mavlink2 for item transfer");
     send_mission_ack(_link, msg, MAV_MISSION_UNSUPPORTED);
     return false;
+}
+
+// returns true if we are either not receiving, or we successfully
+// cancelled an existing upload:
+bool MissionItemProtocol::cancel_upload(const GCS_MAVLINK &_link, const mavlink_message_t &msg)
+{
+    if (receiving) {
+        // someone is already uploading a mission.  If we are
+        // receiving from someone then we will allow them to restart -
+        // otherwise we deny.
+        if (msg.sysid != dest_sysid || msg.compid != dest_compid) {
+            // reject another upload until
+            send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+            return false;
+        }
+        // the upload count may have changed; free resources and
+        // allocate them again:
+        free_upload_resources();
+        receiving = false;
+        link = nullptr;
+    }
+
+    return true;
 }
 
 void MissionItemProtocol::handle_mission_count(
@@ -57,18 +84,8 @@ void MissionItemProtocol::handle_mission_count(
         return;
     }
 
-    if (receiving) {
-        // someone is already uploading a mission.  If we are
-        // receiving from someone then we will allow them to restart -
-        // otherwise we deny.
-        if (msg.sysid != dest_sysid || msg.compid != dest_compid) {
-            // reject another upload until
-            send_mission_ack(_link, msg, MAV_MISSION_DENIED);
-            return;
-        }
-        // the upload count may have changed; free resources and
-        // allocate them again:
-        free_upload_resources();
+    if (!cancel_upload(_link, msg)) {
+        return;
     }
 
     if (packet.count > max_items()) {
@@ -155,6 +172,7 @@ void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
 
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
                                                  const mavlink_mission_request_t &packet,
                                                  const mavlink_message_t &msg
@@ -192,12 +210,13 @@ void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
 
     if (!mission_request_warning_sent) {
         mission_request_warning_sent = true;
-        gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
     }
 
     // buffer space is checked by send_message
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
 }
+#endif  // AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 
 void MissionItemProtocol::send_mission_item_warning()
 {
@@ -205,19 +224,32 @@ void MissionItemProtocol::send_mission_item_warning()
         return;
     }
     mission_item_warning_sent = true;
-    gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_ITEM; GCS should send MISSION_ITEM_INT");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got MISSION_ITEM; GCS should send MISSION_ITEM_INT");
 }
 
 void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
                                                             const mavlink_message_t &msg,
                                                             const mavlink_mission_write_partial_list_t &packet)
 {
+    if (!mavlink2_requirement_met(_link, msg)) {
+        return;
+    }
+
+    if (receiving) {
+        // someone is already uploading a mission.  Deny ability to
+        // write a partial list here as they might be trying to
+        // overwrite a subset of the waypoints which the current
+        // transfer is uploading, and that may lead to storing a whole
+        // bunch of empty items.
+        send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+        return;
+    }
 
     // start waypoint receiving
     if ((unsigned)packet.start_index > item_count() ||
         (unsigned)packet.end_index > item_count() ||
         packet.end_index < packet.start_index) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight plan update rejected"); // FIXME: Remove this anytime after 2020-01-22
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Flight plan update rejected"); // FIXME: Remove this anytime after 2020-01-22
         send_mission_ack(_link, msg, MAV_MISSION_ERROR);
         return;
     }
@@ -380,3 +412,5 @@ void MissionItemProtocol::update()
         link->send_message(next_item_ap_message_id());
     }
 }
+
+#endif  // HAL_GCS_ENABLED

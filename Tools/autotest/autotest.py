@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 ArduPilot automatic test suite.
 
@@ -21,6 +21,7 @@ import sys
 import time
 import traceback
 
+import blimp
 import rover
 import arducopter
 import arduplane
@@ -35,7 +36,7 @@ import examples
 from pysim import util
 from pymavlink.generator import mavtemplate
 
-from common import Test
+from vehicle_test_suite import Test
 
 tester = None
 
@@ -97,7 +98,7 @@ def build_binaries():
 
 def build_examples(**kwargs):
     """Build examples."""
-    for target in 'fmuv2', 'Pixhawk1', 'navio', 'linux':
+    for target in 'Pixhawk1', 'navio', 'linux':
         print("Running build.examples for %s" % target)
         try:
             util.build_examples(target, **kwargs)
@@ -185,7 +186,9 @@ def all_vehicles():
             'Rover',
             'AntennaTracker',
             'ArduSub',
-            'Blimp')
+            'Blimp',
+            'AP_Periph',
+            )
 
 
 def build_parameters():
@@ -275,6 +278,9 @@ __bin_names = {
     "CopterTests2b": "arducopter",
 
     "Plane": "arduplane",
+    "PlaneTests1a": "arduplane",
+    "PlaneTests1b": "arduplane",
+
     "Rover": "ardurover",
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
@@ -283,8 +289,10 @@ __bin_names = {
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
-    "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
+    "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
+    "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
     "CAN": "arducopter",
+    "BattCAN": "arducopter",
 }
 
 
@@ -295,16 +303,15 @@ def binary_path(step, debug=False):
     except Exception:
         return None
 
-    if vehicle in __bin_names:
-        if len(__bin_names[vehicle].split(".")) == 2:
-            config_name = __bin_names[vehicle].split(".")[0]
-            binary_name = __bin_names[vehicle].split(".")[1]
-        else:
-            config_name = 'sitl'
-            binary_name = __bin_names[vehicle]
-    else:
+    if vehicle not in __bin_names:
         # cope with builds that don't have a specific binary
         return None
+
+    try:
+        (config_name, binary_name) = __bin_names[vehicle]
+    except ValueError:
+        config_name = "sitl"
+        binary_name = __bin_names[vehicle]
 
     binary = util.reltopdir(os.path.join('build',
                                          config_name,
@@ -338,6 +345,7 @@ def find_specific_test_to_run(step):
 
 
 tester_class_map = {
+    "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
     "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
     "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
@@ -347,6 +355,8 @@ tester_class_map = {
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
     "test.Plane": arduplane.AutoTestPlane,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
@@ -355,10 +365,15 @@ tester_class_map = {
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
+    "test.BattCAN": arducopter.AutoTestBattCAN,
 }
 
-suplementary_test_binary_map = {
-    "test.CAN": ["sitl_periph_gps.AP_Periph", "sitl_periph_gps.AP_Periph.1"],
+supplementary_test_binary_map = {
+    "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+                 "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
+    "test.BattCAN": [
+        "sitl_periph_battmon:AP_Periph:0:Tools/autotest/default_params/periph-battmon.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+    ],
 }
 
 
@@ -375,11 +390,11 @@ def run_specific_test(step, *args, **kwargs):
 
     # print("Got %s" % str(tester))
     for a in tester.tests():
-        if type(a) != Test:
+        if not isinstance(a, Test):
             a = Test(a)
         print("Got %s" % (a.name))
         if a.name == test:
-            return (tester.autotest(tests=[a], allow_skips=False), tester)
+            return tester.autotest(tests=[a], allow_skips=False, step_name=step), tester
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)
 
@@ -402,10 +417,11 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
-        "sitl_32bit" : opts.sitl_32bit,
+        "force_32bit" : opts.force_32bit,
         "ubsan" : opts.ubsan,
         "ubsan_abort" : opts.ubsan_abort,
         "num_aux_imus" : opts.num_aux_imus,
+        "dronecan_tests" : opts.dronecan_tests,
     }
 
     if opts.Werror:
@@ -414,6 +430,7 @@ def run_step(step):
     build_opts = build_opts
 
     vehicle_binary = None
+    board = "sitl"
     if step == 'build.Plane':
         vehicle_binary = 'bin/arduplane'
 
@@ -435,8 +452,13 @@ def run_step(step):
     if step == 'build.Sub':
         vehicle_binary = 'bin/ardusub'
 
-    if step == 'build.SITLPeriphGPS':
-        vehicle_binary = 'sitl_periph_gps.bin/AP_Periph'
+    if step == 'build.SITLPeriphUniversal':
+        vehicle_binary = 'bin/AP_Periph'
+        board = 'sitl_periph_universal'
+
+    if step == 'build.SITLPeriphBattMon':
+        vehicle_binary = 'bin/AP_Periph'
+        board = 'sitl_periph_battmon'
 
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
@@ -447,6 +469,7 @@ def run_step(step):
             os.unlink(binary)
         except (FileNotFoundError, ValueError):
             pass
+<<<<<<< HEAD
         if len(vehicle_binary.split(".")) == 1:
             return util.build_SITL(vehicle_binary, **build_opts)
         else:
@@ -458,24 +481,40 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
+=======
+        return util.build_SITL(
+            vehicle_binary,
+            board=board,
+            **build_opts
+        )
+
+    binary = binary_path(step, debug=opts.debug)
+
+    # see if we need any supplementary binaries
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     supplementary_binaries = []
-    if step in suplementary_test_binary_map:
-        for supplementary_test_binary in suplementary_test_binary_map[step]:
-            config_name = supplementary_test_binary.split('.')[0]
-            binary_name = supplementary_test_binary.split('.')[1]
-            instance_num = 0
-            if len(supplementary_test_binary.split('.')) >= 3:
-                instance_num = int(supplementary_test_binary.split('.')[2])
-            supplementary_binaries.append([util.reltopdir(os.path.join('build',
-                                                                       config_name,
-                                                                       'bin',
-                                                                       binary_name)),
-                                          '-I {}'.format(instance_num)])
-        # we are running in conjunction with a supplementary app
-        # can't have speedup
-        opts.speedup = 1.0
-    else:
-        supplementary_binaries = []
+    for k in supplementary_test_binary_map.keys():
+        if step.startswith(k):
+            # this test needs to use supplementary binaries
+            for supplementary_test_binary in supplementary_test_binary_map[k]:
+                a = supplementary_test_binary.split(':')
+                if len(a) != 4:
+                    raise ValueError("Bad supplementary_test_binary %s" % supplementary_test_binary)
+                config_name = a[0]
+                binary_name = a[1]
+                instance_num = int(a[2])
+                param_file = a[3].split(",")
+                bin_path = util.reltopdir(os.path.join('build', config_name, 'bin', binary_name))
+                customisation = '-I {}'.format(instance_num)
+                sup_binary = {"binary" : bin_path,
+                              "customisation" : customisation,
+                              "param_file" : param_file}
+                supplementary_binaries.append(sup_binary)
+            # we are running in conjunction with a supplementary app
+            # can't have speedup
+            opts.speedup = 1.0
+            break
+
     fly_opts = {
         "viewerip": opts.viewerip,
         "use_map": opts.map,
@@ -487,7 +526,6 @@ def run_step(step):
         "gdbserver": opts.gdbserver,
         "breakpoints": opts.breakpoint,
         "disable_breakpoints": opts.disable_breakpoints,
-        "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
         "num_aux_imus" : opts.num_aux_imus,
@@ -496,6 +534,8 @@ def run_step(step):
         "sup_binaries": supplementary_binaries,
         "reset_after_every_test": opts.reset_after_every_test,
         "build_opts": copy.copy(build_opts),
+        "generate_junit": opts.junit,
+        "enable_fgview": opts.enable_fgview,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -506,7 +546,7 @@ def run_step(step):
         global tester
         tester = tester_class_map[step](binary, **fly_opts)
         # run the test and return its result and the tester itself
-        return (tester.autotest(), tester)
+        return tester.autotest(None, step_name=step), tester
 
     # handle "test.Copter.CPUFailsafe" etc:
     specific_test_to_run = find_specific_test_to_run(step)
@@ -568,11 +608,7 @@ class TestResults(object):
     def __init__(self):
         """Init test results class."""
         self.date = time.asctime()
-        self.githash = util.run_cmd('git rev-parse HEAD',
-                                    output=True,
-                                    directory=util.reltopdir('.')).strip()
-        if sys.version_info.major >= 3:
-            self.githash = self.githash.decode('utf-8')
+        self.githash = util.get_git_hash()
         self.tests = []
         self.files = []
         self.images = []
@@ -674,6 +710,7 @@ def write_fullresults():
     results.addglob('APM:Copter documentation', 'docs/ArduCopter/index.html')
     results.addglob('APM:Rover documentation', 'docs/Rover/index.html')
     results.addglob('APM:Sub documentation', 'docs/ArduSub/index.html')
+    results.addglob('APM:Blimp documentation', 'docs/Blimp/index.html')
     results.addglobimage("Flight Track", '*.png')
 
     write_webresults(results)
@@ -709,7 +746,7 @@ def run_tests(steps):
         try:
             success = run_step(step)
             testinstance = None
-            if type(success) == tuple:
+            if isinstance(success, tuple):
                 (success, testinstance) = success
             if success:
                 results.add(step, '<span class="passed-text">PASSED</span>',
@@ -762,7 +799,7 @@ def run_tests(steps):
     return passed
 
 
-vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat']
+vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat', 'Blimp']
 
 
 def list_subtests():
@@ -795,7 +832,7 @@ def list_subtests_for_vehicle(vehicle_type):
         subtests = tester.tests()
         sorted_list = []
         for subtest in subtests:
-            if type(subtest) != Test:
+            if not isinstance(subtest, Test):
                 subtest = Test(subtest)
             sorted_list.append([subtest.name, subtest.description])
         sorted_list.sort()
@@ -845,6 +882,9 @@ if __name__ == "__main__":
     parser.add_option("--viewerip",
                       default=None,
                       help='IP address to send MAVLink and fg packets to')
+    parser.add_option("--enable-fgview",
+                      action='store_true',
+                      help="Enable FlightGear output")
     parser.add_option("--map",
                       action='store_true',
                       default=False,
@@ -857,10 +897,6 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
-    parser.add_option("--frame",
-                      type='string',
-                      default=None,
-                      help='specify frame type')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -873,6 +909,10 @@ if __name__ == "__main__":
                       action='store_true',
                       default=False,
                       help='configure with --Werror')
+    parser.add_option("--junit",
+                      default=False,
+                      action='store_true',
+                      help='Generate Junit XML tests report')
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",
@@ -919,10 +959,10 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
-    group_build.add_option("--sitl-32bit",
+    group_build.add_option("--force-32bit",
                            default=False,
                            action='store_true',
-                           dest="sitl_32bit",
+                           dest="force_32bit",
                            help="compile sitl using 32-bit")
     group_build.add_option("", "--ubsan",
                            default=False,
@@ -939,6 +979,11 @@ if __name__ == "__main__":
                            default=0,
                            type='int',
                            help='number of auxiliary IMUs to simulate')
+    group_build.add_option("--enable-dronecan-tests",
+                           default=False,
+                           action='store_true',
+                           dest="dronecan_tests",
+                           help="enable dronecan tests")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -1066,8 +1111,11 @@ if __name__ == "__main__":
         'build.Blimp',
         'test.Blimp',
 
-        'build.SITLPeriphGPS',
+        'build.SITLPeriphUniversal',
         'test.CAN',
+
+        'build.SITLPeriphBattMon',
+        'test.BattCAN',
 
         # convertgps disabled as it takes 5 hours
         # 'convertgpx',
@@ -1082,6 +1130,9 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+
+        'test.PlaneTests1a',
+        'test.PlaneTests1b',
 
         'clang-scan-build',
     ]

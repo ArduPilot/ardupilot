@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # script to more easily get a backtrace from an ArduPilot crash_dump.bin
 

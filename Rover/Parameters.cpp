@@ -1,5 +1,7 @@
 #include "Rover.h"
 
+#include <AP_Gripper/AP_Gripper.h>
+
 /*
   Rover parameter definitions
 */
@@ -29,7 +31,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
     // @CopyValuesFrom: MODE1
     // @User: Advanced
-    GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
+    GSCALAR(initial_mode,        "INITIAL_MODE",     (int8_t)Mode::Number::MANUAL),
 
     // @Param: SYSID_THISMAV
     // @DisplayName: MAVLink system ID of this vehicle
@@ -42,6 +44,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: MAVLink ground station ID
     // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
     // @Range: 1 255
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",      255),
 
@@ -58,7 +61,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Steering,2:Throttle,4:Pitch,8:Left Wheel,16:Right Wheel,32:Sailboat Heel,64:Velocity North,128:Velocity East
     // @Bitmask: 0:Steering,1:Throttle,2:Pitch,3:Left Wheel,4:Right Wheel,5:Sailboat Heel,6:Velocity North,7:Velocity East
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
@@ -107,9 +109,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
-    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold
+    // @Values: 0:Nothing,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold,5:Terminate
     // @User: Standard
-    GSCALAR(fs_action,    "FS_ACTION",     Failsafe_Action_Hold),
+    GSCALAR(fs_action,    "FS_ACTION",     (int8_t)FailsafeAction::Hold),
 
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
@@ -174,38 +176,38 @@ const AP_Param::Info Rover::var_info[] = {
     // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,9:Circle,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
-    GSCALAR(mode1,           "MODE1",         Mode::Number::MANUAL),
+    GSCALAR(mode1,           "MODE1",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE2
     // @DisplayName: Mode2
     // @Description: Driving mode for switch position 2 (1231 to 1360)
     // @CopyValuesFrom: MODE1
     // @User: Standard
-    GSCALAR(mode2,           "MODE2",         Mode::Number::MANUAL),
+    GSCALAR(mode2,           "MODE2",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE3
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    GSCALAR(mode3,           "MODE3",         Mode::Number::MANUAL),
+    GSCALAR(mode3,           "MODE3",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE4
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    GSCALAR(mode4,           "MODE4",         Mode::Number::MANUAL),
+    GSCALAR(mode4,           "MODE4",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE5
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    GSCALAR(mode5,           "MODE5",         Mode::Number::MANUAL),
+    GSCALAR(mode5,           "MODE5",         (int8_t)Mode::Number::MANUAL),
 
     // @Param: MODE6
     // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    GSCALAR(mode6,           "MODE6",         Mode::Number::MANUAL),
+    GSCALAR(mode6,           "MODE6",         (int8_t)Mode::Number::MANUAL),
 
     // variables not in the g class which contain EEPROM saved variables
 
@@ -221,9 +223,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "BARO", AP_Baro),
 
-    // @Group: RELAY_
+#if AP_RELAY_ENABLED
+    // @Group: RELAY
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
-    GOBJECT(relay,                  "RELAY_", AP_Relay),
+    GOBJECT(relay,                  "RELAY", AP_Relay),
+#endif
 
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
@@ -269,13 +273,13 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
 #endif
 
-    // @Group: SERIAL
-    // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
-    GOBJECT(serial_manager,         "SERIAL",   AP_SerialManager),
+    // AP_SerialManager was here
 
+#if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
+#endif
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -297,7 +301,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // @Group: PLND_
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
     GOBJECT(precland,                "PLND_", AC_PrecLand),
@@ -312,10 +316,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
     GOBJECT(arming,                 "ARMING_", AP_Arming),
-
-    // @Group: LOG
-    // @Path: ../libraries/AP_Logger/AP_Logger.cpp
-    GOBJECT(logger,           "LOG",  AP_Logger),
 
     // @Group: BATT
     // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
@@ -358,9 +358,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECTN(mode_auto.mission, mission, "MIS_", AP_Mission),
 
+#if AP_RSSI_ENABLED
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
+#endif
 
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
@@ -399,11 +401,8 @@ const AP_Param::Info Rover::var_info[] = {
   2nd group of parameters
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
-#if STATS_ENABLED == ENABLED
-    // @Group: STAT
-    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
-    AP_SUBGROUPINFO(stats, "STAT", 1, ParametersG2, AP_Stats),
-#endif
+    // 1 was AP_Stats
+
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
@@ -419,15 +418,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 4, ParametersG2, RC_Channels_Rover),
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
+#if AP_BEACON_ENABLED
     // @Group: BCN
     // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
+#endif
 
     // 7 was used by AP_VisualOdometry
 
@@ -489,9 +490,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(proximity, "PRX", 18, ParametersG2, AP_Proximity),
 #endif
 
+#if AP_AVOIDANCE_ENABLED
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     AP_SUBGROUPINFO(avoid, "AVOID_", 19, ParametersG2, AC_Avoid),
+#endif
 
     // 20 was PIVOT_TURN_RATE and should not be re-used
 
@@ -513,14 +516,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CRASH_ANGLE", 22, ParametersG2, crash_angle, 0),
 
+#if AP_FOLLOW_ENABLED
     // @Group: FOLL
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 23, ParametersG2, AP_Follow),
+#endif
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type
     // @Description: Frame Type
-    // @Values: 0:Undefined,1:Omni3,2:OmniX,3:OmniPlus
+    // @Values: 0:Undefined,1:Omni3,2:OmniX,3:OmniPlus,4:Omni3Mecanum
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_TYPE", 24, ParametersG2, frame_type, 0),
@@ -542,7 +547,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_WheelEncoder/AP_WheelRateControl.cpp
     AP_SUBGROUPINFO(wheel_rate_control, "WRC", 27, ParametersG2, AP_WheelRateControl),
 
-#if AP_RALLY == ENABLED
+#if HAL_RALLY_ENABLED
     // @Group: RALLY_
     // @Path: AP_Rally.cpp,../libraries/AP_Rally/AP_Rally.cpp
     AP_SUBGROUPINFO(rally, "RALLY_", 28, ParametersG2, AP_Rally_Rover),
@@ -580,11 +585,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-#if AP_GRIPPER_ENABLED
-    // @Group: GRIP_
-    // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
-    AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
-#endif
+    // 39 was AP_Gripper
 
     // @Param: BAL_PITCH_TRIM
     // @DisplayName: Balance Bot pitch trim angle
@@ -595,11 +596,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BAL_PITCH_TRIM", 40, ParametersG2, bal_pitch_trim, 0),
 
-#if AP_SCRIPTING_ENABLED
-    // @Group: SCR_
-    // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
-    AP_SUBGROUPINFO(scripting, "SCR_", 41, ParametersG2, AP_Scripting),
-#endif
+    // 41 was Scripting
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
@@ -616,9 +613,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: sailboat.cpp
     AP_SUBGROUPINFO(sailboat, "SAIL_", 44, ParametersG2, Sailboat),
 
+#if AP_OAPATHPLANNER_ENABLED
     // @Group: OA_
     // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
     AP_SUBGROUPINFO(oa, "OA_", 45, ParametersG2, AP_OAPathPlanner),
+#endif
 
     // @Param: SPEED_MAX
     // @DisplayName: Speed maximum
@@ -640,15 +639,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe Options
     // @Description: Bitmask to enable failsafe options
-    // @Values: 0:None,1:Failsafe enabled in Hold mode
     // @Bitmask: 0:Failsafe enabled in Hold mode
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 48, ParametersG2, fs_options, 0),
 
 #if HAL_TORQEEDO_ENABLED
-    // @Group: TRQD_
+    // @Group: TRQ
     // @Path: ../libraries/AP_Torqeedo/AP_Torqeedo.cpp
-    AP_SUBGROUPINFO(torqeedo, "TRQD_", 49, ParametersG2, AP_Torqeedo),
+    AP_SUBGROUPINFO(torqeedo, "TRQ", 49, ParametersG2, AP_Torqeedo),
 #endif
 
     // @Group: PSC
@@ -669,7 +667,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_OPTIONS", 53, ParametersG2, manual_options, 0),
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     // @Group: DOCK
     // @Path: mode_dock.cpp
     AP_SUBGROUPPTR(mode_dock_ptr, "DOCK", 54, ParametersG2, ModeDock),
@@ -731,26 +729,32 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 ParametersG2::ParametersG2(void)
     :
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     afs(),
 #endif
+#if AP_BEACON_ENABLED
     beacon(),
-    motors(rover.ServoRelayEvents, wheel_rate_control),
+#endif
     wheel_rate_control(wheel_encoder),
+    motors(wheel_rate_control),
     attitude_control(),
     smart_rtl(),
-#if MODE_DOCK_ENABLED == ENABLED
-    mode_dock_ptr(&rover.mode_dock),
-#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
 #endif
+#if MODE_DOCK_ENABLED
+    mode_dock_ptr(&rover.mode_dock),
+#endif
+#if AP_AVOIDANCE_ENABLED
     avoid(),
+#endif
+#if AP_FOLLOW_ENABLED
     follow(),
+#endif
     windvane(),
-    pos_control(attitude_control),
     wp_nav(attitude_control, pos_control),
-    sailboat()
+    sailboat(),
+    pos_control(attitude_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -806,27 +810,20 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
     { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
     { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
+    { Parameters::k_param_g2,               113,     AP_PARAM_INT8, "TRQ1_TYPE" },
+    { Parameters::k_param_g2,               177,     AP_PARAM_INT8, "TRQ1_ONOFF_PIN" },
+    { Parameters::k_param_g2,               241,     AP_PARAM_INT8, "TRQ1_DE_PIN" },
+    { Parameters::k_param_g2,               305,     AP_PARAM_INT16, "TRQ1_OPTIONS" },
+    { Parameters::k_param_g2,               369,     AP_PARAM_INT8, "TRQ1_POWER" },
+    { Parameters::k_param_g2,               433,     AP_PARAM_FLOAT, "TRQ1_SLEW_TIME" },
+    { Parameters::k_param_g2,               497,     AP_PARAM_FLOAT, "TRQ1_DIR_DELAY" },
 };
 
 
 void Rover::load_parameters(void)
 {
-    if (!g.format_version.load() ||
-         g.format_version != Parameters::k_format_version) {
-        // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
-        StorageManager::erase();
-        AP_Param::erase_all();
+    AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-        // save the current format version
-        g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->printf("done.\n");
-    }
-    g.format_version.set_default(Parameters::k_format_version);
-
-    const uint32_t before = micros();
-    // Load all auto-loaded EEPROM variables
-    AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_ROVER);
@@ -839,7 +836,6 @@ void Rover::load_parameters(void)
     }
 
     SRV_Channels::upgrade_parameters();
-    hal.console->printf("load_all took %uus\n", unsigned(micros() - before));
 
     // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
     const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
@@ -892,20 +888,47 @@ void Rover::load_parameters(void)
     }
 #endif
 
-// PARAMETER_CONVERSION - Added: JAN-2022
+    static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
-    const uint16_t old_index = 37;          // Old parameter index in the tree
-    const uint16_t old_top_element = 4069;  // Old group element in the tree for the first subgroup element
-    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
+// PARAMETER_CONVERSION - Added: JAN-2022
+        { &airspeed, airspeed.var_info, 37 },
 #endif
-
-// PARAMETER_CONVERSION - Added: MAR-2022
 #if AP_AIS_ENABLED
-    AP_Param::convert_class(info.old_key, &ais, ais.var_info, 50, 114, false);
+// PARAMETER_CONVERSION - Added: MAR-2022
+        { &ais, ais.var_info, 50 },
+#endif
+#if AP_FENCE_ENABLED
+// PARAMETER_CONVERSION - Added: Mar-2022
+        { &fence, fence.var_info, 17 },
+#endif
+#if AP_STATS_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
+        { &stats, stats.var_info, 1 },
+#endif
+#if AP_SCRIPTING_ENABLED
+    // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
+        { &scripting, scripting.var_info, 41 },
+#endif
+#if AP_GRIPPER_ENABLED
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+        { &gripper, gripper.var_info, 39 },
+#endif
+    };
+
+    AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+#if HAL_LOGGING_ENABLED
+    AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
-// PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(info.old_key, &fence, fence.var_info, 17, 4049, false);
+    static const AP_Param::TopLevelObjectConversion toplevel_conversions[] {
+#if AP_SERIALMANAGER_ENABLED
+        // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+        { &serial_manager, serial_manager.var_info, Parameters::k_param_serial_manager_old },
 #endif
+    };
+
+    AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
+
 }

@@ -260,6 +260,16 @@ private:
         sg_flightid_t fid;
         sg_ack_t ack;
     } mxs_state;
+
+    // helper functions for populating the operating message:
+    void populate_op_altitude(const struct AP_ADSB::Loc &loc);
+    void populate_op_climbrate(const struct AP_ADSB::Loc &loc);
+    void populate_op_airspeed_and_heading(const struct AP_ADSB::Loc &loc);
+
+    // last course-over-ground calculated from groundspeed vector.
+    // This is cached so we don't flip to a COG of 90-degrees when
+    // we stop moving.
+    float cog;
 };
 #endif // HAL_ADSB_SAGETECH_MXS_ENABLED
 

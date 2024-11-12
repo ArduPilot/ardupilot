@@ -24,11 +24,6 @@
 
 #define AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS         1
 
-
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_AHRS/AP_AHRS.h>
-
 #include "GDL90_protocol/GDL90_Message_Structs.h"
 #include "GDL90_protocol/hostGDL90Support.h"
 
@@ -69,6 +64,7 @@ private:
             GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 transponder_config;
             GDL90_HEARTBEAT heartbeat;
             GDL90_TRANSPONDER_STATUS_MSG transponder_status;
+            GDL90_TRANSPONDER_STATUS_MSG_V3 transponder_status_v3;
 #if AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS
             GDL90_OWNSHIP_REPORT ownship_report;
             GDL90_OWNSHIP_GEO_ALTITUDE ownship_geometric_altitude;
@@ -78,11 +74,19 @@ private:
     } rx;
 
     struct {
-        uint32_t last_packet_GPS_ms;
-        uint32_t last_packet_Transponder_Control_ms;
-        uint32_t last_packet_Transponder_Status_ms;
-        uint32_t last_packet_Transponder_Heartbeat_ms;
-        uint32_t last_packet_Transponder_Ownship_ms;
+        uint32_t last_packet_GPS_ms; // out
+        uint32_t last_packet_Transponder_Control_ms; // out
+        uint32_t last_packet_Transponder_Status_ms; // in
+        uint32_t last_packet_Transponder_Heartbeat_ms; // in
+        uint32_t last_packet_Transponder_Ownship_ms; // in
+        uint32_t last_gcs_send_message_Transponder_Status_ms; // out
+        uint32_t last_packet_Request_Transponder_Config_ms;  // out
+        uint32_t last_packet_Transponder_Config_ms; // in
+        uint32_t request_Transponder_Config_tries;
+        uint32_t last_packet_Request_Transponder_Id_ms; // out
+        uint32_t last_packet_Transponder_Id_ms; // in
+        uint32_t request_Transponder_Id_tries;
+
     } run_state;
 
 };

@@ -303,7 +303,7 @@ class MagcalController(CalController):
                 # this is set to None so we can ensure we don't get
                 # progress reports for completed compasses.
                 self.last_progress[m.compass_id] = None
-            if len(self.last_progress.values()) and all(progress == None for progress in self.last_progress.values()):
+            if len(self.last_progress.values()) and all(progress is None for progress in self.last_progress.values()):
                 self.stop()
             return
 

@@ -39,17 +39,9 @@ define PORT_INT_REQUIRED_STACK 64
 #PA13 JTMS-SWDIO SWD
 #PA14 JTCK-SWCLK SWD
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
-
-define HAL_DISABLE_LOOP_DELAY
-
-define HAL_NO_MONITOR_THREAD
 
 define HAL_DEVICE_THREAD_STACK 768
 
@@ -101,11 +93,6 @@ define HAL_I2C_INTERNAL_MASK 1
 PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
-
-# use DNA for node allocation
-
-define CAN_APP_NODE_NAME "org.ardupilot.f405_MatekGPS"
-
 
 # ---------------------- UARTs ---------------------------
 #           | sr0  | sr1  | sr2  | GPS | MSP |
@@ -226,3 +213,5 @@ define HAL_BATT2_VOLT_SCALE 11.0
 # -------------------- Buzzer+NeoPixels --------------d------
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
+
+define DEFAULT_NTF_LED_TYPES 455

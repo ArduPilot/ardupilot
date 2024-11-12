@@ -20,6 +20,8 @@
 #include <AP_HAL/AP_HAL_Macros.h>
 #include <AP_HAL/Semaphores.h>
 #include "HAL_ESP32_Namespace.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 class ESP32::Semaphore : public AP_HAL::Semaphore
 {
@@ -34,3 +36,20 @@ public:
 protected:
     void*  handle;
 };
+
+class ESP32::BinarySemaphore : public AP_HAL::BinarySemaphore {
+public:
+    BinarySemaphore(bool initial_state=false);
+    ~BinarySemaphore(void);
+
+    CLASS_NO_COPY(BinarySemaphore);
+
+    bool wait(uint32_t timeout_us) override;
+    bool wait_blocking(void) override;
+    void signal(void) override;
+    void signal_ISR(void) override;
+
+protected:
+    SemaphoreHandle_t _sem;
+};
+

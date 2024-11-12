@@ -65,7 +65,7 @@ public:
 
     static AP_DAL *get_singleton() {
         if (!_singleton) {
-            _singleton = new AP_DAL();
+            _singleton = NEW_NOTHROW AP_DAL();
         }
         return _singleton;
     }
@@ -82,6 +82,8 @@ public:
 
     void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
+    void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
+
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
 
@@ -119,19 +121,23 @@ public:
     int snprintf(char* str, size_t size, const char *format, ...) const;
 
     // copied in AP_HAL/Util.h
-    enum Memory_Type {
-        MEM_DMA_SAFE,
-        MEM_FAST
+    enum class MemoryType : uint8_t {
+        DMA_SAFE = 0,
+        FAST     = 1,
     };
-    void *malloc_type(size_t size, enum Memory_Type mem_type) const;
+    void *malloc_type(size_t size, MemoryType mem_type) const;
+    void free_type(void *ptr, size_t size, MemoryType memtype) const;
 
     AP_DAL_InertialSensor &ins() { return _ins; }
     AP_DAL_Baro &baro() { return _baro; }
     AP_DAL_GPS &gps() { return _gps; }
 
+#if AP_RANGEFINDER_ENABLED
     AP_DAL_RangeFinder *rangefinder() {
         return _rangefinder;
     }
+#endif
+
     AP_DAL_Airspeed *airspeed() {
         return _airspeed;
     }
@@ -213,7 +219,7 @@ public:
     void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms);
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
-    // log wheel odomotry data
+    // log wheel odometry data
     void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
 
@@ -240,13 +246,13 @@ public:
 
     void handle_message(const log_RASH &msg) {
         if (_airspeed == nullptr) {
-            _airspeed = new AP_DAL_Airspeed;
+            _airspeed = NEW_NOTHROW AP_DAL_Airspeed;
         }
         _airspeed->handle_message(msg);
     }
     void handle_message(const log_RASI &msg) {
         if (_airspeed == nullptr) {
-            _airspeed = new AP_DAL_Airspeed;
+            _airspeed = NEW_NOTHROW AP_DAL_Airspeed;
         }
         _airspeed->handle_message(msg);
     }
@@ -259,16 +265,20 @@ public:
     }
 
     void handle_message(const log_RRNH &msg) {
+#if AP_RANGEFINDER_ENABLED
         if (_rangefinder == nullptr) {
-            _rangefinder = new AP_DAL_RangeFinder;
+            _rangefinder = NEW_NOTHROW AP_DAL_RangeFinder;
         }
         _rangefinder->handle_message(msg);
+#endif
     }
     void handle_message(const log_RRNI &msg) {
+#if AP_RANGEFINDER_ENABLED
         if (_rangefinder == nullptr) {
-            _rangefinder = new AP_DAL_RangeFinder;
+            _rangefinder = NEW_NOTHROW AP_DAL_RangeFinder;
         }
         _rangefinder->handle_message(msg);
+#endif
     }
 
     void handle_message(const log_RGPH &msg) {
@@ -291,7 +301,7 @@ public:
     void handle_message(const log_RBCH &msg) {
 #if AP_BEACON_ENABLED
         if (_beacon == nullptr) {
-            _beacon = new AP_DAL_Beacon;
+            _beacon = NEW_NOTHROW AP_DAL_Beacon;
         }
         _beacon->handle_message(msg);
 #endif
@@ -299,7 +309,7 @@ public:
     void handle_message(const log_RBCI &msg) {
 #if AP_BEACON_ENABLED
         if (_beacon == nullptr) {
-            _beacon = new AP_DAL_Beacon;
+            _beacon = NEW_NOTHROW AP_DAL_Beacon;
         }
         _beacon->handle_message(msg);
 #endif
@@ -307,7 +317,7 @@ public:
     void handle_message(const log_RVOH &msg) {
 #if HAL_VISUALODOM_ENABLED
         if (_visualodom == nullptr) {
-            _visualodom = new AP_DAL_VisualOdom;
+            _visualodom = NEW_NOTHROW AP_DAL_VisualOdom;
         }
         _visualodom->handle_message(msg);
 #endif
@@ -317,13 +327,16 @@ public:
     void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
 
+#if HAL_LOGGING_ENABLED
     // write out a DAL log message. If old_msg is non-null, then
     // only write if the content has changed
     static void WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
+#endif
 
 private:
 
@@ -340,6 +353,7 @@ private:
     struct log_REVH _REVH;
     struct log_RWOH _RWOH;
     struct log_RBOH _RBOH;
+    struct log_RSLL _RSLL;
 
     // cached variables for speed:
     uint32_t _micros;
@@ -352,7 +366,9 @@ private:
     AP_DAL_InertialSensor _ins;
     AP_DAL_Baro _baro;
     AP_DAL_GPS _gps;
+#if AP_RANGEFINDER_ENABLED
     AP_DAL_RangeFinder *_rangefinder;
+#endif
     AP_DAL_Compass _compass;
     AP_DAL_Airspeed *_airspeed;
 #if AP_BEACON_ENABLED
@@ -372,10 +388,15 @@ private:
     bool init_done;
 };
 
+#if HAL_LOGGING_ENABLED
 #define WRITE_REPLAY_BLOCK(sname,v) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, nullptr, offsetof(log_ ##sname, _end))
 #define WRITE_REPLAY_BLOCK_IFCHANGED(sname,v,old) do { static_assert(sizeof(v) == sizeof(old), "types must match"); \
                                                       AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, &old, offsetof(log_ ##sname, _end)); } \
                                                  while (0)
+#else
+#define WRITE_REPLAY_BLOCK(sname,v) do { (void)v; } while (false)
+#define WRITE_REPLAY_BLOCK_IFCHANGED(sname,v,old) do { (void)old; } while (false)
+#endif
 
 namespace AP {
     AP_DAL &dal();

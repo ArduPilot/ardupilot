@@ -75,10 +75,10 @@ public:
 
     // get_closest_point_on_circle - returns closest point on the circle
     //  circle's center should already have been set
-    //  closest point on the circle will be placed in result
+    //  closest point on the circle will be placed in result, dist_cm will be updated with the distance to the center
     //  result's altitude (i.e. z) will be set to the circle_center's altitude
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
-    void get_closest_point_on_circle(Vector3f &result) const;
+    void get_closest_point_on_circle(Vector3f& result, float& dist_cm) const;
 
     /// get horizontal distance to loiter target in cm
     float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }
@@ -88,6 +88,9 @@ public:
 
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
+
+    /// true if mount roi is at circle center
+    bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
 
     /// provide rangefinder based terrain offset
     /// terrain offset is the terrain's height above the EKF origin
@@ -136,6 +139,7 @@ private:
         MANUAL_CONTROL           = 1U << 0,
         FACE_DIRECTION_OF_TRAVEL = 1U << 1,
         INIT_AT_CENTER           = 1U << 2, // true then the circle center will be the current location, false and the center will be 1 radius ahead
+        ROI_AT_CENTER            = 1U << 3, // true when the mount roi is at circle center
     };
 
     // parameters
@@ -149,7 +153,7 @@ private:
     float       _rate;          // rotation speed of circle in deg/sec. +ve for cw turn
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
-    float       _angle_total;   // total angle traveled in radians
+    float       _angle_total;   // total angle travelled in radians
     float       _angular_vel;   // angular velocity in radians/sec
     float       _angular_vel_max;   // maximum velocity in radians/sec
     float       _angular_accel; // angular acceleration in radians/sec/sec

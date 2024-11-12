@@ -5,6 +5,7 @@
 -- the value of the 50% point on the curve.  This can be used to set the collective position to aid with hovering 
 -- at the midstick.
 -- luacheck: only 0
+---@diagnostic disable: cast-local-type
 
 -- Tested and working as of 25th Aug 2020 (Copter Dev)
 

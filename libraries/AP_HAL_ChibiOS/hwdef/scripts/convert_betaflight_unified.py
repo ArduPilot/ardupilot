@@ -192,6 +192,9 @@ define STORAGE_FLASH_PAGE 1
         line = lines[i]
         if line.startswith('resource'):
             a = line.split()
+
+            if a[3] == 'NONE':
+                continue
             # function, number, pin
             pin = convert_pin(a[3])
             resource = [ a[2] , pin, a[1].split('_')[0], a[1] ]
@@ -252,18 +255,22 @@ define STORAGE_FLASH_PAGE 1
         if (spin != int(spi[0])):
             spin = int(spi[0])
             f.write("\n# SPI%s\n" % spin)
-        f.write("%s SPI%s_%s SPI%s\n" % (spi[1], spin, spi[3].split('_')[1], spin))
+        fn = spi[3].split('_')[1]
+        if fn == "SDI":
+            fn = "MISO"
+        elif fn == "SDO":
+            fn = "MOSI"
+        f.write("%s SPI%s_%s SPI%s\n" % (spi[1], spin, fn, spin))
 
     f.write("\n# Chip select pins\n")
     for cs in chip_select.values():
         f.write("%s %s%s_CS CS\n" % (cs[1], cs[2], int(cs[0])))
 
-    beeper = list(functions["BEEPER"].values())[0]
-    f.write('''\n# Beeper
+    if len(functions["BEEPER"].values()) > 0:
+        beeper = list(functions["BEEPER"].values())[0]
+        f.write('''\n# Beeper
 %s BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
 ''' % beeper[1])
 
     f.write("\n# SERIAL ports\n")
@@ -369,6 +376,8 @@ define HAL_BATT_CURR_SCALE %.1f
     for led in sorted(functions["LED"].values()):
         if (led[3].endswith('_STRIP')):
             pin = led[1]
+            if not pin in timers.keys():
+                continue
             timer = timers[pin]
             nmotors = nmotors+1
             f.write("%s %s_%s %s PWM(%s) GPIO(%s) # M%s\n" % (led[1], timer[1], timer[2], timer[1], nmotors, 49+nmotors, nmotors))
@@ -378,10 +387,9 @@ define HAL_BATT_CURR_SCALE %.1f
 %s LED%u OUTPUT LOW GPIO(%u)
 define HAL_GPIO_%s_LED_PIN %u
 ''' % (led[1], ledn-1, 89+ledn, chr(ledn+64), 89+ledn))
-    f.write("define HAL_GPIO_LED_OFF 1\n")
 
     # write out devices
-    if settings['blackbox_device'] == 'SPIFLASH':
+    if 'blackbox_device' in settings and settings['blackbox_device'] == 'SPIFLASH' or 'USE_FLASH' in defines:
         write_flash_config(f, settings['flash_spi_bus'])
 
     if 'max7456_spi_bus' in settings:

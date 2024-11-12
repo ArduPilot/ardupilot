@@ -2,6 +2,7 @@
 
 #include "GCS_Mavlink.h"
 #include <AP_RPM/AP_RPM_config.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 
 MAV_TYPE GCS_Blimp::frame_type() const
 {
@@ -39,6 +40,9 @@ MAV_STATE GCS_MAVLINK_Blimp::vehicle_system_status() const
     if (blimp.ap.land_complete) {
         return MAV_STATE_STANDBY;
     }
+    if (!blimp.ap.initialised) {
+    	return MAV_STATE_BOOT;
+    }
 
     return MAV_STATE_ACTIVE;
 }
@@ -52,8 +56,8 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
     }
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-            POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-            POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
 
     mavlink_msg_position_target_global_int_send(
         chan,
@@ -102,11 +106,11 @@ int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
  */
 void GCS_MAVLINK_Blimp::send_pid_tuning()
 {
-    if(blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::LAND) {
+    if (blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::LAND) {
         //No PIDs are used in Manual or Land mode.
         return;
     }
-    
+
     static const int8_t axes[] = {
         PID_SEND::VELX,
         PID_SEND::VELY,
@@ -214,7 +218,7 @@ bool GCS_MAVLINK_Blimp::try_send_message(enum ap_message id)
 const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
-    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and SENSOR_OFFSETS to ground station
+    // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3, AIRSPEED and SENSOR_OFFSETS to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -284,7 +288,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
 
     // @Param: EXTRA3
     // @DisplayName: Extra data type 3 stream rate to ground station
-    // @Description: Stream rate of AHRS, SYSTEM_TIME, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
+    // @Description: Stream rate of AHRS, SYSTEM_TIME, RANGEFINDER, DISTANCE_SENSOR, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -311,19 +315,28 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+#if AP_AIRSPEED_ENABLED
+    MSG_AIRSPEED,
+#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+#if HAL_WITH_MCU_MONITORING
     MSG_MCU_STATUS,
+#endif
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
     MSG_GPS_RAW,
     MSG_GPS_RTK,
+#if GPS_MAX_RECEIVERS > 1
     MSG_GPS2_RAW,
     MSG_GPS2_RTK,
+#endif
     MSG_NAV_CONTROLLER_OUTPUT,
+#if AP_FENCE_ENABLED
     MSG_FENCE_STATUS,
+#endif
     MSG_POSITION_TARGET_GLOBAL_INT,
 };
 static const ap_message STREAM_POSITION_msgs[] = {
@@ -333,11 +346,15 @@ static const ap_message STREAM_POSITION_msgs[] = {
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RC_CHANNELS,
+#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
     MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
+#endif
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
+#if AP_SIM_ENABLED
     MSG_SIMSTATE,
+#endif
     MSG_AHRS2,
     MSG_PID_TUNING // Up to four PID_TUNING messages are sent, depending on GCS_PID_MASK parameter
 };
@@ -348,27 +365,43 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_SYSTEM_TIME,
     MSG_WIND,
+#if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
+#endif
     MSG_DISTANCE_SENSOR,
+#if AP_BATTERY_ENABLED
     MSG_BATTERY_STATUS,
+#endif
+#if HAL_MOUNT_ENABLED
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
+#endif
+#if AP_OPTICALFLOW_ENABLED
     MSG_OPTICAL_FLOW,
+#endif
+#if COMPASS_CAL_ENABLED
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
+#endif
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
 #if AP_RPM_ENABLED
     MSG_RPM,
 #endif
+#if HAL_WITH_ESC_TELEM
     MSG_ESC_TELEMETRY,
+#endif
+#if HAL_GENERATOR_ENABLED
     MSG_GENERATOR_STATUS,
+#endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
+#if AP_AIS_ENABLED
     MSG_AIS_VESSEL,
+#endif
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -383,15 +416,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
-
-bool GCS_MAVLINK_Blimp::handle_guided_request(AP_Mission::Mission_Command &cmd)
-{
-    // #if MODE_AUTO_ENABLED == ENABLED
-    //     // return blimp.mode_auto.do_guided(cmd);
-    // #else
-    return false;
-    // #endif
-}
 
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
@@ -417,7 +441,7 @@ void GCS_MAVLINK_Blimp::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", blimp.get_frame_string());
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet, msg);
 }
@@ -430,15 +454,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
     }
     // blimp.flightmode->auto_yaw.set_roi(roi_loc);
     return MAV_RESULT_ACCEPTED;
-}
-
-bool GCS_MAVLINK_Blimp::set_home_to_current_location(bool _lock)
-{
-    return blimp.set_home_to_current_location(_lock);
-}
-bool GCS_MAVLINK_Blimp::set_home(const Location& loc, bool _lock)
-{
-    return blimp.set_home(loc, _lock);
 }
 
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
@@ -466,81 +481,45 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_int_t &packet)
+MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
-    case MAV_CMD_DO_FOLLOW:
-        return MAV_RESULT_UNSUPPORTED;
-
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
-    default:
-        return GCS_MAVLINK::handle_command_int_packet(packet);
-    }
-}
-
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_mount(const mavlink_command_long_t &packet)
-{
-    // if the mount doesn't do pan control then yaw the entire vehicle instead:
-    switch (packet.command) {
-    default:
-        break;
-    }
-    return GCS_MAVLINK::handle_command_mount(packet);
-}
-
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_long_t &packet)
-{
-    switch (packet.command) {
-
-    case MAV_CMD_NAV_TAKEOFF: {
+    case MAV_CMD_NAV_TAKEOFF:
         return MAV_RESULT_ACCEPTED;
-    }
-
-    case MAV_CMD_CONDITION_YAW:
-        // param1 : target angle [0-360]
-        // param2 : speed during change [deg per second]
-        // param3 : direction (-1:ccw, +1:cw)
-        // param4 : relative offset (1) or absolute angle (0)
-        if ((packet.param1 >= 0.0f)   &&
-            (packet.param1 <= 360.0f) &&
-            (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
-            // blimp.flightmode->auto_yaw.set_fixed_yaw(
-            // packet.param1,
-            // packet.param2,
-            // (int8_t)packet.param3,
-            // is_positive(packet.param4));
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_FAILED;
-
     default:
-        return GCS_MAVLINK::handle_command_long_packet(packet);
+        return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
 }
 
-void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
+bool GCS_MAVLINK_Blimp::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
+{
+    if (packet_command == MAV_CMD_NAV_TAKEOFF) {
+        frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+        return true;
+    }
+    return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
+}
+#endif
+
+void GCS_MAVLINK_Blimp::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS: {     // MAV ID: 109
-        handle_radio_status(msg, blimp.should_log(MASK_LOG_PM));
-        break;
-    }
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
         break;
 
     default:
-        handle_common_message(msg);
+        GCS_MAVLINK::handle_message(msg);
         break;
     }     // end switch
 } // end handle mavlink
 
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_flight_termination(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Blimp::handle_flight_termination(const mavlink_command_int_t &packet)
 {
     MAV_RESULT result = MAV_RESULT_FAILED;
     if (packet.param1 > 0.5f) {

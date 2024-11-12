@@ -20,7 +20,7 @@
      AHRS_EKF_TYPE = 11
      EAHRS_TYPE=1
 
-     sim_vehicle.py -D --console --map -A --uartF=sim:VectorNav
+     sim_vehicle.py -D --console --map -A --serial5=sim:VectorNav
 */
 
 #pragma once
@@ -41,15 +41,14 @@ public:
     void update(void);
 
 private:
-    uint32_t last_pkt1_us;
-    uint32_t last_pkt2_us;
-    uint32_t last_type_us;
+    uint32_t last_imu_pkt_us;
+    uint32_t last_ekf_pkt_us;
+    uint32_t last_gnss_pkt_us;
 
-    void send_packet1();
-    void send_packet2();
+    void send_imu_packet();
+    void send_ins_ekf_packet();
+    void send_ins_gnss_packet();
     void nmea_printf(const char *fmt, ...);
-
-    uint64_t start_us;
 };
 
 }

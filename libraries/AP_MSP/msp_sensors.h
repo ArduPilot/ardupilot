@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#pragma once
+
 namespace MSP
 {
 // src/main/msp/msp_protocol_v2_sensor_msg.h

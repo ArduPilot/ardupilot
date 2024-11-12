@@ -23,7 +23,8 @@
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
+#include "esp_event.h"
+#include "esp_log.h"
 #include "nvs_flash.h"
 
 #include "lwip/err.h"
@@ -45,28 +46,34 @@ WiFiDriver::WiFiDriver()
     }
 }
 
-void WiFiDriver::begin(uint32_t b)
-{
-    begin(b, 0, 0);
-}
-
-void WiFiDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void WiFiDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (_state == NOT_INITIALIZED) {
         initialize_wifi();
-        xTaskCreate(_wifi_thread, "APM_WIFI", Scheduler::WIFI_SS, this, Scheduler::WIFI_PRIO, &_wifi_task_handle);
+
+    // keep main tasks that need speed on CPU 0
+    // pin potentially slow stuff to CPU 1, as we have disabled the WDT on that core.
+    #define FASTCPU 0
+    #define SLOWCPU 1
+
+	if (xTaskCreatePinnedToCore(_wifi_thread, "APM_WIFI1", Scheduler::WIFI_SS1, this, Scheduler::WIFI_PRIO1, &_wifi_task_handle, SLOWCPU) != pdPASS) {
+           hal.console->printf("FAILED to create task _wifi_thread on SLOWCPU\n");
+        } else {
+           hal.console->printf("OK created task _wifi_thread for TCP with PORT 5760 on SLOWCPU\n");
+        }
+
         _readbuf.set_size(RX_BUF_SIZE);
         _writebuf.set_size(TX_BUF_SIZE);
         _state = INITIALIZED;
     }
 }
 
-void WiFiDriver::end()
+void WiFiDriver::_end()
 {
     //TODO
 }
 
-void WiFiDriver::flush()
+void WiFiDriver::_flush()
 {
 }
 
@@ -75,17 +82,12 @@ bool WiFiDriver::is_initialized()
     return _state != NOT_INITIALIZED;
 }
 
-void WiFiDriver::set_blocking_writes(bool blocking)
-{
-    //blocking writes do not used anywhere
-}
-
 bool WiFiDriver::tx_pending()
 {
     return (_writebuf.available() > 0);
 }
 
-uint32_t WiFiDriver::available()
+uint32_t WiFiDriver::_available()
 {
     if (_state != CONNECTED) {
         return 0;
@@ -103,16 +105,12 @@ uint32_t WiFiDriver::txspace()
     return MAX(result, 0);
 }
 
-int16_t WiFiDriver::read()
+ssize_t WiFiDriver::_read(uint8_t *buf, uint16_t count)
 {
     if (_state != CONNECTED) {
-        return -1;
+        return 0;
     }
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-    return byte;
+    return _readbuf.read(buf, count);
 }
 
 bool WiFiDriver::start_listen()
@@ -147,7 +145,7 @@ bool WiFiDriver::start_listen()
 bool WiFiDriver::try_accept()
 {
     struct sockaddr_in sourceAddr;
-    uint addrLen = sizeof(sourceAddr);
+    socklen_t addrLen = sizeof(sourceAddr);
     short i = available_socket();
     if (i != WIFI_MAX_CONNECTION) {
         socket_list[i] = accept(accept_socket, (struct sockaddr *)&sourceAddr, &addrLen);
@@ -211,39 +209,161 @@ bool WiFiDriver::write_data()
     return true;
 }
 
+#if WIFI_STATION
+
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT      BIT1
+
+#ifndef ESP_STATION_MAXIMUM_RETRY
+#define ESP_STATION_MAXIMUM_RETRY 10
+#endif
+
+static const char *TAG = "wifi station";
+static int s_retry_num = 0;
+static EventGroupHandle_t s_wifi_event_group;
+
+static void _sta_event_handler(void* arg, esp_event_base_t event_base,
+                                int32_t event_id, void* event_data)
+{
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        if (s_retry_num < ESP_STATION_MAXIMUM_RETRY) {
+            esp_wifi_connect();
+            s_retry_num++;
+            ESP_LOGI(TAG, "retry to connect to the AP");
+        } else {
+            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+        }
+        ESP_LOGI(TAG,"connect to the AP fail");
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        s_retry_num = 0;
+        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+    }
+}
+#endif
+
 void WiFiDriver::initialize_wifi()
 {
-    tcpip_adapter_init();
-    nvs_flash_init();
-    esp_event_loop_init(nullptr, nullptr);
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    esp_wifi_init(&cfg);
-    esp_wifi_set_storage(WIFI_STORAGE_FLASH);
+#ifndef WIFI_PWD
+    #define WIFI_PWD "ardupilot1"
+#endif
+    //Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+      ESP_ERROR_CHECK(nvs_flash_erase());
+      ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
     wifi_config_t wifi_config;
-    memset(&wifi_config, 0, sizeof(wifi_config));
-#ifdef WIFI_SSID
+    bzero(&wifi_config, sizeof(wifi_config));
+
+/*
+	Acting as an Access Point (softAP)
+*/
+#if !WIFI_STATION
+#ifndef WIFI_SSID
+    #define WIFI_SSID "ardupilot"
+#endif
+#ifndef WIFI_CHANNEL
+	#define WIFI_CHANNEL 1
+#endif
+
+    esp_netif_create_default_wifi_ap();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+
     strcpy((char *)wifi_config.ap.ssid, WIFI_SSID);
-#else
-    strcpy((char *)wifi_config.ap.ssid, "ardupilot");
-#endif
-#ifdef WIFI_PWD
     strcpy((char *)wifi_config.ap.password, WIFI_PWD);
+    wifi_config.ap.ssid_len = strlen(WIFI_SSID),
+    wifi_config.ap.max_connection = WIFI_MAX_CONNECTION,
+    wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
+    wifi_config.ap.channel = WIFI_CHANNEL;
+
+    if (strlen(WIFI_PWD) == 0) {
+        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
+    }
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    hal.console->printf("WiFi softAP init finished. SSID: %s password: %s channel: %d\n",
+                        wifi_config.ap.ssid, wifi_config.ap.password, wifi_config.ap.channel);
+
+/*
+	Acting as a Station (WiFi Client)
+*/
 #else
-    strcpy((char *)wifi_config.ap.password, "ardupilot1");
+#ifndef WIFI_SSID_STATION
+    #define WIFI_SSID_STATION "ardupilot"
 #endif
-    wifi_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-    wifi_config.ap.max_connection = WIFI_MAX_CONNECTION;
-    esp_wifi_set_mode(WIFI_MODE_AP);
-    esp_wifi_set_config(WIFI_IF_AP, &wifi_config);
-    esp_wifi_start();
+#ifndef WIFI_HOSTNAME
+    #define WIFI_HOSTNAME "ArduPilotESP32"
+#endif
+    s_wifi_event_group = xEventGroupCreate();
+    esp_netif_t *netif = esp_netif_create_default_wifi_sta();
+    esp_netif_set_hostname(netif, WIFI_HOSTNAME);
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    esp_event_handler_instance_t instance_any_id;
+    esp_event_handler_instance_t instance_got_ip;
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &_sta_event_handler,
+                                                        NULL,
+                                                        &instance_any_id));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                        IP_EVENT_STA_GOT_IP,
+                                                        &_sta_event_handler,
+                                                        NULL,
+                                                        &instance_got_ip));
+
+    strcpy((char *)wifi_config.sta.ssid, WIFI_SSID_STATION);
+    strcpy((char *)wifi_config.sta.password, WIFI_PWD);
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;
+    wifi_config.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
+    ESP_ERROR_CHECK(esp_wifi_start() );
+
+    hal.console->printf("WiFi Station init finished. Connecting:\n");
+
+    /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
+     * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
+            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
+            pdFALSE, pdFALSE, portMAX_DELAY);
+
+    /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
+     * happened. */
+    if (bits & WIFI_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "connected to ap SSID: %s password: %s",
+                 wifi_config.sta.ssid, wifi_config.sta.password);
+    } else if (bits & WIFI_FAIL_BIT) {
+        ESP_LOGI(TAG, "Failed to connect to SSID: %s, password: %s",
+                 wifi_config.sta.ssid, wifi_config.sta.password);
+    } else {
+        ESP_LOGE(TAG, "UNEXPECTED EVENT");
+    }
+
+    /* The event will not be processed after unregister */
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
+    vEventGroupDelete(s_wifi_event_group);
+#endif
 }
 
-size_t WiFiDriver::write(uint8_t c)
-{
-    return write(&c,1);
-}
-
-size_t WiFiDriver::write(const uint8_t *buffer, size_t size)
+size_t WiFiDriver::_write(const uint8_t *buffer, size_t size)
 {
     if (_state != CONNECTED) {
         return 0;
@@ -280,10 +400,12 @@ void WiFiDriver::_wifi_thread(void *arg)
                 }
             }
         }
+        hal.scheduler->delay_microseconds(10); // don't flog the thread if nothing to accept.
+
     }
 }
 
-bool WiFiDriver::discard_input()
+bool WiFiDriver::_discard_input()
 {
     return false;
 }

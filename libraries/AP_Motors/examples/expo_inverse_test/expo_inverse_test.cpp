@@ -44,7 +44,7 @@ public:
     void output_to_motors() override {};
 
     // helper function to allow setting of expo
-    void set_expo(float v) { _thrust_curve_expo.set(v); }
+    void set_expo(float v) { thr_lin.curve_expo.set(v); }
 
 };
 
@@ -74,7 +74,7 @@ void setup(void)
         float throttle = 0.0;
         while (throttle < 1.0+throttle_step*0.5) {
 
-            const float throttle_out = motors.actuator_to_thrust(motors.thrust_to_actuator(throttle));
+            const float throttle_out = motors.thr_lin.actuator_to_thrust(motors.thr_lin.thrust_to_actuator(throttle));
             const double diff = fabsf(throttle_out - throttle);
             if (diff > max_diff) {
                 max_diff_throttle = throttle;

@@ -47,9 +47,6 @@ public:
     // save gain to eeprom
     void save_gains();
 
-    /// operator function call for easy initialisation
-    void operator() (float p, float i, float imaxval, float input_filt_hz, float dt);
-
     // get accessors
     AP_Float &kP() { return _kp; }
     AP_Float &kI() { return _ki; }
@@ -87,7 +84,7 @@ private:
     } _flags;
 
     // internal variables
-    float _dt;              // timestep in seconds
+    float _dt;              // time step in seconds
     Vector2f _integrator;   // integrator value
     Vector2f _input;        // last input for derivative
     float _filt_alpha;      // input filter alpha

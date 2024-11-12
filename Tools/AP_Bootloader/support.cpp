@@ -22,6 +22,10 @@
 // optional uprintf() code for debug
 // #define BOOTLOADER_DEBUG SD1
 
+#ifndef AP_BOOTLOADER_ALWAYS_ERASE
+#define AP_BOOTLOADER_ALWAYS_ERASE 0
+#endif
+
 #if defined(BOOTLOADER_DEV_LIST)
 static BaseChannel *uarts[] = { BOOTLOADER_DEV_LIST };
 #if HAL_USE_SERIAL == TRUE
@@ -139,12 +143,21 @@ uint32_t flash_func_sector_size(uint32_t sector)
     return stm32_flash_getpagesize(flash_base_page+sector);
 }
 
+bool flash_func_is_erased(uint32_t sector)
+{
+    return stm32_flash_ispageerased(flash_base_page+sector);
+}
+
 bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 {
+#if AP_BOOTLOADER_ALWAYS_ERASE
+    return stm32_flash_erasepage(flash_base_page+sector);
+#else
     if (force_erase || !stm32_flash_ispageerased(flash_base_page+sector)) {
         return stm32_flash_erasepage(flash_base_page+sector);
     }
     return true;
+#endif
 }
 
 // read one-time programmable memory
@@ -241,34 +254,31 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
     int32_t mcuid = idcode & DEVID_MASK;
     uint16_t revid = ((idcode & REVID_MASK) >> 16);
 
-    mcu_des_t des = mcu_descriptions[STM32_UNKNOWN];
+    uint8_t *endp = &revstr[max - 1];
+    uint8_t *strp = revstr;
 
     for (const auto &desc : mcu_descriptions) {
         if (mcuid == desc.mcuid) {
-            des = desc;
+            // copy the string in:
+            const char *tmp = desc.desc;
+            while (strp < endp && *tmp) {
+                *strp++ = *tmp++;
+            }
             break;
         }
     }
 
-    for (const auto &rev : silicon_revs) {
-        if (rev.revid == revid) {
-            des.rev = rev.rev;
-        }
-    }
-
-    uint8_t *endp = &revstr[max - 1];
-    uint8_t *strp = revstr;
-
-    while (strp < endp && *des.desc) {
-        *strp++ = *des.desc++;
-    }
-
+    // comma-separated:
     if (strp < endp) {
         *strp++ = ',';
     }
 
-    if (strp < endp) {
-        *strp++ = des.rev;
+    for (const auto &rev : silicon_revs) {
+        if (rev.revid == revid) {
+            if (strp < endp) {
+                *strp++ = rev.rev;
+            }
+        }
     }
 
     return  strp - revstr;
@@ -343,6 +353,28 @@ void uprintf(const char *fmt, ...)
 #endif
 }
 
+void thread_sleep_ms(uint32_t ms)
+{
+    while (ms > 0) {
+        // don't sleep more than 65 at a time, to cope with 16 bit
+        // timer
+        const uint32_t dt = ms > 65? 65: ms;
+        chThdSleepMilliseconds(dt);
+        ms -= dt;
+    }
+}
+
+void thread_sleep_us(uint32_t us)
+{
+    while (us > 0) {
+        // don't sleep more than 65 at a time, to cope with 16 bit
+        // timer
+        const uint32_t dt = us > 6500? 6500: us;
+        chThdSleepMicroseconds(dt);
+        us -= dt;
+    }
+}
+
 // generate a pulse sequence forever, for debugging
 void led_pulses(uint8_t npulses)
 {
@@ -350,11 +382,11 @@ void led_pulses(uint8_t npulses)
     while (true) {
         for (uint8_t i=0; i<npulses; i++) {
             led_on(LED_BOOTLOADER);
-            chThdSleepMilliseconds(200);
+            thread_sleep_ms(200);
             led_off(LED_BOOTLOADER);
-            chThdSleepMilliseconds(200);
+            thread_sleep_ms(200);
         }
-        chThdSleepMilliseconds(2000);
+        thread_sleep_ms(2000);
     }
 }
 
@@ -424,9 +456,13 @@ void init_uarts(void)
 #if HAL_USE_SERIAL_USB == TRUE
     sduObjectInit(&SDU1);
     sduStart(&SDU1, &serusbcfg1);
-    
+#if HAL_HAVE_DUAL_USB_CDC
+    sduObjectInit(&SDU2);
+    sduStart(&SDU2, &serusbcfg2);
+#endif
+
     usbDisconnectBus(serusbcfg1.usbp);
-    chThdSleepMilliseconds(1000);
+    thread_sleep_ms(1000);
     usbStart(serusbcfg1.usbp, &usbcfg);
     usbConnectBus(serusbcfg1.usbp);
 #endif
@@ -436,7 +472,11 @@ void init_uarts(void)
 
     for (const auto &uart : uarts) {
 #if HAL_USE_SERIAL_USB == TRUE
-        if (uart == (BaseChannel *)&SDU1) {
+        if (uart == (BaseChannel *)&SDU1
+#if HAL_HAVE_DUAL_USB_CDC
+         || uart == (BaseChannel *)&SDU2
+#endif
+         ) {
             continue;
         }
 #endif
@@ -446,13 +486,52 @@ void init_uarts(void)
 }
 
 
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+/* forward serial to OTG2
+Used for devices containing multiple devices in one
+*/
+static SerialConfig forward_sercfg;
+static uint32_t otg2_serial_deadline_ms;
+bool update_otg2_serial_forward()
+{
+    // get baudrate set on SDU2 and set it on HAL_FORWARD_OTG2_SERIAL if changed
+    if (forward_sercfg.speed != BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE) {
+        forward_sercfg.speed = BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE;
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP) && BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP
+        forward_sercfg.cr2 = USART_CR2_SWAP;
+#endif
+        sdStart(&BOOTLOADER_FORWARD_OTG2_SERIAL, &forward_sercfg);
+    }
+    // check how many bytes are available to read from HAL_FORWARD_OTG2_SERIAL
+    uint8_t data[SERIAL_BUFFERS_SIZE]; // read upto SERIAL_BUFFERS_SIZE at a time
+    int n = chnReadTimeout(&SDU2, data, SERIAL_BUFFERS_SIZE, TIME_IMMEDIATE);
+    if (n > 0) {
+        // do a blocking write to HAL_FORWARD_OTG2_SERIAL
+        chnWriteTimeout(&BOOTLOADER_FORWARD_OTG2_SERIAL, data, n, TIME_IMMEDIATE);
+        otg2_serial_deadline_ms = AP_HAL::millis() + 1000;
+    }
+
+    n = chnReadTimeout(&BOOTLOADER_FORWARD_OTG2_SERIAL, data, SERIAL_BUFFERS_SIZE, TIME_IMMEDIATE);
+    if (n > 0) {
+        // do a blocking write to SDU2
+        chnWriteTimeout(&SDU2, data, n, TIME_IMMEDIATE);
+    }
+
+    return (AP_HAL::millis() < otg2_serial_deadline_ms);
+}
+#endif
+
 /*
   set baudrate on the current port
  */
 void port_setbaud(uint32_t baudrate)
 {
 #if HAL_USE_SERIAL_USB == TRUE
-    if (uarts[last_uart] == (BaseChannel *)&SDU1) {
+    if (uarts[last_uart] == (BaseChannel *)&SDU1
+#if HAL_HAVE_DUAL_USB_CDC
+     || uarts[last_uart] == (BaseChannel *)&SDU2
+#endif
+     ) {
         // can't set baudrate on USB
         return;
     }
@@ -464,3 +543,53 @@ void port_setbaud(uint32_t baudrate)
 #endif
 }
 #endif // BOOTLOADER_DEV_LIST
+
+#if defined(STM32H7) && CH_CFG_USE_HEAP
+/*
+  check if flash has any ECC errors and if it does then erase all of
+  flash
+ */
+#define ECC_CHECK_CHUNK_SIZE (32*sizeof(uint32_t))
+void check_ecc_errors(void)
+{
+    __disable_fault_irq();
+    // stm32_flash_corrupt(0x8043200);
+    auto *dma = dmaStreamAlloc(STM32_DMA_STREAM_ID(1, 1), 0, nullptr, nullptr);
+
+    uint32_t *buf = (uint32_t*)malloc_dma(ECC_CHECK_CHUNK_SIZE);
+
+    if (buf == nullptr) {
+        // DMA'ble memory not available
+        return;
+    }
+    uint32_t ofs = 0;
+    while (ofs < BOARD_FLASH_SIZE*1024) {
+        if (FLASH->SR1 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
+            break;
+        }
+#if BOARD_FLASH_SIZE > 1024
+        if (FLASH->SR2 & (FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
+            break;
+        }
+#endif
+        dmaStartMemCopy(dma,
+                        STM32_DMA_CR_PL(0) | STM32_DMA_CR_PSIZE_BYTE |
+                        STM32_DMA_CR_MSIZE_BYTE,
+                        ofs+(uint8_t*)FLASH_BASE, buf, ECC_CHECK_CHUNK_SIZE);
+        dmaWaitCompletion(dma);
+        ofs += ECC_CHECK_CHUNK_SIZE;
+    }
+    dmaStreamFree(dma);
+    
+    if (ofs < BOARD_FLASH_SIZE*1024) {
+        // we must have ECC errors in flash
+        flash_set_keep_unlocked(true);
+        for (uint32_t i=0; i<num_pages; i++) {
+            stm32_flash_erasepage(flash_base_page+i);
+        }
+        flash_set_keep_unlocked(false);
+    }
+    __enable_fault_irq();
+}
+#endif // defined(STM32H7) && CH_CFG_USE_HEAP
+

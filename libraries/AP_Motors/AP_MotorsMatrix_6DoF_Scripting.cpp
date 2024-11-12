@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_Scripting/AP_Scripting_config.h>
+
 #if AP_SCRIPTING_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
@@ -46,17 +48,17 @@ void AP_MotorsMatrix_6DoF_Scripting::output_to_motors()
                     if (_reversible[i]) {
                         // revesible motor can provide both positive and negative thrust, +- spin max, spin min does not apply
                         if (is_positive(_thrust_rpyt_out[i])) { 
-                            _actuator[i] = apply_thrust_curve_and_volt_scaling(_thrust_rpyt_out[i]) * _spin_max;
+                            _actuator[i] = thr_lin.apply_thrust_curve_and_volt_scaling(_thrust_rpyt_out[i]) * thr_lin.get_spin_max();
 
                         } else if (is_negative(_thrust_rpyt_out[i])) {
-                            _actuator[i] = -apply_thrust_curve_and_volt_scaling(-_thrust_rpyt_out[i]) * _spin_max;
+                            _actuator[i] = -thr_lin.apply_thrust_curve_and_volt_scaling(-_thrust_rpyt_out[i]) * thr_lin.get_spin_max();
 
                         } else {
                             _actuator[i] = 0.0f;
                         }
                     } else {
                         // motor can only provide trust in a single direction, spin min to spin max as 'normal' copter
-                         _actuator[i] = thrust_to_actuator(_thrust_rpyt_out[i]);
+                         _actuator[i] = thr_lin.thrust_to_actuator(_thrust_rpyt_out[i]);
                     }
                 }
             }
@@ -85,7 +87,7 @@ void AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing()
     // note that the throttle, forwards and right inputs are not in bodyframe, they are in the frame of the 'normal' 4DoF copter were pretending to be
 
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
+    const float compensation_gain = thr_lin.get_compensation_gain(); // compensation for battery voltage and altitude
     roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
     pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
     yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
@@ -264,7 +266,7 @@ void AP_MotorsMatrix_6DoF_Scripting::add_motor(int8_t motor_num, float roll_fact
 
         uint8_t chan;
         if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
             return;
         }
 

@@ -37,8 +37,9 @@ void AC_AttitudeControl::control_monitor_update(void)
     control_monitor_filter_pid(iyaw.P + iyaw.D + iyaw.FF,  _control_monitor.rms_yaw);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
-  log a CRTL message
+  log a CTRL message
  */
 void AC_AttitudeControl::control_monitor_log(void) const
 {
@@ -59,6 +60,7 @@ void AC_AttitudeControl::control_monitor_log(void) const
                                            (double)safe_sqrt(_control_monitor.rms_yaw));
 
 }
+#endif  // HAL_LOGGING_ENABLED
 
 /*
   return current controller RMS filter value for roll

@@ -225,6 +225,9 @@ This list is automatically generated from the latest ardupilot source code, and 
            reference=reference)
 
         for param in g.params:
+            if getattr(param, "Legacy", False):
+                # do not emit legacy parameters to the Wiki
+                continue
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
@@ -263,7 +266,9 @@ This list is automatically generated from the latest ardupilot source code, and 
             headings = []
             row = []
             for field in sorted(param.__dict__.keys()):
-                if (field not in ['name', 'DisplayName', 'Description', 'User', 'RebootRequired'] and
+                if not self.should_emit_field(param, field):
+                    continue
+                if (field not in ['name', 'DisplayName', 'Description', 'User', 'SortValues', 'RebootRequired'] and
                         field in known_param_fields):
                     headings.append(field)
                     if field in field_table_info and Emit.prog_values_field.match(param.__dict__[field]):

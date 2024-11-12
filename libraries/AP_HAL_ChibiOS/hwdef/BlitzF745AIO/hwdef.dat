@@ -3,6 +3,11 @@
 # for IFLIGHT_BLITZ_F7_AIO hardware.
 # thanks to betaflight for pin information
 
+<<<<<<< HEAD
+=======
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
 
@@ -65,28 +70,49 @@ PA12 OTG_FS_DP OTG1
 # USART1 (DJI)
 PA10 USART1_RX USART1
 PA9 USART1_TX USART1
+<<<<<<< HEAD
 define HAL_SERIAL1_PROTOCOL SerialProtocol_DJI_FPV
+=======
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_DJI_FPV
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # USART2 (RX)
 PA2 USART2_TX USART2
 PA3 USART2_RX USART2
+<<<<<<< HEAD
 define HAL_SERIAL2_PROTOCOL SerialProtocol_RCIN
+=======
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # USART3 (Alt RX or GPS)
 PB10 USART3_TX USART3
 PB11 USART3_RX USART3
+<<<<<<< HEAD
 define HAL_SERIAL3_PROTOCOL SerialProtocol_GPS
 define HAL_SERIAL7_BAUD 38
+=======
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
+define DEFAULT_SERIAL7_BAUD 38
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # UART4
 PA0 UART4_TX UART4 NODMA
 PA1 UART4_RX UART4 NODMA
+<<<<<<< HEAD
 define HAL_SERIAL4_PROTOCOL SerialProtocol_None
+=======
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # UART7
 PE8 UART7_TX UART7 NODMA
 PE7 UART7_RX UART7 NODMA
+<<<<<<< HEAD
 define HAL_SERIAL7_PROTOCOL SerialProtocol_None
+=======
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # I2C4 for baro
 I2C_ORDER I2C1 I2C4
@@ -130,11 +156,19 @@ define STM32_I2C_USE_DMA FALSE
 # Dataflash setup
 SPIDEV dataflash SPI3 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
 SPIDEV bmi270    SPI1 DEVID1 GYRO1_CS      MODE3 2*MHZ 10*MHZ
+<<<<<<< HEAD
+=======
+SPIDEV icm42688  SPI1 DEVID1 GYRO1_CS      MODE3 1*MHZ 16*MHZ
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # OSD setup
+<<<<<<< HEAD
 # SPIDEV osd SPI4 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
+=======
+SPIDEV osd SPI4 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
@@ -144,6 +178,7 @@ BARO DPS310 I2C:1:0x76
         
 # no built-in compass
 define ALLOW_ARM_NO_COMPASS
+<<<<<<< HEAD
 define HAL_I2C_INTERNAL_MASK 0
 
 define STM32_PWM_USE_ADVANCED TRUE
@@ -153,10 +188,24 @@ include ../include/save_some_flash.inc
 
 # one IMU: bmi270
 IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_135
+=======
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+
+# save some flash
+include ../include/minimize_fpv_osd.inc
+
+# one IMU: bmi270
+IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_135
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_315
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
+<<<<<<< HEAD
 # This is a whoop AIO board, not really suitable for anything other than copter
 AUTOBUILD_TARGETS Copter
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86

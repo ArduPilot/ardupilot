@@ -97,9 +97,9 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void);
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
     // do a full dump if on serial
-    static CrashCatcherMemoryRegion regions[60] = {
+    static CrashCatcherMemoryRegion regions[80] = {
     {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
-    {(uint32_t)&ch, (uint32_t)&ch + sizeof(ch), CRASH_CATCHER_BYTE}};
+    {(uint32_t)&ch_system, (uint32_t)&ch_system + sizeof(ch_system), CRASH_CATCHER_BYTE}};
     uint32_t total_dump_size = dump_size + buf_off + REMAINDER_MEM_REGION_SIZE;
     // loop through chibios threads and add their stack info
     uint8_t curr_region = 2;
@@ -138,7 +138,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
     // log statically alocated memory
     int32_t bss_size = ((uint32_t)&__bss_end__) - ((uint32_t)&__bss_base__);
     int32_t available_space = stm32_crash_dump_max_size() - total_dump_size;
-    if (available_space < 0) {
+    if (available_space < 0 || curr_region >= (ARRAY_SIZE(regions) - 1)) {
         // we can't log anymore than this
         goto finalise;
     }
@@ -157,7 +157,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
     // dump the Heap as well as much as we can
     int32_t heap_size = ((uint32_t)&__heap_end__) - ((uint32_t)&__heap_base__);
     available_space = stm32_crash_dump_max_size() - total_dump_size;
-    if (available_space < 0) {
+    if (available_space < 0 || curr_region >= (ARRAY_SIZE(regions) - 1)) {
         // we can't log anymore than this
         goto finalise;
     }
@@ -505,7 +505,7 @@ static void init_uarts(void)
 
     /* Baud rate setting.*/
     uint32_t fck;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     fck = (uint32_t)(((HAL_CRASH_SERIAL_PORT_CLOCK + ((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD));
 #else
 #if STM32_HAS_USART6
@@ -516,11 +516,11 @@ static void init_uarts(void)
         fck = (STM32_PCLK2+((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD;
     else
         fck = (STM32_PCLK1+((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD;
-#endif //defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#endif //defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 
     u->BRR = fck;
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     /* Resetting eventual pending status flags.*/
     u->ICR = 0xFFFFFFFFU;
 #else
@@ -545,7 +545,7 @@ int CrashCatcher_getc(void)
     static const char* wait_for_string = "dump_crash_log";
     uint8_t curr_off = 0;
     while (true) {
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         while (!(USART_ISR_RXNE & u->ISR)) {}
         uint8_t c = u->RDR;
 #else
@@ -571,12 +571,12 @@ void CrashCatcher_putc(int c)
         init_uarts();
     }
     USART_TypeDef *u = HAL_CRASH_SERIAL_PORT;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     u->TDR = c & 0xFF;
 #else
     u->DR = c & 0xFF;
 #endif
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     while (!(USART_ISR_TC & u->ISR)) {
 #else
     while (!(USART_SR_TC & u->SR)) {

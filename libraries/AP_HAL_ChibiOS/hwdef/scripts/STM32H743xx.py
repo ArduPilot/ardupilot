@@ -26,21 +26,21 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
     'RAM_MAP' : [
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
+        (0x24000000, 512, 4), # AXI SRAM.
 		(0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 
     # alternative RAM_MAP needed for px4 bootloader compatibility
     'ALT_RAM_MAP' : [
-        (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x24000000, 512, 4), # AXI SRAM.
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 
@@ -49,14 +49,22 @@ mcu = {
     # we can't use DTCM first for main firmware as some builds overflow the first segment
     'RAM_MAP_BOOTLOADER' : [
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
     
     'EXPECTED_CLOCK' : 400000000,
+
+	'EXPECTED_CLOCKS' : [
+		('STM32_SYS_CK',	400000000),
+		('STM32_QSPICLK', 	200000000),
+		('STM32_SDMMC1CLK',  80000000),
+		('STM32_SPI45CLK',  100000000),
+		('STM32_FDCANCLK',   80000000),
+	],
 
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
@@ -1288,4 +1296,40 @@ ADC1_map = {
     "PA1"	:	17,
     "PA4"	:	18,
     "PA5"	:	19,
+}
+
+ADC2_map = {
+    "PF13"	:	2,
+    "PA6"	:	3,
+    "PC4"	:	4,
+    "PB1"	:	5,
+    "PF14"	:	6,
+    "PA7"	:	7,
+    "PC5"	:	8,
+    "PB0"	:	9,
+    "PC0"	:	10,
+    "PC1"	:	11,
+    "PC2"	:	12,
+    "PC3"	:	13,
+    "PA2"	:	14,
+    "PA3"	:	15,
+    "N/A"	:	16,
+    "N/A"	:	17,
+    "PA4"	:	18,
+    "PA5"	:	19,
+}
+
+ADC3_map = {
+    "PF9"	:	2,
+    "PF7"	:	3,
+    "PF5"	:	4,
+    "PF3"	:	5,
+    "PF10"	:	6,
+    "PF8"	:	7,
+    "PF6"	:	8,
+    "PF4"	:	9,
+    "PH2"	:	13,
+    "PH3"	:	14,
+    "PH4"	:	15,
+    "PH5"	:	16,
 }

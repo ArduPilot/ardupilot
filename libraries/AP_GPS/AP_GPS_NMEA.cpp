@@ -629,7 +629,7 @@ bool AP_GPS_NMEA::_term_complete()
         //
         case _GPS_SENTENCE_RMC + 7: // Speed (GPRMC)
         case _GPS_SENTENCE_VTG + 5: // Speed (VTG)
-            _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximiates * 0.514
+            _new_speed = (_parse_decimal_100(_term) * 514) / 1000;       // knots-> m/sec, approximates * 0.514
             break;
         case _GPS_SENTENCE_HDT + 1: // Course (HDT)
             _new_gps_yaw = _parse_decimal_100(_term);
@@ -776,7 +776,7 @@ void AP_GPS_NMEA::parse_versiona_field(uint16_t term_number, const char *term)
     // ::printf("VERSIONA[%u]='%s'\n", term_number, term);
     auto &v = _versiona;
 #pragma GCC diagnostic push
-#if defined(__GNUC__) &&  __GNUC__ >= 10
+#if defined(__GNUC__) &&  __GNUC__ >= 9
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
     switch (term_number) {
@@ -850,7 +850,7 @@ void AP_GPS_NMEA::send_config(void)
         return;
     }
     last_config_ms = now_ms;
-    const uint16_t rate_ms = gps._rate_ms[state.instance];
+    const uint16_t rate_ms = params.rate_ms;
 #if AP_GPS_NMEA_UNICORE_ENABLED
     const float rate_s = rate_ms * 0.001;
 #endif
@@ -957,9 +957,9 @@ bool AP_GPS_NMEA::get_lag(float &lag_sec) const
     return true;
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
 {
-#if HAL_LOGGING_ENABLED
     AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 #if AP_GPS_NMEA_UNICORE_ENABLED
     if (_have_unicore_versiona) {
@@ -970,7 +970,7 @@ void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
                                     _versiona.build_date);
     }
 #endif
-#endif
 }
+#endif
 
 #endif // AP_GPS_NMEA_ENABLED

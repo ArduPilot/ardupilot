@@ -32,6 +32,9 @@
 #ifndef MATH_CHECK_INDEXES
 #define MATH_CHECK_INDEXES 0
 #endif
+#if MATH_CHECK_INDEXES
+#include <assert.h>
+#endif
 
 #include <cmath>
 #include <float.h>
@@ -44,12 +47,12 @@ struct Vector2
     T x, y;
 
     // trivial ctor
-    constexpr Vector2<T>()
+    constexpr Vector2()
         : x(0)
         , y(0) {}
 
     // setting ctor
-    constexpr Vector2<T>(const T x0, const T y0)
+    constexpr Vector2(const T x0, const T y0)
         : x(x0)
         , y(y0) {}
 

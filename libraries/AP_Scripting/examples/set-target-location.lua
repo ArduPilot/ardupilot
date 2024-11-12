@@ -5,7 +5,6 @@
 --    a) switches to Guided mode
 --    b) sets the target location to be 10m above home
 --    c) switches the vehicle to land once it is within a couple of meters of home
--- luacheck: only 0
 
 local wp_radius = 2
 local target_alt_above_home = 10

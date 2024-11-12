@@ -106,8 +106,13 @@ SECTIONS
         __ram3_init_text__ = LOADADDR(.fastramfunc);
         __ram3_init__ = .;
         /* performance critical sections of ChibiOS */
+<<<<<<< HEAD
         /* ChibiOS won't boot unless these are excluded */
         EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o) *libch.a:ch*.*(.text*)
+=======
+        /* ChibiOS won't boot unless some of these are excluded */
+        EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o  *chprintf.o) *libch.a:ch*.*(.text*)
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
         *libch.a:nvic.*(.text*)
         *libch.a:bouncebuffer.*(.text*)
         *libch.a:stm32_util.*(.text*)

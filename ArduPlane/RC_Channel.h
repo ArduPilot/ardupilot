@@ -9,9 +9,12 @@ public:
 
 protected:
 
-    void init_aux_function(aux_func_t ch_option,
+    void init_aux_function(AUX_FUNC ch_option,
                            AuxSwitchPos ch_flag) override;
-    bool do_aux_function(aux_func_t ch_option, AuxSwitchPos) override;
+    bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
+
+    // called when the mode switch changes position:
+    void mode_switch_changed(modeswitch_pos_t new_pos) override;
 
 private:
 
@@ -42,9 +45,12 @@ public:
         return &obj_channels[chan];
     }
 
+    bool in_rc_failsafe() const override;
     bool has_valid_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;
+
+    void read_mode_switch() override;
 
 protected:
 

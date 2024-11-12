@@ -46,10 +46,10 @@ void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs
-bool AP_MotorsHeli_Quad::init_outputs()
+void AP_MotorsHeli_Quad::init_outputs()
 {
     if (initialised_ok()) {
-        return true;
+        return;
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
@@ -61,34 +61,6 @@ bool AP_MotorsHeli_Quad::init_outputs()
     _main_rotor.init_servo();
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
-
-    return true;
-}
-
-// output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::_output_test_seq(uint8_t motor_seq, int16_t pwm)
-{
-    // output to motors and servos
-    switch (motor_seq) {
-    case 1 ... AP_MOTORS_HELI_QUAD_NUM_MOTORS:
-        rc_write(AP_MOTORS_MOT_1 + (motor_seq-1), pwm);
-        break;
-    case AP_MOTORS_HELI_QUAD_NUM_MOTORS+1:
-        // main rotor
-        rc_write(AP_MOTORS_HELI_RSC, pwm);
-        break;
-    default:
-        // do nothing
-        break;
-    }
-}
-
-// set_desired_rotor_speed
-void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
-{
-    _main_rotor.set_desired_speed(desired_speed);
 }
 
 // calculate_armed_scalars
@@ -101,21 +73,12 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
     // keeps user from changing RSC mode while armed
     if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
         _main_rotor.reset_rsc_mode_param();
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
         _heliflags.save_rsc_mode = true;
     }
     // saves rsc mode parameter when disarmed if it had been reset while armed
     if (_heliflags.save_rsc_mode && !armed()) {
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
-    }
-
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else {
-        _main_rotor.set_autorotation_flag(false);
     }
 }
 
@@ -155,7 +118,7 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
 {
     // assume X quad layout, with motors at 45, 135, 225 and 315 degrees
-    // order FrontRight, RearLeft, FrontLeft, RearLeft
+    // order FrontRight, RearLeft, FrontLeft, RearRight
     const float angles[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { 45, 225, 315, 135 };
     const bool x_clockwise[AP_MOTORS_HELI_QUAD_NUM_MOTORS] = { false, false, true, true };
     const float cos45 = cosf(radians(45));
@@ -173,25 +136,13 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
     }
 }
 
-// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint32_t AP_MotorsHeli_Quad::get_motor_mask()
-{
-    uint32_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    mask |= 1U << AP_MOTORS_HELI_RSC;
-    return mask;
-}
-
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
+void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
 {
     // Send state update to motors
     _main_rotor.output(state);
 
-    if (state == ROTOR_CONTROL_STOP) {
+    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP) {
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -200,7 +151,8 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
     }
 
     // Check if rotors are run-up
-    _heliflags.rotor_runup_complete = _main_rotor.is_runup_complete();
+    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+
     // Check if rotors are spooled down
     _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
 }
@@ -247,10 +199,6 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     update_takeoff_collective_flag(collective_out);
 
     float collective_range = (_collective_max - _collective_min) * 0.001f;
-
-    if (_heliflags.inverted_flight) {
-        collective_out = 1.0f - collective_out;
-    }
 
     // feed power estimate into main rotor controller
     _main_rotor.set_collective(fabsf(collective_out));
@@ -314,25 +262,8 @@ void AP_MotorsHeli_Quad::output_to_motors()
         rc_write_angle(AP_MOTORS_MOT_1+i, _out[i] * QUAD_SERVO_MAX_ANGLE);
     }
 
-    switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            update_motor_control(ROTOR_CONTROL_STOP);
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-            // set motor output based on thrust requests
-            update_motor_control(ROTOR_CONTROL_ACTIVE);
-            break;
-        case SpoolState::SPOOLING_DOWN:
-            // sends idle output to motors and wait for rotor to stop
-            update_motor_control(ROTOR_CONTROL_IDLE);
-            break;
-    }
+    update_motor_control(get_rotor_control_state());
+
 }
 
 // servo_test - move servos through full range of movement
@@ -340,3 +271,11 @@ void AP_MotorsHeli_Quad::servo_test()
 {
     // not implemented
 }
+
+#if HAL_LOGGING_ENABLED
+// heli motors logging - called at 10 Hz
+void AP_MotorsHeli_Quad::Log_Write(void)
+{
+    _main_rotor.write_log();
+}
+#endif

@@ -16,5 +16,4 @@ APJ_BOARD_ID 1002
 PC8 SBUS_INVERT_RX OUTPUT LOW
 PC9 SBUS_INVERT_TX OUTPUT LOW
 
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc
+

@@ -59,7 +59,7 @@
   STM32H7 can only write in 32 byte chunks, and must only write when all bits are 1
  */
 #define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_H7
-#elif defined(STM32G4) || defined(STM32L4)
+#elif defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 /*
   STM32G4 can only write in 8 byte chunks, and must only write when all bits are 1
  */
@@ -236,7 +236,7 @@ private:
     bool switch_sectors(void) WARN_IF_UNUSED;
 
     // _switch_full_sector is protected by switch_full_sector to avoid
-    // an infinite recursion problem; switch_full_sectory calls
+    // an infinite recursion problem; switch_full_sector calls
     // write() which can call switch_full_sector.  This has been seen
     // in practice.
     bool protected_switch_full_sector(void) WARN_IF_UNUSED;

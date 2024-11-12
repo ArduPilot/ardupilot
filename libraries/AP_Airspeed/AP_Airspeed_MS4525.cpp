@@ -62,7 +62,7 @@ bool AP_Airspeed_MS4525::probe(uint8_t bus, uint8_t address)
 bool AP_Airspeed_MS4525::init()
 {
     static const uint8_t addresses[] = { MS4525D0_I2C_ADDR1, MS4525D0_I2C_ADDR2, MS4525D0_I2C_ADDR3 };
-    if (bus_is_confgured()) {
+    if (bus_is_configured()) {
         // the user has configured a specific bus
         for (uint8_t addr : addresses) {
             if (probe(get_bus(), addr)) {

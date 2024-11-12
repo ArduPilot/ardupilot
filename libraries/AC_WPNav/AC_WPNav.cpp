@@ -5,7 +5,7 @@ extern const AP_HAL::HAL& hal;
 
 // maximum velocities and accelerations
 #define WPNAV_WP_SPEED                 1000.0f      // default horizontal speed between waypoints in cm/s
-#define WPNAV_WP_SPEED_MIN               20.0f      // minimum horizontal speed between waypoints in cm/s
+#define WPNAV_WP_SPEED_MIN               10.0f      // minimum horizontal speed between waypoints in cm/s
 #define WPNAV_WP_RADIUS                 200.0f      // default waypoint radius in cm
 #define WPNAV_WP_RADIUS_MIN               5.0f      // minimum waypoint radius in cm
 #define WPNAV_WP_SPEED_UP               250.0f      // default maximum climb velocity
@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @DisplayName: Waypoint Horizontal Speed Target
     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally during a WP mission
     // @Units: cm/s
-    // @Range: 20 2000
+    // @Range: 10 2000
     // @Increment: 50
     // @User: Standard
     AP_GROUPINFO("SPEED",       0, AC_WPNav, _wp_speed_cms, WPNAV_WP_SPEED),
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 
     // @Param: ACCEL_C
     // @DisplayName: Waypoint Cornering Acceleration
-    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions, zero uses max lean angle.
+    // @Description: Defines the maximum cornering acceleration in cm/s/s used during missions.  If zero uses 2x accel value.
     // @Units: cm/s/s
     // @Range: 0 500
     // @Increment: 10
@@ -323,11 +323,11 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
         if (terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
             _origin.z -= origin_terr_offset;
-            _pos_control.set_pos_offset_z_cm(_pos_control.get_pos_offset_z_cm() + origin_terr_offset);
+            _pos_control.init_pos_terrain_cm(origin_terr_offset);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
             _origin.z += origin_terr_offset;
-            _pos_control.set_pos_offset_z_cm(_pos_control.get_pos_offset_z_cm() - origin_terr_offset);
+            _pos_control.init_pos_terrain_cm(0.0);
         }
     }
 
@@ -350,6 +350,7 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
 
     _this_leg_is_spline = false;
     _scurve_next_leg.init();
+    _next_destination.zero();       // clear next destination
     _flags.fast_waypoint = false;   // default waypoint back to slow
     _flags.reached_destination = false;
 
@@ -379,6 +380,9 @@ bool AC_WPNav::set_wp_destination_next(const Vector3f& destination, bool terrain
 
     // next destination provided so fast waypoint
     _flags.fast_waypoint = true;
+
+    // record next destination
+    _next_destination = destination;
 
     return true;
 }
@@ -431,7 +435,7 @@ void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
     _destination.xy() = stopping_point;
 
     // move pos controller target horizontally
-    _pos_control.set_pos_target_xy_cm(stopping_point.x, stopping_point.y);
+    _pos_control.set_pos_desired_xy_cm(stopping_point);
 }
 
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
@@ -462,10 +466,14 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     const float offset_z_scaler = _pos_control.pos_offset_z_scaler(terr_offset, get_terrain_margin() * 100.0);
 
     // input shape the terrain offset
-    _pos_control.update_pos_offset_z(terr_offset);
+    _pos_control.set_pos_terrain_target_cm(terr_offset);
+
+    // get position controller's position offset (post input shaping) so it can be used in position error calculation
+    const Vector3p& psc_pos_offset = _pos_control.get_pos_offset_cm();
 
     // get current position and adjust altitude to origin and destination's frame (i.e. _frame)
-    const Vector3f &curr_pos = _inav.get_position_neu_cm() - Vector3f{0, 0, terr_offset};
+    Vector3f curr_pos = _inav.get_position_neu_cm() - psc_pos_offset.tofloat();
+    curr_pos.z -= terr_offset;
     Vector3f curr_target_vel = _pos_control.get_vel_desired_cms();
     curr_target_vel.z -= _pos_control.get_vel_offset_z_cms();
 
@@ -478,11 +486,11 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         const float track_error = _pos_control.get_pos_error_cm().dot(track_direction);
         const float track_velocity = _inav.get_velocity_neu_cms().dot(track_direction);
         // set time scaler to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
-        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / curr_target_vel.length(), 0.1f, 1.0f);
+        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / curr_target_vel.length(), 0.0f, 1.0f);
     }
 
     // Use vel_scaler_dt to slow down the trajectory time
-    // vel_scaler_dt scales the velocity and acceleration to be kinematically constent
+    // vel_scaler_dt scales the velocity and acceleration to be kinematically consistent
     float vel_scaler_dt = 1.0;
     if (is_positive(_wp_desired_speed_xy_cms)) {
         update_vel_accel(_offset_vel, _offset_accel, dt, 0.0, 0.0);
@@ -523,11 +531,6 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     target_vel *= vel_scaler_dt;
     target_accel *= sq(vel_scaler_dt);
     target_accel += accel_offset;
-
-    // convert final_target.z to altitude above the ekf origin
-    target_pos.z += _pos_control.get_pos_offset_z_cm();
-    target_vel.z += _pos_control.get_vel_offset_z_cms();
-    target_accel.z += _pos_control.get_accel_offset_z_cmss();
 
     // pass new target to the position controller
     _pos_control.set_pos_vel_accel(target_pos.topostype(), target_vel, target_accel);
@@ -587,8 +590,11 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
 {
+<<<<<<< HEAD
     bool ret = true;
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     // check for changes in speed parameter values
     if (_check_wp_speed_change) {
         if (!is_equal(_wp_speed_cms.get(), _last_wp_speed_cms)) {
@@ -606,6 +612,7 @@ bool AC_WPNav::update_wpnav()
     }
 
     // advance the target if necessary
+    bool ret = true;
     if (!advance_wp_target_along_track(_pos_control.get_dt())) {
         // To-Do: handle inability to advance along track (probably because of missing terrain data)
         ret = false;
@@ -622,6 +629,29 @@ bool AC_WPNav::update_wpnav()
 bool AC_WPNav::is_active() const
 {
     return (AP_HAL::millis() - _wp_last_update) < 200;
+}
+
+// force stopping at next waypoint.  Used by Dijkstra's object avoidance when path from destination to next destination is not clear
+// only affects regular (e.g. non-spline) waypoints
+// returns true if this had any affect on the path
+bool AC_WPNav::force_stop_at_next_wp()
+{
+    // exit immediately if vehicle was going to stop anyway
+    if (!_flags.fast_waypoint) {
+        return false;
+    }
+
+    _flags.fast_waypoint = false;
+
+    // update this_leg's final velocity and next leg's initial velocity to zero
+    if (!_this_leg_is_spline) {
+        _scurve_this_leg.set_destination_speed_max(0);
+    }
+    if (!_next_leg_is_spline) {
+        _scurve_next_leg.init();
+    }
+
+    return true;
 }
 
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
@@ -752,11 +782,11 @@ bool AC_WPNav::set_spline_destination(const Vector3f& destination, bool terrain_
         if (terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
             _origin.z -= origin_terr_offset;
-            _pos_control.set_pos_offset_z_cm(_pos_control.get_pos_offset_z_cm() + origin_terr_offset);
+            _pos_control.init_pos_terrain_cm(origin_terr_offset);
         } else {
             // new destination is alt-above-ekf-origin, previous destination was alt-above-terrain
             _origin.z += origin_terr_offset;
-            _pos_control.set_pos_offset_z_cm(_pos_control.get_pos_offset_z_cm() - origin_terr_offset);
+            _pos_control.init_pos_terrain_cm(0.0);
         }
     }
 

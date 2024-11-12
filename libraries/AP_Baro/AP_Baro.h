@@ -28,6 +28,7 @@ class AP_Baro
 {
     friend class AP_Baro_Backend;
     friend class AP_Baro_SITL; // for access to sensors[]
+    friend class AP_Baro_DroneCAN; // for access to sensors[]
 
 public:
     AP_Baro();
@@ -55,12 +56,8 @@ public:
 
     // healthy - returns true if sensor and derived altitude are good
     bool healthy(void) const { return healthy(_primary); }
-#ifdef HAL_BUILD_AP_PERIPH
-    // calibration and alt check not valid for AP_Periph
-    bool healthy(uint8_t instance) const { return sensors[instance].healthy; }
-#else
-    bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated; }
-#endif
+
+    bool healthy(uint8_t instance) const;
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
@@ -86,10 +83,6 @@ public:
     // get pressure correction in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
     float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
-    
-    // accumulate a reading on sensors. Some backends without their
-    // own thread or a timer may need this.
-    void accumulate(void);
 
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
@@ -104,8 +97,36 @@ public:
     float get_altitude(void) const { return get_altitude(_primary); }
     float get_altitude(uint8_t instance) const { return sensors[instance].altitude; }
 
+    // get altitude above mean sea level
+    float get_altitude_AMSL(uint8_t instance) const { return get_altitude(instance) + _field_elevation_active; }
+    float get_altitude_AMSL(void) const { return get_altitude_AMSL(_primary); }
+
     // returns which i2c bus is considered "the" external bus
     uint8_t external_bus() const { return _ext_bus; }
+
+    // Atmospheric Model Functions
+    static float geometric_alt_to_geopotential(float alt);
+    static float geopotential_alt_to_geometric(float alt);
+
+    float get_temperature_from_altitude(float alt) const;
+    float get_altitude_from_pressure(float pressure) const;
+
+    // EAS2TAS for SITL
+    static float get_EAS2TAS_for_alt_amsl(float alt_amsl);
+
+#if AP_BARO_1976_STANDARD_ATMOSPHERE_ENABLED
+    // lookup expected pressure for a given altitude. Used for SITL backend
+    static void get_pressure_temperature_for_alt_amsl(float alt_amsl, float &pressure, float &temperature_K);
+#endif
+
+    // lookup expected temperature in degrees C for a given altitude. Used for SITL backend
+    static float get_temperatureC_for_alt_amsl(const float alt_amsl);
+
+    // lookup expected pressure in Pa for a given altitude. Used for SITL backend
+    static float get_pressure_for_alt_amsl(const float alt_amsl);
+    
+    // get air density for SITL
+    static float get_air_density_for_alt_amsl(float alt_amsl);
 
     // get altitude difference in meters relative given a base
     // pressure in Pascal
@@ -113,13 +134,16 @@ public:
 
     // get sea level pressure relative to 1976 standard atmosphere model
     // pressure in Pascal
-    float get_sealevel_pressure(float pressure) const;
+    float get_sealevel_pressure(float pressure, float altitude) const;
 
-    // get scale factor required to convert equivalent to true airspeed
-    float get_EAS2TAS(void);
+    // get scale factor required to convert equivalent to true
+    // airspeed. This should only be used to update the AHRS value
+    // once per loop. Please use AP::ahrs().get_EAS2TAS()
+    float _get_EAS2TAS(void) const;
 
     // get air density / sea level density - decreases as altitude climbs
-    float get_air_density_ratio(void);
+    // please use AP::ahrs()::get_air_density_ratio()
+    float _get_air_density_ratio(void);
 
     // get current climb rate in meters/s. A positive number means
     // going up
@@ -170,9 +194,6 @@ public:
 
     // get baro drift amount
     float get_baro_drift_offset(void) const { return _alt_offset_active; }
-
-    // simple atmospheric model
-    static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
 
     // simple underwater atmospheric model
     static void SimpleUnderWaterAtmosphere(float alt, float &rho, float &delta, float &theta);
@@ -243,6 +264,7 @@ private:
         PROBE_BMP388=(1<<10),
         PROBE_SPL06 =(1<<11),
         PROBE_MSP   =(1<<12),
+        PROBE_BMP581=(1<<13),
     };
     
 #if HAL_BARO_WIND_COMP_ENABLED
@@ -286,14 +308,12 @@ private:
     uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
-    float                               _last_altitude_EAS2TAS;
-    float                               _EAS2TAS;
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
     AP_Float                            _specific_gravity; // the specific gravity of fluid for an ROV 1.00 for freshwater, 1.024 for salt water
     AP_Float                            _user_ground_temperature; // user override of the ground temperature used for EAS2TAS
-    float                               _guessed_ground_temperature; // currently ground temperature estimate using our best abailable source
+    float                               _guessed_ground_temperature; // currently ground temperature estimate using our best available source
 
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
@@ -326,6 +346,14 @@ private:
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
 
     void update_field_elevation();
+
+    // atmosphere model functions
+    float get_altitude_difference_extended(float base_pressure, float pressure) const;
+    float get_EAS2TAS_extended(float pressure) const;
+    static float get_temperature_by_altitude_layer(float alt, int8_t idx);
+
+    float get_altitude_difference_simple(float base_pressure, float pressure) const;
+    float get_EAS2TAS_simple(float altitude, float pressure) const;
 };
 
 namespace AP {

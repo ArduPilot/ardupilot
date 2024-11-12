@@ -74,11 +74,7 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
 
-# avoid timer and RCIN threads to save memory
-define HAL_NO_RCIN_THREAD
-
 define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
 
 define DMA_RESERVE_SIZE 0
 
@@ -92,8 +88,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_DISABLE_LOOP_DELAY
-
 # enable CAN support
 PB8 CAN_RX CAN
 PB9 CAN_TX CAN
@@ -106,10 +100,6 @@ define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 0x200
-
-
-define HAL_NO_MONITOR_THREAD
-
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -148,14 +138,12 @@ PA7 LED_BUS_I2C OUTPUT LOW
 env ROMFS_UNCOMPRESSED True
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.HitecMosaic"
-
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
 
 # septentrio on com 3
-define HAL_GPS_TYPE_DEFAULT 10
+define HAL_GPS1_TYPE_DEFAULT 10
 define HAL_GPS_COM_PORT_DEFAULT 3
 define GPS_SBF_STREAM_NUMBER 3
 define GPS_SBF_EXTRA_CONFIG "sdfa, DSK1, DeleteOldest", "sfn, DSK1, Incremental, Mosaic", "sfno, off"

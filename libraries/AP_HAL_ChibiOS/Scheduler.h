@@ -26,9 +26,13 @@
 #define APM_MAIN_PRIORITY       180
 #define APM_TIMER_PRIORITY      181
 #define APM_RCOUT_PRIORITY      181
+<<<<<<< HEAD
 #define APM_RCIN_PRIORITY       177
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 #define APM_LED_PRIORITY         60
 #define APM_UART_PRIORITY        60
+#define APM_NET_PRIORITY         60
 #define APM_UART_UNBUFFERED_PRIORITY 181
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
@@ -40,6 +44,10 @@
  */
 #ifndef APM_MAIN_PRIORITY_BOOST
 #define APM_MAIN_PRIORITY_BOOST 182
+#endif
+
+#ifndef APM_RCIN_PRIORITY
+#define APM_RCIN_PRIORITY      177
 #endif
 
 #ifndef APM_SPI_PRIORITY
@@ -199,5 +207,10 @@ private:
     void ext_watchdog_pat(uint32_t now_ms);
     uint32_t last_ext_watchdog_ms;
 #endif
+<<<<<<< HEAD
+=======
+
+    static void try_force_mutex(void);
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 };
 #endif

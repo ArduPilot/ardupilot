@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #define LOG_IDS_FROM_NAVEKF3 \
     LOG_XKF0_MSG, \
@@ -103,8 +104,8 @@ struct PACKED log_XKF1 {
 // @Field: AX: Estimated accelerometer X bias
 // @Field: AY: Estimated accelerometer Y bias
 // @Field: AZ: Estimated accelerometer Z bias
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
+// @Field: VWN: Estimated wind velocity (moving-to-North component)
+// @Field: VWE: Estimated wind velocity (moving-to-East component)
 // @Field: MN: Magnetic field strength (North component)
 // @Field: ME: Magnetic field strength (East component)
 // @Field: MD: Magnetic field strength (Down component)
@@ -187,6 +188,7 @@ struct PACKED log_XKF3 {
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
 // @Field: SS: Filter solution status
+// @FieldBitmaskEnum: SS: NavFilterStatusBit
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index
 struct PACKED log_XKF4 {
@@ -344,6 +346,9 @@ struct PACKED log_XKQ {
 // @Field: GI: GPS selection index
 // @Field: AI: airspeed selection index
 // @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
+// @Field: GPS_GTA: GPS good to align
+// @Field: GPS_CHK_WAIT: Waiting for GPS checks to pass
+// @Field: MAG_FUSION: Magnetometer fusion (0=not fusing/1=fuse yaw/2=fuse mag)
 struct PACKED log_XKFS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -353,6 +358,9 @@ struct PACKED log_XKFS {
     uint8_t gps_index;
     uint8_t airspeed_index;
     uint8_t source_set;
+    uint8_t gps_good_to_align;
+    uint8_t wait_for_gps_checks;
+    uint8_t mag_fusion;
 };
 
 // @LoggerMessage: XKTV
@@ -439,7 +447,7 @@ struct PACKED log_XKV {
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBBB","TimeUS,C,MI,BI,GI,AI,SS", "s#-----", "F------" , true }, \
+      "XKFS","QBBBBBBBBB","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT,MAG_FUSION", "s#--------", "F---------" , true }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \

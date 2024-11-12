@@ -57,6 +57,10 @@
  * http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm
  */
 
+#include "AP_Compass_config.h"
+
+#if COMPASS_CAL_ENABLED
+
 #include "AP_Compass.h"
 #include "CompassCalibrator.h"
 #include <AP_HAL/AP_HAL.h>
@@ -134,9 +138,21 @@ void CompassCalibrator::new_sample(const Vector3f& sample)
 
 bool CompassCalibrator::failed() {
     WITH_SEMAPHORE(state_sem);
-    return (cal_state.status == Status::FAILED ||
-            cal_state.status == Status::BAD_ORIENTATION || 
-            cal_state.status == Status::BAD_RADIUS);
+    switch (cal_state.status) {
+    case Status::FAILED:
+    case Status::BAD_ORIENTATION:
+    case Status::BAD_RADIUS:
+        return true;
+    case Status::SUCCESS:
+    case Status::NOT_STARTED:
+    case Status::WAITING_TO_START:
+    case Status::RUNNING_STEP_ONE:
+    case Status::RUNNING_STEP_TWO:
+        return false;
+    }
+
+    // compiler guarantees we don't get here
+    return true;
 }
 
 
@@ -457,10 +473,10 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
 
             _status = status;
             return true;
-
-        default:
-            return false;
     };
+
+    // compiler guarantees we don't get here
+    return false;
 }
 
 bool CompassCalibrator::fit_acceptable() const
@@ -1061,14 +1077,15 @@ bool CompassCalibrator::calculate_orientation(void)
  */
 bool CompassCalibrator::fix_radius(void)
 {
-    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+    Location loc;
+    if (!AP::ahrs().get_location(loc) && !AP::ahrs().get_origin(loc)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MagCal: No location, fix_radius skipped");
         // we don't have a position, leave scale factor as 0. This
         // will disable use of WMM in the EKF. Users can manually set
         // scale factor after calibration if it is known
         _params.scale_factor = 0;
         return true;
     }
-    const Location &loc = AP::gps().location();
     float intensity;
     float declination;
     float inclination;
@@ -1153,3 +1170,5 @@ bool CompassCalibrator::right_angle_rotation(Rotation r) const
             return false;
     }
 }
+
+#endif  // COMPASS_CAL_ENABLED

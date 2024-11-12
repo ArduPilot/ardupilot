@@ -47,38 +47,33 @@ public:
 
     void vprintf(const char *fmt, va_list ap) override;
 
-    void begin(uint32_t b) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
-
-    uint32_t available() override;
-    //uint32_t available_locked(uint32_t key) override;
 
     uint32_t txspace() override;
 
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-    int16_t read() override;
-    //ssize_t read(uint8_t *buffer, uint16_t count) override;
-    //int16_t read_locked(uint32_t key) override;
-
     void _timer_tick(void) override;
 
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
-
-    bool discard_input() override; // discard all bytes available for reading
     uint32_t bw_in_bytes_per_second() const override
     {
         return 10*1024;
     }
 
-    //bool lock_port(uint32_t write_key, uint32_t read_key) override;
+    /*
+      return timestamp estimate in microseconds for when the start of
+      a nbytes packet arrived on the uart. This should be treated as a
+      time constraint, not an exact time. It is guaranteed that the
+      packet did not start being received after this time, but it
+      could have been in a system buffer before the returned time.
+      This takes account of the baudrate of the link. For transports
+      that have no baudrate (such as USB) the time estimate may be
+      less accurate.
+      A return value of zero means the HAL does not support this API */
+     
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
 
-    //size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
+    uint32_t get_baud_rate() const override { return _baudrate; }
+
 private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
@@ -91,6 +86,22 @@ private:
     void write_data();
 
     uint8_t uart_num;
+
+    // timestamp for receiving data on the UART, avoiding a lock
+    uint64_t _receive_timestamp[2];
+    uint8_t _receive_timestamp_idx;
+    uint32_t _baudrate;
+
+    void _receive_timestamp_update(void);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _end() override;
+    void _flush() override;
+    uint32_t _available() override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    bool _discard_input() override; // discard all bytes available for reading
 };
 
 }

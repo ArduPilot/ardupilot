@@ -23,8 +23,8 @@ I2C_ORDER I2C1
 #PD15 TIM4_CH4 TIM4 GPIO(80) ALARM
 PD15 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # USB
 PA11 OTG_FS_DM OTG1
@@ -120,8 +120,6 @@ PE13 TIM1_CH3 TIM1 PWM(10) GPIO(59)			# PPM/Unused - for future use according to
 
 DMA_PRIORITY USART1* TIM1* TIM3*
 DMA_NOSHARE SPI1_TX SPI1_RX TIM1_CH2 TIM3_CH3
-NODMA I2C*
-define STM32_I2C_USE_DMA FALSE
 
 define HAL_STORAGE_SIZE 16384
 STORAGE_FLASH_PAGE 1
@@ -151,32 +149,31 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # one BARO
 BARO BMP280 I2C:0:0x76
 BARO SPL06  I2C:0:0x76
+<<<<<<< HEAD
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 define AP_BARO_SPL06_ENABLED 1
 define AP_BARO_BMP280_ENABLED 1
+=======
+BARO DPS310 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_SPL06_ENABLED 1
+define AP_BARO_BMP280_ENABLED 1
+define AP_BARO_DPS280_ENABLED 1
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define STM32_PWM_USE_ADVANCED TRUE
-
 # FFT option (disabled by default)
 # define HAL_GYROFFT_ENABLED 1
-# define AC_OAPATHPLANNER_ENABLED 0
-
-# EK2 options (disabled by default)
-# define HAL_NAVEKF2_AVAILABLE 1
-# define HAL_NAVEKF3_AVAILABLE 0
+# define AP_OAPATHPLANNER_ENABLED 0
 
 # save some flash
-include ../include/save_some_flash.inc
-define AP_GRIPPER_ENABLED 0
-define HAL_PARACHUTE_ENABLED 0
+include ../include/minimize_fpv_osd.inc
+include ../include/no_bootloader_DFU.inc
+
+define DEFAULT_NTF_LED_TYPES 257
 
 
-# minimal drivers to reduce flash usage
-include ../include/minimal.inc
-define HAL_SPRAYER_ENABLED 0
-define AP_BATTERY_SMBUS_ENABLED 0

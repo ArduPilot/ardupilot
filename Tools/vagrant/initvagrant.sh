@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 echo "---------- $0 start ----------"
 
 # this script is run by the root user in the virtual machine
@@ -22,9 +22,15 @@ echo USING VAGRANT_USER:$VAGRANT_USER
 
 cd /home/$VAGRANT_USER
 
+IS_BENTO=0
+if [ -e /etc/update-motd.d/99-bento ]; then
+    IS_BENTO=1
+fi
 
-# artful rootfs is 2GB without resize:
-sudo resize2fs /dev/sda1
+# artful rootfs is 2GB without resize.  Do not resize if using Bento:
+if [ ! $IS_BENTO ]; then
+    sudo resize2fs /dev/sda1
+fi
 
 echo "calling pre-reqs script..."
 sudo -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
@@ -42,10 +48,14 @@ sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER
 perl -pe 's/kernel.yama.ptrace_scope = ./kernel.yama.ptrace_scope = 0/' -i /etc/sysctl.d/10-ptrace.conf
 echo 0 > /proc/sys/kernel/yama/ptrace_scope
 
-# build JSB sim
-apt-get install -y libtool automake autoconf libexpat1-dev cmake
-#  libtool-bin
-sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
+RELEASE_CODENAME=$(lsb_release -c -s)
+
+if [ ${RELEASE_CODENAME} != 'bionic' ]; then
+    # build JSB sim
+    apt-get install -y libtool automake autoconf libexpat1-dev cmake
+    #  libtool-bin
+    sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
+fi
 
 # adjust environment for every login shell:
 DOT_PROFILE=/home/$VAGRANT_USER/.profile
@@ -60,8 +70,6 @@ echo "source $BASHRC_GIT" |
 
 # link a half-way decent .mavinit.scr into place:
 sudo --login -u $VAGRANT_USER ln -sf /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
-
-RELEASE_CODENAME=$(lsb_release -c -s)
 
 # no multipath available, stop mutlipathd complaining about lack of data:
 if [ ${RELEASE_CODENAME} == 'jammy' ]; then

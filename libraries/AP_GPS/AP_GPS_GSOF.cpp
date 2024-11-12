@@ -17,12 +17,20 @@
 //  Trimble GPS driver for ArduPilot.
 //  Code by Michael Oborne
 //
-
+//  Usage in SITL with hardware for debugging: 
+//    sim_vehicle.py -v Plane -A "--serial3=uart:/dev/ttyUSB0" --console --map -DG
+//    param set GPS1_TYPE 11 // GSOF
+//    param set SERIAL3_PROTOCOL 5 // GPS
+//
+//  Pure SITL usage
+//     param set SIM_GPS_TYPE 11 // GSOF
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_GPS.h"
 #include "AP_GPS_GSOF.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_HAL/utility/sparse-endian.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_GPS_GSOF_ENABLED
 
@@ -42,18 +50,26 @@ do {                                            \
 # define Debug(fmt, args ...)
 #endif
 
-AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
+AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps,
+                         AP_GPS::Params &_params,
+                         AP_GPS::GPS_State &_state,
                          AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
+    AP_GPS_Backend(_gps, _params, _state, _port)
 {
-    gsof_msg.gsof_state = gsof_msg_parser_t::STARTTX;
+    // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
+    static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
 
-    // baud request for port 0
-    requestBaud(0);
-    // baud request for port 3
-    requestBaud(3);
+    constexpr uint8_t default_com_port = static_cast<uint8_t>(HW_Port::COM2);
+    params.com_port.set_default(default_com_port);
+    const auto com_port = params.com_port;
+    if (!validate_com_port(com_port)) {
+        // The user parameter for COM port is not a valid GSOF port
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "GSOF instance %d has invalid COM port setting of %d", state.instance, (unsigned)com_port);
+        return;
+    }
+    requestBaud(static_cast<HW_Port>(unsigned(com_port)));
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
 }
 
@@ -62,12 +78,16 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_GSOF::read(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
+        const auto com_port = params.com_port.get();
+        if (!validate_com_port(com_port)) {
+            // The user parameter for COM port is not a valid GSOF port
+            return false;
+        }
         if (now > gsofmsg_time) {
-            requestGSOF(gsofmsgreq[gsofmsgreq_index], 0);
-            requestGSOF(gsofmsgreq[gsofmsgreq_index], 3);
+            requestGSOF(gsofmsgreq[gsofmsgreq_index], static_cast<HW_Port>(com_port), Output_Rate::FREQ_10_HZ);
             gsofmsg_time = now + 110;
             gsofmsgreq_index++;
         }
@@ -75,78 +95,31 @@ AP_GPS_GSOF::read(void)
 
     bool ret = false;
     while (port->available() > 0) {
-        uint8_t temp = port->read();
+        const uint8_t temp = port->read();
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&temp, 1);
 #endif
-        ret |= parse(temp);
+        const int n_gsof_received = parse(temp, ARRAY_SIZE(gsofmsgreq));
+        if(n_gsof_received == UNEXPECTED_NUM_GSOF_PACKETS) {
+            state.status = AP_GPS::NO_FIX;
+            continue;
+        }
+        const bool got_expected_packets = n_gsof_received == ARRAY_SIZE(gsofmsgreq);
+        ret |= got_expected_packets;
+    }
+    if (ret) {
+        pack_state_data();
     }
 
     return ret;
 }
 
-bool
-AP_GPS_GSOF::parse(uint8_t temp)
-{
-    switch (gsof_msg.gsof_state)
-    {
-    default:
-    case gsof_msg_parser_t::STARTTX:
-        if (temp == GSOF_STX)
-        {
-            gsof_msg.starttx = temp;
-            gsof_msg.gsof_state = gsof_msg_parser_t::STATUS;
-            gsof_msg.read = 0;
-            gsof_msg.checksumcalc = 0;
-        }
-        break;
-    case gsof_msg_parser_t::STATUS:
-        gsof_msg.status = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::PACKETTYPE;
-        gsof_msg.checksumcalc += temp;
-        break;
-    case gsof_msg_parser_t::PACKETTYPE:
-        gsof_msg.packettype = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::LENGTH;
-        gsof_msg.checksumcalc += temp;
-        break;
-    case gsof_msg_parser_t::LENGTH:
-        gsof_msg.length = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::DATA;
-        gsof_msg.checksumcalc += temp;
-        break;
-    case gsof_msg_parser_t::DATA:
-        gsof_msg.data[gsof_msg.read] = temp;
-        gsof_msg.read++;
-        gsof_msg.checksumcalc += temp;
-        if (gsof_msg.read >= gsof_msg.length)
-        {
-            gsof_msg.gsof_state = gsof_msg_parser_t::CHECKSUM;
-        }
-        break;
-    case gsof_msg_parser_t::CHECKSUM:
-        gsof_msg.checksum = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::ENDTX;
-        if (gsof_msg.checksum == gsof_msg.checksumcalc)
-        {
-            return process_message();
-        }
-        break;
-    case gsof_msg_parser_t::ENDTX:
-        gsof_msg.endtx = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::STARTTX;
-        break;
-    }
-
-    return false;
-}
-
 void
-AP_GPS_GSOF::requestBaud(uint8_t portindex)
+AP_GPS_GSOF::requestBaud(const HW_Port portindex)
 {
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
-                          0x02, 0x04, portindex, 0x07, 0x00,0x00, // serial port baud format
+                          0x02, 0x04, static_cast<uint8_t>(portindex), 0x07, 0x00,0x00, // serial port baud format
                           0x00,0x03
                          }; // checksum
 
@@ -163,16 +136,15 @@ AP_GPS_GSOF::requestBaud(uint8_t portindex)
 }
 
 void
-AP_GPS_GSOF::requestGSOF(uint8_t messagetype, uint8_t portindex)
+AP_GPS_GSOF::requestGSOF(const uint8_t messageType, const HW_Port portIndex, const Output_Rate rateHz)
 {
     uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
                           0x03,0x00,0x01,0x00, // file control information block
-                          0x07,0x06,0x0a,portindex,0x01,0x00,0x01,0x00, // output message record
+                          0x07,0x06,0x0a,static_cast<uint8_t>(portIndex),static_cast<uint8_t>(rateHz),0x00,messageType,0x00, // output message record
                           0x00,0x03
                          }; // checksum
 
     buffer[4] = packetcount++;
-    buffer[17] = messagetype;
 
     uint8_t checksum = 0;
     for (uint8_t a = 1; a < (sizeof(buffer) - 1); a++) {
@@ -184,168 +156,61 @@ AP_GPS_GSOF::requestGSOF(uint8_t messagetype, uint8_t portindex)
     port->write((const uint8_t*)buffer, sizeof(buffer));
 }
 
-double
-AP_GPS_GSOF::SwapDouble(uint8_t* src, uint32_t pos)
-{
-    union {
-        double d;
-        char bytes[sizeof(double)];
-    } doubleu;
-    doubleu.bytes[0] = src[pos + 7];
-    doubleu.bytes[1] = src[pos + 6];
-    doubleu.bytes[2] = src[pos + 5];
-    doubleu.bytes[3] = src[pos + 4];
-    doubleu.bytes[4] = src[pos + 3];
-    doubleu.bytes[5] = src[pos + 2];
-    doubleu.bytes[6] = src[pos + 1];
-    doubleu.bytes[7] = src[pos + 0];
-
-    return doubleu.d;
-}
-
-float
-AP_GPS_GSOF::SwapFloat(uint8_t* src, uint32_t pos)
-{
-    union {
-        float f;
-        char bytes[sizeof(float)];
-    } floatu;
-    floatu.bytes[0] = src[pos + 3];
-    floatu.bytes[1] = src[pos + 2];
-    floatu.bytes[2] = src[pos + 1];
-    floatu.bytes[3] = src[pos + 0];
-
-    return floatu.f;
-}
-
-uint32_t
-AP_GPS_GSOF::SwapUint32(uint8_t* src, uint32_t pos)
-{
-    union {
-        uint32_t u;
-        char bytes[sizeof(uint32_t)];
-    } uint32u;
-    uint32u.bytes[0] = src[pos + 3];
-    uint32u.bytes[1] = src[pos + 2];
-    uint32u.bytes[2] = src[pos + 1];
-    uint32u.bytes[3] = src[pos + 0];
-
-    return uint32u.u;
-}
-
-uint16_t
-AP_GPS_GSOF::SwapUint16(uint8_t* src, uint32_t pos)
-{
-    union {
-        uint16_t u;
-        char bytes[sizeof(uint16_t)];
-    } uint16u;
-    uint16u.bytes[0] = src[pos + 1];
-    uint16u.bytes[1] = src[pos + 0];
-
-    return uint16u.u;
-}
-
 bool
-AP_GPS_GSOF::process_message(void)
+AP_GPS_GSOF::validate_com_port(const uint8_t com_port) const
 {
-    //http://www.trimble.com/OEM_ReceiverHelp/V4.81/en/default.html#welcome.html
-
-    if (gsof_msg.packettype == 0x40) { // GSOF
-#if gsof_DEBUGGING
-        uint8_t trans_number = gsof_msg.data[0];
-        uint8_t pageidx = gsof_msg.data[1];
-        uint8_t maxpageidx = gsof_msg.data[2];
-
-        Debug("GSOF page: %u of %u (trans_number=%u)",
-              pageidx, maxpageidx, trans_number);
-#endif
-
-        int valid = 0;
-
-        // want 1 2 8 9 12
-        for (uint32_t a = 3; a < gsof_msg.length; a++)
-        {
-            uint8_t output_type = gsof_msg.data[a];
-            a++;
-            uint8_t output_length = gsof_msg.data[a];
-            a++;
-            //Debug("GSOF type: " + output_type + " len: " + output_length);
-
-            if (output_type == 1) // pos time
-            {
-                state.time_week_ms = SwapUint32(gsof_msg.data, a);
-                state.time_week = SwapUint16(gsof_msg.data, a + 4);
-                state.num_sats = gsof_msg.data[a + 6];
-                uint8_t posf1 = gsof_msg.data[a + 7];
-                uint8_t posf2 = gsof_msg.data[a + 8];
-
-                //Debug("POSTIME: " + posf1 + " " + posf2);
-                
-                if ((posf1 & 1)) { // New position
-                    state.status = AP_GPS::GPS_OK_FIX_3D;
-                    if ((posf2 & 1)) { // Differential position 
-                        state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
-                        if (posf2 & 2) { // Differential position method
-                            if (posf2 & 4) {// Differential position method
-                                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
-                            } else {
-                                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
-                            }
-                        }
-                    }
-                } else {
-                    state.status = AP_GPS::NO_FIX;
-                }
-                valid++;
-            }
-            else if (output_type == 2) // position
-            {
-                state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a)) * (double)1e7);
-                state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a + 8)) * (double)1e7);
-                state.location.alt = (int32_t)(SwapDouble(gsof_msg.data, a + 16) * 100);
-
-                state.last_gps_time_ms = AP_HAL::millis();
-
-                valid++;
-            }
-            else if (output_type == 8) // velocity
-            {
-                uint8_t vflag = gsof_msg.data[a];
-                if ((vflag & 1) == 1)
-                {
-                    state.ground_speed = SwapFloat(gsof_msg.data, a + 1);
-                    state.ground_course = degrees(SwapFloat(gsof_msg.data, a + 5));
-                    fill_3d_velocity();
-                    state.velocity.z = -SwapFloat(gsof_msg.data, a + 9);
-                    state.have_vertical_velocity = true;
-                }
-                valid++;
-            }
-            else if (output_type == 9) //dop
-            {
-                state.hdop = (uint16_t)(SwapFloat(gsof_msg.data, a + 4) * 100);
-                valid++;
-            }
-            else if (output_type == 12) // position sigma
-            {
-                state.horizontal_accuracy = (SwapFloat(gsof_msg.data, a + 4) + SwapFloat(gsof_msg.data, a + 8)) / 2;
-                state.vertical_accuracy = SwapFloat(gsof_msg.data, a + 16);
-                state.have_horizontal_accuracy = true;
-                state.have_vertical_accuracy = true;
-                valid++;
-            }
-
-            a += output_length-1u;
-        }
-
-        if (valid == 5) {
+    switch(com_port) {
+        case static_cast<uint8_t>(HW_Port::COM1):
+        case static_cast<uint8_t>(HW_Port::COM2):
             return true;
-        } else {
-            state.status = AP_GPS::NO_FIX;
+        default:
+            return false;
+    }
+}
+
+void
+AP_GPS_GSOF::pack_state_data() 
+{
+    // TODO should we pack time data if there is no fix?
+    state.time_week_ms = pos_time.time_week_ms;
+    state.time_week = pos_time.time_week;
+    state.num_sats = pos_time.num_sats;
+
+    if ((pos_time.pos_flags1 & 1)) { // New position
+        state.status = AP_GPS::GPS_OK_FIX_3D;
+        if ((pos_time.pos_flags2 & 1)) { // Differential position 
+            state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+            if (pos_time.pos_flags2 & 2) { // Differential position method
+                if (pos_time.pos_flags2 & 4) {// Differential position method
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                } else {
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                }
+            }
         }
+    } else {
+        state.status = AP_GPS::NO_FIX;
     }
 
-    return false;
+    state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * position.latitude_rad * (double)1e7);
+    state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * position.longitude_rad * (double)1e7);
+    state.location.alt = (int32_t)(position.altitude * 100);
+    state.last_gps_time_ms = AP_HAL::millis();
+
+    if ((vel.velocity_flags & 1) == 1) {
+        state.ground_speed = vel.horizontal_velocity;
+        state.ground_course = wrap_360(degrees(vel.heading));
+        fill_3d_velocity();
+        state.velocity.z = -vel.vertical_velocity;
+        state.have_vertical_velocity = true;
+    }
+
+    state.hdop = (uint16_t)(dop.hdop * 100);
+    state.vdop = (uint16_t)(dop.vdop * 100);
+
+    state.horizontal_accuracy = (pos_sigma.sigma_east + pos_sigma.sigma_north) / 2;
+    state.vertical_accuracy = pos_sigma.sigma_up;
+    state.have_horizontal_accuracy = true;
+    state.have_vertical_accuracy = true;
 }
 #endif

@@ -14,11 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_AIRSPEED_SDP3X_ENABLED
-#define AP_AIRSPEED_SDP3X_ENABLED AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_SDP3X_ENABLED
 
@@ -27,7 +23,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
@@ -42,8 +37,8 @@
 class AP_Airspeed_SDP3X : public AP_Airspeed_Backend
 {
 public:
-    AP_Airspeed_SDP3X(AP_Airspeed &frontend, uint8_t _instance);
-    ~AP_Airspeed_SDP3X(void) {}
+
+    using AP_Airspeed_Backend::AP_Airspeed_Backend;
 
     // probe and initialise the sensor
     bool init() override;

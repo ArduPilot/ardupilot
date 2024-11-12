@@ -350,7 +350,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
@@ -458,7 +458,7 @@ void system_halt_hook(void)
 #ifdef HAL_GPIO_PIN_FAULT
     // optionally print the message on a fault pin
     while (true) {
-        fault_printf("PANIC:%s\n", ch.dbg.panic_msg);
+        fault_printf("PANIC:%s\n", currcore->dbg.panic_msg);
         fault_printf("RA0:0x%08x\n", __builtin_return_address(0));
     }
 #endif
@@ -581,3 +581,31 @@ bool check_limit_flash_1M(void)
     return false;
 }
 #endif
+
+
+#if defined(DUAL_CORE)
+void stm32_disable_cm4_core() {
+    // Turn off second core for now
+    if ((FLASH->OPTSR_CUR & FLASH_OPTSR_BCM4)) {
+        //unlock flash
+        if (FLASH->OPTCR & FLASH_OPTCR_OPTLOCK) {
+            /* Unlock sequence */
+            FLASH->OPTKEYR = 0x08192A3B;
+            FLASH->OPTKEYR = 0x4C5D6E7F;
+        }
+        while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        }
+        // disable core boot
+        FLASH->OPTSR_PRG &= ~FLASH_OPTSR_BCM4;
+        // start programming
+        FLASH->OPTCR |= FLASH_OPTCR_OPTSTART;
+        // wait for completion by checking busy bit
+        while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        }
+        // lock flash
+        FLASH->OPTCR |= FLASH_OPTCR_OPTLOCK;
+        while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        }
+    }
+}
+#endif // DUAL_CORE

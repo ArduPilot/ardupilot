@@ -18,9 +18,12 @@
 #include <AP_HAL/AP_HAL.h>
 #include "HAL_ESP32_Namespace.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #define ESP32_SCHEDULER_MAX_TIMER_PROCS 10
 #define ESP32_SCHEDULER_MAX_IO_PROCS 10
-
+#define TWDT_TIMEOUT_MS 3000
 
 /* Scheduler implementation: */
 class ESP32::Scheduler : public AP_HAL::Scheduler
@@ -28,6 +31,7 @@ class ESP32::Scheduler : public AP_HAL::Scheduler
 
 public:
     Scheduler();
+    ~Scheduler();
     /* AP_HAL::Scheduler methods */
     void     init() override;
     void     set_callbacks(AP_HAL::HAL::Callbacks *cb)
@@ -46,6 +50,8 @@ public:
     bool     is_system_initialized() override;
 
     void     print_stats(void) ;
+    void     print_main_loop_rate(void);
+
     uint16_t get_loop_rate_hz(void);
     AP_Int16 _active_loop_rate_hz;
     AP_Int16 _loop_rate_hz;
@@ -53,26 +59,42 @@ public:
     static void thread_create_trampoline(void *ctx);
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
 
-    static const int SPI_PRIORITY = 40; // if your primary imu is spi, this should be above the i2c value, spi is better.
-    static const int MAIN_PRIO = 10;
-    static const int I2C_PRIORITY = 5; // if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
+    /*static const int SPI_PRIORITY = 40; // if your primary imu is spi, this should be above the i2c value, spi is better.
+    static const int MAIN_PRIO = 15;
+    static const int I2C_PRIORITY = 8; // if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
     static const int TIMER_PRIO = 15;
     static const int RCIN_PRIO = 15;
-    static const int RCOUT_PRIO = 10;
-    static const int WIFI_PRIO = 7;
-    static const int UART_PRIO = 6;
-    static const int IO_PRIO = 5;
+    static const int RCOUT_PRIO = 15;
+    static const int WIFI_PRIO = 10;
+    static const int UART_PRIO = 8;
+    static const int IO_PRIO = 6;
+    static const int STORAGE_PRIO = 6; */
+
+      // configMAX_PRIORITIES=25
+
+
+    static const int SPI_PRIORITY = 24; //      if your primary imu is spi, this should be above the i2c value, spi is better.
+    static const int MAIN_PRIO    = 24; //	cpu0: we want scheduler running at full tilt.
+    static const int I2C_PRIORITY = 5;  //      if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
+    static const int TIMER_PRIO   = 23; //dont make 24. a low priority mere might cause wifi thruput to suffer
+    static const int RCIN_PRIO    = 5;
+    static const int RCOUT_PRIO   = 10;
+    static const int WIFI_PRIO1   = 20; //cpu1:
+    static const int WIFI_PRIO2   = 12; //cpu1:
+    static const int UART_PRIO    = 23; //dont make 24, scheduler suffers a bit. cpu1: a low priority mere might cause wifi thruput to suffer, as wifi gets passed its data frim the uart subsustem in _writebuf/_readbuf
+    static const int IO_PRIO      = 5;
     static const int STORAGE_PRIO = 4;
 
-    static const int TIMER_SS = 4096;
-    static const int MAIN_SS = 4096;
-    static const int RCIN_SS = 4096;
-    static const int RCOUT_SS = 4096;
-    static const int WIFI_SS = 4096;
-    static const int UART_SS = 1024;
-    static const int DEVICE_SS = 4096;
-    static const int IO_SS = 4096;
-    static const int STORAGE_SS = 4096;
+    static const int TIMER_SS 	  = 4096;
+    static const int MAIN_SS      = 8192;
+    static const int RCIN_SS      = 4096;
+    static const int RCOUT_SS     = 4096;
+    static const int WIFI_SS1     = 6192;
+    static const int WIFI_SS2     = 6192;
+    static const int UART_SS      = 2048;
+    static const int DEVICE_SS    = 4096;
+    static const int IO_SS        = 4096;
+    static const int STORAGE_SS   = 8192;
 
 private:
     AP_HAL::HAL::Callbacks *callbacks;
@@ -86,16 +108,14 @@ private:
 
     static bool _initialized;
 
-
-
-    void *_main_task_handle;
-    void *_timer_task_handle;
-    void *_rcin_task_handle;
-    void *_rcout_task_handle;
-    void *_uart_task_handle;
-    void *_io_task_handle;
-    void *test_task_handle;
-    void *_storage_task_handle;
+    tskTaskControlBlock* _main_task_handle;
+    tskTaskControlBlock* _timer_task_handle;
+    tskTaskControlBlock* _rcin_task_handle;
+    tskTaskControlBlock* _rcout_task_handle;
+    tskTaskControlBlock* _uart_task_handle;
+    tskTaskControlBlock* _io_task_handle;
+    tskTaskControlBlock* test_task_handle;
+    tskTaskControlBlock* _storage_task_handle;
 
     static void _main_thread(void *arg);
     static void _timer_thread(void *arg);
@@ -107,10 +127,11 @@ private:
 
     static void set_position(void* arg);
 
-
     static void _print_profile(void* arg);
 
     static void test_esc(void* arg);
+
+    static void wdt_init(uint32_t timeout, uint32_t core_mask);
 
     bool _in_timer_proc;
     void _run_timers();

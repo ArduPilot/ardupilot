@@ -1,5 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_IRLOCK_ENABLED
+
 #include "AC_PrecLand_IRLock.h"
+#include <AP_HAL/AP_HAL.h>
 
 // Constructor
 AC_PrecLand_IRLock::AC_PrecLand_IRLock(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
@@ -31,22 +35,4 @@ void AC_PrecLand_IRLock::update()
     _have_los_meas = _have_los_meas && AP_HAL::millis()-_los_meas_time_ms <= 1000;
 }
 
-// provides a unit vector towards the target in body frame
-//  returns same as have_los_meas()
-bool AC_PrecLand_IRLock::get_los_body(Vector3f& ret) {
-    if (have_los_meas()) {
-        ret = _los_meas_body;
-        return true;
-    }
-    return false;
-}
-
-// returns system time in milliseconds of last los measurement
-uint32_t AC_PrecLand_IRLock::los_meas_time_ms() {
-    return _los_meas_time_ms;
-}
-
-// return true if there is a valid los measurement available
-bool AC_PrecLand_IRLock::have_los_meas() {
-    return _have_los_meas;
-}
+#endif // AC_PRECLAND_IRLOCK_ENABLED

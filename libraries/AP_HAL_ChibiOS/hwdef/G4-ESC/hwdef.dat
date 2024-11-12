@@ -100,8 +100,6 @@ MAIN_STACK 0x300
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0xA00
 
-define HAL_DISABLE_LOOP_DELAY
-
 # enable CAN support
 PB5 CAN2_RX CAN2
 PB6 CAN2_TX CAN2
@@ -132,10 +130,6 @@ define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 0x200
 
-
-define HAL_NO_MONITOR_THREAD
-
-
 define HAL_DEVICE_THREAD_STACK 0x200
 define STORAGE_THD_WA_SIZE 512
 define IO_THD_WA_SIZE      512
@@ -149,7 +143,8 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 512
 env ROMFS_UNCOMPRESSED True
 
 
-define CAN_APP_NODE_NAME "org.ardupilot.G4-ESC"
-
 # don't share any DMA channels (there are enough for everyone)
 DMA_NOSHARE *
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1
+define HAL_RCIN_THREAD_ENABLED 1

@@ -23,9 +23,6 @@ FLASH_RESERVE_START_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART6 USART1 UART4 UART8 UART7 USART3 OTG2
 
-# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
-
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -108,9 +105,7 @@ define HAL_I2C_INTERNAL_MASK 1
 # enable pins
 PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
+# start peripheral power on
 PD11 VDD_5V_HIPOWER_EN OUTPUT HIGH
 PG4  VDD_5V_PERIPH_EN OUTPUT HIGH
 
@@ -233,7 +228,7 @@ SPIDEV bmi088_g       SPI4 DEVID3  BMI088_G_CS     MODE3  10*MHZ 10*MHZ
 SPIDEV ms5611_imu     SPI4 DEVID1  MS5611_IMU_CS   MODE3  20*MHZ 20*MHZ
 SPIDEV ms5611_board   SPI6 DEVID1  MS5611_BOARD_CS MODE3  20*MHZ 20*MHZ
 SPIDEV ramtron        SPI2 DEVID1  FRAM_CS         MODE3  8*MHZ  8*MHZ
-SPIDEV rm3100         SPI2 DEVID2  RM3100_CS       MODE3  2*MHZ  8*MHZ
+SPIDEV rm3100         SPI2 DEVID2  RM3100_CS       MODE3  1*MHZ  1*MHZ
 
 #Mount icm20649 or icm20689 on SPI6
 SPIDEV icm20649       SPI6 DEVID2  ICM20649_CS       MODE3  2*MHZ  8*MHZ
@@ -278,15 +273,12 @@ PI5 LED_R1 OUTPUT OPENDRAIN HIGH GPIO(0)
 PI6 LED_G1 OUTPUT OPENDRAIN LOW  GPIO(1)
 PI7 LED_B1 OUTPUT OPENDRAIN HIGH GPIO(2)
 
-define HAL_GPIO_A_LED_PIN 0
-define HAL_GPIO_B_LED_PIN 1
-define HAL_GPIO_C_LED_PIN 2
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 2
 
 # use pixracer style 3-LED indicators
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 32768
@@ -300,8 +292,7 @@ PE10 SAFETY_IN INPUT PULLDOWN
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 DMA_PRIORITY  ADC* SPI1* TIM*UP*
 DMA_NOSHARE  SPI1* TIM*UP*
+
+define DEFAULT_NTF_LED_TYPES 231

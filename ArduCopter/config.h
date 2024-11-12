@@ -27,7 +27,9 @@
 /// change in your local copy of APM_Config.h.
 ///
 #include "APM_Config.h"
-
+#include <AP_ADSB/AP_ADSB_config.h>
+#include <AP_Follow/AP_Follow_config.h>
+#include <AC_Avoidance/AC_Avoidance_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -68,36 +70,12 @@
 // Rangefinder
 //
 
-#ifndef RANGEFINDER_ENABLED
- # define RANGEFINDER_ENABLED ENABLED
-#endif
-
-#ifndef RANGEFINDER_HEALTH_MAX
- # define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
-#endif
-
-#ifndef RANGEFINDER_TIMEOUT_MS
-# define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
-#endif
-
 #ifndef RANGEFINDER_FILT_DEFAULT
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
-#endif
-
-#ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
- # define RANGEFINDER_TILT_CORRECTION ENABLED
-#endif
-
-#ifndef RANGEFINDER_GLITCH_ALT_CM
- # define RANGEFINDER_GLITCH_ALT_CM  200      // amount of rangefinder change to be considered a glitch
-#endif
-
-#ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
- # define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -132,142 +110,138 @@
  # define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
 #endif
 
+#ifndef FS_EKF_FILT_DEFAULT
+# define FS_EKF_FILT_DEFAULT     5.0f    // frequency cutoff of EKF variance filters
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 //  Auto Tuning
 #ifndef AUTOTUNE_ENABLED
- # define AUTOTUNE_ENABLED  ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Precision Landing with companion computer or IRLock sensor
-#ifndef PRECISION_LANDING
- # define PRECISION_LANDING ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Parachute release
-#ifndef PARACHUTE
- # define PARACHUTE HAL_PARACHUTE_ENABLED
+ # define AUTOTUNE_ENABLED  1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
-#ifndef NAV_GUIDED
- # define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
+#ifndef AC_NAV_GUIDED
+ # define AC_NAV_GUIDED    1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Acro - fly vehicle in acrobatic mode
 #ifndef MODE_ACRO_ENABLED
-# define MODE_ACRO_ENABLED ENABLED
+# define MODE_ACRO_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
 #ifndef MODE_AUTO_ENABLED
-# define MODE_AUTO_ENABLED ENABLED
+# define MODE_AUTO_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Brake mode - bring vehicle to stop
 #ifndef MODE_BRAKE_ENABLED
-# define MODE_BRAKE_ENABLED ENABLED
+# define MODE_BRAKE_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Circle - fly vehicle around a central point
 #ifndef MODE_CIRCLE_ENABLED
-# define MODE_CIRCLE_ENABLED ENABLED
+# define MODE_CIRCLE_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Drift - fly vehicle in altitude-held, coordinated-turn mode
 #ifndef MODE_DRIFT_ENABLED
-# define MODE_DRIFT_ENABLED ENABLED
+# define MODE_DRIFT_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // flip - fly vehicle in flip in pitch and roll direction mode
 #ifndef MODE_FLIP_ENABLED
-# define MODE_FLIP_ENABLED ENABLED
+# define MODE_FLIP_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Follow - follow another vehicle or GCS
 #ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
+#if AP_FOLLOW_ENABLED && AP_AVOIDANCE_ENABLED
+#define MODE_FOLLOW_ENABLED 1
+#else
+#define MODE_FOLLOW_ENABLED 0
+#endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Guided mode - control vehicle's position or angles from GCS
 #ifndef MODE_GUIDED_ENABLED
-# define MODE_GUIDED_ENABLED ENABLED
+# define MODE_GUIDED_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_GUIDED_NOGPS_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Loiter mode - allows vehicle to hold global position
 #ifndef MODE_LOITER_ENABLED
-# define MODE_LOITER_ENABLED ENABLED
+# define MODE_LOITER_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Position Hold - enable holding of global position
 #ifndef MODE_POSHOLD_ENABLED
-# define MODE_POSHOLD_ENABLED ENABLED
+# define MODE_POSHOLD_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // RTL - Return To Launch
 #ifndef MODE_RTL_ENABLED
-# define MODE_RTL_ENABLED ENABLED
+# define MODE_RTL_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
 #ifndef MODE_SMARTRTL_ENABLED
-# define MODE_SMARTRTL_ENABLED ENABLED
+# define MODE_SMARTRTL_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Sport - fly vehicle in rate-controlled (earth-frame) mode
 #ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED DISABLED
+# define MODE_SPORT_ENABLED 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // System ID - conduct system identification tests on vehicle
 #ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_SYSTEMID_ENABLED HAL_LOGGING_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Throw - fly vehicle after throwing it in the air
 #ifndef MODE_THROW_ENABLED
-# define MODE_THROW_ENABLED ENABLED
+# define MODE_THROW_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // ZigZag - allow vehicle to fly in a zigzag manner with predefined point A B
 #ifndef MODE_ZIGZAG_ENABLED
-# define MODE_ZIGZAG_ENABLED !HAL_MINIMIZE_FEATURES
+# define MODE_ZIGZAG_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Turtle - allow vehicle to be flipped over after a crash
 #ifndef MODE_TURTLE_ENABLED
-# define MODE_TURTLE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(DISABLE_DSHOT) && FRAME_CONFIG != HELI_FRAME
+# define MODE_TURTLE_ENABLED HAL_DSHOT_ENABLED && FRAME_CONFIG != HELI_FRAME
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Flowhold - use optical flow to hover in place
 #ifndef MODE_FLOWHOLD_ENABLED
-# define MODE_FLOWHOLD_ENABLED !HAL_MINIMIZE_FEATURES && AP_OPTICALFLOW_ENABLED
+# define MODE_FLOWHOLD_ENABLED AP_OPTICALFLOW_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -275,30 +249,25 @@
 //////////////////////////////////////////////////////////////////////////////
 // Weathervane - allow vehicle to yaw into wind
 #ifndef WEATHERVANE_ENABLED
-# define WEATHERVANE_ENABLED !HAL_MINIMIZE_FEATURES
+# define WEATHERVANE_ENABLED 1
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
+#ifndef MODE_AUTOROTATE_ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #if FRAME_CONFIG == HELI_FRAME
         #ifndef MODE_AUTOROTATE_ENABLED
-        # define MODE_AUTOROTATE_ENABLED !HAL_MINIMIZE_FEATURES
+        # define MODE_AUTOROTATE_ENABLED 1
         #endif
     #else
-        # define MODE_AUTOROTATE_ENABLED DISABLED
+        # define MODE_AUTOROTATE_ENABLED 0
     #endif
 #else
-    # define MODE_AUTOROTATE_ENABLED DISABLED
+    # define MODE_AUTOROTATE_ENABLED 0
 #endif
-
-//////////////////////////////////////////////////////////////////////////////
-
-// Beacon support - support for local positioning systems
-#ifndef BEACON_ENABLED
-# define BEACON_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -383,6 +352,9 @@
 #ifndef LAND_DETECTOR_ACCEL_MAX
 # define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
 #endif
+#ifndef LAND_DETECTOR_VEL_Z_MAX
+# define LAND_DETECTOR_VEL_Z_MAX              1.0f    // vehicle vertical velocity must be under 1m/s
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Flight mode definitions
@@ -435,15 +407,11 @@
 #endif
 
 #ifndef RTL_ALT_MIN
- # define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
+ # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
 #endif
 
 #ifndef RTL_CLIMB_MIN_DEFAULT
  # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
-#endif
-
-#ifndef RTL_ABS_MIN_CLIMB
- # define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
 #endif
 
 #ifndef RTL_CONE_SLOPE_DEFAULT
@@ -542,9 +510,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Logging control
 //
-#ifndef LOGGING_ENABLED
- # define LOGGING_ENABLED                ENABLED
-#endif
 
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK
@@ -569,16 +534,8 @@
 // Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
-#ifndef AC_AVOID_ENABLED
- #define AC_AVOID_ENABLED   ENABLED
-#endif
-
-#ifndef AC_OAPATHPLANNER_ENABLED
- #define AC_OAPATHPLANNER_ENABLED   !HAL_MINIMIZE_FEATURES
-#endif
-
-#if MODE_FOLLOW_ENABLED && !AC_AVOID_ENABLED
-  #error Follow Mode relies on AC_AVOID which is disabled
+#if MODE_FOLLOW_ENABLED && !AP_AVOIDANCE_ENABLED
+  #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
 #endif
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
@@ -618,7 +575,7 @@
 //
 
 #ifndef ADVANCED_FAILSAFE
-# define ADVANCED_FAILSAFE DISABLED
+# define ADVANCED_FAILSAFE 0
 #endif
 
 #ifndef CH_MODE_DEFAULT
@@ -626,19 +583,11 @@
 #endif
 
 #ifndef TOY_MODE_ENABLED
-#define TOY_MODE_ENABLED DISABLED
+#define TOY_MODE_ENABLED 0
 #endif
 
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
   #error Toy mode is not available on Helicopters
-#endif
-
-#ifndef STATS_ENABLED
- # define STATS_ENABLED ENABLED
-#endif
-
-#ifndef OSD_ENABLED
- #define OSD_ENABLED DISABLED
 #endif
 
 #ifndef HAL_FRAME_TYPE_DEFAULT
@@ -647,4 +596,12 @@
 
 #ifndef AC_CUSTOMCONTROL_MULTI_ENABLED
 #define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_CUSTOMCONTROL_ENABLED
+#endif
+
+#ifndef AC_PAYLOAD_PLACE_ENABLED
+#define AC_PAYLOAD_PLACE_ENABLED 1
+#endif
+
+#ifndef USER_PARAMS_ENABLED
+  #define USER_PARAMS_ENABLED 0
 #endif

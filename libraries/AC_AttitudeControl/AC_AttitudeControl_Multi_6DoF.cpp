@@ -1,3 +1,5 @@
+#include <AP_Scripting/AP_Scripting_config.h>
+
 #if AP_SCRIPTING_ENABLED
 
 #include "AC_AttitudeControl_Multi_6DoF.h"
@@ -5,7 +7,7 @@
 #include <AP_Math/AP_Math.h>
 
 // 6DoF control is extracted from the existing copter code by treating desired angles as thrust angles rather than vehicle attitude.
-// Vehicle attitude is then set separately, typically the vehicle would matain 0 roll and pitch.
+// Vehicle attitude is then set separately, typically the vehicle would maintain 0 roll and pitch.
 // rate commands result in the vehicle behaving as a ordinary copter.
 
 // run lowest level body-frame rate controller and send outputs to the motors
@@ -146,8 +148,7 @@ void AC_AttitudeControl_Multi_6DoF::input_angle_step_bf_roll_pitch_yaw(float rol
 
 // Command a Quaternion attitude with feedforward and smoothing
 // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
-// not used anywhere in current code, panic in SITL so this implementation is not overlooked
-void AC_AttitudeControl_Multi_6DoF::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target) {
+void AC_AttitudeControl_Multi_6DoF::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     AP_HAL::panic("input_quaternion not implemented AC_AttitudeControl_Multi_6DoF");
 #endif
@@ -155,7 +156,7 @@ void AC_AttitudeControl_Multi_6DoF::input_quaternion(Quaternion& attitude_desire
     _motors.set_lateral(0.0f);
     _motors.set_forward(0.0f);
 
-    AC_AttitudeControl_Multi::input_quaternion(attitude_desired_quat, ang_vel_target);
+    AC_AttitudeControl_Multi::input_quaternion(attitude_desired_quat, ang_vel_body);
 }
 
 

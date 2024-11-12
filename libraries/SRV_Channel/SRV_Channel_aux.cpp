@@ -20,6 +20,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if NUM_SERVO_CHANNELS == 0
 #pragma GCC diagnostic ignored "-Wtype-limits"
@@ -58,7 +59,27 @@ void SRV_Channel::output_ch(void)
                 // non-mapped rc passthrough
                 int16_t radio_in = c->get_radio_in();
                 if (passthrough_mapped) {
-                    radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                    if (rc().has_valid_input()) {
+                        switch (c->get_type()) {
+                        case RC_Channel::ControlType::ANGLE:
+                            radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                            break;
+                        case RC_Channel::ControlType::RANGE:
+                            // convert RC normalised input from -1 to +1 range to 0 to +1 and output as range
+                            radio_in = pwm_from_range((c->norm_input_ignore_trim() + 1.0) * 0.5 * 4500);
+                            break;
+                        }
+                    } else {
+                        // no valid input.  If we are in radio
+                        // failsafe then go to trim values (if
+                        // configured for this channel).  Otherwise
+                        // use the last-good value
+                        if ( ((1U<<passthrough_from) & SRV_Channels::get_rc_fs_mask()) && rc().in_rc_failsafe()) {
+                            radio_in = pwm_from_angle(0);
+                        } else {
+                            radio_in = previous_radio_in;
+                        }
+                    }
                 }
                 if (!ign_small_rcin_changes) {
                     output_pwm = radio_in;
@@ -119,6 +140,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_flap:
     case k_flap_auto:
     case k_egg_drop:
+    case k_lift_release:
         set_range(100);
         break;
     case k_heli_rsc:
@@ -369,6 +391,7 @@ SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t functi
     }
 }
 
+#if AP_RC_CHANNEL_ENABLED
 /*
   copy radio_in to radio_out for a given function
  */
@@ -409,6 +432,7 @@ SRV_Channels::copy_radio_in_out_mask(uint32_t mask)
     }
 
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 /*
   setup failsafe value for an auxiliary function type to a Limit
@@ -459,6 +483,7 @@ SRV_Channels::set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_C
         if (c.function == function) {
             uint16_t pwm = c.get_limit_pwm(limit);
             c.set_output_pwm(pwm);
+#if AP_RC_CHANNEL_ENABLED
             if (c.function == SRV_Channel::k_manual) {
                 RC_Channel *cin = rc().channel(c.ch_num);
                 if (cin != nullptr) {
@@ -467,6 +492,7 @@ SRV_Channels::set_output_limit(SRV_Channel::Aux_servo_function_t function, SRV_C
                     cin->set_radio_in(pwm);
                 }
             }
+#endif
         }
     }
 }
@@ -540,27 +566,33 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
 // find first channel that a function is assigned to
 bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan)
 {
-    if (!function_assigned(function)) {
+    // Must have populated channel masks
+    if (!initialised) {
+        update_aux_servo_function();
+    }
+
+    // Make sure function is valid
+    if (!SRV_Channel::valid_function(function)) {
         return false;
     }
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            chan = channels[i].ch_num;
-            return true;
-        }
+
+    // Get the index of the first set bit, returns 0 if no bits are set
+    const int first_chan = __builtin_ffs(functions[function].channel_mask);
+    if (first_chan == 0) {
+        return false;
     }
-    return false;
+
+    // Convert to 0 indexed
+    chan = first_chan - 1;
+    return true;
 }
 
 /*
   get a pointer to first auxiliary channel for a channel function
 */
-SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan)
+SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function)
 {
     uint8_t chan;
-    if (default_chan >= 0) {
-        set_aux_channel_default(function, default_chan);
-    }
     if (!find_channel(function, chan)) {
         return nullptr;
     }
@@ -772,7 +804,7 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Aux_servo_function_t function, flo
     }
 
     // add new item
-    slew_list *new_slew = new slew_list(function);
+    slew_list *new_slew = NEW_NOTHROW slew_list(function);
     if (new_slew == nullptr) {
         return;
     }
@@ -809,6 +841,31 @@ void SRV_Channels::set_output_min_max(SRV_Channel::Aux_servo_function_t function
         if (channels[i].function == function) {
             channels[i].set_output_min(min_pwm);
             channels[i].set_output_max(max_pwm);
+        }
+    }
+}
+
+// set MIN/MAX parameter defaults for a function
+void SRV_Channels::set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            channels[i].servo_min.set_default(min_pwm);
+            channels[i].servo_max.set_default(max_pwm);
+        }
+    }
+}
+
+// Save MIN/MAX/REVERSED parameters for a function
+void SRV_Channels::save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm)
+{
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if (channels[i].function == function) {
+            // If min is larger than max swap and set reversed
+            const bool reversed = min_pwm > max_pwm;
+            channels[i].servo_min.set_and_save(reversed ? max_pwm : min_pwm);
+            channels[i].servo_max.set_and_save(reversed ? min_pwm : max_pwm);
+            channels[i].reversed.set_and_save(reversed ? 1 : 0);
         }
     }
 }

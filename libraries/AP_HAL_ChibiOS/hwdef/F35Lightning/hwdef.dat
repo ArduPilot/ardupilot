@@ -70,8 +70,9 @@ define BOARD_RSSI_ANA_PIN 13
 #PA4 VDD_5V_SENS ADC1 SCALE(2)
 
 # LED
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
 PC10 LED OUTPUT HIGH GPIO(57)
-define HAL_GPIO_A_LED_PIN 57
+define AP_NOTIFY_GPIO_LED_1_PIN 57
 
 # SPI
 PA5 SPI1_SCK SPI1
@@ -104,15 +105,14 @@ PC4 MPU9250_DRDY INPUT
 # use active buzzer instead
 PA1 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # I2C
 PB6 I2C1_SCL I2C1
 PB7 I2C1_SDA I2C1
 
 # PWM pins S1-S6
-define STM32_PWM_USE_ADVANCED TRUE
 PC8 TIM8_CH3 TIM8 PWM(1) GPIO(50)
 PC9 TIM8_CH4 TIM8 PWM(2) GPIO(51)
 PB8 TIM4_CH3 TIM4 PWM(3) GPIO(52)
@@ -137,13 +137,8 @@ COMPASS AK8963:probe_mpu9250 0 ROTATION_YAW_90
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
-# external baro probing
-define HAL_PROBE_EXTERNAL_I2C_BAROS
-
 # no onboard SD, filesystem support disabled until flash logging implemented
 #define HAL_OS_FATFS_IO 1
-#define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # OSD support
 define OSD_ENABLED 1
@@ -161,9 +156,9 @@ define HAL_BATT_CURR_PIN 12
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 25
 
-# minimal drivers to reduce flash usage
-include ../include/minimal.inc
-define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
-
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# no space for bootloader in firmware image:
+include ../include/minimize_fpv_osd.inc
+include ../include/no_bootloader_DFU.inc

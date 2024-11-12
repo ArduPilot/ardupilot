@@ -21,6 +21,10 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AC_Avoidance/AC_Avoid.h>
+<<<<<<< HEAD
+=======
+#include <AC_AttitudeControl/AC_PosControl.h>
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 #define AR_POSCON_TIMEOUT_MS            100     // timeout after 0.1 sec
 #define AR_POSCON_POS_P                 0.2f    // default position P gain
@@ -56,7 +60,7 @@ const AP_Param::GroupInfo AR_PosControl::var_info[] = {
     // @Param: _VEL_I
     // @DisplayName: Velocity (horizontal) I gain
     // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
-    // @Range: 0.02 1.00
+    // @Range: 0.00 1.00
     // @Increment: 0.01
     // @User: Advanced
 
@@ -153,6 +157,7 @@ void AR_PosControl::update(float dt)
 
     // Limit the velocity to prevent fence violations
     bool backing_up = false;
+#if AP_AVOIDANCE_ENABLED
     AC_Avoid *avoid = AP::ac_avoid();
     if (avoid != nullptr) {
         Vector3f vel_3d_cms{_vel_target.x * 100.0f, _vel_target.y * 100.0f, 0.0f};
@@ -160,6 +165,15 @@ void AR_PosControl::update(float dt)
         avoid->adjust_velocity(vel_3d_cms, backing_up, _p_pos.kP(), accel_max_cmss, _p_pos.kP(), accel_max_cmss, dt);
         _vel_target.x = vel_3d_cms.x * 0.01;
         _vel_target.y = vel_3d_cms.y * 0.01;
+    }
+#endif  // AP_AVOIDANCE_ENABLED
+
+    // calculate limit vector based on steering limits
+    Vector2f steering_limit_vec;
+    if (_atc.steering_limit_left()) {
+        steering_limit_vec = AP::ahrs().body_to_earth2D(Vector2f{0, _reversed ? 1.0f : -1.0f});
+    } else if (_atc.steering_limit_right()) {
+        steering_limit_vec = AP::ahrs().body_to_earth2D(Vector2f{0, _reversed ? -1.0f : 1.0f});
     }
 
     // calculate limit vector based on steering limits
@@ -363,6 +377,10 @@ void AR_PosControl::get_srate(float &velocity_srate)
     velocity_srate = _pid_vel.get_pid_info_x().slew_rate;
 }
 
+<<<<<<< HEAD
+=======
+#if HAL_LOGGING_ENABLED
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 // write PSC logs
 void AR_PosControl::write_log()
 {
@@ -384,7 +402,9 @@ void AR_PosControl::write_log()
     // convert position to required format
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;
 
-    AP::logger().Write_PSCN(pos_target_2d_cm.x,     // position target
+    // reuse logging from AC_PosControl:
+    AC_PosControl::Write_PSCN(0.0,                  // position desired
+                            pos_target_2d_cm.x,     // position target
                             curr_pos_NED.x * 100.0, // position
                             _vel_desired.x * 100.0, // desired velocity
                             _vel_target.x * 100.0,  // target velocity
@@ -392,7 +412,8 @@ void AR_PosControl::write_log()
                             _accel_desired.x * 100.0,   // desired accel
                             _accel_target.x * 100.0,    // target accel
                             curr_accel_NED.x);      // accel
-    AP::logger().Write_PSCE(pos_target_2d_cm.y,     // position target
+    AC_PosControl::Write_PSCE(0.0,                  // position desired
+                            pos_target_2d_cm.y,     // position target
                             curr_pos_NED.y * 100.0, // position
                             _vel_desired.y * 100.0, // desired velocity
                             _vel_target.y * 100.0,  // target velocity
@@ -401,6 +422,7 @@ void AR_PosControl::write_log()
                             _accel_target.y * 100.0,    // target accel
                             curr_accel_NED.y);      // accel
 }
+#endif
 
 /// initialise ekf xy position reset check
 void AR_PosControl::init_ekf_xy_reset()

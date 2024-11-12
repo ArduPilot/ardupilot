@@ -20,8 +20,12 @@
   With thanks to cleanflight and betaflight projects
  */
 
+#include "AP_Radio_config.h"
+
+#if AP_RADIO_CC2500_ENABLED
+
 #include "AP_Radio_backend.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+
 #include "hal.h"
 #include "telem_structure.h"
 #include "driver_cc2500.h"
@@ -87,7 +91,7 @@ private:
 
     static void irq_handler_thd(void* arg);
     static void trigger_irq_radio_event(void);
-    static void trigger_timeout_event(void *arg);
+    static void trigger_timeout_event(virtual_timer_t* vt, void *arg);
 
     void radio_init(void);
 
@@ -226,5 +230,4 @@ private:
 };
 
 
-#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-
+#endif // AP_RADIO_CC2500_ENABLED

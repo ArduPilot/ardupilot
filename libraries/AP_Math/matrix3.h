@@ -55,18 +55,18 @@ public:
 
     // trivial ctor
     // note that the Vector3 ctor will zero the vector elements
-    constexpr Matrix3<T>() {}
+    constexpr Matrix3() {}
 
     // setting ctor
-    constexpr Matrix3<T>(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
+    constexpr Matrix3(const Vector3<T> &a0, const Vector3<T> &b0, const Vector3<T> &c0)
         : a(a0)
         , b(b0)
         , c(c0) {}
 
     // setting ctor
-    constexpr Matrix3<T>(const T ax, const T ay, const T az,
-                         const T bx, const T by, const T bz,
-                         const T cx, const T cy, const T cz)
+    constexpr Matrix3(const T ax, const T ay, const T az,
+                      const T bx, const T by, const T bz,
+                      const T cx, const T cy, const T cz)
         : a(ax,ay,az)
         , b(bx,by,bz)
         , c(cx,cy,cz) {}
@@ -219,14 +219,14 @@ public:
     bool invert() WARN_IF_UNUSED;
 
     // zero the matrix
-    void        zero(void);
+    void        zero(void) {
+        memset((void*)this, 0, sizeof(*this));
+    }
 
     // setup the identity matrix
     void        identity(void) {
+        zero();
         a.x = b.y = c.z = 1;
-        a.y = a.z = 0;
-        b.x = b.z = 0;
-        c.x = c.y = 0;
     }
 
     // check if any elements are NAN
@@ -235,13 +235,17 @@ public:
         return a.is_nan() || b.is_nan() || c.is_nan();
     }
 
-    // create a rotation matrix from Euler angles
+    /*
+      create a rotation matrix from Euler angles in 321 euler ordering
+    */
     void        from_euler(T roll, T pitch, T yaw);
 
-    // create eulers from a rotation matrix.
-    // roll is from -Pi to Pi
-    // pitch is from -Pi/2 to Pi/2
-    // yaw is from -Pi to Pi
+    /* create eulers from a rotation matrix.
+       roll is from -Pi to Pi
+       pitch is from -Pi/2 to Pi/2
+       yaw is from -Pi to Pi
+       euler order is 321
+    */
     void        to_euler(T *roll, T *pitch, T *yaw) const;
 
     // create matrix from rotation enum

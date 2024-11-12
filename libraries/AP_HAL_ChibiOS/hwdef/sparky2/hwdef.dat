@@ -24,12 +24,10 @@ PB5 LED_BLUE OUTPUT LOW GPIO(0)
 PB6 LED_YELLOW OUTPUT LOW GPIO(1) # optional
 PB4 LED_RED OUTPUT LOW GPIO(2)
 
+define AP_NOTIFY_GPIO_LED_3_ENABLED 1
 define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
-
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
 
 # ---------I2C-------------
 # only one I2C bus
@@ -133,8 +131,6 @@ SPIDEV dataflash      SPI3 DEVID1  FLASH_CS     MODE3  32*MHZ 32*MHZ
 
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH_ENABLED 1
-
-define STM32_PWM_USE_ADVANCED TRUE
 
 # we are low on flash on this board
 include ../include/minimize_features.inc

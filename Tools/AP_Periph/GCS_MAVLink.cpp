@@ -28,14 +28,18 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+#if HAL_WITH_MCU_MONITORING
     MSG_MCU_STATUS,
+#endif
     MSG_MEMINFO,
+#if AP_GPS_ENABLED
     MSG_GPS_RAW,
     MSG_GPS_RTK,
+#endif
 };
 
 static const ap_message STREAM_POSITION_msgs[] = {
-#if defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
     MSG_LOCATION,
     MSG_LOCAL_POSITION
 #endif
@@ -67,7 +71,7 @@ uint8_t GCS_Periph::sysid_this_mav() const
     return periph.g.sysid_this_mav;
 }
 
-MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     hal.scheduler->delay(10);
     periph.prepare_reboot();

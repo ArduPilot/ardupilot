@@ -13,9 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED
+
 #include "AP_Proximity_LightWareSF40C.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -421,4 +424,4 @@ uint16_t AP_Proximity_LightWareSF40C::buff_to_uint16(uint8_t b0, uint8_t b1) con
     return leval;
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED

@@ -17,8 +17,7 @@
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if AP_FILESYSTEM_ESP32_ENABLED
 
 #define FSDEBUG 0
 
@@ -43,7 +42,7 @@ int AP_Filesystem_ESP32::close(int fd)
     return ::close(fd);
 }
 
-ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_ESP32::read(int fd, void *buf, uint32_t count)
 {
 #if FSDEBUG
     printf("DO read \n");
@@ -51,7 +50,7 @@ ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
     return ::read(fd, buf, count);
 }
 
-ssize_t AP_Filesystem_ESP32::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_ESP32::write(int fd, const void *buf, uint32_t count)
 {
 #if FSDEBUG
     printf("DO write \n");
@@ -199,5 +198,4 @@ bool AP_Filesystem_ESP32::set_mtime(const char *filename, const uint32_t mtime_s
     return utime(filename, &times) == 0;
 }
 
-#endif // CONFIG_HAL_BOARD
-#endif
+#endif  // AP_FILESYSTEM_ESP32_ENABLED

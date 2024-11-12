@@ -1,7 +1,7 @@
 -- switches between AHRS/EKF sources based on the pilot's source selection switch or using an automatic source selection algorithm
 -- this script is intended to help vehicles move between GPS and Non-GPS environments
 --
--- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=primary, middle=secondary, high=tertiary)
+-- setup RCx_OPTION = 90 (EKF Source Set) to select the source (low=primary, middle=secondary, high=tertiary)
 -- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
 -- setup EK3_SRCn_ parameters so that GPS is the primary source, Non-GPS (i.e. T265) is secondary and optical flow tertiary
 -- configure a forward or downward facing lidar with a range of more than 5m
@@ -15,6 +15,9 @@
 --     if both GPS speed accuracy <= SCR_USER2 and ExternalNav speed variance >= SCR_USER3, source1 will be used
 --     otherwise source2 (T265) or source3 (optical flow) will be used based on rangefinder distance
 -- luacheck: only 0
+
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: cast-local-type
 
 local rangefinder_rotation = 25     -- check downward (25) facing lidar
 local source_prev = 0               -- previous source, defaults to primary source

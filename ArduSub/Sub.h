@@ -74,8 +74,11 @@
 #include "GCS_Sub.h"
 #include "mode.h"
 #include "script_button.h"
+<<<<<<< HEAD
 #include "modeMPC.h"
 #include "mpc_controller.h" // 确保包含 MPC 控制器的头文件
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
 
@@ -120,8 +123,11 @@ public:
     friend class ModeCircle;
     friend class ModeSurface;
     friend class ModeMotordetect;
+<<<<<<< HEAD
     friend class MPC_Controller;
     friend class ModeMPC;
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
     Sub(void);
 
@@ -607,8 +613,11 @@ private:
     ModeSurface mode_surface;
     ModeMotordetect mode_motordetect;
     ModeSurftrak mode_surftrak;
+<<<<<<< HEAD
     ModeMPC mode_mpc;
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
     // Auto
     AutoSubMode auto_mode;   // controls which auto controller is run

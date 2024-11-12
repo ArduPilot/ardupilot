@@ -43,14 +43,15 @@ void QAutoTune::init_z_limits()
 {
     // set vertical speed and acceleration limits
     plane.quadplane.pos_control->set_max_speed_accel_z(-plane.quadplane.get_pilot_velocity_z_max_dn(),
-        plane.quadplane.pilot_velocity_z_max_up,
-        plane.quadplane.pilot_accel_z);
+                                                       plane.quadplane.pilot_speed_z_max_up*100,
+                                                       plane.quadplane.pilot_accel_z*100);
     plane.quadplane.pos_control->set_correction_speed_accel_z(-plane.quadplane.get_pilot_velocity_z_max_dn(),
-        plane.quadplane.pilot_velocity_z_max_up,
-        plane.quadplane.pilot_accel_z);
+                                                              plane.quadplane.pilot_speed_z_max_up*100,
+                                                              plane.quadplane.pilot_accel_z*100);
 }
 
 
+#if HAL_LOGGING_ENABLED
 // log VTOL PIDs for during twitch
 void QAutoTune::log_pids(void)
 {
@@ -58,6 +59,7 @@ void QAutoTune::log_pids(void)
     AP::logger().Write_PID(LOG_PIQP_MSG, plane.quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
     AP::logger().Write_PID(LOG_PIQY_MSG, plane.quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
 }
+#endif
 
 #endif // QAUTOTUNE_ENABLED
 

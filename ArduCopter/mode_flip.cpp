@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_FLIP_ENABLED == ENABLED
+#if MODE_FLIP_ENABLED
 
 /*
  * Init and run calls for flip flight mode
@@ -76,7 +76,7 @@ bool ModeFlip::init(bool ignore_checks)
     }
 
     // log start of flip
-    AP::logger().Write_Event(LogEvent::FLIP_START);
+    LOGGER_WRITE_EVENT(LogEvent::FLIP_START);
 
     // capture current attitude which will be used during the FlipState::Recovery stage
     const float angle_max = copter.aparm.angle_max;
@@ -194,7 +194,7 @@ void ModeFlip::run()
                 copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
             }
             // log successful completion
-            AP::logger().Write_Event(LogEvent::FLIP_END);
+            LOGGER_WRITE_EVENT(LogEvent::FLIP_END);
         }
         break;
 
@@ -206,7 +206,7 @@ void ModeFlip::run()
             copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
         }
         // log abandoning flip
-        AP::logger().Write_Error(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
         break;
     }
 

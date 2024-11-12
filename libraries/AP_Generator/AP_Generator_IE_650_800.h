@@ -2,7 +2,7 @@
 
 #include "AP_Generator_IE_FuelCell.h"
 
-#if AP_GENERATOR_IE650_800_ENABLED
+#if AP_GENERATOR_IE_650_800_ENABLED
 
 class AP_Generator_IE_650_800 : public AP_Generator_IE_FuelCell
 {
@@ -46,7 +46,7 @@ private:
     static const uint32_t ERROR_START_UNDER_PRESS = (1U << 19); // (0x80000), Tank pressure < 6 barg
     static const uint32_t ERROR_TANK_UNDER_PRESS  = (1U << 18); // (0x40000), Tank pressure < 5 barg
     static const uint32_t ERROR_TANK_LOW_PRESS    = (1U << 17); // (0x20000), Tank pressure < 15 barg
-    static const uint32_t ERROR_SAFETY_FLAG       = (1U << 16); // (0x10000), Fuel cell's internal saftey flags not set true
+    static const uint32_t ERROR_SAFETY_FLAG       = (1U << 16); // (0x10000), Fuel cell's internal safety flags not set true
     static const uint32_t ERROR_DENY_START1       = (1U << 15); // (0x8000), Stack 1 denied start
     static const uint32_t ERROR_DENY_START2       = (1U << 14); // (0x4000), Stack 2 denied start
     static const uint32_t ERROR_STACK_UT1         = (1U << 13); // (0x2000), Stack 1 under temperature (<5 degC)
@@ -74,7 +74,7 @@ private:
                                 | ERROR_START_TIMEOUT         // (0x200000), Fuel cell's internal State == start for > 30 s
                                 | ERROR_START_UNDER_PRESS     // (0x80000), Tank pressure < 6 barg
                                 | ERROR_TANK_UNDER_PRESS      // (0x40000), Tank pressure < 5 barg
-                                | ERROR_SAFETY_FLAG           // (0x10000), Fuel cell's internal saftey flags not set true
+                                | ERROR_SAFETY_FLAG           // (0x10000), Fuel cell's internal safety flags not set true
                                 | ERROR_DENY_START1           // (0x8000), Stack 1 denied start
                                 | ERROR_DENY_START2           // (0x4000), Stack 2 denied start
                                 | ERROR_BAT_UV_DENY           // (0x400), Battery under voltage (21.6 V) and master denied
@@ -95,4 +95,4 @@ private:
                                 | ERROR_BAT_UT;               // (0x8), Battery undertemperature (<-15 degC)
 
 };
-#endif  // AP_GENERATOR_IE650_800_ENABLED
+#endif  // AP_GENERATOR_IE_650_800_ENABLED

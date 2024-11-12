@@ -8,19 +8,11 @@
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 #include "AP_MotorsHeli_Swash.h"
+#include "AP_Motors_Thrust_Linearization.h"
 
 // rsc and extgyro function output channels.
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
 #define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
-
-// tail types
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                      0
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO              1
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH       2
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW  3
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW 4
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV 5
-
 
 // direct-drive variable pitch defaults
 #define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               50
@@ -40,8 +32,8 @@ public:
     // constructor
     AP_MotorsHeli_Single(uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(speed_hz),
-        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC),
-        _swashplate()
+        _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC, 1U),
+        _swashplate(AP_MOTORS_MOT_1, AP_MOTORS_MOT_2, AP_MOTORS_MOT_3, AP_MOTORS_MOT_5, 1U)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -54,21 +46,6 @@ public:
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
-
-    // get_main_rotor_speed - estimated rotor speed when no speed sensor or governor is used
-    float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
-
-    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
-    float get_desired_rotor_speed() const  override { return _main_rotor.get_desired_speed(); }
-
-    // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
-
-    // get_governor_output
-    float get_governor_output() const override { return _main_rotor.get_governor_output(); }
-
-    // get_control_output
-    float get_control_output() const override{ return _main_rotor.get_control_output(); }
 
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
@@ -86,13 +63,24 @@ public:
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const  override { return _flybar_mode; }
 
-    // supports_yaw_passthrought - returns true if we support yaw passthrough
-    bool supports_yaw_passthrough() const override { return _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO; }
+    // supports_yaw_passthrough - returns true if we support yaw passthrough
+    bool supports_yaw_passthrough() const override { return get_tail_type() == TAIL_TYPE::SERVO_EXTGYRO; }
 
     void set_acro_tail(bool set) override { _acro_tail = set; }
 
-    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const override;
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
+
+    // Helper function for param conversions to be done in motors class
+    void heli_motors_param_conversions(void) override;
+
+    // Thrust Linearization handling
+    Thrust_Linearization thr_lin {*this};
+
+#if HAL_LOGGING_ENABLED
+    // Blade angle logging - called at 10 Hz
+    void Log_Write(void) override;
+#endif
 
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -100,10 +88,10 @@ public:
 protected:
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    bool init_outputs() override;
+    void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
 
     // heli_move_actuators - moves swash plate and tail rotor
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;
@@ -111,13 +99,32 @@ protected:
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
 
+    // Get yaw offset required to cancel out steady state main rotor torque
+    float get_yaw_offset(float collective);
+
+    // handle output limit flags and send throttle to servos lib
+    void output_to_ddfp_tail(float throttle);
+
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+    // Tail types
+    enum class TAIL_TYPE {
+        SERVO = 0,
+        SERVO_EXTGYRO = 1,
+        DIRECTDRIVE_VARPITCH = 2,
+        DIRECTDRIVE_FIXEDPITCH_CW = 3,
+        DIRECTDRIVE_FIXEDPITCH_CCW = 4,
+        DIRECTDRIVE_VARPIT_EXT_GOV = 5
+    };
+
+    TAIL_TYPE get_tail_type() const { return TAIL_TYPE(_tail_type.get()); }
+
+    // Helper to return true for direct drive fixed pitch tail, either CW or CCW
+    bool have_DDFP_tail() const;
+
+    // Helper to return true if the tail RSC should be used
+    bool use_tail_RSC() const;
 
     // external objects we depend upon
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
@@ -130,11 +137,7 @@ protected:
     float _roll_test = 0.0f;                    // over-ride for roll output, used by servo_test function
     float _pitch_test = 0.0f;                   // over-ride for pitch output, used by servo_test function
     float _yaw_test = 0.0f;                     // over-ride for yaw output, used by servo_test function
-    float _servo1_out = 0.0f;                   // output value sent to motor
-    float _servo2_out = 0.0f;                   // output value sent to motor
-    float _servo3_out = 0.0f;                   // output value sent to motor
     float _servo4_out = 0.0f;                   // output value sent to motor
-    float _servo5_out = 0.0f;                   // output value sent to motor
 
     // parameters
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
@@ -143,6 +146,7 @@ protected:
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
     AP_Float        _collective_yaw_scale;      // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
+    AP_Float        _yaw_trim;                  // Fixed offset applied to yaw output to reduce yaw I.
 
     bool            _acro_tail = false;
 };

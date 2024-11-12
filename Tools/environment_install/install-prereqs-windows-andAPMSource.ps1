@@ -19,7 +19,11 @@ Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -
 Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'ln -sf /usr/bin/pip3.7 /usr/bin/pip'"
 
 Write-Output "Downloading extra Python packages (5/8)"
+<<<<<<< HEAD
 Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'pip install empy==3.3.4 pyserial pymavlink intelhex dronecan pexpect'"
+=======
+Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'python3.7 -m pip install empy==3.3.4 pyserial pymavlink intelhex dronecan pexpect'"
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
 Write-Output "Downloading APM source (6/8)"
 Copy-Item "APM_install.sh" -Destination "C:\cygwin64\home"

@@ -16,6 +16,7 @@
 #include "Device.h"
 
 #include <stdio.h>
+#include <AP_Common/AP_Common.h>
 
 /*
   using checked registers allows a device check that a set of critical
@@ -30,7 +31,7 @@
   Periodically (say at 50Hz) you should then call
   check_next_register(). If that returns false then the sensor has had
   a corrupted register value. Marking the sensor as unhealthy is
-  approriate. The bad value will be corrected
+  appropiate. The bad value will be corrected
  */
 
 /*
@@ -44,7 +45,7 @@ bool AP_HAL::Device::setup_checked_registers(uint8_t nregs, uint8_t frequency)
         _checked.n_set = 0;
         _checked.next = 0;
     }
-    _checked.regs = new struct checkreg[nregs];
+    _checked.regs = NEW_NOTHROW struct checkreg[nregs];
     if (_checked.regs == nullptr) {
         return false;
     }

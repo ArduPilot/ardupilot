@@ -29,7 +29,6 @@ public:
     void read(uint16_t *period_us, uint8_t len) override;
     void cork() override;
     void push() override;
-    void set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override;
 
 private:
     // Disco RC output combines methods from Sysfs and Bebop

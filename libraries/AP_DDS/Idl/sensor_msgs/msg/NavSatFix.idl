@@ -1,0 +1,68 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from sensor_msgs/msg/NavSatFix.msg
+// generated code does not contain a copyright notice
+
+#include "sensor_msgs/msg/NavSatStatus.idl"
+#include "std_msgs/msg/Header.idl"
+
+module sensor_msgs {
+  module msg {
+    typedef double double__9[9];
+    module NavSatFix_Constants {
+      @verbatim (language="comment", text=
+        "If the covariance of the fix is known, fill it in completely. If the" "\n"        "GPS receiver provides the variance of each measurement, put them" "\n"        "along the diagonal. If only Dilution of Precision is available," "\n"        "estimate an approximate covariance from that.")
+      const uint8 COVARIANCE_TYPE_UNKNOWN = 0;
+      const uint8 COVARIANCE_TYPE_APPROXIMATED = 1;
+      const uint8 COVARIANCE_TYPE_DIAGONAL_KNOWN = 2;
+      const uint8 COVARIANCE_TYPE_KNOWN = 3;
+    };
+    @verbatim (language="comment", text=
+      "Navigation Satellite fix for any Global Navigation Satellite System" "\n"
+      "" "\n"
+      "Specified using the WGS 84 reference ellipsoid")
+    struct NavSatFix {
+      @verbatim (language="comment", text=
+        "header.stamp specifies the ROS time for this measurement (the" "\n"
+        "       corresponding satellite time may be reported using the" "\n"
+        "       sensor_msgs/TimeReference message)." "\n"
+        "" "\n"
+        "header.frame_id is the frame of reference reported by the satellite" "\n"
+        "       receiver, usually the location of the antenna.  This is a" "\n"
+        "       Euclidean frame relative to the vehicle, not a reference" "\n"
+        "       ellipsoid.")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "Satellite fix status information.")
+      sensor_msgs::msg::NavSatStatus status;
+
+      @verbatim (language="comment", text=
+        "Latitude. Positive is north of equator; negative is south.")
+      @unit (value="degrees")
+      double latitude;
+
+      @verbatim (language="comment", text=
+        "Longitude. Positive is east of prime meridian; negative is west.")
+      @unit (value="degrees")
+      double longitude;
+
+      @verbatim (language="comment", text=
+        "Altitude. Positive is above the WGS 84 ellipsoid" "\n"
+        "(quiet NaN if no altitude is available).")
+      @unit (value="m")
+      double altitude;
+
+      @verbatim (language="comment", text=
+        "Position covariance defined relative to a tangential plane" "\n"
+        "through the reported position. The components are East, North, and" "\n"
+        "Up (ENU), in row-major order." "\n"
+        "" "\n"
+        "Beware: this coordinate system exhibits singularities at the poles.")
+      @unit (value="m^2")
+      double__9 position_covariance;
+
+      uint8 position_covariance_type;
+    };
+  };
+};
+

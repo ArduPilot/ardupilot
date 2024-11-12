@@ -25,6 +25,7 @@ I2C_ORDER I2C1
 SERIAL_ORDER OTG1 USART3 UART4 USART1 UART5 USART2
 
 # LEDs
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PB9 LED_BLUE OUTPUT LOW GPIO(0)
 PA14 LED_GREEN OUTPUT LOW GPIO(1)
 
@@ -34,8 +35,8 @@ define HAL_GPIO_B_LED_PIN 1
 # buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -132,7 +133,6 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # probe for I2C BMP280, but allow init on board variants without onboard baro too
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 define AP_BARO_BMP280_ENABLED 1
@@ -151,26 +151,15 @@ SPIDEV osd       SPI2 DEVID1 MAX7456_CS MODE0 10*MHZ 10*MHZ
 
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
-# disable parachute and sprayer to save flash
+# disable parachute to save flash
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # save some flash
-include ../include/save_some_flash.inc
+include ../include/minimize_fpv_osd.inc
 
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc

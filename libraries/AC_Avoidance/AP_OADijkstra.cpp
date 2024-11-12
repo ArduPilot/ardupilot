@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AC_Avoidance_config.h"
+
+#if AP_OAPATHPLANNER_DIJKSTRA_ENABLED
+
 #include "AP_OADijkstra.h"
 #include "AP_OAPathPlanner.h"
 
@@ -30,29 +34,40 @@
 
 /// Constructor
 AP_OADijkstra::AP_OADijkstra(AP_Int16 &options) :
-        _options(options),
         _inclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_circle_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _short_path_data(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
-        _path(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK)
+        _path(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
+        _options(options)
 {
 }
 
 // calculate a destination to avoid fences
-// returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
-AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new)
+// returns DIJKSTRA_STATE_SUCCESS and populates origin_new, destination_new and next_destination_new if avoidance is required
+// next_destination_new will be non-zero if there is a next destination
+// dest_to_next_dest_clear will be set to true if the path from (the input) destination to (input) next_destination is clear
+AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current_loc,
+                                                         const Location &destination,
+                                                         const Location &next_destination,
+                                                         Location& origin_new,
+                                                         Location& destination_new,
+                                                         Location& next_destination_new,
+                                                         bool& dest_to_next_dest_clear)
 {
     WITH_SEMAPHORE(AP::fence()->polyfence().get_loaded_fence_semaphore());
 
     // avoidance is not required if no fences
     if (!some_fences_enabled()) {
+        dest_to_next_dest_clear = _dest_to_next_dest_clear = true;
         Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
         return DIJKSTRA_STATE_NOT_REQUIRED;
     }
 
     // no avoidance required if destination is same as current location
     if (current_loc.same_latlon_as(destination)) {
+        // we do not check path to next destination so conservatively set to false
+        dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
         Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
         return DIJKSTRA_STATE_NOT_REQUIRED;
     }
@@ -79,43 +94,46 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
     }
 
     // create inner polygon fence
-    AP_OADijkstra_Error error_id;
     if (!_inclusion_polygon_with_margin_ok) {
-        _inclusion_polygon_with_margin_ok = create_inclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
+        _inclusion_polygon_with_margin_ok = create_inclusion_polygon_with_margin(_polyfence_margin * 100.0f, _error_id);
         if (!_inclusion_polygon_with_margin_ok) {
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create exclusion polygon outer fence
     if (!_exclusion_polygon_with_margin_ok) {
-        _exclusion_polygon_with_margin_ok = create_exclusion_polygon_with_margin(_polyfence_margin * 100.0f, error_id);
+        _exclusion_polygon_with_margin_ok = create_exclusion_polygon_with_margin(_polyfence_margin * 100.0f, _error_id);
         if (!_exclusion_polygon_with_margin_ok) {
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create exclusion circle points
     if (!_exclusion_circle_with_margin_ok) {
-        _exclusion_circle_with_margin_ok = create_exclusion_circle_with_margin(_polyfence_margin * 100.0f, error_id);
+        _exclusion_circle_with_margin_ok = create_exclusion_circle_with_margin(_polyfence_margin * 100.0f, _error_id);
         if (!_exclusion_circle_with_margin_ok) {
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
     }
 
     // create visgraph for all fence (with margin) points
     if (!_polyfence_visgraph_ok) {
-        _polyfence_visgraph_ok = create_fence_visgraph(error_id);
+        _polyfence_visgraph_ok = create_fence_visgraph(_error_id);
         if (!_polyfence_visgraph_ok) {
             _shortest_path_ok = false;
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
         // reset logging count to restart logging updated graph
@@ -133,27 +151,39 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
     }
 
-    // rebuild path if destination has changed
-    if (!destination.same_latlon_as(_destination_prev)) {
+    // rebuild path if destination or next_destination has changed
+    if (!destination.same_latlon_as(_destination_prev) || !next_destination.same_latlon_as(_next_destination_prev)) {
         _destination_prev = destination;
+        _next_destination_prev = next_destination;
         _shortest_path_ok = false;
     }
 
     // calculate shortest path from current_loc to destination
     if (!_shortest_path_ok) {
-        _shortest_path_ok = calc_shortest_path(current_loc, destination, error_id);
+        _shortest_path_ok = calc_shortest_path(current_loc, destination, _error_id);
         if (!_shortest_path_ok) {
-            report_error(error_id);
-            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
+            dest_to_next_dest_clear = _dest_to_next_dest_clear = false;
+            report_error(_error_id);
+            Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
         // start from 2nd point on path (first is the original origin)
         _path_idx_returned = 1;
+
+        // check if path from destination to next_destination intersects with a fence
+        _dest_to_next_dest_clear = false;
+        if (!next_destination.is_zero()) {
+            Vector2f seg_start, seg_end;
+            if (destination.get_vector_xy_from_origin_NE(seg_start) && next_destination.get_vector_xy_from_origin_NE(seg_end)) {
+                _dest_to_next_dest_clear = !intersects_fence(seg_start, seg_end);
+            }
+        }
     }
 
     // path has been created, return latest point
     Vector2f dest_pos;
-    if (get_shortest_path_point(_path_idx_returned, dest_pos)) {
+    const uint8_t path_length = get_shortest_path_numpoints() > 0 ? (get_shortest_path_numpoints() - 1) : 0;
+    if ((_path_idx_returned < path_length) && get_shortest_path_point(_path_idx_returned, dest_pos)) {
 
         // for the first point return origin as current_loc
         Vector2f origin_pos;
@@ -172,6 +202,23 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         destination_new.lat = temp_loc.lat;
         destination_new.lng = temp_loc.lng;
 
+        // provide next destination to allow smooth cornering
+        next_destination_new.zero();
+        Vector2f next_dest_pos;
+        if ((_path_idx_returned + 1 < path_length) && get_shortest_path_point(_path_idx_returned + 1, next_dest_pos)) {
+            // convert offset from ekf origin to Location
+            Location next_loc(Vector3f{next_dest_pos.x, next_dest_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
+            next_destination_new = destination;
+            next_destination_new.lat = next_loc.lat;
+            next_destination_new.lng = next_loc.lng;
+        } else {
+            // return destination as next_destination
+            next_destination_new = destination;
+        }
+
+        // path to next destination clear state is still valid from previous calcs (was calced along with shortest path)
+        dest_to_next_dest_clear = _dest_to_next_dest_clear;
+
         // check if we should advance to next point for next iteration
         const bool near_oa_wp = current_loc.get_distance(destination_new) <= 2.0f;
         const bool past_oa_wp = current_loc.past_interval_finish_line(origin_new, destination_new);
@@ -179,11 +226,13 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
             _path_idx_returned++;
         }
         // log success
-        Write_OADijkstra(DIJKSTRA_STATE_SUCCESS, 0, _path_idx_returned, _path_numpoints, destination, destination_new);
+        Write_OADijkstra(DIJKSTRA_STATE_SUCCESS, 0, _path_idx_returned, get_shortest_path_numpoints(), destination, destination_new);
         return DIJKSTRA_STATE_SUCCESS;
     }
 
     // we have reached the destination so avoidance is no longer required
+    // path to next destination clear state is still valid from previous calcs
+    dest_to_next_dest_clear = _dest_to_next_dest_clear;
     Write_OADijkstra(DIJKSTRA_STATE_NOT_REQUIRED, 0, 0, 0, destination, destination);
     return DIJKSTRA_STATE_NOT_REQUIRED;
 }
@@ -247,7 +296,8 @@ void AP_OADijkstra::report_error(AP_OADijkstra_Error error_id)
     if ((error_id != AP_OADijkstra_Error::DIJKSTRA_ERROR_NONE) &&
         ((error_id != _error_last_id) || ((now_ms - _error_last_report_ms) > OA_DIJKSTRA_ERROR_REPORTING_INTERVAL_MS))) {
         const char* error_msg = get_error_msg(error_id);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Dijkstra: %s", error_msg);
+        (void)error_msg;  // in case !HAL_GCS_ENABLED
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Dijkstra: %s", error_msg);
         _error_last_id = error_id;
         _error_last_report_ms = now_ms;
     }
@@ -924,7 +974,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
             }
         }
     }
-    // report error incase path not found
+    // report error in case path not found
     if (!success) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
     }
@@ -933,7 +983,7 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
 }
 
 // return point from final path as an offset (in cm) from the ekf origin
-bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos)
+bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos) const
 {
     if ((_path_numpoints == 0) || (point_num >= _path_numpoints)) {
         return false;
@@ -965,3 +1015,5 @@ bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vec
 }
 #endif // AP_FENCE_ENABLED
 
+
+#endif  // AP_OAPATHPLANNER_DIJKSTRA_ENABLED

@@ -17,6 +17,10 @@
   Code by Andy Piper
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SRXL2_ENABLED
+
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_SRXL2.h"
 #include <AP_Math/AP_Math.h>
@@ -181,17 +185,8 @@ void AP_RCProtocol_SRXL2::update(void)
     }
 }
 
-void AP_RCProtocol_SRXL2::capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
-{
-    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
-
-    if (srxl2 != nullptr) {
-        srxl2->_capture_scaled_input(values_p, in_failsafe, new_rssi);
-    }
-}
-
 // capture SRXL2 encoded values
-void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
+void AP_RCProtocol_SRXL2::capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
 {
     _in_failsafe = in_failsafe;
     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
@@ -269,7 +264,7 @@ void AP_RCProtocol_SRXL2::process_handshake(uint32_t baudrate)
         _handshake_start_ms = now;
         // it seems the handshake protocol only sets the baudrate after receiving data
         // since we are sending data unprompted make sure that the uart is set up correctly
-        _change_baud_rate(baudrate);
+        change_baud_rate(baudrate);
     }
 
     // we have not bootstrapped and attempts to listen first have failed
@@ -291,71 +286,6 @@ void AP_RCProtocol_SRXL2::process_handshake(uint32_t baudrate)
 
 // send data to the uart
 void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
-{
-    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
-
-    if (srxl2 != nullptr) {
-        srxl2->_send_on_uart(pBuffer, length);
-    }
-}
-
-#if AP_VIDEOTX_ENABLED
-// configure the video transmitter, the input values are Spektrum-oriented
-void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
-{
-    AP_VideoTX& vtx = AP::vtx();
-    // VTX Band (0 = Fatshark, 1 = Raceband, 2 = E, 3 = B, 4 = A)
-    // map to TBS band A, B, E, Race, Airwave, LoRace
-    switch (band) {
-    case VTX_BAND_FATSHARK:
-        vtx.set_configured_band(AP_VideoTX::VideoBand::FATSHARK);
-        break;
-    case VTX_BAND_RACEBAND:
-        vtx.set_configured_band(AP_VideoTX::VideoBand::RACEBAND);
-        break;
-    case VTX_BAND_E_BAND:
-        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_E);
-        break;
-    case VTX_BAND_B_BAND:
-        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_B);
-        break;
-    case VTX_BAND_A_BAND:
-        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_A);
-        break;
-    default:
-        break;
-    }
-    // VTX Channel (0-7)
-    vtx.set_configured_channel(channel);
-    if (pitmode) {
-        vtx.set_configured_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-    } else {
-        vtx.set_configured_options(vtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-    }
-
-    switch (power) {
-    case VTX_POWER_1MW_14MW:
-    case VTX_POWER_15MW_25MW:
-        vtx.set_configured_power_mw(25);
-        break;
-    case VTX_POWER_26MW_99MW:
-    case VTX_POWER_100MW_299MW:
-        vtx.set_configured_power_mw(100);
-        break;
-    case VTX_POWER_300MW_600MW:
-        vtx.set_configured_power_mw(400);
-        break;
-    case VTX_POWER_601_PLUS:
-        vtx.set_configured_power_mw(800);
-        break;
-    default:
-        break;
-    }
-}
-#endif  // AP_VIDEOTX_ENABLED
-
-// send data to the uart
-void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
 {
     AP_HAL::UARTDriver* uart = get_available_UART();
 
@@ -383,22 +313,11 @@ void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
 // change the uart baud rate
 void AP_RCProtocol_SRXL2::change_baud_rate(uint32_t baudrate)
 {
-    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
-
-    if (srxl2 != nullptr) {
-        srxl2->_change_baud_rate(baudrate);
-    }
-}
-
-// change the uart baud rate
-void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
-{
     AP_HAL::UARTDriver* uart = get_available_UART();
     if (uart != nullptr) {
         uart->begin(baudrate);
         uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         uart->set_unbuffered_writes(true);
-        uart->set_blocking_writes(false);
     }
 }
 
@@ -409,8 +328,11 @@ void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
 // baudRate - the actual baud rate (currently either 115200 or 400000)
 void srxlChangeBaudRate(uint8_t uart, uint32_t baudRate)
 {
-    AP_RCProtocol_SRXL2::change_baud_rate(baudRate);
+    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
 
+    if (srxl2 != nullptr) {
+        srxl2->change_baud_rate(baudRate);
+    }
 }
 
 // User-provided routine to actually transmit a packet on the given UART:
@@ -419,7 +341,11 @@ void srxlChangeBaudRate(uint8_t uart, uint32_t baudRate)
 // length - the number of bytes contained in pBuffer that should be sent
 void srxlSendOnUart(uint8_t uart, uint8_t* pBuffer, uint8_t length)
 {
-    AP_RCProtocol_SRXL2::send_on_uart(pBuffer, length);
+    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
+
+    if (srxl2 != nullptr) {
+        srxl2->send_on_uart(pBuffer, length);
+    }
 }
 
 // User-provided callback routine to fill in the telemetry data to send to the master when requested:
@@ -440,10 +366,16 @@ void srxlFillTelemetry(SrxlTelemetryData* pTelemetryData)
 // so be very careful to only do local operations
 void srxlReceivedChannelData(SrxlChannelData* pChannelData, bool isFailsafe)
 {
+    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
+
+    if (srxl2 == nullptr) {
+        return;
+    }
+
     if (isFailsafe) {
-        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)pChannelData->values, true, pChannelData->rssi);
+        srxl2->capture_scaled_input((const uint8_t *)pChannelData->values, true, pChannelData->rssi);
     } else {
-        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)srxlChData.values, false, srxlChData.rssi);
+        srxl2->capture_scaled_input((const uint8_t *)srxlChData.values, false, srxlChData.rssi);
     }
 }
 
@@ -458,6 +390,8 @@ bool srxlOnBind(SrxlFullID device, SrxlBindData info)
 void srxlOnVtx(SrxlVtxData* pVtxData)
 {
 #if AP_VIDEOTX_ENABLED
-    AP_RCProtocol_SRXL2::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
+    AP_RCProtocol_Backend::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
 #endif
 }
+
+#endif  // AP_RCPROTOCOL_SRXL2_ENABLED

@@ -1,0 +1,94 @@
+rst:0x10 (RTCWDT_RTC_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:1
+load:0x3fff0030,len:5232
+load:0x40078000,len:14264
+load:0x40080400,len:4244
+entry 0x40080664
+I (334) cpu_start: Pro cpu up.
+I (334) cpu_start: Application information:
+I (334) cpu_start: ELF file SHA256:  69635451ea60f4bd...
+I (337) cpu_start: ESP-IDF:          v4.2.4-209-g527a23d63f
+I (344) cpu_start: Starting app cpu, entry point is 0x40081c50
+I (0) cpu_start: App cpu up.
+I (354) heap_init: Initializing. RAM available for dynamic allocation:
+I (361) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+I (367) heap_init: At 3FFBF160 len 00020EA0 (131 KiB): DRAM
+I (373) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (379) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (386) heap_init: At 400954F8 len 0000AB08 (42 KiB): IRAM
+I (392) cpu_start: Pro cpu start user code
+I (410) spi_flash: detected chip: generic
+I (410) spi_flash: flash io: qio
+I (410) esp_core_dump_uart: Init core dump to UART
+I (413) cpu_start: Starting scheduler on PRO CPU.
+I (0) cpu_start: Starting scheduler on APP CPU.
+SYSCLK 0MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0049 usec/call
+micros()    0.5432 usec/call
+micros16()  0.5979 usec/call
+millis()    0.9198 usec/call
+millis16()  0.9713 usec/call
+micros64()  0.5536 usec/call
+fadd        0.0634 usec/call
+fsub        0.0624 usec/call
+fmul        0.0624 usec/call
+fdiv /=     0.2504 usec/call
+fdiv 2/x    0.2428 usec/call
+dadd        0.2940 usec/call
+dsub        0.3306 usec/call
+dmul        0.2638 usec/call
+ddiv        0.2430 usec/call
+sinf()      0.9574 usec/call
+cosf()      0.8554 usec/call
+tanf()      1.4338 usec/call
+acosf()     2.1064 usec/call
+asinf()     1.7080 usec/call
+atan2f()    3.0798 usec/call
+sqrtf()     0.4264 usec/call
+sin()       0.9496 usec/call
+cos()       0.8504 usec/call
+tan()       1.4314 usec/call
+acos()     12.1722 usec/call
+asin()     11.5936 usec/call
+atan2()     3.8804 usec/call
+sqrt()      0.4268 usec/call
+sq()        0.0516 usec/call
+powf(v,2)   0.0516 usec/call
+powf(v,3.1)  3.0752 usec/call
+EKF        16.2000 usec/call
+iadd8       0.0674 usec/call
+isub8       0.0676 usec/call
+imul8       0.0718 usec/call
+idiv8       0.0862 usec/call
+iadd16      0.0672 usec/call
+isub16      0.0676 usec/call
+imul16      0.0718 usec/call
+idiv16      0.0852 usec/call
+iadd32      0.0610 usec/call
+isub32      0.0614 usec/call
+imul32      0.0612 usec/call
+idiv32      0.0654 usec/call
+iadd64      0.1232 usec/call
+isub64      0.1232 usec/call
+imul64      0.1712 usec/call
+idiv64      0.3848 usec/call
+memcpy128   0.5094 usec/call
+memset128   0.3917 usec/call
+delay(1)   164.9920 usec/call
+SEM         6.1196 usec/call

@@ -1,6 +1,8 @@
-#include "AP_Proximity_Cygbot_D1.h"
+#include "AP_Proximity_config.h"
 
-#if HAL_PROXIMITY_ENABLED && AP_PROXIMITY_CYGBOT_ENABLED
+#if AP_PROXIMITY_CYGBOT_ENABLED
+
+#include "AP_Proximity_Cygbot_D1.h"
 
 // update the state of the sensor
 void AP_Proximity_Cygbot_D1::update()
@@ -182,4 +184,4 @@ void AP_Proximity_Cygbot_D1::reset()
     _temp_boundary.reset();
 }
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_CYGBOT_ENABLED

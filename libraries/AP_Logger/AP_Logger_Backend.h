@@ -1,18 +1,27 @@
 #pragma once
 
-#include "AP_Logger.h"
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_ENABLED
 
 #include <AP_Common/Bitmask.h>
+#include <AP_Param/AP_Param.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Vehicle/ModeReason.h>
+#include "LogStructure.h"
 
 class LoggerMessageWriter_DFLogStart;
-
-#define MAX_LOG_FILES 500
 
 // class to handle rate limiting of log messages
 class AP_Logger_RateLimiter
 {
 public:
+<<<<<<< HEAD
     AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz);
+=======
+    AP_Logger_RateLimiter(const class AP_Logger &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz);
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 
     // return true if message passes the rate limit test
     bool should_log(uint8_t msgid, bool writev_streaming);
@@ -71,6 +80,7 @@ public:
     virtual void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) = 0;
     virtual void get_log_info(uint16_t list_entry, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
+    virtual void end_log_transfer() = 0;
     virtual uint16_t get_num_logs() = 0;
     virtual uint16_t find_oldest_log();
 
@@ -103,7 +113,7 @@ public:
 #endif
 
      // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(const GCS_MAVLINK &link,
+    virtual void remote_log_block_status_msg(const class GCS_MAVLINK &link,
                                              const mavlink_message_t &msg) { }
     // end for Logger_MAVlink
 
@@ -124,14 +134,18 @@ public:
                           const class RallyLocation &rally_point);
     bool Write_Rally();
 #if HAL_LOGGER_FENCE_ENABLED
-    bool Write_FencePoint(uint8_t total, uint8_t sequence, const AC_PolyFenceItem &fence_point);
+    bool Write_FencePoint(uint8_t total, uint8_t sequence, const class AC_PolyFenceItem &fence_point);
     bool Write_Fence();
 #endif
     bool Write_Format(const struct LogStructure *structure);
+    bool have_emitted_format_for_type(LogMessages a_type) const {
+        return _formats_written.get(uint8_t(a_type));
+    }
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
-                               const AP_Mission::Mission_Command &cmd);
+                           const AP_Mission::Mission_Command &cmd,
+                           LogMessages id);
     bool Write_Mode(uint8_t mode, const ModeReason reason);
     bool Write_Parameter(const char *name, float value, float default_val);
     bool Write_Parameter(const AP_Param *ap,
@@ -150,6 +164,9 @@ public:
     // write a FMT message out (if it hasn't been done already).
     // Returns true if the FMT message has ever been written.
     bool Write_Emit_FMT(uint8_t msg_type);
+
+    // output a FMT message if not already done so
+    void Safe_Write_Emit_FMT(uint8_t msg_type);
 
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
@@ -191,7 +208,6 @@ protected:
     /*
       read a block
     */
-    virtual bool WriteBlockCheckStartupMessages();
     virtual void WriteMoreStartupMessages();
     virtual void push_log_blocks();
 
@@ -201,7 +217,6 @@ protected:
     uint16_t _cached_oldest_log;
 
     uint32_t _dropped;
-    uint32_t _log_file_size_bytes;
     // should we rotate when we next stop logging
     bool _rotate_pending;
 
@@ -258,4 +273,12 @@ private:
 
     void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
+
+    bool message_type_from_block(const void *pBuffer, uint16_t size, LogMessages &type) const;
+    bool ensure_format_emitted(const void *pBuffer, uint16_t size);
+    bool emit_format_for_type(LogMessages a_type);
+    Bitmask<256> _formats_written;
+
 };
+
+#endif  // HAL_LOGGING_ENABLED

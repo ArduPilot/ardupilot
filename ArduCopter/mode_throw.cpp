@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
 
 // throw_init - initialise throw controller
 bool ModeThrow::init(bool ignore_checks)
@@ -72,9 +72,9 @@ void ModeThrow::run()
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
         if (g2.throw_type == ThrowType::Drop) {
-            pos_control->set_pos_target_z_cm(inertial_nav.get_position_z_up_cm() - 100);
+            pos_control->set_pos_desired_z_cm(inertial_nav.get_position_z_up_cm() - 100);
         } else {
-            pos_control->set_pos_target_z_cm(inertial_nav.get_position_z_up_cm() + 300);
+            pos_control->set_pos_desired_z_cm(inertial_nav.get_position_z_up_cm() + 300);
         }
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
@@ -200,6 +200,7 @@ void ModeThrow::run()
         break;
     }
 
+#if HAL_LOGGING_ENABLED
     // log at 10hz or if stage changes
     uint32_t now = AP_HAL::millis();
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
@@ -213,7 +214,7 @@ void ModeThrow::run()
         const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
-        
+
 // @LoggerMessage: THRO
 // @Description: Throw Mode messages
 // @URL: https://ardupilot.org/copter/docs/throw-mode.html
@@ -227,7 +228,7 @@ void ModeThrow::run()
 // @Field: AttOk: True if the vehicle is upright 
 // @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
 // @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
-        
+
         AP::logger().WriteStreaming(
             "THRO",
             "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
@@ -245,6 +246,7 @@ void ModeThrow::run()
             height_ok,
             pos_ok);
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 
 bool ModeThrow::throw_detected()
@@ -272,8 +274,21 @@ bool ModeThrow::throw_detected()
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released
     bool no_throw_action = copter.ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
-    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
-    bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
+    // fetch the altitude above home
+    float altitude_above_home;  // Use altitude above home if it is set, otherwise relative to EKF origin
+    if (ahrs.home_is_set()) {
+        ahrs.get_relative_position_D_home(altitude_above_home);
+        altitude_above_home = -altitude_above_home; // altitude above home is returned as negative
+    } else {
+        altitude_above_home = inertial_nav.get_position_z_up_cm() * 0.01f; // centimeters to meters
+    }
+
+    // Check that the altitude is within user defined limits
+    const bool height_within_params = (g.throw_altitude_min == 0 || altitude_above_home > g.throw_altitude_min) && (g.throw_altitude_max == 0 || (altitude_above_home < g.throw_altitude_max));
+
+    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release  
+    bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action && height_within_params;
+
 
     // Record time and vertical velocity when we detect the possible throw
     if (possible_throw_detected && ((AP_HAL::millis() - free_fall_start_ms) > 500)) {

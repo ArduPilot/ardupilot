@@ -9,6 +9,8 @@ extern "C" {
 #if HAL_USE_MMC_SPI == TRUE
 void spiStartHook(SPIDriver *spip, const SPIConfig *config);
 void spiStopHook(SPIDriver *spip);
+void spiAcquireBusHook(SPIDriver *spip);
+void spiReleaseBusHook(SPIDriver *spip);
 void spiSelectHook(SPIDriver *spip);
 void spiUnselectHook(SPIDriver *spip);
 void spiIgnoreHook(SPIDriver *spip,size_t n);

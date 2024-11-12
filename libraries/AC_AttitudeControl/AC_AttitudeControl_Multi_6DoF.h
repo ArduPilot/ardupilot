@@ -20,10 +20,9 @@ public:
 
     // Command a Quaternion attitude with feedforward and smoothing
     // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
-    // not used anywhere in current code, panic so this implementaiton is not overlooked
-    void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target) override;
+    void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body) override;
     /*
-        override input functions to attitude controller and convert desired angles into thrust angles and substitute for osset angles
+        override input functions to attitude controller and convert desired angles into thrust angles and substitute for offset angles
     */
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing

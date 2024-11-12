@@ -26,22 +26,28 @@
 #include "AP_FlashIface_JEDEC.h"
 #include <AP_Math/AP_Math.h>
 #ifdef HAL_BOOTLOADER_BUILD
-#include <AP_HAL_ChibiOS/QSPIDevice.h>
+#include <AP_HAL_ChibiOS/WSPIDevice.h>
 #include "../../Tools/AP_Bootloader/support.h"
 #else
 extern const AP_HAL::HAL& hal;
 #endif
 
+enum class SupportedDeviceType {
+    QuadSPI = 0,
+    OctoSPI = 1
+};
+
 struct supported_device {
     const char* name;
     uint8_t manufacturer_id;
     uint8_t device_id;
+    SupportedDeviceType device_type;
 };
 
 static const struct supported_device supported_devices[] = {
-    {"mt25q", 0x20, 0xBA},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
-    {"w25q", 0xEF, 0x40},
-    {"w25q-dtr", 0xEF, 0x70}
+    {"mt25q",       0x20, 0xBA, SupportedDeviceType::QuadSPI},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
+    {"w25q",        0xEF, 0x40, SupportedDeviceType::QuadSPI},
+    {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPI},
 };
 
 #ifdef HAL_BOOTLOADER_BUILD
@@ -64,7 +70,8 @@ static const struct supported_device supported_devices[] = {
 #define CMD_MULTILINE_READ_ID               0xAF
 #define CMD_PAGE_PROGRAM                    0x02
 #define CMD_WRITE_DISABLE                   0x04
-#define CMD_READ_STATUS                     0x05
+#define CMD_READ_STATUS_1                   0x05
+#define CMD_READ_STATUS_2                   0x35
 #define CMD_MASS_ERASE                      0xC7
 #define CMD_RESET_ENABLE                    0x66
 #define CMD_RESET_MEMORY                    0x99
@@ -84,6 +91,8 @@ static const struct supported_device supported_devices[] = {
 #define SFDP_REV_1_6                        0x0106
 // quad enable for winbond
 #define QUAD_ENABLE_B1R2                    0x4
+// octo enable for winbond
+#define OCTO_ENABLE_B3R2                    0x1
 
 //#define DEBUG
 
@@ -106,7 +115,7 @@ static const struct supported_device supported_devices[] = {
 #define MAX_READ_SIZE       1024UL
 
 #ifdef HAL_BOOTLOADER_BUILD
-static ChibiOS::QSPIDeviceManager qspi;
+static ChibiOS::WSPIDeviceManager wspi;
 #endif
 
 bool AP_FlashIface_JEDEC::init()
@@ -115,9 +124,9 @@ bool AP_FlashIface_JEDEC::init()
     _dev = nullptr;
     for (uint8_t i = 0; i < ARRAY_SIZE(supported_devices); i++) {
 #ifdef HAL_BOOTLOADER_BUILD
-        _dev = qspi.get_device(supported_devices[i].name);
+        _dev = wspi.get_device(supported_devices[i].name);
 #else
-        _dev = hal.qspi->get_device(supported_devices[i].name);
+        _dev = hal.wspi->get_device(supported_devices[i].name);
 #endif
         if (_dev) {
             _dev_list_idx = i;
@@ -162,14 +171,14 @@ bool AP_FlashIface_JEDEC::init()
 void AP_FlashIface_JEDEC::reset_device()
 {
     // Get chip out of XIP mode
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
 #ifndef HAL_BOOTLOADER_BUILD // this is required in order to run jedec_test with a regular bootloader
     _dev->get_semaphore()->take_blocking();
 #endif
 
     /* Single line CMD_RESET_MEMORY command.*/
     cmd.cmd    =  CMD_RESET_ENABLE;
-    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
+    cmd.cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -179,7 +188,7 @@ void AP_FlashIface_JEDEC::reset_device()
 
     /* Single line N25Q_CMD_RESET_MEMORY command.*/
     cmd.cmd   =  CMD_RESET_MEMORY;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
+    cmd.cfg   =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE;
     cmd.addr  =  0;
     cmd.alt   =  0;
     cmd.dummy =  0;
@@ -192,13 +201,13 @@ void AP_FlashIface_JEDEC::reset_device()
 // Does initial configuration to bring up and setup chip
 bool AP_FlashIface_JEDEC::detect_device()
 {
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
 
     {
         uint8_t buf[3] {};
         cmd.cmd    =  CMD_READ_ID;
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
+        cmd.cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                      AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE;
         cmd.addr   =  0;
         cmd.alt    =  0;
         cmd.dummy  =  0;
@@ -220,10 +229,10 @@ bool AP_FlashIface_JEDEC::detect_device()
         uint32_t sfdp_header[2];
 
         cmd.cmd    =  CMD_READ_SFDP;
-        cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_ADDR_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                      AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
+        cmd.cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                      AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+                      AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
+                      AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE;
         cmd.addr   =  0;
         cmd.alt    =  0;
         cmd.dummy  =  8; // 8 dummy cycles
@@ -381,32 +390,65 @@ bool AP_FlashIface_JEDEC::detect_device()
         _desc.page_prog_delay_us = (SFDP_GET_BITS(param_table[10], 8, 12) + 1) * unit;
         _desc.page_prog_timeout_us = _desc.page_prog_delay_us * timeout_mult;
 
+        uint8_t fast_read_dword = 2; // QuadSPI configuration dword
+#if HAL_USE_OCTOSPI
+        // To use Octo SPI it must be both supported in hardware and configured
+        const bool octo_spi = supported_devices[_dev_list_idx].device_type == SupportedDeviceType::OctoSPI
+                                && SFDP_GET_BITS(param_table[16], 8, 15);
 
-        // Configure Quad Mode Enable and Read Sequence, Ref. JESD216D 6.4.8 6.4.10 6.4.18
-        if (!SFDP_GET_BIT(param_table[0], 21)) {
+        if (octo_spi) {
+            fast_read_dword = 16;
+        }
+#else
+        const bool octo_spi = false;
+#endif
+
+        // Configure Octo/Quad Mode Enable and Read Sequence, Ref. JESD216D 6.4.8 6.4.10 6.4.18, 6.4.20
+        if (!octo_spi && !SFDP_GET_BIT(param_table[0], 21)) {
             Debug("1-4-4 mode unsupported");
             return false;
         }
+
+        _desc.fast_read_ins = SFDP_GET_BITS(param_table[fast_read_dword], 8, 15);
+        // we get number of dummy clocks cycles needed, also include mode bits
+        _desc.fast_read_mode_clocks =  SFDP_GET_BITS(param_table[fast_read_dword], 5, 7);
+        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[fast_read_dword], 0, 4);
+
+        if (_desc.fast_read_ins == 0) {
+            Debug("Fast read unsupported");
+            return false;
+        }
+
+        if (!octo_spi) {
+            _desc.wide_mode_enable = SFDP_GET_BITS(param_table[14], 20, 22);
+            if (_desc.wide_mode_enable != 0b000 && _desc.wide_mode_enable != QUAD_ENABLE_B1R2) {
+                Debug("Unsupported Quad Enable Requirement 0x%x", _desc.wide_mode_enable);
+                return false;
+            }
+            if (SFDP_GET_BIT(param_table[14], 4) && _desc.wide_mode_enable != QUAD_ENABLE_B1R2) {
+                Debug("Unsupported Quad Enable Requirement: set QE bits");
+                return false;
+            }
+        }
+#if HAL_USE_OCTOSPI
+        else {
+            _desc.wide_mode_enable = SFDP_GET_BITS(param_table[18], 20, 22);
+            if (_desc.wide_mode_enable != 0b000 && _desc.wide_mode_enable != OCTO_ENABLE_B3R2) {
+                Debug("Unsupported Octo Enable Requirement 0x%x", _desc.wide_mode_enable);
+                return false;
+            }
+            if (SFDP_GET_BIT(param_table[18], 5) && _desc.wide_mode_enable != OCTO_ENABLE_B3R2) {
+                Debug("Unsupported Quad Enable Requirement: set WREN bits");
+                return false;
+            }
+        }
+#endif
 
         // if (!SFDP_GET_BIT(param_table[4], 4)) {
         //     Debug("Quad mode unsupported");
         //     return false;
         // }
 
-        _desc.fast_read_ins = SFDP_GET_BITS(param_table[2], 8, 15);
-        // we get number of dummy clocks cycles needed, also include mode bits
-        _desc.fast_read_mode_clocks =  SFDP_GET_BITS(param_table[2], 5, 7);
-        _desc.fast_read_dummy_cycles = SFDP_GET_BITS(param_table[2], 0, 4);
-
-        _desc.quad_mode_enable = SFDP_GET_BITS(param_table[14], 20, 22);
-        if (_desc.quad_mode_enable != 0b000 && _desc.quad_mode_enable != QUAD_ENABLE_B1R2) {
-            Debug("Unsupported Quad Enable Requirement 0x%x", _desc.quad_mode_enable);
-            return false;
-        }
-        if (SFDP_GET_BIT(param_table[14], 4) && _desc.quad_mode_enable != QUAD_ENABLE_B1R2) {
-            Debug("Unsupported Quad Enable Requirement: set QE bits");
-            return false;
-        }
 
         // Configure XIP mode Ref. JESD216D 6.4.18
         if (SFDP_GET_BIT(param_table[14], 9)) {
@@ -430,34 +472,34 @@ bool AP_FlashIface_JEDEC::detect_device()
             _desc.status_read_ins = 0x70;
         } else if (SFDP_GET_BIT(param_table[13], 2)) {
             _desc.legacy_status_polling = true;
-            _desc.status_read_ins = 0x05;
+            _desc.status_read_ins = CMD_READ_STATUS_1;
         }
     }
     initialised = true;
     return true;
 }
 
-// Configures device to normal working state, currently 1-4-4 QSPI
+// Configures device to normal working state, currently 1-4-4 WSPI
 bool AP_FlashIface_JEDEC::configure_device()
 {
     // Enable 1-4-4 mode
-    if (_desc.quad_mode_enable == QUAD_ENABLE_B1R2) {
-        uint8_t reg1, reg2;
-        if (!read_reg(0x05, reg1)) {
+    if (_desc.wide_mode_enable == QUAD_ENABLE_B1R2) {
+        uint8_t reg1 = 0, reg2 = 0;
+        if (!read_reg(CMD_READ_STATUS_1, reg1)) {
             Debug("Failed reg1 read");
             return false;
         }
-        if (!read_reg(0x35, reg2)) {
+        if (!read_reg(CMD_READ_STATUS_2, reg2)) {
             Debug("Failed reg2 read");
             return false;
         }
         write_enable();
         wait_ready();
 
-        AP_HAL::QSPIDevice::CommandHeader cmd {
+        AP_HAL::WSPIDevice::CommandHeader cmd {
             .cmd    = 0x01,
-            .cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                       AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE,
+            .cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                       AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE,
             .addr   =  0,
             .alt    =  0,
             .dummy  =  0
@@ -479,13 +521,60 @@ bool AP_FlashIface_JEDEC::configure_device()
             Debug("Failed to set QE bit");
             return false;
         }
+
+        Debug("Device configured for 1-4-4 mode: QE bit 0x%x, fast read ins/cycles 0x%x/0x%x",
+            _desc.quad_mode_enable, _desc.fast_read_ins, _desc.fast_read_dummy_cycles);
+
+        // Hurray! We are in wide mode
+        _wide_spi_mode = WSPIMode::QuadSPI;
     }
+#if HAL_USE_OCTOSPI
+    // Enable 1-8-8 mode
+    else if (_desc.wide_mode_enable == OCTO_ENABLE_B3R2) {
+        uint8_t reg2;
 
-    Debug("Device configured for 1-4-4 mode: QE bit 0x%x, fast read ins/cycles 0x%x/0x%x",
-        _desc.quad_mode_enable, _desc.fast_read_ins, _desc.fast_read_dummy_cycles);
+        AP_HAL::WSPIDevice::CommandHeader read_reg {
+            .cmd    =  0x65,
+            .cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                       AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE |
+                       AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+                       AP_HAL::WSPI::CFG_ADDR_SIZE_8,
+            .addr   =  0x02,
+            .alt    =  0,
+            .dummy  =  8,
+        };
 
-    // Hurray! We are in 1-4-4 mode
-    _quad_spi_mode = true;
+        _dev->set_cmd_header(read_reg);
+        if (!_dev->transfer(nullptr, 0, &reg2, sizeof(reg2))) {
+            Debug("Failed reg2 read");
+            return false;
+        }
+
+        write_enable();
+        wait_ready();
+
+        reg2 |= 0x4;    // enable OE bit
+
+        if (!write_reg(0x31, reg2)) {
+            Debug("Failed OE write");
+            write_disable();
+            return false;
+        }
+
+        write_disable();
+
+        _dev->set_cmd_header(read_reg);
+        if (!_dev->transfer(nullptr, 0, &reg2, sizeof(reg2)) || (reg2 & 0x4) == 0) {
+            Debug("Failed to set OE bit");
+            return false;
+        }
+        Debug("Device configured for 1-8-8 mode: OE bit 0x%x, fast read ins/cycles 0x%x/0x%x",
+            _desc.wide_mode_enable, _desc.fast_read_ins, _desc.fast_read_dummy_cycles);
+
+        // Hurray! We are in wide mode
+        _wide_spi_mode = WSPIMode::OctoSPI;
+    }
+#endif
     return true;
 }
 
@@ -534,10 +623,10 @@ bool AP_FlashIface_JEDEC::modify_reg(uint8_t read_ins, uint8_t write_ins,
 // reads a register value of chip using instruction
 bool AP_FlashIface_JEDEC::read_reg(uint8_t read_ins, uint8_t &read_val)
 {
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
     cmd.cmd = read_ins;
-    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                    AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
+    cmd.cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                    AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -550,12 +639,12 @@ bool AP_FlashIface_JEDEC::read_reg(uint8_t read_ins, uint8_t &read_val)
 }
 
 // sends instruction to write a register value in the chip
-bool AP_FlashIface_JEDEC::write_reg(uint8_t read_ins, uint8_t write_val)
+bool AP_FlashIface_JEDEC::write_reg(uint8_t write_ins, uint8_t write_val)
 {
-    AP_HAL::QSPIDevice::CommandHeader cmd;
-    cmd.cmd = read_ins;
-    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                    AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
+    cmd.cmd = write_ins;
+    cmd.cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                    AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -567,12 +656,12 @@ bool AP_FlashIface_JEDEC::write_reg(uint8_t read_ins, uint8_t write_val)
     return true;
 }
 
-// Sends QSPI command without data
+// Sends WSPI command without data
 bool AP_FlashIface_JEDEC::send_cmd(uint8_t ins)
 {
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
     cmd.cmd = ins;
-    cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
+    cmd.cfg    =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE;
     cmd.addr   =  0;
     cmd.alt    =  0;
     cmd.dummy  =  0;
@@ -603,9 +692,9 @@ bool AP_FlashIface_JEDEC::start_mass_erase(uint32_t &delay_ms, uint32_t &timeout
     write_enable();
     wait_ready();
 
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_MASS_ERASE;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;
+    cmd.cfg   =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE;
     cmd.addr  =  0;
     cmd.alt   =  0;
     cmd.dummy =  0;
@@ -700,11 +789,11 @@ bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uin
     write_enable();
     wait_ready();
 
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
     cmd.cmd   =  ins;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                 AP_HAL::QSPI::CFG_ADDR_MODE_ONE_LINE |
-                 AP_HAL::QSPI::CFG_ADDR_SIZE_24;
+    cmd.cfg   =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                 AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+                 AP_HAL::WSPI::CFG_ADDR_SIZE_24;
     cmd.addr  =  offset;
     cmd.alt   =  0;
     cmd.dummy =  0;
@@ -807,12 +896,12 @@ bool AP_FlashIface_JEDEC::start_program_offset(uint32_t offset, const uint8_t* d
     write_enable();
     wait_ready();
 
-    AP_HAL::QSPIDevice::CommandHeader cmd;
+    AP_HAL::WSPIDevice::CommandHeader cmd;
     cmd.cmd   =  CMD_PAGE_PROGRAM;
-    cmd.cfg   =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                 AP_HAL::QSPI::CFG_ADDR_MODE_ONE_LINE |
-                 AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                 AP_HAL::QSPI::CFG_DATA_MODE_ONE_LINE;
+    cmd.cfg   =  AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                 AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+                 AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
+                 AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE;
     cmd.addr  =  offset;
     cmd.alt   =  0;
     cmd.dummy =  0;
@@ -853,16 +942,25 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
     uint32_t read_ptr, read_size;
     for (read_ptr = offset; read_ptr < (offset+size); read_ptr+=MAX_READ_SIZE) {
         read_size = MIN((offset+size) - read_ptr, MAX_READ_SIZE);
-        AP_HAL::QSPIDevice::CommandHeader cmd;
+        AP_HAL::WSPIDevice::CommandHeader cmd;
         cmd.cmd     =   _desc.fast_read_ins;
         cmd.addr    =   read_ptr;
         cmd.alt     =   0;
-        cmd.cfg     =   AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                        AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
-                        AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                        AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
-                        AP_HAL::QSPI::CFG_ALT_SIZE_8 |
-                        AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES;
+        cmd.cfg     =   AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                        AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
+                        AP_HAL::WSPI::CFG_ALT_SIZE_8;
+        if (_wide_spi_mode == WSPIMode::QuadSPI) {
+            cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
+                         AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
+                         AP_HAL::WSPI::CFG_ALT_MODE_FOUR_LINES);
+#if HAL_USE_OCTOSPI
+        } else if (_wide_spi_mode == WSPIMode::OctoSPI) {
+            cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_EIGHT_LINES |
+                         AP_HAL::WSPI::CFG_DATA_MODE_EIGHT_LINES |
+                         AP_HAL::WSPI::CFG_ALT_MODE_EIGHT_LINES);
+#endif
+        }
+
         if (_desc.fast_read_mode_clocks == 1){
             cmd.dummy = _desc.fast_read_dummy_cycles - 1;
         } else {
@@ -888,8 +986,12 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
  */
 bool AP_FlashIface_JEDEC::is_device_busy()
 {
+    // wait for peripheral to become free
+    while (_dev->is_busy()) {}
+
     uint8_t status;
     read_reg(_desc.status_read_ins, status);
+
     if (_desc.legacy_status_polling) {
         return (status & 0x1);
     } else {
@@ -900,9 +1002,9 @@ bool AP_FlashIface_JEDEC::is_device_busy()
 // wait for the chip to be ready for the next instruction
 void AP_FlashIface_JEDEC::wait_ready()
 {
-    while (is_device_busy()) {}
+    while (is_device_busy()) {
+    }
 }
-
 
 /**
  * @details Starts execution in place mode
@@ -927,16 +1029,24 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
     switch(_desc.entry_method) {
         case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_1:
         {
-            // Set QSPI module for XIP mode
-            AP_HAL::QSPIDevice::CommandHeader cmd;
-            cmd.cmd = _desc.fast_read_ins;
-            cmd.alt = 0xA5;
-            cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                      AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
-                      AP_HAL::QSPI::CFG_ALT_SIZE_8;
+            // Set WSPI module for XIP mode
+            AP_HAL::WSPIDevice::CommandHeader cmd;
+            cmd.cmd = _desc.fast_read_ins;  // generally 0xEB for 1-4-4 access
+            cmd.alt = 0xF0;                 // add M0-7 bits in alt to make up 32-bit address phase, sec 8.2.11 W25Q64JV reference
+            cmd.cfg = AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
+                      AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                      AP_HAL::WSPI::CFG_ALT_SIZE_8;
+            if (_wide_spi_mode == WSPIMode::QuadSPI) {
+                cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
+                             AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
+                             AP_HAL::WSPI::CFG_ALT_MODE_FOUR_LINES);
+#if HAL_USE_OCTOSPI
+            } else if (_wide_spi_mode == WSPIMode::OctoSPI) {
+                cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_EIGHT_LINES |
+                             AP_HAL::WSPI::CFG_DATA_MODE_EIGHT_LINES |
+                             AP_HAL::WSPI::CFG_ALT_MODE_EIGHT_LINES);
+#endif
+            }
             cmd.addr = 0;
             cmd.dummy = _desc.fast_read_dummy_cycles;
             _dev->set_cmd_header(cmd);
@@ -954,17 +1064,25 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
                 write_disable();
                 return false;
             }
-            // Set QSPI module for XIP mode
-            AP_HAL::QSPIDevice::CommandHeader cmd;
+            // Set WSPI module for XIP mode
+            AP_HAL::WSPIDevice::CommandHeader cmd;
             cmd.cmd = _desc.fast_read_ins;
             cmd.alt = 0;
-            cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                      AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
-                      AP_HAL::QSPI::CFG_ALT_SIZE_8 |
-                      AP_HAL::QSPI::CFG_SIOO;
+            cmd.cfg = AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
+                      AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+                      AP_HAL::WSPI::CFG_ALT_SIZE_8 |
+                      AP_HAL::WSPI::CFG_SIOO;
+            if (_wide_spi_mode == WSPIMode::QuadSPI) {
+                cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
+                             AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
+                             AP_HAL::WSPI::CFG_ALT_MODE_FOUR_LINES);
+#if HAL_USE_OCTOSPI
+            } else if (_wide_spi_mode == WSPIMode::OctoSPI) {
+                cmd.cfg |=  (AP_HAL::WSPI::CFG_ADDR_MODE_EIGHT_LINES |
+                             AP_HAL::WSPI::CFG_DATA_MODE_EIGHT_LINES |
+                             AP_HAL::WSPI::CFG_ALT_MODE_EIGHT_LINES);
+#endif
+            }
             cmd.addr = 0;
             // correct dummy bytes because of addition of alt bytes
             cmd.dummy = _desc.fast_read_dummy_cycles - 1;

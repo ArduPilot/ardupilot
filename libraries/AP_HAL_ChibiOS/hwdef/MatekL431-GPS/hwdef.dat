@@ -1,7 +1,5 @@
 include ../MatekL431/hwdef.inc
 
-define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-GPS"
-
 # enable GPS and compass
 define HAL_PERIPH_ENABLE_GPS
 define GPS_MAX_RATE_MS 200
@@ -15,6 +13,7 @@ define HAL_PERIPH_GPS_PORT_DEFAULT 2
 define GPS_MOVING_BASELINE 1
 
 define HAL_PERIPH_ENABLE_MAG
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 
 define HAL_COMPASS_MAX_SENSORS 1
 
@@ -28,10 +27,6 @@ COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 undef PB6
 undef PB7
 
-# disable USART2
-undef PA2
-undef PA3
-
 # enable GPS port with DMA
 undef PB10
 undef PB11
@@ -42,14 +37,24 @@ PB11  USART3_RX USART3 SPEED_HIGH
 define HAL_USE_ADC FALSE
 
 # disable unnecessary threads
-define HAL_NO_MONITOR_THREAD
-define HAL_NO_RCIN_THREAD
 define HAL_NO_RCOUT_THREAD
 define HAL_NO_TIMER_THREAD
+undef HAL_RCIN_THREAD_ENABLED
+define HAL_RCIN_THREAD_ENABLED 0
 
 # maintain GPS port number compatibility with MatekL431-Periph
-SERIAL_ORDER EMPTY EMPTY USART3
+SERIAL_ORDER EMPTY USART2 USART3
 
 # larger CAN pool for RTCM data
 undef HAL_CAN_POOL_SIZE
 define HAL_CAN_POOL_SIZE 12000
+
+# -------------------- MSP --------------------------------
+define HAL_PERIPH_ENABLE_MSP
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 1
+
+undef PB10
+undef PB11
+PB10 USART3_TX USART3 SPEED_HIGH
+PB11 USART3_RX USART3 SPEED_HIGH

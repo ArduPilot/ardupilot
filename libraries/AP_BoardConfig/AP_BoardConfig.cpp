@@ -76,7 +76,11 @@
 
 #ifndef HAL_BRD_OPTIONS_DEFAULT
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#ifdef HAL_DEBUG_BUILD
+#define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG | BOARD_OPTION_DEBUG_ENABLE
+#else
 #define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
+#endif
 #else
 #define HAL_BRD_OPTIONS_DEFAULT 0
 #endif
@@ -111,7 +115,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
     // @Description: Enable flow control on serial 1 (telemetry 1). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
-    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @Values: 0:Disabled,1:Enabled,2:Auto,3:RS-485 Driver enable RTS pin
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, state.ser_rtscts[1], BOARD_SER1_RTSCTS_DEFAULT),
@@ -119,41 +123,33 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL2
     // @Param: SER2_RTSCTS
+    // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 2 flow control
     // @Description: Enable flow control on serial 2 (telemetry 2). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    // @Values: 0:Disabled,1:Enabled,2:Auto
-    // @RebootRequired: True
-    // @User: Advanced
     AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser_rtscts[2], 2),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL3
     // @Param: SER3_RTSCTS
+    // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 3 flow control
     // @Description: Enable flow control on serial 3. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    // @Values: 0:Disabled,1:Enabled,2:Auto
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("SER3_RTSCTS",    23, AP_BoardConfig, state.ser_rtscts[3], 2),
+    AP_GROUPINFO("SER3_RTSCTS",    26, AP_BoardConfig, state.ser_rtscts[3], 2),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL4
     // @Param: SER4_RTSCTS
+    // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 4 flow control
     // @Description: Enable flow control on serial 4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    // @Values: 0:Disabled,1:Enabled,2:Auto
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("SER4_RTSCTS",    24, AP_BoardConfig, state.ser_rtscts[4], 2),
+    AP_GROUPINFO("SER4_RTSCTS",    27, AP_BoardConfig, state.ser_rtscts[4], 2),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL5
     // @Param: SER5_RTSCTS
+    // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 5 flow control
     // @Description: Enable flow control on serial 5. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    // @Values: 0:Disabled,1:Enabled,2:Auto
-    // @RebootRequired: True
-    // @User: Advanced
     AP_GROUPINFO("SER5_RTSCTS",    25, AP_BoardConfig, state.ser_rtscts[5], 2),
 #endif
 #endif
@@ -194,7 +190,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_HAVE_IMU_HEATER
     // @Param: HEAT_TARG
     // @DisplayName: Board heater temperature target
-    // @Description: Board heater target temperature for boards with controllable heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
+    // @Description: Board heater target temperature for boards with controllable heating units. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
@@ -221,7 +217,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, state.io_enable, 1),
 #endif
 
-#if HAL_RCINPUT_WITH_AP_RADIO
+#if AP_RADIO_ENABLED
     // @Group: RADIO
     // @Path: ../AP_Radio/AP_Radio.cpp
     AP_SUBGROUPINFO(_radio, "RADIO", 11, AP_BoardConfig, AP_Radio),
@@ -234,9 +230,11 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 
+#if AP_RTC_ENABLED
     // @Group: RTC
     // @Path: ../AP_RTC/AP_RTC.cpp
     AP_SUBGROUPINFO(rtc, "RTC", 14, AP_BoardConfig, AP_RTC),
+#endif
 
 #if HAL_HAVE_BOARD_VOLTAGE
     // @Param: VBUS_MIN
@@ -274,7 +272,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #ifdef HAL_GPIO_PWM_VOLT_PIN
     // @Param: PWM_VOLT_SEL
     // @DisplayName: Set PWM Out Voltage
-    // @Description: This sets the voltage max for PWM output pulses. 0 for 3.3V and 1 for 5V output. On boards with an IOMCU that support this parameter this option only affects the 8 main outputs, not the 6 auxilliary outputs. Using 5V output can help to reduce the impact of ESC noise interference corrupting signals to the ESCs.
+    // @Description: This sets the voltage max for PWM output pulses. 0 for 3.3V and 1 for 5V output. On boards with an IOMCU that support this parameter this option only affects the 8 main outputs, not the 6 auxiliary outputs. Using 5V output can help to reduce the impact of ESC noise interference corrupting signals to the ESCs.
     // @Values: 0:3.3V,1:5V
     // @User: Advanced
     AP_GROUPINFO("PWM_VOLT_SEL", 18, AP_BoardConfig, _pwm_volt_sel, 0),
@@ -283,7 +281,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Board options
     // @Description: Board specific option flags
-    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot
+    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot, 7:Skip board validation, 8:Disable board arming gpio output change on arm/disarm
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 
@@ -348,8 +346,30 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("SD_MISSION", 24, AP_BoardConfig, sdcard_storage.mission_kb, 0),
+
+    // @Param: SD_FENCE
+    // @DisplayName:  SDCard Fence size
+    // @Description: This sets the amount of storage in kilobytes reserved on the microsd card in fence.stg for fence storage.
+    // @Range: 0 64
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SD_FENCE", 29, AP_BoardConfig, sdcard_storage.fence_kb, 0),
 #endif
+
+    // index 25 used by SER5_RTSCTS
+    // index 26 used by SER3_RTSCTS
+    // index 27 used by SER4_RTSCTS
+
     
+#if HAL_WITH_IO_MCU_DSHOT
+    // @Param: IO_DSHOT
+    // @DisplayName: Load DShot FW on IO
+    // @Description: This loads the DShot firmware on the IO co-processor
+    // @Values: 0:StandardFW,1:DshotFW
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("IO_DSHOT", 28, AP_BoardConfig, state.io_dshot, 0),
+#endif
     AP_GROUPEND
 };
 
@@ -360,7 +380,9 @@ void AP_BoardConfig::init()
 
     board_setup();
 
+#if AP_RTC_ENABLED
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
+#endif
 
     if (_boot_delay_ms > 0) {
         uint16_t delay_ms = uint16_t(_boot_delay_ms.get());

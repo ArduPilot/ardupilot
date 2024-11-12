@@ -8,6 +8,8 @@
 #include <AP_Vehicle/ModeReason.h>
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Mission/AP_Mission.h>
+#include "pullup.h"
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -65,7 +67,7 @@ public:
     void exit();
 
     // run controllers specific to this mode
-    virtual void run() {};
+    virtual void run();
 
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
@@ -78,6 +80,9 @@ public:
 
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
+
+    // Reset rate and steering and TECS controllers
+    void reset_controllers();
 
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
@@ -125,6 +130,18 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+    // true if is landing 
+    virtual bool is_landing() const { return false; }
+
+    // true if is taking 
+    virtual bool is_taking_off() const;
+
+    // true if throttle min/max limits should be applied
+    virtual bool use_throttle_limits() const;
+
+    // true if voltage correction should be applied to throttle
+    virtual bool use_battery_compensation() const;
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -135,6 +152,12 @@ protected:
 
     // mode specific pre-arm checks
     virtual bool _pre_arm_checks(size_t buflen, char *buffer) const;
+
+    // Helper to output to both k_rudder and k_steering servo functions
+    void output_rudder_and_steering(float val);
+
+    // Output pilot throttle, this is used in stabilized modes without auto throttle control
+    void output_pilot_throttle();
 
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes
@@ -186,6 +209,7 @@ protected:
 class ModeAuto : public Mode
 {
 public:
+    friend class Plane;
 
     Number mode_number() const override { return Number::AUTO; }
     const char *name() const override { return "AUTO"; }
@@ -206,11 +230,43 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+    bool is_landing() const override;
+
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
+
+    bool verify_altitude_wait(const AP_Mission::Mission_Command& cmd);
+
+    void run() override;
+
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    bool in_pullup() const { return pullup.in_pullup(); }
+#endif
+
 protected:
 
     bool _enter() override;
     void _exit() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override;
+
+private:
+
+    // Delay the next navigation command
+    struct {
+        uint32_t time_max_ms;
+        uint32_t time_start_ms;
+    } nav_delay;
+
+    // wiggle state and timer for NAV_ALTITUDE_WAIT
+    void wiggle_servos();
+    struct {
+        uint8_t stage;
+        uint32_t last_ms;
+    } wiggle;
+
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    GliderPullup pullup;
+#endif // AP_PLANE_GLIDER_PULLUP_ENABLED
 };
 
 
@@ -226,6 +282,8 @@ public:
     void update() override;
     
     bool mode_allows_autotuning() const override { return true; }
+
+    void run() override;
 
 protected:
 
@@ -303,6 +361,7 @@ public:
     void navigate() override;
 
     bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
+    bool isHeadingLinedUp_cd(const int32_t bearing_cd, const int32_t heading_cd);
     bool isHeadingLinedUp_cd(const int32_t bearing_cd);
 
     bool allows_throttle_nudging() const override { return true; }
@@ -355,6 +414,15 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const override;
+
+    // true if voltage correction should be applied to throttle
+    bool use_battery_compensation() const override { return false; }
+
 };
 
 
@@ -398,6 +466,12 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+private:
+    void stabilize_stick_mixing_direct();
+
 };
 
 class ModeTraining : public Mode
@@ -449,6 +523,8 @@ public:
     void update() override;
     
     bool mode_allows_autotuning() const override { return true; }
+
+    void run() override;
 
 };
 
@@ -589,6 +665,8 @@ class ModeQLoiter : public Mode
 {
 friend class QuadPlane;
 friend class ModeQLand;
+friend class Plane;
+
 public:
 
     Number mode_number() const override { return Number::QLOITER; }
@@ -606,12 +684,12 @@ public:
 protected:
 
     bool _enter() override;
+    uint32_t last_target_loc_set_ms;
 };
 
 class ModeQLand : public Mode
 {
 public:
-
     Number mode_number() const override { return Number::QLAND; }
     const char *name() const override { return "QLAND"; }
     const char *name4() const override { return "QLND"; }
@@ -627,7 +705,6 @@ protected:
 
     bool _enter() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
-
 };
 
 class ModeQRTL : public Mode
@@ -745,10 +822,16 @@ protected:
     AP_Int16 target_dist;
     AP_Int8 level_pitch;
 
-    bool takeoff_started;
+    bool takeoff_mode_setup;
     Location start_loc;
 
     bool _enter() override;
+
+private:
+
+    // flag that we have already called autoenable fences once in MODE TAKEOFF
+    bool have_autoenabled_fences;
+
 };
 
 #if HAL_SOARING_ENABLED

@@ -16,10 +16,11 @@ void Copter::arm_motors_check()
     // check if arming/disarm using rudder is allowed
     AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
     if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
+        arming_counter = 0;
         return;
     }
 
-#if TOY_MODE_ENABLED == ENABLED
+#if TOY_MODE_ENABLED
     if (g2.toy_mode.enabled()) {
         // not armed with sticks in toy mode
         return;
@@ -134,7 +135,7 @@ void Copter::auto_disarm_check()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Copter::motors_output()
 {
-#if ADVANCED_FAILSAFE == ENABLED
+#if ADVANCED_FAILSAFE
     // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
     // OBC rules
@@ -165,10 +166,10 @@ void Copter::motors_output()
     bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !SRV_Channels::get_emergency_stop();
     if (!motors->get_interlock() && interlock) {
         motors->set_interlock(true);
-        AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_ENABLED);
+        LOGGER_WRITE_EVENT(LogEvent::MOTORS_INTERLOCK_ENABLED);
     } else if (motors->get_interlock() && !interlock) {
         motors->set_interlock(false);
-        AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_DISABLED);
+        LOGGER_WRITE_EVENT(LogEvent::MOTORS_INTERLOCK_DISABLED);
     }
 
     if (ap.motor_test) {

@@ -31,6 +31,12 @@ public:
     // update mount position - should be called periodically
     void update() override;
 
+    // returns true if this mount can control its roll
+    bool has_roll_control() const override;
+
+    // returns true if this mount can control its tilt
+    bool has_pitch_control() const override;
+
     // returns true if this mount can control its pan (required for multicopters)
     bool has_pan_control() const override;
 
@@ -56,7 +62,6 @@ private:
     SRV_Channel::Aux_servo_function_t    _pan_idx;   // SRV_Channel mount pan  function index
     SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
 
-    MountTarget _angle_rad;         // angle target
-    Vector3f _angle_bf_output_deg;  // final body frame output angle in degrees
+    Vector3f _angle_bf_output_rad;  // final body frame output angle in radians
 };
 #endif // HAL_MOUNT_SERVO_ENABLED

@@ -15,7 +15,7 @@
 /*
   simulate MegaSquirt EFI system
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --uartF=sim:megasquirt --speedup=1
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduPlane -A --serial5=sim:megasquirt --speedup=1
 param set SERIAL5_PROTOCOL 24
 param set SIM_EFI_TYPE 1
 param set EFI_TYPE 1
@@ -28,8 +28,8 @@ status EFI_STATUS
 
 #pragma once
 
+#include <AP_HAL/utility/Socket_native.h>
 #include <SITL/SITL.h>
-#include <AP_HAL/utility/Socket.h>
 #include "SIM_SerialDevice.h"
 
 namespace SITL {
@@ -96,6 +96,8 @@ private:
         uint8_t pad[128-67];
         uint16_t fuelPressure;
     } table7;
+
+    float tps;
 };
 
 }

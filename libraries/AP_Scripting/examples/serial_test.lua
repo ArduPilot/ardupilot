@@ -1,5 +1,7 @@
 -- Lua script to write and read from a serial
 
+---@diagnostic disable: need-check-nil
+
 local port = serial:find_serial(0)
 
 port:begin(115200)

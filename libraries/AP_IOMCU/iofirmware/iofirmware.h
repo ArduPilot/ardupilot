@@ -4,10 +4,15 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
-
+#include "hal.h"
 #include "ch.h"
 #include "ioprotocol.h"
+
+#if AP_HAL_SHARED_DMA_ENABLED
+#include <AP_HAL_ChibiOS/shared_dma.h>
+#endif
 
 #define PWM_IGNORE_THIS_CHANNEL UINT16_MAX
 #define SERVO_COUNT 8
@@ -25,12 +30,14 @@ public:
     void pwm_out_update();
     void heater_update();
     void rcin_update();
+    void erpm_update();
+    void telem_update();
 
     bool handle_code_write();
     bool handle_code_read();
     void schedule_reboot(uint32_t time_ms);
     void safety_update();
-    void rcout_mode_update();
+    void rcout_config_update();
     void rcin_serial_init();
     void rcin_serial_update();
     void page_status_update(void);
@@ -67,7 +74,12 @@ public:
         uint16_t ignore_safety;
         uint16_t heater_duty_cycle = 0xFFFFU;
         uint16_t pwm_altclock = 1;
+        uint16_t dshot_period_us;
+        uint16_t dshot_rate;
+        uint16_t channel_mask;
     } reg_setup;
+
+    uint16_t last_channel_mask;
 
     // CONFIG values
     struct page_config config;
@@ -81,17 +93,17 @@ public:
 
     // PAGE_SERVO values
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];    // size has to account for virtual channels via SBUS_OUT
     } reg_servo;
 
     // PAGE_DIRECT_PWM values
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     } reg_direct_pwm;
 
     // PAGE_FAILSAFE_PWM
     struct {
-        uint16_t pwm[IOMCU_MAX_CHANNELS];
+        uint16_t pwm[IOMCU_MAX_RC_CHANNELS];
     } reg_failsafe_pwm;
 
     // output rates
@@ -102,6 +114,14 @@ public:
         uint16_t sbus_rate_hz;
     } rate;
 
+    // output mode values
+    struct page_mode_out mode_out;
+
+    uint16_t last_output_mode_mask;
+    uint16_t last_output_bdmask;
+    uint16_t last_output_esc_type;
+    uint16_t last_output_reversible_mask;
+
     // MIXER values
     struct page_mixing mixing;
 
@@ -109,6 +129,25 @@ public:
     struct page_GPIO GPIO;
     uint8_t last_GPIO_channel_mask;
     void GPIO_write();
+
+    // DSHOT runtime
+    struct page_dshot dshot;
+
+#if AP_HAL_SHARED_DMA_ENABLED
+    void tx_dma_allocate(ChibiOS::Shared_DMA *ctx);
+    void tx_dma_deallocate(ChibiOS::Shared_DMA *ctx);
+
+    ChibiOS::Shared_DMA* tx_dma_handle;
+#endif
+#ifdef HAL_WITH_BIDIR_DSHOT
+    struct page_dshot_erpm dshot_erpm;
+    uint32_t last_erpm_us;
+    struct page_dshot_telem dshot_telem[IOMCU_MAX_TELEM_CHANNELS/4];
+    uint32_t last_telem_ms;
+#if HAL_WITH_ESC_TELEM
+    AP_ESC_Telem esc_telem;
+#endif
+#endif
 
     // true when override channel active
     bool override_active;
@@ -118,6 +157,8 @@ public:
     uint32_t sbus_interval_ms;
 
     uint32_t fmu_data_received_time;
+
+    bool pwm_update_pending;
     uint32_t last_heater_ms;
     uint32_t reboot_time;
     bool do_reboot;
@@ -129,9 +170,8 @@ public:
     uint32_t safety_update_ms;
     uint32_t safety_button_counter;
     uint8_t led_counter;
-    uint32_t last_loop_ms;
-    bool oneshot_enabled;
-    bool brushed_enabled;
+    uint32_t last_slow_loop_ms;
+    uint32_t last_fast_loop_us;
     thread_t *thread_ctx;
     bool last_safety_off;
     uint32_t last_status_ms;

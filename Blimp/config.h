@@ -23,64 +23,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// FRAME_CONFIG
-//
-#ifndef FRAME_CONFIG
-# define FRAME_CONFIG   MULTICOPTER_FRAME
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // PWM control
 // default RC speed in Hz
 #ifndef RC_FAST_SPEED
 #   define RC_FAST_SPEED 490
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Rangefinder
-//
-
-#ifndef RANGEFINDER_ENABLED
-# define RANGEFINDER_ENABLED ENABLED
-#endif
-
-#ifndef RANGEFINDER_HEALTH_MAX
-# define RANGEFINDER_HEALTH_MAX 3          // number of good reads that indicates a healthy rangefinder
-#endif
-
-#ifndef RANGEFINDER_TIMEOUT_MS
-# define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
-#endif
-
-#ifndef RANGEFINDER_GAIN_DEFAULT
-# define RANGEFINDER_GAIN_DEFAULT 0.8f     // gain for controlling how quickly rangefinder range adjusts target altitude (lower means slower reaction)
-#endif
-
-#ifndef SURFACE_TRACKING_TIMEOUT_MS
-# define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
-#endif
-
-#ifndef RANGEFINDER_WPNAV_FILT_HZ
-# define RANGEFINDER_WPNAV_FILT_HZ   0.25f // filter frequency for rangefinder altitude provided to waypoint navigation class
-#endif
-
-#ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
-# define RANGEFINDER_TILT_CORRECTION ENABLED
-#endif
-
-#ifndef RANGEFINDER_GLITCH_ALT_CM
-# define RANGEFINDER_GLITCH_ALT_CM  200      // amount of rangefinder change to be considered a glitch
-#endif
-
-#ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
-# define RANGEFINDER_GLITCH_NUM_SAMPLES  3   // number of rangefinder glitches in a row to take new reading
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Proximity sensor
-//
-#ifndef PROXIMITY_ENABLED
-# define PROXIMITY_ENABLED ENABLED
 #endif
 
 #ifndef MAV_SYSTEM_ID
@@ -126,135 +72,8 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  OPTICAL_FLOW
-#ifndef OPTFLOW
-# define OPTFLOW       ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  Auto Tuning
-#ifndef AUTOTUNE_ENABLED
-# define AUTOTUNE_ENABLED  ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Precision Landing with companion computer or IRLock sensor
-#ifndef PRECISION_LANDING
-# define PRECISION_LANDING ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Parachute release
-#ifndef PARACHUTE
-# define PARACHUTE HAL_PARACHUTE_ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Nav-Guided - allows external nav computer to control vehicle
-#ifndef NAV_GUIDED
-# define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Acro - fly vehicle in acrobatic mode
-#ifndef MODE_ACRO_ENABLED
-# define MODE_ACRO_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Auto mode - allows vehicle to trace waypoints and perform automated actions
-#ifndef MODE_AUTO_ENABLED
-# define MODE_AUTO_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Brake mode - bring vehicle to stop
-#ifndef MODE_BRAKE_ENABLED
-# define MODE_BRAKE_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Circle - fly vehicle around a central point
-#ifndef MODE_CIRCLE_ENABLED
-# define MODE_CIRCLE_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Drift - fly vehicle in altitude-held, coordinated-turn mode
-#ifndef MODE_DRIFT_ENABLED
-# define MODE_DRIFT_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// flip - fly vehicle in flip in pitch and roll direction mode
-#ifndef MODE_FLIP_ENABLED
-# define MODE_FLIP_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Follow - follow another vehicle or GCS
-#ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Guided mode - control vehicle's position or angles from GCS
-#ifndef MODE_GUIDED_ENABLED
-# define MODE_GUIDED_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GuidedNoGPS mode - control vehicle's angles from GCS
-#ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Loiter mode - allows vehicle to hold global position
-#ifndef MODE_LOITER_ENABLED
-# define MODE_LOITER_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Position Hold - enable holding of global position
-#ifndef MODE_POSHOLD_ENABLED
-# define MODE_POSHOLD_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// RTL - Return To Launch
-#ifndef MODE_RTL_ENABLED
-# define MODE_RTL_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
-#ifndef MODE_SMARTRTL_ENABLED
-# define MODE_SMARTRTL_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Sport - fly vehicle in rate-controlled (earth-frame) mode
-#ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// System ID - conduct system identification tests on vehicle
-#ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// RADIO CONFIGURATION
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE
 //
-
 #ifndef FLIGHT_MODE_1
 # define FLIGHT_MODE_1                  Mode::Number::MANUAL
 #endif
@@ -274,7 +93,6 @@
 # define FLIGHT_MODE_6                  Mode::Number::MANUAL
 #endif
 
-
 //////////////////////////////////////////////////////////////////////////////
 // Throttle Failsafe
 //
@@ -283,192 +101,14 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Takeoff
-//
-#ifndef PILOT_TKOFF_ALT_DEFAULT
-# define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
-#endif
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Landing
-//
-#ifndef LAND_SPEED
-# define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
-#endif
-#ifndef LAND_REPOSITION_DEFAULT
-# define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
-#endif
-#ifndef LAND_WITH_DELAY_MS
-# define LAND_WITH_DELAY_MS        4000    // default delay (in milliseconds) when a land-with-delay is triggered during a failsafe event
-#endif
-#ifndef LAND_CANCEL_TRIGGER_THR
-# define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
-#endif
-#ifndef LAND_RANGEFINDER_MIN_ALT_CM
-#define LAND_RANGEFINDER_MIN_ALT_CM 200
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Landing Detector
-//
-#ifndef LAND_DETECTOR_TRIGGER_SEC
-# define LAND_DETECTOR_TRIGGER_SEC         1.0f    // number of seconds to detect a landing
-#endif
-#ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC
-# define LAND_DETECTOR_MAYBE_TRIGGER_SEC   0.2f    // number of seconds that means we might be landed (used to reset horizontal position targets to prevent tipping over)
-#endif
-#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
-# define LAND_DETECTOR_ACCEL_LPF_CUTOFF     1.0f    // frequency cutoff of land detector accelerometer filter
-#endif
-#ifndef LAND_DETECTOR_ACCEL_MAX
-# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Flight mode definitions
-//
-
-// Acro Mode
-#ifndef ACRO_RP_P
-# define ACRO_RP_P                 4.5f
-#endif
-
-#ifndef ACRO_YAW_P
-# define ACRO_YAW_P                4.5f
-#endif
-
-#ifndef ACRO_LEVEL_MAX_ANGLE
-# define ACRO_LEVEL_MAX_ANGLE      3000
-#endif
-
-#ifndef ACRO_BALANCE_ROLL
-#define ACRO_BALANCE_ROLL          1.0f
-#endif
-
-#ifndef ACRO_BALANCE_PITCH
-#define ACRO_BALANCE_PITCH         1.0f
-#endif
-
-#ifndef ACRO_RP_EXPO_DEFAULT
-#define ACRO_RP_EXPO_DEFAULT       0.3f
-#endif
-
-#ifndef ACRO_Y_EXPO_DEFAULT
-#define ACRO_Y_EXPO_DEFAULT        0.0f
-#endif
-
-#ifndef ACRO_THR_MID_DEFAULT
-#define ACRO_THR_MID_DEFAULT       0.0f
-#endif
-
-// RTL Mode
-#ifndef RTL_ALT_FINAL
-# define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
-#endif
-
-#ifndef RTL_ALT
-# define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
-#endif
-
-#ifndef RTL_ALT_MIN
-# define RTL_ALT_MIN               200     // min height above ground for RTL (i.e 2m)
-#endif
-
-#ifndef RTL_CLIMB_MIN_DEFAULT
-# define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
-#endif
-
-#ifndef RTL_ABS_MIN_CLIMB
-# define RTL_ABS_MIN_CLIMB         250     // absolute minimum initial climb
-#endif
-
-#ifndef RTL_CONE_SLOPE_DEFAULT
-# define RTL_CONE_SLOPE_DEFAULT    3.0f    // slope of RTL cone (height / distance). 0 = No cone
-#endif
-
-#ifndef RTL_MIN_CONE_SLOPE
-# define RTL_MIN_CONE_SLOPE        0.5f    // minimum slope of cone
-#endif
-
-#ifndef RTL_LOITER_TIME
-# define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
-#endif
-
-// AUTO Mode
-#ifndef WP_YAW_BEHAVIOR_DEFAULT
-# define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
-#endif
-
-#ifndef YAW_LOOK_AHEAD_MIN_SPEED
-# define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before blimp is aimed at ground course
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Stabilize Rate Control
-//
-#ifndef ROLL_PITCH_YAW_INPUT_MAX
-# define ROLL_PITCH_YAW_INPUT_MAX      4500        // roll, pitch and yaw input range
-#endif
-#ifndef DEFAULT_ANGLE_MAX
-# define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Stop mode defaults
-//
-#ifndef BRAKE_MODE_SPEED_Z
-# define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
-#endif
-#ifndef BRAKE_MODE_DECEL_RATE
-# define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// PosHold parameter defaults
-//
-#ifndef POSHOLD_BRAKE_RATE_DEFAULT
-# define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
-#endif
-#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
-# define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Throttle control defaults
 //
-
 #ifndef THR_DZ_DEFAULT
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
-// default maximum vertical velocity and acceleration the pilot may request
-#ifndef PILOT_VELZ_MAX
-# define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
-#endif
-#ifndef PILOT_ACCEL_Z_DEFAULT
-# define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
-#endif
-
 #ifndef AUTO_DISARMING_DELAY
 # define AUTO_DISARMING_DELAY  10
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Throw mode configuration
-//
-#ifndef THROW_HIGH_SPEED
-# define THROW_HIGH_SPEED       500.0f  // vehicle much reach this total 3D speed in cm/s (or be free falling)
-#endif
-#ifndef THROW_VERTICAL_SPEED
-# define THROW_VERTICAL_SPEED   50.0f   // motors start when vehicle reaches this total 3D speed in cm/s
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Logging control
-//
-#ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED                ENABLED
 #endif
 
 // Default logging bitmask
@@ -492,10 +132,6 @@
 
 #ifndef CH_MODE_DEFAULT
 # define CH_MODE_DEFAULT   5
-#endif
-
-#ifndef STATS_ENABLED
-# define STATS_ENABLED ENABLED
 #endif
 
 #ifndef HAL_FRAME_TYPE_DEFAULT

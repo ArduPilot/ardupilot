@@ -1,7 +1,5 @@
 include ../MatekL431/hwdef.inc
 
-define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-Periph"
-
 
 # --------------------- PWM -----------------------
 PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50)
@@ -25,6 +23,10 @@ define HAL_PERIPH_GPS_PORT_DEFAULT 2
 # allow for F9P GPS modules with moving baseline
 define GPS_MOVING_BASELINE 1
 
+# restrict backends available to save flash (i.e. only UBLOX)
+define AP_GPS_NOVA_ENABLED 0
+define AP_GPS_SBF_ENABLED 0
+define AP_GPS_GSOF_ENABLED 0
 
 # ---------------------- COMPASS ---------------------------
 define HAL_PERIPH_ENABLE_MAG
@@ -79,3 +81,5 @@ PB1 BATT2_CURRENT_SENS ADC1 SCALE(1)
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
 
+
+define HAL_SERIAL_ESC_COMM_ENABLED 1

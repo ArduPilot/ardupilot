@@ -17,6 +17,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsHeli.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AC_Autorotation/RSC_Autorotation.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -146,6 +148,10 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL_LAND_MIN", 32, AP_MotorsHeli, _collective_land_min_deg, AP_MOTORS_HELI_COLLECTIVE_LAND_MIN),
 
+    // @Group: RSC_AROT_
+    // @Path: ../AC_Autorotation/RSC_Autorotation.cpp
+    AP_SUBGROUPINFO(_main_rotor.autorotation, "RSC_AROT_", 33, AP_MotorsHeli, RSC_Autorotation),
+
     AP_GROUPEND
 };
 
@@ -173,16 +179,10 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     _throttle_radio_passthrough = 0.5f;
 
     // initialise Servo/PWM ranges and endpoints
-    if (!init_outputs()) {
-        // don't set initialised_ok
-        return;
-    }
+    init_outputs();
 
     // calculate all scalars
     calculate_scalars();
-
-    // record successful initialisation if what we setup was the desired frame_class
-    set_initialised_ok(frame_class == MOTOR_FRAME_HELI);
 
     // set flag to true so targets are initialized once aircraft is armed for first time
     _heliflags.init_targets_on_arming = true;
@@ -196,7 +196,7 @@ void AP_MotorsHeli::output_min()
     // move swash to mid
     move_actuators(0.0f,0.0f,0.5f,0.0f);
 
-    update_motor_control(ROTOR_CONTROL_STOP);
+    update_motor_control(AP_MotorsHeli_RSC::RotorControlState::STOP);
 
     // override limits flags
     set_limit_flag_pitch_roll_yaw(true);
@@ -217,11 +217,7 @@ void AP_MotorsHeli::output()
         // block servo_test from happening at disarm
         _servo_test_cycle_counter = 0;
         calculate_armed_scalars();
-        if (!get_interlock()) {
-            output_armed_zero_throttle();
-        } else {
-            output_armed_stabilizing();
-        }
+        output_armed_stabilizing();
     } else {
         output_disarmed();
     }
@@ -234,17 +230,6 @@ void AP_MotorsHeli::output()
 
 // sends commands to the motors
 void AP_MotorsHeli::output_armed_stabilizing()
-{
-    // if manual override active after arming, deactivate it and reinitialize servos
-    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
-        reset_flight_controls();
-    }
-
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
-}
-
-// output_armed_zero_throttle - sends commands to the motors
-void AP_MotorsHeli::output_armed_zero_throttle()
 {
     // if manual override active after arming, deactivate it and reinitialize servos
     if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
@@ -446,79 +431,6 @@ void AP_MotorsHeli::output_logic()
     }
 }
 
-// parameter_check - check if helicopter specific parameters are sensible
-bool AP_MotorsHeli::parameter_check(bool display_msg) const
-{
-    // returns false if RSC Mode is not set to a valid control mode
-    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
-        }
-        return false;
-    }
-
-    // returns false if rsc_setpoint is out of range
-    if ( _main_rotor._rsc_setpoint.get() > 100 || _main_rotor._rsc_setpoint.get() < 10){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_SETPOINT out of range");
-        }
-        return false;
-    }
-
-    // returns false if idle output is out of range
-    if ( _main_rotor._idle_output.get() > 100 || _main_rotor._idle_output.get() < 0){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE out of range");
-        }
-        return false;
-    }
-
-    // returns false if _rsc_critical is not between 0 and 100
-    if (_main_rotor._critical_speed.get() > 100 || _main_rotor._critical_speed.get() < 0) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL out of range");
-        }
-        return false;
-    }
-
-    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
-    if (_main_rotor._runup_time.get() <= _main_rotor._ramp_time.get()){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
-        }
-        return false;
-    }
-
-    // returns false if _collective_min_deg is not default value which indicates users set parameter
-    if (is_equal((float)_collective_min_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MIN_DEG)) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MIN to measured min blade pitch in deg");
-        }
-        return false;
-    }
-
-    // returns false if _collective_max_deg is not default value which indicates users set parameter
-    if (is_equal((float)_collective_max_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MAX_DEG)) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MAX to measured max blade pitch in deg");
-        }
-        return false;
-    }
-
-    // all other cases parameters are OK
-    return true;
-}
-
-// reset_swash_servo
-void AP_MotorsHeli::reset_swash_servo(SRV_Channel::Aux_servo_function_t function)
-{
-    // outputs are defined on a -500 to 500 range for swash servos
-    SRV_Channels::set_range(function, 1000);
-
-    // swash servos always use full endpoints as restricting them would lead to scaling errors
-    SRV_Channels::set_output_min_max(function, 1000, 2000);
-}
-
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
@@ -539,17 +451,6 @@ void AP_MotorsHeli::reset_flight_controls()
     _servo_mode.set(SERVO_CONTROL_MODE_AUTOMATED);
     init_outputs();
     calculate_scalars();
-}
-
-// convert input in -1 to +1 range to pwm output for swashplate servo.
-// The value 0 corresponds to the trim value of the servo. Swashplate
-// servo travel range is fixed to 1000 pwm and therefore the input is
-// multiplied by 500 to get PWM output.
-void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
-{
-    uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
-    SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
 
 // update the collective input filter.  should be called at 100hz
@@ -603,6 +504,7 @@ void AP_MotorsHeli::update_turbine_start()
     }
 }
 
+// Run arming checks
 bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
 {
     // run base class checks
@@ -615,5 +517,134 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    // returns false if RSC Mode is not set to a valid control mode
+    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
+        hal.util->snprintf(buffer, buflen, "H_RSC_MODE invalid");
+        return false;
+    }
+
+    // returns false if rsc_setpoint is out of range
+    if ( _main_rotor._rsc_setpoint.get() > 100 || _main_rotor._rsc_setpoint.get() < 10){
+        hal.util->snprintf(buffer, buflen, "H_RSC_SETPOINT out of range");
+        return false;
+    }
+
+    // returns false if idle output is out of range
+    if ( _main_rotor._idle_output.get() > 100 || _main_rotor._idle_output.get() < 0){
+        hal.util->snprintf(buffer, buflen, "H_RSC_IDLE out of range");
+        return false;
+    }
+
+    // returns false if _rsc_critical is not between 0 and 100
+    if (_main_rotor._critical_speed.get() > 100 || _main_rotor._critical_speed.get() < 0) {
+        hal.util->snprintf(buffer, buflen, "H_RSC_CRITICAL out of range");
+        return false;
+    }
+
+    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
+    if (_main_rotor._runup_time.get() <= _main_rotor._ramp_time.get()){
+        hal.util->snprintf(buffer, buflen, "H_RUNUP_TIME too small");
+        return false;
+    }
+
+    // returns false if _collective_min_deg is not default value which indicates users set parameter
+    if (is_equal((float)_collective_min_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MIN_DEG)) {
+        hal.util->snprintf(buffer, buflen, "Set H_COL_ANG_MIN to measured min blade pitch in deg");
+        return false;
+    }
+
+    // returns false if _collective_max_deg is not default value which indicates users set parameter
+    if (is_equal((float)_collective_max_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MAX_DEG)) {
+        hal.util->snprintf(buffer, buflen, "Set H_COL_ANG_MAX to measured max blade pitch in deg");
+        return false;
+    }
+
+    if (!_main_rotor.autorotation.arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     return true;
+}
+
+// Tell user motor test is disabled on heli
+bool AP_MotorsHeli::motor_test_checks(size_t buflen, char *buffer) const
+{
+    hal.util->snprintf(buffer, buflen, "Disabled on heli");
+    return false;
+}
+
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint32_t AP_MotorsHeli::get_motor_mask()
+{
+    return _main_rotor.get_output_mask();
+}
+
+// set_desired_rotor_speed
+void AP_MotorsHeli::set_desired_rotor_speed(float desired_speed)
+{
+    _main_rotor.set_desired_speed(desired_speed);
+}
+
+// Converts AP_Motors::SpoolState from _spool_state variable to AP_MotorsHeli_RSC::RotorControlState
+AP_MotorsHeli_RSC::RotorControlState AP_MotorsHeli::get_rotor_control_state() const
+{
+    switch (_spool_state) {
+        case SpoolState::SHUT_DOWN:
+            // sends minimum values out to the motors
+            return AP_MotorsHeli_RSC::RotorControlState::STOP;
+        case SpoolState::GROUND_IDLE:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            return AP_MotorsHeli_RSC::RotorControlState::IDLE;
+        case SpoolState::SPOOLING_UP:
+        case SpoolState::THROTTLE_UNLIMITED:
+            // set motor output based on thrust requests
+            return AP_MotorsHeli_RSC::RotorControlState::ACTIVE;
+        case SpoolState::SPOOLING_DOWN:
+            // sends idle output to motors and wait for rotor to stop
+            return AP_MotorsHeli_RSC::RotorControlState::IDLE;
+    }
+
+    // Should be unreachable, but needed to keep the compiler happy
+    return AP_MotorsHeli_RSC::RotorControlState::STOP;
+}
+
+// Update _heliflags.rotor_runup_complete value writing log event on state change
+void AP_MotorsHeli::set_rotor_runup_complete(bool new_value)
+{
+#if HAL_LOGGING_ENABLED
+    if (!_heliflags.rotor_runup_complete && new_value) {
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_RUNUP_COMPLETE);
+    } else if (_heliflags.rotor_runup_complete && !new_value && !_main_rotor.in_autorotation()) {
+        LOGGER_WRITE_EVENT(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
+    }
+#endif
+    _heliflags.rotor_runup_complete = new_value;
+}
+
+#if HAL_LOGGING_ENABLED
+// Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion
+float AP_MotorsHeli::get_cyclic_angle_scaler(void) const {
+    // We want to use the collective min-max to angle relationship to calculate the cyclic input to angle relationship
+    // First we scale the collective angle range by it's min-max output. Recall that we assume that the maximum possible
+    // collective range is 1000, hence the *1e-3.
+    // The factor 2.0 accounts for the fact that we scale the servo outputs from 0 ~ 1 to -1 ~ 1
+    return ((float)(_collective_max-_collective_min))*1e-3 * (_collective_max_deg.get() - _collective_min_deg.get()) * 2.0;
+}
+#endif
+
+// Helper function for param conversions to be done in motors class
+void AP_MotorsHeli::heli_motors_param_conversions(void)
+{
+    // PARAMETER_CONVERSION - Added: Sep-2024
+    // move autorotation related parameters within the RSC into their own class
+    const AP_Param::ConversionInfo rsc_arot_conversion_info[] = {
+        { 90, 108096, AP_PARAM_INT8,  "H_RSC_AROT_ENBL" },
+        { 90, 104000, AP_PARAM_INT8,  "H_RSC_AROT_RAMP" },
+        { 90, 112192, AP_PARAM_INT16,  "H_RSC_AROT_IDLE" },
+    };
+    uint8_t table_size = ARRAY_SIZE(rsc_arot_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&rsc_arot_conversion_info[i], 1.0);
+    }
 }

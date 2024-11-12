@@ -21,7 +21,10 @@ Mode::Mode(void) :
 { };
 
 // return the static controller object corresponding to supplied mode
+<<<<<<< HEAD
 // return the static controller object corresponding to supplied mode
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 Mode *Sub::mode_from_mode_num(const Mode::Number mode)
 {
     Mode *ret = nullptr;
@@ -60,9 +63,12 @@ Mode *Sub::mode_from_mode_num(const Mode::Number mode)
     case Mode::Number::MOTOR_DETECT:
         ret = &mode_motordetect;
         break;
+<<<<<<< HEAD
     case Mode::Number::MPC:  // 添加对新模式 MPC 的处理
         ret = &mode_mpc;
         break;
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     default:
         break;
     }

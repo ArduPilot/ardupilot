@@ -22,26 +22,20 @@
 #include "lwip/sockets.h"
 #include "esp_event.h"
 
+#ifndef WIFI_MAX_CONNECTION
+#define WIFI_MAX_CONNECTION 5
+#endif
 
 class ESP32::WiFiUdpDriver : public AP_HAL::UARTDriver
 {
 public:
     WiFiUdpDriver();
 
-    void begin(uint32_t b) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
 
-    uint32_t available() override;
     uint32_t txspace() override;
-    int16_t read() override;
 
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
 
     uint32_t bw_in_bytes_per_second() const override
     {
@@ -49,7 +43,6 @@ public:
     }
 
 
-    bool discard_input() override;
 private:
     enum ConnectionState {
         NOT_INITIALIZED,
@@ -58,7 +51,7 @@ private:
     };
     const size_t TX_BUF_SIZE = 1024;
     const size_t RX_BUF_SIZE = 1024;
-    uint8_t _buffer[32];
+    uint8_t _buffer[255]; // 32 means slow param reads as its too small for most mavlink packets, 128 is still a bit small due to packet overheads
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
     Semaphore _write_mutex;
@@ -67,11 +60,20 @@ private:
 
     int accept_socket;
 
-    void *_wifi_task_handle;
+    tskTaskControlBlock* _wifi_task_handle;
     void initialize_wifi();
     bool read_all();
     bool write_data();
     bool start_listen();
     bool try_accept();
-    static void _wifi_thread(void* arg);
+    static void _wifi_thread2(void* arg);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buf, uint16_t count) override;
+    uint32_t _available() override;
+    bool _discard_input() override;
+    void _end() override;
+    void _flush() override;
 };

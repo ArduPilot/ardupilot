@@ -30,7 +30,24 @@ public:
 
     // return a correction factor used to display angles correctly
     float get_aspect_ratio_correction() const override;
+    
+    bool is_compatible_with_backend_type(AP_OSD::osd_types type) const override {
+        switch(type) {
+        case AP_OSD::osd_types::OSD_MSP:
+        case AP_OSD::osd_types::OSD_MSP_DISPLAYPORT:
+            return false;
+        case AP_OSD::osd_types::OSD_NONE:
+        case AP_OSD::osd_types::OSD_TXONLY:
+        case AP_OSD::osd_types::OSD_MAX7456:
+        case AP_OSD::osd_types::OSD_SITL:
+            return true;
+        }
+        return false;
+    }
 
+    AP_OSD::osd_types get_backend_type() const override {
+        return AP_OSD::osd_types::OSD_MSP_DISPLAYPORT;
+    }
 protected:
     uint8_t format_string_for_osd(char* dst, uint8_t size, bool decimal_packed, const char *fmt, va_list ap) override;
 
@@ -129,6 +146,20 @@ private:
     static const uint8_t SYM_RNGFD = 0x7F;
     static const uint8_t SYM_LQ = 0xF8;
 
+    static const uint8_t SYM_SIDEBAR_L_ARROW = 0x02;
+    static const uint8_t SYM_SIDEBAR_R_ARROW = 0x03;
+    static const uint8_t SYM_SIDEBAR_A = 0x13;
+    static const uint8_t SYM_SIDEBAR_B = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_C = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_D = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_E = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_F = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_G = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_H = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_I = SYM_SIDEBAR_A;
+    static const uint8_t SYM_SIDEBAR_J = SYM_SIDEBAR_A;
+
+
     static constexpr uint8_t symbols[AP_OSD_NUM_SYMBOLS] {
         SYM_M,
         SYM_KM,
@@ -209,6 +240,18 @@ private:
         SYM_FENCE_DISABLED,
         SYM_RNGFD,
         SYM_LQ,
+        SYM_SIDEBAR_L_ARROW,
+        SYM_SIDEBAR_R_ARROW,
+        SYM_SIDEBAR_A,
+        SYM_SIDEBAR_B,
+        SYM_SIDEBAR_C,
+        SYM_SIDEBAR_D,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_H,
+        SYM_SIDEBAR_I,
+        SYM_SIDEBAR_J,
     };
 
     bool _blink_on;

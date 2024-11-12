@@ -3,14 +3,6 @@
 
 #include "defines.h"
 
-// Just so that it's completely clear...
-#define ENABLED                 1
-#define DISABLED                0
-
-// this avoids a very common config error
-#define ENABLE ENABLED
-#define DISABLE DISABLED
-
 #ifndef MAV_SYSTEM_ID
  // use 2 for antenna tracker by default
  # define MAV_SYSTEM_ID          2
@@ -57,9 +49,6 @@
 //
 // Logging control
 //
-#ifndef LOGGING_ENABLED
-# define LOGGING_ENABLED        ENABLED
-#endif
 
 // Default logging bitmask
 #ifndef DEFAULT_LOG_BITMASK
@@ -71,4 +60,8 @@
     MASK_LOG_RCOUT | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CURRENT
+#endif
+
+#ifndef AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED
+#define AP_TRACKER_SET_HOME_VIA_MISSION_UPLOAD_ENABLED 1
 #endif

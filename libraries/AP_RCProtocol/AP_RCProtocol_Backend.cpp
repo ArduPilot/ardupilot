@@ -15,11 +15,24 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_VideoTX/AP_VideoTX_config.h>
+
+// for video TX configuration:
+#if AP_VIDEOTX_ENABLED
+#include <AP_VideoTX/AP_VideoTX.h>
+#include "spm_srxl.h"
+#endif
+
+
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
@@ -65,11 +78,11 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     _num_channels = num_values;
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
-#if APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !AP_RC_CHANNEL_ENABLED
     // failsafed is sorted out in AP_IOMCU.cpp
     in_failsafe = false;
 #else
-    if (rc().ignore_rc_failsafe()) {
+    if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
         in_failsafe = false;
     }
 #endif
@@ -105,13 +118,74 @@ void AP_RCProtocol_Backend::decode_11bit_channels(const uint8_t* data, uint8_t n
     }
 }
 
+#if AP_VIDEOTX_ENABLED
+// configure the video transmitter, the input values are Spektrum-oriented
+void AP_RCProtocol_Backend::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    // VTX Band (0 = Fatshark, 1 = Raceband, 2 = E, 3 = B, 4 = A)
+    // map to TBS band A, B, E, Race, Airwave, LoRace
+    switch (band) {
+    case VTX_BAND_FATSHARK:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::FATSHARK);
+        break;
+    case VTX_BAND_RACEBAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::RACEBAND);
+        break;
+    case VTX_BAND_E_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_E);
+        break;
+    case VTX_BAND_B_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_B);
+        break;
+    case VTX_BAND_A_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_A);
+        break;
+    default:
+        break;
+    }
+    // VTX Channel (0-7)
+    vtx.set_configured_channel(channel);
+    if (pitmode) {
+        vtx.set_configured_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    } else {
+        vtx.set_configured_options(vtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    }
+
+    switch (power) {
+    case VTX_POWER_1MW_14MW:
+    case VTX_POWER_15MW_25MW:
+        vtx.set_configured_power_mw(25);
+        break;
+    case VTX_POWER_26MW_99MW:
+    case VTX_POWER_100MW_299MW:
+        vtx.set_configured_power_mw(100);
+        break;
+    case VTX_POWER_300MW_600MW:
+        vtx.set_configured_power_mw(400);
+        break;
+    case VTX_POWER_601_PLUS:
+        vtx.set_configured_power_mw(800);
+        break;
+    default:
+        break;
+    }
+}
+#endif  // AP_VIDEOTX_ENABLED
+
 /*
   optionally log RC input data
  */
 void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
 {
-#if HAL_LOGGING_ENABLED
-    if (rc().log_raw_data()) {
+#if HAL_LOGGING_ENABLED && AP_RC_CHANNEL_ENABLED
+
+#if (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+    if (RC_Channels::get_singleton() == nullptr) { // allow running without RC_Channels if we are doing the examples
+        return;
+    }
+#endif
+    if (rc().option_is_enabled(RC_Channels::Option::LOG_RAW_DATA)) {
         uint32_t u32[10] {};
         if (len > sizeof(u32)) {
             len = sizeof(u32);
@@ -141,5 +215,7 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
                            u32[0], u32[1], u32[2], u32[3], u32[4],
                            u32[5], u32[6], u32[7], u32[8], u32[9]);
     }
-#endif  // HAL_LOGGING_ENABLED
+#endif  // HAL_LOGGING_ENABLED && AP_RC_CHANNEL_ENABLED
 }
+
+#endif  // AP_RCPROTOCOL_ENABLED

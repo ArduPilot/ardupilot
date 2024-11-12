@@ -24,18 +24,17 @@ USB_STRING_MANUFACTURER "ArduPilot"
 # order of I2C buses
 I2C_ORDER I2C3 I2C2 I2C1
 
-# now the UART order. These map to the hal.uartA to hal.uartF
-# objects. If you use a shorter list then HAL_Empty::UARTDriver
-# objects are substituted for later UARTs, or you can leave a gap by
-# listing one or more of the uarts as EMPTY
+# now the SERIALn order. These map to the hal.serial(n) objects. If you use a
+# shorter list then HAL_Empty::UARTDriver objects are substituted for later
+# UARTs, or you can leave a gap by listing one or more of the uarts as EMPTY
 # 1) SERIAL0: console (primary mavlink, usually USB)
-# 2) SERIAL3: primary GPS
-# 3) SERIAL1: telem1
-# 4) SERIAL2: telem2
+# 2) SERIAL1: telem1
+# 3) SERIAL2: telem2
+# 4) SERIAL3: primary GPS
 # 5) SERIAL4: GPS2
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
-# order of UARTs (and USB)
+# order of SERIALn (incl. USB)
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8  UART7
 
 # UART for IOMCU
@@ -164,14 +163,12 @@ PG5 VDD_BRICK2_nVALID INPUT PULLUP
 PC11  LED_RED     OUTPUT OPENDRAIN  GPIO(11) HIGH
 PC10  LED_GREEN   OUTPUT OPENDRAIN  GPIO(12) HIGH
 PC12  LED_BLUE    OUTPUT OPENDRAIN  GPIO(13) HIGH
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
 
-define HAL_GPIO_A_LED_PIN 11
-define HAL_GPIO_B_LED_PIN 12
-define HAL_GPIO_C_LED_PIN 13
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 11
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 12
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 13
 
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # SPI device table
 SPIDEV ms5611           SPI1 DEVID3  BARO_CS      MODE3   20*MHZ 20*MHZ
@@ -196,10 +193,6 @@ BARO MS56XX SPI:ms5611_ext
 COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180_YAW_270
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 1
-
-
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1

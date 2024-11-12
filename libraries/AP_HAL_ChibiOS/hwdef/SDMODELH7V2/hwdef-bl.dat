@@ -1,0 +1,7 @@
+include ../KakuteH7-bdshot/hwdef-bl.dat
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_SDMODELH7V2
+
+# VTX power switch
+PB11 VTX_PWR OUTPUT HIGH PUSHPULL GPIO(81)

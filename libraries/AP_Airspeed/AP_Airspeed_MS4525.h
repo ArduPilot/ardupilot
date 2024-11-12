@@ -14,11 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_AIRSPEED_MS4525_ENABLED
-#define AP_AIRSPEED_MS4525_ENABLED AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_MS4525_ENABLED
 
@@ -27,7 +23,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>

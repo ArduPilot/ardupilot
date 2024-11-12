@@ -8,18 +8,17 @@ git clone --recursive https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
 ```
 
-Ardupilot is gradually moving from the make-based build system to
-[Waf](https://waf.io/). The instructions below should be enough for you to
-build Ardupilot, but you can also read more about the build system in the
+You can also read more about the build system in the
 [Waf Book](https://waf.io/book/).
 
-Waf should always be called from the ardupilot's root directory. Differently
-from the make-based build, with Waf there's a configure step to choose the
-board to be used (default is `sitl`).
+waf should always be called from the locally cloned ardupilot root directory for the local branch you are trying to build from.
+
+**Note**
+Do not run `waf` with `sudo`!  This leads to permission and environment problems.
 
 ## Basic usage ##
 
-There are several commands in the build system for advanced usages, but here we
+There are several commands in the build system for advanced usage, but here we
 list some basic and more used commands as example.
 
 * **Build ArduCopter**
@@ -89,6 +88,7 @@ list some basic and more used commands as example.
     ./waf rover                             # Ground-based rovers and surface boats
     ./waf sub                               # ROV and other submarines
     ./waf antennatracker                    # Antenna trackers
+    ./waf AP_Periph                         # AP Peripheral
     
     ```
 
@@ -102,6 +102,11 @@ list some basic and more used commands as example.
     Cleaning the build is very often not necessary and discouraged. We do
     incremental builds reducing the build time by orders of magnitude.
 
+    If submodules are failing to be synchronized, `submodulesync` may be used
+    to resync the submodules. This is usually necessary when shifting development
+    between stable releases or a stable release and the master branch.
+
+    In some some cases `submodule_force_clean` may be necessary. This removes all submodules and then performs a `submodulesync`. (Note whitelisted modules like esp_idf is not removed.)
 
 * **Upload or install**
 
@@ -164,6 +169,18 @@ list some basic and more used commands as example.
     ./waf --targets tests/test_math
     ```
 
+* **Use clang instead of gcc**
+
+    Currently, gcc is the default on linux, and clang is used for MacOS.
+    Building with clang on linux can be accomplished by setting the CXX
+    environment variables during the configure step, e.g.:
+
+    ```
+    CXX=clang++ CC=clang ./waf configure --board=sitl
+    ```
+
+    Note: Your clang binary names may differ.
+
 * **Other options**
 
     It's possible to see all available commands and options:
@@ -173,6 +190,27 @@ list some basic and more used commands as example.
     ```
 
     Also, take a look on the [Advanced section](#advanced-usage) below.
+
+### Using Docker ###
+
+A docker environment is provided which may be helpful for building in a clean
+environment and avoiding modification of the host environment.
+
+To build the docker image (should only need to be done once), run:
+
+```bash
+docker build --rm -t ardupilot-dev .
+```
+
+To build inside the container, prefix your `waf` commands, e.g.:
+
+```bash
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf configure --board=sitl
+docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf copter
+```
+
+Alternatively, simply run `docker run --rm -it -v $PWD:/ardupilot ardupilot-dev` to
+start a `bash` shell in which you can run other commands from this document.
 
 ## Advanced usage ##
 

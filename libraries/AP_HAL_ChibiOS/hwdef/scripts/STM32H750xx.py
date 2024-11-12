@@ -63,6 +63,13 @@ mcu = {
 
     'EXPECTED_CLOCK' : 400000000,
 
+	'EXPECTED_CLOCKS' : [
+		('STM32_SYS_CK',	400000000),
+		('STM32_QSPICLK', 	200000000),
+		('STM32_SDMMC1CLK',  80000000),
+		('STM32_SPI45CLK',  100000000),
+	],
+
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
@@ -1140,4 +1147,40 @@ ADC1_map = {
     "PA1"	:	17,
     "PA4"	:	18,
     "PA5"	:	19,
+}
+
+ADC2_map = {
+    "PF13"	:	2,
+    "PA6"	:	3,
+    "PC4"	:	4,
+    "PB1"	:	5,
+    "PF14"	:	6,
+    "PA7"	:	7,
+    "PC5"	:	8,
+    "PB0"	:	9,
+    "PC0"	:	10,
+    "PC1"	:	11,
+    "PC2"	:	12,
+    "PC3"	:	13,
+    "PA2"	:	14,
+    "PA3"	:	15,
+    "N/A"	:	16,
+    "N/A"	:	17,
+    "PA4"	:	18,
+    "PA5"	:	19,
+}
+
+ADC3_map = {
+    "PF9"	:	2,
+    "PF7"	:	3,
+    "PF5"	:	4,
+    "PF3"	:	5,
+    "PF10"	:	6,
+    "PF8"	:	7,
+    "PF6"	:	8,
+    "PF4"	:	9,
+    "PH2"	:	13,
+    "PH3"	:	14,
+    "PH4"	:	15,
+    "PH5"	:	16,
 }

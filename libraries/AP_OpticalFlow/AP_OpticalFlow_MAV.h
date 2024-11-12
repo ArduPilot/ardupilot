@@ -1,13 +1,10 @@
 #pragma once
 
-#include "AP_OpticalFlow.h"
-
-#ifndef AP_OPTICALFLOW_MAV_ENABLED
-#define AP_OPTICALFLOW_MAV_ENABLED AP_OPTICALFLOW_ENABLED
-#endif
+#include "AP_OpticalFlow_config.h"
 
 #if AP_OPTICALFLOW_MAV_ENABLED
 
+#include "AP_OpticalFlow_Backend.h"
 #include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_MAV : public OpticalFlow_backend

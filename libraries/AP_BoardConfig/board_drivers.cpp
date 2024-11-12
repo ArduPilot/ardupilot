@@ -54,7 +54,7 @@ void AP_BoardConfig::board_init_safety()
  */
 void AP_BoardConfig::board_init_debug()
 {
-#ifndef HAL_BUILD_AP_PERIPH
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_DEBUG_BUILD)
     if ((_options & BOARD_OPTION_DEBUG_ENABLE) == 0) {
 #ifdef HAL_GPIO_PIN_JTCK_SWCLK
         palSetLineMode(HAL_GPIO_PIN_JTCK_SWCLK, PAL_MODE_INPUT);
@@ -63,7 +63,7 @@ void AP_BoardConfig::board_init_debug()
         palSetLineMode(HAL_GPIO_PIN_JTMS_SWDIO, PAL_MODE_INPUT);
 #endif
     }
-#endif // HAL_BUILD_AP_PERIPH
+#endif // HAL_BUILD_AP_PERIPH && HAL_DEBUG_BUILD
 }
 
 
@@ -80,18 +80,6 @@ void AP_BoardConfig::board_setup_drivers(void)
 
     // run board auto-detection
     board_autodetect();
-
-#if HAL_HAVE_IMU_HEATER
-    if (state.board_type == PX4_BOARD_PH2SLIM ||
-        state.board_type == PX4_BOARD_PIXHAWK2) {
-        heater.imu_target_temperature.set_default(45);
-        if (heater.imu_target_temperature.get() < 0) {
-            // don't allow a value of -1 on the cube, or it could cook
-            // the IMU
-            heater.imu_target_temperature.set(45);
-        }
-    }
-#endif
 
     px4_configured_board = (enum px4_board_type)state.board_type.get();
 
@@ -118,6 +106,8 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PCNC1:
     case PX4_BOARD_MINDPXV2:
     case FMUV6_BOARD_HOLYBRO_6X:
+    case FMUV6_BOARD_HOLYBRO_6X_REV6:
+    case FMUV6_BOARD_HOLYBRO_6X_45686:
     case FMUV6_BOARD_CUAV_6X:
         break;
     default:
@@ -141,17 +131,15 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
         return false;
     }
     dev->set_read_flag(read_flag);
-    dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     uint8_t v;
     if (!dev->read_registers(regnum, &v, 1)) {
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
 #endif
-        dev->get_semaphore()->give();
         return false;
     }
-    dev->get_semaphore()->give();
 #if SPI_PROBE_DEBUG
     hal.console->printf("%s: reg %02x expected:%02x got:%02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
 #endif
@@ -173,7 +161,7 @@ bool AP_BoardConfig::spi_check_register_inv2(const char *devname, uint8_t regnum
         return false;
     }
     dev->set_read_flag(read_flag);
-    dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     uint8_t v;
     // select bank 0 for who am i
@@ -182,10 +170,8 @@ bool AP_BoardConfig::spi_check_register_inv2(const char *devname, uint8_t regnum
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
 #endif
-        dev->get_semaphore()->give();
         return false;
     }
-    dev->get_semaphore()->give();
 #if SPI_PROBE_DEBUG
     hal.console->printf("%s: reg %02x expected:%02x got:%02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
 #endif
@@ -207,7 +193,7 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
     if (!dev_sem) {
         return false;
     }
-    dev_sem->take_blocking();
+    WITH_SEMAPHORE(dev_sem);
 
     static const uint8_t CMD_MS56XX_RESET = 0x1E;
     static const uint8_t CMD_MS56XX_PROM = 0xA0;
@@ -221,7 +207,6 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
         const uint8_t reg = CMD_MS56XX_PROM + (i << 1);
         uint8_t val[2];
         if (!dev->transfer(&reg, 1, val, sizeof(val))) {
-            dev_sem->give();
 #if SPI_PROBE_DEBUG
             hal.console->printf("%s: transfer fail\n", devname);
 #endif
@@ -233,7 +218,6 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
             all_zero = false;
         }
     }
-    dev_sem->give();
 
     uint16_t crc_read = prom[7]&0xf;
     prom[7] &= 0xff00;
@@ -269,12 +253,13 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
 #define INV2_WHOAMI_ICM20649 0xE1
 
 #define INV3REG_WHOAMI        0x75
-#define INV3REG_456_WHOAMI        0x72
+#define INV3REG_456_WHOAMI    0x72
 
 #define INV3_WHOAMI_ICM42688  0x47
 #define INV3_WHOAMI_ICM42670  0x67
-
 #define INV3_WHOAMI_ICM45686  0xE9
+#define INV3_WHOAMI_IIM42652  0x6f
+
 /*
   validation of the board type
  */
@@ -313,12 +298,14 @@ void AP_BoardConfig::validate_board_type(void)
 void AP_BoardConfig::board_autodetect(void)
 {
 #if defined(HAL_VALIDATE_BOARD)
-    const char* errored_check = HAL_VALIDATE_BOARD;
-    if (errored_check == nullptr) {
-        return;
-    } else {
-        config_error("Board Validation %s Failed", errored_check);
-        return;
+    if((_options & SKIP_BOARD_VALIDATION) == 0) {
+        const char* errored_check = HAL_VALIDATE_BOARD;
+        if (errored_check == nullptr) {
+            return;
+        } else {
+            config_error("Board Validation %s Failed", errored_check);
+            return;
+        }
     }
 #endif
 
@@ -513,7 +500,15 @@ void AP_BoardConfig::detect_fmuv6_variant()
         state.board_type.set_and_notify(FMUV6_BOARD_CUAV_6X);
         DEV_PRINTF("Detected CUAV 6X\n");
         AP_Param::load_defaults_file("@ROMFS/param/CUAV_V6X_defaults.parm", false);
+    } else if (spi_check_register("icm45686-1", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) &&
+               spi_check_register("icm45686-2", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) &&
+               spi_check_register("icm45686-3", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
+        state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_45686);
+        DEV_PRINTF("Detected Holybro 6X_45686\n");
+    } else if (spi_check_register("iim42652", INV3REG_WHOAMI, INV3_WHOAMI_IIM42652) &&
+               spi_check_register("icm45686", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
+        state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_REV6);
+        DEV_PRINTF("Detected Holybro 6X_Rev6\n");
     }
-
 }
 #endif

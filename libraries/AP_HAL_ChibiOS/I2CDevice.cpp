@@ -31,7 +31,7 @@
 #include "hal.h"
 
 static const struct I2CInfo {
-    struct I2CDriver *i2c;
+    I2CDriver *i2c;
     uint8_t instance;
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
@@ -76,6 +76,14 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 #define HAL_I2C_L4_400_TIMINGR 0x00702991
 #endif
 
+#ifndef HAL_I2C_L4PLUS_100_TIMINGR
+#define HAL_I2C_L4PLUS_100_TIMINGR 0x307075B1
+#endif
+
+#ifndef HAL_I2C_L4PLUS_400_TIMINGR
+#define HAL_I2C_L4PLUS_400_TIMINGR 0x00501BFF
+#endif
+
 #ifndef HAL_I2C_G4_100_TIMINGR
 #define HAL_I2C_G4_100_TIMINGR 0x60505F8C
 #endif
@@ -94,7 +102,7 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 void I2CBus::dma_init(void)
 {
     chMtxObjectInit(&dma_lock);
-    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx,
+    dma_handle = NEW_NOTHROW Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx,
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));
 }
@@ -223,6 +231,15 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].i2ccfg.timingr = HAL_I2C_L4_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
+#elif defined(STM32L4PLUS)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4PLUS_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4PLUS_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+
 #elif defined(STM32G4)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_G4_100_TIMINGR;
@@ -244,18 +261,18 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
+    bus(I2CDeviceManager::businfo[busnum]),
     _retries(2),
     _address(address),
     _use_smbus(use_smbus),
-    _timeout_ms(timeout_ms),
-    bus(I2CDeviceManager::businfo[busnum])
+    _timeout_ms(timeout_ms)
 {
     set_device_bus(busnum+HAL_I2C_BUS_BASE);
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.busclock) {
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
@@ -302,7 +319,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
     } else {
@@ -442,7 +459,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     if (bus >= ARRAY_SIZE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
 }
 

@@ -30,6 +30,12 @@
 #include "hal.h"
 #include <hrt.h>
 
+// we rely on systimestamp_t for 64 bit timestamps
+static_assert(sizeof(uint64_t) == sizeof(systimestamp_t), "unexpected systimestamp_t size");
+
+#define STR(x) #x
+#define XSTR(x) STR(x)
+
 #if CH_CFG_ST_RESOLUTION == 16
 static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
 #elif CH_CFG_ST_RESOLUTION == 32
@@ -39,9 +45,9 @@ static_assert(sizeof(systime_t) == sizeof(sysinterval_t), "expected systime_t sa
 
 #if defined(HAL_EXPECTED_SYSCLOCK)
 #ifdef STM32_SYS_CK
-static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value");
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
 #elif defined(STM32_HCLK)
-static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value");
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
 #else
 #error "unknown system clock"
 #endif
@@ -51,6 +57,27 @@ static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value"
 // easy access to the fault data iun the debugger:
 #ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 1
+#endif
+
+#define QUOTE1(str) #str
+#define QUOTE2(str) QUOTE1(str)
+#define EXPAND_AND_QUOTE(str) QUOTE2(str)
+#define ASSERT_CLOCK(clk) static_assert(HAL_EXPECTED_ ##clk == (clk), "unexpected " #clk " value: '" EXPAND_AND_QUOTE(clk) "'")
+
+#if defined(HAL_EXPECTED_STM32_SYS_CK) && defined(STM32_SYS_CK)
+ASSERT_CLOCK(STM32_SYS_CK);
+#endif
+#if defined(HAL_EXPECTED_STM32_HCLK) && defined(STM32_HCLK)
+ASSERT_CLOCK(STM32_HCLK);
+#endif
+#if defined(HAL_EXPECTED_STM32_SDMMC1CLK) && defined(STM32_SDMMC1CLK)
+ASSERT_CLOCK(STM32_SDMMC1CLK);
+#endif
+#if defined(HAL_EXPECTED_STM32_SPI45CLK) && defined(STM32_SPI45CLK)
+ASSERT_CLOCK(STM32_SPI45CLK);
+#endif
+#if defined(HAL_EXPECTED_STM32_FDCANCLK) && defined(STM32_FDCANCLK)
+ASSERT_CLOCK(STM32_FDCANCLK);
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -107,9 +134,9 @@ void HardFault_Handler(void) {
             fault_printf("HARDFAULT(%d)\n", int(faultType));
         }
         fault_printf("CSFR=0x%08x\n", cfsr);
-        fault_printf("CUR=0x%08x\n", ch.rlist.current);
-        if (ch.rlist.current) {
-            fault_printf("NAME=%s\n", ch.rlist.current->name);
+        fault_printf("CUR=0x%08x\n", currcore->rlist.current);
+        if (currcore->rlist.current) {
+            fault_printf("NAME=%s\n", currcore->rlist.current->name);
         }
         fault_printf("FA=0x%08x\n", faultAddress);
         fault_printf("PC=0x%08x\n", ctx.pc);
@@ -283,6 +310,13 @@ void __entry_hook()
 }
 #endif
 
+uint32_t chibios_rand_generate()
+{
+    uint32_t val;
+    hal.util->get_random_vals((uint8_t*)&val, sizeof(val));
+    return val;
+}
+
 }
 namespace AP_HAL {
 
@@ -357,33 +391,7 @@ __FASTRAMFUNC__ uint64_t micros64()
 
 __FASTRAMFUNC__ uint64_t millis64()
 {
-    return hrt_micros64() / 1000U;
-}
-
-
-__FASTRAMFUNC__ uint32_t native_micros()
-{
-    return micros();
-}
-
-__FASTRAMFUNC__ uint32_t native_millis()
-{
-    return millis();
-}
-
-__FASTRAMFUNC__ uint16_t native_millis16()
-{
-    return millis16();
-}
-
-__FASTRAMFUNC__ uint64_t native_micros64()
-{
-    return micros64();
-}
-
-__FASTRAMFUNC__ uint64_t native_millis64()
-{
-    return millis64();
+    return hrt_millis64();
 }
 
 

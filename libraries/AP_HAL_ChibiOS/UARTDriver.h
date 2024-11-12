@@ -25,8 +25,12 @@
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartJ, plus IOMCU
+// enough for serial0 to serial9, plus IOMCU
 #define UART_MAX_DRIVERS 11
+
+#ifndef HAL_HAVE_LOW_NOISE_UART
+#define HAL_HAVE_LOW_NOISE_UART 0
+#endif
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -35,44 +39,24 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(UARTDriver);
 
-    void begin(uint32_t b) override;
-    void begin_locked(uint32_t b, uint32_t write_key) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
+    uint8_t get_usb_parity() const override;
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
     
-    uint32_t available() override;
-    uint32_t available_locked(uint32_t key) override;
-
     uint32_t txspace() override;
-    int16_t read() override;
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-    int16_t read_locked(uint32_t key) override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
-
-    bool discard_input() override;
-
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
-
-    // lock a port for exclusive use. Use a key of 0 to unlock
-    bool lock_port(uint32_t write_key, uint32_t read_key) override;
+#if HAL_FORWARD_OTG2_SERIAL
+    void fwd_otg2_serial(void);
+#endif
 
     // control optional features
     bool set_options(uint16_t options) override;
     uint16_t get_options(void) const override;
-
-    // write to a locked port. If port is locked and key is not correct then 0 is returned
-    // and write is discarded
-    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
 
     struct SerialDef {
         BaseSequentialStream* serial;
@@ -95,9 +79,14 @@ public:
         int8_t txinv_gpio;
         uint8_t txinv_polarity;
         uint8_t endpoint_id;
+        uint8_t rts_alternative_function;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+
+#if HAL_HAVE_LOW_NOISE_UART
+        bool low_noise_line;
+#endif
     };
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
@@ -144,7 +133,7 @@ public:
 
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O for one uart
-    void uart_info(ExpandingString &str) override;
+    void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
 #endif
 
     /*
@@ -169,18 +158,14 @@ private:
     static thread_t* volatile uart_rx_thread_ctx;
 
     // table to find UARTDrivers from serial number, used for event handling
-    static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+    static UARTDriver *serial_drivers[UART_MAX_DRIVERS];
     
     // thread used for writing and reading
     thread_t* volatile uart_thread_ctx;
     char uart_thread_name[6];
 
-    // index into uart_drivers table
+    // index into serial_drivers table
     uint8_t serial_num;
-
-    // key for a locked port
-    uint32_t lock_write_key;
-    uint32_t lock_read_key;
 
     uint32_t _baudrate;
 #if HAL_USE_SERIAL == TRUE
@@ -205,14 +190,14 @@ private:
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
+    uint32_t _rts_threshold;
     HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
 #endif
-    volatile bool _in_rx_timer;
-    volatile bool _in_tx_timer;
-    bool _blocking_writes;
+    HAL_Semaphore tx_sem;
+    HAL_Semaphore rx_sem;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
@@ -235,7 +220,6 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
-    uint32_t _last_stats_ms;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
@@ -292,6 +276,28 @@ private:
     void uart_thread();
     static void uart_rx_thread(void* arg);
     static void uart_thread_trampoline(void* p);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _end() override;
+    void _flush() override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    uint32_t _available() override;
+    bool _discard_input() override;
+
+#if HAL_UART_STATS_ENABLED
+    // Getters for cumulative tx and rx counts
+    uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
+    uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#if CH_CFG_USE_EVENTS == TRUE
+    uint32_t _rx_stats_framing_errors;
+    uint32_t _rx_stats_overrun_errors;
+    uint32_t _rx_stats_noise_errors;
+    event_listener_t err_listener;
+    bool err_listener_initialised;
+#endif
+#endif
 };
 
 // access to usb init for stdio.cpp

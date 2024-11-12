@@ -5,6 +5,7 @@
 #include "AP_HAL_SITL.h"
 #include "Semaphores.h"
 #include "ToneAlarm_SF.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 #if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
 #include <sys/types.h>
@@ -16,10 +17,6 @@ public:
     Util(SITL_State *_sitlState) :
         sitlState(_sitlState) {}
     
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override {
-        return false;
-    }
-
     /**
        how much free memory do we have in bytes. 
      */
@@ -46,7 +43,7 @@ public:
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
     void dump_stack_trace();
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     void *allocate_heap_memory(size_t size) override;
     void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
@@ -93,7 +90,7 @@ private:
     static ToneAlarm_SF _toneAlarm;
 #endif
 
-#ifdef ENABLE_HEAP
+#if ENABLE_HEAP
     struct heap_allocation_header {
         size_t allocation_size; // size of allocated block, not including this header
     };
@@ -106,4 +103,27 @@ private:
 
     int saved_argc;
     char *const *saved_argv;
+
+#if HAL_UART_STATS_ENABLED
+    // request information on uart I/O
+    void uart_info(ExpandingString &str) override;
+
+#if HAL_LOGGING_ENABLED
+    // Log UART message for each serial port
+    void uart_log() override;
+#endif
+#endif // HAL_UART_STATS_ENABLED
+
+private:
+#if HAL_UART_STATS_ENABLED
+    // UART stats tracking helper
+    struct uart_stats {
+        AP_HAL::UARTDriver::StatsTracker serial[AP_HAL::HAL::num_serial];
+        uint32_t last_ms;
+    };
+    uart_stats sys_uart_stats;
+#if HAL_LOGGING_ENABLED
+    uart_stats log_uart_stats;
+#endif
+#endif // HAL_UART_STATS_ENABLED
 };

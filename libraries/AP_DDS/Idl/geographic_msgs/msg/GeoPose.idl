@@ -1,0 +1,21 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geographic_msgs/msg/GeoPose.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Quaternion.idl"
+#include "geographic_msgs/msg/GeoPoint.idl"
+
+module geographic_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "Geographic pose, using the WGS 84 reference ellipsoid." "\n"
+      "" "\n"
+      "Orientation uses the East-North-Up (ENU) frame of reference." "\n"
+      "(But, what about singularities at the poles?)")
+    struct GeoPose {
+      geographic_msgs::msg::GeoPoint position;
+
+      geometry_msgs::msg::Quaternion orientation;
+    };
+  };
+};

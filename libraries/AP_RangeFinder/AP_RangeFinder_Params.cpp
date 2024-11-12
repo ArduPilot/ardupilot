@@ -1,13 +1,12 @@
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_ENABLED
+
 #include "AP_RangeFinder_Params.h"
 #include "AP_RangeFinder.h"
 
 #ifndef AP_RANGEFINDER_DEFAULT_ORIENTATION
-#ifndef HAL_BUILD_AP_PERIPH
 #define AP_RANGEFINDER_DEFAULT_ORIENTATION ROTATION_PITCH_270
-#else
-// AP_Periph expects ROTATION_NONE
-#define AP_RANGEFINDER_DEFAULT_ORIENTATION ROTATION_NONE
-#endif
 #endif
 
 // table of user settable parameters
@@ -15,13 +14,13 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Rangefinder type
     // @Description: Type of connected rangefinder
-    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:USD1_Serial,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:Benewake-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:DroneCAN,25:BenewakeTFminiPlus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial,30:HC-SR04,31:GYUS42v2,32:MSP,33:USD1_CAN,34:Benewake_CAN,35:TeraRangerSerial,36:Lua_Scripting,100:SITL
+    // @Values: 0:None,1:Analog,2:MaxbotixI2C,3:LidarLite-I2C,5:PWM,6:BBB-PRU,7:LightWareI2C,8:LightWareSerial,9:Bebop,10:MAVLink,11:USD1_Serial,12:LeddarOne,13:MaxbotixSerial,14:TeraRangerI2C,15:LidarLiteV3-I2C,16:VL53L0X or VL53L1X,17:NMEA,18:WASP-LRF,19:BenewakeTF02,20:Benewake-Serial,21:LidarLightV3HP,22:PWM,23:BlueRoboticsPing,24:DroneCAN,25:BenewakeTFminiPlus-I2C,26:LanbaoPSK-CM8JL65-CC5,27:BenewakeTF03,28:VL53L1X-ShortRange,29:LeddarVu8-Serial,30:HC-SR04,31:GYUS42v2,32:MSP,33:USD1_CAN,34:Benewake_CAN,35:TeraRangerSerial,36:Lua_Scripting,37:NoopLoop_TOFSense,38:NoopLoop_TOFSense_CAN,39:NRA24_CAN,40:NoopLoop_TOFSenseF_I2C,41:JRE_Serial,42:Ainstein_LR_D1,43:RDS02UF,100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RangeFinder_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog or PWM input pin that rangefinder is connected to. Airspeed ports can be used for Analog input, AUXOUT can be used for PWM input. When using analog pin 103, the maximum value of the input in 3.3V. For PWM input, the pin must be configured as a digital GPIO, see the Wiki's "GPIOs" section for details.
+    // @Description: Analog or PWM input pin that rangefinder is connected to. Analog RSSI or Airspeed ports can be used for Analog inputs (some autopilots provide others also), Non-IOMCU Servo/MotorOutputs can be used for PWM input when configured as "GPIOs". Values for some autopilots are given as examples. Search wiki for "Analog pins" for analog pin or "GPIOs", if PWM input type, to determine pin number.
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("PIN",     2, AP_RangeFinder_Params, pin, -1),
@@ -144,3 +143,5 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 AP_RangeFinder_Params::AP_RangeFinder_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#endif  // AP_RANGEFINDER_ENABLED

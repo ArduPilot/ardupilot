@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AR_WPNav.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
@@ -87,9 +88,9 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 };
 
 AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control) :
+    _pivot(atc),
     _atc(atc),
-    _pos_control(pos_control),
-    _pivot(atc)
+    _pos_control(pos_control)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -425,7 +426,7 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
         float track_velocity = curr_vel_NED.xy().dot(track_direction);
         // set time scaler to be consistent with the achievable vehicle speed with a 5% buffer for short term variation.
         const float time_scaler_dt_max = _overspeed_enabled ? AR_WPNAV_OVERSPEED_RATIO_MAX : 1.0f;
-        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_p().kP() * track_error) / curr_target_vel.length(), 0.1f, time_scaler_dt_max);
+        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_p().kP() * track_error) / curr_target_vel.length(), 0.0f, time_scaler_dt_max);
     }
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
     float track_scaler_tc = 1.0f;

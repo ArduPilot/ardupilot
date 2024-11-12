@@ -1,7 +1,7 @@
 #include "AC_CommandModel.h"
 #include <AP_HAL/AP_HAL.h>
 
-// The Commmand Model class holds parameters that shape the pilot desired angular rate input.  This class can 
+// The Command Model class holds parameters that shape the pilot desired angular rate input.  This class can 
 // be expanded to hold the methods that shape the pilot desired input.
 
 extern const AP_HAL::HAL& hal;
@@ -40,9 +40,9 @@ const AP_Param::GroupInfo AC_CommandModel::var_info[] = {
 
 // Constructor
 AC_CommandModel::AC_CommandModel(float initial_rate, float initial_expo, float initial_tc) :
+    default_rate_tc(initial_tc),
     default_rate(initial_rate),
-    default_expo(initial_expo),
-    default_rate_tc(initial_tc)
+    default_expo(initial_expo)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

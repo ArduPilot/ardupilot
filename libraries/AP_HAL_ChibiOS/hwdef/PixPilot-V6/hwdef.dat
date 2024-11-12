@@ -17,8 +17,6 @@ env OPTIMIZE -O2
 
 FLASH_RESERVE_START_KB 128
 
-define HAL_STORAGE_SIZE 32768
-
 # order of I2C buses
 I2C_ORDER I2C3 I2C2 I2C1
 
@@ -161,14 +159,12 @@ PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
 PB4  LED_RED     OUTPUT OPENDRAIN  GPIO(11) HIGH
 PB3  LED_GREEN   OUTPUT OPENDRAIN  GPIO(12) HIGH
 PB5  LED_BLUE    OUTPUT OPENDRAIN  GPIO(13) HIGH
-define HAL_GPIO_LED_ON  0
-define HAL_GPIO_LED_OFF 1
 
-define HAL_GPIO_A_LED_PIN 11
-define HAL_GPIO_B_LED_PIN 13
-define HAL_GPIO_C_LED_PIN 12
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 11
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 13
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 12
 
-define HAL_HAVE_PIXRACER_LED
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
 
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
@@ -213,8 +209,6 @@ undef AP_FEATURE_SBUS_OUT
 
 # Enable FAT filesystem support.
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1

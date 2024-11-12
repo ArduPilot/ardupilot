@@ -64,7 +64,7 @@ public:
     // to averaged acc over time
     bool get_sample(uint8_t i, Vector3f& s) const;
 
-    // returns truen and sample corrected with diag offdiag parameters as calculated by LSq estimation procedure
+    // returns true and sample corrected with diag offdiag parameters as calculated by LSq estimation procedure
     // returns false if no correct parameter exists to be applied along with existing sample without corrections
     bool get_sample_corrected(uint8_t i, Vector3f& s) const;
 

@@ -163,7 +163,7 @@ extern AP_FlashIface_JEDEC ext_flash;
 /*
   1ms timer tick callback
  */
-static void sys_tick_handler(void *ctx)
+static void sys_tick_handler(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
     chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
@@ -238,6 +238,10 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
 
 #ifndef APP_START_ADDRESS
 #define APP_START_ADDRESS (FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U)
+#endif
+
+#if !defined(STM32_OTG2_IS_OTG1)
+#define STM32_OTG2_IS_OTG1 0
 #endif
 
 void
@@ -316,12 +320,17 @@ jump_to_app()
 #elif defined(STM32L4)
     rccDisableAPB1R1(~0);
     rccDisableAPB1R2(~0);
+#elif defined(STM32L4PLUS)
+    rccDisableAPB1R1(~0);
+    rccDisableAPB1R2(~0);
 #else
     rccDisableAPB1(~0);
 #endif
     rccDisableAPB2(~0);
-#if HAL_USE_SERIAL_USB == TRUE    
+#if HAL_USE_SERIAL_USB == TRUE
+#if !STM32_OTG2_IS_OTG1
     rccResetOTG_FS();
+#endif
 #if defined(rccResetOTG_HS)
     rccResetOTG_HS();
 #endif
@@ -413,23 +422,23 @@ static void test_flash()
             }
             uint32_t num_writes = flash_func_sector_size(page) / sizeof(v);
             uprintf("page %u size %u addr=0x%08x v=0x%08x\n",
-                    page, flash_func_sector_size(page), addr, v[0]); delay(10);
+                    unsigned(page), unsigned(flash_func_sector_size(page)), unsigned(addr), unsigned(v[0])); delay(10);
             if (init_done) {
                 for (uint32_t j=0; j<flash_func_sector_size(page)/4; j++) {
                     uint32_t v1 = (page<<16) + (loop-1);
                     uint32_t v2 = flash_func_read_word(addr+j*4);
                     if (v2 != v1) {
-                        uprintf("read error at 0x%08x v=0x%08x v2=0x%08x\n", addr+j*4, v1, v2);
+                        uprintf("read error at 0x%08x v=0x%08x v2=0x%08x\n", unsigned(addr+j*4), unsigned(v1), unsigned(v2));
                         break;
                     }
                 }
             }
             if (!flash_func_erase_sector(page)) {
-                uprintf("erase of %u failed\n", page);
+                uprintf("erase of %u failed\n", unsigned(page));
             }
             for (uint32_t j=0; j<num_writes; j++) {
                 if (!flash_func_write_words(addr+j*sizeof(v), v, ARRAY_SIZE(v))) {
-                    uprintf("write failed at 0x%08x\n", addr+j*sizeof(v));
+                    uprintf("write failed at 0x%08x\n", unsigned(addr+j*sizeof(v)));
                     break;
                 }
             }
@@ -496,8 +505,16 @@ bootloader(unsigned timeout)
         led_off(LED_ACTIVITY);
 
         do {
-            /* if we have a timeout and the timer has expired, return now */
-            if (timeout && !timer[TIMER_BL_WAIT]) {
+            /* if we have a timeout and the timer has expired and serial forward is not busy, return now */
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+            bool ser_forward_active = update_otg2_serial_forward();
+#endif
+            if (timeout && !timer[TIMER_BL_WAIT]
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+            // do serial forward only when idle
+            && !ser_forward_active
+#endif
+            ) {
                 return;
             }
 
@@ -625,7 +642,7 @@ bootloader(unsigned timeout)
             led_set(LED_OFF);
 
             // erase all sectors
-            for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
+            for (uint16_t i = 0; flash_func_sector_size(i) != 0; i++) {
 #if defined(STM32F7) || defined(STM32H7)
                 if (!flash_func_erase_sector(i, c == PROTO_CHIP_FULL_ERASE)) {
 #else

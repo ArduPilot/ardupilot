@@ -24,15 +24,11 @@
 
 #include "SRV_Channel.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
-  #include <AP_UAVCAN/AP_UAVCAN.h>
-
-  // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    #include <AP_KDECAN/AP_KDECAN.h>
-  #endif
+  #include <AP_DroneCAN/AP_DroneCAN.h>
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
@@ -49,7 +45,7 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
 AP_SBusOut *SRV_Channels::sbus_ptr;
 #endif
 
@@ -187,7 +183,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 
     // @Param: _RATE
     // @DisplayName: Servo default output rate
-    // @Description: This sets the default output rate in Hz for all outputs.
+    // @Description: Default output rate in Hz for all PWM outputs.
     // @Range: 25 400
     // @User: Advanced
     // @Units: Hz
@@ -199,11 +195,11 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
@@ -225,26 +221,35 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 
     // @Param: _DSHOT_RATE
     // @DisplayName: Servo DShot output rate
-    // @Description: This sets the DShot output rate for all outputs as a multiple of the loop rate. 0 sets the output rate to be fixed at 1Khz for low loop rates. This value should never be set below 500Hz.
+    // @Description: DShot output rate for all outputs as a multiple of the loop rate. 0 sets the output rate to be fixed at 1Khz for low loop rates. This value should never be set below 500Hz.
     // @Values: 0:1Khz,1:loop-rate,2:double loop-rate,3:triple loop-rate,4:quadruple loop rate
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_RATE",  23, SRV_Channels, dshot_rate, 0),
 
     // @Param: _DSHOT_ESC
     // @DisplayName: Servo DShot ESC type
-    // @Description: This sets the DShot ESC type for all outputs. The ESC type affects the range of DShot commands available. None means that no dshot commands will be executed.
-    // @Values: 0:None,1:BLHeli32/Kiss,2:BLHeli_S
+    // @Description: DShot ESC type for all outputs. The ESC type affects the range of DShot commands available and the bit widths used. None means that no dshot commands will be executed. Some ESC types support Extended DShot Telemetry (EDT) which allows telemetry other than RPM data to be returned when using bi-directional dshot. If you enable EDT you must install EDT capable firmware for correct operation.
+    // @Values: 0:None,1:BLHeli32/Kiss/AM32,2:BLHeli_S/BlueJay,3:BLHeli32/AM32/Kiss+EDT,4:BLHeli_S/BlueJay+EDT
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
 
     // @Param: _GPIO_MASK
     // @DisplayName: Servo GPIO mask
-    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
+    // @Description: Bitmask of outputs which will be available as GPIOs. Any output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
     // @Bitmask: 0:Servo 1, 1:Servo 2, 2:Servo 3, 3:Servo 4, 4:Servo 5, 5:Servo 6, 6:Servo 7, 7:Servo 8, 8:Servo 9, 9:Servo 10, 10:Servo 11, 11:Servo 12, 12:Servo 13, 13:Servo 14, 14:Servo 15, 15:Servo 16, 16:Servo 17, 17:Servo 18, 18:Servo 19, 19:Servo 20, 20:Servo 21, 21:Servo 22, 22:Servo 23, 23:Servo 24, 24:Servo 25, 25:Servo 26, 26:Servo 27, 27:Servo 28, 28:Servo 29, 29:Servo 30, 30:Servo 31, 31:Servo 32
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),
+    AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),  
 
+    // indexes 27-43 used by SERVO_32_ENABLEd group of params
+ 
+    // @Param: _RC_FS_MSK
+    // @DisplayName: Servo RC Failsafe Mask
+    // @Description: Bitmask of scaled passthru output channels which will be set to their trim value during rc failsafe instead of holding their last position before failsafe.
+    // @Bitmask: 0:RCIN1Scaled, 1:RCIN2Scaled, 2:RCIN3Scaled, 3:RCIN4Scaled, 4:RCIN5Scaled, 5:RCIN6Scaled, 6:RCIN7Scaled, 7:RCIN8Scaled, 8:RCIN9Scaled, 9:RCIN10Scaled, 10:RCIN11Scaled, 11:SRCIN12Scaled, 12:RCIN13Scaled, 13:RCIN14Scaled, 14:RCIN15Scaled, 15:RCIN16Scaled
+    // @User: Advanced
+    AP_GROUPINFO("_RC_FS_MSK", 44, SRV_Channels, rc_fs_mask, 0),
+ 
 #if (NUM_SERVO_CHANNELS >= 17)
     // @Param: _32_ENABLE
     // @DisplayName: Enable outputs 17 to 31
@@ -383,7 +388,7 @@ SRV_Channels::SRV_Channels(void)
     volz_ptr = &volz;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     sbus_ptr = &sbus;
 #endif
 
@@ -469,6 +474,7 @@ void SRV_Channels::set_output_pwm_chan(uint8_t chan, uint16_t value)
     }
 }
 
+#if AP_SCRIPTING_ENABLED && AP_SCHEDULER_ENABLED
 // set output value for a specific function channel as a pwm value with loop based timeout
 // timeout_ms of zero will clear override of the channel
 // minimum override is 1 MAIN_LOOP
@@ -494,6 +500,7 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         }
     }
 }
+#endif  // AP_SCRIPTING_ENABLED
 
 /*
   wrapper around hal.rcout->cork()
@@ -515,10 +522,10 @@ void SRV_Channels::push()
     volz_ptr->update();
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     // give sbus library a chance to update
     sbus_ptr->update();
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if AP_ROBOTISSERVO_ENABLED
     // give robotis library a chance to update
@@ -534,32 +541,27 @@ void SRV_Channels::push()
     fetteconwire_ptr->update();
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if AP_KDECAN_ENABLED
+    if (AP::kdecan() != nullptr) {
+        AP::kdecan()->update();
+    }
+#endif
+
+#if HAL_ENABLE_DRONECAN_DRIVERS
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         switch (AP::can().get_driver_type(i)) {
-            case AP_CANManager::Driver_Type_UAVCAN: {
-                AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-                if (ap_uavcan == nullptr) {
+            case AP_CAN::Protocol::DroneCAN: {
+                AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_dronecan(i);
+                if (ap_dronecan == nullptr) {
                     continue;
                 }
-                ap_uavcan->SRV_push_servos();
-                break;
-            }
-            case AP_CANManager::Driver_Type_KDECAN: {
-// To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
-                if (ap_kdecan == nullptr) {
-                    continue;
-                }
-                ap_kdecan->update();
-#endif
+                ap_dronecan->SRV_push_servos();
                 break;
             }
 #if HAL_PICCOLO_CAN_ENABLE
-            case AP_CANManager::Driver_Type_PiccoloCAN: {
+            case AP_CAN::Protocol::PiccoloCAN: {
                 AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
                 if (ap_pcan == nullptr) {
                     continue;
@@ -568,8 +570,7 @@ void SRV_Channels::push()
                 break;
             }
 #endif
-            case AP_CANManager::Driver_Type_CANTester:
-            case AP_CANManager::Driver_Type_None:
+            case AP_CAN::Protocol::None:
             default:
                 break;
         }

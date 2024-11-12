@@ -29,8 +29,11 @@ SERIAL_ORDER OTG1
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
+<<<<<<< HEAD
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 # Add CS pins to ensure they are high in bootloader
 PA4 MPU_CS CS
 PB12 OSD_CS CS

@@ -27,10 +27,11 @@
  * and DroneCAN
  */
 
-#include "AP_OpenDroneID.h"
+#include "AP_OpenDroneID_config.h"
 
 #if AP_OPENDRONEID_ENABLED
 
+#include "AP_OpenDroneID.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
@@ -38,6 +39,10 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+<<<<<<< HEAD
+=======
+#include <AP_DroneCAN/AP_DroneCAN.h>
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -164,6 +169,11 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return true;
     }
 
+    if(_enable == 0) {
+        strncpy(failmsg, "DID_ENABLE must be 1", failmsg_len);
+        return false;
+    }
+
     if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
         strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
         return false;
@@ -224,6 +234,20 @@ void AP_OpenDroneID::update()
 
     send_dynamic_out();
     send_static_out();
+#if HAL_ENABLE_DRONECAN_DRIVERS
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_DroneCAN *dronecan = AP_DroneCAN::get_dronecan(i);
+        if (dronecan == nullptr) {
+            continue;
+        }
+        if (dronecan->get_driver_index()+1 != _can_driver) {
+            continue;
+        }
+        // send messages
+        dronecan_send(dronecan);
+    }
+#endif
 }
 
 // local payload space check which treats invalid channel as having space
@@ -538,7 +562,7 @@ void AP_OpenDroneID::send_operator_id_message()
 */
 MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 18520.0) {
         return MAV_ODID_HOR_ACC_UNKNOWN;
     }
@@ -579,7 +603,7 @@ MAV_ODID_HOR_ACC AP_OpenDroneID::create_enum_horizontal_accuracy(float accuracy)
 */
 MAV_ODID_VER_ACC AP_OpenDroneID::create_enum_vertical_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 150.0) {
         return MAV_ODID_VER_ACC_UNKNOWN;
     }
@@ -614,7 +638,7 @@ MAV_ODID_VER_ACC AP_OpenDroneID::create_enum_vertical_accuracy(float accuracy) c
 */
 MAV_ODID_SPEED_ACC AP_OpenDroneID::create_enum_speed_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 10.0) {
         return MAV_ODID_SPEED_ACC_UNKNOWN;
     }
@@ -641,7 +665,7 @@ MAV_ODID_SPEED_ACC AP_OpenDroneID::create_enum_speed_accuracy(float accuracy) co
 */
 MAV_ODID_TIME_ACC AP_OpenDroneID::create_enum_timestamp_accuracy(float accuracy) const
 {
-    // Out of bounds return UKNOWN flag
+    // Out of bounds return UNKNOWN flag
     if (accuracy < 0.0 || accuracy >= 1.5) {
         return MAV_ODID_TIME_ACC_UNKNOWN;
     }

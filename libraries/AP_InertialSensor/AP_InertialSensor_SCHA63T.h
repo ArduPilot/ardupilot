@@ -84,7 +84,10 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev_uno;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_due;
 
+<<<<<<< HEAD
     uint8_t accel_instance;
     uint8_t gyro_instance;
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
     enum Rotation rotation;
 };

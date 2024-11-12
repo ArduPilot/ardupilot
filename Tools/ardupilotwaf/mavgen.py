@@ -44,7 +44,7 @@ class mavgen(Task.Task):
                     node.parent.path_from(entry_point.parent),
                     path
                 )
-                if not path in names:
+                if path not in names:
                     names.append(path)
 
         return nodes, names
@@ -94,8 +94,5 @@ def configure(cfg):
     """
     setup environment for mavlink header generator
     """
-    cfg.load('python')
-    cfg.check_python_version(minver=(2,7,0))
-
     env = cfg.env
     env.MAVLINK_DIR = cfg.srcnode.make_node('modules/mavlink/').abspath()

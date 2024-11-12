@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_ZIGZAG_ENABLED == ENABLED
+#if MODE_ZIGZAG_ENABLED
 
 /*
 * Init and run calls for zigzag flight mode
@@ -161,7 +161,7 @@ void ModeZigZag::run()
 void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 {
     // get current position as an offset from EKF origin
-    const Vector2f curr_pos {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos = pos_control->get_pos_desired_cm().xy().tofloat();
 
     // handle state machine changes
     switch (stage) {
@@ -170,13 +170,13 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             if (ab_dest == Destination::A) {
                 // store point A
                 dest_A = curr_pos;
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: point A stored");
-                AP::logger().Write_Event(LogEvent::ZIGZAG_STORE_A);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: point A stored", name());
+                LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_A);
             } else {
                 // store point B
                 dest_B = curr_pos;
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: point B stored");
-                AP::logger().Write_Event(LogEvent::ZIGZAG_STORE_B);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: point B stored", name());
+                LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_B);
             }
             // if both A and B have been stored advance state
             if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
@@ -203,10 +203,10 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     spray(true);
                     reach_wp_time_ms = 0;
                     if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
+                        gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), (ab_dest == Destination::A) ? "A" : "B");
                     } else {
                         line_count++;
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
+                        gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s (line %d/%d)", name(), (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
                     }
                 }
             }
@@ -228,7 +228,7 @@ void ModeZigZag::move_to_side()
                 current_terr_alt = terr_alt;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
         }
     }
@@ -244,14 +244,16 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         if (maintain_target) {
             const Vector3f& wp_dest = wp_nav->get_wp_destination();
             loiter_nav->init_target(wp_dest.xy());
-            if (wp_nav->origin_and_destination_are_terrain_alt()) {
-                copter.surface_tracking.set_target_alt_cm(wp_dest.z);
+#if AP_RANGEFINDER_ENABLED
+            if (copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy()) {
+                copter.surface_tracking.external_init();
             }
+#endif
         } else {
             loiter_nav->init_target();
         }
         is_auto = false;
-        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
+        gcs().send_text(MAV_SEVERITY_INFO, "%s: manual control", name());
     }
 }
 
@@ -262,7 +264,7 @@ void ModeZigZag::auto_control()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
     }
 
     // set motors to full range
@@ -303,7 +305,7 @@ void ModeZigZag::manual_control()
         // process pilot's roll and pitch input
         loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = get_pilot_desired_yaw_rate();
 
         // get pilot desired climb rate
         target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->get_control_in());
@@ -326,7 +328,7 @@ void ModeZigZag::manual_control()
     // althold state machine
     switch (althold_state) {
 
-    case AltHold_MotorStopped:
+    case AltHoldModeState::MotorStopped:
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->reset_yaw_target_and_rate();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
@@ -334,7 +336,7 @@ void ModeZigZag::manual_control()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
         break;
 
-    case AltHold_Takeoff:
+    case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
@@ -353,18 +355,18 @@ void ModeZigZag::manual_control()
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
-    case AltHold_Landed_Ground_Idle:
+    case AltHoldModeState::Landed_Ground_Idle:
         attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
-    case AltHold_Landed_Pre_Takeoff:
+    case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         loiter_nav->init_target();
         attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
-    case AltHold_Flying:
+    case AltHoldModeState::Flying:
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -377,8 +379,10 @@ void ModeZigZag::manual_control()
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
+#if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();
+#endif
 
         // Send the commanded climb rate to the position controller
         pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
@@ -427,7 +431,7 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
     }
 
     // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d {inertial_nav.get_position_xy_cm()};
+    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
     Vector2f veh_to_start_pos = curr_pos2d - start_pos;
 
     // lengthen AB_diff so that it is at least as long as vehicle is from start point
@@ -451,14 +455,10 @@ bool ModeZigZag::calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Ve
         terrain_alt = wp_nav->origin_and_destination_are_terrain_alt();
         next_dest.z = wp_nav->get_wp_destination().z;
     } else {
-        // if we have a downward facing range finder then use terrain altitude targets
         terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-        if (terrain_alt) {
-            if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
-                next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
-            }
-        } else {
-            next_dest.z = pos_control->is_active_z() ? pos_control->get_pos_target_z_cm() : inertial_nav.get_position_z_up_cm();
+        next_dest.z = pos_control->get_pos_desired_z_cm();
+        if (!terrain_alt) {
+            next_dest.z += pos_control->get_pos_terrain_cm();
         }
     }
 
@@ -499,19 +499,12 @@ bool ModeZigZag::calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) con
     float scalar = constrain_float(_side_dist, 0.1f, 100.0f) * 100 / safe_sqrt(AB_side.length_squared());
 
     // get distance from vehicle to start_pos
-    const Vector2f curr_pos2d {inertial_nav.get_position_xy_cm()};
-    next_dest.x = curr_pos2d.x + (AB_side.x * scalar);
-    next_dest.y = curr_pos2d.y + (AB_side.y * scalar);
+    const Vector2f curr_pos2d = pos_control->get_pos_desired_cm().xy().tofloat();
+    next_dest.xy() = curr_pos2d + (AB_side * scalar);
 
     // if we have a downward facing range finder then use terrain altitude targets
     terrain_alt = copter.rangefinder_alt_ok() && wp_nav->rangefinder_used_and_healthy();
-    if (terrain_alt) {
-        if (!copter.surface_tracking.get_target_alt_cm(next_dest.z)) {
-            next_dest.z = copter.rangefinder_state.alt_cm_filt.get();
-        }
-    } else {
-        next_dest.z = pos_control->is_active_z() ? pos_control->get_pos_target_z_cm() : inertial_nav.get_position_z_up_cm();
-    }
+    next_dest.z = pos_control->get_pos_desired_z_cm();
 
     return true;
 }
@@ -542,7 +535,7 @@ void ModeZigZag::run_auto()
                 stage = AUTO;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
-                gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
+                gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), dir[(uint8_t)zigzag_direction]);
             }
         }
     } else {
@@ -583,4 +576,17 @@ void ModeZigZag::spray(bool b)
 #endif
 }
 
-#endif // MODE_ZIGZAG_ENABLED == ENABLED
+uint32_t ModeZigZag::wp_distance() const
+{
+    return is_auto ? wp_nav->get_wp_distance_to_destination() : 0;
+}
+int32_t ModeZigZag::wp_bearing() const
+{
+    return is_auto ? wp_nav->get_wp_bearing_to_destination() : 0;
+}
+float ModeZigZag::crosstrack_error() const
+{
+    return is_auto ? wp_nav->crosstrack_error() : 0;
+}
+
+#endif // MODE_ZIGZAG_ENABLED

@@ -72,6 +72,7 @@ PA10 USART1_RX USART1
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 PA14 LED_BLUE OUTPUT LOW GPIO(0)
 PA13 LED_GREEN OUTPUT LOW GPIO(1) # optional
 
@@ -128,8 +129,8 @@ PC13 VBUS INPUT OPENDRAIN
 
 PC15 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 #################################################
 ###                 DEVICES                   ###
@@ -157,8 +158,6 @@ define AP_BARO_BMP280_ENABLED 1
 define AP_BARO_DPS280_ENABLED 1
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # define default battery setup
 define HAL_BATT_MONITOR_DEFAULT 4
@@ -182,33 +181,10 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-define STM32_PWM_USE_ADVANCED TRUE
-
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
-# disable parachute and sprayer to save flash
-define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-
-# reduce max size of embedded params for apj_tool.py
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-define HAL_GYROFFT_ENABLED 0
-
 # save some flash
-include ../include/save_some_flash.inc
-define AP_GRIPPER_ENABLED 0
-define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
-define AP_BATTERY_SMBUS_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
 define HAL_RUNCAM_ENABLED 0
-define HAL_HOTT_TELEM_ENABLED 0
-define HAL_NMEA_OUTPUT_ENABLED 0
 define HAL_BUTTON_ENABLED 0
-define AP_NOTIFY_OREOLED_ENABLED 0
-define HAL_PICCOLO_CAN_ENABLE 0
 
-# only include ublox GPS driver
-include ../include/minimal_GPS.inc
+include ../include/minimize_fpv_osd.inc
 

@@ -38,7 +38,7 @@ uint16_t buflen = 0;
 
 void setup(void)
 {
-    hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
+    hal.scheduler->delay(1000); //Ensure that hal.serial(n) can be initialized
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     uart = hal.serial(0);  //  console

@@ -4,12 +4,21 @@
    Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
    assistance from Paul Riseborough, testing by Henry Wurzburg
 ]]--
--- luacheck: only 0
+-- luacheck: ignore 212 (Unused argument)
+---@diagnostic disable: param-type-mismatch
+---@diagnostic disable: undefined-field
+---@diagnostic disable: missing-parameter
+---@diagnostic disable: cast-local-type
+---@diagnostic disable: need-check-nil
+---@diagnostic disable: undefined-global
+---@diagnostic disable: inject-field
 
--- setup param block for aerobatics, reserving 30 params beginning with AERO_
+-- setup param block for aerobatics, reserving 35 params beginning with AERO_
 local PARAM_TABLE_KEY = 70
 local PARAM_TABLE_PREFIX = 'AEROM_'
-assert(param:add_table(PARAM_TABLE_KEY, "AEROM_", 30), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, "AEROM_", 40), 'could not add param table')
+
+local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
 -- add a parameter and bind it to a variable
 function bind_add_param(name, idx, default_value)
@@ -17,32 +26,252 @@ function bind_add_param(name, idx, default_value)
     return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
+
+--[[
+  // @Param: AEROM_ANG_ACCEL
+  // @DisplayName: Angular acceleration limit
+  // @Description: Maximum angular acceleration in maneuvers
+  // @Units: deg/s/s
+--]]
 AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 6000)
+
+
+--[[
+  // @Param: AEROM_ANG_TC
+  // @DisplayName: Roll control filtertime constant
+  // @Description: This is the time over which we filter the desired roll to smooth it
+  // @Units: s
+--]]
 AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.1)
+
 -- 3 was AEROM_KE_ANG
+
+--[[
+  // @Param: AEROM_THR_PIT_FF
+  // @DisplayName: Throttle feed forward from pitch
+  // @Description: This controls how much extra throttle to add based on pitch ange. The value is for 90 degrees and is applied in proportion to pitch
+  // @Units: %
+--]]
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
+
+--[[
+  // @Param: AEROM_SPD_P
+  // @DisplayName: P gain for speed controller
+  // @Description: This controls how rapidly the throttle is raised to compensate for a speed error
+  // @Units: %
+--]]
 SPD_P = bind_add_param('SPD_P', 5, 5)
+
+--[[
+  // @Param: AEROM_SPD_I
+  // @DisplayName: I gain for speed controller
+  // @Description: This controls how rapidly the throttle is raised to compensate for a speed error
+  // @Units: %
+--]]
 SPD_I = bind_add_param('SPD_I', 6, 25)
+
+--[[
+  // @Param: AEROM_ROL_COR_TC
+  // @DisplayName: Roll control time constant
+  // @Description: This is the time constant for correcting roll errors. A smaller value leads to faster roll corrections
+  // @Units: s
+--]]
 ROLL_CORR_TC = bind_add_param('ROL_COR_TC', 8, 0.25)
+
 -- removed 9 and 10
+
+--[[
+  // @Param: AEROM_TIME_COR_P
+  // @DisplayName: Time constant for correction of our distance along the path
+  // @Description: This is the time constant for correcting path position errors
+  // @Units: s
+--]]
 TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
+
+--[[
+  // @Param: AEROM_ERR_COR_P
+  // @DisplayName: P gain for path error corrections
+  // @Description: This controls how rapidly we correct back onto the desired path
+--]]
 ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
+
+--[[
+  // @Param: AEROM_ERR_COR_D
+  // @DisplayName: D gain for path error corrections
+  // @Description: This controls how rapidly we correct back onto the desired path
+--]]
 ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
+
+--[[
+  // @Param: AEROM_ENTRY_RATE
+  // @DisplayName: The roll rate to use when entering a roll maneuver
+  // @Description: This controls how rapidly we roll into a new orientation
+  // @Units: deg/s
+--]]
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
+
+--[[
+  // @Param: AEROM_THR_LKAHD
+  // @DisplayName: The lookahead for throttle control
+  // @Description: This controls how far ahead we look in time along the path for the target throttle
+  // @Units: s
+--]]
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
+
+--[[
+  // @Param: AEROM_DEBUG
+  // @DisplayName: Debug control
+  // @Description: This controls the printing of extra debug information on paths
+--]]
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
+
+--[[
+  // @Param: AEROM_THR_MIN
+  // @DisplayName: Minimum Throttle
+  // @Description: Lowest throttle used during maneuvers
+  // @Units: %
+--]]
 AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
+
+--[[
+  // @Param: AEROM_THR_BOOST
+  // @DisplayName: Throttle boost
+  // @Description: This is the extra throttle added in schedule elements marked as needing a throttle boost
+  // @Units: %
+--]]
 AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
+
+--[[
+  // @Param: AEROM_YAW_ACCEL
+  // @DisplayName: Yaw acceleration
+  // @Description: This is maximum yaw acceleration to use
+  // @Units: deg/s/s
+--]]
 AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
+
+--[[
+  // @Param: AEROM_LKAHD
+  // @DisplayName: Lookahead
+  // @Description: This is how much time to look ahead in the path for calculating path rates
+  // @Units: s
+--]]
 AEROM_LKAHD = bind_add_param('LKAHD', 20, 0.5)
+
+--[[
+    // @Param: AEROM_PATH_SCALE
+    // @DisplayName: Path Scale
+    // @Description: Scale factor for Path/Box size. 0.5 would half the distances in maneuvers. Radii are unaffected.
+    // @Range: 0.1 100
+--]]
 AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
+
+--[[
+    // @Param: AEROM_BOX_WIDTH
+    // @DisplayName: Box Width
+    // @Description: Length of aerobatic "box" 
+    // @Units: m
+--]]
 AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
+
+--[[
+    // @Param: AEROM_STALL_THR
+    // @DisplayName: Stall turn throttle
+    // @Description: Amount of throttle to reduce to for a stall turn
+    // @Units: %
+--]]
 AEROM_STALL_THR = bind_add_param('STALL_THR', 23, 40)
+
+--[[
+    // @Param: AEROM_STALL_PIT
+    // @DisplayName: Stall turn pitch threshold
+    // @Description: Pitch threashold for moving to final stage of stall turn
+    // @Units: deg
+--]]
 AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
+
 -- 25 was AEROM_KE_TC
+
+--[[
+    // @Param: AEROM_KE_RUDD
+    // @DisplayName: KnifeEdge Rudder
+    // @Description: Percent of rudder normally uses to sustain knife-edge at trick speed
+    // @Units: %
+--]]
 AEROM_KE_RUDD = bind_add_param('KE_RUDD', 26, 25)
+
+--[[
+    // @Param: AEROM_KE_RUDD_LK
+    // @DisplayName: KnifeEdge Rudder lookahead
+    // @Description: Time to look ahead in the path to calculate rudder correction for bank angle
+    // @Units: s
+--]]
 AEROM_KE_RUDD_LK = bind_add_param('KE_RUDD_LK', 27, 0.25)
+
+--[[
+    // @Param: AEROM_ALT_ABORT
+    // @DisplayName: Altitude Abort
+    // @Description: Maximum allowable loss in altitude during a trick or sequence from its starting altitude.
+    // @Units: m
+--]]
 AEROM_ALT_ABORT = bind_add_param('ALT_ABORT',28,15)
+
+--[[
+    // @Param: AEROM_TS_P
+    // @DisplayName: Timesync P gain
+    // @Description: This controls how rapidly two aircraft are brought back into time sync
+--]]
+AEROM_TS_P = bind_add_param('TS_P', 29, 0.33)
+
+--[[
+    // @Param: AEROM_TS_I
+    // @DisplayName: Timesync I gain
+    // @Description: This controls how rapidly two aircraft are brought back into time sync
+--]]
+AEROM_TS_I = bind_add_param('TS_I', 30, 0.33)
+
+--[[
+    // @Param: AEROM_TS_SPDMAX
+    // @DisplayName: Timesync speed max
+    // @Description: This sets the maximum speed adjustment for time sync between aircraft
+    // @Units: m/s
+--]]
+AEROM_TS_SPDMAX = bind_add_param('TS_SPDMAX', 31, 0.0)
+
+--[[
+    // @Param: AEROM_TS_RATE
+    // @DisplayName: Timesync rate of send of NAMED_VALUE_FLOAT data
+    // @Description: This sets the rate we send data for time sync between aircraft
+    // @Units: Hz
+--]]
+AEROM_TS_RATE = bind_add_param('TS_RATE', 32, 4.0)
+
+--[[
+    // @Param: AEROM_MIS_ANGLE
+    // @DisplayName: Mission angle
+    // @Description: When set to a non-zero value, this is the assumed direction of the mission. Otherwise the waypoint angle is used
+    // @Units: deg
+--]]
+AEROM_MIS_ANGLE = bind_add_param('MIS_ANGLE', 33, 0.0)
+
+--[[
+    // @Param: AEROM_OPTIONS
+    // @DisplayName: Aerobatic options
+    // @Description: Options to control aerobatic behavior
+    // @Bitmask: 0:UseRTLOnAbort, 1:AddAtToMessages, 2:DualAircraftSynchronised
+    // @Units: deg
+--]]
+AEROM_OPTIONS = bind_add_param('OPTIONS', 34, 0.0)
+
+local OPTIONS = { ABORT_RTL=(1<<0), MSG_ADD_AT=(1<<1), DUAL_AIRCRAFT=(1<<2) }
+
+--[[
+   return true if an option is set
+--]]
+function option_set(option)
+   local options = math.floor(AEROM_OPTIONS:get())
+   return options & option ~= 0
+end
+
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -54,15 +283,16 @@ end
 
 ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
-ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
+AIRSPEED_MIN = Parameter("AIRSPEED_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
+SYSID_THISMAV = Parameter("SYSID_THISMAV")
 
 GRAVITY_MSS = 9.80665
 
 --[[
    list of attributes that can be added to a path element
 --]]
-local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message", "shift_xy" }
+local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message", "shift_xy", "timestamp", "pos_gain_mul" }
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -77,12 +307,17 @@ function bind_add_param2(name, idx, default_value)
     assert(param:add_param(PARAM_TABLE_KEY2, idx, name, default_value), string.format('could not add param %s', name))
     return Parameter(PARAM_TABLE_PREFIX2 .. name)
 end
-
+--[[
+    // @Param: TRIK_ENABLE
+    // @DisplayName: Tricks on Switch Enable
+    // @Description: Enables Tricks on Switch. TRIK params hidden until enabled
+--]]
 local TRIK_ENABLE = bind_add_param2("_ENABLE", 1, 0)
 local TRICKS = nil
 local TRIK_SEL_FN = nil
 local TRIK_ACT_FN = nil
 local TRIK_COUNT  = nil
+
 
 local function TrickDef(id, arg1, arg2, arg3, arg4)
    local self = {}
@@ -106,42 +341,63 @@ local function sq(x)
    return x*x
 end
 
+local last_trick_action_state = nil
 if TRIK_ENABLE:get() > 0 then
+--[[
+    // @Param: TRIK_SEL_FN
+    // @DisplayName: Trik Selection Scripting Function
+    // @Description: Setting an RC channel's _OPTION to this value will use it for trick selection
+    // @Range: 301 307
+--]]
    TRIK_SEL_FN = bind_add_param2("_SEL_FN", 2, 301)
+--[[
+    // @Param: TRIK_ACT_FN
+    // @DisplayName: Trik Action Scripting Function
+    // @Description: Setting an RC channel's _OPTION to this value will use it for trick action (abort,announce,execute)
+    // @Range: 301 307
+--]]
    TRIK_ACT_FN = bind_add_param2("_ACT_FN", 3, 300)
+--[[
+    // @Param: TRIK_COUNT
+    // @DisplayName: Trik Count
+    // @Description: Number of tricks which can be selected over the range of the trik selection RC channel
+    // @Range: 1 11
+--]]
    TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
    TRICKS = {}
+
+   last_trick_action_state = rc:get_aux_cached(TRIK_ACT_FN:get())
 
    -- setup parameters for tricks
    local count = math.floor(constrain(TRIK_COUNT:get(),1,11))
    for i = 1, count do
       local k = 5*i
       local prefix = string.format("%u", i)
-      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
+      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, -1),
                            bind_add_param2(prefix .. "_ARG1", k+1, 30),
                            bind_add_param2(prefix .. "_ARG2", k+2, 0),
                            bind_add_param2(prefix .. "_ARG3", k+3, 0),
                            bind_add_param2(prefix .. "_ARG4", k+4, 0))
    end
-   gcs:send_text(0, string.format("Enabled %u aerobatic tricks", TRIK_COUNT:get()))
+   gcs:send_text(MAV_SEVERITY.ALERT, string.format("Enabled %u aerobatic tricks", TRIK_COUNT:get()))
 end
 
-local NAV_TAKEOFF = 22
-local NAV_WAYPOINT = 16
 local NAV_SCRIPT_TIME = 42702
 
 local MODE_AUTO = 10
+local MODE_RTL = 11
 
 local LOOP_RATE = 40
 local DO_JUMP = 177
 local k_throttle = 70
 local NAME_FLOAT_RATE = 2
 
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local AIRSPEED_CRUISE = Parameter("AIRSPEED_CRUISE")
 
 local last_id = 0
 local current_task = nil
 local last_named_float_t = 0
+local last_named_float_send_t = 0
 
 local path_var = {}
 
@@ -213,7 +469,6 @@ local function PI_controller(kP,kI,iMax,min,max)
    -- private fields as locals
    local _kP = kP or 0.0
    local _kI = kI or 0.0
-   local _kD = kD or 0.0
    local _iMax = iMax
    local _min = min
    local _max = max
@@ -249,6 +504,8 @@ local function PI_controller(kP,kI,iMax,min,max)
       _target = target
       _current = current
       _P = P
+
+      ret = constrain(ret, _min, _max)
       _total = ret
       return ret
    end
@@ -303,6 +560,26 @@ local function speed_controller(kP_param,kI_param, kFF_pitch_param, Imax, min, m
 end
 
 local speed_PI = speed_controller(SPD_P, SPD_I, THR_PIT_FF, 100.0, 0.0, 100.0)
+
+local function speed_adjust_controller(kP_param, kI_param)
+   local self = {}
+   local spd_max = AEROM_TS_SPDMAX:get()
+   local PI = PI_controller(kP_param:get(), kI_param:get(), spd_max, -spd_max, spd_max)
+
+   function self.update(spd_error)
+      local adjustment = PI.update(0, spd_error)
+      PI.log("AESA", 0)
+      return adjustment
+   end
+
+   function self.reset()
+      PI.reset(0)
+   end
+
+   return self
+end
+
+local speed_adjustment_PI = speed_adjust_controller(AEROM_TS_P, AEROM_TS_I)
 
 function sgn(x)
    local eps = 0.000001
@@ -412,18 +689,18 @@ end
    rotate a vector by a quaternion
 --]]
 local function quat_earth_to_body(quat, v)
-   local v = v:copy()
-   quat:earth_to_body(v)
-   return v
+   local v2 = v:copy()
+   quat:earth_to_body(v2)
+   return v2
 end
 
 --[[
    rotate a vector by a inverse quaternion
 --]]
 local function quat_body_to_earth(quat, v)
-   local v = v:copy()
-   quat:inverse():earth_to_body(v)
-   return v
+   local v2 = v:copy()
+   quat:inverse():earth_to_body(v2)
+   return v2
 end
 
 --[[
@@ -615,11 +892,6 @@ function _PathComponent:get_extents_x()
    end
    self.extents = get_extents_x(self)
    return self.extents
-end
-
-local function PathComponent()
-   local self = _PathComponent:create()
-   return self
 end
 
 --[[
@@ -877,7 +1149,7 @@ function _path_composer:subpath(i)
       local args = self.subpaths[i][2]
       self.cache_sp = self.subpaths[i][1](args[1], args[2], args[3], args[4], self.start_pos[i], self.start_orientation[i])
       -- copy over path attributes
-      for k, v in pairs(path_attribs) do
+      for _, v in pairs(path_attribs) do
          self.cache_sp[v] = self.subpaths[i][v]
       end
    end
@@ -905,10 +1177,14 @@ function _path_composer:get_subpath_t(t)
    if i > self.highest_i and t < 1.0 and t > 0 then
       self.highest_i = i
       if sp.message ~= nil then
-         gcs:send_text(0, sp.message)
+         local msg = sp.message
+         if option_set(OPTIONS.MSG_ADD_AT) then
+            msg = "@" .. msg
+         end
+         gcs:send_text(MAV_SEVERITY.ALERT, msg)
       end
       if AEROM_DEBUG:get() > 0 then
-         gcs:send_text(0, string.format("starting %s[%d] %s", self.name, i, sp.name))
+         gcs:send_text(MAV_SEVERITY.ALERT, string.format("starting %s[%d] %s", self.name, i, sp.name))
       end
    end
    return subpath_t, i
@@ -958,6 +1234,86 @@ function _path_composer:get_extents_x()
    return self.extents
 end
 
+function _path_composer:calculate_timestamps()
+   self.timestamp_start = {}
+   self.timestamp_start[1] = 0.0
+   self.have_timestamps = false
+   for i = 1, self.num_sub_paths do
+      local sp = self:subpath(i)
+      local timestamp = sp.timestamp
+      if timestamp then
+         self.timestamp_start[i] = timestamp
+         self.have_timestamps = true
+      end
+   end
+   if self.have_timestamps then
+      local tstart = 0.0
+      for i = 2, self.num_sub_paths do
+         if not self.timestamp_start[i] then
+            -- find the next element with a timestamp, getting total length
+            local length_sum = self:subpath(i-1):get_length()
+            for j = i, self.num_sub_paths do
+               if self.timestamp_start[j] then
+                  --gcs:send_text(MAV_SEVERITY.ALERT, string.format("found %u %u %.3f ts=%.3f", i, j, length_sum, tstart))
+                  for k = i, j-1 do
+                     local len = self:subpath(k):get_length()
+                     self.timestamp_start[k] = tstart +  len / length_sum
+                     --gcs:send_text(MAV_SEVERITY.ALERT, string.format("ts[%u] %.3f %.2f/%.2f", k, self.timestamp_start[k], len, length_sum))
+                  end
+                  break
+               end
+               length_sum = length_sum + self:subpath(j):get_length()
+            end
+         else
+            tstart = self.timestamp_start[i]
+         end
+      end
+      self.timestamp_start[self.num_sub_paths+1] = self.timestamp_start[self.num_sub_paths]+1.0
+   end
+
+   self.patht_start = {}
+   self.patht_start[1] = 0.0
+   self.patht_start[self.num_sub_paths+1] = 1.0
+   local total_length = self:get_length()
+   for i = 2, self.num_sub_paths do
+      self.patht_start[i] = self.patht_start[i-1] + self:subpath(i-1):get_length() / total_length
+   end
+
+   if self.have_timestamps then
+      gcs:send_text(MAV_SEVERITY.INFO,"Calculated timestamps")
+   end
+end
+
+function _path_composer:patht_to_timestamp(path_t)
+   path_t = constrain(path_t, 0.0, 1.0)
+   if not self.have_timestamps then
+      return path_t
+   end
+   for i = 1, self.num_sub_paths do
+      if self.patht_start[i+1] >= path_t then
+         local dt = path_t - self.patht_start[i]
+         local p = dt / (self.patht_start[i+1] - self.patht_start[i])
+         return self.timestamp_start[i] + p * (self.timestamp_start[i+1] - self.timestamp_start[i])
+      end
+   end
+   return self.timestamp_start[self.num_sub_paths+1]
+end
+
+function _path_composer:timestamp_to_patht(tstamp)
+   if not self.have_timestamps then
+      return tstamp
+   end
+   tstamp = constrain(tstamp, 0.0, self.timestamp_start[self.num_sub_paths+1])
+   for i = 1, self.num_sub_paths do
+      if self.timestamp_start[i+1] >= tstamp then
+         local dt = tstamp - self.timestamp_start[i]
+         local p = dt / (self.timestamp_start[i+1] - self.timestamp_start[i])
+         return self.patht_start[i] + p * (self.patht_start[i+1] - self.patht_start[i])
+      end
+   end
+   return 1.0
+end
+
 --[[
    get the time that the next segment starts
 --]]
@@ -990,8 +1346,6 @@ local function path_composer(name, subpaths)
    local angle = 0
    local roll_correction = 0
    local speed = target_groundspeed()
-   local cache_i = -1
-   local cache_sp = nil
 
    for i = 1, self.num_sub_paths do
       -- accumulate orientation, position and angle
@@ -1069,7 +1423,7 @@ function make_paths(name, paths)
          p[i] = Path(paths[i][1], paths[i][2])
       end
       -- copy over path attributes
-      for k, v in pairs(path_attribs) do
+      for _, v in pairs(path_attribs) do
          if paths[i][v] ~= nil then
             p[i][v] = paths[i][v]
          end
@@ -1155,7 +1509,6 @@ end
 
 -- immelmann with max roll rate
 function immelmann_turn_fast(r, arg2, arg3, arg4)
-   local rabs = math.abs(r)
    local roll_time = 180.0 / ACRO_ROLL_RATE:get()
    local roll_dist = target_groundspeed() * roll_time
    return make_paths("immelmann_turn_fast", {
@@ -1259,7 +1612,6 @@ function side_step(displacement, length, arg3, arg4)
    local angle = math.deg(2*math.atan(displacement, length))
    local sign = sgn(displacement)
    local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
-   displacement = math.abs(displacement)
 
    return make_paths("side_step",{
       {path_horizontal_arc(sign*radius, angle, 0), roll_angle_entry_exit(sign*bank)},
@@ -1334,7 +1686,6 @@ function rudder_over(_direction, _min_speed)
       local ahrs_pos = ahrs:get_relative_position_NED_origin()
       local ahrs_gyro = ahrs:get_gyro()
       local now = millis():tofloat() * 0.001
-      local pitch_threshold = 60.0
 
       if target_q == nil then
          -- initialising
@@ -1468,6 +1819,79 @@ function stall_turn(radius, height, direction, min_speed)
    })
 end
 
+--[[
+   takeoff controller
+--]]
+function takeoff_controller(_distance, _thr_slew)
+   local self = {}
+   local start_time = 0
+   local start_pos = nil
+   local thr_slew = _thr_slew
+   local distance = _distance
+   local all_done = false
+   local initial_yaw_deg = math.deg(ahrs:get_yaw())
+   local yaw_correction_tconst = 1.0
+   gcs:send_text(MAV_SEVERITY.INFO,string.format("Takeoff init"))
+
+   --[[
+      the update() method is called during the rudder over, it
+      should return true when the maneuver is completed
+   --]]
+   function self.update(path, t, target_speed)
+      if all_done then
+         return true
+      end
+      local now = millis():tofloat() * 0.001
+      local ahrs_pos = ahrs:get_relative_position_NED_origin()
+      if start_time == 0 then
+         gcs:send_text(MAV_SEVERITY.INFO,string.format("Takeoff start"))
+         start_time = now
+         start_pos = ahrs_pos
+      end
+      local throttle = constrain(thr_slew * (now - start_time), 0, 100)
+
+      local yaw_deg = math.deg(ahrs:get_yaw())
+      local yaw_err_deg = wrap_180(yaw_deg - initial_yaw_deg)
+      local targ_yaw_rate = -yaw_err_deg / yaw_correction_tconst
+
+      vehicle:set_target_throttle_rate_rpy(throttle, 0, 0, targ_yaw_rate)
+      vehicle:set_rudder_offset(0, true)
+      local dist_moved = (ahrs_pos - start_pos):length()
+      if dist_moved > distance then
+         gcs:send_text(MAV_SEVERITY.INFO,string.format("Takeoff complete dist=%.1f", dist_moved))
+
+         path_var.path_t = path:get_next_segment_start(t)
+         path_var.last_time = now
+         path_var.last_ang_rate_dps = ahrs:get_gyro():scale(math.deg(1))
+         path_var.pos = rotate_path(path, path_var.path_t, path_var.initial_ori, path_var.initial_ef_pos)
+         all_done = true
+      end
+      return false
+   end
+
+   return self
+end
+
+--[[
+   stall turn is not really correct, as we don't fully stall. Needs to be
+   reworked
+--]]
+function takeoff(dist, height, thr_slew)
+   local angle_deg = 20
+   local dist_per_arc = 3*dist/8
+   local radius = dist_per_arc / math.sin(math.rad(angle_deg))
+   local h1 = dist_per_arc * (1.0 - math.cos(math.rad(angle_deg)))
+   local line_h = constrain(height - 2*h1, 0, height)
+   local line_len = (line_h - 2*radius*(1.0-math.cos(math.rad(angle_deg))))/math.sin(math.rad(angle_deg))
+
+   return make_paths("takeoff", {
+         { path_straight(dist/4), roll_angle(0), rate_override=takeoff_controller(dist/4, thr_slew) },
+         { path_vertical_arc(radius, 20),  roll_angle(0), pos_gain_mul=0.3 },
+         { path_straight(line_len), roll_angle(0), pos_gain_mul=0.5 },
+         { path_vertical_arc(-radius, 20),  roll_angle(0), pos_gain_mul=0.5 },
+   })
+end
+
 function half_cuban_eight(r, arg2, arg3, arg4)
    local rabs = math.abs(r)
    return make_paths("half_cuban_eight", {
@@ -1593,7 +2017,7 @@ end
    velocity at the start of the maneuver
 --]]
 function target_groundspeed()
-   return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
+   return math.max(ahrs:get_EAS2TAS()*AIRSPEED_CRUISE:get(), ahrs:get_velocity_NED():length())
 end
 
 --[[
@@ -1611,18 +2035,18 @@ end
 --  arg1, arg2: arguments for path function
 --  orientation: maneuver frame orientation
 --returns: requested position, angle and speed in maneuver frame
-function rotate_path(path_f, t, orientation, offset)
-   local t = constrain(t, 0, 1)
+function rotate_path(path_f, t0, orientation, offset)
+   local t = constrain(t0, 0, 1)
    local point = path_f:get_pos(t)
    local angle = path_f:get_roll(t)
    local roll_correction = path_f:get_roll_correction(t)
 
    local attrib = {}
-   for k, v in pairs(path_attribs) do
+   for _, v in pairs(path_attribs) do
       attrib[v] = path_f:get_attribute(t, v)
    end
    point = point + path_var.path_shift
-   local point = quat_earth_to_body(orientation, point)
+   point = quat_earth_to_body(orientation, point)
 
    local scale = AEROM_PATH_SCALE:get()
    point = point:scale(math.abs(scale))
@@ -1700,7 +2124,9 @@ end
 
 -- log a pose from position and quaternion attitude
 function log_pose(logname, pos, quat)
-   logger.write(logname, 'px,py,pz,q1,q2,q3,q4,r,p,y','ffffffffff',
+   local loc = ahrs:get_origin():copy()
+   loc:offset(pos:x(),pos:y())
+   logger.write(logname, 'px,py,pz,q1,q2,q3,q4,r,p,y,Lat,Lon', 'ffffffffffLL',
                 pos:x(),
                 pos:y(),
                 pos:z(),
@@ -1708,6 +2134,45 @@ function log_pose(logname, pos, quat)
                 quat:q2(),
                 quat:q3(),
                 quat:q4(),
+                math.deg(quat:get_euler_roll()),
+                math.deg(quat:get_euler_pitch()),
+                math.deg(quat:get_euler_yaw()),
+                loc:lat(),
+                loc:lng())
+end
+
+--[[
+   get GPS week and MS, coping with crossing a week boundary
+--]]
+function get_gps_times()
+   local gps_last_fix_ms1 = gps:last_fix_time_ms(0)
+   local gps_week = gps:time_week(0)
+   local gps_week_ms = gps:time_week_ms(0)
+   local gps_last_fix_ms2 = gps:last_fix_time_ms(0)
+   local now_ms = millis()
+   if gps_last_fix_ms2 ~= gps_last_fix_ms1 then
+      -- we got a new fix while requesting the values. fetch again,
+      -- and assume we won't get another fix during these calls
+      gps_week = gps:time_week(0)
+      gps_week_ms = gps:time_week_ms(0)
+   end
+   gps_week_ms = gps_week_ms + (now_ms - gps_last_fix_ms2)
+   return gps_week, gps_week_ms
+end
+
+function log_position(logname, loc, quat)
+   local gps_week, gps_week_ms = get_gps_times()
+
+   logger.write(logname, 'I,GWk,GMS,Lat,Lon,Alt,R,P,Y',
+                'BHILLffff',
+                '#--DU----',
+                '---GG----',
+                SYSID_THISMAV:get(),
+                gps_week,
+                gps_week_ms,
+                loc:lat(),
+                loc:lng(),
+                loc:alt()*0.01,
                 math.deg(quat:get_euler_roll()),
                 math.deg(quat:get_euler_pitch()),
                 math.deg(quat:get_euler_yaw()))
@@ -1759,6 +2224,175 @@ function calculate_rudder_offset(ahrs_quat, ahrs_gyro, airspeed_constrained)
    return rudder_ofs
 end
 
+--[[
+   convert a table of bytes to a lua string
+--]]
+function bytes_to_string(bytes)
+   local ret = {}
+   for _, b in ipairs(bytes) do
+      if b == 0 then
+         break
+      end
+      table.insert(ret, string.char(b))
+   end
+   return table.concat(ret)
+end
+
+--[[
+   a lua implementation of the jitter correction algorithm from libraries/AP_RTC
+
+   note that the use of a 32 bit float lua number for a uint32_t
+   milliseconds means we lose accuracy over time. At 9 hours we have
+   an accuracy of about 1 millisecond
+--]]
+local function JitterCorrection(_max_lag_ms, _convergence_loops)
+   local self = {}
+
+   local max_lag_ms = _max_lag_ms
+   local convergence_loops = _convergence_loops
+   local link_offset_ms = 0
+   local min_sample_ms = 0
+   local initialised = false
+   local min_sample_counter = 0
+
+   function self.correct_offboard_timestamp_msec(offboard_ms, local_ms)
+      local diff_ms = local_ms - offboard_ms
+      if not initialised or diff_ms < link_offset_ms then
+         --[[
+            this message arrived from the remote system with a
+            timestamp that would imply the message was from the
+            future. We know that isn't possible, so we adjust down the
+            correction value
+         --]]
+        link_offset_ms = diff_ms
+        initialised = true
+      end
+
+      local estimate_ms = offboard_ms + link_offset_ms
+
+      if estimate_ms + max_lag_ms < local_ms then
+         --[[
+            this implies the message came from too far in the past. clamp the lag estimate
+            to assume the message had maximum lag
+         --]]
+         estimate_ms = local_ms - max_lag_ms
+         link_offset_ms = estimate_ms - offboard_ms
+      end
+
+      if min_sample_counter == 0 then
+         min_sample_ms = diff_ms
+      end
+
+      min_sample_counter = (min_sample_counter+1)
+      if diff_ms < min_sample_ms then
+         min_sample_ms = diff_ms
+      end
+      if min_sample_counter == convergence_loops then
+         --[[
+            we have the requested number of samples of the transport
+            lag for convergence. To account for long term clock drift
+            we set the diff we will use in future to this value
+         --]]
+         link_offset_ms = min_sample_ms
+         min_sample_counter = 0
+      end
+    
+      return estimate_ms
+   end
+
+   return self
+end
+
+--[[
+   import mavlink support for NAMED_VALUE_FLOAT, only used for
+   DUAL_AIRCRAFT operation
+--]]
+local function mavlink_receiver()
+   local self = {}
+   local mavlink_msgs = require("mavlink_msgs")
+   local NAMED_VALUE_FLOAT_msgid = mavlink_msgs.get_msgid("NAMED_VALUE_FLOAT")
+   local msg_map = {}
+   local jitter_correction = JitterCorrection(5000, 100)
+
+   msg_map[NAMED_VALUE_FLOAT_msgid] = "NAMED_VALUE_FLOAT"
+
+   -- initialise mavlink rx with number of messages, and buffer depth
+   mavlink.init(1, 10)
+
+   -- register message id to receive
+   mavlink.register_rx_msgid(NAMED_VALUE_FLOAT_msgid)
+
+   --[[
+      get a NAMED_VALUE_FLOAT incoming message, handling jitter correction
+   --]]
+   function self.get_named_value_float()
+      local msg,_,timestamp_ms = mavlink.receive_chan()
+      if msg then
+         local parsed_msg = mavlink_msgs.decode(msg, msg_map)
+         if (parsed_msg ~= nil) and (parsed_msg.msgid == NAMED_VALUE_FLOAT_msgid) then
+            -- convert remote timestamp to local timestamp with jitter correction
+            local time_boot_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms:toint())
+            local value = parsed_msg.value
+            local name = bytes_to_string(parsed_msg.name)
+            return time_boot_ms, name, value, parsed_msg.sysid
+         end
+      end
+      return nil
+   end
+
+   return self
+end
+
+local mavlink_handler = nil
+if option_set(OPTIONS.DUAL_AIRCRAFT) then
+   mavlink_handler = mavlink_receiver()
+end
+
+--[[
+   handle NAMED_VALUE_FLOAT from another vehicle to sync our schedules
+--]]
+function handle_speed_adjustment()
+   local local_t = millis():tofloat() * 0.001
+   local named_float_rate = AEROM_TS_RATE:get()
+   local loc_timestamp = current_task.fn:patht_to_timestamp(path_var.path_t)
+   if named_float_rate > 0 and loc_timestamp > 1 and local_t - last_named_float_send_t > 1.0/named_float_rate then
+      last_named_float_send_t = local_t
+      gcs:send_named_float("PATHT", loc_timestamp)
+   end
+   local time_boot_ms, name, remote_timestamp, sysid = mavlink_handler.get_named_value_float()
+   if not time_boot_ms then
+      return
+   end
+   -- gcs:send_text(MAV_SEVERITY.INFO, string.format("NVF: name='%s' value=%f sysid=%d tbm=%f", name, remote_timestamp, sysid, time_boot_ms))
+   if name == "PATHT" and sysid ~= SYSID_THISMAV:get() then
+      local remote_t = time_boot_ms * 0.001
+      local dt = local_t - remote_t
+      local rem_patht = current_task.fn:timestamp_to_patht(remote_timestamp)
+      local adjusted_rem_path_t = rem_patht + dt / path_var.total_time
+      local dist_err = (path_var.path_t - adjusted_rem_path_t) * path_var.total_time * path_var.target_speed
+
+      if loc_timestamp > 1 and remote_timestamp > 1 then
+         path_var.speed_adjustment = speed_adjustment_PI.update(dist_err)
+      else
+         path_var.speed_adjustment = 0.0
+      end
+
+      local gps_week, gps_week_ms = get_gps_times()
+      logger.write("PTHT",
+                   'SysID,GWk,GMS,RemT,LocT,TS,RTS,PT,RPT,Dt,ARPT,DE,SA',
+                   'BHIffffffffff',
+                   '#------------',
+                   '-------------',
+                   sysid,
+                   gps_week, gps_week_ms,
+                   remote_t, local_t,
+                   loc_timestamp,
+                   remote_timestamp,
+                   path_var.path_t, rem_patht,
+                   dt, adjusted_rem_path_t, dist_err, path_var.speed_adjustment)
+   end
+end
+
 path_var.count = 0
 
 function do_path()
@@ -1775,7 +2409,6 @@ function do_path()
    local ahrs_quat = ahrs:get_quaternion():inverse()
 
    path_var.count = path_var.count + 1
-   local target_dt = 1.0/LOOP_RATE
    local path = current_task.fn
 
    if not current_task.started then
@@ -1784,6 +2417,7 @@ function do_path()
 
       local speed = target_groundspeed()
       path_var.target_speed = speed
+      path_var.speed_adjustment = 0.0
 
       path_var.length = path:get_length() * math.abs(AEROM_PATH_SCALE:get())
 
@@ -1823,9 +2457,12 @@ function do_path()
 
       path_var.ss_angle = 0.0
       path_var.ss_angle_filt = 0.0
+      path_var.last_rate_override = 0
+
+      path.highest_i = 0
 
       -- get initial tangent
-      local p1, r1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
+      local p1, _ = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
                                  path_var.initial_ori, path_var.initial_ef_pos)
       path_var.tangent = p1 - path_var.pos
       return true
@@ -1848,8 +2485,12 @@ function do_path()
       return false
    end
 
+   if option_set(OPTIONS.DUAL_AIRCRAFT) then
+      handle_speed_adjustment()
+   end
+
    -- airspeed, assume we don't go below min
-   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs_airspeed)
+   local airspeed_constrained = math.max(AIRSPEED_MIN:get(), ahrs_airspeed)
 
    --[[
       calculate positions and angles at previous, current and next time steps
@@ -1857,7 +2498,7 @@ function do_path()
 
    local p0 = path_var.pos:copy()
    local r0 = path_var.roll
-   local p1, r1, attrib = rotate_path(path, path_var.path_t + local_n_dt,
+   local p1, _, attrib = rotate_path(path, path_var.path_t + local_n_dt,
                                       path_var.initial_ori, path_var.initial_ef_pos)
 
    local current_measured_pos_ef = ahrs_pos_NED:copy()
@@ -1866,6 +2507,7 @@ function do_path()
       if not attrib.rate_override.update(path, path_var.path_t + local_n_dt, path_var.target_speed) then
          -- not done yet
          path_var.pos = current_measured_pos_ef
+         path_var.last_rate_override = now
          return true
       end
    end
@@ -1898,7 +2540,7 @@ function do_path()
 
    local tv_unit = tangent2_ef:copy()
    if tv_unit:length() < 0.00001 then
-      gcs:send_text(0, string.format("path not advancing %f", tv_unit:length()))
+      gcs:send_text(MAV_SEVERITY.EMERGENCY, string.format("path not advancing %f", tv_unit:length()))
    end
    tv_unit:normalize()
 
@@ -1908,13 +2550,17 @@ function do_path()
    --]]
    local v = ahrs_velned:copy()
    local path_dist = v:dot(tv_unit)*actual_dt
-   if path_dist < 0 then
-      gcs:send_text(0, string.format("aborting %.2f at %d tv=(%.2f,%.2f,%.2f) vx=%.2f adt=%.2f",
+   if path_dist < 0 and path_var.last_rate_override > 0 and now - path_var.last_rate_override > 1 then
+      gcs:send_text(MAV_SEVERITY.EMERGENCY, string.format("aborting %.2f at %d tv=(%.2f,%.2f,%.2f) vx=%.2f adt=%.2f",
                                      path_dist, path_var.count,
                                      tangent2_ef:x(),
                                      tangent2_ef:y(),
                                      tangent2_ef:z(),
                                      v:x(), actual_dt))
+      if option_set(OPTIONS.ABORT_RTL) and vehicle:get_mode() == MODE_AUTO then
+         vehicle:set_mode(MODE_RTL)
+      end
+      path_var.last_rate_override = 0
       return false
    end
    local path_t_delta = constrain(path_dist/path_var.length, 0.2*local_n_dt, 4*local_n_dt)
@@ -1922,9 +2568,9 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   local p1, r1, attrib = rotate_path(path,
-                                      constrain(path_var.path_t + path_t_delta, 0, 1),
-                                      path_var.initial_ori, path_var.initial_ef_pos)
+   p1, _, _ = rotate_path(path,
+                          constrain(path_var.path_t + path_t_delta, 0, 1),
+                          path_var.initial_ori, path_var.initial_ef_pos)
    local last_path_t = path_var.path_t
    path_var.path_t = path_var.path_t + path_t_delta
 
@@ -1953,6 +2599,7 @@ function do_path()
    path_var.path_t = path_var.path_t + TIME_CORR_P:get() * path_err_t
 
    -- get the path again with the corrected time
+   local r1
    p1, r1, attrib = rotate_path(path,
                                 constrain(path_var.path_t, 0, 1),
                                 path_var.initial_ori, path_var.initial_ef_pos)
@@ -1988,6 +2635,11 @@ function do_path()
    -- gains for error correction.
    local acc_err_ef = B:scale(ERR_CORR_P:get()) + B_dot:scale(ERR_CORR_D:get())
 
+   if attrib.pos_gain_mul then
+      -- allow for reduced gains during some maneuvers like takeoff
+      acc_err_ef = acc_err_ef:scale(attrib.pos_gain_mul)
+   end
+
    -- scale by per-maneuver error correction scale factor
    acc_err_ef = acc_err_ef:scale(attrib.pos_corr or 1.0)
 
@@ -2012,7 +2664,7 @@ function do_path()
    --]]
    local path_rate_ef_rads = tangents_to_rate(tangent1_ef, tangent2_ef, actual_dt)
    if Vec3IsNaN(path_rate_ef_rads) then
-      gcs:send_text(0,string.format("path_rate_ef_rads: NaN"))
+      gcs:send_text(MAV_SEVERITY.EMERGENCY,string.format("path_rate_ef_rads: NaN"))
       path_rate_ef_rads = makeVector3f(0,0,0)
    end
    local path_rate_ef_dps = path_rate_ef_rads:scale(math.deg(1))
@@ -2076,8 +2728,10 @@ function do_path()
                    lookahead_bf_dps:y(),
                    path_rate_bf_dps:z(),
                    lookahead_bf_dps:z())
-      path_rate_bf_dps:y(lookahead_bf_dps:y())
-      path_rate_bf_dps:z(lookahead_bf_dps:z())
+      if not Vec3IsNaN(lookahead_bf_dps) then
+         path_rate_bf_dps:y(lookahead_bf_dps:y())
+         path_rate_bf_dps:z(lookahead_bf_dps:z())
+      end
    end
    
    --[[
@@ -2155,7 +2809,7 @@ function do_path()
    local qnew = qchange * orientation_rel_ef_with_roll_angle
    local anticipated_pitch_rad = math.max(qnew:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_pitch())
 
-   local throttle = speed_PI.update(path_var.target_speed, anticipated_pitch_rad)
+   local throttle = speed_PI.update(path_var.target_speed + path_var.speed_adjustment, anticipated_pitch_rad)
    local thr_min = AEROM_THR_MIN:get()
    if attrib.thr_boost then
       thr_min = math.max(thr_min, AEROM_THR_BOOST:get())
@@ -2163,7 +2817,7 @@ function do_path()
    throttle = constrain(throttle, thr_min, 100.0)
 
    if isNaN(throttle) or Vec3IsNaN(tot_ang_vel_bf_dps) then
-      gcs:send_text(0,string.format("Path NaN - aborting"))
+      gcs:send_text(MAV_SEVERITY.EMERGENCY,string.format("Path NaN - aborting"))
       return false
    end
 
@@ -2177,7 +2831,7 @@ function do_path()
 
    local alt_error = (current_measured_pos_ef - path_var.initial_ef_pos):z()
    if alt_error > AEROM_ALT_ABORT:get() then
-     gcs:send_text(0,"Too low altitude, aborting")
+     gcs:send_text(MAV_SEVERITY.EMERGENCY,"Too low altitude, aborting")
      return false
    end
 
@@ -2193,6 +2847,8 @@ function PathFunction(fn, name)
    self.name = name
    return self
 end
+
+local last_preload = nil
 
 local command_table = {}
 command_table[1] = PathFunction(figure_eight, "Figure Eight")
@@ -2243,6 +2899,8 @@ load_table["scale_figure_eight"] = scale_figure_eight
 load_table["immelmann_turn"] = immelmann_turn
 load_table["split_s"] = split_s
 load_table["upline_45"] = upline_45
+load_table["upline_20"] = upline_20
+load_table["takeoff"] = takeoff
 load_table["downline_45"] = downline_45
 load_table["stall_turn"] = stall_turn
 load_table["procedure_turn"] = procedure_turn
@@ -2285,14 +2943,14 @@ end
 function parse_function(line, file)
    _, _, funcname = string.find(line, "^function%s*([%w_]+).*$")
    if not funcname then
-      gcs:send_text(0, string.format("Parse error: %s", line))
+      gcs:send_text(MAV_SEVERITY.ERROR, string.format("Parse error: %s", line))
       return
    end
    local funcstr = line .. "\n"
    while true do
-      local line = file:read()
+      line = file:read()
       if not line then
-         gcs:send_text(0, string.format("Error: end of file in %s", funcname))
+         gcs:send_text(MAV_SEVERITY.ERROR, string.format("Error: end of file in %s", funcname))
          break
       end
       funcstr = funcstr .. line .. "\n"
@@ -2302,13 +2960,14 @@ function parse_function(line, file)
    end
    local f, errloc, err = load(funcstr, funcname, "t", _ENV)
    if not f then
-      gcs:send_text(0,string.format("Error %s: %s", errloc, err))
+      gcs:send_text(MAV_SEVERITY.ERROR,string.format("Error %s: %s", errloc, err))
       return
    end
    -- fun the function code, which creates the function
-   local success, err = pcall(f)
+   local success
+   success, err = pcall(f)
    if not success then
-      gcs:send_text(0,string.format("Error %s: %s", funcname, err))
+      gcs:send_text(MAV_SEVERITY.ERROR,string.format("Error %s: %s", funcname, err))
    end
    load_table[funcname] = _ENV[funcname]
 end
@@ -2325,14 +2984,16 @@ function load_trick(id)
    local trickdirs = { "APM/scripts/", "scripts/", "./" }
    local file = nil
    local fname = string.format("trick%u.txt", id)
+   local filename = nil
    for i = 1, #trickdirs do
-      file = io.open(trickdirs[i] .. fname, "r")
+      filename = trickdirs[i] .. fname
+      file = io.open(filename, "r")
       if file then
          break
       end
    end
    if file == nil then
-      gcs:send_text(0,string.format("Failed to open %s", fname))
+      gcs:send_text(MAV_SEVERITY.ERROR,string.format("Failed to open %s", fname))
       return
    end
    local name = string.format("Trick%u", id)
@@ -2348,6 +3009,7 @@ function load_trick(id)
       local _, _, cmd, arg1, arg2, arg3, arg4 = string.find(line, "^([%w_:]+)%s*([-.%d]*)%s*([-.%d]*)%s*([-.%d]*)%s*([-.%d]*)")
       if cmd == "" or cmd == nil or string.sub(cmd,1,1) == "#" then
          -- ignore comments
+         goto continue
       elseif cmd == "name:" then
          _, _, name = string.find(line, "^name:%s*([%w_]+)$")
       elseif string.sub(cmd,-1) == ":" then
@@ -2355,7 +3017,7 @@ function load_trick(id)
          if a ~= nil then
             attrib[a] = interpret_attrib(s)
          else
-            gcs:send_text(0, string.format("Bad line: '%s'", line))
+            gcs:send_text(MAV_SEVERITY.ERROR, string.format("Bad line: '%s'", line))
          end
       elseif cmd == "function" then
          parse_function(line, file)
@@ -2366,7 +3028,7 @@ function load_trick(id)
          arg4 = tonumber(arg4) or 0
          local f = load_table[cmd]
          if f == nil then
-            gcs:send_text(0,string.format("Unknown command '%s' in %s", cmd, fname))
+            gcs:send_text(MAV_SEVERITY.ERROR,string.format("Unknown command '%s' in %s", cmd, fname))
          else
             paths[#paths+1] = { f, { arg1, arg2, arg3, arg4 }}
             for k, v in pairs(attrib) do
@@ -2375,10 +3037,18 @@ function load_trick(id)
             attrib = {}
          end
       end
+      ::continue::
    end
    local pc = path_composer(name, paths)
-   gcs:send_text(0, string.format("Loaded trick%u '%s'", id, name))
+   gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded trick%u '%s'", id, name))
    command_table[id] = PathFunction(pc, name)
+   logger:log_file_content(filename)
+
+   calculate_timestamps(command_table[id])
+end
+
+function calculate_timestamps(pc)
+   pc.fn:calculate_timestamps()
 end
 
 function PathTask(fn, name, id, initial_yaw_deg, arg1, arg2, arg3, arg4)
@@ -2395,10 +3065,33 @@ function PathTask(fn, name, id, initial_yaw_deg, arg1, arg2, arg3, arg4)
    return self
 end
 
+--[[
+   see if we should prepare for an upcoming trick
+--]]
+function check_preload_trick()
+   local idx = mission:get_current_nav_index()
+   if idx == last_preload then
+      return
+   end
+   last_preload = idx
+   local m = mission:get_item(idx+1)
+   if not m then
+      return
+   end
+   if m:command() ~= NAV_SCRIPT_TIME then
+      return
+   end
+   cmdid = m:param1()
+   if command_table[cmdid] == nil then
+      load_trick(cmdid)
+   end
+end
+
 -- see if an auto mission item needs to be run
 function check_auto_mission()
    id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
    if not id then
+      check_preload_trick()
       return
    end
    if id ~= last_id then
@@ -2408,39 +3101,47 @@ function check_auto_mission()
       local initial_yaw_deg = get_ground_course_deg()
       load_trick(cmd)
       if command_table[cmd] == nil then
-         gcs:send_text(0, string.format("Trick %u not found", cmd))
+         gcs:send_text(MAV_SEVERITY.ERROR, string.format("Trick %u not found", cmd))
          return
       end
-      gcs:send_text(0, string.format("Starting %s!", command_table[cmd].name ))
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("Starting %s!", command_table[cmd].name ))
 
       -- work out yaw between previous WP and next WP
       local cnum = mission:get_current_nav_index()
-      -- find previous nav waypoint
-      local loc_prev = get_wp_location(cnum-1)
-      local loc_next = get_wp_location(cnum+1)
-      local i= cnum-1
-      while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
-         i = i-1
-         loc_prev = get_wp_location(i)
+
+      if AEROM_MIS_ANGLE:get() == 0 then
+         -- find previous nav waypoint
+         local loc_prev = ahrs:get_location()
+         if cnum > 1 then
+            loc_prev = get_wp_location(cnum-1)
+            local i= cnum-1
+            while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
+               i = i-1
+               loc_prev = get_wp_location(i)
+            end
+         end
+
+         -- find next nav waypoint
+         local loc_next = get_wp_location(cnum+1)
+         i = cnum+1
+         while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
+            i = i+1
+            loc_next = get_wp_location(resolve_jump(i))
+         end
+         local wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
+         if math.abs(wrap_180(initial_yaw_deg - wp_yaw_deg)) > 90 and cnum > 1 then
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("Doing turnaround! iyaw=%.1f wyaw=%.1f", initial_yaw_deg, wp_yaw_deg))
+            wp_yaw_deg = wrap_180(wp_yaw_deg + 180)
+         end
+         initial_yaw_deg = wp_yaw_deg
+      else
+         initial_yaw_deg = AEROM_MIS_ANGLE:get()
       end
-      -- find next nav waypoint
-      i = cnum+1
-      while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
-         i = i+1
-         loc_next = get_wp_location(resolve_jump(i))
-      end
-      local wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
-      if math.abs(wrap_180(initial_yaw_deg - wp_yaw_deg)) > 90 then
-         gcs:send_text(0, string.format("Doing turnaround!"))
-         wp_yaw_deg = wrap_180(wp_yaw_deg + 180)
-      end
-      initial_yaw_deg = wp_yaw_deg
       current_task = PathTask(command_table[cmd].fn, command_table[cmd].name,
                               id, initial_yaw_deg, arg1, arg2, arg3, arg4)
    end
 end
 
-local last_trick_action_state = 0
 local trick_sel_chan = nil
 local last_trick_selection = nil
 
@@ -2469,7 +3170,7 @@ function check_trick()
    local selection = get_trick_selection()
    local action = rc:get_aux_cached(TRIK_ACT_FN:get())
    if action == 0 and current_task ~= nil then
-      gcs:send_text(0,string.format("Trick aborted"))
+      gcs:send_text(MAV_SEVERITY.ALERT,string.format("Trick aborted"))
       current_task = nil
       last_trick_selection = nil
       -- use invalid mode to disable script control
@@ -2481,10 +3182,15 @@ function check_trick()
    end
    if action == 1 and selection ~= last_trick_selection then
       local id = TRICKS[selection].id:get()
+         if id == -1 then
+            gcs:send_text(MAV_SEVERITY.ERROR,string.format("Trick %u not setup",selection))
+            last_trick_selection = selection
+            return
+         end
       load_trick(id)
       if command_table[id] ~= nil then
          local cmd = command_table[id]
-         gcs:send_text(0, string.format("Trick %u selected (%s)", selection, cmd.name))
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("Trick %u selected (%s)", selection, cmd.name))
          last_trick_selection = selection
          return
       end
@@ -2497,27 +3203,32 @@ function check_trick()
       last_trick_selection = selection
       last_trick_action_state = action
       if selection == 0 then
-         gcs:send_text(0, string.format("No trick selected"))
+         gcs:send_text(MAV_SEVERITY.ALERT, string.format("No trick selected"))
          return
       end
       local id = TRICKS[selection].id:get()
+      if id == -1 then
+         gcs:send_text(MAV_SEVERITY.ALERT,string.format("Trick %u not setup",selection))
+         last_trick_selection = selection
+         return
+      end
       load_trick(id)
       if command_table[id] == nil then
-         gcs:send_text(0, string.format("Invalid trick ID %u", id))
+         gcs:send_text(MAV_SEVERITY.ALERT, string.format("Invalid trick ID %u", id))
          return
       end
       local cmd = command_table[id]
       if action == 1 then
-         gcs:send_text(0, string.format("Trick %u selected (%s)", selection, cmd.name))
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("Trick %u selected (%s)", selection, cmd.name))
       end
       if action == 2 then
          last_trick_selection = nil
          local current_mode = vehicle:get_mode()
          if not vehicle:nav_scripting_enable(current_mode) then
-            gcs:send_text(0, string.format("Tricks not available in mode"))
+            gcs:send_text(MAV_SEVERITY.ALERT, string.format("Tricks not available in mode"))
             return
          end
-         gcs:send_text(0, string.format("Trick %u started (%s)", selection, cmd.name))
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("Trick %u started (%s)", selection, cmd.name))
          local initial_yaw_deg = get_ground_course_deg()
          current_task = PathTask(cmd.fn,
                                  cmd.name,
@@ -2533,11 +3244,14 @@ function check_trick()
 end
 
 function update()
-   if ahrs:get_velocity_NED() == nil  or ahrs:get_EAS2TAS() == nil then
-      -- don't start till we have a valid ahrs estimates
+   if ahrs:get_velocity_NED() == nil  or ahrs:get_EAS2TAS() == nil or ahrs:get_relative_position_NED_origin() == nil then
+      -- don't start till we have valid ahrs estimates
       return update, 1000.0/LOOP_RATE
    end
    if vehicle:get_mode() == MODE_AUTO then
+      if arming:is_armed() then
+         log_position("VEH", ahrs:get_location(), ahrs:get_quaternion())
+      end
       check_auto_mission()
    elseif TRICKS ~= nil then
       check_trick()
@@ -2545,7 +3259,7 @@ function update()
 
    if current_task ~= nil then
       if not do_path() then
-         gcs:send_text(0, string.format("Finishing %s!", current_task.name))
+         gcs:send_text(MAV_SEVERITY.INFO, string.format("Finishing %s!", current_task.name))
          if current_task.id ~= nil then
             vehicle:nav_script_time_done(current_task.id)
          else
@@ -2559,5 +3273,5 @@ function update()
    return update, 1000.0/LOOP_RATE
 end
 
-gcs:send_text(0, string.format("Loaded plane_aerobatics.lua"))
+gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded plane_aerobatics.lua"))
 return update()

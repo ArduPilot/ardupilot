@@ -56,7 +56,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFMiniPlus::detect(
     }
 
     AP_RangeFinder_Benewake_TFMiniPlus *sensor
-        = new AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, std::move(dev));
+        = NEW_NOTHROW AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, std::move(dev));
 
     if (!sensor || !sensor->init()) {
         delete sensor;

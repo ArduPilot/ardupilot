@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_WindVane_config.h"
+
+#if AP_WINDVANE_NMEA_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_WindVane_NMEA.h"
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -197,3 +201,5 @@ bool AP_WindVane_NMEA::decode_latest_term()
     }
     return false;
 }
+
+#endif  // AP_WINDVANE_NMEA_ENABLED

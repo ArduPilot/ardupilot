@@ -20,6 +20,12 @@
 
 #include "AP_HAL_Namespace.h"
 #include "utility/functor.h"
+#include "AP_HAL_Boards.h"
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
+// we need utility for std::move, but not on QURT due to a include error in hexagon SDK
+#include <utility>
+#endif
 
 /*
  * This is an interface abstracting I2C and SPI devices
@@ -34,7 +40,7 @@ public:
         BUS_TYPE_SITL    = 4,
         BUS_TYPE_MSP     = 5,
         BUS_TYPE_SERIAL  = 6,
-        BUS_TYPE_QSPI    = 7,
+        BUS_TYPE_WSPI    = 7,
     };
 
     enum Speed {

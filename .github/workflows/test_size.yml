@@ -1,17 +1,66 @@
 name: test size
 
-on: [pull_request]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on:
+  pull_request:
+    paths-ignore:  # ignore autotest stuffs
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      # Remove generic tools
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # remove non CHIBIOS HAL
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_Linux/**'
+      # Remove change on other workflows
+      - '.github/workflows/test_environment.yml'
+  workflow_dispatch:
+
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -21,8 +70,11 @@ jobs:
         config: [
             Durandal,
             MatekF405,
+            KakuteF7,
+            MatekH743-bdshot,
             Pixhawk1-1M,
             MatekF405-CAN,  # see special "build bootloader" code below
+            DrotekP3Pro,  # see special "build bootloader" code below
             Hitec-Airspeed,  # see special code for Periph below (3 places!)
             f103-GPS  # see special code for Periph below (3 places!)
         ]
@@ -33,7 +85,7 @@ jobs:
           - config: disco
             toolchain: chibios
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.ref }}
           path: base_branch
@@ -65,7 +117,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
           if [ $BOOTLOADER -eq 1 ]; then
@@ -121,7 +174,7 @@ jobs:
 
           echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           path: 'pr'
@@ -138,7 +191,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
           if [ $BOOTLOADER -eq 1 ]; then
@@ -230,7 +284,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
           if [ $AP_PERIPH -eq 1 ]; then

@@ -1,7 +1,5 @@
 include ../MatekL431/hwdef.inc
 
-define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-DShot"
-
 define HAL_USE_ADC FALSE
 
 undef SERIAL_ORDER
@@ -31,5 +29,10 @@ define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
 
 # enable ESC control
+define HAL_SERIAL_ESC_COMM_ENABLED 1
 define HAL_SUPPORT_RCOUT_SERIAL 1
 define HAL_WITH_ESC_TELEM 1
+
+# also enable relay output via hardpoint msgs
+define HAL_PERIPH_ENABLE_RELAY
+define AP_RELAY_ENABLED 1

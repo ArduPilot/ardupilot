@@ -23,6 +23,8 @@
 #define AC_ATC_SUB_RATE_YAW_IMAX       0.222f
 #define AC_ATC_SUB_RATE_YAW_FILT_HZ    5.0f
 
+#define MAX_YAW_ERROR                  radians(5)
+
 class AC_AttitudeControl_Sub : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors);
@@ -34,6 +36,9 @@ public:
     AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
     AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    const AC_PID& get_rate_roll_pid() const override { return _pid_rate_roll; }
+    const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
+    const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -60,6 +65,12 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    // set the PID notch sample rates
+    void set_notch_sample_rate(float sample_rate) override;
+
+    // This function ensures that the ROV reaches the target orientation with the desired yaw rate
+    void input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float slew_yaw);
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -72,9 +83,39 @@ protected:
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
-    AC_PID                _pid_rate_roll;
-    AC_PID                _pid_rate_pitch;
-    AC_PID                _pid_rate_yaw;
+
+    // Roll and Pitch rate PIDs share the same defaults:
+    const AC_PID::Defaults rp_defaults {
+        AC_PID::Defaults{
+            .p         = AC_ATC_SUB_RATE_RP_P,
+            .i         = AC_ATC_SUB_RATE_RP_I,
+            .d         = AC_ATC_SUB_RATE_RP_D,
+            .ff        = 0.0f,
+            .imax      = AC_ATC_SUB_RATE_RP_IMAX,
+            .filt_T_hz = AC_ATC_SUB_RATE_RP_FILT_HZ,
+            .filt_E_hz = 0.0,
+            .filt_D_hz = AC_ATC_SUB_RATE_RP_FILT_HZ,
+            .srmax     = 0,
+            .srtau     = 1.0
+        }
+    };
+    AC_PID                _pid_rate_roll { rp_defaults };
+    AC_PID                _pid_rate_pitch { rp_defaults };
+
+    AC_PID                _pid_rate_yaw {
+        AC_PID::Defaults{
+            .p         = AC_ATC_SUB_RATE_YAW_P,
+            .i         = AC_ATC_SUB_RATE_YAW_I,
+            .d         = AC_ATC_SUB_RATE_YAW_D,
+            .ff        = 0.0f,
+            .imax      = AC_ATC_SUB_RATE_YAW_IMAX,
+            .filt_T_hz = AC_ATC_SUB_RATE_YAW_FILT_HZ,
+            .filt_E_hz = 0.0f,
+            .filt_D_hz = AC_ATC_SUB_RATE_YAW_FILT_HZ,
+            .srmax     = 0,
+            .srtau     = 1.0
+        }
+    };
 
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)

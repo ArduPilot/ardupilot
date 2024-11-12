@@ -37,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 
 #if MM_DEBUG_LEVEL
   #include <GCS_MAVLink/GCS.h>
-  #define Debug(level, fmt, args ...)  do { if (level <= MM_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+  #define Debug(level, fmt, args ...)  do { if (level <= MM_DEBUG_LEVEL) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
 #else
   #define Debug(level, fmt, args ...)
 #endif
@@ -203,15 +203,13 @@ void AP_Beacon_Marvelmind::update(void)
         return;
     }
     // read any available characters
-    int32_t num_bytes_read = uart->available();
-    uint8_t received_char = 0;
-    if (num_bytes_read < 0) {
-        return;
-    }
+    uint16_t num_bytes_read = MIN(uart->available(), 16384U);
     while (num_bytes_read-- > 0) {
         bool good_byte = false;
-        received_char = uart->read();
-        input_buffer[num_bytes_in_block_received] = received_char;
+        if (!uart->read(input_buffer[num_bytes_in_block_received])) {
+            break;
+        }
+        const uint8_t received_char = input_buffer[num_bytes_in_block_received];
         switch (parse_state) {
         case RECV_HDR:
             switch (num_bytes_in_block_received) {

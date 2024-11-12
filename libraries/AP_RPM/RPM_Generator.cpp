@@ -13,12 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#include "RPM_Generator.h"
+#include "AP_RPM_config.h"
 
 #if AP_RPM_GENERATOR_ENABLED
-extern const AP_HAL::HAL& hal;
+
+#include "RPM_Generator.h"
+#include <AP_Generator/AP_Generator.h>
 
 void AP_RPM_Generator::update(void)
 {

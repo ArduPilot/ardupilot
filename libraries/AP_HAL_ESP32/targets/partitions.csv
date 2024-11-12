@@ -1,5 +1,0 @@
-# Name,   Type, SubType, Offset,  Size
-nvs,      data, nvs,           ,  0x6000
-phy_init, data, phy,           ,  0x1000
-factory,   app, factory,       ,  3M
-storage,  0x45, 0x0,           ,  128K

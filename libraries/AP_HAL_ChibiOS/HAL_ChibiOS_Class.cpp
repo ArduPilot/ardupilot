@@ -38,28 +38,38 @@
 
 #include <hwdef.h>
 
-#ifndef HAL_NO_UARTDRIVER
-static HAL_UARTA_DRIVER;
-static HAL_UARTB_DRIVER;
-static HAL_UARTC_DRIVER;
-static HAL_UARTD_DRIVER;
-static HAL_UARTE_DRIVER;
-static HAL_UARTF_DRIVER;
-static HAL_UARTG_DRIVER;
-static HAL_UARTH_DRIVER;
-static HAL_UARTI_DRIVER;
-static HAL_UARTJ_DRIVER;
+#ifndef DEFAULT_SERIAL0_BAUD
+#define SERIAL0_BAUD 115200
 #else
-static Empty::UARTDriver uartADriver;
-static Empty::UARTDriver uartBDriver;
-static Empty::UARTDriver uartCDriver;
-static Empty::UARTDriver uartDDriver;
-static Empty::UARTDriver uartEDriver;
-static Empty::UARTDriver uartFDriver;
-static Empty::UARTDriver uartGDriver;
-static Empty::UARTDriver uartHDriver;
-static Empty::UARTDriver uartIDriver;
-static Empty::UARTDriver uartJDriver;
+#define SERIAL0_BAUD DEFAULT_SERIAL0_BAUD
+#endif
+
+#ifndef HAL_SCHEDULER_LOOP_DELAY_ENABLED
+#define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1
+#endif
+
+#ifndef HAL_NO_UARTDRIVER
+static HAL_SERIAL0_DRIVER;
+static HAL_SERIAL1_DRIVER;
+static HAL_SERIAL2_DRIVER;
+static HAL_SERIAL3_DRIVER;
+static HAL_SERIAL4_DRIVER;
+static HAL_SERIAL5_DRIVER;
+static HAL_SERIAL6_DRIVER;
+static HAL_SERIAL7_DRIVER;
+static HAL_SERIAL8_DRIVER;
+static HAL_SERIAL9_DRIVER;
+#else
+static Empty::UARTDriver serial0Driver;
+static Empty::UARTDriver serial1Driver;
+static Empty::UARTDriver serial2Driver;
+static Empty::UARTDriver serial3Driver;
+static Empty::UARTDriver serial4Driver;
+static Empty::UARTDriver serial5Driver;
+static Empty::UARTDriver serial6Driver;
+static Empty::UARTDriver serial7Driver;
+static Empty::UARTDriver serial8Driver;
+static Empty::UARTDriver serial9Driver;
 #endif
 
 #if HAL_USE_I2C == TRUE && defined(HAL_I2C_DEVICE_LIST)
@@ -104,8 +114,6 @@ static AP_HAL::SIMState xsimstate;
 
 #if HAL_WITH_DSP
 static ChibiOS::DSP dspDriver;
-#else
-static Empty::DSP dspDriver;
 #endif
 
 #ifndef HAL_NO_FLASH_SUPPORT
@@ -118,8 +126,8 @@ static Empty::Flash flashDriver;
 static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 #endif
 
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
-static ChibiOS::QSPIDeviceManager qspiDeviceManager;
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+static ChibiOS::WSPIDeviceManager wspiDeviceManager;
 #endif
 
 #if HAL_WITH_IO_MCU
@@ -130,26 +138,26 @@ AP_IOMCU iomcu(uart_io);
 
 HAL_ChibiOS::HAL_ChibiOS() :
     AP_HAL::HAL(
-        &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
-        &uartDDriver,
-        &uartEDriver,
-        &uartFDriver,
-        &uartGDriver,
-        &uartHDriver,
-        &uartIDriver,
-        &uartJDriver,
+        &serial0Driver,
+        &serial1Driver,
+        &serial2Driver,
+        &serial3Driver,
+        &serial4Driver,
+        &serial5Driver,
+        &serial6Driver,
+        &serial7Driver,
+        &serial8Driver,
+        &serial9Driver,
         &i2cDeviceManager,
         &spiDeviceManager,
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
-        &qspiDeviceManager,
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+        &wspiDeviceManager,
 #else
         nullptr,
 #endif
         &analogIn,
         &storageDriver,
-        &uartADriver,
+        &serial0Driver,
         &gpioDriver,
         &rcinDriver,
         &rcoutDriver,
@@ -160,7 +168,9 @@ HAL_ChibiOS::HAL_ChibiOS() :
 #if AP_SIM_ENABLED
         &xsimstate,
 #endif
+#if HAL_WITH_DSP
         &dspDriver,
+#endif
 #if HAL_NUM_CAN_IFACES
         (AP_HAL::CANIface**)canDrivers
 #else
@@ -219,9 +229,9 @@ static void main_loop()
 
     peripheral_power_enable();
 
-    hal.serial(0)->begin(115200);
+    hal.serial(0)->begin(SERIAL0_BAUD);
 
-#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+#if (HAL_USE_SPI == TRUE) && defined(HAL_SPI_CHECK_CLOCK_FREQ)
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
 #endif
@@ -261,11 +271,13 @@ static void main_loop()
 #if !defined(DISABLE_WATCHDOG)
 #ifdef IOMCU_FW
     stm32_watchdog_init();
-#else
+#elif !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_EARLY_WATCHDOG_INIT)
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();
     }
+#endif
 
     if (hal.util->was_watchdog_reset()) {
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
@@ -278,7 +290,7 @@ static void main_loop()
     hal.scheduler->set_system_initialized();
 
     thread_running = true;
-    chRegSetThreadName(SKETCHNAME);
+    chRegSetThreadName(AP_BUILD_TARGET_NAME);
 
     /*
       switch to high priority for main loop
@@ -288,6 +300,7 @@ static void main_loop()
     while (true) {
         g_callbacks->loop();
 
+#if HAL_SCHEDULER_LOOP_DELAY_ENABLED && !APM_BUILD_TYPE(APM_BUILD_Replay)
         /*
           give up 50 microseconds of time if the INS loop hasn't
           called delay_microseconds_boost(), to ensure low priority
@@ -296,7 +309,6 @@ static void main_loop()
           time from the main loop, so we don't need to do it again
           here
          */
-#if !defined(HAL_DISABLE_LOOP_DELAY) && !APM_BUILD_TYPE(APM_BUILD_Replay)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(50);
         }
@@ -308,6 +320,10 @@ static void main_loop()
 
 void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+#if defined(HAL_EARLY_WATCHDOG_INIT) && !defined(DISABLE_WATCHDOG)
+    stm32_watchdog_init();
+    stm32_watchdog_pat();
+#endif
     /*
      * System initializations.
      * - ChibiOS HAL initialization, this also initializes the configured device drivers
@@ -338,8 +354,13 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     main_loop();
 }
 
+static HAL_ChibiOS hal_chibios;
+
 const AP_HAL::HAL& AP_HAL::get_HAL() {
-    static const HAL_ChibiOS hal_chibios;
+    return hal_chibios;
+}
+
+AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
     return hal_chibios;
 }
 

@@ -17,8 +17,11 @@ from pymavlink import mavutil
 
 
 class SolutionStatusChange(object):
-    def __init__(self, master):
+    def __init__(self, master, core=None):
         self.master = master
+        self.core = core
+        if self.core is not None:
+            self.core = set(self.core)
 
     def progress(self, text):
         '''emit text with possible timestamps etc'''
@@ -58,18 +61,19 @@ class SolutionStatusChange(object):
             if m.C not in old_message_per_core:
                 old_message_per_core[m.C] = m
                 continue
-            ss = m.SS
+            if self.core is not None and m.C not in self.core:
+                continue
             current = old_message_per_core[m.C]
-            if ss == current.SS:
+            if m.SS == current.SS:
                 continue
             line = ""
-            for bit in bit_descriptions.keys():
-                old_bit_set = current.SS & (1 << bit_descriptions[bit])
-                new_bit_set = ss & (1 << bit_descriptions[bit])
+            for (name, bit) in bit_descriptions.items():
+                old_bit_set = current.SS & (1 << bit)
+                new_bit_set = m.SS & (1 << bit)
                 if new_bit_set and not old_bit_set:
-                    line += " +%s" % bit
+                    line += " +%s" % name
                 elif not new_bit_set and old_bit_set:
-                    line += " -%s" % bit
+                    line += " -%s" % name
 
             old_message_per_core[m.C] = m
 
@@ -85,6 +89,9 @@ class SolutionStatusChange(object):
 if __name__ == '__main__':
     parser = optparse.OptionParser("solution-status-change.py [options]")
 
+    parser.add_option("", "--core", action="append", type="int",
+                      default=[], help="core to show (default is all)")
+
     (opts, args) = parser.parse_args()
 
     if len(args) < 1:
@@ -93,5 +100,8 @@ if __name__ == '__main__':
 
     master = args[0]
 
-    tester = SolutionStatusChange(master)
+    if len(opts.core) == 0:
+        opts.core = None
+
+    tester = SolutionStatusChange(master, core=opts.core)
     tester.run()

@@ -72,7 +72,7 @@ AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(AP_OpticalFlow &_frontend)
     }
 
     // we have found a serial port so use it
-    AP_OpticalFlow_CXOF *sensor = new AP_OpticalFlow_CXOF(_frontend, uart);
+    AP_OpticalFlow_CXOF *sensor = NEW_NOTHROW AP_OpticalFlow_CXOF(_frontend, uart);
     return sensor;
 }
 
@@ -116,11 +116,10 @@ void AP_OpticalFlow_CXOF::update(void)
     // read any available characters in the serial buffer
     int16_t nbytes = uart->available();
     while (nbytes-- > 0) {
-        int16_t r = uart->read();
-        if (r < 0) {
+        uint8_t c;
+        if (!uart->read(c)) {
             continue;
         }
-        uint8_t c = (uint8_t)r;
         // if buffer is empty and this byte is header, add to buffer
         if (buf_len == 0) {
             if (c == CXOF_HEADER) {

@@ -26,6 +26,6 @@ public:
 
 protected:
 
-    AP_Float    _max_voltage;           /// maximum battery voltage used in current caluculation   
+    AP_Float    _max_voltage;           /// maximum battery voltage used in current calculation   
 };
 #endif

@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <utility>
 
-#if MODE_FLOWHOLD_ENABLED == ENABLED
+#if MODE_FLOWHOLD_ENABLED
 
 /*
   implement FLOWHOLD mode, for position hold using optical flow
@@ -202,6 +202,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     bf_angles.x = constrain_float(bf_angles.x, -copter.aparm.angle_max, copter.aparm.angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: FHLD
 // @Description: FlowHold mode messages
 // @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
@@ -222,6 +223,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
                                                (double)quality_filtered,
                                                (double)xy_I.x, (double)xy_I.y);
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 
 // flowhold_run - runs the flowhold controller
@@ -238,7 +240,7 @@ void ModeFlowHold::run()
 
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
-        flow_filter.set_cutoff_frequency(flow_filter_hz.get());
+        flow_filter.set_cutoff_frequency(copter.scheduler.get_loop_rate_hz(), flow_filter_hz.get());
     }
 
     // get pilot desired climb rate
@@ -246,7 +248,7 @@ void ModeFlowHold::run()
     target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
+    float target_yaw_rate = get_pilot_desired_yaw_rate();
 
     // Flow Hold State Machine Determination
     AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);
@@ -261,7 +263,7 @@ void ModeFlowHold::run()
     // Flow Hold State Machine
     switch (flowhold_state) {
 
-    case AltHold_MotorStopped:
+    case AltHoldModeState::MotorStopped:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->reset_yaw_target_and_rate();
@@ -269,7 +271,7 @@ void ModeFlowHold::run()
         flow_pi_xy.reset_I();
         break;
 
-    case AltHold_Takeoff:
+    case AltHoldModeState::Takeoff:
         // set motors to full range
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -285,23 +287,25 @@ void ModeFlowHold::run()
         takeoff.do_pilot_takeoff(target_climb_rate);
         break;
 
-    case AltHold_Landed_Ground_Idle:
+    case AltHoldModeState::Landed_Ground_Idle:
         attitude_control->reset_yaw_target_and_rate();
         FALLTHROUGH;
 
-    case AltHold_Landed_Pre_Takeoff:
+    case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
-    case AltHold_Flying:
+    case AltHoldModeState::Flying:
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
+#if AP_RANGEFINDER_ENABLED
         // update the vertical offset based on the surface measurement
         copter.surface_tracking.update_surface_offset();
+#endif
 
         // Send the commanded climb rate to the position controller
         pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
@@ -330,7 +334,7 @@ void ModeFlowHold::run()
     bf_angles.x = constrain_float(bf_angles.x, -angle_max, angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -angle_max, angle_max);
 
-#if AC_AVOID_ENABLED == ENABLED
+#if AP_AVOIDANCE_ENABLED
     // apply avoidance
     copter.avoid.adjust_roll_pitch(bf_angles.x, bf_angles.y, copter.aparm.angle_max);
 #endif
@@ -478,6 +482,7 @@ void ModeFlowHold::update_height_estimate(void)
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: FHXY
 // @Description: Height estimation using optical flow sensor 
 // @Field: TimeUS: Time since system startup
@@ -504,6 +509,8 @@ void ModeFlowHold::update_height_estimate(void)
                                            (double)ins_height,
                                            (double)last_ins_height,
                                            dt_ms);
+#endif
+
     gcs().send_named_float("HEST", height_estimate);
     delta_velocity_ne.zero();
     last_ins_height = ins_height;

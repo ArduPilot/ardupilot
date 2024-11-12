@@ -13,9 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Generator_RichenPower.h"
+#include "AP_Generator_config.h"
 
 #if AP_GENERATOR_RICHENPOWER_ENABLED
+
+#include "AP_Generator_RichenPower.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -30,6 +32,8 @@ extern const AP_HAL::HAL& hal;
 // init method; configure communications with the generator
 void AP_Generator_RichenPower::init()
 {
+    ASSERT_STORAGE_SIZE(RichenPacket, 70);
+
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Generator, 0);
@@ -121,7 +125,7 @@ bool AP_Generator_RichenPower::get_reading()
     const uint8_t minor = (version % 100) / 10;
     const uint8_t point = version % 10;
     if (!protocol_information_anounced) {
-        gcs().send_text(MAV_SEVERITY_INFO, "RichenPower: protocol %u.%u.%u", major, minor, point);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RichenPower: protocol %u.%u.%u", major, minor, point);
         protocol_information_anounced = true;
     }
 
@@ -190,7 +194,7 @@ bool AP_Generator_RichenPower::generator_ok_to_run() const
 constexpr float AP_Generator_RichenPower::heat_required_for_run()
 {
     // assume that heat is proportional to RPM.  Return a number
-    // proportial to RPM.  Reduce it to account for the cooling some%/s
+    // proportional to RPM.  Reduce it to account for the cooling some%/s
     // cooling
     return (45 * IDLE_RPM) * heat_environment_loss_30s;
 }
@@ -208,7 +212,7 @@ void AP_Generator_RichenPower::check_maintenance_required()
 
         if (last_reading.errors & (1U<<uint16_t(Errors::MaintenanceRequired))) {
             if (now - last_maintenance_warning_ms > 60000) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Generator: requires maintenance");
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Generator: requires maintenance");
                 last_maintenance_warning_ms = now;
             }
         }
@@ -235,7 +239,9 @@ void AP_Generator_RichenPower::update(void)
 
     update_frontend_readings();
 
+#if HAL_LOGGING_ENABLED
     Log_Write();
+#endif
 }
 
 // update_runstate updates the servo output we use to control the
@@ -261,7 +267,7 @@ void AP_Generator_RichenPower::update_runstate()
     // because the vehicle is crashed.
     if (AP::vehicle()->is_crashed()) {
         if (!vehicle_was_crashed) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Crash; stopping generator");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Crash; stopping generator");
             pilot_desired_runstate = RunState::STOP;
             vehicle_was_crashed = true;
         }
@@ -308,6 +314,7 @@ void AP_Generator_RichenPower::update_runstate()
     }
 }
 
+#if HAL_LOGGING_ENABLED
 // log generator status to the onboard log
 void AP_Generator_RichenPower::Log_Write()
 {
@@ -336,6 +343,7 @@ void AP_Generator_RichenPower::Log_Write()
         last_reading.mode
         );
 }
+#endif
 
 // generator prearm checks; notably, if we never see a generator we do
 // not run the checks.  Generators are attached/detached at will, and

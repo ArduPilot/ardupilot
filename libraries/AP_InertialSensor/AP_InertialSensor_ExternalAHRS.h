@@ -21,8 +21,6 @@ public:
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
 private:
-    uint8_t gyro_instance;
-    uint8_t accel_instance;
     const uint8_t serial_port;
     bool started;
 };

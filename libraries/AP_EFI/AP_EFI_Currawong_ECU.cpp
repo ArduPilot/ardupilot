@@ -33,9 +33,14 @@ AP_EFI_Currawong_ECU::AP_EFI_Currawong_ECU(AP_EFI &_frontend) :
     AP_EFI_Backend(_frontend)
 {
     _singleton = this;
+
     // Indicate that temperature and fuel pressure are supported
     internal_state.fuel_pressure_status = Fuel_Pressure_Status::OK;
     internal_state.temperature_status = Temperature_Status::OK;
+
+    // Currawong ECU does not report EGT 
+    internal_state.cylinder_status.exhaust_gas_temperature = NAN;
+
 }
 
 void AP_EFI_Currawong_ECU::update()

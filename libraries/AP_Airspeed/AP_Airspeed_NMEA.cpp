@@ -30,13 +30,6 @@
 
 #define TIMEOUT_MS 2000
 
-extern const AP_HAL::HAL &hal;
-
-AP_Airspeed_NMEA::AP_Airspeed_NMEA(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{
-}
-
 bool AP_Airspeed_NMEA::init()
 {
     const AP_SerialManager& serial_manager = AP::serialmanager();
@@ -103,7 +96,7 @@ bool AP_Airspeed_NMEA::get_airspeed(float &airspeed)
 }
 
 // return the current temperature in degrees C
-// the main update is done in the get_pressue function
+// the main update is done in the get_pressure function
 // this just reports the value
 bool AP_Airspeed_NMEA::get_temperature(float &temperature)
 {

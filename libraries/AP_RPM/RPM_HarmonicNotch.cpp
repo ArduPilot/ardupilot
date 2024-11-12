@@ -13,18 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "RPM_HarmonicNotch.h"
+#include "AP_RPM_config.h"
 
 #if AP_RPM_HARMONICNOTCH_ENABLED
 
+#include "RPM_HarmonicNotch.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-
-AP_RPM_HarmonicNotch::AP_RPM_HarmonicNotch(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
-    AP_RPM_Backend(_ap_rpm, _instance, _state)
-{
-    instance = _instance;
-}
 
 void AP_RPM_HarmonicNotch::update(void)
 {

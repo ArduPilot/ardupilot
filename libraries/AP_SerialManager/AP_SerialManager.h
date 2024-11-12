@@ -21,9 +21,13 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_SerialManager_config.h"
+
+#if AP_SERIALMANAGER_ENABLED
+
 #include <AP_Param/AP_Param.h>
 
+<<<<<<< HEAD
 #ifdef HAL_UART_NUM_SERIAL_PORTS
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
 #define SERIALMANAGER_NUM_PORTS HAL_UART_NUM_SERIAL_PORTS
@@ -115,6 +119,8 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
 
+=======
+>>>>>>> 7f04c82994d82ad0004f50e47e458c63c291dd86
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -169,6 +175,11 @@ public:
         SerialProtocol_MSP_DisplayPort = 42,
         SerialProtocol_MAVLinkHL = 43,
         SerialProtocol_Tramp = 44,
+        SerialProtocol_DDS_XRCE = 45,
+        SerialProtocol_IMUOUT = 46,
+        // Reserving Serial Protocol 47 for SerialProtocol_IQ
+        SerialProtocol_PPP = 48,
+        SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -200,12 +211,9 @@ public:
     // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
     int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
 
-    // set_blocking_writes_all - sets block_writes on or off for all serial channels
-    void set_blocking_writes_all(bool blocking);
-
     // get the passthru ports if enabled
     bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                      uint32_t &baud1, uint32_t &baud2) const;
+                      uint32_t &baud1, uint32_t &baud2);
 
     // disable passthru by settings SERIAL_PASS2 to -1
     void disable_passthru(void);
@@ -235,11 +243,16 @@ public:
         AP_SerialManager::SerialProtocol get_protocol() const {
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
-    private:
         AP_Int32 baud;
         AP_Int16 options;
         AP_Int8 protocol;
+
+        // serial index number
+        uint8_t idx;
     };
+
+    // get a state from serial index
+    const UARTState *get_state_by_id(uint8_t id) const;
 
     // search through managed serial connections looking for the
     // instance-nth UART which is running protocol protocol.
@@ -248,6 +261,27 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    /*
+      a class for a externally registered port
+      used by AP_Networking
+     */
+    class RegisteredPort : public AP_HAL::UARTDriver {
+    public:
+        uint32_t bw_in_bytes_per_second() const override { return state.baudrate()/10; }
+        uint32_t get_baud_rate() const override { return state.baudrate(); }
+        RegisteredPort *next;
+        UARTState state;
+    };
+    RegisteredPort *registered_ports;
+    HAL_Semaphore port_sem;
+
+    // register an externally managed port
+    void register_port(RegisteredPort *port);
+
+#endif // AP_SERIALMANAGER_REGISTER_ENABLED
+
 
 private:
     static AP_SerialManager *_singleton;
@@ -273,3 +307,5 @@ private:
 namespace AP {
     AP_SerialManager &serialmanager();
 };
+
+#endif  // AP_SERIALMANAGER_ENABLED

@@ -15,14 +15,12 @@
 
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend_Serial.h"
-
-#ifndef AP_RANGEFINDER_NMEA_ENABLED
-#define AP_RANGEFINDER_NMEA_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_NMEA_ENABLED
+
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
 {
@@ -32,7 +30,7 @@ public:
     static AP_RangeFinder_Backend_Serial *create(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params) {
-        return new AP_RangeFinder_NMEA(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_NMEA(_state, _params);
     }
 
 protected:

@@ -10,17 +10,13 @@ bool ModeLoiterAltQLand::_enter()
         return true;
     }
 
+    // If we were already in a loiter then use that waypoint. Else, use the current point
+    const bool already_in_a_loiter = plane.nav_controller->reached_loiter_target() && !plane.nav_controller->data_is_stale();
+    const Location loiter_wp = already_in_a_loiter ? plane.next_WP_loc : plane.current_loc;
+
     ModeLoiter::_enter();
 
-#if AP_TERRAIN_AVAILABLE
-    if (plane.terrain_enabled_in_mode(Mode::Number::QLAND)) {
-        plane.next_WP_loc.set_alt_cm(quadplane.qrtl_alt*100UL, Location::AltFrame::ABOVE_TERRAIN);
-    } else {
-        plane.next_WP_loc.set_alt_cm(quadplane.qrtl_alt*100UL, Location::AltFrame::ABOVE_HOME);
-    }
-#else
-    plane.next_WP_loc.set_alt_cm(quadplane.qrtl_alt*100UL, Location::AltFrame::ABOVE_HOME);
-#endif
+    handle_guided_request(loiter_wp);
 
     switch_qland();
 

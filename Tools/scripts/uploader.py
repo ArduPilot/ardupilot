@@ -90,6 +90,7 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/serial/by-id/usb-*_BL_*',
                  '/dev/serial/by-id/usb-Swift-Flyer*',
                  '/dev/serial/by-id/usb-CubePilot*',
+                 '/dev/serial/by-id/usb-Qiotek*',
                  '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform or is_WSL:
@@ -175,11 +176,11 @@ class firmware(object):
             self.extf_image = None
         # pad image to 4-byte length
         while ((len(self.image) % 4) != 0):
-            self.image.append('\xff')
+            self.image += bytes(0xFF)
         # pad image to 4-byte length
         if self.extf_image is not None:
             while ((len(self.extf_image) % 4) != 0):
-                self.extf_image.append('\xff')
+                self.extf_image += bytes(0xFF)
 
     def property(self, propname, default=None):
         if propname in self.desc:
@@ -274,7 +275,7 @@ class uploader(object):
         self.force_erase = force_erase
 
         # open the port, keep the default timeout short so we can poll quickly
-        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0)
+        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0)
         self.baudrate_bootloader = baudrate_bootloader
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash
@@ -1006,7 +1007,7 @@ def ports_to_try(args):
     if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
         import glob
         for pattern in patterns:
-            portlist += glob.glob(pattern)
+            portlist += sorted(glob.glob(pattern))
     else:
         portlist = patterns
 

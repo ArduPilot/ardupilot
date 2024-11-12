@@ -27,13 +27,7 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_OpenDroneID_config.h"
-
-#ifndef AP_OPENDRONEID_ENABLED
-// default to off. Enabled in hwdef.dat
-#define AP_OPENDRONEID_ENABLED 0
-#endif
 
 #if AP_OPENDRONEID_ENABLED
 
@@ -63,7 +57,7 @@
 #define ODID_AREA_COUNT_MIN  1
 #define ODID_AREA_COUNT_MAX  65000
 
-class AP_UAVCAN;
+class AP_DroneCAN;
 
 class AP_OpenDroneID
 {
@@ -81,7 +75,7 @@ public:
     void update();
 
     // send pending dronecan messages
-    void dronecan_send(AP_UAVCAN *);
+    void dronecan_send(AP_DroneCAN *);
 
     // handle a message from the GCS
     void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
@@ -197,6 +191,7 @@ private:
 
     // mask of what UAVCAN drivers need to send each packet
     const uint8_t dronecan_send_all = (1U<<HAL_MAX_CAN_PROTOCOL_DRIVERS)-1;
+    uint8_t driver_mask;
     uint8_t need_send_location;
     uint8_t need_send_basic_id;
     uint8_t need_send_system;
@@ -205,12 +200,12 @@ private:
 
     uint8_t dronecan_done_init;
     uint8_t dronecan_init_failed;
-    void dronecan_init(AP_UAVCAN *uavcan);
-    void dronecan_send_location(AP_UAVCAN *uavcan);
-    void dronecan_send_basic_id(AP_UAVCAN *uavcan);
-    void dronecan_send_system(AP_UAVCAN *uavcan);
-    void dronecan_send_self_id(AP_UAVCAN *uavcan);
-    void dronecan_send_operator_id(AP_UAVCAN *uavcan);
+    void dronecan_init(AP_DroneCAN *uavcan);
+    void dronecan_send_location(AP_DroneCAN *uavcan);
+    void dronecan_send_basic_id(AP_DroneCAN *uavcan);
+    void dronecan_send_system(AP_DroneCAN *uavcan);
+    void dronecan_send_self_id(AP_DroneCAN *uavcan);
+    void dronecan_send_operator_id(AP_DroneCAN *uavcan);
 };
 
 namespace AP

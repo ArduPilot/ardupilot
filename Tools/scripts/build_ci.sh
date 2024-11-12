@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # useful script to test all the different build types that we support.
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
@@ -40,7 +40,7 @@ function install_pymavlink() {
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive --depth 1
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        (cd modules/mavlink/pymavlink && python3 -m pip install --user .)
         pymavlink_installed=1
     fi
 }
@@ -51,12 +51,12 @@ function install_mavproxy() {
         pushd /tmp
           git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
-            python setup.py build install --user --force
+            python3 -m pip install --user --force .
           popd
         popd
         mavproxy_installed=1
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
-        python -m pip uninstall -y pymavlink
+        python3 -m pip uninstall -y pymavlink
     fi
 }
 
@@ -89,7 +89,7 @@ function run_autotest() {
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
-    Tools/autotest/autotest.py --show-test-timings --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -132,11 +132,15 @@ for t in $CI_BUILD_TARGET; do
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
-        run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
         continue
     fi
-    if [ "$t" == "sitltest-plane" ]; then
-        run_autotest "Plane" "build.Plane" "test.Plane"
+    if [ "$t" == "sitltest-plane-tests1a" ]; then
+        run_autotest "Plane" "build.Plane" "test.PlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-plane-tests1b" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
     if [ "$t" == "sitltest-quadplane" ]; then
@@ -144,6 +148,8 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
+        sudo apt-get update || /bin/true
+        sudo apt-get install -y ppp || /bin/true
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
@@ -163,6 +169,10 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Sub" "build.Sub" "test.Sub"
         continue
     fi
+    if [ "$t" == "sitltest-blimp" ]; then
+        run_autotest "Blimp" "build.Blimp" "test.Blimp"
+        continue
+    fi
 
     if [ "$t" == "unit-tests" ]; then
         run_autotest "Unit Tests" "build.unit_tests" "run.unit_tests"
@@ -170,7 +180,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "examples" ]; then
-        ./waf configure --board=linux --debug
+        ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
         continue
@@ -209,18 +219,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
-        echo "Building HerePro peripheral fw"
-        $waf configure --board HerePro
-        $waf clean
-        $waf AP_Periph
         echo "Building CubeOrange-periph peripheral fw"
         $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
-        echo "Building HerePro bootloader"
-        $waf configure --board HerePro --bootloader
-        $waf clean
-        $waf bootloader
         echo "Building G4-ESC peripheral fw"
         $waf configure --board G4-ESC
         $waf clean
@@ -252,6 +254,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeRedPrimary-bootloader" ]; then
+        echo "Building CubeRedPrimary bootloader"
+        $waf configure --board CubeRedPrimary --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
     if [ "$t" == "fmuv3-bootloader" ]; then
         echo "Building fmuv3 bootloader"
         $waf configure --board fmuv3 --bootloader
@@ -259,7 +269,7 @@ for t in $CI_BUILD_TARGET; do
         $waf bootloader
         continue
     fi
-    
+
     if [ "$t" == "stm32f7" ]; then
         echo "Building mRoX21-777/"
         $waf configure --Werror --board mRoX21-777
@@ -285,6 +295,8 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board Durandal
         $waf clean
         $waf copter
+        echo "Building CPUInfo"
+        $waf --target=tool/CPUInfo
 
         # test external flash build
         echo "Building SPRacingH7"
@@ -310,7 +322,73 @@ for t in $CI_BUILD_TARGET; do
         $waf plane
         continue
     fi
+
+    if [ "$t" == "CubeOrange-PPP" ]; then
+        echo "Building CubeOrange-PPP"
+        $waf configure --board CubeOrange --enable-PPP
+        $waf clean
+        $waf copter
+        continue
+    fi
+
+    if [ "$t" == "CubeRed-EKF2" ]; then
+        echo "Building CubeRed with EKF2 enabled"
+        $waf configure --board CubeRedPrimary --enable-EKF2
+        $waf clean
+        $waf copter
+        continue
+    fi
+
+    if [ "$t" == "SOHW" ]; then
+        echo "Building CubeOrange-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board CubeOrange --vehicle copter --simclass MultiCopter
+        echo "Building 6X-SOHW"
+        Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board Pixhawk6X --vehicle plane --simclass Plane --frame plane-3d
+        continue
+    fi
+
+    if [ "$t" == "Pixhawk6X-PPPGW" ]; then
+        echo "Building Pixhawk6X-PPPGW"
+        $waf configure --board Pixhawk6X-PPPGW
+        $waf clean
+        $waf AP_Periph
+        $waf configure --board Pixhawk6X-PPPGW --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
+    if [ "$t" == "new-check" ]; then
+        echo "Building Pixhawk6X with new check"
+        $waf configure --board Pixhawk6X --enable-new-checking
+        $waf clean
+        $waf
+        echo "Building Pixhawk6X-PPPGW with new check"
+        $waf configure --board Pixhawk6X-PPPGW --enable-new-checking
+        $waf clean
+        $waf AP_Periph
+        continue
+    fi
     
+    if [ "$t" == "dds-stm32h7" ]; then
+        echo "Building with DDS support on a STM32H7"
+        $waf configure --board Durandal --enable-dds
+        $waf clean
+        $waf copter
+        $waf plane
+        continue
+    fi
+
+    if [ "$t" == "dds-sitl" ]; then
+        echo "Building with DDS support on SITL"
+        $waf configure --board sitl --enable-dds
+        $waf clean
+        $waf copter
+        $waf plane
+        $waf tests
+        continue
+    fi
+
     if [ "$t" == "fmuv2-plane" ]; then
         echo "Building fmuv2 plane"
         $waf configure --board fmuv2
@@ -335,12 +413,22 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "navigator64" ]; then
+        echo "Building navigator64"
+        $waf configure --board navigator64 --toolchain=aarch64-linux-gnu
+        $waf sub
+        ./Tools/scripts/firmware_version_decoder.py -f build/navigator64/bin/ardusub --expected-hash $GIT_VERSION
+        continue
+    fi
+
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board sitl --debug --disable-scripting
+
         $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
+
         $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue
@@ -376,10 +464,16 @@ for t in $CI_BUILD_TARGET; do
         ./Tools/scripts/build_bootloaders.py --signing-key testkey_public_key.dat MatekL431-DShot
         continue
     fi
-    
+
     if [ "$t" == "python-cleanliness" ]; then
         echo "Checking Python code cleanliness"
         ./Tools/scripts/run_flake8.py
+        continue
+    fi
+
+    if [ "$t" == "astyle-cleanliness" ]; then
+        echo "Checking AStyle code cleanliness"
+        ./Tools/scripts/run_astyle.py --dry-run
         continue
     fi
 
@@ -406,12 +500,26 @@ for t in $CI_BUILD_TARGET; do
              --no-enable-in-turn \
              --build-targets=copter \
              --build-targets=plane
+        echo "Checking building with logging disabled works"
+        echo "define HAL_LOGGING_ENABLED 0" >/tmp/extra.hwdef
+        time ./waf configure \
+             --board=CubeOrange \
+             --extra-hwdef=/tmp/extra.hwdef
+        time ./waf plane
+        time ./waf copter
         continue
     fi
 
     if [ "$t" == "param_parse" ]; then
-        for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp; do
-            python Tools/autotest/param_metadata/param_parse.py --vehicle $v
+        for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp AP_Periph; do
+            python3 Tools/autotest/param_metadata/param_parse.py --vehicle $v
+        done
+        continue
+    fi
+
+    if [ "$t" == "logger_metadata" ]; then
+        for v in Rover Tracker Copter Plane Sub Blimp; do
+            python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
         continue
     fi

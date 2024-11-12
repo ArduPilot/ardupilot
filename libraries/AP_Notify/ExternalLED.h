@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_EXTERNALLED_ENABLED
+
 #include "NotifyDevice.h"
 
 class ExternalLED: public NotifyDevice
@@ -64,3 +68,5 @@ private:
     void motor_led1(bool on_off);
     void motor_led2(bool on_off);
 };
+
+#endif  // AP_NOTIFY_EXTERNALLED_ENABLED
