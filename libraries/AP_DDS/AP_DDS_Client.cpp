@@ -1615,10 +1615,11 @@ void AP_DDS_Client::update()
         }
         last_status_check_time_ms = cur_time_ms;
     }
+#endif // AP_DDS_STATUS_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
-#endif // AP_DDS_STATUS_PUB_ENABLED
+
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 extern "C" {
     int clock_gettime(clockid_t clockid, struct timespec *ts);
