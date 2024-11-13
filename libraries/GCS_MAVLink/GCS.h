@@ -1038,8 +1038,10 @@ private:
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) { return false; };
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) {};
+#endif
     void handle_common_mission_message(const mavlink_message_t &msg);
 
     virtual void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) {};
@@ -1126,6 +1128,12 @@ private:
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
     bool _locked;
+
+#if HAL_GCS_GUIDED_MISSION_REQUESTS_ENABLED
+    // handle a mission item int uploaded with current==2 or
+    // current==3, meaning go somewhere when in guided mode:
+    void handle_mission_item_guided_mode_request(const mavlink_message_t &msg, const mavlink_mission_item_int_t &mission_item_int);
+#endif
 };
 
 /// @class GCS
