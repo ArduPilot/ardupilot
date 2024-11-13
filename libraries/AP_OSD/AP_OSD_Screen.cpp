@@ -1045,23 +1045,6 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 	AP_SUBGROUPINFO(rrpm, "RPM", 62, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
-
-    // @Param: VTX_TEMP_EN
-    // @DisplayName: VTX_TEMP_EN
-    // @Description: Displays the VTX Temperature. A Value of '-1' indicates that temperature is not available.
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: VTX_TEMP_X
-    // @DisplayName: VTX_TEMP_X
-    // @Description: Horizontal position on screen for VTX_TEMP item
-    // @Range: 0 59
-
-    // @Param: VTX_TEMP_Y
-    // @DisplayName: VTX_TEMP_Y
-    // @Description: Vertical position on screen for VTX_TEMP item
-    // @Range: 0 21
-    AP_SUBGROUPINFO(vtx_temp, "VTX_TEMP", 63, AP_OSD_Screen, AP_OSD_Setting),
-
     AP_GROUPEND
 };
 
@@ -1190,6 +1173,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Range: 0 32
     AP_GROUPINFO("ESC_IDX", 10, AP_OSD_Screen, esc_index, 0),
 #endif
+
+    // @Param: VTX_TEMP_EN
+    // @DisplayName: VTX_TEMP_EN
+    // @Description: Displays the VTX Temperature. A Value of '-1' indicates that temperature is not available.
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: VTX_TEMP_X
+    // @DisplayName: VTX_TEMP_X
+    // @Description: Horizontal position on screen for VTX_TEMP item
+    // @Range: 0 59
+
+    // @Param: VTX_TEMP_Y
+    // @DisplayName: VTX_TEMP_Y
+    // @Description: Vertical position on screen for VTX_TEMP item
+    // @Range: 0 21
+    AP_SUBGROUPINFO(vtx_temp, "VTX_TEMP", 11, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
