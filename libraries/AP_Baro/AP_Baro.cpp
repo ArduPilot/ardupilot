@@ -961,9 +961,11 @@ void AP_Baro::update_field_elevation(void)
             is_zero(_field_elevation)) {
             // auto-set based on origin
             Location origin;
-            if (!armed && AP::ahrs().get_origin(origin)) {
+            if (!armed && AP::ahrs().get_origin(origin) && origin.alt != 0) {
                 _field_elevation_active = origin.alt * 0.01;
                 new_field_elev = true;
+            } else if (!armed && AP::ahrs().get_origin(origin) && origin.alt == 0) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "Origin altitude cannot be 0");
             }
         } else if (fabsf(_field_elevation_active-_field_elevation) > 1.0 &&
                    !is_zero(_field_elevation)) {
