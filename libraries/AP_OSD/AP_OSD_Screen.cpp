@@ -1045,6 +1045,23 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 	AP_SUBGROUPINFO(rrpm, "RPM", 62, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
+
+    // @Param: VTX_TEMP_EN
+    // @DisplayName: VTX_TEMP_EN
+    // @Description: Displays the VTX Temperature. A Value of '-1' indicates that temperature is not available.
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: VTX_TEMP_X
+    // @DisplayName: VTX_TEMP_X
+    // @Description: Horizontal position on screen for VTX_TEMP item
+    // @Range: 0 59
+
+    // @Param: VTX_TEMP_Y
+    // @DisplayName: VTX_TEMP_Y
+    // @Description: Vertical position on screen for VTX_TEMP item
+    // @Range: 0 21
+    AP_SUBGROUPINFO(vtx_temp, "VTX_TEMP", 63, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -2550,6 +2567,17 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 }
 #endif
 
+
+void AP_OSD_Screen::draw_vtx_temp(uint8_t x, uint8_t y)
+{
+    AP_VideoTX *vtx = AP_VideoTX::get_singleton();
+    if (!vtx) {
+        return;
+    }
+    float vtx_temperature = vtx->get_temperature();
+    backend->write(x, y, false, "%3.1f%c", u_scale(TEMPERATURE, vtx_temperature), u_icon(TEMPERATURE));
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
@@ -2648,6 +2676,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(rc_snr);
     DRAW_SETTING(rc_active_antenna);
     DRAW_SETTING(rc_lq);
+#endif
+#if AP_VIDEOTX_ENABLED
+    DRAW_SETTING(vtx_temp);
 #endif
 }
 #endif

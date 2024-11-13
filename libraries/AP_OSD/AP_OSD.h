@@ -353,6 +353,10 @@ private:
         bool load_attempted;
         const char *str;
     } callsign_data;
+
+    // VTX temperature for AP_Tramp
+    AP_OSD_Setting vtx_temp;
+    void draw_vtx_temp(uint8_t x, uint8_t y);
 };
 #endif // OSD_ENABLED
 
