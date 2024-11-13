@@ -2,6 +2,8 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Terrain/AP_Terrain_config.h>
+#include <GCS_MAVLink/GCS_config.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 
 #ifndef HAL_MOUNT_ENABLED
 #define HAL_MOUNT_ENABLED 1

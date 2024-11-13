@@ -438,7 +438,7 @@ void AP_Vehicle::setup()
 
 
 #if AP_SRV_CHANNELS_ENABLED
-    SRV_Channels::init();
+    AP::srv().init();
 #endif
 
     // gyro FFT needs to be initialized really late

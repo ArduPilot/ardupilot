@@ -1,8 +1,10 @@
+#include "AP_Mount_config.h"
+
+#if HAL_MOUNT_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include "AP_Mount.h"
-
-#if HAL_MOUNT_ENABLED
 
 #include "AP_Mount_Backend.h"
 #include "AP_Mount_Servo.h"
