@@ -1,0 +1,152 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/obstacles/protos/OilBarrel.proto"
+EXTERNPROTO "../protos/Heron.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/robots/nvidia/jetbot/protos/JetBotRaspberryPiCamera.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/devices/nvidia/protos/JetsonNano.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation 0.18802303494067113 0.008368575014304897 -0.9821289657086432 2.6567413787072653
+  position -3.5173698357397702 0.9533488761989521 1.9238550170857296
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+DEF WATER Fluid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.0626841 0.552224 0.723339
+        transparency 0.7
+        roughness 1
+        metalness 0
+      }
+      geometry DEF WATER_BOX Box {
+        size 1000 1000 0.7
+      }
+    }
+  ]
+  viscosity 0.01
+  boundingObject Transform {
+    children [
+      USE WATER_BOX
+    ]
+  }
+  locked TRUE
+}
+Heron {
+  hidden linearVelocity_0 0 0 -3.545123546997953e-14
+  hidden angularVelocity_0 4.609404596900323e-14 6.687054702593327e-13 2.3099636435669426e-16
+  translation -6.6784157308512615 -0.49028637658352825 0.4450058268441469
+  rotation -0.010053065114475615 -0.041473403722977586 -0.9990890314008232 0.517597020428728
+  controller "ardupilot_vehicle_controller"
+  controllerArgs [
+    "--motors"
+    "left_motor, right_motor"
+    "--motor-cap"
+    "10"
+    "--bidirectional-motors"
+    "true"
+    "--camera"
+    "camera"
+    "--camera-port"
+    "5599"
+    "--sitl-address"
+    "localhost"
+  ]
+  bodySlot [
+    JetsonNano {
+      translation 0.17 0.0700002 0.08
+      rotation 0 0 1 -1.5707953071795862
+    }
+    JetBotRaspberryPiCamera {
+      translation 0.32 0 0.22
+      fieldOfView 0.7
+      near 0.1
+    }
+    InertialUnit {
+    }
+    GPS {
+    }
+    Accelerometer {
+    }
+    Gyro {
+    }
+  ]
+}
+OilBarrel {
+  hidden linearVelocity_0 0 0 1.4387456326881762e-15
+  translation -5.769041604986175 5.7137363726152754 0.5595498919704248
+  rotation -0.1699998685374228 -0.9047911400234424 0.39045235001513096 1.7528084979303689
+  physics Physics {
+    density 100
+    damping Damping {
+      linear 0.5
+      angular 0.5
+    }
+  }
+  immersionProperties [
+    ImmersionProperties {
+      fluidName "fluid"
+    }
+  ]
+}
+OilBarrel {
+  hidden linearVelocity_0 0 0 1.4387456326881762e-15
+  translation -10.052079249302796 2.4814946123187727 0.5595498919704248
+  rotation -0.27511330388511257 -0.6601076264091592 0.6989782482895184 -2.843722039686051
+  name "oil barrel(1)"
+  physics Physics {
+    density 100
+    damping Damping {
+      linear 0.5
+      angular 0.5
+    }
+  }
+  immersionProperties [
+    ImmersionProperties {
+      fluidName "fluid"
+    }
+  ]
+}
+OilBarrel {
+  hidden linearVelocity_0 0 0 -1.5261006141050254e-15
+  translation -9.806804324970415 -3.2705951440882433 0.5595498919704249
+  rotation 0.9914248557443196 0.045597095586811014 0.12246493492588871 1.5859460279251565
+  name "oil barrel(2)"
+  physics Physics {
+    density 100
+    damping Damping {
+      linear 0.5
+      angular 0.5
+    }
+  }
+  immersionProperties [
+    ImmersionProperties {
+      fluidName "fluid"
+    }
+  ]
+}
+OilBarrel {
+  hidden linearVelocity_0 0 0 1.4387456326881762e-15
+  translation -9.046348837161165 3.2463636605243056 0.5595498919704248
+  rotation 0.7378366847241952 0.14393236835260417 -0.6594546989866846 -2.4506564948848384
+  name "oil barrel(3)"
+  physics Physics {
+    density 100
+    damping Damping {
+      linear 0.5
+      angular 0.5
+    }
+  }
+  immersionProperties [
+    ImmersionProperties {
+      fluidName "fluid"
+    }
+  ]
+}
