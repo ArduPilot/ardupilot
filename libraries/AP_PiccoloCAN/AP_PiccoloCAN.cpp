@@ -209,6 +209,7 @@ void AP_PiccoloCAN::loop()
 
         uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
 #endif
+        uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1000);
@@ -234,7 +235,7 @@ void AP_PiccoloCAN::loop()
 #endif
 
         // Look for any message responses on the CAN bus
-        while (read_frame(rxFrame, 0)) {
+        while (read_frame(rxFrame, timeout)) {
 
             // Extract group and device ID values from the frame identifier
             frame_id_group = (rxFrame.id >> 24) & 0x1F;
@@ -275,7 +276,7 @@ void AP_PiccoloCAN::loop()
 }
 
 // write frame on CAN bus, returns true on success
-bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us)
+bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 {
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for write_frame\n\r");
@@ -284,27 +285,26 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us
 
     bool read_select = false;
     bool write_select = true;
-    const uint64_t deadline_us = AP_HAL::micros64() + timeout_us;
-    bool ret =  _can_iface->select(read_select, write_select, &out_frame, deadline_us);
+    
+    bool ret =  _can_iface->select(read_select, write_select, &out_frame, timeout);
 
     if (!ret || !write_select) {
         return false;
     }
 
-    return (_can_iface->send(out_frame, deadline_us, AP_HAL::CANIface::AbortOnError) == 1);
+    return (_can_iface->send(out_frame, timeout, AP_HAL::CANIface::AbortOnError) == 1);
 }
 
 // read frame on CAN bus, returns true on succses
-bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us)
+bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
 {
     if (!_initialized) {
         debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for read_frame\n\r");
         return false;
     }
-
     bool read_select = true;
     bool write_select = false;
-    bool ret = _can_iface->select(read_select, write_select, nullptr, AP_HAL::micros64() + timeout_us);
+    bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
 
     if (!ret || !read_select) {
         // No frame available
@@ -344,15 +344,16 @@ void AP_PiccoloCAN::update()
         if (is_esc_channel_active(ii)) {
 
             uint16_t output = 0;
+            
+            SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(ii);
 
-            if (SRV_Channels::channel_function(ii) == SRV_Channel::k_throttle) {
+            if (function == SRV_Channel::k_throttle || function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight) {
                 SRV_Channels::get_output_pwm(SRV_Channel::k_throttle, output);
                 _escs[ii].command = output;
                 _escs[ii].newCommand = true;
-                break;
+                continue;
             }
 
-            
             SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
@@ -411,11 +412,89 @@ void AP_PiccoloCAN::update()
 #endif  // HAL_LOGGING_ENABLED
 }
 
+#if HAL_GCS_ENABLED
+// send ESC telemetry messages over MAVLink
+void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+    // Arrays to store ESC telemetry data
+    uint8_t temperature[4] {};
+    uint16_t voltage[4] {};
+    uint16_t rpm[4] {};
+    uint16_t count[4] {};
+    uint16_t current[4] {};
+    uint16_t totalcurrent[4] {};
+
+    bool dataAvailable = false;
+
+    uint8_t idx = 0;
+
+    WITH_SEMAPHORE(_telem_sem);
+
+    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
+
+        // Calculate index within storage array
+        idx = (ii % 4);
+
+        AP_PiccoloCAN_ESC &esc = _escs[idx];
+
+        // Has the ESC been heard from recently?
+        if (is_esc_present(ii)) {
+            dataAvailable = true;
+
+            // Provide the maximum ESC temperature in the telemetry stream
+            temperature[idx] = esc.temperature();   // Convert to C
+            voltage[idx] = esc.voltage() * 10;      // Convert to cV
+            current[idx] = esc.current() * 10;      // Convert to cA
+            totalcurrent[idx] = 0;
+            rpm[idx] = esc.rpm();
+            count[idx] = 0;
+        } else {
+            temperature[idx] = 0;
+            voltage[idx] = 0;
+            current[idx] = 0;
+            totalcurrent[idx] = 0;
+            rpm[idx] = 0;
+            count[idx] = 0;
+        }
+
+        // Send ESC telemetry in groups of 4
+        if ((ii % 4) == 3) {
+
+            if (dataAvailable) {
+                if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
+                    continue;
+                }
+
+                switch (ii) {
+                case 3:
+                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                case 7:
+                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                case 11:
+                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                case 15:
+                    mavlink_msg_esc_telemetry_13_to_16_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            dataAvailable = false;
+        }
+    }
+}
+#endif
 
 // send servo messages over CAN
 void AP_PiccoloCAN::send_servo_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
+
+    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
     // No servos are selected? Don't send anything!
     if (_srv_bm == 0x00) {
@@ -451,7 +530,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
                 // Servo is not enabled
                 encodeServo_EnablePacket(&txFrame);
                 txFrame.id |= (idx + 1);
-                write_frame(txFrame, 1000);
+                write_frame(txFrame, timeout);
             } else if (_servos[idx].newCommand) {
                 // A new command is provided
                 send_cmd = true;
@@ -473,7 +552,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
             // Broadcast the command to all servos
             txFrame.id |= 0xFF;
 
-            write_frame(txFrame, 1000);
+            write_frame(txFrame, timeout);
         }
     }
 }
@@ -483,6 +562,8 @@ void AP_PiccoloCAN::send_servo_messages(void)
 void AP_PiccoloCAN::send_esc_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
+
+    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
     // No ESCs are selected? Don't send anything
     if (_esc_bm == 0x00) {
@@ -519,7 +600,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
                 if (is_esc_present(idx) && !is_esc_enabled(idx)) {
                     encodeESC_EnablePacket(&txFrame);
                     txFrame.id |= (idx + 1);
-                    write_frame(txFrame, 1000);
+                    write_frame(txFrame, timeout);
                 }
                 else if (_escs[idx].newCommand) {
                     send_cmd = true;
@@ -544,7 +625,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
                 // Broadcast the command to all ESCs
                 txFrame.id |= 0xFF;
 
-                write_frame(txFrame, 1000);
+                write_frame(txFrame, timeout);
             }
         }
 
@@ -557,7 +638,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
         // Set the ESC address to the broadcast ID (0xFF)
         txFrame.id |= 0xFF;
 
-        write_frame(txFrame, 1000);
+        write_frame(txFrame, timeout);
     }
 }
 
@@ -613,6 +694,8 @@ void AP_PiccoloCAN::send_ecu_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
 
+    const uint64_t timeout = AP_HAL::micros64() + 1000ULL;
+
     // No ECU node id set, don't send anything
     if (_ecu_id == 0) {
         return;
@@ -624,7 +707,7 @@ void AP_PiccoloCAN::send_ecu_messages(void)
 
         _ecu_info.newCommand = false;
 
-        write_frame(txFrame, 1000);
+        write_frame(txFrame, timeout);
     }
 }
 
@@ -678,7 +761,9 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
     // Check if a motor function is assigned for this motor channel
     SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
 
-    if (SRV_Channels::function_assigned(motor_function) || SRV_Channels::channel_function(chan) == SRV_Channel::k_throttle) {
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
+
+    if (SRV_Channels::function_assigned(motor_function) || function == SRV_Channel::k_throttle || function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight) {
         return true;
     }
 
@@ -689,26 +774,26 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
 /**
  * Determine if a servo is present on the CAN bus (has telemetry data been received)
  */
-bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint32_t timeout_us)
+bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint64_t timeout_ms)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_SERVO) {
         return false;
     }
 
-    return _servos[chan].is_connected(timeout_us);
+    return _servos[chan].is_connected(timeout_ms);
 }
 
 
 /**
  * Determine if an ESC is present on the CAN bus (has telemetry data been received)
  */
-bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint32_t timeout_us)
+bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
         return false;
     }
 
-    return _escs[chan].is_connected(timeout_us);
+    return _escs[chan].is_connected(timeout_ms);
 }
 
 
