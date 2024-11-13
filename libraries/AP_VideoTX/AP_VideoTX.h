@@ -178,6 +178,11 @@ public:
 
     static AP_VideoTX *singleton;
 
+    // set the vtx temperature from backend, at the moment only AP_Tramp provides temperature
+    void set_temperature(float temperature) { _internal_temperature = temperature; }
+    // get the vtx temperature, consumer is OSD, a value of -1.0f indicates an invalid value, i.e. the backend does not provide it.
+    float get_temperature() const { return _internal_temperature; }
+
 private:
     uint8_t find_current_power() const;
     // channel frequency
@@ -212,6 +217,9 @@ private:
 
     // types of VTX providers
     uint8_t _types;
+
+    // VTX temperature provided by AP_Tramp backend, not by AP_SmartAudio
+    float _internal_temperature = -1.0f;
 };
 
 namespace AP {

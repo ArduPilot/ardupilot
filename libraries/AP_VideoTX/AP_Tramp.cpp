@@ -156,6 +156,11 @@ char AP_Tramp::handle_response(void)
         if (temp != 0) {
             // Got response, update device status
             cur_temp = temp;
+
+            // propagate temperature to AP_VideoTX
+            AP_VideoTX& vtx = AP::vtx();
+            vtx.set_temperature((float) cur_temp);
+
             return 's';
         }
         break;
