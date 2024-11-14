@@ -413,18 +413,26 @@ bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_
 }
 
 // Register a custom mode with given number and names
-bool Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name)
+AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name)
 {
-    // Numbers over 100 are reserved for custom modes
-    if (num < 100) {
-        return false;
-    }
-
     const Mode::Number number = (Mode::Number)num;
+
+    // See if this mode has been registered already, if it has return the state for it
+    // This allows scripting restarts
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if (mode_guided_custom[i] == nullptr) {
+            break;
+        }
+        if ((mode_guided_custom[i]->mode_number() == number) &&
+            (strcmp(mode_guided_custom[i]->name(), full_name) == 0) &&
+            (strncmp(mode_guided_custom[i]->name4(), short_name, 4) == 0)) {
+            return &mode_guided_custom[i]->state;
+        }
+    }
 
     // Number already registered to existing mode
     if (mode_from_mode_num(number) != nullptr) {
-        return false;
+        return nullptr;
     }
 
     // Find free slot
@@ -436,12 +444,16 @@ bool Copter::register_custom_mode(const uint8_t num, const char* full_name, cons
             if ((full_name_copy != nullptr) && (short_name_copy != nullptr)) {
                 mode_guided_custom[i] = NEW_NOTHROW ModeGuidedCustom(number, full_name_copy, short_name_copy);
             }
-            return mode_guided_custom[i] != nullptr;
+            if (mode_guided_custom[i] == nullptr) {
+                // Allocation failure
+                return nullptr;
+            }
+            return &mode_guided_custom[i]->state;
         }
     }
 
     // No free slots
-    return false;
+    return nullptr;
 }
 #endif // MODE_GUIDED_ENABLED
 

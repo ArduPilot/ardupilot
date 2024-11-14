@@ -1208,11 +1208,15 @@ public:
     // constructor registers custom number and names
     ModeGuidedCustom(const Number _number, const char* _full_name, const char* _short_name);
 
+    bool init(bool ignore_checks) override;
+
     Number mode_number() const override { return number; }
 
-protected:
     const char *name() const override { return full_name; }
     const char *name4() const override { return short_name; }
+
+    // State object which can be edited by scripting
+    AP_Vehicle::custom_mode_state state;
 
 private:
     const Number number;
