@@ -1686,6 +1686,14 @@ function mavlink_video_stream_information_t_ud:uri(index) end
 ---@param value integer
 function mavlink_video_stream_information_t_ud:uri(index, value) end
 
+-- get field
+---@return integer
+function mavlink_video_stream_information_t_ud:encoding() end
+
+-- set field
+---@param value integer
+function mavlink_video_stream_information_t_ud:encoding(value) end
+
 -- Populate the fields of the VIDEO_STREAM_INFORMATION message
 ---@param instance integer
 ---@param stream_info mavlink_video_stream_information_t_ud
