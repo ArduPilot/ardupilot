@@ -2830,8 +2830,20 @@ function vehicle:set_crosstrack_start(new_start_location) end
 ---@param number integer -- mode number to use, should be over 100
 ---@param full_name string -- Full mode name
 ---@param short_name string -- Short mode name upto 4 characters
----@return boolean -- true if successful
+---@return AP_Vehicle__custom_mode_state_ud|nil -- Returns custom mode state which allows customisation of behavior, nil if mode register fails
 function vehicle:register_custom_mode(number, full_name, short_name) end
+
+-- Custom mode state, allows customisation of mode behavior
+---@class (exact) AP_Vehicle__custom_mode_state_ud
+local AP_Vehicle__custom_mode_state_ud = {}
+
+-- get allow_entry, if true the vehicle is allowed to enter this custom mode
+---@return boolean
+function AP_Vehicle__custom_mode_state_ud:allow_entry() end
+
+-- set allow_entry, if true the vehicle is allowed to enter this custom mode
+---@param value boolean
+function AP_Vehicle__custom_mode_state_ud:allow_entry(value) end
 
 -- desc
 onvif = {}

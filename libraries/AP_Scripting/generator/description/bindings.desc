@@ -309,6 +309,9 @@ singleton AP_ONVIF method set_absolutemove boolean float'skip_check float'skip_c
 singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
 singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 
+ap_object AP_Vehicle::custom_mode_state depends (!defined(HAL_BUILD_AP_PERIPH))
+ap_object AP_Vehicle::custom_mode_state field allow_entry boolean read write
+
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle depends (!defined(HAL_BUILD_AP_PERIPH))
 singleton AP_Vehicle rename vehicle
@@ -352,7 +355,7 @@ singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
-singleton AP_Vehicle method register_custom_mode boolean uint8_t'skip_check string string
+singleton AP_Vehicle method register_custom_mode AP_Vehicle::custom_mode_state uint8_t'skip_check string string
 
 
 include AP_SerialLED/AP_SerialLED.h
