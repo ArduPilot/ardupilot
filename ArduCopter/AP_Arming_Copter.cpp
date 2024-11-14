@@ -491,20 +491,20 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
         ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
-        if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF compass variance");
-            return false;
-        }
-        if (pos_variance >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF position variance");
-            return false;
-        }
-        if (vel_variance >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF velocity variance");
-            return false;
-        }
-        if (hgt_variance >= copter.g.fs_ekf_thresh) {
-            check_failed(display_failure, "EKF height variance");
+        const struct {
+            const char *name;
+            float value;
+        } variances[] {
+            { "compass", mag_variance.length() },
+            { "position", pos_variance },
+            { "velocity", vel_variance },
+            { "height", hgt_variance },
+        };
+        for (auto &variance : variances) {
+            if (variance.value < copter.g.fs_ekf_thresh) {
+                continue;
+            }
+            check_failed(display_failure, "EKF %s variance", variance.name);
             return false;
         }
     }
