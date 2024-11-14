@@ -68,7 +68,7 @@
 // ArduPilot 4.7 stops compiling them in by default
 // ArduPilot 4.8 removes the code entirely
 #ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
-#define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED HAL_GCS_ENABLED && HAL_RALLY_ENABLED
+#define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
 #endif
 
 // CODE_REMOVAL
