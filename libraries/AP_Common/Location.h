@@ -35,6 +35,10 @@ public:
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
+    // set_alt_m - set altitude in metres
+    void set_alt_m(float alt_m, AltFrame frame) {
+        set_alt_cm(alt_m*100, frame);
+    }
 
     // get altitude (in cm) in the desired frame
     // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:

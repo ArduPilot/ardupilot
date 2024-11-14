@@ -258,7 +258,6 @@ class TestBuildOptions(object):
             'AP_COMPASS_MAG3110_ENABLED',  # must be in hwdef, not probed
             'AP_COMPASS_MMC5XX3_ENABLED',  # must be in hwdef, not probed
             'AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED',  # completely elided
-            'AP_MAVLINK_MSG_HIL_GPS_ENABLED',  # no symbol available
             'AP_MAVLINK_MSG_RELAY_STATUS_ENABLED',  # no symbol available
             'AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED',  # no symbol available
             'HAL_MSP_SENSORS_ENABLED',  # no symbol available
@@ -287,6 +286,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_WINCH_DAIWA_ENABLED')
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
+            feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
 
         if target.lower() != "plane":
             # only on Plane:

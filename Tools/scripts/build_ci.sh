@@ -56,7 +56,7 @@ function install_mavproxy() {
         popd
         mavproxy_installed=1
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
-        python -m pip uninstall -y pymavlink
+        python3 -m pip uninstall -y pymavlink
     fi
 }
 
@@ -473,7 +473,11 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "astyle-cleanliness" ]; then
         echo "Checking AStyle code cleanliness"
+
         ./Tools/scripts/run_astyle.py --dry-run
+        if [ $? -ne 0 ]; then
+            echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
+        fi
         continue
     fi
 
@@ -512,7 +516,14 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "param_parse" ]; then
         for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp AP_Periph; do
-            python Tools/autotest/param_metadata/param_parse.py --vehicle $v
+            python3 Tools/autotest/param_metadata/param_parse.py --vehicle $v
+        done
+        continue
+    fi
+
+    if [ "$t" == "logger_metadata" ]; then
+        for v in Rover Tracker Copter Plane Sub Blimp; do
+            python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
         continue
     fi

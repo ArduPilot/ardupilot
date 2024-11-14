@@ -135,7 +135,7 @@ void Copter::auto_disarm_check()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Copter::motors_output()
 {
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
     // OBC rules
@@ -156,8 +156,10 @@ void Copter::motors_output()
     // output any servo channels
     SRV_Channels::calc_pwm();
 
+    auto &srv = AP::srv();
+
     // cork now, so that all channel outputs happen at once
-    SRV_Channels::cork();
+    srv.cork();
 
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
@@ -181,7 +183,7 @@ void Copter::motors_output()
     }
 
     // push all channels
-    SRV_Channels::push();
+    srv.push();
 }
 
 // check for pilot stick input to trigger lost vehicle alarm

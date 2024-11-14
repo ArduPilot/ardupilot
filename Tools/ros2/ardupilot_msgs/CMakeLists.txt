@@ -14,6 +14,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/GlobalPosition.msg"
+  "msg/Status.msg"
   "srv/ArmMotors.srv"
   "srv/ModeSwitch.srv"
   DEPENDENCIES geometry_msgs std_msgs

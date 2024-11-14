@@ -620,13 +620,14 @@ def _select_programs_from_group(bld):
         else:
             groups = ['bin']
 
+    possible_groups = list(_grouped_programs.keys())
+    possible_groups.remove('bin')       # Remove `bin` so as not to duplicate all items in bin
     if 'all' in groups:
-        groups = list(_grouped_programs.keys())
-        groups.remove('bin')       # Remove `bin` so as not to duplicate all items in bin
+        groups = possible_groups
 
     for group in groups:
         if group not in _grouped_programs:
-            bld.fatal('Group %s not found' % group)
+            bld.fatal(f'Group {group} not found, possible groups: {possible_groups}')
 
         target_names = _grouped_programs[group].keys()
 

@@ -1921,14 +1921,6 @@ RC_Channel::AuxSwitchPos RC_Channel::get_aux_switch_pos() const
     return position;
 }
 
-// return switch position value as LOW, MIDDLE, HIGH
-// if reading the switch fails then it returns LOW
-RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(const uint8_t rcmapchan) const
-{
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
-    return chan != nullptr ? chan->get_aux_switch_pos() : RC_Channel::AuxSwitchPos::LOW;
-}
-
 RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC option)
 {
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {

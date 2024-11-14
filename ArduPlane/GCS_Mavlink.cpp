@@ -630,10 +630,16 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 #endif
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
     MSG_GPS_RAW,
+#endif
+#if AP_GPS_GPS_RTK_SENDING_ENABLED
     MSG_GPS_RTK,
-#if GPS_MAX_RECEIVERS > 1
+#endif
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
     MSG_GPS2_RAW,
+#endif
+#if AP_GPS_GPS2_RTK_SENDING_ENABLED
     MSG_GPS2_RTK,
 #endif
     MSG_NAV_CONTROLLER_OUTPUT,
@@ -710,7 +716,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_VIBRATION,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM
+    MSG_NEXT_PARAM,
+    MSG_AVAILABLE_MODES
 };
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
@@ -863,6 +870,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
         plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+        plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+#endif
 
         // add home alt if needed
         if (requested_position.relative_alt) {
@@ -973,14 +983,20 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
         float new_target_heading = radians(wrap_180(packet.param2));
 
-        // course over ground
-        if ( int(packet.param1) == HEADING_TYPE_COURSE_OVER_GROUND) { // compare as nearest int
+        switch(HEADING_TYPE(packet.param1)) {
+        case HEADING_TYPE_COURSE_OVER_GROUND:
+            // course over ground
             plane.guided_state.target_heading_type = GUIDED_HEADING_COG;
             plane.prev_WP_loc = plane.current_loc;
-        // normal vehicle heading
-        } else if (int(packet.param1) == HEADING_TYPE_HEADING) { // compare as nearest int
+            break;
+        case HEADING_TYPE_HEADING:
+            // normal vehicle heading
             plane.guided_state.target_heading_type = GUIDED_HEADING_HEADING;
-        } else {
+            break;
+        case HEADING_TYPE_DEFAULT:
+            plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
+            return MAV_RESULT_ACCEPTED;
+        default:
             //  MAV_RESULT_DENIED  means Command is invalid (is supported but has invalid parameters).
             return MAV_RESULT_DENIED;
         }
@@ -1372,43 +1388,27 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
 
         mavlink_set_position_target_global_int_t pos_target;
         mavlink_msg_set_position_target_global_int_decode(&msg, &pos_target);
+
+        Location::AltFrame frame;
+        if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)pos_target.coordinate_frame, frame)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+            // Even though other parts of the command may be valid, reject the whole thing.
+            return;
+        }
+
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
         const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
             
-        bool msg_valid = true;
         AP_Mission::Mission_Command cmd = {0};
         
         if (pos_target.type_mask & alt_mask)
         {
-            cmd.content.location.alt = pos_target.alt * 100;
-            cmd.content.location.relative_alt = false;
-            cmd.content.location.terrain_alt = false;
-            switch (pos_target.coordinate_frame) 
-            {
-                case MAV_FRAME_GLOBAL:
-                case MAV_FRAME_GLOBAL_INT:
-                    break; //default to MSL altitude
-                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
-                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-                    cmd.content.location.relative_alt = true;
-                    break;
-                case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-                case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-                    cmd.content.location.relative_alt = true;
-                    cmd.content.location.terrain_alt = true;
-                    break;
-                default:
-                    gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
-                    msg_valid = false;
-                    break;
-            }    
-
-            if (msg_valid) {
-                handle_change_alt_request(cmd);
-            }
-        } // end if alt_mask       
+            const int32_t alt_cm = pos_target.alt * 100;
+            cmd.content.location.set_alt_cm(alt_cm, frame);
+            handle_change_alt_request(cmd);
+        }
     }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)
@@ -1546,3 +1546,99 @@ MAV_LANDED_STATE GCS_MAVLINK_Plane::landed_state() const
     return MAV_LANDED_STATE_ON_GROUND;
 }
 
+// Send the mode with the given index (not mode number!) return the total number of modes
+// Index starts at 1
+uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
+{
+    // Fixed wing modes
+    const Mode* fw_modes[] {
+        &plane.mode_manual,
+        &plane.mode_circle,
+        &plane.mode_stabilize,
+        &plane.mode_training,
+        &plane.mode_acro,
+        &plane.mode_fbwa,
+        &plane.mode_fbwb,
+        &plane.mode_cruise,
+        &plane.mode_autotune,
+        &plane.mode_auto,
+        &plane.mode_rtl,
+        &plane.mode_loiter,
+#if HAL_ADSB_ENABLED
+        &plane.mode_avoidADSB,
+#endif
+        &plane.mode_guided,
+        &plane.mode_initializing,
+        &plane.mode_takeoff,
+#if HAL_SOARING_ENABLED
+        &plane.mode_thermal,
+#endif
+    };
+
+    const uint8_t fw_mode_count = ARRAY_SIZE(fw_modes);
+
+    // Fixedwing modes are always present
+    uint8_t mode_count = fw_mode_count;
+
+#if HAL_QUADPLANE_ENABLED
+    // Quadplane modes
+    const Mode* q_modes[] {
+        &plane.mode_qstabilize,
+        &plane.mode_qhover,
+        &plane.mode_qloiter,
+        &plane.mode_qland,
+        &plane.mode_qrtl,
+        &plane.mode_qacro,
+        &plane.mode_loiter_qland,
+#if QAUTOTUNE_ENABLED
+        &plane.mode_qautotune,
+#endif
+    };
+
+    // Quadplane modes must be enabled
+    if (plane.quadplane.available()) {
+        mode_count += ARRAY_SIZE(q_modes);
+    }
+#endif // HAL_QUADPLANE_ENABLED
+
+
+    // Convert to zero indexed
+    const uint8_t index_zero = index - 1;
+    if (index_zero >= mode_count) {
+        // Mode does not exist!?
+        return mode_count;
+    }
+
+    // Ask the mode for its name and number
+    const char* name;
+    uint8_t mode_number;
+
+    if (index_zero < fw_mode_count) {
+        // A fixedwing mode
+        name = fw_modes[index_zero]->name();
+        mode_number = (uint8_t)fw_modes[index_zero]->mode_number();
+
+    } else {
+#if HAL_QUADPLANE_ENABLED
+        // A Quadplane mode
+        const uint8_t q_index = index_zero - fw_mode_count;
+        name = q_modes[q_index]->name();
+        mode_number = (uint8_t)q_modes[q_index]->mode_number();
+#else
+        // Should not endup here
+        return mode_count;
+#endif
+    }
+
+    mavlink_msg_available_modes_send(
+        chan,
+        mode_count,
+        index,
+        MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
+        mode_number,
+        0, // MAV_MODE_PROPERTY bitmask
+        name
+    );
+
+    return mode_count;
+}

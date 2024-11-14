@@ -232,7 +232,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_ADSB_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100, 138),
 #endif
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,          10,    100, 141),
 #endif
 #if AP_TERRAIN_AVAILABLE
@@ -688,12 +688,29 @@ void Copter::three_hz_loop()
     low_alt_avoidance();
 }
 
+// ap_value calculates a 32-bit bitmask representing various pieces of
+// state about the Copter.  It replaces a global variable which was
+// used to track this state.
+uint32_t Copter::ap_value() const
+{
+    uint32_t ret = 0;
+
+    const bool *b = (const bool *)&ap;
+    for (uint8_t i=0; i<sizeof(ap); i++) {
+        if (b[i]) {
+            ret |= 1U<<i;
+        }
+    }
+
+    return ret;
+}
+
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ANY)) {
-        Log_Write_Data(LogDataID::AP_STATE, ap.value);
+        Log_Write_Data(LogDataID::AP_STATE, ap_value());
     }
 #endif
 
@@ -710,7 +727,7 @@ void Copter::one_hz_loop()
     }
 
     // update assigned functions and enable auxiliary servos
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
 #if HAL_LOGGING_ENABLED
     // log terrain data

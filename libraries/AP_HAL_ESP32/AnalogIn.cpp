@@ -141,8 +141,8 @@ void adc_calibration_deinit(adc_cali_handle_t handle)
 
 //ardupin is the ardupilot assigned number, starting from 1-8(max)
 AnalogSource::AnalogSource(int16_t ardupin, adc_channel_t adc_channel, float scaler, float initial_value) :
-    _ardupin(ardupin),
     _adc_channel(adc_channel),
+    _ardupin(ardupin),
     _scaler(scaler),
     _value(initial_value),
     _latest_value(initial_value),
