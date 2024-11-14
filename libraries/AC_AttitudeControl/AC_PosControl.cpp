@@ -643,6 +643,14 @@ bool AC_PosControl::is_active_xy() const
     return dt_ticks <= 1;
 }
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~is_active_Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+bool AC_PosControl::is_active_Rd() const
+{
+    const uint32_t dt_ticks_Rd = AP::scheduler().ticks32() - _last_update_Rd_ticks;  //时间间隔dt_ticks计算
+    return dt_ticks_Rd <= 1;
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+
 /// update_xy_controller - runs the horizontal position controller correcting position, velocity and acceleration errors.
 ///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
 ///     Desired velocity and accelerations are added to these corrections as they are calculated
@@ -732,8 +740,34 @@ void AC_PosControl::update_xy_controller()
     // reset the disturbance from system ID mode to zero //扰动复位
     _disturb_pos.zero();
     _disturb_vel.zero();
+    
 }
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望旋转矩阵Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void AC_PosControl::init_Rd()
+{
+
+ _last_update_Rd_ticks = AP::scheduler().ticks32();  //记录时间戳
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~期望旋转矩阵Rd更新主循环~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void AC_PosControl::update_Rd()
+{
+ // check for ekf xy position reset // 卡尔曼滤波器 EKF XY 位置重置检查
+   handle_ekf_xy_reset();
+// Check for position control time out
+    if (!is_active_xy()) {                //如果Rd update不活跃
+        init_Rd();                        //重新初始化Rd update
+    }
+ _last_update_Rd_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
+//memo接下来计算b3=fd/||fd||
+
+   float test_msg = 1719;
+   current_DIYwrench = get_DIYwrench(test_msg); //用于ROS2推力话题 
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ///
 /// Vertical position controller
@@ -992,11 +1026,11 @@ bool AC_PosControl::is_active_z() const
 
  ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DIYWrench get_DIYwrench(Vector3f f_d)  //记得修改这里的参数后要在.h文件中也修改一下
+DIYWrench get_DIYwrench(float test_msg)  //记得修改这里的参数后要在.h文件中也修改一下
 {
     
 // 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(f_d.x, f_d.y, f_d.z); // 假设的力值
+Vector3f force(test_msg, 2.0f, 3.0f); // 假设的力值
 
 Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
   
@@ -1051,9 +1085,9 @@ void AC_PosControl::update_z_controller()
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     const Vector3f &pos_meas = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
-    _pos_desired_3f.x = _pos_desired.x;
-    _pos_desired_3f.y = _pos_desired.y;
-    _pos_desired_3f.z = _pos_desired.z;
+    _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
+    _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f
+    _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f
     Vector3f f_d;
     f_d = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1109,7 +1143,7 @@ void AC_PosControl::update_z_controller()
         _limit_vector.z = 0.0f; //如果油门既不受上限也不受下限的限制，则限制向量为 `0.0`，表示没有垂直方向上的限制。
     }
 
-     current_DIYwrench = get_DIYwrench(f_d); //用于ROS2推力话题
+     //current_DIYwrench = get_DIYwrench(f_d); //用于ROS2推力话题
 }
 
 

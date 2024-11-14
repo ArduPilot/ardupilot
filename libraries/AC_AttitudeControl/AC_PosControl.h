@@ -121,6 +121,10 @@ public:
     ///     This function is private and contains all the shared xy axis initialisation functions
     void init_xy_controller();
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望旋转矩阵Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    void init_Rd();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     /// input_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
     ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_xy.
@@ -145,6 +149,10 @@ public:
     // is_active_xy - returns true if the xy position controller has been run in the previous 5 loop times
     bool is_active_xy() const;
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~is_active_Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    bool is_active_Rd() const;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
+
     /// stop_pos_xy_stabilisation - sets the target to the current position to remove any position corrections from the system
     void stop_pos_xy_stabilisation();
 
@@ -156,6 +164,10 @@ public:
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_xy_controller();
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~期望旋转矩阵Rd更新函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    void update_Rd();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ///
     /// Vertical position controller
@@ -261,13 +273,13 @@ public:
     /// Position
 
     /// get_pos_target_cm - returns the position target, frame NEU in cm relative to the EKF origin
-    const Vector3p& get_pos_target_cm() const { return _pos_target; }
+    const Vector3p& get_pos_target_cm() const { return _pos_target; }  
 
     /// set_pos_desired_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin //AC_WPNav模块通过这个set访问器，设置期望位置
     void set_pos_desired_xy_cm(const Vector2f& pos) { _pos_desired.xy() = pos.topostype(); }
 
     /// get_pos_desired_cm - returns the position desired, frame NEU in cm relative to the EKF origin
-    const Vector3p& get_pos_desired_cm() const { return _pos_desired; }
+    const Vector3p& get_pos_desired_cm() const { return _pos_desired; } //moed_guided.cpp通过这里的getter，传输期望位置信息到poscontrol
 
     /// get_pos_target_z_cm - get target altitude (in cm above the EKF origin)
     float get_pos_target_z_cm() const { return _pos_target.z; }
@@ -541,6 +553,7 @@ protected:
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
     uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
+    uint32_t    _last_update_Rd_ticks;  //新建用于记录Rd_update的时间戳
     uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
@@ -626,7 +639,7 @@ DIYWrench() : force(), torque() {}
 DIYWrench(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
 };
 
-extern DIYWrench get_DIYwrench(Vector3f f_d);
+extern DIYWrench get_DIYwrench(float test_msg);
 extern DIYWrench current_DIYwrench;
 extern DIYWrench get_current_DIYwrench();
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
