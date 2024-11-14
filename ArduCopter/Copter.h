@@ -685,7 +685,7 @@ private:
     bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) override;
 
     // Register a custom mode with given number and names
-    bool register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) override;
+    AP_Vehicle::custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) override;
 #endif
 #if MODE_CIRCLE_ENABLED
     bool get_circle_radius(float &radius_m) override;
@@ -1033,7 +1033,7 @@ private:
     ModeGuided mode_guided;
 #if AP_SCRIPTING_ENABLED
     // Custom modes registered at runtime
-    Mode *mode_guided_custom[5];
+    ModeGuidedCustom *mode_guided_custom[5];
 #endif
 #endif
     ModeLand mode_land;
