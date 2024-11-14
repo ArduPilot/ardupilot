@@ -826,6 +826,7 @@ userdata mavlink_video_stream_information_t field count uint8_t'skip_check read 
 userdata mavlink_video_stream_information_t field type uint8_t'skip_check read write
 userdata mavlink_video_stream_information_t field name'array 32 uint8_t'skip_check read write
 userdata mavlink_video_stream_information_t field uri'array 160 uint8_t'skip_check read write
+userdata mavlink_video_stream_information_t field encoding uint8_t'skip_check read write
 
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED && (AP_CAMERA_SCRIPTING_ENABLED == 1)
