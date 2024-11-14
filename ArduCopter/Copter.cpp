@@ -448,6 +448,10 @@ AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, c
                 // Allocation failure
                 return nullptr;
             }
+
+            // Registration sucsessful, notify the GCS that it should re-request the avalable modes
+            gcs().available_modes_changed();
+
             return &mode_guided_custom[i]->state;
         }
     }
