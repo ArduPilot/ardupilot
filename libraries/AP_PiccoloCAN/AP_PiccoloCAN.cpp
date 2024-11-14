@@ -680,6 +680,8 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
     // Check if a motor function is assigned for this motor channel
     SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
 
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
+    
     if (SRV_Channels::function_assigned(motor_function) || function == SRV_Channel::k_throttle || function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight) {
         return true;
     }
