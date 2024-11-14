@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
- process a *.h.in file to produce a *.h file
+ process config.h.in file to produce a <uxr/client/config.h> file
 '''
 
 # TODO move to AP_DDS_Client/tools

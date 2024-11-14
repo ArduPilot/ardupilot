@@ -40,6 +40,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Declination',
     'AP_GPS',
     'AP_GSOF',
+    # 'AP_DDS',
     'AP_HAL',
     'AP_HAL_Empty',
     'AP_InertialSensor',
@@ -147,7 +148,7 @@ def get_legacy_defines(sketch_name, bld):
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
+    # 'AP_DDS',
 ]
 
 
@@ -249,6 +250,7 @@ def ap_get_all_libraries(bld):
         libraries.append(name)
     libraries.extend(['AP_HAL', 'AP_HAL_Empty'])
     libraries.append('AP_PiccoloCAN/piccolo_protocol')
+    # print("LIBS:", libraries)
     return libraries
 
 @conf
@@ -258,6 +260,7 @@ def ap_common_vehicle_libraries(bld):
     if bld.env.with_can or bld.env.HAL_NUM_CAN_IFACES:
         libraries.extend(COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES)
 
+    # raise Exception("FOO")
     return libraries
 
 _grouped_programs = {}
