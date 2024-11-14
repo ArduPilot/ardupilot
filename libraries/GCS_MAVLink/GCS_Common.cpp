@@ -1153,6 +1153,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AIRSPEED, MSG_AIRSPEED},
 #endif
         { MAVLINK_MSG_ID_AVAILABLE_MODES, MSG_AVAILABLE_MODES},
+        { MAVLINK_MSG_ID_AVAILABLE_MODES_MONITOR, MSG_AVAILABLE_MODES_MONITOR},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -3210,6 +3211,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
         available_modes.should_send = true;
         available_modes.next_index = 1;
         available_modes.requested_index = (uint8_t)packet.param2;
+
+        // After the first request sequnece is streamed in the AVAILABLE_MODES_MONITOR message
+        // This allows the GCS to re-request modes if there is a change
+        set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
         break;
 
     default:
@@ -6137,6 +6142,18 @@ bool GCS_MAVLINK::send_available_modes()
     return true;
 }
 
+bool GCS_MAVLINK::send_available_mode_monitor()
+{
+    CHECK_PAYLOAD_SIZE(AVAILABLE_MODES_MONITOR);
+
+    mavlink_msg_available_modes_monitor_send(
+        chan,
+        gcs().get_available_modes_sequence()
+    );
+
+    return true;
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -6569,6 +6586,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_AVAILABLE_MODES:
         ret = send_available_modes();
+        break;
+
+    case MSG_AVAILABLE_MODES_MONITOR:
+        ret = send_available_mode_monitor();
         break;
 
     default:
