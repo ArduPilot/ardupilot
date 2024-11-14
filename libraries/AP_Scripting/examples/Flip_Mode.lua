@@ -2,7 +2,7 @@
 local MODE_NUMBER = 100
 
 -- Register flip as mode 100
-assert(vehicle:register_custom_mode(MODE_NUMBER, "Flip", "FLIP"))
+local FLIP_MODE_STATE = assert(vehicle:register_custom_mode(MODE_NUMBER, "Flip 2", "FLI2"))
 
 -- Get input channels
 local THROTTLE_CHAN = math.floor(assert(param:get("RCMAP_THROTTLE")))
@@ -217,6 +217,12 @@ local function exit()
 end
 
 local function update()
+
+    -- Only allow entry into flip mode if armed and flying
+    local armed = arming:is_armed()
+    local flying = vehicle:get_likely_flying()
+    FLIP_MODE_STATE:allow_entry(armed and flying)
+
     local mode = vehicle:get_mode()
     if mode == MODE_NUMBER then
         if last_mode_number ~= MODE_NUMBER then
