@@ -29,7 +29,10 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc99-designator"
 #include "spm_srxl.h"
+#pragma clang diagnostic pop
 
 extern const AP_HAL::HAL& hal;
 //#define SRXL2_DEBUG

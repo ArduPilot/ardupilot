@@ -29,7 +29,10 @@
 // for video TX configuration:
 #if AP_VIDEOTX_ENABLED
 #include <AP_VideoTX/AP_VideoTX.h>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc99-designator"
 #include "spm_srxl.h"
+#pragma clang diagnostic pop
 #endif
 
 
