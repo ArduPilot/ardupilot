@@ -1211,7 +1211,7 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_global_int(const mav
                 return;
             }
             Vector3f pos_neu_cm;
-            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 // input is not valid so stop
                 copter.mode_guided.init(true);
                 return;
