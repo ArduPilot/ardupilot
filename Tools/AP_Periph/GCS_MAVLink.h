@@ -41,6 +41,7 @@ protected:
 
     void send_nav_controller_output() const override {};
     void send_pid_tuning() override {};
+    virtual uint8_t send_available_mode(uint8_t index) const override { return 0; }
 };
 
 /*
