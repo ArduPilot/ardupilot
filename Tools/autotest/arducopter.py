@@ -9832,28 +9832,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def GPSForYaw(self):
         '''Moving baseline GPS yaw'''
-        self.context_push()
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.reboot_sitl()
-        ex = None
-        try:
-            self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
-            m = self.assert_receive_message("GPS2_RAW")
-            self.progress(self.dump_message_verbose(m))
-            want = 27000
-            if abs(m.yaw - want) > 500:
-                raise NotAchievedException("Expected to get GPS-from-yaw (want %f got %f)" % (want, m.yaw))
-            self.wait_ready_to_arm()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
 
-        self.context_pop()
-
-        self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        m = self.assert_receive_message("GPS2_RAW", very_verbose=True)
+        want = 27000
+        if abs(m.yaw - want) > 500:
+            raise NotAchievedException("Expected to get GPS-from-yaw (want %f got %f)" % (want, m.yaw))
+        self.wait_ready_to_arm()
 
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''

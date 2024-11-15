@@ -243,6 +243,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board FreeflyRTK
         $waf clean
         $waf AP_Periph
+        echo "Building CubeNode-ETH peripheral fw"
+        $waf configure --board CubeNode-ETH
+        $waf clean
+        $waf AP_Periph
         continue
     fi
 
