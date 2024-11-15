@@ -24,9 +24,9 @@
 
 #pragma once
 
-#include "AP_Mount_Backend_Serial.h"
-
+#include "AP_Mount_config.h"
 #if HAL_MOUNT_TUSUAV_ENABLED
+#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -44,9 +44,6 @@ public:
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Tusuav);
-
-    // // init - performs any required initialisation for this instance
-    // void init() override;
 
     // update mount position - should be called periodically
     void update() override;
@@ -98,6 +95,7 @@ protected:
 
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
+
 private:
 
     // send text prefix string to reduce flash cost
@@ -205,7 +203,7 @@ private:
     struct ParsedRxMsg {
         struct FrameType msg;      // the parsed message 
         ParseState state;          // the current state of the message parser
-    }_parsed_msg;
+    } _parsed_msg;
 
     union PodCtrlUnion {
         struct PodCtrlBitField {
@@ -292,7 +290,7 @@ private:
                 uint8_t no_define1:1;
             } bits;
             uint8_t all;
-        }fc_status;
+        } fc_status;
         float fc_gyro[3];             // fc body frame NED angular speed in degrees/sec
         float fc_acc[3];              // fc body frame NED acceleration in G (9.8m/s^2)
         float vel[3];                 // fc earth coordinate NED velocity in m/s
@@ -301,7 +299,6 @@ private:
         float altitude;               
         float longitude;              
         float latitude;               
-
     };
 
     //GimbalSubCmd_PlaneSensor_Attitude data frame
@@ -316,9 +313,9 @@ private:
         }time;
 
         struct PACKED LocType {
-            int32_t lat;               // latitude
+            int32_t lat;               // latitude *1e7
             int32_t lng;               // longitude
-            int32_t altitude_cm;       // altitude
+            int32_t altitude_cm;       // altitude (cm)
             uint32_t time_of_week_ms;  // GPS time of the week
         } loc;
 
@@ -355,7 +352,7 @@ private:
 
     // send packet to gimbal
     // returns true on success, false if outgoing serial buffer is full
-    bool send_packet(struct FrameType frame);
+    bool send_packet(const FrameType& frame);
 
     // send handshake, gimbal will respond with T1_F1_B1_D1 packet that includes current angles
     void send_time_sync();
