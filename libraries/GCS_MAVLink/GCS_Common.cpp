@@ -3036,7 +3036,7 @@ void GCS_MAVLINK::send_home_position() const
 
     // get home position from origin
     Vector3f home_pos_ned;
-    if (home.get_vector_from_origin_NEU(home_pos_ned)) {
+    if (home.get_vector_from_origin_NEU_cm(home_pos_ned)) {
         // convert NEU in cm to NED in meters
         home_pos_ned *= 0.01f;
         home_pos_ned.z *= -1;
