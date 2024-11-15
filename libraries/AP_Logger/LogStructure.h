@@ -1270,7 +1270,7 @@ LOG_STRUCTURE_FROM_CAMERA \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
     { LOG_LRD1_MSG, sizeof(log_LRD1), \
-      "LRD1", "QCCCCBBB", "TimeUS,Dis24,Dis60,DisInt,DisLpf,Snr24,Snr60,SnrInt", "smmm---", "FBBB---", true }, \
+      "LRD1", "QCCCCBBB", "TimeUS,Dis24,Dis60,DisInt,DisLpf,Snr24,Snr60,SnrInt", "smmmm---", "FHHHH---", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
