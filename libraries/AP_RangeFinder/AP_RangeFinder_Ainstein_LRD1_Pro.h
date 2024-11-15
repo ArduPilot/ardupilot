@@ -93,7 +93,7 @@ private:
     int8_t signal_quality_pct = SIGNAL_QUALITY_UNKNOWN;
 
     // Logging Function
-    void Log_LRD1_Pro(uint16_t s_24, uint16_t s_60, uint16_t s_int, uint8_t snr_24, uint8_t snr_60, uint8_t snr_int) const;
+    void Log_LRD1_Pro(uint16_t s_24, uint16_t s_60, uint16_t s_int, uint16_t s_lpf, uint8_t snr_24, uint8_t snr_60, uint8_t snr_int) const;
 
     // Validating if the reading is good
     bool check_radar_reading(float &reading_m);
