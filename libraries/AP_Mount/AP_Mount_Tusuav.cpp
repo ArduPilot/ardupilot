@@ -503,7 +503,7 @@ void AP_Mount_Tusuav::send_time_sync()
 {
     // get current location
     Location loc;
-    int32_t alt_amsl_cm;
+    int32_t alt_amsl_cm = 0;
     if (!AP::ahrs().get_location(loc) || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
         return;      
     }
@@ -691,7 +691,7 @@ bool AP_Mount_Tusuav::send_m_ahrs()
 {
     // get current location
     Location loc;
-    int32_t alt_amsl_cm;
+    int32_t alt_amsl_cm = 0;
     if (!AP::ahrs().get_location(loc) || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
         debug("tus ahrs fault:%d %d %d",(int)loc.lat,(int)loc.lng,(int)loc.alt); 
 
