@@ -1,22 +1,24 @@
 # hw definition file for processing by chibios_pins.py
 
-# Inferno-PMU Bootloader
+# CSKY-PMU Bootloader
 
 # MCU class and specific type
 MCU STM32F4xx STM32F412Rx
 
+# bootloader loads at start of flash
 FLASH_RESERVE_START_KB 0
-# two sectors for bootloader, two for storage
+
+# location of application code
 FLASH_BOOTLOADER_LOAD_KB 64
 
 # board ID for firmware load
 APJ_BOARD_ID 1001
 
-# setup build for a peripheral firmware
-env AP_PERIPH 1
-
 # crystal frequency
 OSCILLATOR_HZ 8000000
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
 
 define CH_CFG_ST_FREQUENCY 1000000
 
@@ -29,7 +31,7 @@ STDOUT_BAUDRATE 57600
 # order of UARTs
 SERIAL_ORDER
 
-PB12 LED_BOOTLOADER OUTPUT LOW
+PB14 LED_BOOTLOADER OUTPUT HIGH
 define HAL_LED_ON 1
 
 # USART1
@@ -64,7 +66,3 @@ define BOOTLOADER_BAUDRATE 57600
 
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
-
-# Add CS pins to ensure they are high in bootloader
-PA4 MAG_CS CS
-PA10 MS5611_CS CS
