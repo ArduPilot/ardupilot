@@ -196,18 +196,18 @@ bool AP_RangeFinder_Ainstein_LRD1_Pro::get_reading(float &reading_m)
                 state.status = RangeFinder::Status::NoData;
             }
         }
-            /* Adding a check to ignore sudden jumps in height from Radar*/
+        /* Adding a check to ignore sudden jumps in height from Radar*/
         else if (state.status == RangeFinder::Status::Good &&
-                   (reading_m - current_dist_reading_m > CHANGE_HEIGHT_THRESHOLD ||
+                (reading_m - current_dist_reading_m > CHANGE_HEIGHT_THRESHOLD ||
                  reading_m - current_dist_reading_m < -CHANGE_HEIGHT_THRESHOLD)) {
             state.status = RangeFinder::Status::NoData;
             has_data = false;
         }
-            else
-            {
+        else
+        {
             reading_m = get_avg_reading(reading_m);
             state.status = RangeFinder::Status::Good;
-            reading_lpf_cm = reading_m;
+            reading_lpf_cm = reading_m*100;
         }
 
         /* Logging Point Start */
