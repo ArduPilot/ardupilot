@@ -261,9 +261,9 @@ TEST(Location, Tests)
     }
 
     Vector2f test_vec2;
-    EXPECT_FALSE(test_home.get_vector_xy_from_origin_NE(test_vec2));
+    EXPECT_FALSE(test_home.get_vector_xy_from_origin_NE_cm(test_vec2));
     Vector3f test_vec3;
-    EXPECT_FALSE(test_home.get_vector_from_origin_NEU(test_vec3));
+    EXPECT_FALSE(test_home.get_vector_from_origin_NEU_cm(test_vec3));
 
     Location test_origin = test_home;
     test_origin.offset(2, 2);
@@ -286,7 +286,7 @@ TEST(Location, Tests)
 
     // can't create a Location using a vector here as there's no origin for the vector to be relative to:
     // const Location test_location_empty{test_vect, Location::AltFrame::ABOVE_HOME};
-    // EXPECT_FALSE(test_location_empty.get_vector_from_origin_NEU(test_vec3));
+    // EXPECT_FALSE(test_location_empty.get_vector_from_origin_NEU_cm(test_vec3));
 }
 
 TEST(Location, Distance)
