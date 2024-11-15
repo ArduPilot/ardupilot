@@ -212,7 +212,7 @@ void AP_Mount_Tusuav::read_incoming_packets()
     bool reset_parser = false;
 
     // process bytes received
-    for (auto i=0; i<nbytes; i++) {
+    for (auto i=0U; i<nbytes; i++) {
         uint8_t b;
         if (!_uart->read(b)) {
             break;
