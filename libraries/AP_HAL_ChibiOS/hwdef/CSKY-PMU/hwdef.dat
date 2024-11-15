@@ -16,9 +16,8 @@ APJ_BOARD_ID 1001
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
+# ChibiOS system timer
 STM32_ST_USE_TIMER 5
-
-# enable watchdog
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
