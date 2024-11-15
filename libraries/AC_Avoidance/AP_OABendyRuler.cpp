@@ -547,7 +547,8 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
 
     // convert start and end to offsets from EKF origin
     Vector2f start_NE, end_NE;
-    if (!start.get_vector_xy_from_origin_NE(start_NE) || !end.get_vector_xy_from_origin_NE(end_NE)) {
+    if (!start.get_vector_xy_from_origin_NE_cm(start_NE) ||
+        !end.get_vector_xy_from_origin_NE_cm(end_NE)) {
         return false;
     }
 
@@ -618,7 +619,8 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
 
     // convert start and end to offsets from EKF origin
     Vector2f start_NE, end_NE;
-    if (!start.get_vector_xy_from_origin_NE(start_NE) || !end.get_vector_xy_from_origin_NE(end_NE)) {
+    if (!start.get_vector_xy_from_origin_NE_cm(start_NE) ||
+        !end.get_vector_xy_from_origin_NE_cm(end_NE)) {
         return false;
     }
 
@@ -685,7 +687,8 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
 
     // convert start and end to offsets (in cm) from EKF origin
     Vector3f start_NEU,end_NEU;
-    if (!start.get_vector_from_origin_NEU(start_NEU) || !end.get_vector_from_origin_NEU(end_NEU)) {
+    if (!start.get_vector_from_origin_NEU_cm(start_NEU) ||
+        !end.get_vector_from_origin_NEU_cm(end_NEU)) {
         return false;
     }
     if (start_NEU == end_NEU) {
