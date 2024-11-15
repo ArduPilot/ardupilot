@@ -656,7 +656,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 int32_t(packet.alt*100),
                 frame,
             };
-            if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
                 break;
             }
         }

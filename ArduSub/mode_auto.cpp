@@ -401,7 +401,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the sub
         if (!sub.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU(sub.roi_WP)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
                 set_auto_yaw_mode(AUTO_YAW_ROI);
             }
         }
@@ -416,7 +416,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the sub at the location
-        if (roi_location.get_vector_from_origin_NEU(sub.roi_WP)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
