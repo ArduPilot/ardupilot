@@ -694,7 +694,7 @@ void QuaternionT<T>::zero(void)
 template <typename T>
 bool QuaternionT<T>::is_unit_length(void) const
 {
-    if (fabsF(length_squared() - 1) < 1E-3) {
+    if (std::abs(length_squared() - 1) < 1E-3) {
         return true;
     }
 
