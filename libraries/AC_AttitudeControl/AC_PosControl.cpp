@@ -643,11 +643,11 @@ bool AC_PosControl::is_active_xy() const
     return dt_ticks <= 1;
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~is_active_Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-bool AC_PosControl::is_active_Rd() const
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~is_active_Rc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+bool AC_PosControl::is_active_Rc() const
 {
-    const uint32_t dt_ticks_Rd = AP::scheduler().ticks32() - _last_update_Rd_ticks;  //时间间隔dt_ticks计算
-    return dt_ticks_Rd <= 1;
+    const uint32_t dt_ticks_Rc = AP::scheduler().ticks32() - _last_update_Rc_ticks;  //时间间隔dt_ticks计算
+    return dt_ticks_Rc <= 1;
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
 
@@ -743,29 +743,57 @@ void AC_PosControl::update_xy_controller()
     
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望旋转矩阵Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void AC_PosControl::init_Rd()
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望（解算）旋转矩阵Rc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void AC_PosControl::init_Rc()
 {
+       // 设置初始 解算体坐标系的各轴
+   _b_1c = Vector3f(1.0f, 0.0f, 0.0f);
+   _b_2c = Vector3f(0.0f, 1.0f, 0.0f); 
+   _b_3c = Vector3f(0.0f, 0.0f, 1.0f);
 
- _last_update_Rd_ticks = AP::scheduler().ticks32();  //记录时间戳
+   // 设置初始 解算旋转矩阵 _Rc 的各列
+    Matrix3f _Rc_T;   //定义_Rc的转置矩阵
+    _Rc_T.a = _b_1c;  // 设置 第一行为 _b_1c
+    _Rc_T.b = _b_2c;  // 设置 第二行为 _b_2c
+    _Rc_T.c = _b_3c;  // 设置 第三行为 _b_3c
+    _Rc = _Rc_T.transposed();  //transpose()是就地修改，transposed()是返回新的矩阵，注意区别
+
+   _last_update_Rc_ticks = AP::scheduler().ticks32();  //记录时间戳
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~期望旋转矩阵Rd更新主循环~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void AC_PosControl::update_Rd()
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~期望（解算）旋转矩阵Rc更新主循环~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void AC_PosControl::update_Rc()
 {
  // check for ekf xy position reset // 卡尔曼滤波器 EKF XY 位置重置检查
    handle_ekf_xy_reset();
 // Check for position control time out
-    if (!is_active_xy()) {                //如果Rd update不活跃
-        init_Rd();                        //重新初始化Rd update
+    if (!is_active_Rc()) {                //如果Rc update不活跃
+        init_Rc();                        //重新初始化Rc update
     }
- _last_update_Rd_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
-//memo接下来计算b3=fd/||fd||
+   _last_update_Rc_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
+//接下来计算b3c=fd/||fd||
+    if (!_fd.is_zero()){  //如果fd不是零向量，则归一化后作为b3轴
+        _b_3c = _fd.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
+        _b_1d = Vector3f(1.0f, 0.0f, 0.0f); //设置 期望的b1d轴
+        //计算_b_2c轴
+        _b_2c = _b_1d.cross(_b_3c).normalized(); 
+        //计算_b_1c轴
+        _b_1c = _b_3c.cross(_b_2c);
+        //更新_Rc
+         Matrix3f _Rc_T;   //定义_Rc的转置矩阵
+        _Rc_T.a = _b_1c;  // 设置 第一行为 _b_1c
+        _Rc_T.b = _b_2c;  // 设置 第二行为 _b_2c
+        _Rc_T.c = _b_3c;  // 设置 第三行为 _b_3c
+        _Rc = _Rc_T.transposed();  //transpose()是就地修改，transposed()是返回新的矩阵，注意区别
 
-   float test_msg = 1719;
-   current_DIYwrench = get_DIYwrench(test_msg); //用于ROS2推力话题 
+        float test_msg_1 = _Rc.c.x;
+        float test_msg_2 = _Rc_T.a.z; //memo这里用来测试转置效果
+        current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
+    }
+
+   
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1026,11 +1054,11 @@ bool AC_PosControl::is_active_z() const
 
  ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DIYWrench get_DIYwrench(float test_msg)  //记得修改这里的参数后要在.h文件中也修改一下
+DIYWrench get_DIYwrench(float test_msg_1, float test_msg_2)  //记得修改这里的参数后要在.h文件中也修改一下
 {
     
 // 示例力和力矩数据，你可以根据实际情况进行修改
-Vector3f force(test_msg, 2.0f, 3.0f); // 假设的力值
+Vector3f force(test_msg_1, test_msg_2, 3.0f); // 假设的力值
 
 Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
   
@@ -1088,8 +1116,8 @@ void AC_PosControl::update_z_controller()
     _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
     _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f
     _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f
-    Vector3f f_d;
-    f_d = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
+    
+    _fd = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // add feed forward component //目标速度，添加一些前馈
@@ -1143,7 +1171,7 @@ void AC_PosControl::update_z_controller()
         _limit_vector.z = 0.0f; //如果油门既不受上限也不受下限的限制，则限制向量为 `0.0`，表示没有垂直方向上的限制。
     }
 
-     //current_DIYwrench = get_DIYwrench(f_d); //用于ROS2推力话题
+     //current_DIYwrench = get_DIYwrench(_fd); //用于ROS2推力话题
 }
 
 

@@ -76,11 +76,11 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     // reset input filter to value received //无人机重启pid时的初始化
     if (_reset_filter) {
         _reset_filter = false;
-        _error = _target - measurement;
+        _error = measurement - _target;
         _derivative.zero();  //.zero是vector3f自带的成员函数，可以便捷地初始化归零一个三维向量
     } else {
         Vector3f error_last{_error}; //将上一个循环计算出的误差 _error 存储到一个临时变量 error_last 中，用于后续的微分项计算。
-        _error += ((_target - measurement) - _error) * get_filt_E_alpha(dt); //低通滤波：误差变化量*滤波系数
+        _error += ((measurement - _target) - _error) * get_filt_E_alpha(dt); //低通滤波：误差变化量*滤波系数
 
         // calculate and filter derivative
         if (is_positive(dt)) { //检查时间步长是否有效
@@ -122,9 +122,9 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     _pdnn_output_D.y = _error.y * _kd;
     _pdnn_output_D.z = _error.z * _kd_z;
 
-    _pdnn_output.x = _error.x * _kp + _derivative.x * _kd + _target.x * _kff; //计算总输出
-    _pdnn_output.y = _error.y * _kp + _derivative.y * _kd + _target.y * _kff;
-    _pdnn_output.z = _error.z * _kp_z + _derivative.z * _kd_z + _target.z * _kff;
+    _pdnn_output.x = -_error.x * _kp - _derivative.x * _kd + _target.x * _kff; //计算总输出
+    _pdnn_output.y = -_error.y * _kp - _derivative.y * _kd + _target.y * _kff;
+    _pdnn_output.z = -_error.z * _kp_z - _derivative.z * _kd_z + _target.z * _kff;
 
     return _pdnn_output; //返回pdnn控制器输出
 }

@@ -739,12 +739,14 @@ void ModeGuided::pos_control_run()
 
     // run position controllers
     pos_control->update_xy_controller();
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rd期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    pos_control->update_Rd();
+    pos_control->update_z_controller();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rc期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    pos_control->update_Rc();
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    pos_control->update_z_controller();
     
 
     // call attitude controller with auto yaw

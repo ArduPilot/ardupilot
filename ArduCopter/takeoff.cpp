@@ -146,11 +146,11 @@ void _AutoTakeoff::run()
         // motors have not completed spool up yet so relax navigation and position controllers
         pos_control->relax_velocity_controller_xy();
         pos_control->update_xy_controller();
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rd期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        pos_control->update_Rd();
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
         pos_control->update_z_controller();
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rc期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        pos_control->update_Rc();
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
@@ -168,8 +168,8 @@ void _AutoTakeoff::run()
         copter.pos_control->init_z_controller();
         pos_control->relax_velocity_controller_xy();
         pos_control->update_xy_controller();
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rd期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        pos_control->update_Rd();
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rc期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //pos_control->update_Rc();
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
@@ -199,9 +199,7 @@ void _AutoTakeoff::run()
         pos_control->input_vel_accel_xy(vel, accel);
     }
     pos_control->update_xy_controller();
-     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rd期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        pos_control->update_Rd();
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     
 
     // command the aircraft to the take off altitude
     float pos_z = complete_alt_cm + terr_offset;
@@ -210,6 +208,10 @@ void _AutoTakeoff::run()
     
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加Rc期望旋转矩阵的update循环调用~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        pos_control->update_Rc();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), copter.flightmode->auto_yaw.get_heading());

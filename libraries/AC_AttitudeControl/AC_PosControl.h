@@ -121,8 +121,8 @@ public:
     ///     This function is private and contains all the shared xy axis initialisation functions
     void init_xy_controller();
 
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望旋转矩阵Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void init_Rd();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~初始化期望旋转矩阵Rc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    void init_Rc();
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /// input_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
@@ -149,8 +149,8 @@ public:
     // is_active_xy - returns true if the xy position controller has been run in the previous 5 loop times
     bool is_active_xy() const;
 
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~is_active_Rd~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    bool is_active_Rd() const;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~is_active_Rc~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    bool is_active_Rc() const;
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
 
     /// stop_pos_xy_stabilisation - sets the target to the current position to remove any position corrections from the system
@@ -165,8 +165,8 @@ public:
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_xy_controller();
     
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~期望旋转矩阵Rd更新函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    void update_Rd();
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~期望旋转矩阵Rc更新函数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    void update_Rc();
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     ///
@@ -553,7 +553,7 @@ protected:
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
     uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
-    uint32_t    _last_update_Rd_ticks;  //新建用于记录Rd_update的时间戳
+    uint32_t    _last_update_Rc_ticks;  //新建用于记录Rc_update的时间戳
     uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
@@ -612,6 +612,15 @@ protected:
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~声明内部成员变量~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Vector3f    _fd;
+    Vector3f    _b_1d;  //desired b1_axis
+    Vector3f    _b_1c;
+    Vector3f    _b_2c;
+    Vector3f    _b_3c;
+    Matrix3f    _Rc;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 private:
     // convenience method for writing out the identical PSCE, PSCN, PSCD - and
     // to save bytes
@@ -639,7 +648,7 @@ DIYWrench() : force(), torque() {}
 DIYWrench(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
 };
 
-extern DIYWrench get_DIYwrench(float test_msg);
+extern DIYWrench get_DIYwrench(float test_msg_1, float test_msg_2);
 extern DIYWrench current_DIYwrench;
 extern DIYWrench get_current_DIYwrench();
 ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
