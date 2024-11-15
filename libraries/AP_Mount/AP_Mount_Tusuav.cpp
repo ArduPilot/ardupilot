@@ -1,5 +1,6 @@
-#include "AP_Mount_Tusuav.h"
+#include "AP_Mount_config.h"
 #if HAL_MOUNT_TUSUAV_ENABLED
+#include "AP_Mount_Tusuav.h"
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -10,15 +11,15 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_MOUNT_TUSUAV_HEADER1       0x5A     // first header byte
-#define AP_MOUNT_TUSUAV_PACKETLEN_MIN 6        // min number of bytes in a packet (1 header bytes,1 flag,1 cmd,1 sub-cmd,length,1 crc)
-#define AP_MOUNT_TUSUAV_DATALEN_MAX   (AP_MOUNT_TUSUAV_PACKETLEN_MAX-AP_MOUNT_TUSUAV_PACKETLEN_MIN) // max bytes for data portion of packet
-#define AP_MOUNT_TUSUAV_HEALTH_TIMEOUT_MS 1000 // state will become unhealthy if no attitude is received within this timeout
-#define AP_MOUNT_TUSUAV_SEND_INTERVAL_MS 100 // resend angle or rate targets to gimbal at this interval
-#define AP_MOUNT_TUSUAV_PARSE_INTERVAL_MS 1 // resend angle or rate targets to gimbal at this interval
-#define AP_MOUNT_TUSUAV_TIME_SYNC_INTERVAL_MS 1000 // resend angle or rate targets to gimbal at this interval
-#define AP_MOUNT_TUSUAV_ZOOM_SPEED     500    // hard-coded zoom speed (fast)
-#define AP_MOUNT_TUSUAV_ZOOM_MAX       30      // hard-coded absolute zoom times max
+constexpr uint8_t AP_MOUNT_TUSUAV_HEADER1 = 0x5A; // first header byte
+#define AP_MOUNT_TUSUAV_PACKETLEN_MIN 6        // Minimum number of bytes in a packet (1 header byte, 1 flag byte, 1 command byte, 1 sub-command byte, length byte, and 1 CRC byte)
+#define AP_MOUNT_TUSUAV_DATALEN_MAX   (AP_MOUNT_TUSUAV_PACKETLEN_MAX - AP_MOUNT_TUSUAV_PACKETLEN_MIN) // Maximum number of bytes for the data portion of the packet
+#define AP_MOUNT_TUSUAV_HEALTH_TIMEOUT_MS 1000 // Timeout in milliseconds for considering the state unhealthy if no attitude data is received
+#define AP_MOUNT_TUSUAV_SEND_INTERVAL_MS 100 // Interval in milliseconds for resending angle or rate targets to the gimbal
+#define AP_MOUNT_TUSUAV_PARSE_INTERVAL_MS 1 // Interval in milliseconds for parsing data from the gimbal
+#define AP_MOUNT_TUSUAV_TIME_SYNC_INTERVAL_MS 1000 // Interval in milliseconds for resending time synchronization packets to the gimbal
+#define AP_MOUNT_TUSUAV_ZOOM_SPEED     500    // Hard-coded zoom speed (high speed)
+#define AP_MOUNT_TUSUAV_ZOOM_MAX       30      // Maximum zoom level
 #define AP_MOUNT_TUSUAV_DEBUG 0
 #define debug(fmt, args ...) do { if (AP_MOUNT_TUSUAV_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Tusuav: " fmt, ## args); } } while (0)
 
@@ -33,7 +34,7 @@ void AP_Mount_Tusuav::update()
     }
     // below here we sent angle or rate targets
     // throttle sends of target angles or rates
-    uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     
     if (now_ms - _last_update_ms_parse >= AP_MOUNT_TUSUAV_PARSE_INTERVAL_MS) {
         _last_update_ms_parse = now_ms;
@@ -74,11 +75,10 @@ void AP_Mount_Tusuav::update()
     MountTarget rc_target;
     get_rc_target(mnt_target.target_type, rc_target);
 	if (mnt_target.target_type == MountTargetType::RATE) {
-		int16_t pitch_value = degrees(rc_target.pitch) / _params.rc_rate_max.get() * 500;
-		int16_t yaw_value = degrees(rc_target.yaw) / _params.rc_rate_max.get() * 500;
+		const int16_t pitch_value = degrees(rc_target.pitch) / _params.rc_rate_max.get() * 500;
+		const int16_t yaw_value = degrees(rc_target.yaw) / _params.rc_rate_max.get() * 500;
 		send_stick_pitch_yaw(pitch_value,yaw_value);
         debug("stick ：%d  %d", pitch_value, yaw_value);
-
 	}
 
     // if tracking is active we do not send new targets to the gimbal
@@ -151,7 +151,7 @@ void AP_Mount_Tusuav::update()
     }
 
     // send target angles or rates depending on the target type
-    MessageGimbalAngleRates gimbal_angle_mode = {0};
+    MessageGimbalAngleRates gimbal_angle_mode{};
     switch (mnt_target.target_type) {
     case MountTargetType::ANGLE:
         if (mnt_target.angle_rad.yaw_is_ef) {
@@ -203,7 +203,7 @@ bool AP_Mount_Tusuav::get_attitude_quaternion(Quaternion& att_quat)
 void AP_Mount_Tusuav::read_incoming_packets()
 {
     // check for bytes on the serial port
-    int16_t nbytes = MIN(_uart->available(), 1024U);
+    const auto nbytes = MIN(_uart->available(), 1024U);
     if (nbytes <= 0 ) {
         return;
     }
@@ -212,16 +212,16 @@ void AP_Mount_Tusuav::read_incoming_packets()
     bool reset_parser = false;
 
     // process bytes received
-    for (int16_t i = 0; i < nbytes; i++) {
+    for (auto i=0; i<nbytes; i++) {
         uint8_t b;
         if (!_uart->read(b)) {
-            continue;
+            break;
         }
 
         _msg_buff[_msg_buff_len++] = b;
 
         // protect against overly long messages
-        if (_msg_buff_len >= AP_MOUNT_TUSUAV_PACKETLEN_MAX) {
+        if (_msg_buff_len >= ARRAY_SIZE(_msg_buff)) {
             reset_parser = true;
             debug("tus buff full s:%u len:%u", (unsigned)_parsed_msg.state, (unsigned)_msg_buff_len);
         }
@@ -310,7 +310,7 @@ void AP_Mount_Tusuav::process_packet()
             MessageGimbalAngle msg;
 
             if (_parsed_msg.msg.data_len >= sizeof(msg)) {
-                memcpy(&msg,_parsed_msg.msg.data,sizeof(msg));
+                msg = *reinterpret_cast<const MessageGimbalAngle*>(_parsed_msg.msg.data);                
                 _last_current_angle_rad_ms = AP_HAL::millis();
                 _current_angle_rad.x = radians(msg.gimbal_angle[1]); // roll angle in rad
                 _current_angle_rad.z = radians(msg.gimbal_angle[2]); // yaw angle in rad
@@ -341,7 +341,8 @@ void AP_Mount_Tusuav::process_packet()
                         break;
                     }
                     default:{
-                        tracking_status = TrackingStatus::Lost;break;
+                        tracking_status = TrackingStatus::Lost;
+                        break;
                     }
                     }
                 } else {
@@ -371,7 +372,7 @@ void AP_Mount_Tusuav::process_packet()
 
         case GimbalSubCmd::GimbalSubCmd_LaserDistance:{
             // recieve laser rangefinder value in decimeters and save the value in meters
-            uint16_t temp = (uint16_t)_parsed_msg.msg.data[1] << 8 | _parsed_msg.msg.data[0];
+            const uint16_t temp = (uint16_t)_parsed_msg.msg.data[1] << 8 | _parsed_msg.msg.data[0];
             _rangefinder_dist_m = temp * 0.1f;
             break;
         }
@@ -384,7 +385,7 @@ void AP_Mount_Tusuav::process_packet()
                     _parsed_msg.msg.data_len = 18;
                 }
                 
-                strncpy((char *)_model_sn, (const char *)_parsed_msg.msg.data, _parsed_msg.msg.data_len);
+                strncpy((char *)_model_sn, (const char *)_parsed_msg.msg.data, MIN(ARRAY_SIZE(_model_sn), _parsed_msg.msg.data_len));
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s SN: %s", send_text_prefix, (const char*)_model_sn);
             }
             break;
@@ -444,7 +445,7 @@ void AP_Mount_Tusuav::process_packet()
 
 // send packet to gimbal.  total_len includes everything including the header '0x5A' and crc
 // returns true on success, false if outgoing serial buffer is full or other errors
-bool AP_Mount_Tusuav::send_packet(struct FrameType frame)
+bool AP_Mount_Tusuav::send_packet(const struct FrameType &frame)
 {
     if (!_initialised) {
         return false;
@@ -454,7 +455,8 @@ bool AP_Mount_Tusuav::send_packet(struct FrameType frame)
         return false;
     }
 
-    frame.total_len = frame.data_len + AP_MOUNT_TUSUAV_PACKETLEN_MIN;
+    AP_Mount_Tusuav::FrameType modifiable_frame = frame;
+    modifiable_frame.total_len = modifiable_frame.data_len + AP_MOUNT_TUSUAV_PACKETLEN_MIN;
     // calculate and sanity check packet size
     if (frame.total_len >= AP_MOUNT_TUSUAV_PACKETLEN_MAX) {
         debug("send_packet data buff too large");
@@ -479,8 +481,11 @@ bool AP_Mount_Tusuav::send_packet(struct FrameType frame)
     send_buff[send_buff_ofs++] = frame.sub_cmd;
 
     // data
-    if (frame.data_len != 0) {
-        memcpy(&send_buff[send_buff_ofs], frame.data, frame.data_len);
+    if (frame.data_len > 0) {
+        auto* data_ptr = reinterpret_cast<const uint8_t*>(frame.data);
+        for (size_t i = 0; i < frame.data_len; ++i) {
+            send_buff[send_buff_ofs + i] = data_ptr[i];
+        }
         send_buff_ofs += frame.data_len;
     }
 
@@ -498,7 +503,7 @@ void AP_Mount_Tusuav::send_time_sync()
 {
     // get current location
     Location loc;
-    int32_t alt_amsl_cm = 0;
+    int32_t alt_amsl_cm;
     if (!AP::ahrs().get_location(loc) || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
         return;      
     }
@@ -511,13 +516,12 @@ void AP_Mount_Tusuav::send_time_sync()
     if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec, ms)) {
         year = month = day = hour = min = sec = ms = 0;
     }
-#else
 
 #endif
     debug("tus time sync :%d %d %d", year, month,day);
 
     // fill in packet
-    MessageTimeSync msg_sync = {
+    const MessageTimeSync msg_sync{
         .time = {
             .year = static_cast<uint8_t>(year-2000),
             .month = month,
@@ -533,7 +537,7 @@ void AP_Mount_Tusuav::send_time_sync()
         }
     };
 
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={1},
         data_len : sizeof(msg_sync),
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -550,7 +554,7 @@ void AP_Mount_Tusuav::send_time_sync()
 bool AP_Mount_Tusuav::request_tracking_status()
 {
     // fill in packet
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0x28},
         data_len : 0,
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -566,7 +570,7 @@ bool AP_Mount_Tusuav::request_tracking_status()
 bool AP_Mount_Tusuav::request_versions()
 {
     // fill in packet
-    FrameType frame_to_send{
+   const FrameType frame_to_send{
         .flag={0x28},
         data_len : 0,
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Device),
@@ -582,7 +586,7 @@ bool AP_Mount_Tusuav::request_versions()
 bool AP_Mount_Tusuav::request_models()
 {
     // fill in packet
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0x28},
         data_len : 0,
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -611,7 +615,7 @@ bool AP_Mount_Tusuav::set_lock(bool lock)
     gimbal_ctrl_settings.bits.lock_ef = lock;
 
     // fill in packet
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0x00},
         data_len : sizeof(gimbal_ctrl_settings),
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -633,7 +637,7 @@ bool AP_Mount_Tusuav::send_target_angles_rates(MessageGimbalAngleRates mode)
     }
 
     // fill in packet
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0},
         data_len : sizeof(mode),
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -661,7 +665,6 @@ bool AP_Mount_Tusuav::send_stick_pitch_yaw(int16_t pitch,int16_t yaw)
 	else if (pitch < -500) {
 		pitch = -500;
 	}
-
     if (yaw > 500) {
     	yaw = 500;
 	}
@@ -669,9 +672,9 @@ bool AP_Mount_Tusuav::send_stick_pitch_yaw(int16_t pitch,int16_t yaw)
 		yaw = -500;
 	}
 
-    int16_t value[2] = {pitch,yaw};
+    const int16_t value[2] = {pitch,yaw};
     // fill in packet
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0},
         data_len : sizeof(value),
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -688,7 +691,7 @@ bool AP_Mount_Tusuav::send_m_ahrs()
 {
     // get current location
     Location loc;
-    int32_t alt_amsl_cm = 0;
+    int32_t alt_amsl_cm;
     if (!AP::ahrs().get_location(loc) || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm)) {
         debug("tus ahrs fault:%d %d %d",(int)loc.lat,(int)loc.lng,(int)loc.alt); 
 
@@ -702,16 +705,25 @@ bool AP_Mount_Tusuav::send_m_ahrs()
     Vector3f gyro_NED;
     gyro_NED = AP::ahrs().get_gyro();
 
-    uint32_t gps_last_time = AP::gps().last_message_time_ms();
-
-    if (_gps_last_update_ms != gps_last_time) {
-        _gps_last_update_ms = gps_last_time;
-        if (++_gps_update_count >= 255) {
-            _gps_update_count = 0;
+// _gps_update_count will increase and send to gimbal if gps fixed 2D or better
+    #if AP_GPS_ENABLED
+    if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D){
+        uint32_t gps_last_time = AP::gps().last_message_time_ms();
+        if (_gps_last_update_ms != gps_last_time) {
+            _gps_last_update_ms = gps_last_time;
+            if (++_gps_update_count >= 255) {
+                _gps_update_count = 0;
+            }
         }
     }
+    else{
+        _gps_update_count = 0;
+    }
+    #else
+    _gps_update_count = 0;
+    #endif
 
-    // get vehicle yaw in the range 0 to 360
+ // get vehicle yaw in the range 0 to 360
     MessageAhrs::FcStatus fc_status;
 
     if (AP_Param::check_frame_type(AP_PARAM_FRAME_COPTER)) {
@@ -737,7 +749,7 @@ bool AP_Mount_Tusuav::send_m_ahrs()
         .latitude = loc.lat*1e-7,
     };
 
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0},
         data_len : sizeof(msg_ahrs),
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -759,7 +771,7 @@ bool AP_Mount_Tusuav::take_picture()
     }
 
     RecordPhotoSettings settings = {.bits={1,RecordingCmd::No_Action}};
-    FrameType frame_to_send {
+    const FrameType frame_to_send{
         .flag={0},
         .data_len = sizeof(settings),
         .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -786,7 +798,7 @@ bool AP_Mount_Tusuav::record_video(bool start_recording)
         settings.bits.record = RecordingCmd::Stop;
     }
 
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
     .flag={0},
     data_len : sizeof(settings),
     cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
@@ -796,7 +808,6 @@ bool AP_Mount_Tusuav::record_video(bool start_recording)
 
     // send packet to gimbal
     return send_packet(frame_to_send);
-
 }
 
 // set zoom specified as a rate or percentage
@@ -807,38 +818,48 @@ bool AP_Mount_Tusuav::set_zoom(ZoomType zoom_type, float zoom_value)
         return false;
     }
 
-    int32_t int_zoom_value = (int32_t)zoom_value;
+    const int32_t int_zoom_value = static_cast<int32_t>(zoom_value);
     int16_t speed = AP_MOUNT_TUSUAV_ZOOM_SPEED;
-    if (zoom_type == ZoomType::RATE) {
-        if (int_zoom_value < 0) {
-           speed = -speed;
-        }
-        else if (int_zoom_value == 0) {
-            speed = 0;
-        }
+    
+    switch (zoom_type) {
+        case ZoomType::RATE:
+            if (int_zoom_value < 0) {
+                speed = -speed;
+            } else if (int_zoom_value == 0) {
+                speed = 0;
+            }
+            {
+                _zoom_times = int_zoom_value;
+                const FrameType frame_to_send{
+                    .flag = {0},
+                    .data_len = sizeof(speed),
+                    .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+                    .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_zoomspeed_set),
+                    .data = reinterpret_cast<uint8_t*>(&speed)
+                };
+                return send_packet(frame_to_send);
+            }
+            break;
+        
+        case ZoomType::PCT:
+            {
+                int16_t percentage = linear_interpolate(10, AP_MOUNT_TUSUAV_ZOOM_MAX * 10, zoom_value, 0, 100);
+                const FrameType frame_to_send{
+                    .flag = {0},
+                    .data_len = sizeof(percentage),
+                    .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+                    .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_zoomvalue_set),
+                    .data = reinterpret_cast<uint8_t*>(&percentage)
+                };
+                return send_packet(frame_to_send);
+            }
+            break;
+        
+        default:
+            // Handle any other unanticipated cases if needed
+            return false;
+    }
 
-        _zoom_times = int_zoom_value;
-        FrameType frame_to_send{
-            .flag={0},
-            data_len : sizeof(speed),
-            cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-            sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_zoomspeed_set),
-            data : (uint8_t*)&speed
-        };   
-        return send_packet(frame_to_send);
-    }
-    // zoom percentage
-    if (zoom_type == ZoomType::PCT) {
-        int16_t percentage = linear_interpolate(10, AP_MOUNT_TUSUAV_ZOOM_MAX * 10, zoom_value, 0, 100);
-        FrameType frame_to_send{
-        .flag={0},
-        data_len : sizeof(percentage),
-        cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-        sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_zoomvalue_set),
-        data : (uint8_t*)&percentage
-        };
-        return send_packet(frame_to_send);
-    }
     return false;
 }
 
@@ -850,23 +871,23 @@ bool AP_Mount_Tusuav::set_tracking(TrackingType tracking_type, const Vector2f& p
         return false;
     }
 
-    FrameType frame_to_send;
+    FrameType frame_to_send; // Declare the variable once and reuse it.
 
     switch (tracking_type) {
-    case TrackingType::TRK_NONE:{
+    case TrackingType::TRK_NONE: {
         bool disable_track = false;
         frame_to_send = {
-        .flag={0},
-        data_len : sizeof(disable_track),
-        cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-        sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_track_switch),
-        data : (uint8_t*)&disable_track
+            .flag = {0},
+            .data_len = sizeof(disable_track),
+            .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+            .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_track_switch),
+            .data = (uint8_t*)&disable_track
         };
         // send packet to gimbal
         return send_packet(frame_to_send);
     }
     case TrackingType::TRK_POINT: {
-        uint16_t pos[2] = {uint16_t(p1.x * 10000),uint16_t(p1.y * 10000)};
+        const uint16_t pos[2] = {uint16_t(p1.x * 10000), uint16_t(p1.y * 10000)};
         bool start_track = true;
         if (pos[0] == 5000 && pos[1] == 5000) {
             // set deadtime over 500ms to avoid trigger tracking mistake
@@ -874,53 +895,47 @@ bool AP_Mount_Tusuav::set_tracking(TrackingType tracking_type, const Vector2f& p
                 return 0;
             }
             frame_to_send = {
-            .flag={0},
-            data_len : sizeof(start_track),
-            cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-            sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_track_switch),
-            data : (uint8_t*)&start_track
+                .flag = {0},
+                .data_len = sizeof(start_track),
+                .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+                .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_track_switch),
+                .data = (uint8_t*)&start_track
             };
-
             _last_tracking_ms = AP_HAL::millis();
         } else {
             frame_to_send = {
-                .flag={0},
-                data_len : sizeof(pos),
-                cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-                sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_trackpos_set),
-                data : (uint8_t*)pos
+                .flag = {0},
+                .data_len = sizeof(pos),
+                .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+                .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_trackpos_set),
+                .data = (uint8_t*)pos
             };
         }
-
         return send_packet(frame_to_send);
     }
-    case TrackingType::TRK_RECTANGLE:{
-
-        uint8_t track_window[2] = {uint8_t((p2.x-p1.x)*255),uint8_t((p2.y-p1.y)*255)};
+    case TrackingType::TRK_RECTANGLE: {
+        const uint8_t track_window[2] = {uint8_t((p2.x - p1.x) * 255), uint8_t((p2.y - p1.y) * 255)};
         frame_to_send = {
-        .flag={0},
-        data_len : sizeof(track_window),
-        cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-        sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_trackbox_set),
-        data : (uint8_t*)track_window
+            .flag = {0},
+            .data_len = sizeof(track_window),
+            .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+            .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_trackbox_set),
+            .data = (uint8_t*)track_window
         };
-
         send_packet(frame_to_send);
 
-        uint16_t pos[2] = {uint16_t((p2.x - p1.x) * 10000/2),uint16_t((p2.y - p1.y) * 10000/2)};
-        
+        const uint16_t pos[2] = {uint16_t((p2.x - p1.x) * 10000 / 2), uint16_t((p2.y - p1.y) * 10000 / 2)};
         frame_to_send = {
-            .flag={0},
-            data_len : sizeof(pos),
-            cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-            sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_trackpos_set),
-            data : (uint8_t*)pos
+            .flag = {0},
+            .data_len = sizeof(pos),
+            .cmd = static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+            .sub_cmd = static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_trackpos_set),
+            .data = (uint8_t*)pos
         };
         return send_packet(frame_to_send);
     }
-    
-    default:{
-        return 0;
+    default: {
+        return false;
     }
     }
 }
@@ -942,12 +957,12 @@ bool AP_Mount_Tusuav::set_lens(uint8_t lens)
         .source = CameraSource(lens)
     };
     
-    FrameType frame_to_send{
-    .flag={0},
-    data_len : sizeof(camera),
-    cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-    sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_infrared_display),
-    data : (uint8_t*)&camera
+    const FrameType frame_to_send{
+        .flag={0},
+        data_len : sizeof(camera),
+        cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+        sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_infrared_display),
+        data : (uint8_t*)&camera
     };
     return send_packet(frame_to_send);
     
@@ -995,12 +1010,12 @@ bool AP_Mount_Tusuav::set_camera_source(uint8_t primary_source, uint8_t secondar
         .source = source
     };
     
-    FrameType frame_to_send{
-    .flag={0},
-    data_len : sizeof(camera),
-    cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
-    sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_infrared_display),
-    data : (uint8_t*)&camera
+    const FrameType frame_to_send{
+        .flag={0},
+        data_len : sizeof(camera),
+        cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
+        sub_cmd : static_cast<uint8_t>(GimbalSubCmd::gimbal_single_cmd_infrared_display),
+        data : (uint8_t*)&camera
     };
 
     // send desired image type to camera
@@ -1094,7 +1109,7 @@ bool AP_Mount_Tusuav::set_rangefinder_enable(bool enable)
     }
 
 
-    FrameType frame_to_send{
+    const FrameType frame_to_send{
         .flag={0},
         data_len : sizeof(cmd),
         cmd : static_cast<uint8_t>(GimbalCmd::MasCmd_Gimbal),
