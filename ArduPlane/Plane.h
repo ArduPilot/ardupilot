@@ -326,6 +326,7 @@ private:
 #endif  // QAUTOTUNE_ENABLED
 #endif  // HAL_QUADPLANE_ENABLED
     ModeTakeoff mode_takeoff;
+    ModeAutoLand mode_autoland;
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif

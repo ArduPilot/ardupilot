@@ -65,7 +65,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         break;
 #endif // HAL_QUADPLANE_ENABLED
 
-    case Mode::Number::AUTO: {
+    case Mode::Number::AUTO:
+    case Mode::Number::AUTOLAND: {
         if (failsafe_in_landing_sequence()) {
             // don't failsafe in a landing sequence
             break;
@@ -169,6 +170,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif  // HAL_QUADPLANE_ENABLED
 
     case Mode::Number::AUTO:
+    case Mode::Number::AUTOLAND:
         if (failsafe_in_landing_sequence()) {
             // don't failsafe in a landing sequence
             break;
