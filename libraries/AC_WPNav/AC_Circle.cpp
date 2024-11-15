@@ -110,7 +110,8 @@ void AC_Circle::set_center(const Location& center)
         // convert Location with terrain altitude
         Vector2f center_xy;
         int32_t terr_alt_cm;
-        if (center.get_vector_xy_from_origin_NE(center_xy) && center.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terr_alt_cm)) {
+        if (center.get_vector_xy_from_origin_NE_cm(center_xy) &&
+            center.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, terr_alt_cm)) {
             set_center(Vector3f(center_xy.x, center_xy.y, terr_alt_cm), true);
         } else {
             // failed to convert location so set to current position and log error
@@ -120,7 +121,7 @@ void AC_Circle::set_center(const Location& center)
     } else {
         // convert Location with alt-above-home, alt-above-origin or absolute alt
         Vector3f circle_center_neu;
-        if (!center.get_vector_from_origin_NEU(circle_center_neu)) {
+        if (!center.get_vector_from_origin_NEU_cm(circle_center_neu)) {
             // default to current position and log error
             circle_center_neu = _inav.get_position_neu_cm();
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);

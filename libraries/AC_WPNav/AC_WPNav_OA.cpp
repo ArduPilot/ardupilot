@@ -207,7 +207,7 @@ bool AC_WPNav_OA::update_wpnav()
 
                 // calculate final destination as an offset from EKF origin in NEU
                 Vector2f dest_NE;
-                if (!_oa_destination.get_vector_xy_from_origin_NE(dest_NE)) {
+                if (!_oa_destination.get_vector_xy_from_origin_NE_cm(dest_NE)) {
                     // this should never happen because we can only get here if we have an EKF origin
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return false;
@@ -230,7 +230,7 @@ bool AC_WPNav_OA::update_wpnav()
 
                 // calculate final destination as an offset from EKF origin in NEU
                 Vector3f dest_NEU;
-                if (!_oa_destination.get_vector_from_origin_NEU(dest_NEU)) {
+                if (!_oa_destination.get_vector_from_origin_NEU_cm(dest_NEU)) {
                     // this should never happen because we can only get here if we have an EKF origin
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     return false;
