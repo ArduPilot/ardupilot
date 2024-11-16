@@ -40,7 +40,7 @@ void AP_InertialSensor::enable_fast_rate_buffer()
     if (fast_rate_buffer == nullptr) {
         fast_rate_buffer = NEW_NOTHROW FastRateBuffer();
     }
-    fast_rate_buffer_enabled = true;
+    fast_rate_buffer_enabled = fast_rate_buffer != nullptr;
 }
 
 // disable the fast rate buffer and stop pushing samples to it
@@ -55,7 +55,7 @@ void AP_InertialSensor::disable_fast_rate_buffer()
 // get the number of available gyro samples in the fast rate buffer
 uint32_t AP_InertialSensor::get_num_gyro_samples()
 {
-    if (fast_rate_buffer == nullptr) {
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return 0;
     }
     return fast_rate_buffer->get_num_gyro_samples();
@@ -64,7 +64,7 @@ uint32_t AP_InertialSensor::get_num_gyro_samples()
 // set the rate at which samples are collected, unused samples are dropped
 void AP_InertialSensor::set_rate_decimation(uint8_t rdec)
 {
-    if (fast_rate_buffer == nullptr) {
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return;
     }
     fast_rate_buffer->set_rate_decimation(rdec);
@@ -73,13 +73,16 @@ void AP_InertialSensor::set_rate_decimation(uint8_t rdec)
 // whether or not to push the current gyro sample
 bool AP_InertialSensor::is_rate_loop_gyro_enabled(uint8_t instance) const
 {
-    return fast_rate_buffer_enabled && fast_rate_buffer->use_rate_loop_gyro_samples() && instance == AP::ahrs().get_primary_gyro_index();
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return false;
+    }
+    return fast_rate_buffer->use_rate_loop_gyro_samples() && instance == AP::ahrs().get_primary_gyro_index();
 }
 
 // get the next available gyro sample from the fast rate buffer
 bool AP_InertialSensor::get_next_gyro_sample(Vector3f& gyro)
 {
-    if (!fast_rate_buffer_enabled) {
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return false;
     }
 
@@ -109,7 +112,7 @@ void FastRateBuffer::reset()
 
 bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
 {
-    if (fast_rate_buffer == nullptr) {
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return false;
     }
 
