@@ -817,6 +817,8 @@ void Copter::one_hz_loop()
                                          "rate",
                                          1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
             started_rate_thread = true;
+        } else {
+            AP_BoardConfig::allocation_error("rate thread");
         }
     }
 #endif
