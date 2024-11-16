@@ -51,6 +51,7 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <AP_Servo_Telem/AP_Servo_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_Networking/AP_Networking.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
@@ -413,6 +414,10 @@ protected:
 
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+#endif
+
+#if AP_SERVO_TELEM_ENABLED
+    AP_Servo_Telem servo_telem;
 #endif
 
 #if AP_OPENDRONEID_ENABLED
