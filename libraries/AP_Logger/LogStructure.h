@@ -67,6 +67,7 @@ const struct UnitStructure log_Units[] = {
     { '%', "%" },             // percent
     { 'S', "satellites" },    // number of satellites
     { 's', "s" },             // seconds
+    { 't', "N.m" },           // Newton meters, torque
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
     { 'r', "rad" },           // radians
     { 'U', "deglongitude" },  // degrees of longitude
