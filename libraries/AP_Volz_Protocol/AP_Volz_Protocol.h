@@ -44,8 +44,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <SRV_Channel/SRV_Channel_config.h>
-#include <AP_Logger/AP_Logger_config.h>
-
+#include <AP_Servo_Telem/AP_Servo_Telem_config.h>
 
 class AP_Volz_Protocol {
 public:
@@ -110,7 +109,7 @@ private:
     AP_Int16 range;
     bool initialised;
 
-#if HAL_LOGGING_ENABLED
+#if AP_SERVO_TELEM_ENABLED
     // Request telem data, cycling through each servo and telem item
     void request_telem();
 
@@ -143,7 +142,6 @@ private:
             int16_t motor_temp_deg;
             int16_t pcb_temp_deg;
         } data[NUM_SERVO_CHANNELS];
-        uint32_t last_log_ms;
     } telem;
 #endif
 
