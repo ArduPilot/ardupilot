@@ -107,6 +107,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_EFI',
     'AP_Hott_Telem',
     'AP_ESC_Telem',
+    'AP_Servo_Telem',
     'AP_Stats',
     'AP_GyroFFT',
     'AP_RCTelemetry',
