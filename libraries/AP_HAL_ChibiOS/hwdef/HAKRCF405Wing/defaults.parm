@@ -1,0 +1,106 @@
+# Defaults for HaKRCF405Wing v1.0
+# Created by   : Jani Hirvinen https://github.com/jpkh
+# Version      : v1.0, 13.11.2024
+
+# Most radios Ch 6 is 3-way swtich. We could use Ch5 as default
+# but in Betaflight uses that for Arm/Disarm motors. 
+FLTMODE_CH = 6
+
+# First flight mode always Stabile (0)
+FLTMODE1 = 0
+
+# Second flight mode Alt HoldStabilize (2)
+FLTMODE4 = 2
+
+# Flight mode 6 either FBWA (5)
+FLTMODE6 = 5
+
+# Reverse RC2. Applies to most of the RC Trasmitters. 
+#RC1_REVERSED = 0
+#RC2_REVERSED = 1
+#RC4_REVERSED = 0
+
+###############################################
+# Frame class: fixedwing, no frame type / class
+#FRAME_CLASS = 
+#FRAME_TYPE = 
+
+###############################################
+# Serial ports 
+# RC Receiver, ELRS 915/2.4Ghz as default on Serial 1 port, that's where the connector is.
+# Can be changed to elsewhere in FC parameters. 
+RC_PROTOCOLS = 512
+SERIAL1_BAUD = 115
+SERIAL1_PROTOCOL = 23
+
+# Other ports as follows, these can be changed in the GCS
+SERIAL2_BAUD = 57
+SERIAL2_PROTOCOL = 2
+SERIAL3_BAUD = 57
+SERIAL3_PROTOCOL = 2
+SERIAL4_BAUD = 230
+SERIAL4_PROTOCOL = 5 
+#SERIAL5_BAUD = 57
+#SERIAL5_PROTOCOL = -1
+#SERIAL6_BAUD = 38
+#SERIAL6_PROTOCOL = -1
+
+###############################################
+# OSD Settings
+# This is an FPVCopter setup, no GPS, Compass on board as default
+# User can activate settings later if needed. 
+
+# No GPS LAT/LON, Speed, HDOP
+OSD1_GPSLAT_EN = 0
+OSD1_GPSLONG_EN = 0
+OSD1_GSPEED_EN = 0
+OSD1_HDOP_EN = 0
+OSD1_SATS_EN = 0
+
+OSD1_VTX_PWR_EN = 1
+
+# Modify OSD1 page from defaults. 
+OSD1_MESSAGE_Y = 12
+OSD1_BATTBAR_X = 11
+OSD1_BATTBAR_Y = 12
+OSD1_CELLVOLT_EN = 0
+OSD1_HOMEDIR_EN = 0
+OSD1_HOMEDIST_EN = 0
+OSD1_POWER_EN = 0
+OSD1_POWER_X = 2
+OSD1_POWER_Y = 9
+
+
+
+###############################################
+# Info leds and NeoPixel (4 x SK6812 onboard)
+
+# NeoPixed output on PWM9
+SERVO12_FUNCTION = 120
+
+# Only have built-in and NeoPixels
+NTF_LED_TYPES = 257 
+
+# 4 x SK6812 Leds on board
+NTF_LED_LEN = 4
+
+# We dont want them to be too bright so..
+NTF_LED_BRIGHT = 2
+
+
+###############################################
+# Battery monitor 
+# Generic settings for the battery monitor
+BATT_MONITOR = 4
+
+# Bat volt multiplier is rather high but quite accurate.
+# tested with lab powers output 14.2v while flightcontroller
+# reading is 14.18v. Users need to change this to match their 
+# measured values. 
+BATT_VOLT_MULT = 550
+
+
+# Default battery, users need to change this on their settings
+BATT_CAPACITY = 5000
+
+
