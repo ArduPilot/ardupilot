@@ -92,9 +92,8 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 
 #if ENABLE_HEAP
-
 /*
-  realloc implementation thanks to wolfssl, used by AP_Scripting
+  realloc implementation thanks to wolfssl, used by ExpandingString
  */
 void *Util::std_realloc(void *addr, uint32_t size)
 {
