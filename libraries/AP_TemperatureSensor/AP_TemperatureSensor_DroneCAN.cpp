@@ -53,15 +53,11 @@ AP_TemperatureSensor_DroneCAN::AP_TemperatureSensor_DroneCAN(AP_TemperatureSenso
 }
 
 // Subscript to incoming temperature messages
-void AP_TemperatureSensor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_TemperatureSensor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_temperature, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("temp_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_temperature, driver_index) != nullptr);
 }
 
 void AP_TemperatureSensor_DroneCAN::handle_temperature(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_device_Temperature &msg)
