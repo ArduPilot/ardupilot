@@ -140,8 +140,8 @@ private:
             float secondary_current;
             float primary_voltage;
             float secondary_voltage;
-            uint16_t motor_temp_deg;
-            uint16_t pcb_temp_deg;
+            int16_t motor_temp_deg;
+            int16_t pcb_temp_deg;
         } data[NUM_SERVO_CHANNELS];
         uint32_t last_log_ms;
     } telem;

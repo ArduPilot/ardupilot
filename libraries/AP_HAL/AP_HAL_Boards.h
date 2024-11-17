@@ -6,6 +6,7 @@
  */
 #pragma once
 
+// @LoggerEnum: HAL_BOARD
 #define HAL_BOARD_SITL     3
 // #define HAL_BOARD_SMACCM   4  // unused
 // #define HAL_BOARD_PX4      5  // unused
@@ -16,7 +17,9 @@
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
 #define HAL_BOARD_EMPTY    99
+// @LoggerEnumEnd
 
+// @LoggerEnum: HAL_BOARD_SUBTYPE
 /* Default board subtype is -1 */
 #define HAL_BOARD_SUBTYPE_NONE -1
 
@@ -70,6 +73,7 @@
 #define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
 #define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 #define HAL_BOARD_SUBTYPE_ESP32_S3EMPTY         6008
+// @LoggerEnumEnd
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0

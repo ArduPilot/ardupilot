@@ -243,6 +243,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board FreeflyRTK
         $waf clean
         $waf AP_Periph
+        echo "Building CubeNode-ETH peripheral fw"
+        $waf configure --board CubeNode-ETH
+        $waf clean
+        $waf AP_Periph
         continue
     fi
 
@@ -473,7 +477,11 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "astyle-cleanliness" ]; then
         echo "Checking AStyle code cleanliness"
+
         ./Tools/scripts/run_astyle.py --dry-run
+        if [ $? -ne 0 ]; then
+            echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
+        fi
         continue
     fi
 

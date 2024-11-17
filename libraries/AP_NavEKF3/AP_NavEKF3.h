@@ -453,9 +453,12 @@ private:
     AP_Int32 _options;              // bit mask of processing options
 
     // enum for processing options
-    enum class Options {
+    enum class Option {
         JammingExpected     = (1<<0),
     };
+    bool option_is_enabled(Option option) const {
+        return (_options & (uint32_t)option) != 0;
+    }
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0

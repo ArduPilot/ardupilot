@@ -92,6 +92,11 @@ class EnumDocco(object):
         if m is not None:
             return (m.group(1), 1 << int(m.group(2)), m.group(3))
 
+        # Match:  "#define FRED 1  // optional comment"
+        m = re.match(r"#define\s*([A-Z0-9_a-z]+)\s+(-?\d+) *(// *(.*) *)?$", line)
+        if m is not None:
+            return (m.group(1), m.group(2), m.group(4))
+
         if m is None:
             raise ValueError("Failed to match (%s)" % line)
 
@@ -116,7 +121,13 @@ class EnumDocco(object):
                     break
                 line = line.rstrip()
                 #        print("state=%s line: %s" % (state, line))
-                if re.match(r"\s*//.*", line):
+                # Skip single-line comments - unless they contain LoggerEnum tags
+                if re.match(r"\s*//.*", line) and "LoggerEnum" not in line:
+                    continue
+                # Skip multi-line comments
+                if re.match(r"\s*/\*.*", line):
+                    while "*/" not in line:
+                        line = f.readline()
                     continue
                 if state == "outside":
                     if re.match("class .*;", line) is not None:
@@ -154,6 +165,19 @@ class EnumDocco(object):
                         last_value = None
                         state = state_inside
                         skip_enumeration = False
+                        continue
+
+                    # // @LoggerEnum: NAME  -  can be used around for #define sets
+                    m = re.match(r".*@LoggerEnum: *([\w]+)", line)
+                    if m is not None:
+                        enum_name = m.group(1)
+                        debug("%s: %s" % (source_file, enum_name))
+                        entries = []
+                        last_value = None
+                        state = state_inside
+                        skip_enumeration = False
+                        continue
+
                     continue
                 if state == "inside":
                     if re.match(r"\s*$", line):
@@ -164,7 +188,7 @@ class EnumDocco(object):
                         continue
                     if re.match(r"#else", line):
                         continue
-                    if re.match(r".*}\s*\w*(\s*=\s*[\w:]+)?;", line):
+                    if re.match(r".*}\s*\w*(\s*=\s*[\w:]+)?;", line) or "@LoggerEnumEnd" in line:
                         # potential end of enumeration
                         if not skip_enumeration:
                             if enum_name is None:
