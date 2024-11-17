@@ -5502,7 +5502,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #endif
 
     case MAV_CMD_DO_SET_ROI_NONE: {
-        const Location zero_loc = Location();
+        const Location zero_loc;
         return handle_command_do_set_roi(zero_loc);
     }
 
