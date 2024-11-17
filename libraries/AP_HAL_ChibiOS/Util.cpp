@@ -98,41 +98,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 #if ENABLE_HEAP
 /*
-  heap functions used by lua scripting
- */
-void *Util::heap_create(uint32_t size)
-{
-    memory_heap_t *heap = (memory_heap_t *)malloc(size + sizeof(memory_heap_t));
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    chHeapObjectInit(heap, heap + 1U, size);
-    return heap;
-}
-
-void Util::heap_destroy(void *ptr)
-{
-    free(ptr);
-}
-
-void *Util::heap_allocate(void *heap, uint32_t size)
-{
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    if (size == 0) {
-        return nullptr;
-    }
-    return chHeapAlloc((memory_heap_t *)heap, size);
-}
-
-void Util::heap_free(void *ptr)
-{
-    return chHeapFree(ptr);
-}
-
-
-/*
   realloc implementation thanks to wolfssl, used by ExpandingString
   and ExpandingArray
  */
