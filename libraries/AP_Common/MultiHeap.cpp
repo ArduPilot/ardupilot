@@ -103,16 +103,24 @@ void *MultiHeap::allocate(uint32_t size)
         }
         void *newptr = hal.util->heap_allocate(heaps[i].hp, size);
         if (newptr != nullptr) {
+            last_failed = false;
             return newptr;
         }
     }
-    if (!allow_expansion) {
+    if (!allow_expansion || !last_failed) {
+        /*
+          we only allow expansion when the last allocation
+          failed. This gives the lua engine a chance to use garbage
+          collection to recover memory
+         */
+        last_failed = true;
         return nullptr;
     }
 
     if (!hal.util->get_soft_armed()) {
         // only expand the available heaps when armed. When disarmed
         // user should fix their SCR_HEAP_SIZE parameter
+        last_failed = true;
         return nullptr;
     }
 
@@ -125,6 +133,7 @@ void *MultiHeap::allocate(uint32_t size)
     const uint32_t heap_overhead = 128; // conservative value, varies with HAL
     const uint32_t min_size = size + heap_overhead;
     if (available < reserve_size+min_size) {
+        last_failed = true;
         return nullptr;
     }
 
@@ -132,20 +141,24 @@ void *MultiHeap::allocate(uint32_t size)
     const uint32_t round_to = 30*1024U;
     const uint32_t alloc_size = MIN(available - reserve_size, MAX(size+heap_overhead, round_to));
     if (alloc_size < min_size) {
+        last_failed = true;
         return nullptr;
     }
     for (uint8_t i=0; i<num_heaps; i++) {
         if (heaps[i].hp == nullptr) {
             heaps[i].hp = hal.util->heap_create(alloc_size);
             if (heaps[i].hp == nullptr) {
+                last_failed = true;
                 return nullptr;
             }
             sum_size += alloc_size;
             expanded_to = sum_size;
             void *p = hal.util->heap_allocate(heaps[i].hp, size);
+            last_failed = p == nullptr;
             return p;
         }
     }
+    last_failed = true;
     return nullptr;
 }
 
@@ -157,6 +170,7 @@ void MultiHeap::deallocate(void *ptr)
     if (!available() || ptr == nullptr) {
         return;
     }
+    last_failed = false;
     hal.util->heap_free(ptr);
 }
 

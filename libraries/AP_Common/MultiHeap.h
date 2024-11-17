@@ -43,4 +43,9 @@ private:
     uint32_t reserve_size;
     uint32_t sum_size;
     uint32_t expanded_to;
+
+    // we only do heap expansion if the last allocation failed this
+    // encourages the lua scripting engine to garbage collect to
+    // re-use memory when possible
+    bool last_failed;
 };
