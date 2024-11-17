@@ -75,7 +75,7 @@ public:
     void send_camera_settings(mavlink_channel_t chan) const override;
 
     // subscribe to Xacti DroneCAN messages
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     // xacti specific message handlers
     static void handle_gimbal_attitude_status(AP_DroneCAN* ap_dronecan, const CanardRxTransfer& transfer, const com_xacti_GimbalAttitudeStatus &msg);
