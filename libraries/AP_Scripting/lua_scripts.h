@@ -26,7 +26,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/Semaphores.h>
-#include <AP_Common/MultiHeap.h>
+#include <AP_MultiHeap/AP_MultiHeap.h>
 #include "lua_common_defs.h"
 
 #include "lua/src/lua.hpp"
