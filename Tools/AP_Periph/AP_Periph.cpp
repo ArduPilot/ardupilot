@@ -627,6 +627,7 @@ void AP_Periph_FW::prepare_reboot()
  */
 void AP_Periph_FW::reboot(bool hold_in_bootloader)
 {
+    prepare_reboot();
     hal.scheduler->reboot(hold_in_bootloader);
 }
 
