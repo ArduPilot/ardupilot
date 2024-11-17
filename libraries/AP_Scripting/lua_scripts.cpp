@@ -540,6 +540,8 @@ void lua_scripts::run(void) {
     succeeded_initial_load = true;
 #endif // __clang_analyzer__
 
+    uint32_t expansion_size = 0;
+
     while (AP_Scripting::get_singleton()->should_run()) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {
@@ -605,6 +607,17 @@ void lua_scripts::run(void) {
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             }
             hal.scheduler->delay(1000);
+        }
+
+        /*
+          report a warning if SCR_HEAP_SIZE wasn't adequate and we
+          expanded at runtime, so the user can fix it for future
+          flights
+         */
+        const uint32_t new_expansion_size = _heap.get_expansion_size();
+        if (new_expansion_size > expansion_size) {
+            expansion_size = new_expansion_size;
+            set_and_print_new_error_message(MAV_SEVERITY_WARNING, "Required SCR_HEAP_SIZE over %u", unsigned(expansion_size));
         }
 
         // re-print the latest error message every 10 seconds 10 times
