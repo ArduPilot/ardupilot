@@ -21,8 +21,8 @@ public:
        how much free memory do we have in bytes. 
      */
     uint32_t available_memory(void) override {
-        // SITL is assumed to always have plenty of memory. Return 128k for now
-        return 0x20000;
+        // SITL is assumed to always have plenty of memory. Return 512k for now
+        return 512*1024;
     }
 
     // get path to custom defaults file for AP_Param
@@ -42,12 +42,6 @@ public:
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
     void dump_stack_trace();
-
-#if ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    void *allocate_heap_memory(size_t size) override;
-    void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
-#endif // ENABLE_HEAP
 
 #ifdef WITH_SITL_TONEALARM
     bool toneAlarm_init(uint8_t types) override { return _toneAlarm.init(); }
