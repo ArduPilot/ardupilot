@@ -49,10 +49,12 @@ public:
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
 #if ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
-    virtual void *std_realloc(void *ptr, size_t new_size) override;
+    // heap functions for scripting support
+    void *heap_create(uint32_t size) override;
+    void heap_destroy(void *p) override;
+    void *heap_allocate(void *heap, uint32_t size) override;
+    void heap_free(void *ptr) override;
+    void *std_realloc(void *ptr, uint32_t new_size) override;
 #endif // ENABLE_HEAP
 
     /*
