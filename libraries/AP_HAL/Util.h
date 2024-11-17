@@ -150,24 +150,6 @@ public:
 
 #if ENABLE_HEAP
     /*
-      heap functions used by lua scripting
-    */
-    // allocate a new heap
-    virtual void *heap_create(uint32_t size);
-
-    // destroy a heap
-    virtual void heap_destroy(void *ptr);
-
-    // allocate some memory on a specific heap
-    virtual void *heap_allocate(void *heap, uint32_t size);
-
-    // free some memory that was allocated by heap_allocate. The implementation must
-    // be able to determine which heap the allocation was from using the pointer
-    virtual void heap_free(void *ptr);
-#endif // ENABLE_HEAP
-
-#if ENABLE_HEAP
-    /*
       heap functions used by non-scripting
      */
 #if USE_LIBC_REALLOC
