@@ -84,17 +84,6 @@ private:
     static ToneAlarm_SF _toneAlarm;
 #endif
 
-#if ENABLE_HEAP
-    struct heap_allocation_header {
-        size_t allocation_size; // size of allocated block, not including this header
-    };
-
-    struct heap {
-      size_t scripting_max_heap_size;
-      size_t current_heap_usage;
-    };
-#endif // ENABLE_HEAP
-
     int saved_argc;
     char *const *saved_argv;
 
