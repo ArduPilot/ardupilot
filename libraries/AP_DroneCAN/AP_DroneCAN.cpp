@@ -368,44 +368,49 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     }
 
     // Roundup all subscribers from supported drivers
+    bool subscribed = true;
 #if AP_GPS_DRONECAN_ENABLED
-    AP_GPS_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_GPS_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_COMPASS_DRONECAN_ENABLED
-    AP_Compass_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_Compass_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_BARO_DRONECAN_ENABLED
-    AP_Baro_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_Baro_DroneCAN::subscribe_msgs(this);
 #endif
-    AP_BattMonitor_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_BattMonitor_DroneCAN::subscribe_msgs(this);
 #if AP_AIRSPEED_DRONECAN_ENABLED
-    AP_Airspeed_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_Airspeed_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
-    AP_OpticalFlow_HereFlow::subscribe_msgs(this);
+    subscribed = subscribed && AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
 #if AP_RANGEFINDER_DRONECAN_ENABLED
-    AP_RangeFinder_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_RangeFinder_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
-    AP_RCProtocol_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_RCProtocol_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_EFI_DRONECAN_ENABLED
-    AP_EFI_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_EFI_DroneCAN::subscribe_msgs(this);
 #endif
 
 #if AP_PROXIMITY_DRONECAN_ENABLED
-    AP_Proximity_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_Proximity_DroneCAN::subscribe_msgs(this);
 #endif
 #if HAL_MOUNT_XACTI_ENABLED
-    AP_Mount_Xacti::subscribe_msgs(this);
+    subscribed = subscribed && AP_Mount_Xacti::subscribe_msgs(this);
 #endif
 #if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
-    AP_TemperatureSensor_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_TemperatureSensor_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_RPM_DRONECAN_ENABLED
-    AP_RPM_DroneCAN::subscribe_msgs(this);
+    subscribed = subscribed && AP_RPM_DroneCAN::subscribe_msgs(this);
 #endif
+
+    if (!subscribed) {
+        AP_BoardConfig::allocation_error("DroneCAN callback");
+    }
 
     act_out_array.set_timeout_ms(5);
     act_out_array.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
