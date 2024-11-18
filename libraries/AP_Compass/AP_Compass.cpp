@@ -23,6 +23,7 @@
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_BMM350.h"
 #include "AP_Compass_HMC5843.h"
+#include "AP_Compass_IIS2MDC.h"
 #include "AP_Compass_IST8308.h"
 #include "AP_Compass_IST8310.h"
 #include "AP_Compass_LSM303D.h"
@@ -529,7 +530,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1166,6 +1167,26 @@ void Compass::_probe_external_i2c_compasses(void)
             ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
                         all_external,
                         all_external?HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883P_ORIENTATION_INTERNAL));
+        }
+    }
+#endif
+#endif  // AP_COMPASS_QMC5883P_ENABLED
+
+#if AP_COMPASS_IIS2MDC_ENABLED
+    //external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IIS2MDC_I2C_ADDR),
+                    true, HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL));
+    }
+
+    // internal i2c bus
+#if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
+    if (all_external) {
+        // only probe IIS2MDC on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe(GET_I2C_DEVICE(i, HAL_COMPASS_IIS2MDC_I2C_ADDR),
+                        all_external,
+                        all_external?HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL:HAL_COMPASS_IIS2MDC_ORIENTATION_INTERNAL));
         }
     }
 #endif
