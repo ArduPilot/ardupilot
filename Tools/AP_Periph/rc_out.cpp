@@ -15,6 +15,9 @@
 #include <AP_HAL/AP_HAL.h>
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #include "AP_Periph.h"
+#if AP_SIM_ENABLED
+#include <dronecan_msgs.h>
+#endif
 
 // magic value from UAVCAN driver packet
 // dsdl/uavcan/equipment/esc/1030.RawCommand.uavcan
@@ -112,6 +115,9 @@ void AP_Periph_FW::rcout_srv_unitless(uint8_t actuator_id, const float command_v
     SRV_Channels::set_output_norm(function, command_value);
 
     rcout_has_new_data_to_update = true;
+#if AP_SIM_ENABLED
+    sim_update_actuator(actuator_id);
+#endif
 #endif
 }
 
@@ -122,6 +128,9 @@ void AP_Periph_FW::rcout_srv_PWM(uint8_t actuator_id, const float command_value)
     SRV_Channels::set_output_pwm(function, uint16_t(command_value+0.5));
 
     rcout_has_new_data_to_update = true;
+#if AP_SIM_ENABLED
+    sim_update_actuator(actuator_id);
+#endif
 #endif
 }
 
@@ -171,5 +180,47 @@ void AP_Periph_FW::rcout_update()
 #endif
 #endif
 }
+
+#if AP_SIM_ENABLED
+/*
+  update simulation of servos, sending actuator status
+*/
+void AP_Periph_FW::sim_update_actuator(uint8_t actuator_id)
+{
+    sim_actuator.mask |= 1U << actuator_id;
+
+    // send status at 10Hz
+    const uint32_t period_ms = 100;
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if (now_ms - sim_actuator.last_send_ms < period_ms) {
+        return;
+    }
+    sim_actuator.last_send_ms = now_ms;
+
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        if ((sim_actuator.mask & (1U<<i)) == 0) {
+            continue;
+        }
+        const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+        uavcan_equipment_actuator_Status pkt {};
+        pkt.actuator_id = i;
+        // assume 45 degree angle for simulation
+        pkt.position = radians(SRV_Channels::get_output_norm(function) * 45);
+        pkt.force = 0;
+        pkt.speed = 0;
+        pkt.power_rating_pct = UAVCAN_EQUIPMENT_ACTUATOR_STATUS_POWER_RATING_PCT_UNKNOWN;
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_ACTUATOR_STATUS_MAX_SIZE];
+        uint16_t total_size = uavcan_equipment_actuator_Status_encode(&pkt, buffer, !canfdout());
+
+        canard_broadcast(UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIGNATURE,
+                         UAVCAN_EQUIPMENT_ACTUATOR_STATUS_ID,
+                         CANARD_TRANSFER_PRIORITY_LOW,
+                         &buffer[0],
+                         total_size);
+    }
+}
+#endif // AP_SIM_ENABLED
 
 #endif // HAL_PERIPH_ENABLE_RC_OUT
