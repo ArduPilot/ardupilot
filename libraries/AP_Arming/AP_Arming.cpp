@@ -513,6 +513,12 @@ bool AP_Arming::ins_checks(bool report)
         }
 #endif
 
+        // check if IMU gyro updates are greater than or equal to Ardupilot Loop rate
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+        if (!ins.pre_arm_check_gyro_backend_rate_hz(fail_msg, ARRAY_SIZE(fail_msg))) {
+            check_failed(ARMING_CHECK_INS, report, "%s", fail_msg);
+            return false;
+        }
     }
 
 #if HAL_GYROFFT_ENABLED
