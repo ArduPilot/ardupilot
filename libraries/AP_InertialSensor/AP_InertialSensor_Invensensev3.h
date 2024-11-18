@@ -74,6 +74,11 @@ private:
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
     bool accumulate_highres_samples(const struct FIFODataHighRes *data, uint8_t n_samples);
 
+    // get the gyro backend rate in Hz at which the FIFO is being read
+    uint16_t get_gyro_backend_rate_hz() const override {
+        return backend_rate_hz;
+    }
+
     // reset FIFO configure1 register
     uint8_t fifo_config1;
 
