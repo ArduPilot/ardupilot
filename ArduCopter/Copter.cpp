@@ -636,6 +636,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_ANY)) {
         g2.winch.write_log();
     }
+    g2.winch.package_update();
 #endif
 #if HAL_MOUNT_ENABLED
     if (should_log(MASK_LOG_CAMERA)) {

@@ -1,4 +1,5 @@
 #include "AP_Winch.h"
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_WINCH_ENABLED
 
@@ -123,6 +124,56 @@ void AP_Winch::set_desired_rate(float rate)
 {
     config.rate_desired = constrain_float(rate, -get_rate_max(), get_rate_max());
     config.control_mode = ControlMode::RATE;
+}
+
+//Implement DO_WINCH Deliver message
+void AP_Winch::package_update()
+{
+    if ( deliveryFlag == true)
+    {
+        config.rate_desired = get_rate_max(); //negative is up, positive is down
+        config.control_mode = ControlMode::RATE;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Package Requested, package lowering");
+        if ( touchGroundFlag == true )
+        {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"TOUCHED GROUND");
+            config.rate_desired = 0;
+            config.control_mode = ControlMode::RATE;
+            deliveryFlag = { false };
+            reelUpFlag = { true };
+        }
+    }
+
+    //could be moved into own function later. For Daiwa, 540 is empty line weight, 240 is max line weight. current threshold at 420
+    //TODO: find a better way to go about the delivery tension threshold. Add a parameter for it? 
+    uint16_t package_weight = backend->get_current_tension();
+    if ( package_weight > 420 )
+    {
+        touchGroundFlag = { true };
+    }
+    else
+    {
+        touchGroundFlag = { false };
+    }
+
+    if ( reelUpFlag == true )
+    {
+        config.length_desired = home_line; //replace this with var home_line
+        config.control_mode = ControlMode::POSITION;
+        reelUpFlag = { false };
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Package is on the ground, reeling up to home line at: %f",float(home_line));
+    }
+
+}
+
+void AP_Winch::deliver_package()
+{
+    home_line = backend->get_current_length();
+    deliveryFlag = { true };
+
+    if (backend == nullptr) {
+        return;
+    }
 }
 
 // send status to ground station

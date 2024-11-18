@@ -2007,6 +2007,9 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
         case WINCH_RATE_CONTROL:
             g2.winch.set_desired_rate(cmd.content.winch.release_rate);
             break;
+        case WINCH_DELIVER:
+            g2.winch.deliver_package();
+            break;
         default:
             // do nothing
             break;

@@ -49,6 +49,9 @@ public:
     // returns current length of line deployed
     float get_current_length() const override { return latest.line_length; }
 
+    // returns current line tension
+    uint16_t get_current_tension() const override { return latest.tension_corrected; }
+
     // send status to ground station
     void send_status(const GCS_MAVLINK &channel) override;
 

@@ -1339,7 +1339,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_DO_WINCH:                              // MAV ID: 42600
         cmd.content.winch.num = packet.param1;          // winch number
-        cmd.content.winch.action = packet.param2;       // action (0 = relax, 1 = length control, 2 = rate control).  See WINCH_ACTION enum
+        cmd.content.winch.action = packet.param2;       // action (0 = relax, 1 = length control, 2 = rate control, 4 = winch deliver).  See WINCH_ACTION enum
         cmd.content.winch.release_length = packet.param3;   // cable distance to unwind in meters, negative numbers to wind in cable
         cmd.content.winch.release_rate = packet.param4; // release rate in meters/second
         break;

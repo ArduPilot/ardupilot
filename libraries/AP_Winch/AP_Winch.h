@@ -44,6 +44,18 @@ public:
     // true if winch is healthy
     bool healthy() const;
 
+    // true if ongoing delivery
+    bool deliveryFlag { false };
+
+    // true if package has hit the ground
+    bool touchGroundFlag { false };
+
+    // true if package has hit the ground and needs to be reeled back up
+    bool reelUpFlag { false };
+
+    // stores home line position before winch starts reeling
+    float home_line = 0;
+
     // initialise the winch
     void init();
 
@@ -55,6 +67,12 @@ public:
 
     // release specified length of cable (in meters)
     void release_length(float length);
+
+    // lower package until it touches the ground and reel winch back up. DO_Winch Deliver action
+    void package_update();
+
+    // set delivery flag
+    void deliver_package();
 
     // deploy line at specified speed in m/s (+ve deploys line, -ve retracts line, 0 stops)
     void set_desired_rate(float rate);
