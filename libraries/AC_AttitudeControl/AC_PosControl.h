@@ -531,7 +531,7 @@ protected:
     void handle_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
-    AP_AHRS_View&           _ahrs;
+    AP_AHRS_View&     _ahrs;
     const AP_InertialNav&   _inav;
     const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
@@ -613,12 +613,14 @@ protected:
     bool has_good_timing(void) const;
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~声明内部成员变量~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Vector3f    _fd;
-    Vector3f    _b_1d;  //desired b1_axis
+    Vector3f    _U_x;     //PDNN位移控制器输出
+    Vector3f    _b_1d;    //desired b1_axis
     Vector3f    _b_1c;
     Vector3f    _b_2c;
     Vector3f    _b_3c;
-    Matrix3f    _Rc;
+    Matrix3f    _Rc;      //解算后的期望旋转矩阵
+    Matrix3f    _R_body_to_ned_meas; //旋转矩阵测量值 body to NED
+    Matrix3f    _R_body_to_neu_meas; //旋转矩阵测量值 body to NEU
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 private:

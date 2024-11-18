@@ -585,7 +585,7 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    const Matrix3f &get_rotation_body_to_ned(void) const { return state.dcm_matrix; }
+    const Matrix3f &get_rotation_body_to_ned(void) const { return state.dcm_matrix; } //这里的state.dcm_matrix可能是由底层四元数得到的，待考证
 
     // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const;

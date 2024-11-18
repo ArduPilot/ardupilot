@@ -5,6 +5,9 @@
 #include <AP_Motors/AP_Motors.h>    // motors library
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加新依赖以支持调用测量的四元数~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#include <AP_AHRS/AP_AHRS_View.h>
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 extern const AP_HAL::HAL& hal;
 
@@ -774,23 +777,17 @@ void AC_PosControl::update_Rc()
     }
    _last_update_Rc_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
 //接下来计算b3c=fd/||fd||
-    if (!_fd.is_zero()){  //如果fd不是零向量，则归一化后作为b3轴
-        _b_3c = _fd.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
+    if (!_U_x.is_zero()){  //如果fd不是零向量，则归一化后作为b3轴
+        _b_3c = _U_x.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
         _b_1d = Vector3f(1.0f, 0.0f, 0.0f); //设置 期望的b1d轴
         //计算_b_2c轴
         _b_2c = _b_1d.cross(_b_3c).normalized(); 
         //计算_b_1c轴
         _b_1c = _b_3c.cross(_b_2c);
         //更新_Rc
-         Matrix3f _Rc_T;   //定义_Rc的转置矩阵
-        _Rc_T.a = _b_1c;  // 设置 第一行为 _b_1c
-        _Rc_T.b = _b_2c;  // 设置 第二行为 _b_2c
-        _Rc_T.c = _b_3c;  // 设置 第三行为 _b_3c
-        _Rc = _Rc_T.transposed();  //transpose()是就地修改，transposed()是返回新的矩阵，注意区别
-
-        float test_msg_1 = _Rc.c.x;
-        float test_msg_2 = _Rc_T.a.z; //memo这里用来测试转置效果
-        current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
+        _Rc.colx() = _b_1c;  // 设置 第一列为 _b_1c
+        _Rc.coly() = _b_2c;  // 设置 第二列为 _b_2c
+        _Rc.colz() = _b_3c;  // 设置 第三列为 _b_3c
     }
 
    
@@ -1115,9 +1112,20 @@ void AC_PosControl::update_z_controller()
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
     _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f
-    _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f
+    _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f，并将原本的NEU期望坐标，转换为NED
     
-    _fd = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
+    _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
+
+    _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
+    _R_body_to_neu_meas = _R_body_to_ned_meas;
+    _R_body_to_neu_meas.colz() = -_R_body_to_ned_meas.colz();   // 转换为旋转矩阵测量值 body to NEU （翻转第三列）
+    
+    float fd;
+    fd = _U_x.dot(_R_body_to_neu_meas.colz());                  //f=U_x * Re3
+
+    float test_msg_1 = fd;
+    float test_msg_2 = fd; //memo这里用来测试转置效果
+    current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // add feed forward component //目标速度，添加一些前馈
@@ -1171,7 +1179,7 @@ void AC_PosControl::update_z_controller()
         _limit_vector.z = 0.0f; //如果油门既不受上限也不受下限的限制，则限制向量为 `0.0`，表示没有垂直方向上的限制。
     }
 
-     //current_DIYwrench = get_DIYwrench(_fd); //用于ROS2推力话题
+     //current_DIYwrench = get_DIYwrench(_U_x); //用于ROS2推力话题
 }
 
 
