@@ -520,12 +520,14 @@ void Plane::update_fly_forward(void)
             return;
         }
 
-        if (quadplane.in_vtol_mode()) {
-            ahrs.set_fly_forward(false);
+        if (quadplane.option_is_set(QuadPlane::OPTION::ASSUME_FLYING_FORWARD_IN_TRANSITION) &&
+            quadplane.in_transition()) {
+            ahrs.set_fly_forward(true);
             return;
         }
 
-        if (quadplane.in_assisted_flight()) {
+        if (quadplane.in_vtol_mode() ||
+            quadplane.in_assisted_flight()) {
             ahrs.set_fly_forward(false);
             return;
         }

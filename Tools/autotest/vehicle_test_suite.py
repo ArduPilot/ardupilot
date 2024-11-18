@@ -3145,7 +3145,7 @@ class TestSuite(ABC):
         # we allow for no docs for replay messages, as these are not for end-users. They are
         # effectively binary blobs for replay
         REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
-                       'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
+                       'REY3', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
                        'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
                        'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
 
