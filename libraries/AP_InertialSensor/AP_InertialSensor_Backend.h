@@ -91,6 +91,12 @@ public:
     bool has_been_killed(uint8_t instance) const { return false; }
 #endif
 
+    // get the backend update rate for the gyro in Hz
+    // if the backend polling rate is the same as the sample rate or higher, return raw sample rate
+    // override and return the backend rate in Hz if it is lower than the sample rate
+    virtual uint16_t get_gyro_backend_rate_hz() const {
+        return _gyro_raw_sample_rate(gyro_instance);
+    }
 
     /*
       device driver IDs. These are used to fill in the devtype field
