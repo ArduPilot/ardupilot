@@ -5,6 +5,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 class LR_MsgHandler : public MsgHandler {
 public:
@@ -28,15 +29,20 @@ public:
 class LR_MsgHandler_EKF : public LR_MsgHandler
 {
 public:
-    LR_MsgHandler_EKF(struct log_Format &_f, NavEKF2 &_ekf2, NavEKF3 &_ekf3) :
+    LR_MsgHandler_EKF(struct log_Format &_f,
+                      NavEKF2 &_ekf2,
+                      NavEKF3 &_ekf3,
+                      AP_ExternalAHRS &_eahrs) :
         LR_MsgHandler(_f),
         ekf2(_ekf2),
-        ekf3(_ekf3) {}
+        ekf3(_ekf3),
+        eahrs(_eahrs){}
     using LR_MsgHandler::LR_MsgHandler;
     virtual void process_message(uint8_t *msg) override = 0;
 protected:
     NavEKF2 &ekf2;
     NavEKF3 &ekf3;
+    AP_ExternalAHRS &eahrs;
 };
 
 class LR_MsgHandler_RFRF : public LR_MsgHandler_EKF

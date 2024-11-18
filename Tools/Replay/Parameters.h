@@ -17,6 +17,7 @@ public:
         k_param_logger,
         k_param_NavEKF3,
         k_param_gps,
+        k_param_eahrs,
     };
     AP_Int8 dummy;
 };

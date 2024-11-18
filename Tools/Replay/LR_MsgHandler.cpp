@@ -39,6 +39,12 @@ void LR_MsgHandler_RFRF::process_message(uint8_t *msgbytes)
     }
 #undef MAP_FLAG
     AP::dal().handle_message(msg, ekf2, ekf3);
+    if (eahrs.get_name() == nullptr) {
+        eahrs.init();
+    }
+    if (eahrs.get_name() != nullptr) {
+        eahrs.update();
+    }
 }
 
 void LR_MsgHandler_RFRN::process_message(uint8_t *msgbytes)
@@ -75,7 +81,7 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
         break;
     }
     if (replay_force_ekf3) {
-        LR_MsgHandler_REV3 h{f, ekf2, ekf3};
+        LR_MsgHandler_REV3 h{f, ekf2, ekf3, eahrs};
         h.process_message(msgbytes);
     }
 }
@@ -90,7 +96,7 @@ void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
     ekf2.setOriginLLH(loc);
 
     if (replay_force_ekf3) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
+        LR_MsgHandler_RSO2 h{f, ekf2, ekf3, eahrs};
         h.process_message(msgbytes);
     }
 }
@@ -100,7 +106,7 @@ void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA2, msgbytes);
     ekf2.writeDefaultAirSpeed(msg.airspeed);
     if (replay_force_ekf3) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
+        LR_MsgHandler_RWA2 h{f, ekf2, ekf3, eahrs};
         h.process_message(msgbytes);
     }
 }
@@ -136,7 +142,7 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
     }
 
     if (replay_force_ekf2) {
-        LR_MsgHandler_REV2 h{f, ekf2, ekf3};
+        LR_MsgHandler_REV2 h{f, ekf2, ekf3, eahrs};
         h.process_message(msgbytes);
     }
 }
@@ -150,7 +156,7 @@ void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
     loc.alt = msg.alt;
     ekf3.setOriginLLH(loc);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
+        LR_MsgHandler_RSO2 h{f, ekf2, ekf3, eahrs};
         h.process_message(msgbytes);
     }
 }
@@ -160,7 +166,7 @@ void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA3, msgbytes);
     ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
+        LR_MsgHandler_RWA2 h{f, ekf2, ekf3, eahrs};
         h.process_message(msgbytes);
     }
 }

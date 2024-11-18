@@ -8,7 +8,7 @@
 class LogReader : public AP_LoggerFileReader
 {
 public:
-    LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf, NavEKF3 &_ekf3);
+    LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf, NavEKF3 &_ekf3, AP_ExternalAHRS &_eahrs);
 
     VehicleType::vehicle_type vehicle;
 
@@ -26,6 +26,7 @@ private:
 
     NavEKF2 &ekf2;
     NavEKF3 &ekf3;
+    AP_ExternalAHRS &eahrs;
 
     struct LogStructure *_log_structure;
     uint8_t _log_structure_count;
