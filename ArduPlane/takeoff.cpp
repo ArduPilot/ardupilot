@@ -204,7 +204,7 @@ void Plane::takeoff_calc_pitch(void)
 
     // We are now past the rotation.
     // Initialize pitch limits for TECS.
-    int16_t pitch_min_cd = get_takeoff_pitch_min_cd();
+    int16_t pitch_min_cd = get_takeoff_pitch_min_cd() + int16_t(g.pitch_trim * 100.0);
     bool pitch_clipped_max = false;
 
     // If we're using an airspeed sensor, we consult TECS.
