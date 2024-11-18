@@ -14,7 +14,7 @@ bool ModeAcro_Heli::init(bool ignore_checks)
     attitude_control->use_flybar_passthrough(motors->has_flybar(), motors->supports_yaw_passthrough());
 
     motors->set_acro_tail(true);
-    
+
     // set stab collective false to use full collective pitch range
     copter.input_manager.set_use_stab_col(false);
 
@@ -67,7 +67,7 @@ void ModeAcro_Heli::run()
         break;
     }
 
-    if (!motors->has_flybar()){
+    if (!motors->has_flybar()) {
         // convert the input to the desired body frame rate
         get_pilot_desired_angle_rates(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), channel_yaw->norm_input_dz(), target_roll, target_pitch, target_yaw);
         // only mimic flybar response when trainer mode is disabled
@@ -75,7 +75,7 @@ void ModeAcro_Heli::run()
             // while landed always leak off target attitude to current attitude
             if (copter.ap.land_complete) {
                 virtual_flybar(target_roll, target_pitch, target_yaw, 3.0f, 3.0f);
-            // while flying use acro balance parameters for leak rate
+                // while flying use acro balance parameters for leak rate
             } else {
                 virtual_flybar(target_roll, target_pitch, target_yaw, g.acro_balance_pitch, g.acro_balance_roll);
             }
@@ -93,7 +93,7 @@ void ModeAcro_Heli::run()
         } else {
             attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
         }
-    }else{
+    } else {
         /*
           for fly-bar passthrough use control_in values with no
           deadzone. This gives true pass-through.
@@ -101,7 +101,7 @@ void ModeAcro_Heli::run()
         float roll_in = channel_roll->get_control_in_zero_dz();
         float pitch_in = channel_pitch->get_control_in_zero_dz();
         float yaw_in;
-        
+
         if (motors->supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and

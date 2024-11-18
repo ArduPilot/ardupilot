@@ -49,21 +49,21 @@ void ModeSmartRTL::exit()
 void ModeSmartRTL::run()
 {
     switch (smart_rtl_state) {
-        case SubMode::WAIT_FOR_PATH_CLEANUP:
-            wait_cleanup_run();
-            break;
-        case SubMode::PATH_FOLLOW:
-            path_follow_run();
-            break;
-        case SubMode::PRELAND_POSITION:
-            pre_land_position_run();
-            break;
-        case SubMode::DESCEND:
-            descent_run(); // Re-using the descend method from normal rtl mode.
-            break;
-        case SubMode::LAND:
-            land_run(true); // Re-using the land method from normal rtl mode.
-            break;
+    case SubMode::WAIT_FOR_PATH_CLEANUP:
+        wait_cleanup_run();
+        break;
+    case SubMode::PATH_FOLLOW:
+        path_follow_run();
+        break;
+    case SubMode::PRELAND_POSITION:
+        pre_land_position_run();
+        break;
+    case SubMode::DESCEND:
+        descent_run(); // Re-using the descend method from normal rtl mode.
+        break;
+    case SubMode::LAND:
+        land_run(true); // Re-using the land method from normal rtl mode.
+        break;
     }
 }
 

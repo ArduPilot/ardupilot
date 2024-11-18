@@ -126,11 +126,11 @@ void ModeFlip::run()
         if (flip_angle >= 4500) {
             if (roll_dir != 0) {
                 // we are rolling
-            _state = FlipState::Roll;
+                _state = FlipState::Roll;
             } else {
                 // we are pitching
                 _state = FlipState::Pitch_A;
-        }
+            }
         }
         break;
 

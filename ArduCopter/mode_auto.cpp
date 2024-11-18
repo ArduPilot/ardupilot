@@ -272,7 +272,7 @@ bool ModeAuto::return_path_or_jump_to_landing_sequence_auto_RTL(ModeReason reaso
 }
 
 // Enter auto rtl pseudo mode
-bool ModeAuto::enter_auto_rtl(ModeReason reason) 
+bool ModeAuto::enter_auto_rtl(ModeReason reason)
 {
     mission.set_force_resume(true);
 
@@ -590,7 +590,7 @@ void ModeAuto::nav_guided_start()
 
 bool ModeAuto::is_landing() const
 {
-    switch(_mode) {
+    switch (_mode) {
     case SubMode::LAND:
         return true;
     case SubMode::RTL:
@@ -671,7 +671,7 @@ bool ModeAuto::set_speed_down(float speed_down_cms)
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
-    switch(cmd.id) {
+    switch (cmd.id) {
 
     ///
     /// navigation commands
@@ -831,20 +831,19 @@ bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
     // switch to handle different commands
     switch (cmd.id) {
 
-        case MAV_CMD_NAV_WAYPOINT:
-        {
-            // set wp_nav's destination
-            Location dest(cmd.content.location);
-            return copter.mode_guided.set_destination(dest);
-        }
+    case MAV_CMD_NAV_WAYPOINT: {
+        // set wp_nav's destination
+        Location dest(cmd.content.location);
+        return copter.mode_guided.set_destination(dest);
+    }
 
-        case MAV_CMD_CONDITION_YAW:
-            do_yaw(cmd);
-            return true;
+    case MAV_CMD_CONDITION_YAW:
+        do_yaw(cmd);
+        return true;
 
-        default:
-            // reject unrecognised command
-            return false;
+    default:
+        // reject unrecognised command
+        return false;
     }
 
     return true;
@@ -960,7 +959,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-     case MAV_CMD_NAV_DELAY:
+    case MAV_CMD_NAV_DELAY:
         cmd_complete = verify_nav_delay(cmd);
         break;
 
@@ -1182,10 +1181,10 @@ void ModeAuto::loiter_to_alt_run()
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
     float target_climb_rate = sqrt_controller(
-        -alt_error_cm,
-        pos_control->get_pos_z_p().kP(),
-        pos_control->get_max_accel_z_cmss(),
-        G_Dt);
+                                  -alt_error_cm,
+                                  pos_control->get_pos_z_p().kP(),
+                                  pos_control->get_max_accel_z_cmss(),
+                                  G_Dt);
     target_climb_rate = constrain_float(target_climb_rate, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
@@ -1615,12 +1614,12 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     }
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
-        // stop because we may change between rel,abs and terrain alt types
+    // stop because we may change between rel,abs and terrain alt types
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
-        // always stop for RTL and takeoff commands
+    // always stop for RTL and takeoff commands
     default:
         // for unsupported commands it is safer to stop
         break;
@@ -1998,18 +1997,18 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 {
     // Note: we ignore the gripper num parameter because we only support one gripper
     switch (cmd.content.winch.action) {
-        case WINCH_RELAXED:
-            g2.winch.relax();
-            break;
-        case WINCH_RELATIVE_LENGTH_CONTROL:
-            g2.winch.release_length(cmd.content.winch.release_length);
-            break;
-        case WINCH_RATE_CONTROL:
-            g2.winch.set_desired_rate(cmd.content.winch.release_rate);
-            break;
-        default:
-            // do nothing
-            break;
+    case WINCH_RELAXED:
+        g2.winch.relax();
+        break;
+    case WINCH_RELATIVE_LENGTH_CONTROL:
+        g2.winch.release_length(cmd.content.winch.release_length);
+        break;
+    case WINCH_RATE_CONTROL:
+        g2.winch.set_desired_rate(cmd.content.winch.release_rate);
+        break;
+    default:
+        // do nothing
+        break;
     }
 }
 #endif
@@ -2079,37 +2078,37 @@ bool ModeAuto::verify_land()
     bool retval = false;
 
     switch (state) {
-        case State::FlyToLocation:
-            // check if we've reached the location
-            if (copter.wp_nav->reached_wp_destination()) {
-                // initialise landing controller
-                land_start();
+    case State::FlyToLocation:
+        // check if we've reached the location
+        if (copter.wp_nav->reached_wp_destination()) {
+            // initialise landing controller
+            land_start();
 
-                // advance to next state
-                state = State::Descending;
-            }
-            break;
+            // advance to next state
+            state = State::Descending;
+        }
+        break;
 
-        case State::Descending:
-            // rely on THROTTLE_LAND mode to correctly update landing status
-            retval = copter.ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
-            if (retval && !mission.continue_after_land_check_for_takeoff() && copter.motors->armed()) {
-                /*
-                  we want to stop mission processing on land
-                  completion. Disarm now, then return false. This
-                  leaves mission state machine in the current NAV_LAND
-                  mission item. After disarming the mission will reset
-                */
-                copter.arming.disarm(AP_Arming::Method::LANDED);
-                retval = false;
-            }
-            break;
+    case State::Descending:
+        // rely on THROTTLE_LAND mode to correctly update landing status
+        retval = copter.ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
+        if (retval && !mission.continue_after_land_check_for_takeoff() && copter.motors->armed()) {
+            /*
+              we want to stop mission processing on land
+              completion. Disarm now, then return false. This
+              leaves mission state machine in the current NAV_LAND
+              mission item. After disarming the mission will reset
+            */
+            copter.arming.disarm(AP_Arming::Method::LANDED);
+            retval = false;
+        }
+        break;
 
-        default:
-            // this should never happen
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            retval = true;
-            break;
+    default:
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        retval = true;
+        break;
     }
 
     // true is returned if we've successfully landed
@@ -2181,7 +2180,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // returns true with RTL has completed successfully
 bool ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && 
+    return (copter.mode_rtl.state_complete() &&
             (copter.mode_rtl.state() == ModeRTL::SubMode::FINAL_DESCENT || copter.mode_rtl.state() == ModeRTL::SubMode::LAND) &&
             (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }

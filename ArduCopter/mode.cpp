@@ -36,151 +36,151 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 
     switch (mode) {
 #if MODE_ACRO_ENABLED
-        case Mode::Number::ACRO:
-            ret = &mode_acro;
-            break;
+    case Mode::Number::ACRO:
+        ret = &mode_acro;
+        break;
 #endif
 
-        case Mode::Number::STABILIZE:
-            ret = &mode_stabilize;
-            break;
+    case Mode::Number::STABILIZE:
+        ret = &mode_stabilize;
+        break;
 
-        case Mode::Number::ALT_HOLD:
-            ret = &mode_althold;
-            break;
+    case Mode::Number::ALT_HOLD:
+        ret = &mode_althold;
+        break;
 
 #if MODE_AUTO_ENABLED
-        case Mode::Number::AUTO:
-            ret = &mode_auto;
-            break;
+    case Mode::Number::AUTO:
+        ret = &mode_auto;
+        break;
 #endif
 
 #if MODE_CIRCLE_ENABLED
-        case Mode::Number::CIRCLE:
-            ret = &mode_circle;
-            break;
+    case Mode::Number::CIRCLE:
+        ret = &mode_circle;
+        break;
 #endif
 
 #if MODE_LOITER_ENABLED
-        case Mode::Number::LOITER:
-            ret = &mode_loiter;
-            break;
+    case Mode::Number::LOITER:
+        ret = &mode_loiter;
+        break;
 #endif
 
 #if MODE_GUIDED_ENABLED
-        case Mode::Number::GUIDED:
-            ret = &mode_guided;
-            break;
+    case Mode::Number::GUIDED:
+        ret = &mode_guided;
+        break;
 #endif
 
-        case Mode::Number::LAND:
-            ret = &mode_land;
-            break;
+    case Mode::Number::LAND:
+        ret = &mode_land;
+        break;
 
 #if MODE_RTL_ENABLED
-        case Mode::Number::RTL:
-            ret = &mode_rtl;
-            break;
+    case Mode::Number::RTL:
+        ret = &mode_rtl;
+        break;
 #endif
 
 #if MODE_DRIFT_ENABLED
-        case Mode::Number::DRIFT:
-            ret = &mode_drift;
-            break;
+    case Mode::Number::DRIFT:
+        ret = &mode_drift;
+        break;
 #endif
 
 #if MODE_SPORT_ENABLED
-        case Mode::Number::SPORT:
-            ret = &mode_sport;
-            break;
+    case Mode::Number::SPORT:
+        ret = &mode_sport;
+        break;
 #endif
 
 #if MODE_FLIP_ENABLED
-        case Mode::Number::FLIP:
-            ret = &mode_flip;
-            break;
+    case Mode::Number::FLIP:
+        ret = &mode_flip;
+        break;
 #endif
 
 #if AUTOTUNE_ENABLED
-        case Mode::Number::AUTOTUNE:
-            ret = &mode_autotune;
-            break;
+    case Mode::Number::AUTOTUNE:
+        ret = &mode_autotune;
+        break;
 #endif
 
 #if MODE_POSHOLD_ENABLED
-        case Mode::Number::POSHOLD:
-            ret = &mode_poshold;
-            break;
+    case Mode::Number::POSHOLD:
+        ret = &mode_poshold;
+        break;
 #endif
 
 #if MODE_BRAKE_ENABLED
-        case Mode::Number::BRAKE:
-            ret = &mode_brake;
-            break;
+    case Mode::Number::BRAKE:
+        ret = &mode_brake;
+        break;
 #endif
 
 #if MODE_THROW_ENABLED
-        case Mode::Number::THROW:
-            ret = &mode_throw;
-            break;
+    case Mode::Number::THROW:
+        ret = &mode_throw;
+        break;
 #endif
 
 #if HAL_ADSB_ENABLED
-        case Mode::Number::AVOID_ADSB:
-            ret = &mode_avoid_adsb;
-            break;
+    case Mode::Number::AVOID_ADSB:
+        ret = &mode_avoid_adsb;
+        break;
 #endif
 
 #if MODE_GUIDED_NOGPS_ENABLED
-        case Mode::Number::GUIDED_NOGPS:
-            ret = &mode_guided_nogps;
-            break;
+    case Mode::Number::GUIDED_NOGPS:
+        ret = &mode_guided_nogps;
+        break;
 #endif
 
 #if MODE_SMARTRTL_ENABLED
-        case Mode::Number::SMART_RTL:
-            ret = &mode_smartrtl;
-            break;
+    case Mode::Number::SMART_RTL:
+        ret = &mode_smartrtl;
+        break;
 #endif
 
 #if MODE_FLOWHOLD_ENABLED
-        case Mode::Number::FLOWHOLD:
-            ret = (Mode *)g2.mode_flowhold_ptr;
-            break;
+    case Mode::Number::FLOWHOLD:
+        ret = (Mode *)g2.mode_flowhold_ptr;
+        break;
 #endif
 
 #if MODE_FOLLOW_ENABLED
-        case Mode::Number::FOLLOW:
-            ret = &mode_follow;
-            break;
+    case Mode::Number::FOLLOW:
+        ret = &mode_follow;
+        break;
 #endif
 
 #if MODE_ZIGZAG_ENABLED
-        case Mode::Number::ZIGZAG:
-            ret = &mode_zigzag;
-            break;
+    case Mode::Number::ZIGZAG:
+        ret = &mode_zigzag;
+        break;
 #endif
 
 #if MODE_SYSTEMID_ENABLED
-        case Mode::Number::SYSTEMID:
-            ret = (Mode *)g2.mode_systemid_ptr;
-            break;
+    case Mode::Number::SYSTEMID:
+        ret = (Mode *)g2.mode_systemid_ptr;
+        break;
 #endif
 
 #if MODE_AUTOROTATE_ENABLED
-        case Mode::Number::AUTOROTATE:
-            ret = &mode_autorotate;
-            break;
+    case Mode::Number::AUTOROTATE:
+        ret = &mode_autorotate;
+        break;
 #endif
 
 #if MODE_TURTLE_ENABLED
-        case Mode::Number::TURTLE:
-            ret = &mode_turtle;
-            break;
+    case Mode::Number::TURTLE:
+        ret = &mode_turtle;
+        break;
 #endif
 
-        default:
-            break;
+    default:
+        break;
     }
 
     return ret;
@@ -456,10 +456,10 @@ void Copter::exit_mode(Mode *&old_flightmode,
     // if we are changing from a mode that did not use manual throttle,
     // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
     // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
-    if (!old_flightmode->has_manual_throttle()){
-        if (new_flightmode == &mode_stabilize){
+    if (!old_flightmode->has_manual_throttle()) {
+        if (new_flightmode == &mode_stabilize) {
             input_manager.set_stab_col_ramp(1.0);
-        } else if (new_flightmode == &mode_acro){
+        } else if (new_flightmode == &mode_acro) {
             input_manager.set_stab_col_ramp(0.0);
         }
     }
@@ -472,7 +472,8 @@ void Copter::exit_mode(Mode *&old_flightmode,
 }
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
-void Copter::notify_flight_mode() {
+void Copter::notify_flight_mode()
+{
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
     AP_Notify::flags.flight_mode = (uint8_t)flightmode->mode_number();
     notify.set_flight_mode_str(flightmode->name4());
@@ -580,13 +581,13 @@ void Mode::zero_throttle_and_hold_attitude()
 // handle situations where the vehicle is on the ground waiting for takeoff
 // force_throttle_unlimited should be true in cases where we want to keep the motors spooled up
 // (instead of spooling down to ground idle).  This is required for tradheli's in Guided and Auto
-// where we always want the motor spooled up in Guided or Auto mode.  Tradheli's main rotor stops 
+// where we always want the motor spooled up in Guided or Auto mode.  Tradheli's main rotor stops
 // when spooled down to ground idle.
 // ultimately it forces the motor interlock to be obeyed in auto and guided modes when on the ground.
 void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 {
     if (force_throttle_unlimited) {
-        // keep rotors turning 
+        // keep rotors turning
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     } else {
         // spool down to ground idle
@@ -595,7 +596,7 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 
     // aircraft is landed, integrator terms must be reset regardless of spool state
     attitude_control->reset_rate_controller_I_terms_smoothly();
- 
+
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
     case AP_Motors::SpoolState::GROUND_IDLE:
@@ -712,7 +713,7 @@ void Mode::land_run_horizontal_control()
 
     // process pilot inputs
     if (!copter.failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR) {
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
@@ -757,7 +758,7 @@ void Mode::land_run_horizontal_control()
         if (!copter.precland.get_target_position_cm(target_pos)) {
             target_pos = inertial_nav.get_position_xy_cm();
         }
-         // get the velocity of the target
+        // get the velocity of the target
         copter.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
 
         Vector2f zero;
@@ -784,7 +785,7 @@ void Mode::land_run_horizontal_control()
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
         const float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
-                                                     g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
+                                        g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         const float thrust_vector_max = sinf(radians(attitude_limit_cd * 0.01f)) * GRAVITY_MSS * 100.0f;
         const float thrust_vector_mag = thrust_vector.xy().length();
         if (thrust_vector_mag > thrust_vector_max) {
@@ -827,7 +828,7 @@ void Mode::land_run_normal_or_precland(bool pause_descent)
 void Mode::precland_retry_position(const Vector3f &retry_pos)
 {
     if (!copter.failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR) {
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
@@ -1048,7 +1049,8 @@ float Mode::get_non_takeoff_throttle()
     return copter.get_non_takeoff_throttle();
 }
 
-void Mode::update_simple_mode(void) {
+void Mode::update_simple_mode(void)
+{
     copter.update_simple_mode();
 }
 

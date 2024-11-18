@@ -50,7 +50,7 @@ void ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"waiting for throw");
         stage = Throw_Detecting;
 
-    } else if (stage == Throw_Detecting && throw_detected()){
+    } else if (stage == Throw_Detecting && throw_detected()) {
         gcs().send_text(MAV_SEVERITY_INFO,"throw detected - spooling motors");
         copter.set_land_complete(false);
         stage = Throw_Wait_Throttle_Unlimited;
@@ -92,17 +92,17 @@ void ModeThrow::run()
     } else if (stage == Throw_PosHold && throw_position_good()) {
         if (!nextmode_attempted) {
             switch ((Mode::Number)g2.throw_nextmode.get()) {
-                case Mode::Number::AUTO:
-                case Mode::Number::GUIDED:
-                case Mode::Number::RTL:
-                case Mode::Number::LAND:
-                case Mode::Number::BRAKE:
-                case Mode::Number::LOITER:
-                    set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
-                    break;
-                default:
-                    // do nothing
-                    break;
+            case Mode::Number::AUTO:
+            case Mode::Number::GUIDED:
+            case Mode::Number::RTL:
+            case Mode::Number::LAND:
+            case Mode::Number::BRAKE:
+            case Mode::Number::LOITER:
+                set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
+                break;
+            default:
+                // do nothing
+                break;
             }
             nextmode_attempted = true;
         }
@@ -215,19 +215,19 @@ void ModeThrow::run()
         const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
 
-// @LoggerMessage: THRO
-// @Description: Throw Mode messages
-// @URL: https://ardupilot.org/copter/docs/throw-mode.html
-// @Field: TimeUS: Time since system startup
-// @Field: Stage: Current stage of the Throw Mode
-// @Field: Vel: Magnitude of the velocity vector
-// @Field: VelZ: Vertical Velocity
-// @Field: Acc: Magnitude of the vector of the current acceleration
-// @Field: AccEfZ: Vertical earth frame accelerometer value
-// @Field: Throw: True if a throw has been detected since entering this mode
-// @Field: AttOk: True if the vehicle is upright 
-// @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
-// @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
+        // @LoggerMessage: THRO
+        // @Description: Throw Mode messages
+        // @URL: https://ardupilot.org/copter/docs/throw-mode.html
+        // @Field: TimeUS: Time since system startup
+        // @Field: Stage: Current stage of the Throw Mode
+        // @Field: Vel: Magnitude of the velocity vector
+        // @Field: VelZ: Vertical Velocity
+        // @Field: Acc: Magnitude of the vector of the current acceleration
+        // @Field: AccEfZ: Vertical earth frame accelerometer value
+        // @Field: Throw: True if a throw has been detected since entering this mode
+        // @Field: AttOk: True if the vehicle is upright
+        // @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
+        // @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
 
         AP::logger().WriteStreaming(
             "THRO",
@@ -286,7 +286,7 @@ bool ModeThrow::throw_detected()
     // Check that the altitude is within user defined limits
     const bool height_within_params = (g.throw_altitude_min == 0 || altitude_above_home > g.throw_altitude_min) && (g.throw_altitude_max == 0 || (altitude_above_home < g.throw_altitude_max));
 
-    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release  
+    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action && height_within_params;
 
 

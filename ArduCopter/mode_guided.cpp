@@ -95,7 +95,7 @@ void ModeGuided::run()
         angle_control_run();
         break;
     }
- }
+}
 
 // returns true if the Guided-mode-option is set (see GUID_OPTIONS)
 bool ModeGuided::option_is_enabled(Option option) const
@@ -1108,7 +1108,7 @@ const Vector3f& ModeGuided::get_target_accel() const
 
 uint32_t ModeGuided::wp_distance() const
 {
-    switch(guided_mode) {
+    switch (guided_mode) {
     case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination();
     case SubMode::Pos:
@@ -1122,7 +1122,7 @@ uint32_t ModeGuided::wp_distance() const
 
 int32_t ModeGuided::wp_bearing() const
 {
-    switch(guided_mode) {
+    switch (guided_mode) {
     case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination();
     case SubMode::Pos:

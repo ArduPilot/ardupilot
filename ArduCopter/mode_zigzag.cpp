@@ -166,51 +166,51 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
     // handle state machine changes
     switch (stage) {
 
-        case STORING_POINTS:
-            if (ab_dest == Destination::A) {
-                // store point A
-                dest_A = curr_pos;
-                gcs().send_text(MAV_SEVERITY_INFO, "%s: point A stored", name());
-                LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_A);
-            } else {
-                // store point B
-                dest_B = curr_pos;
-                gcs().send_text(MAV_SEVERITY_INFO, "%s: point B stored", name());
-                LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_B);
-            }
-            // if both A and B have been stored advance state
-            if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
-                stage = MANUAL_REGAIN;
-                spray(false);
-            } else if (!dest_A.is_zero() || !dest_B.is_zero()) {
-                // if only A or B have been stored, spray on
-                spray(true);
-            }
-            break;
+    case STORING_POINTS:
+        if (ab_dest == Destination::A) {
+            // store point A
+            dest_A = curr_pos;
+            gcs().send_text(MAV_SEVERITY_INFO, "%s: point A stored", name());
+            LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_A);
+        } else {
+            // store point B
+            dest_B = curr_pos;
+            gcs().send_text(MAV_SEVERITY_INFO, "%s: point B stored", name());
+            LOGGER_WRITE_EVENT(LogEvent::ZIGZAG_STORE_B);
+        }
+        // if both A and B have been stored advance state
+        if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
+            stage = MANUAL_REGAIN;
+            spray(false);
+        } else if (!dest_A.is_zero() || !dest_B.is_zero()) {
+            // if only A or B have been stored, spray on
+            spray(true);
+        }
+        break;
 
-        case AUTO:
-        case MANUAL_REGAIN:
-            // A and B have been defined, move vehicle to destination A or B
-            Vector3f next_dest;
-            bool terr_alt;
-            if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt)) {
-                wp_nav->wp_and_spline_init();
-                if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
-                    stage = AUTO;
-                    auto_stage = AutoState::AB_MOVING;
-                    ab_dest_stored = ab_dest;
-                    // spray on while moving to A or B
-                    spray(true);
-                    reach_wp_time_ms = 0;
-                    if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
-                        gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), (ab_dest == Destination::A) ? "A" : "B");
-                    } else {
-                        line_count++;
-                        gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s (line %d/%d)", name(), (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
-                    }
+    case AUTO:
+    case MANUAL_REGAIN:
+        // A and B have been defined, move vehicle to destination A or B
+        Vector3f next_dest;
+        bool terr_alt;
+        if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt)) {
+            wp_nav->wp_and_spline_init();
+            if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
+                stage = AUTO;
+                auto_stage = AutoState::AB_MOVING;
+                ab_dest_stored = ab_dest;
+                // spray on while moving to A or B
+                spray(true);
+                reach_wp_time_ms = 0;
+                if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s", name(), (ab_dest == Destination::A) ? "A" : "B");
+                } else {
+                    line_count++;
+                    gcs().send_text(MAV_SEVERITY_INFO, "%s: moving to %s (line %d/%d)", name(), (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
                 }
             }
-            break;
+        }
+        break;
     }
 }
 

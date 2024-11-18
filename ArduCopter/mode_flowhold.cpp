@@ -203,25 +203,25 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
 #if HAL_LOGGING_ENABLED
-// @LoggerMessage: FHLD
-// @Description: FlowHold mode messages
-// @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
-// @Field: TimeUS: Time since system startup
-// @Field: SFx: Filtered flow rate, X-Axis
-// @Field: SFy: Filtered flow rate, Y-Axis
-// @Field: Ax: Target lean angle, X-Axis
-// @Field: Ay: Target lean angle, Y-Axis
-// @Field: Qual: Flow sensor quality. If this value falls below FHLD_QUAL_MIN parameter, FlowHold will act just like AltHold.
-// @Field: Ix: Integral part of PI controller, X-Axis
-// @Field: Iy: Integral part of PI controller, Y-Axis
+    // @LoggerMessage: FHLD
+    // @Description: FlowHold mode messages
+    // @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
+    // @Field: TimeUS: Time since system startup
+    // @Field: SFx: Filtered flow rate, X-Axis
+    // @Field: SFy: Filtered flow rate, Y-Axis
+    // @Field: Ax: Target lean angle, X-Axis
+    // @Field: Ay: Target lean angle, Y-Axis
+    // @Field: Qual: Flow sensor quality. If this value falls below FHLD_QUAL_MIN parameter, FlowHold will act just like AltHold.
+    // @Field: Ix: Integral part of PI controller, X-Axis
+    // @Field: Iy: Integral part of PI controller, Y-Axis
 
     if (log_counter++ % 20 == 0) {
         AP::logger().WriteStreaming("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
-                                               AP_HAL::micros64(),
-                                               (double)sensor_flow.x, (double)sensor_flow.y,
-                                               (double)bf_angles.x, (double)bf_angles.y,
-                                               (double)quality_filtered,
-                                               (double)xy_I.x, (double)xy_I.y);
+                                    AP_HAL::micros64(),
+                                    (double)sensor_flow.x, (double)sensor_flow.y,
+                                    (double)bf_angles.x, (double)bf_angles.y,
+                                    (double)quality_filtered,
+                                    (double)xy_I.x, (double)xy_I.y);
     }
 #endif  // HAL_LOGGING_ENABLED
 }
@@ -414,7 +414,7 @@ void ModeFlowHold::update_height_estimate(void)
         last_flow_rate_rps = flow_rate_rps;
         last_ins_height = ins_height;
         height_offset = 0;
-        return;        
+        return;
     }
 
     /*
@@ -483,32 +483,32 @@ void ModeFlowHold::update_height_estimate(void)
     height_estimate = ins_height + height_offset;
 
 #if HAL_LOGGING_ENABLED
-// @LoggerMessage: FHXY
-// @Description: Height estimation using optical flow sensor 
-// @Field: TimeUS: Time since system startup
-// @Field: DFx: Delta flow rate, X-Axis
-// @Field: DFy: Delta flow rate, Y-Axis
-// @Field: DVx: Integrated delta velocity rate, X-Axis
-// @Field: DVy: Integrated delta velocity rate, Y-Axis
-// @Field: Hest: Estimated Height
-// @Field: DH: Delta Height
-// @Field: Hofs: Height offset
-// @Field: InsH: Height estimate from inertial navigation library
-// @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations 
-// @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
+    // @LoggerMessage: FHXY
+    // @Description: Height estimation using optical flow sensor
+    // @Field: TimeUS: Time since system startup
+    // @Field: DFx: Delta flow rate, X-Axis
+    // @Field: DFy: Delta flow rate, Y-Axis
+    // @Field: DVx: Integrated delta velocity rate, X-Axis
+    // @Field: DVy: Integrated delta velocity rate, Y-Axis
+    // @Field: Hest: Estimated Height
+    // @Field: DH: Delta Height
+    // @Field: Hofs: Height offset
+    // @Field: InsH: Height estimate from inertial navigation library
+    // @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations
+    // @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
 
     AP::logger().WriteStreaming("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
-                                           AP_HAL::micros64(),
-                                           (double)delta_flowrate.x,
-                                           (double)delta_flowrate.y,
-                                           (double)delta_vel_rate.x,
-                                           (double)delta_vel_rate.y,
-                                           (double)height_estimate,
-                                           (double)delta_height,
-                                           (double)height_offset,
-                                           (double)ins_height,
-                                           (double)last_ins_height,
-                                           dt_ms);
+                                AP_HAL::micros64(),
+                                (double)delta_flowrate.x,
+                                (double)delta_flowrate.y,
+                                (double)delta_vel_rate.x,
+                                (double)delta_vel_rate.y,
+                                (double)height_estimate,
+                                (double)delta_height,
+                                (double)height_offset,
+                                (double)ins_height,
+                                (double)last_ins_height,
+                                dt_ms);
 #endif
 
     gcs().send_named_float("HEST", height_estimate);

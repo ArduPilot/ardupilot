@@ -7,25 +7,25 @@
  */
 
 #ifndef DRIFT_SPEEDGAIN
- # define DRIFT_SPEEDGAIN 8.0f
+# define DRIFT_SPEEDGAIN 8.0f
 #endif
 #ifndef DRIFT_SPEEDLIMIT
- # define DRIFT_SPEEDLIMIT 560.0f
+# define DRIFT_SPEEDLIMIT 560.0f
 #endif
 
 #ifndef DRIFT_THR_ASSIST_GAIN
- # define DRIFT_THR_ASSIST_GAIN 0.0018f    // gain controlling amount of throttle assistance
+# define DRIFT_THR_ASSIST_GAIN 0.0018f    // gain controlling amount of throttle assistance
 #endif
 
 #ifndef DRIFT_THR_ASSIST_MAX
- # define DRIFT_THR_ASSIST_MAX  0.3f    // maximum assistance throttle assist will provide
+# define DRIFT_THR_ASSIST_MAX  0.3f    // maximum assistance throttle assist will provide
 #endif
 
 #ifndef DRIFT_THR_MIN
- # define DRIFT_THR_MIN         0.213f  // throttle assist will be active when pilot's throttle is above this value
+# define DRIFT_THR_MIN         0.213f  // throttle assist will be active when pilot's throttle is above this value
 #endif
 #ifndef DRIFT_THR_MAX
- # define DRIFT_THR_MAX         0.787f  // throttle assist will be active when pilot's throttle is below this value
+# define DRIFT_THR_MAX         0.787f  // throttle assist will be active when pilot's throttle is below this value
 #endif
 
 // drift_init - initialise drift controller
@@ -137,7 +137,7 @@ float ModeDrift::get_throttle_assist(float velz, float pilot_throttle_scaled)
         // ensure throttle assist never adjusts the throttle by more than 300 pwm
         thr_assist = constrain_float(thr_assist, -DRIFT_THR_ASSIST_MAX, DRIFT_THR_ASSIST_MAX);
     }
-    
+
     return constrain_float(pilot_throttle_scaled + thr_assist, 0.0f, 1.0f);
 }
 #endif

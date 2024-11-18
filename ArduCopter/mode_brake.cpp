@@ -71,13 +71,13 @@ void ModeBrake::run()
 
 /**
  * Set a timeout for the brake mode
- * 
+ *
  * @param timeout_ms [in] timeout in milliseconds
- * 
+ *
  * @note MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
  * If the timeout is reached, the mode will switch to loiter or alt hold depending on the current mode.
  * If timeout_ms is 0, the timeout is disabled.
- * 
+ *
 */
 void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {

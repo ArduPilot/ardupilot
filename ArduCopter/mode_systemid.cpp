@@ -181,8 +181,8 @@ void ModeSystemId::run()
         if (!motors->armed()) {
             // Motors should be Stopped
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-        // Tradheli doesn't set spool state to ground idle when throttle stick is zero.  Ground idle only set when
-        // motor interlock is disabled.
+            // Tradheli doesn't set spool state to ground idle when throttle stick is zero.  Ground idle only set when
+            // motor interlock is disabled.
         } else if (copter.ap.throttle_zero && !copter.is_tradheli()) {
             // Attempting to Land
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
@@ -240,110 +240,110 @@ void ModeSystemId::run()
     waveform_freq_rads = chirp_input.get_frequency_rads();
     Vector2f disturb_state;
     switch (systemid_state) {
-        case SystemIDModeState::SYSTEMID_STATE_STOPPED:
-            attitude_control->bf_feedforward(att_bf_feedforward);
-            break;
-        case SystemIDModeState::SYSTEMID_STATE_TESTING:
+    case SystemIDModeState::SYSTEMID_STATE_STOPPED:
+        attitude_control->bf_feedforward(att_bf_feedforward);
+        break;
+    case SystemIDModeState::SYSTEMID_STATE_TESTING:
 
-            if (copter.ap.land_complete) {
-                systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
-                break;
-            }
-            if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
-                systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
-                break;
-            }
-            if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
-                systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Finished");
-                break;
-            }
-
-            switch ((AxisType)axis.get()) {
-                case AxisType::NONE:
-                    systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                    gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
-                    break;
-                case AxisType::INPUT_ROLL:
-                    target_roll += waveform_sample*100.0f;
-                    break;
-                case AxisType::INPUT_PITCH:
-                    target_pitch += waveform_sample*100.0f;
-                    break;
-                case AxisType::INPUT_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
-                    break;
-                case AxisType::RECOVER_ROLL:
-                    target_roll += waveform_sample*100.0f;
-                    attitude_control->bf_feedforward(false);
-                    break;
-                case AxisType::RECOVER_PITCH:
-                    target_pitch += waveform_sample*100.0f;
-                    attitude_control->bf_feedforward(false);
-                    break;
-                case AxisType::RECOVER_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
-                    attitude_control->bf_feedforward(false);
-                    break;
-                case AxisType::RATE_ROLL:
-                    attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
-                    break;
-                case AxisType::RATE_PITCH:
-                    attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
-                    break;
-                case AxisType::RATE_YAW:
-                    attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
-                    break;
-                case AxisType::MIX_ROLL:
-                    attitude_control->actuator_roll_sysid(waveform_sample);
-                    break;
-                case AxisType::MIX_PITCH:
-                    attitude_control->actuator_pitch_sysid(waveform_sample);
-                    break;
-                case AxisType::MIX_YAW:
-                    attitude_control->actuator_yaw_sysid(waveform_sample);
-                    break;
-                case AxisType::MIX_THROTTLE:
-                    pilot_throttle_scaled += waveform_sample;
-                    break;
-                case AxisType::DISTURB_POS_LAT:
-                    disturb_state.x = 0.0f;
-                    disturb_state.y = waveform_sample * 100.0f;
-                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_pos_cm(disturb_state);
-                    break;
-                case AxisType::DISTURB_POS_LONG:
-                    disturb_state.x = waveform_sample * 100.0f;
-                    disturb_state.y = 0.0f;
-                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_pos_cm(disturb_state);
-                    break;
-                case AxisType::DISTURB_VEL_LAT:
-                    disturb_state.x = 0.0f;
-                    disturb_state.y = waveform_sample * 100.0f;
-                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_vel_cms(disturb_state);
-                    break;
-                case AxisType::DISTURB_VEL_LONG:
-                    disturb_state.x = waveform_sample * 100.0f;
-                    disturb_state.y = 0.0f;
-                    disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
-                    pos_control->set_disturb_vel_cms(disturb_state);
-                    break;
-                case AxisType::INPUT_VEL_LAT:
-                    input_vel.x = 0.0f;
-                    input_vel.y = waveform_sample * 100.0f;
-                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
-                    break;
-                case AxisType::INPUT_VEL_LONG:
-                    input_vel.x = waveform_sample * 100.0f;
-                    input_vel.y = 0.0f;
-                    input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
-                    break;
-            }
+        if (copter.ap.land_complete) {
+            systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
+            gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
             break;
+        }
+        if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
+            systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
+            gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
+            break;
+        }
+        if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {
+            systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
+            gcs().send_text(MAV_SEVERITY_INFO, "SystemID Finished");
+            break;
+        }
+
+        switch ((AxisType)axis.get()) {
+        case AxisType::NONE:
+            systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
+            gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
+            break;
+        case AxisType::INPUT_ROLL:
+            target_roll += waveform_sample*100.0f;
+            break;
+        case AxisType::INPUT_PITCH:
+            target_pitch += waveform_sample*100.0f;
+            break;
+        case AxisType::INPUT_YAW:
+            target_yaw_rate += waveform_sample*100.0f;
+            break;
+        case AxisType::RECOVER_ROLL:
+            target_roll += waveform_sample*100.0f;
+            attitude_control->bf_feedforward(false);
+            break;
+        case AxisType::RECOVER_PITCH:
+            target_pitch += waveform_sample*100.0f;
+            attitude_control->bf_feedforward(false);
+            break;
+        case AxisType::RECOVER_YAW:
+            target_yaw_rate += waveform_sample*100.0f;
+            attitude_control->bf_feedforward(false);
+            break;
+        case AxisType::RATE_ROLL:
+            attitude_control->rate_bf_roll_sysid(radians(waveform_sample));
+            break;
+        case AxisType::RATE_PITCH:
+            attitude_control->rate_bf_pitch_sysid(radians(waveform_sample));
+            break;
+        case AxisType::RATE_YAW:
+            attitude_control->rate_bf_yaw_sysid(radians(waveform_sample));
+            break;
+        case AxisType::MIX_ROLL:
+            attitude_control->actuator_roll_sysid(waveform_sample);
+            break;
+        case AxisType::MIX_PITCH:
+            attitude_control->actuator_pitch_sysid(waveform_sample);
+            break;
+        case AxisType::MIX_YAW:
+            attitude_control->actuator_yaw_sysid(waveform_sample);
+            break;
+        case AxisType::MIX_THROTTLE:
+            pilot_throttle_scaled += waveform_sample;
+            break;
+        case AxisType::DISTURB_POS_LAT:
+            disturb_state.x = 0.0f;
+            disturb_state.y = waveform_sample * 100.0f;
+            disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
+            pos_control->set_disturb_pos_cm(disturb_state);
+            break;
+        case AxisType::DISTURB_POS_LONG:
+            disturb_state.x = waveform_sample * 100.0f;
+            disturb_state.y = 0.0f;
+            disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
+            pos_control->set_disturb_pos_cm(disturb_state);
+            break;
+        case AxisType::DISTURB_VEL_LAT:
+            disturb_state.x = 0.0f;
+            disturb_state.y = waveform_sample * 100.0f;
+            disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
+            pos_control->set_disturb_vel_cms(disturb_state);
+            break;
+        case AxisType::DISTURB_VEL_LONG:
+            disturb_state.x = waveform_sample * 100.0f;
+            disturb_state.y = 0.0f;
+            disturb_state.rotate(attitude_control->get_att_target_euler_rad().z);
+            pos_control->set_disturb_vel_cms(disturb_state);
+            break;
+        case AxisType::INPUT_VEL_LAT:
+            input_vel.x = 0.0f;
+            input_vel.y = waveform_sample * 100.0f;
+            input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
+            break;
+        case AxisType::INPUT_VEL_LONG:
+            input_vel.x = waveform_sample * 100.0f;
+            input_vel.y = 0.0f;
+            input_vel.rotate(attitude_control->get_att_target_euler_rad().z);
+            break;
+        }
+        break;
     }
 
     if (!is_poscontrol_axis_type()) {
@@ -353,7 +353,7 @@ void ModeSystemId::run()
 
         // output pilot's throttle
         attitude_control->set_throttle_out(pilot_throttle_scaled, !copter.is_tradheli(), g.throttle_filt);
-        
+
     } else {
 
         // relax loiter target if we might be landed
@@ -429,17 +429,17 @@ bool ModeSystemId::is_poscontrol_axis_type() const
     bool ret = false;
 
     switch ((AxisType)axis.get()) {
-        case AxisType::DISTURB_POS_LAT:
-        case AxisType::DISTURB_POS_LONG:
-        case AxisType::DISTURB_VEL_LAT:
-        case AxisType::DISTURB_VEL_LONG:
-        case AxisType::INPUT_VEL_LAT:
-        case AxisType::INPUT_VEL_LONG:
-            ret = true;
-            break;
-        default:
-            break;
-        }
+    case AxisType::DISTURB_POS_LAT:
+    case AxisType::DISTURB_POS_LONG:
+    case AxisType::DISTURB_VEL_LAT:
+    case AxisType::DISTURB_VEL_LONG:
+    case AxisType::INPUT_VEL_LAT:
+    case AxisType::INPUT_VEL_LONG:
+        ret = true;
+        break;
+    default:
+        break;
+    }
 
     return ret;
 }

@@ -104,35 +104,35 @@ void ModeFollow::run()
 
         // calculate vehicle heading
         switch (g2.follow.get_yaw_behave()) {
-            case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
-                if (dist_vec.xy().length_squared() > 1.0) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
-                    use_yaw = true;
-                }
-                break;
+        case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
+            if (dist_vec.xy().length_squared() > 1.0) {
+                yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
+                use_yaw = true;
             }
+            break;
+        }
 
-            case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
-                float target_hdg = 0.0f;
-                if (g2.follow.get_target_heading_deg(target_hdg)) {
-                    yaw_cd = target_hdg * 100.0f;
-                    use_yaw = true;
-                }
-                break;
+        case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
+            float target_hdg = 0.0f;
+            if (g2.follow.get_target_heading_deg(target_hdg)) {
+                yaw_cd = target_hdg * 100.0f;
+                use_yaw = true;
             }
+            break;
+        }
 
-            case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
-                if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
-                    use_yaw = true;
-                }
-                break;
+        case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
+            if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
+                yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
+                use_yaw = true;
             }
+            break;
+        }
 
-            case AP_Follow::YAW_BEHAVE_NONE:
-            default:
-                // do nothing
-               break;
+        case AP_Follow::YAW_BEHAVE_NONE:
+        default:
+            // do nothing
+            break;
 
         }
     }
