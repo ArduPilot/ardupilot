@@ -81,7 +81,7 @@ The HAKRCF405Wing does not have onboard compass. Compass can be connected on I2C
 ## NeoPixel LED
 
 The board includes a NeoPixel LED on the underside which is pre-configured to output ArduPilot sequences. 
-This is the twelwth PWM output.
+This is the twelwth (12) PWM output.
 
 ## Loading Firmware
 
