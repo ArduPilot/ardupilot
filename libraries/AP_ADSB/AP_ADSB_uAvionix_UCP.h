@@ -50,7 +50,7 @@ private:
     const char* get_hardware_name(const uint8_t hwId);
 
     bool hostTransmit(uint8_t *buffer, uint16_t length);
-    uint16_t gdl90Transmit(GDL90_TX_MESSAGE &message, const uint16_t length);
+    uint16_t gdl90Transmit(const GDL90_TX_MESSAGE &message, const uint16_t length);
     static bool parseByte(const uint8_t data, GDL90_RX_MESSAGE &msg, GDL90_RX_STATUS &status);
 
     struct {
@@ -88,6 +88,17 @@ private:
         uint32_t request_Transponder_Id_tries;
 
     } run_state;
+
+#if HAL_ADSB_UCP_SET_CONFIG
+    void update_Transponder_Config();
+    GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 populate_Transponder_Config() const;
+    static bool compare_Transponder_Config(const GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 &msg1, const GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 &msg2);
+
+    struct {
+        uint32_t last_send_ms;
+        int32_t icao_backup; // used to check for change
+    } transponder_config_set;
+#endif
 
 };
 #endif // HAL_ADSB_UCP_ENABLED
