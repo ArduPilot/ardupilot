@@ -1527,4 +1527,5 @@ void AP_TECS::offset_altitude(const float alt_offset)
     // _hgt_dem
     // _hgt_dem_in_raw
     // _hgt_dem_in
+    // Energies
 }
