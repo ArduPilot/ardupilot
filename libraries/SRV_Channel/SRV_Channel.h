@@ -373,6 +373,9 @@ public:
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
 
+    // get output value for a specific channel as a pwm value
+    static bool get_output_pwm_chan(uint8_t chan, uint16_t &value);
+    
     // set output value for a specific function channel as a pwm value for specified override time in ms
     static void set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uint16_t timeout_ms);
 
