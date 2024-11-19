@@ -9111,8 +9111,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
 
-        self.context_push()
-
         # configure:
         self.set_parameters({
             "WP_YAW_BEHAVIOR": 0,  # do not yaw
@@ -9165,8 +9163,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         raise NotAchievedException("Blended diverged")
                 current_ts = None
 
-        self.context_pop()
-        self.reboot_sitl()
+        if len(measurements) != 3:
+            raise NotAchievedException("Did not see three GPS measurements!")
 
     def GPSWeightedBlending(self):
         '''Test GPS Weighted Blending'''

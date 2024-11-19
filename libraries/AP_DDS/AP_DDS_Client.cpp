@@ -817,7 +817,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for %sing received", msg_prefix, arm_motors_request.arm ? "arm" : "disarm");
-        arm_motors_response.result = arm_motors_request.arm ? AP::arming().arm(AP_Arming::Method::DDS) : AP::arming().disarm(AP_Arming::Method::DDS);
+#if AP_EXTERNAL_CONTROL_ENABLED
+        const bool do_checks = true;
+        arm_motors_response.result = arm_motors_request.arm ? AP_DDS_External_Control::arm(AP_Arming::Method::DDS, do_checks) : AP_DDS_External_Control::disarm(AP_Arming::Method::DDS, do_checks);
+        if (!arm_motors_response.result) {
+            // TODO #23430 handle arm failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id,

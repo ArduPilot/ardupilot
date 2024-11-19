@@ -427,6 +427,9 @@ void AP_TECS::_update_speed(float DT)
 
     // Get measured airspeed or default to trim speed and constrain to range between min and max if
     // airspeed sensor data cannot be used
+
+    // Equivalent airspeed
+    float _EAS;
     if (!use_airspeed || !_ahrs.airspeed_estimate(_EAS)) {
         // If no airspeed available use average of min and max
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());

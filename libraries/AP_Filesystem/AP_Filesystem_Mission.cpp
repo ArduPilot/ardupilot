@@ -30,7 +30,11 @@
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
+
+// QURT HAL already has a declaration of errno in errno.h
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
 extern int errno;
+#endif
 
 #define IDLE_TIMEOUT_MS 30000
 
