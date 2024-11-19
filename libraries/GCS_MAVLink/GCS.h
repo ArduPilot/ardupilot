@@ -632,6 +632,9 @@ protected:
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
     MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_int_t &packet);
 #endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    MAV_RESULT handle_EAHRS_message(const mavlink_command_int_t &packet);
+#endif
 
     virtual void send_banner();
 
