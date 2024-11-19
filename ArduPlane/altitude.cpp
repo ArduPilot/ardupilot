@@ -44,7 +44,7 @@ void Plane::check_home_alt_change(void)
             next_WP_loc.alt += alt_change_cm;
         }
         // reset TECS to force the field elevation estimate to reset
-        TECS_controller.reset();
+        TECS_controller.offset_altitude(alt_change_cm * 0.01f);
     }
     auto_state.last_home_alt_cm = home_alt_cm;
 }
