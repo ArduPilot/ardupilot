@@ -200,6 +200,10 @@ void SRV_Channel::aux_servo_function_setup(void)
         // fixed wing throttle
         set_range(100);
         break;
+    case k_actuator1 ... k_actuator5:
+        // We take floats from -1 to 1. see MAV_CMD_DO_SET_ACTUATOR
+        set_angle(1);
+        break;
     default:
         break;
     }
