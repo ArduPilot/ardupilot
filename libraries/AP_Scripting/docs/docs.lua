@@ -2550,6 +2550,11 @@ function SRV_Channels:set_output_pwm_chan_timeout(chan, pwm, timeout_ms) end
 ---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm_chan(chan, pwm) end
 
+-- Get the pwm for a given servo output channel
+---@param chan integer -- servo channel number (zero indexed)
+---@return integer|nil -- output pwm if available
+function SRV_Channels:get_output_pwm_chan(chan) end
+
 -- Set the pwm for a given servo output function
 ---@param function_num integer -- servo function number (See SERVOx_FUNCTION parameters)
 ---@param pwm integer -- pwm value
