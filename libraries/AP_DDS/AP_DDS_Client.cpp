@@ -632,15 +632,17 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     msg.external_control = true; // Always true for now. To be filled after PR#28429.
     uint8_t fs_iter = 0;
     msg.failsafe_size = 0;
-    if (AP_Notify::flags.failsafe_radio) {
+    if (rc().in_rc_failsafe()) {
         msg.failsafe[fs_iter++] = FS_RADIO;
     }
     if (battery.has_failsafed()) {
         msg.failsafe[fs_iter++] = FS_BATTERY;
     }
+    // TODO: replace flag with function.
     if (AP_Notify::flags.failsafe_gcs) {
         msg.failsafe[fs_iter++] = FS_GCS;
     }
+    // TODO: replace flag with function.
     if (AP_Notify::flags.failsafe_ekf) {
         msg.failsafe[fs_iter++] = FS_EKF;
     }
@@ -815,7 +817,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for %sing received", msg_prefix, arm_motors_request.arm ? "arm" : "disarm");
-        arm_motors_response.result = arm_motors_request.arm ? AP::arming().arm(AP_Arming::Method::DDS) : AP::arming().disarm(AP_Arming::Method::DDS);
+#if AP_EXTERNAL_CONTROL_ENABLED
+        const bool do_checks = true;
+        arm_motors_response.result = arm_motors_request.arm ? AP_DDS_External_Control::arm(AP_Arming::Method::DDS, do_checks) : AP_DDS_External_Control::disarm(AP_Arming::Method::DDS, do_checks);
+        if (!arm_motors_response.result) {
+            // TODO #23430 handle arm failure through rosout, throttled.
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 
         const uxrObjectId replier_id = {
             .id = services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id,
@@ -955,8 +963,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
-        uint8_t reply_buffer[reply_size] {};
+        const uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
+        uint8_t reply_buffer[reply_size];
+        memset(reply_buffer, 0, reply_size * sizeof(uint8_t));
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
@@ -1040,8 +1049,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             .type = UXR_REPLIER_ID
         };
 
-        uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
-        uint8_t reply_buffer[reply_size] {};
+        const uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
+        uint8_t reply_buffer[reply_size];
+        memset(reply_buffer, 0, reply_size * sizeof(uint8_t));
         ucdrBuffer reply_ub;
 
         ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
@@ -1615,10 +1625,11 @@ void AP_DDS_Client::update()
         }
         last_status_check_time_ms = cur_time_ms;
     }
+#endif // AP_DDS_STATUS_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
-#endif // AP_DDS_STATUS_PUB_ENABLED
+
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
 extern "C" {
     int clock_gettime(clockid_t clockid, struct timespec *ts);

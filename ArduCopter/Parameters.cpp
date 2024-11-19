@@ -1240,8 +1240,11 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 /*
   constructor for g2 object
  */
-ParametersG2::ParametersG2(void)
-    : command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
+ParametersG2::ParametersG2(void) :
+    unused_integer{17}
+#if HAL_BUTTON_ENABLED
+    ,button_ptr(&copter.button)
+#endif
 #if AP_TEMPCALIBRATION_ENABLED
     , temp_calibration()
 #endif
@@ -1257,14 +1260,14 @@ ParametersG2::ParametersG2(void)
 #if MODE_SMARTRTL_ENABLED
     ,smart_rtl()
 #endif
+#if USER_PARAMS_ENABLED
+    ,user_parameters()
+#endif
 #if MODE_FLOWHOLD_ENABLED
     ,mode_flowhold_ptr(&copter.mode_flowhold)
 #endif
 #if MODE_FOLLOW_ENABLED
     ,follow()
-#endif
-#if USER_PARAMS_ENABLED
-    ,user_parameters()
 #endif
 #if AUTOTUNE_ENABLED
     ,autotune_ptr(&copter.mode_autotune.autotune)
@@ -1275,13 +1278,9 @@ ParametersG2::ParametersG2(void)
 #if MODE_AUTOROTATE_ENABLED
     ,arot()
 #endif
-#if HAL_BUTTON_ENABLED
-    ,button_ptr(&copter.button)
-#endif
 #if MODE_ZIGZAG_ENABLED
     ,mode_zigzag_ptr(&copter.mode_zigzag)
 #endif
-
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     ,command_model_acro_rp(ACRO_RP_RATE_DEFAULT, ACRO_RP_EXPO_DEFAULT, 0.0f)
 #endif
@@ -1289,6 +1288,8 @@ ParametersG2::ParametersG2(void)
 #if MODE_ACRO_ENABLED || MODE_DRIFT_ENABLED
     ,command_model_acro_y(ACRO_Y_RATE_DEFAULT, ACRO_Y_EXPO_DEFAULT, 0.0f)
 #endif
+
+    ,command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
 
 #if WEATHERVANE_ENABLED
     ,weathervane()

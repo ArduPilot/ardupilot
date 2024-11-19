@@ -159,6 +159,9 @@ protected:
     // Output pilot throttle, this is used in stabilized modes without auto throttle control
     void output_pilot_throttle();
 
+    // makes the initialiser list in the constructor manageable
+    uint8_t unused_integer;
+
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes
     AC_PosControl*& pos_control;

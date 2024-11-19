@@ -78,8 +78,10 @@ void Blimp::motors_output()
     // output any servo channels
     SRV_Channels::calc_pwm();
 
+    auto &srv = AP::srv();
+
     // cork now, so that all channel outputs happen at once
-    SRV_Channels::cork();
+    srv.cork();
 
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
@@ -88,5 +90,5 @@ void Blimp::motors_output()
     motors->output();
 
     // push all channels
-    SRV_Channels::push();
+    srv.push();
 }

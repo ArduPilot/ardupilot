@@ -72,6 +72,9 @@ public:
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
 
+    // returns a unique number specific to this mode
+    virtual Mode::Number number() const = 0;
+
     // functions for reporting to GCS
     virtual bool get_wp(Location &loc) { return false; }
     virtual int32_t wp_bearing() const { return 0; }
@@ -202,6 +205,7 @@ protected:
 
     const char *name() const override { return "MANUAL"; }
     const char *name4() const override { return "MANU"; }
+    Mode::Number number() const override { return Mode::Number::MANUAL; }
 };
 
 
@@ -224,6 +228,7 @@ protected:
 
     const char *name() const override { return "ACRO"; }
     const char *name4() const override { return "ACRO"; }
+    Mode::Number number() const override { return Mode::Number::ACRO; }
 };
 
 
@@ -246,6 +251,7 @@ protected:
 
     const char *name() const override { return "STABILIZE"; }
     const char *name4() const override { return "STAB"; }
+    Mode::Number number() const override { return Mode::Number::STABILIZE; }
 };
 
 
@@ -272,6 +278,7 @@ protected:
 
     const char *name() const override { return "ALT_HOLD"; }
     const char *name4() const override { return "ALTH"; }
+    Mode::Number number() const override { return Mode::Number::ALT_HOLD; }
 };
 
 
@@ -293,6 +300,7 @@ protected:
 
     const char *name() const override { return "SURFTRAK"; }
     const char *name4() const override { return "STRK"; }
+    Mode::Number number() const override { return Mode::Number::SURFTRAK; }
 
 private:
 
@@ -342,6 +350,8 @@ protected:
 
     const char *name() const override { return "GUIDED"; }
     const char *name4() const override { return "GUID"; }
+    Mode::Number number() const override { return Mode::Number::GUIDED; }
+
     autopilot_yaw_mode get_default_auto_yaw_mode(bool rtl) const;
 
 private:
@@ -387,6 +397,7 @@ protected:
 
     const char *name() const override { return "AUTO"; }
     const char *name4() const override { return "AUTO"; }
+    Mode::Number number() const override { return Mode::Number::AUTO; }
 
 private:
     void auto_wp_run();
@@ -417,6 +428,7 @@ protected:
 
     const char *name() const override { return "POSHOLD"; }
     const char *name4() const override { return "POSH"; }
+    Mode::Number number() const override { return Mode::Number::POSHOLD; }
 };
 
 
@@ -439,6 +451,7 @@ protected:
 
     const char *name() const override { return "CIRCLE"; }
     const char *name4() const override { return "CIRC"; }
+    Mode::Number number() const override { return Mode::Number::CIRCLE; }
 };
 
 class ModeSurface : public Mode
@@ -460,6 +473,7 @@ protected:
 
     const char *name() const override { return "SURFACE"; }
     const char *name4() const override { return "SURF"; }
+    Mode::Number number() const override { return Mode::Number::CIRCLE; }
 };
 
 
@@ -482,4 +496,5 @@ protected:
 
     const char *name() const override { return "MOTORDETECT"; }
     const char *name4() const override { return "DETE"; }
+    Mode::Number number() const override { return Mode::Number::MOTOR_DETECT; }
 };

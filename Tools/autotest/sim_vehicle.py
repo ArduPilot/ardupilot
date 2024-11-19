@@ -964,6 +964,8 @@ def start_mavproxy(opts, stuff):
         cmd.extend(['--aircraft', opts.aircraft])
     if opts.moddebug:
         cmd.append('--moddebug=%u' % opts.moddebug)
+    if opts.mavcesium:
+        cmd.extend(["--load-module", "cesium"])
 
     if opts.fresh_params:
         # these were built earlier:
@@ -1373,6 +1375,11 @@ group.add_option("", "--map",
                  default=False,
                  action='store_true',
                  help="load map module on startup")
+group.add_option("", "--mavcesium",
+                 default=False,
+                 action='store_true',
+                 help="load MAVCesium module on startup")
+
 group.add_option("", "--console",
                  default=False,
                  action='store_true',

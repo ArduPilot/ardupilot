@@ -1304,7 +1304,7 @@ void srxlOnFrameError(uint8_t busIndex)
 
 SrxlFullID srxlGetTelemetryEndpoint(void)
 {
-    SrxlFullID retVal = {0};
+    SrxlFullID retVal = {{0}};
     if(srxlRx.pTelemRcvr)
     {
         retVal.deviceID = srxlRx.pTelemRcvr->deviceID;

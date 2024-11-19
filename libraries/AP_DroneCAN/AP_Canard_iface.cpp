@@ -456,7 +456,7 @@ bool CanardInterface::add_11bit_driver(CANSensor *sensor)
 }
 
 // handler for outgoing frames for auxillary drivers
-bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us)
+bool CanardInterface::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
     const uint64_t tx_deadline_us = AP_HAL::micros64() + timeout_us;
     bool ret = false;

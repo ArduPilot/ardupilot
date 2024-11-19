@@ -95,7 +95,7 @@ public:
     bool add_11bit_driver(CANSensor *sensor) override;
 
     // handler for outgoing frames for auxillary drivers
-    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) override;
+    bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us) override;
     
     uint8_t get_driver_index() const { return _driver_index; }
 
