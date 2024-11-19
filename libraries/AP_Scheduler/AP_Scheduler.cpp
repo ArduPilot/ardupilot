@@ -447,6 +447,11 @@ void AP_Scheduler::update_logging()
 // Write a performance monitoring packet
 void AP_Scheduler::Log_Write_Performance()
 {
+    uint64_t rtc = 0;
+#if AP_RTC_ENABLED
+    UNUSED_RESULT(AP::rtc().get_utc_usec(rtc));
+#endif
+
     const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
@@ -464,6 +469,7 @@ void AP_Scheduler::Log_Write_Performance()
         i2c_count        : pd.i2c_count,
         i2c_isr_count    : pd.i2c_isr_count,
         extra_loop_us    : extra_loop_us,
+        rtc              : rtc,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
 }
