@@ -29,7 +29,11 @@
 #define PACKED_NAME "param.pck"
 
 extern const AP_HAL::HAL& hal;
+
+// QURT HAL already has a declaration of errno in errno.h
+#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
 extern int errno;
+#endif
 
 int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_path)
 {

@@ -72,7 +72,7 @@ void Copter::failsafe_check()
 }
 
 
-#if ADVANCED_FAILSAFE
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 /*
   check for AFS failsafe check
 */

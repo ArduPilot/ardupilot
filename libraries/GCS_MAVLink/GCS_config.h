@@ -68,16 +68,7 @@
 // ArduPilot 4.7 stops compiling them in by default
 // ArduPilot 4.8 removes the code entirely
 #ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
-#define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED HAL_GCS_ENABLED && HAL_RALLY_ENABLED
-#endif
-
-// CODE_REMOVAL
-// handling of HIL_GPS is slated to be removed in 4.7; GPS_INPUT can be used
-// in its place
-// ArduPilot 4.6 stops compiling support in
-// ArduPilot 4.7 removes the code entirely
-#ifndef AP_MAVLINK_MSG_HIL_GPS_ENABLED
-#define AP_MAVLINK_MSG_HIL_GPS_ENABLED 0
+#define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
 #endif
 
 // CODE_REMOVAL

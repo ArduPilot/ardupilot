@@ -289,9 +289,6 @@ void Tailsitter::output(void)
         return;
     }
 
-    float tilt_left = 0.0f;
-    float tilt_right = 0.0f;
-
     // throttle 0 to 1
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
 
@@ -340,6 +337,10 @@ void Tailsitter::output(void)
         if (!quadplane.assisted_flight) {
             // set AP_MotorsMatrix throttles for forward flight
             motors->output_motor_mask(throttle, motor_mask, plane.rudder_dt);
+
+            // No tilt output unless forward gain is set
+            float tilt_left = 0.0;
+            float tilt_right = 0.0;
 
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
@@ -398,8 +399,11 @@ void Tailsitter::output(void)
             }
 
             // output tilt motors
-            tilt_left = 0.0f;
-            tilt_right = 0.0f;
+
+            // No output unless hover gain is set
+            float tilt_left = 0.0;
+            float tilt_right = 0.0;
+
             if (vectored_hover_gain > 0) {
                 const float hover_throttle = motors->get_throttle_hover();
                 const float output_throttle = motors->get_throttle();
@@ -438,8 +442,10 @@ void Tailsitter::output(void)
         tailsitter_motors->set_min_throttle(0.0);
     }
 
-    tilt_left = 0.0f;
-    tilt_right = 0.0f;
+    // No tilt output unless hover gain is set
+    float tilt_left = 0.0;
+    float tilt_right = 0.0;
+
     if (vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);

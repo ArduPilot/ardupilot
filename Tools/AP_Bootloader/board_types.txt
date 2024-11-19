@@ -291,6 +291,7 @@ AP_HW_PhenixH7_Pro                   1172
 AP_HW_2RAWH743                       1173
 AP_HW_X-MAV-AP-H743V2                1174
 AP_HW_BETAFPV_F4_2-3S_20A            1175
+AP_HW_MicoAir743AIOv1                1176
 
 AP_HW_FlywooF405HD_AIOv2             1180
 AP_HW_FlywooH743Pro                  1181
@@ -403,6 +404,12 @@ AP_HW_DroneBuild_G1                  5700
 AP_HW_DroneBuild_G2                  5701
 
 # IDs 6000-6099 reserved for SpektreWorks
+
+# IDs 6100-6109 reserved for MFE
+AP_HW_MFE_PDB_CAN                            6100
+AP_HW_MFE_POS3_CAN                          6101
+AP_HW_MFE_RTK_CAN                             6102
+AP_HW_MFE_AirSpeed_CAN                     6103
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
