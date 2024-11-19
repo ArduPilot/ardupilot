@@ -1124,7 +1124,6 @@ void AP_TECS::_initialise_states(float hgt_afe)
         _integKE              = 0.0f;
         _last_throttle_dem    = aparm.throttle_cruise * 0.01f;
         _last_pitch_dem       = _ahrs.get_pitch();
-        _hgt_afe              = hgt_afe;
         _hgt_dem_in_prev      = hgt_afe;
         _hgt_dem_lpf          = hgt_afe;
         _hgt_dem_rate_ltd     = hgt_afe;
