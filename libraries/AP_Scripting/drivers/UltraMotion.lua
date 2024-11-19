@@ -28,6 +28,15 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 8), 'could not add p
 UM_SERVO_MASK = bind_add_param("SERVO_MASK", 1, 0)
 
 --[[
+  // @Param: UM_CANDRV
+  // @DisplayName: Set CAN driver
+  // @Description: Set CAN driver
+  // @Values: 0:None,1:1stCANDriver,2:2ndCanDriver
+  // @User: Standard
+--]]
+local UM_CANDRV = bind_add_param('CANDRV', 2, 1)    -- CAN driver to use
+
+--[[
   // @Param: UM_RATE_HZ
   // @DisplayName: Update rate for UltraMotion servos
   // @Description: Update rate for UltraMotion servos
@@ -35,37 +44,20 @@ UM_SERVO_MASK = bind_add_param("SERVO_MASK", 1, 0)
   // @Range: 1 400
   // @User: Standard
 --]]
-UM_RATE_HZ = bind_add_param("RATE_HZ", 2, 70)
-
---[[
-  // @Param: UM_TORQUE_MAX
-  // @DisplayName: Maximum torque to command
-  // @Description: Maximum torque to command
-  // @Units: %
-  // @Range: 1 100
-  // @User: Standard
---]]
-UM_TORQUE_MAX = bind_add_param("TORQUE_MAX", 3, 30.5) -- default matches datasheet
+UM_RATE_HZ = bind_add_param("RATE_HZ", 3, 70)
 
 --[[
   // @Param: UM_OPTIONS
   // @DisplayName: Optional settings
   // @Description: Optional settings
-  // @Bitmask: 0:LogAllFrames,1:ParseTelemetry
+  // @Bitmask: 0:LogAllFrames,1:ParseTelemetry,2:SendPosAsNamedValueFloat
   // @User: Standard
 --]]
-UM_OPTIONS = bind_add_param("OPTIONS", 4, 0)
-
---[[
-  // @Param: UM_TELEM_TXID
-  // @DisplayName: Telemetry ID
-  // @Description: Telemetry ID
-  // @User: Standard
---]]
-UM_TELEM_TXID = bind_add_param("TELEM_TXID", 5, 0)
+UM_OPTIONS = bind_add_param("OPTIONS", 5, 0)
 
 local OPTION_LOGALLFRAMES = 0x01
 local OPTION_PARSETELEM = 0x02
+local OPTION_NVF_TELEM_POS = 0x04
 
 if UM_SERVO_MASK:get() == 0 then
    gcs:send_text(MAV_SEVERITY.INFO, "UltraMotion UM_SERVO_MASK is empty")
@@ -74,7 +66,12 @@ end
 
 -- Load CAN driver, using the scripting protocol
 -- use a buffer size of 25
-local driver = CAN:get_device(25)
+local CAN_BUF_LEN = 25
+if UM_CANDRV:get() == 1 then
+   driver = CAN:get_device(CAN_BUF_LEN)
+elseif UM_CANDRV:get() == 2 then
+   driver = CAN:get_device2(CAN_BUF_LEN)
+end
 if not driver then
    gcs:send_text(MAV_SEVERITY.INFO, "UltraMotion: init failed")
    return
@@ -107,7 +104,7 @@ function Actuator(unitID)
     -- pre-fill the msg ID to avoid expensive uint32_t operations at runtime
     o.msg = CANFrame()
     o.msg:id(CAN_FLAG_EFF | uint32_t(unitID))
-    o.msg:dlc(4)
+    o.msg:dlc(2)
     return o
 end
 
@@ -136,13 +133,11 @@ end
 --]]
 local function send_outputs()
    local noutputs = #actuators
-   local torque_max = math.floor(UM_TORQUE_MAX:get() * 32767.0 * 0.01)
    for i = 1, noutputs do
-      local pwm = SRV_Channels:get_output_pwm_chan(actuators[i].unitID)
+      local pwm = SRV_Channels:get_output_pwm_chan(actuators[i].unitID-1)
       local msg = actuators[i].msg
 
       put_uint16(msg, 0, pwm)
-      put_uint16(msg, 2, torque_max)
 
       driver:write_frame(msg, 10000)
    end
@@ -152,7 +147,8 @@ end
    parse one telemetry frame. The telemetry data format depends on
    the txData parameter set in the servos
 
-   This code assumes txData is pABCDEFS
+   This code assumes txData is KLMGHEFY. See the datasheet for the
+   meaning of these data codes
 --]]
 local function parse_telemetry(frame)
    local bytes = ""
@@ -160,8 +156,18 @@ local function parse_telemetry(frame)
    for i = 1, dlc do
       bytes = bytes .. string.char(frame:data(i-1))
    end
-   local unitid, status, current, pos = string.unpack("<BiHB", bytes)
-   logger:write("UMSV",'Id,Status,Curr,Pos','Biff', unitid, status, current, pos)
+   local swordlow, sword24, pos, curr, temp = string.unpack("<HBHHB", bytes)
+   local statusword = swordlow | (sword24 << 16)
+   local txid = frame:id_signed()
+   local pos_scaled = pos / 65535.0
+   local current_scaled = curr / 32767.0
+   local temp_scaled = temp - 50.0
+   if txid < 256 then
+      logger:write('UMSV','Id,Status,Curr,Pos,Temp','Bifff','#----','-----', txid, statusword, current_scaled, pos_scaled, temp_scaled)
+      if UM_OPTIONS:get() & OPTION_NVF_TELEM_POS ~= 0 then
+         gcs:send_named_float(string.format('UMPOS_%u',txid), pos_scaled)
+      end
+   end
 end
 
 --[[
@@ -177,7 +183,8 @@ local function read_frames()
          log_can_frame(frame)
       end
       if UM_OPTIONS:get() & OPTION_PARSETELEM ~= 0 then
-         if frame:id_signed() == UM_TELEM_TXID:get() then
+         if frame:dlc() == 8 then
+            -- assume any 8 byte frame is a telemetry frame
             parse_telemetry(frame)
          end
       end
