@@ -582,11 +582,11 @@ bool AP_Arming::compass_checks(bool report)
                              (double)MAX(fabsf(diff_mgauss.x), (double)fabsf(diff_mgauss.y)), (int)magfield_error_threshold);
                 return false;
             }
-            if (fabsf(diff_mgauss.x) > magfield_error_threshold*2.0) {
+            if (fabsf(diff_mgauss.z) > magfield_error_threshold*2.0) {
                 check_failed(ARMING_CHECK_COMPASS, report, "Check mag field (z diff:%.0f>%d)",
                              (double)fabsf(diff_mgauss.z), (int)magfield_error_threshold*2);
                 return false;
-            }           
+            }
         }
 #endif  // AP_AHRS_ENABLED
     }

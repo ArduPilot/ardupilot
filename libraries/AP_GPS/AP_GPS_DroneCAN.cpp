@@ -89,36 +89,19 @@ AP_GPS_DroneCAN::~AP_GPS_DroneCAN()
 #endif
 }
 
-void AP_GPS_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_GPS_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_fix2_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_aux_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_heading_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_status_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_fix2_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_aux_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_heading_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_status_msg_trampoline, driver_index) != nullptr)
 #if GPS_MOVING_BASELINE
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_moving_baseline_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("moving_baseline_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_relposheading_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("relposheading_sub");
-    }
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_moving_baseline_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_relposheading_msg_trampoline, driver_index) != nullptr)
 #endif
+    ;
 }
 
 AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)

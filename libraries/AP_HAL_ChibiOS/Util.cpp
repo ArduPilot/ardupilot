@@ -97,21 +97,11 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 
 #if ENABLE_HEAP
-
-void *Util::allocate_heap_memory(size_t size)
-{
-    memory_heap_t *heap = (memory_heap_t *)malloc(size + sizeof(memory_heap_t));
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    chHeapObjectInit(heap, heap + 1U, size);
-    return heap;
-}
-
 /*
-  realloc implementation thanks to wolfssl, used by AP_Scripting
+  realloc implementation thanks to wolfssl, used by ExpandingString
+  and ExpandingArray
  */
-void *Util::std_realloc(void *addr, size_t size)
+void *Util::std_realloc(void *addr, uint32_t size)
 {
     if (size == 0) {
        free(addr);
@@ -128,33 +118,6 @@ void *Util::std_realloc(void *addr, size_t size)
     return new_mem;
 }
 
-void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
-{
-    if (heap == nullptr) {
-        return nullptr;
-    }
-    if (new_size == 0) {
-        if (ptr != nullptr) {
-            chHeapFree(ptr);
-        }
-        return nullptr;
-    }
-    if (ptr == nullptr) {
-        return chHeapAlloc((memory_heap_t *)heap, new_size);
-    }
-    void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
-    if (new_mem != nullptr) {
-        const size_t old_size2 = chHeapGetSize(ptr);
-#if defined(HAL_DEBUG_BUILD) && !defined(IOMCU_FW)
-        if (new_size != 0 && old_size2 != old_size) {
-            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        }
-#endif
-        memcpy(new_mem, ptr, old_size2 > new_size ? new_size : old_size2);
-        chHeapFree(ptr);
-    }
-    return new_mem;
-}
 #endif // ENABLE_HEAP
 
 #endif // CH_CFG_USE_HEAP

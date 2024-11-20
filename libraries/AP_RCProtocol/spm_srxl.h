@@ -55,27 +55,6 @@ typedef enum
     SrxlDevType_Broadcast           = 15
 } SrxlDevType;
 
-// Default device ID list used by master when polling
-static const uint8_t SRXL_DEFAULT_ID_OF_TYPE[16] =
-{
-    [SrxlDevType_None]              = 0x00,
-    [SrxlDevType_RemoteReceiver]    = 0x10,
-    [SrxlDevType_Receiver]          = 0x21,
-    [SrxlDevType_FlightController]  = 0x30,
-    [SrxlDevType_ESC]               = 0x40,
-    [5]                             = 0x60,
-    [SrxlDevType_SRXLServo1]        = 0x60,
-    [SrxlDevType_SRXLServo2]        = 0x70,
-    [SrxlDevType_VTX]               = 0x81,
-    [9]                             = 0xFF,
-    [10]                            = 0xFF,
-    [11]                            = 0xFF,
-    [12]                            = 0xFF,
-    [13]                            = 0xFF,
-    [14]                            = 0xFF,
-    [SrxlDevType_Broadcast]         = 0xFF,
-};
-
 // Set SRXL_CRC_OPTIMIZE_MODE in spm_srxl_config.h to one of the following values
 #define SRXL_CRC_OPTIMIZE_EXTERNAL  (0)  // Uses an external function defined by SRXL_CRC_EXTERNAL_FN for CRC
 #define SRXL_CRC_OPTIMIZE_SPEED     (1)  // Uses table lookup for CRC computation (requires 512 const bytes for CRC table)

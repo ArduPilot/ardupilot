@@ -6807,7 +6807,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Test jamming simulation works'''
         self.wait_ready_to_arm()
         start_loc = self.assert_receive_message('GPS_RAW_INT')
-        self.set_parameter("SIM_GPS_JAM", 1)
+        self.set_parameter("SIM_GPS1_JAM", 1)
 
         class Requirement():
             def __init__(self, field, min_value):
