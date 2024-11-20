@@ -31,8 +31,8 @@
 --
 -- Testing in SITL:
 --   a. set map setshowsimpos 1 (to allow seeing where vehicle really is in simulator even with GPS disabled)
---   b. set SIM_GPS_DISABLE = 1 to disable GPS (confirm dead reckoning begins)
---   c. set SIM_GPS_DISABLE = 0 to re-enable GPS
+--   b. set SIM_GPS1_ENABLE = 0 to disable GPS (confirm dead reckoning begins)
+--   c. set SIM_GPS1_ENABLE = 1 to re-enable GPS
 --   d. set SIM_GPS_NUMSAT = 3 to lower simulated satellite count to confirm script triggers
 --   e. set DR_GPS_SACC_MAX = 0.01 to lower the threshold and trigger below the simulator value which is 0.04 (remember to set this back after testing!)
 --

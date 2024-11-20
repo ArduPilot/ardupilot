@@ -155,6 +155,7 @@ public:
         GPS_HEADING_HDT  = 1,
         GPS_HEADING_THS  = 2,
         GPS_HEADING_KSXT = 3,
+        GPS_HEADING_BASE = 4,  // act as an RTK base
     };
 
     struct sitl_fdm state;
@@ -196,23 +197,6 @@ public:
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
     AP_Int8  engine_fail; // engine servo to fail (0-7)
-
-    AP_Float gps_noise[2]; // amplitude of the gps altitude error
-    AP_Int16 gps_lock_time[2]; // delay in seconds before GPS gets lock
-    AP_Int16 gps_alt_offset[2]; // gps alt error
-    AP_Int8  gps_disable[2]; // disable simulated GPS
-    AP_Int16 gps_delay_ms[2];   // delay in milliseconds
-    AP_Int8  gps_type[2]; // see enum SITL::GPS::Type
-    AP_Float gps_byteloss[2];// byte loss as a percent
-    AP_Int8  gps_numsats[2]; // number of visible satellites
-    AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
-    AP_Int8  gps_hertz[2];   // GPS update rate in Hz
-    AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
-    AP_Float gps_drift_alt[2]; // altitude drift error
-    AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
-    AP_Float gps_accuracy[2];
-    AP_Vector3f gps_vel_err[2]; // Velocity error offsets in NED (x = N, y = E, z = D)
-    AP_Int8 gps_jam[2]; // jamming simulation enable
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
@@ -311,7 +295,33 @@ public:
         AP_Float servo_filter; // servo 2p filter in Hz
     };
     ServoParams servo;
-    
+
+    class GPSParms {
+    public:
+        GPSParms(void) {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+        static const struct AP_Param::GroupInfo var_info[];
+
+        AP_Float noise; // amplitude of the gps altitude error
+        AP_Int16 lock_time; // delay in seconds before GPS gets lock
+        AP_Int16 alt_offset; // gps alt error
+        AP_Int8  enabled; // enable simulated GPS
+        AP_Int16 delay_ms;   // delay in milliseconds
+        AP_Int8  type; // see enum SITL::GPS::Type
+        AP_Float byteloss;// byte loss as a percent
+        AP_Int8  numsats; // number of visible satellites
+        AP_Vector3f glitch;  // glitch offsets in lat, lon and altitude
+        AP_Int8  hertz;   // GPS update rate in Hz
+        AP_Int8 hdg_enabled; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
+        AP_Float drift_alt; // altitude drift error
+        AP_Vector3f pos_offset;  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+        AP_Float accuracy;
+        AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
+        AP_Int8 jam; // jamming simulation enable
+    };
+    GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
+
     // physics model parameters
     class ModelParm {
     public:
