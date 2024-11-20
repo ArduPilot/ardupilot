@@ -19,7 +19,7 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
     if (fence == nullptr) {
         return false;
     }
-    const uint8_t num_stored_items = fence->polyfence().num_stored_items();
+    const auto num_stored_items = fence->polyfence().num_stored_items();
     if (seq > num_stored_items) {
         return false;
     }
@@ -75,7 +75,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(const GCS_MAVLINK &_link,
                                                        const mavlink_mission_request_int_t &packet,
                                                        mavlink_mission_item_int_t &ret_packet)
 {
-    const uint8_t num_stored_items = _fence.polyfence().num_stored_items();
+    const auto num_stored_items = _fence.polyfence().num_stored_items();
     if (packet.seq > num_stored_items) {
         return MAV_MISSION_INVALID_SEQUENCE;
     }
@@ -218,7 +218,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::allocate_receive_resources(const u
         return MAV_MISSION_ERROR;
     }
 
-    const uint16_t allocation_size = count * sizeof(AC_PolyFenceItem);
+    const uint32_t allocation_size = count * sizeof(AC_PolyFenceItem);
     if (allocation_size != 0) {
         _new_items = (AC_PolyFenceItem*)malloc(allocation_size);
         if (_new_items == nullptr) {
