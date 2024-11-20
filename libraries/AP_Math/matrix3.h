@@ -230,7 +230,7 @@ public:
     }
 
     // check if any elements are NAN
-    bool        is_nan(void) WARN_IF_UNUSED
+    bool        is_nan(void) const WARN_IF_UNUSED //~这里加入const以保证不会修改
     {
         return a.is_nan() || b.is_nan() || c.is_nan();
     }

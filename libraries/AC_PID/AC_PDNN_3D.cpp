@@ -124,7 +124,7 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
 
     _pdnn_output.x = -_error.x * _kp - _derivative.x * _kd + _target.x * _kff; //计算总输出
     _pdnn_output.y = -_error.y * _kp - _derivative.y * _kd + _target.y * _kff;
-    _pdnn_output.z = -_error.z * _kp_z - _derivative.z * _kd_z + _target.z * _kff;
+    _pdnn_output.z = -_error.z * _kp_z - _derivative.z * _kd_z + 9.80665f + _target.z * _kff; //加入重力值9.80665
 
     return _pdnn_output; //返回pdnn控制器输出
 }
