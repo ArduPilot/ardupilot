@@ -13,6 +13,26 @@
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
 {
+    // if reset source is not specified then use user defined velocity source
+    if (velResetSource == resetDataSource::DEFAULT) {
+        switch (frontend->sources.getVelXYSource()) {
+        case AP_NavEKF_Source::SourceXY::GPS:
+            velResetSource = resetDataSource::GPS;
+            break;
+        case AP_NavEKF_Source::SourceXY::BEACON:
+            velResetSource = resetDataSource::RNGBCN;
+            break;
+        case AP_NavEKF_Source::SourceXY::EXTNAV:
+            velResetSource = resetDataSource::EXTNAV;
+            break;
+        case AP_NavEKF_Source::SourceXY::NONE:
+        case AP_NavEKF_Source::SourceXY::OPTFLOW:
+        case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+            // unhandled sources so stick with the default
+            break;
+        }
+    }
+
     // Store the velocity before the reset so that we can record the reset delta
     velResetNE.x = stateStruct.velocity.x;
     velResetNE.y = stateStruct.velocity.y;
@@ -73,6 +93,26 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
 // resets position states to last GPS measurement or to zero if in constant position mode
 void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 {
+    // if reset source is not specified thenn use the user defined position source
+    if (posResetSource == resetDataSource::DEFAULT) {
+        switch (frontend->sources.getPosXYSource()) {
+        case AP_NavEKF_Source::SourceXY::GPS:
+            posResetSource = resetDataSource::GPS;
+            break;
+        case AP_NavEKF_Source::SourceXY::BEACON:
+            posResetSource = resetDataSource::RNGBCN;
+            break;
+        case AP_NavEKF_Source::SourceXY::EXTNAV:
+            posResetSource = resetDataSource::EXTNAV;
+            break;
+        case AP_NavEKF_Source::SourceXY::NONE:
+        case AP_NavEKF_Source::SourceXY::OPTFLOW:
+        case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+            // invalid sources so stick with the default
+            break;
+        }
+    }
+
     // Store the position before the reset so that we can record the reset delta
     posResetNE.x = stateStruct.position.x;
     posResetNE.y = stateStruct.position.y;
