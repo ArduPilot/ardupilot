@@ -122,6 +122,7 @@ void ModeTakeoff::update()
                 plane.takeoff_state.throttle_max_timer_ms = millis();
                 takeoff_mode_setup = true;
                 plane.steer_state.hold_course_cd = wrap_360_cd(direction*100); // Necessary to allow Plane::takeoff_calc_roll() to function.
+                plane.takeoff_state.takeoff_initial_direction = -1; //so we can capture takeoff direction
             }
         }
     }
@@ -130,6 +131,15 @@ void ModeTakeoff::update()
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
         takeoff_mode_setup = false;
     }
+    
+    // set takeoff_initial_direction
+    const float min_gps_speed = 5;
+    if ((plane.takeoff_state.takeoff_initial_direction == -1) && (plane.gps.ground_speed() > min_gps_speed)) {
+       plane.takeoff_state.takeoff_initial_direction = plane.gps.ground_course();
+       gcs().send_text(MAV_SEVERITY_INFO, "Takeoff initial direction= %d",plane.takeoff_state.takeoff_initial_direction);
+    }
+        
+
 
     // We update the waypoint to follow once we're past TKOFF_LVL_ALT or we
     // pass the target location. The check for target location prevents us

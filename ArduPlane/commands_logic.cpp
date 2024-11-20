@@ -380,6 +380,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     // zero locked course
     steer_state.locked_course_err = 0;
     steer_state.hold_course_cd = -1;
+    takeoff_state.takeoff_initial_direction = -1;
     auto_state.baro_takeoff_alt = barometer.get_altitude();
 }
 
@@ -554,6 +555,8 @@ bool Plane::verify_takeoff()
             gps.ground_speed() > min_gps_speed &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             auto_state.takeoff_speed_time_ms = millis();
+            takeoff_state.takeoff_initial_direction = gps.ground_course();
+            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff initial direction= %d",takeoff_state.takeoff_initial_direction);
         }
         if (auto_state.takeoff_speed_time_ms != 0 &&
             millis() - auto_state.takeoff_speed_time_ms >= 2000) {
