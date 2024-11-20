@@ -1764,8 +1764,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Kill any GPSs
         self.set_parameters({
-            'SIM_GPS_DISABLE': 1,
-            'SIM_GPS2_DISABLE': 1,
+            'SIM_GPS1_ENABLE': 0,
+            'SIM_GPS2_ENABLE': 0,
         })
         self.delay_sim_time(5)
 
