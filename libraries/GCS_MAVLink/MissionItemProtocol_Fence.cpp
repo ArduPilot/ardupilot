@@ -66,6 +66,7 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
     ret_packet.x = fenceitem.loc.x;
     ret_packet.y = fenceitem.loc.y;
     ret_packet.z = 0;
+    ret_packet.mission_type = MAV_MISSION_TYPE_FENCE;
 
     return true;
 }
