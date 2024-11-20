@@ -110,10 +110,16 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_Pol
     switch (mission_item_int.command) {
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
         ret.type = AC_PolyFenceType::POLYGON_INCLUSION;
+        if (mission_item_int.param1 > 255) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
         ret.vertex_count = mission_item_int.param1;
         break;
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
         ret.type = AC_PolyFenceType::POLYGON_EXCLUSION;
+        if (mission_item_int.param1 > 255) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
         ret.vertex_count = mission_item_int.param1;
         break;
     case MAV_CMD_NAV_FENCE_RETURN_POINT:
