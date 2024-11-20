@@ -9428,6 +9428,20 @@ Also, ignores heartbeats not from our target system'''
                                 location.alt,
                                 location.heading)
 
+    def offset_location_heading_distance(self, location, bearing, distance):
+        (target_lat, target_lng) = mavextra.gps_newpos(
+            location.lat,
+            location.lng,
+            bearing,
+            distance
+        )
+        return mavutil.location(
+            target_lat,
+            target_lng,
+            location.alt,
+            location.heading
+        )
+
     def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
         tstart = self.get_sim_time()
         while True:
