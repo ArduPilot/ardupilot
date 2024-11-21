@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("Os")
+
 #include "AP_Generator_IE_650_800.h"
 
 #if AP_GENERATOR_IE_650_800_ENABLED
