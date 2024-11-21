@@ -70,13 +70,13 @@ I2C on the SDA and SCL pads.
 
 ## Firmware
 Firmware for these boards can be found here: https://github.com/ArduPilot/ardupilot
-in the sub-folders labeled “KRSHKF7Mini”.
+in the sub-folders labelled “KRSHKF7Mini”.
 
-###Initial Firmware Load
+### Initial Firmware Load
 1. **Prepare for DFU Mode:** Plug in the USB with the boot jumper soldered.
 
 2. **Load Firmware:** Use your preferred DFU loading tool (e.g., dfuse, STM32CubeProgrammer) to load the ```KRSHKF7Mini_bl.hex``` firmware.
 
-###Firmware Updates
+### Firmware Updates
 After the initial load, you can update the firmware using Mission Planner or by flashing with the ```.apj``` file if the bootloader is already installed. 
 The bootloader for this board can be found in the ```Tools/bootloaders``` folder under the name ```KRSHKF7Mini_bl.bin```.
