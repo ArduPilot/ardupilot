@@ -114,9 +114,8 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
             // @LoggerMessage: RTC
             // @Description: Information about RTC clock resets
             // @Field: TimeUS: Time since system startup
-            // @Field: old: old time
-            // @Field: new: new time
-            // @Field: in: new argument time
+            // @Field: old_utc: old time
+            // @Field: new_utc: new time
             AP::logger().WriteStreaming(
                 "RTC",
                 "TimeUS,old_utc,new_utc",
