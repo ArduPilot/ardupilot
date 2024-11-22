@@ -118,6 +118,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_VideoTX',
     'AP_FETtecOneWire',
     'AP_TemperatureSensor',
+    'AP_TopoLift',
     'AP_Torqeedo',
     'AP_CustomRotations',
     'AP_AIS',

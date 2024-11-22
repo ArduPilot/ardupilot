@@ -125,6 +125,12 @@ public:
      */
     bool height_amsl(const Location &loc, float &height, bool corrected = true);
 
+    /*
+      find the terrain gradient (slope) for a location
+
+      return false if not available
+     */
+    bool gradient(const Location &loc);
     /* 
        find difference between home terrain height and the terrain
        height at the current location in meters. A positive result

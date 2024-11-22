@@ -1,0 +1,3 @@
+#ifndef AP_TOPO_LIFT_ENABLED
+#define AP_TOPO_LIFT_ENABLED 1
+#endif
