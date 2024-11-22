@@ -130,6 +130,7 @@ void ModeTakeoff::update()
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
                                 alt, dist, direction);
                 plane.takeoff_state.start_time_ms = millis();
+                plane.takeoff_state.level_off_start_time_ms = 0;
                 plane.takeoff_state.throttle_max_timer_ms = millis();
                 takeoff_mode_setup = true;
                 plane.steer_state.hold_course_cd = wrap_360_cd(direction*100); // Necessary to allow Plane::takeoff_calc_roll() to function.
@@ -165,6 +166,12 @@ void ModeTakeoff::update()
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
         (altitude_cm >= (alt*100 - 200) ||
         start_loc.get_distance(plane.current_loc) >= dist)) {
+        plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+    }
+
+    // If we have timed-out on the attempt to close the final few meters
+    // during pitch level-off, continue to NORMAL flight stage.
+    if (plane.check_takeoff_timeout_level_off()) {
         plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
     }
 
