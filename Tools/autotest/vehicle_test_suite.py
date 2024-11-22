@@ -2711,8 +2711,6 @@ class TestSuite(ABC):
             "SIM_MAG1_OFS_Z",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
-            "SIM_PLD_ALT_LMT",
-            "SIM_PLD_DIST_LMT",
             "SIM_RICH_CTRL",
             "SIM_RICH_ENABLE",
             "SIM_SHIP_DSIZE",
