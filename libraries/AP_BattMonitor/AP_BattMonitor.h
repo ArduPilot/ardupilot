@@ -70,6 +70,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_INA239;
     friend class AP_BattMonitor_LTC2946;
     friend class AP_BattMonitor_AD7091R5;
+    friend class AP_BattMonitor_INA3221;
 
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
@@ -116,6 +117,7 @@ public:
         EFI                            = 27,
         AD7091R5                       = 28,
         Scripting                      = 29,
+        INA3221                        = 30,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
