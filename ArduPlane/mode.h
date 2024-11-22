@@ -55,6 +55,8 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+		HOVERING      = 26,
+        MANUALK       = 27,
     };
 
     // Constructor
@@ -406,7 +408,37 @@ private:
 
 };
 #endif // HAL_QUADPLANE_ENABLED
+class ModeHovering: public Mode
+{
+public:
+    Number mode_number() const override { return Number::HOVERING; }
+    const char *name() const override { return "HOVERING"; }
+    const char *name4() const override { return "HOVE"; }
 
+    // methods that affect movement of the vehicle in this mode
+    //bool does_auto_navigation() const override { return true; }
+    //bool does_auto_throttle() const override { return true; }
+    
+    void update() override;
+protected:
+    bool _enter() override;
+    void _exit() override;
+};
+
+class ModeManualK : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::MANUALK; }
+    const char *name() const override { return "MANUALK"; }
+    const char *name4() const override { return "MANK"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+protected:
+    bool _enter() override;
+    void _exit() override;
+};
 class ModeManual : public Mode
 {
 public:

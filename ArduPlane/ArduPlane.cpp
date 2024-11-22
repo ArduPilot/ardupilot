@@ -21,6 +21,7 @@
  */
 
 #include "Plane.h"
+#include "zef_control.h"
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros, priority)
 #define FAST_TASK(func) FAST_TASK_CLASS(Plane, &plane, func)
@@ -53,6 +54,8 @@ SCHED_TASK_CLASS arguments:
 FAST_TASK entries are run on every loop even if that means the loop
 overruns its allotted time
  */
+ 
+
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
     FAST_TASK(ahrs_update),

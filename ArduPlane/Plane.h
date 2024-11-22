@@ -82,6 +82,7 @@
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Follow/AP_Follow.h>
+#include <AP_WindVane/AP_WindVane.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Plane.h"
@@ -162,6 +163,7 @@ public:
     friend class ModeGuided;
     friend class ModeInitializing;
     friend class ModeManual;
+	friend class ModeHovering;
     friend class ModeQStabilize;
     friend class ModeQHover;
     friend class ModeQLoiter;
@@ -172,6 +174,10 @@ public:
     friend class ModeTakeoff;
     friend class ModeThermal;
     friend class ModeLoiterAltQLand;
+	friend class ModeHovering;
+    friend class ModeManualK;
+    
+    friend class ZefControl;
 
 #if AP_EXTERNAL_CONTROL_ENABLED
     friend class AP_ExternalControl_Plane;
@@ -307,6 +313,8 @@ private:
     ModeAuto mode_auto;
     ModeRTL mode_rtl;
     ModeLoiter mode_loiter;
+	ModeHovering mode_hovering;
+    ModeManualK mode_manualk;
 #if HAL_ADSB_ENABLED
     ModeAvoidADSB mode_avoidADSB;
 #endif
