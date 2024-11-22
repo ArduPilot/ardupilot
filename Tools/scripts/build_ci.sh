@@ -7,6 +7,10 @@ XOLDPWD=$PWD  # profile changes directory :-(
 
 . ~/.profile
 
+if [ "$CI" = "true" ]; then
+  export PIP_ROOT_USER_ACTION=ignore
+fi
+
 cd $XOLDPWD
 
 set -ex
