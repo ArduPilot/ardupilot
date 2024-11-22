@@ -5,7 +5,9 @@
 
 XOLDPWD=$PWD  # profile changes directory :-(
 
-. ~/.profile
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
+  . ~/.profile
+fi
 
 if [ "$CI" = "true" ]; then
   export PIP_ROOT_USER_ACTION=ignore
