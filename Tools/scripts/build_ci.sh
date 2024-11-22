@@ -40,7 +40,7 @@ function install_pymavlink() {
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive --depth 1
-        (cd modules/mavlink/pymavlink && python3 -m pip install --user .)
+        (cd modules/mavlink/pymavlink && python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user .)
         pymavlink_installed=1
     fi
 }
@@ -51,7 +51,7 @@ function install_mavproxy() {
         pushd /tmp
           git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
-            python3 -m pip install --user --force .
+            python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user --force .
           popd
         popd
         mavproxy_installed=1
@@ -458,7 +458,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building signed firmwares"
         sudo apt-get update
         sudo apt-get install -y python3-dev
-        python3 -m pip install pymonocypher==3.1.3.2
+        python3 -m pip install pymonocypher==3.1.3.2 --progress-bar off --cache-dir /tmp/pip-cache
         ./Tools/scripts/signing/generate_keys.py testkey
         $waf configure --board CubeOrange-ODID --signed-fw --private-key testkey_private_key.dat
         $waf copter
