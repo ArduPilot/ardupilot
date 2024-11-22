@@ -45,6 +45,10 @@ enum class TopicIndex: uint8_t {
 WRE_OUT_PUB, //Add DIY Publisher topic Index
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
 
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+LOG_OUT_1_PUB, //Add DIY Publisher topic Index
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
+
 //~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     LOCAL_AIRSPEED_PUB,
@@ -225,6 +229,27 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
 },
 },
 #endif //AP_DDS_WRE_OUT_PUB_ENABLED
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Add New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+{
+.topic_id = to_underlying(TopicIndex::LOG_OUT_1_PUB),
+.pub_id = to_underlying(TopicIndex::LOG_OUT_1_PUB),
+.sub_id = to_underlying(TopicIndex::LOG_OUT_1_PUB),
+.dw_id = uxrObjectId{.id=to_underlying(TopicIndex::LOG_OUT_1_PUB), .type=UXR_DATAWRITER_ID},
+.dr_id = uxrObjectId{.id=to_underlying(TopicIndex::LOG_OUT_1_PUB), .type=UXR_DATAREADER_ID},
+.topic_rw = Topic_rw::DataWriter,
+.topic_name = "rt/ap/log/log_out_1",
+.type_name = "geometry_msgs::msg::dds_::WrenchStamped_",
+.qos = {
+.durability = UXR_DURABILITY_VOLATILE,
+.reliability = UXR_RELIABILITY_BEST_EFFORT,
+.history = UXR_HISTORY_KEEP_LAST,
+.depth = 5,
+},
+},
+#endif //AP_DDS_LOG_OUT_1_PUB_ENABLED
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     {

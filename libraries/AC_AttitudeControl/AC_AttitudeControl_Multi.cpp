@@ -317,12 +317,19 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
 
+     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn参数表~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    AP_SUBGROUPINFO(_pdnn_att, "_PDNN_ATT", 8, AC_AttitudeControl_Multi, AC_PDNN_SO3),
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     AP_GROUPEND
 };
 
 AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) : //类的构造函数，初始化
     AC_AttitudeControl(ahrs, aparm, motors),
-    _motors_multi(motors)
+    _motors_multi(motors),
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn初始化~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    _pdnn_att(ATTCONTROL_PDNN_XY_kR, ATTCONTROL_PDNN_XY_KOmega, ATTCONTROL_PDNN_Z_kR, ATTCONTROL_PDNN_Z_KOmega)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -439,6 +446,28 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
+ ///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DIYLog get_log_out_1(float test_msg_3, float test_msg_4)  //记得修改这里的参数后要在.h文件中也修改一下
+{
+    
+// 示例力和力矩数据，你可以根据实际情况进行修改
+Vector3f force(test_msg_3, test_msg_4, 3.0f); // 假设的力值
+
+Vector3f torque(4.0f, 5.0f, 6.0f); // 假设的力矩值
+  
+// 返回 DIYWrench 对象
+return DIYLog(force, torque);
+}
+
+DIYLog current_log_out_1; //发送到DDS的数据
+
+DIYLog get_current_log_out_1(){  //让外部传入，保存到current_log_out_1，再发送到DDS
+     return current_log_out_1;
+}
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY End~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, float dt) //姿态速率控制
 {
     // take a copy of the target so that it can't be changed from under us.
@@ -467,6 +496,12 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     _pd_scale_used = _pd_scale;
 
     control_monitor_update();
+    
+    float test_msg_3 = _rate_gyro.z;
+    float test_msg_4 = expf(1.5f);
+    //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~
+    current_log_out_1 = get_log_out_1(test_msg_3, test_msg_4); //用于ROS2推力话题 
+    //_pdnn_att.upda
 }
 
 // reset the rate controller target loop updates //// 重置速率控制器目标环更新

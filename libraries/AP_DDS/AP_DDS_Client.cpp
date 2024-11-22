@@ -18,6 +18,7 @@
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~include new header~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #include <AC_AttitudeControl/AC_PosControl.h>
+#include <AC_AttitudeControl/AC_AttitudeControl_Multi.h>
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~
 
@@ -57,6 +58,10 @@ static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 #if AP_DDS_WRE_OUT_PUB_ENABLED
 static constexpr uint16_t DELAY_WRE_OUT_TOPIC_MS = 33;
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+static constexpr uint16_t DELAY_LOG_OUT_1_TOPIC_MS = 33; //尝试修改为100hz发布
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_AIRSPEED_PUB_ENABLED
@@ -493,6 +498,25 @@ msg.wrench.torque.y = DroneWrench.torque.y;
 msg.wrench.torque.z = DroneWrench.torque.z;
 }
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+void AP_DDS_Client::update_topic_log_out_1(geometry_msgs_msg_WrenchStamped& msg)
+{
+update_topic(msg.header.stamp);  //这里update别改名？
+strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+// 直接调用静态函数 get_log_out_1() 获取 log 数据
+DIYLog LogOut_1 = get_current_log_out_1();
+// 将获取到的 force 和 torque 赋值到 ROS2 消息中
+msg.wrench.force.x = LogOut_1.force.x;
+msg.wrench.force.y = LogOut_1.force.y;
+msg.wrench.force.z = LogOut_1.force.z;
+
+msg.wrench.torque.x = LogOut_1.torque.x;
+msg.wrench.torque.y = LogOut_1.torque.y;
+msg.wrench.torque.z = LogOut_1.torque.z;
+}
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1222,6 +1246,25 @@ if (!success) {
 }
 }
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+void AP_DDS_Client::write_log_out_1_topic()
+{
+WITH_SEMAPHORE(csem);
+if (connected) {
+ucdrBuffer ub {};
+const uint32_t topic_size = geometry_msgs_msg_WrenchStamped_size_of_topic(&log_out_1_topic, 0);
+uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOG_OUT_1_PUB)].dw_id, &ub, topic_size);
+const bool success = geometry_msgs_msg_WrenchStamped_serialize_topic(&ub, &log_out_1_topic);
+if (!success) {
+
+// TODO sometimes serialization fails on bootup. Determine why.
+
+// AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+}
+}
+}
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1363,6 +1406,14 @@ void AP_DDS_Client::update()
         write_wre_out_topic();
     }
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+    if (cur_time_ms - last_log_out_1_time_ms > DELAY_LOG_OUT_1_TOPIC_MS) {
+        update_topic_log_out_1(log_out_1_topic); //注意这里update名要修改！
+        last_log_out_1_time_ms = cur_time_ms;
+        write_log_out_1_topic();
+    }
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

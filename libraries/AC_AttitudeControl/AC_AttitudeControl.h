@@ -244,7 +244,7 @@ public:
     // reset target loop rate modifications
     virtual void rate_controller_target_reset() {}
 
-    // optional variant to allow running with different dt
+    // optional variant to allow running with different dt //加速度控制环核心循环，可考虑在此虚函数添加形参，但是要在对应override函数中也添加相同形参
     virtual void rate_controller_run_dt(const Vector3f& gyro, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
 
     // Convert a 321-intrinsic euler angle derivative to an angular velocity vector

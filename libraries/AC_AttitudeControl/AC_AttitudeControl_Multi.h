@@ -5,6 +5,9 @@
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~PDNN Controller~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#include <AC_PID/AC_PDNN_SO3.h>  
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // default rate controller PID gains
 #ifndef AC_ATC_MULTI_RATE_RP_P
@@ -37,6 +40,13 @@
 #ifndef AC_ATC_MULTI_RATE_YAW_FILT_HZ
  # define AC_ATC_MULTI_RATE_YAW_FILT_HZ     2.5f
 #endif
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#define ATTCONTROL_PDNN_XY_kR                  1.0f    // horizontal pdnn controller P gain default
+#define ATTCONTROL_PDNN_XY_KOmega                  1.0f    // horizontal pdnn controller D gain default
+#define ATTCONTROL_PDNN_Z_kR                  1.0f    // veritical pdnn controller P gain default
+#define ATTCONTROL_PDNN_Z_KOmega                  1.0f    // veritical pdnn controller D gain default
+//在头文件中定义pdnn控制器构造函数的初始化默认值，是因为cpp文件中if编译需要工作空间先build copter
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
@@ -57,8 +67,8 @@ public:
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
 
-    // Set output throttle
-    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
+    // Set output throttle//设置油门输出，传入值是从AC_PosControl.cpp文件垂直控制中thr_out传入
+    void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override; //override是一个标记符，用于表示继承
 
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
@@ -101,7 +111,7 @@ protected:
     float get_throttle_avg_max(float throttle_in);
 
     AP_MotorsMulticopter& _motors_multi;
-    AC_PID                _pid_rate_roll {
+    AC_PID                _pid_rate_roll { //聚合初始化，c++11的语法。可以直接在类声明时对成员变量进行初始化的方式。
         AC_PID::Defaults{
             .p         = AC_ATC_MULTI_RATE_RP_P,
             .i         = AC_ATC_MULTI_RATE_RP_I,
@@ -145,6 +155,11 @@ protected:
         }
     };
 
+ //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~创建PDNN控制器对象~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    AC_PDNN_SO3      _pdnn_att;  //没有用到聚合初始化，所以需要在cpp的构造函数中初始化
+
+ //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
@@ -152,3 +167,22 @@ protected:
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
 };
+
+ ///~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New DDS Topic output get_log~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Wrench struct
+
+struct DIYLog
+{
+Vector3f force; // 力的三维向量
+Vector3f torque; // 力矩的三维向量
+// 默认构造函数，初始化为 0
+DIYLog() : force(), torque() {}
+// 参数化构造函数
+DIYLog(const Vector3f& f, const Vector3f& t) : force(f), torque(t) {}
+};
+
+extern DIYLog get_log_out_1(float test_msg_3, float test_msg_4); //注意这里全局变量，所以传入的参数名也要区分
+extern DIYLog current_log_out_1;
+extern DIYLog get_current_log_out_1();
+///~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -37,6 +37,10 @@
 #include "geometry_msgs/msg/WrenchStamped.h"
 #endif // AP_DDS_WRE_OUT_PUB_ENABLED
 
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+#include "geometry_msgs/msg/WrenchStamped.h"
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #if AP_DDS_NEEDS_TWIST
 #include "geometry_msgs/msg/TwistStamped.h"
@@ -146,7 +150,16 @@ uint64_t last_wre_out_time_ms;
 //! @brief Serialize the current local_pose and publish to the IO stream(s)
 void write_wre_out_topic();
 static void update_topic(geometry_msgs_msg_WrenchStamped& msg);
-#endif // AP_DDS_THR_OUT_PUB_ENABLED
+#endif // AP_DDS_WRE_OUT_PUB_ENABLED
+
+#if AP_DDS_LOG_OUT_1_PUB_ENABLED
+geometry_msgs_msg_WrenchStamped log_out_1_topic;
+// The last ms timestamp AP_DDS wrote a Local Pose message
+uint64_t last_log_out_1_time_ms;
+//! @brief Serialize the current local_pose and publish to the IO stream(s)
+void write_log_out_1_topic();
+static void update_topic_log_out_1(geometry_msgs_msg_WrenchStamped& msg); 
+#endif // AP_DDS_LOG_OUT_1_PUB_ENABLED
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
