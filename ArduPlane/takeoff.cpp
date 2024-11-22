@@ -304,6 +304,14 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
         // if height-below-target has been initialized then use it to create and apply a scaler to the pitch_min
         if (auto_state.height_below_takeoff_to_level_off_cm != 0) {
             float scalar = remaining_height_to_target_cm / (float)auto_state.height_below_takeoff_to_level_off_cm;
+
+            const int32_t takeoff_end_delay_ms = AP_HAL::millis() - takeoff_state.level_off_start_time_ms - g.takeoff_pitch_limit_reduction_sec*1000;
+            if (takeoff_end_delay_ms > 0) {
+                // Takeoff is not complete within the expected time.
+                // Start dialing back the scalar reduction within 5 seconds.
+                scalar = MIN(scalar + takeoff_end_delay_ms/(float)5000, 1.0f);
+            }
+
             return auto_state.takeoff_pitch_cd * scalar;
         }
 
@@ -316,6 +324,7 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
                 // make a note of that altitude to use it as a start height for scaling
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", int(remaining_height_to_target_cm/100));
                 auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+                takeoff_state.level_off_start_time_ms = AP_HAL::millis();
             }
         }
     }

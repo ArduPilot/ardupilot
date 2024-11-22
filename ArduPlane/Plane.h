@@ -449,7 +449,7 @@ private:
         float throttle_lim_max;
         float throttle_lim_min;
         uint32_t throttle_max_timer_ms;
-        // Good candidate for keeping the initial time for TKOFF_THR_MAX_T.
+        uint32_t level_off_start_time_ms;
     } takeoff_state;
 
     // ground steering controller state
