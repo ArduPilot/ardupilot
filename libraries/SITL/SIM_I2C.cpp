@@ -37,6 +37,7 @@
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 #include "SIM_QMC5883L.h"
+#include "SIM_INA3221.h"
 
 #include <signal.h>
 
@@ -85,6 +86,9 @@ static IS31FL3195 is31fl3195;
 #if AP_SIM_COMPASS_QMC5883L_ENABLED
 static QMC5883L qmc5883l;
 #endif
+#if AP_SIM_INA3221_ENABLED
+static INA3221 ina3221;
+#endif
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -102,6 +106,9 @@ struct i2c_device_at_address {
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
     { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4
+#if AP_SIM_INA3221_ENABLED
+    { 1, 0x42, ina3221 },
+#endif
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },        // Rotoye: BATTx_MONITOR 19, BATTx_I2C_ADDR 13
     { 2, 0x0B, maxell },        // Maxell: BATTx_MONITOR 16, BATTx_I2C_ADDR 13
