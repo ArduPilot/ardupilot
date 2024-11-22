@@ -453,7 +453,7 @@ private:
         float throttle_lim_max;
         float throttle_lim_min;
         uint32_t throttle_max_timer_ms;
-        // Good candidate for keeping the initial time for TKOFF_THR_MAX_T.
+        uint32_t level_off_start_time_ms;
     } takeoff_state;
 
     // ground steering controller state
@@ -1151,6 +1151,7 @@ private:
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
     bool check_takeoff_timeout(void);
+    bool check_takeoff_timeout_level_off(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
