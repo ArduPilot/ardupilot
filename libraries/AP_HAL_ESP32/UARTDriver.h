@@ -39,9 +39,8 @@ public:
 
     UARTDriver(uint8_t serial_num);
 
-    /* todo Do not allow copies */
-    //UARTDriver(const UARTDriver &other) = delete;
-    //UARTDriver &operator=(const UARTDriver&) = delete;
+    /* Do not allow copies */
+    CLASS_NO_COPY(UARTDriver);
 
     virtual ~UARTDriver() = default;
 
@@ -104,18 +103,17 @@ private:
     void read_data();
     void write_data();
 
-    uint8_t uart_num;
-    HAL_Semaphore sem;
+    HAL_Semaphore _sem;
 
     // table to find UARTDrivers from serial number, used for event handling
-    static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
+    static UARTDriver *serial_drivers[UART_MAX_DRIVERS];
 
     // unused stuff from chibios - do we want it in the future?
     //const SerialDef &sdef;
     //static const SerialDef _serial_tab[];
 
-    // index into uart_drivers table
-    uint8_t serial_num;
+    // index into serial_drivers table
+    uint8_t _serial_num;
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
@@ -123,7 +121,6 @@ private:
     uint32_t _baudrate;
 
     void _receive_timestamp_update(void);
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) ;
 
 protected:
     void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
