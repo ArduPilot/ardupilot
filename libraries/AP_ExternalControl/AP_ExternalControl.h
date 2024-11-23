@@ -42,6 +42,24 @@ public:
         Disarm the vehicle
     */
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks) WARN_IF_UNUSED;
+    /*
+        Set the External control status.
+    */
+    void enable()
+    {
+        enabled = true;
+    }
+    void disable()
+    {
+        enabled = false;
+    }
+
+    /*
+        Get the External control status.
+    */
+    bool is_enabled() WARN_IF_UNUSED {
+        return enabled;
+    }
 
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
@@ -51,6 +69,7 @@ protected:
 
 private:
     static AP_ExternalControl *singleton;
+    bool enabled {true};
 };
 
 
