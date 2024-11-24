@@ -42,8 +42,6 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(UARTDriver);
 
-    void vprintf(const char *fmt, va_list ap) override;
-
     bool is_initialized() override;
     bool tx_pending() override;
 
@@ -89,6 +87,8 @@ public:
     uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
 
     uint32_t get_baud_rate() const override { return _baudrate; }
+
+    void vprintf(const char *fmt, va_list ap) override;
 
 private:
     bool _initialized;
