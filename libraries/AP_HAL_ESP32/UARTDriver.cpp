@@ -30,7 +30,7 @@ extern int ets_printf(const char* format, ...); //for ets_printf in rom
 using namespace ESP32;
 
 
-const UARTDriver::UARTDesc UARTDriver::_serial_tab[] = {HAL_ESP32_UART_DEVICES};
+const UARTDriver::SerialDef UARTDriver::_serial_tab[] = {HAL_ESP32_UART_DEVICES};
 
 // table to find UARTDrivers from serial number, used for event handling
 UARTDriver *UARTDriver::serial_drivers[UART_MAX_DRIVERS];

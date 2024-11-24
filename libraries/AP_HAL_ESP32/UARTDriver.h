@@ -63,8 +63,7 @@ public:
     //         return uint8_t(this - &_serial_tab[0]);
     //     }
     // };
-
-    struct UARTDesc {
+    struct SerialDef {
         uart_port_t port;
         gpio_num_t rx;
         gpio_num_t tx;
@@ -117,7 +116,7 @@ public:
     void vprintf(const char *fmt, va_list ap) override;
 
 private:
-    const UARTDesc &sdef;
+    const SerialDef &sdef;
 
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
@@ -139,10 +138,7 @@ private:
 
     uint32_t _baudrate;
 
-    // unused stuff from chibios - do we want it in the future?
-    //const SerialDef &sdef;
-    //static const SerialDef _serial_tab[];
-    static const UARTDesc _serial_tab[];
+    static const SerialDef _serial_tab[];
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
