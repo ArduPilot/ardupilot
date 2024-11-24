@@ -36,7 +36,6 @@ struct UARTDesc {
 class ESP32::UARTDriver : public AP_HAL::UARTDriver
 {
 public:
-
     UARTDriver(uint8_t serial_num);
 
     /* Do not allow copies */
