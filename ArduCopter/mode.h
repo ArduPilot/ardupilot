@@ -1970,8 +1970,6 @@ public:
     bool set_speed_up(float speed_up_cms) override {return true;};
     bool set_speed_down(float speed_down_cms) override {return true;};
 
-    void climb_to_alt();
-
     enum class SubMode: uint8_t {
         FOLLOW,
         APPROACH, 
@@ -1999,11 +1997,19 @@ private:
     float target_alt_relative;
     bool landed = false;
     bool land_initialized = false;
+    bool has_target_info = false;
+    struct yaw_behaviour {
+        float yaw_cd;
+        bool use_yaw;
+    };
+    Vector3f desired_velocity_neu_cms;
 
 
-    void follow();
+    void get_target_info();
+    void follow_target();
     void perform_landing();
 
+    yaw_behaviour get_yaw_behaviour();
     void get_desired_vel_neu_cms(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu, Vector3f pos_err, Vector3f pos_err_off);
     void limit_desired_velocity_xy(Vector3f &desired_vel_neu_cms, Vector3f pos_err_off_neu);
     void add_feedforward_velocity_xy(Vector3f &desired_vel_xy_cms);

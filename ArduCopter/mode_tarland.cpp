@@ -4,10 +4,11 @@
 
 #define MIN_DESCENT_ALT_OFF 1
 #define MIN_FOLLOW_DIST 1 
+#define HOVER_ALT 40
 
 /**
  * mode_tarland.cpp - follow another mavlink enabled vehicle and land on it
- * Use AP_FOLLOW library to achieve landing
+ * Use AP_FOLLOW library to achieve follow the target
  */
 bool ModeTarLand::init(bool ignore_checks)
 {
@@ -24,107 +25,70 @@ bool ModeTarLand::init(bool ignore_checks)
     }
 
     // re use guided mode
-    hal.console->printf("start tarland");
-    copter.precland_statemachine.init();
     return ModeGuided::init(ignore_checks);
 }
 
 void ModeTarLand::run()
 {   
-    if(!motors->armed() || landed) {
+    if(!motors->armed()) {
         return;
     }
 
-    const bool has_target_info = g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, target_vel);
+    get_target_info();
 
-
-    if(has_target_info){
-
-        if(dist_vec.xy().length() > MIN_FOLLOW_DIST){
-            // Follow the target
-            g2.follow.set_offset({0,0,-15}, offset_type);
-            follow();
-
-        }else if(dist_vec.xy().length() <= MIN_FOLLOW_DIST){
-
-
-                if(dist_vec.z > MIN_DESCENT_ALT_OFF){
-                    // Initiate descent
-                    g2.follow.set_offset({0,0,-MIN_DESCENT_ALT_OFF}, offset_type);
-                    follow();
-
-                }else if(dist_vec.z <= MIN_DESCENT_ALT_OFF){
-
-                    perform_landing();
-                }
-        }
-
-
+    if(!has_target_info) {
+        // Handle case when target location is not available
+        return;
     }
+
+    float dist_xy = dist_vec.xy().length();
+
+    if(dist_xy > MIN_FOLLOW_DIST){
+
+        g2.follow.set_offset({0,0,-HOVER_ALT}, offset_type);
+        follow_target();
+
+    }else if(dist_xy <= MIN_FOLLOW_DIST) {
+
+            if(dist_vec.z > MIN_DESCENT_ALT_OFF) {
+
+                g2.follow.set_offset({0,0,-MIN_DESCENT_ALT_OFF}, offset_type);
+                follow_target();
+
+            } else if(dist_vec.z <= MIN_DESCENT_ALT_OFF) {
+
+                perform_landing();
+            }
+    }
+
 }
 
-void ModeTarLand::follow()
+void ModeTarLand::get_target_info()
+{
+    has_target_info = g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, target_vel);
+}
+
+void ModeTarLand::follow_target()
 {
 
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    Vector3f desired_velocity_neu_cms;
-    bool use_yaw = false;
-    float yaw_cd = 0.0f;
+    // convert pos_err_off to cm in NEU frame
+    const Vector3f pos_err_off_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
+    get_desired_vel_neu_cms(desired_velocity_neu_cms, pos_err_off_neu, dist_vec, dist_vec_offs);
 
-    const bool has_target_info = g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, target_vel);
+    limit_desired_velocity_xy(desired_velocity_neu_cms, pos_err_off_neu);
+    add_feedforward_velocity_xy(desired_velocity_neu_cms);
 
-    if(has_target_info){
+    limit_desired_velocity_z(desired_velocity_neu_cms, pos_err_off_neu);
+    add_feedforward_velocity_z(desired_velocity_neu_cms);
+    
+    // limit the velocity for obstacle/fence avoidance
+    copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss(), G_Dt);
 
-        // convert pos_err_off to cm in NEU frame
-        const Vector3f pos_err_off_neu(dist_vec_offs.x * 100.0f, dist_vec_offs.y * 100.0f, -dist_vec_offs.z * 100.0f);
-        get_desired_vel_neu_cms(desired_velocity_neu_cms, pos_err_off_neu, dist_vec, dist_vec_offs);
+    ModeTarLand::yaw_behaviour yaw_info = get_yaw_behaviour();
 
-        limit_desired_velocity_xy(desired_velocity_neu_cms, pos_err_off_neu);
-        add_feedforward_velocity_xy(desired_velocity_neu_cms);
-
-        limit_desired_velocity_z(desired_velocity_neu_cms, pos_err_off_neu);
-        add_feedforward_velocity_z(desired_velocity_neu_cms);
-        
-        // limit the velocity for obstacle/fence avoidance
-        copter.avoid.adjust_velocity(desired_velocity_neu_cms, pos_control->get_pos_xy_p().kP().get(), pos_control->get_max_accel_xy_cmss(), pos_control->get_pos_z_p().kP().get(), pos_control->get_max_accel_z_cmss(), G_Dt);
-
-        // calculate vehicle heading
-        switch (g2.follow.get_yaw_behave()) {
-            case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
-                if (dist_vec.xy().length_squared() > 1.0) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
-                    use_yaw = true;
-                }
-                break;
-            }
-
-            case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
-                float target_hdg = 0.0f;
-                if (g2.follow.get_target_heading_deg(target_hdg)) {
-                    yaw_cd = target_hdg * 100.0f;
-                    use_yaw = true;
-                }
-                break;
-            }
-
-            case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
-                if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
-                    yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
-                    use_yaw = true;
-                }
-                break;
-            }
-
-            case AP_Follow::YAW_BEHAVE_NONE:
-            default:
-                // do nothing
-               break;
-
-        }
-    }
-
-        // log output at 10hz
+    // log output at 10hz
     uint32_t now = AP_HAL::millis();
     bool log_request = false;
     if ((now - last_log_ms >= 1000) || (last_log_ms == 0)) {
@@ -135,13 +99,13 @@ void ModeTarLand::follow()
         hal.console->printf("Mode Tarland");
         hal.console->printf("Distance to target: %f", dist_vec.xy().length());
         hal.console->printf("Dist x: %f\n", dist_vec.x);
-         hal.console->printf("Dist y: %f\n", dist_vec.y);
-         hal.console->printf("Dist z: %f\n", dist_vec.z);
-         hal.console->printf("Drone z pos: %f \n", current_loc.alt*0.01f);
+        hal.console->printf("Dist y: %f\n", dist_vec.y);
+        hal.console->printf("Dist z: %f\n", dist_vec.z);
+        hal.console->printf("Drone z pos: %f \n", current_loc.alt*0.01f);
     }
 
     // re-use guided mode's velocity controller (takes NEU)
-    ModeGuided::set_velocity(desired_velocity_neu_cms, use_yaw, yaw_cd, false, 0.0f, false, log_request);
+    ModeGuided::set_velocity(desired_velocity_neu_cms, yaw_info.use_yaw, yaw_info.yaw_cd, false, 0.0f, false, log_request);
 
     ModeGuided::run();
 }
@@ -155,7 +119,11 @@ void ModeTarLand::perform_landing()
     copter.pos_control->update_z_controller();
 
     if (copter.motors->armed()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         copter.arming.disarm(AP_Arming::Method::LANDED);
+    }
+
+    if(!copter.motors->armed()){
         gcs().send_text(MAV_SEVERITY_INFO, "Ship landing complete. Motors disarmed.");
         landed = true;
     }
@@ -212,4 +180,50 @@ void ModeTarLand::add_feedforward_velocity_z(Vector3f &desired_vel_neu_cms)
     desired_vel_neu_cms.z = constrain_float(desired_vel_neu_cms.z, -fabsf(pos_control->get_max_speed_down_cms()), pos_control->get_max_speed_up_cms());
 
 }
+
+ModeTarLand::yaw_behaviour ModeTarLand::get_yaw_behaviour()
+{
+    bool use_yaw = false;
+    float yaw_cd = 0.0f;
+    // calculate vehicle heading
+    switch (g2.follow.get_yaw_behave()) {
+        case AP_Follow::YAW_BEHAVE_FACE_LEAD_VEHICLE: {
+            if (dist_vec.xy().length_squared() > 1.0) {
+                yaw_cd = get_bearing_cd(Vector2f{}, dist_vec.xy());
+                use_yaw = true;
+            }
+            break;
+        }
+
+        case AP_Follow::YAW_BEHAVE_SAME_AS_LEAD_VEHICLE: {
+            float target_hdg = 0.0f;
+            if (g2.follow.get_target_heading_deg(target_hdg)) {
+                yaw_cd = target_hdg * 100.0f;
+                use_yaw = true;
+            }
+            break;
+        }
+
+        case AP_Follow::YAW_BEHAVE_DIR_OF_FLIGHT: {
+            if (desired_velocity_neu_cms.xy().length_squared() > (100.0 * 100.0)) {
+                yaw_cd = get_bearing_cd(Vector2f{}, desired_velocity_neu_cms.xy());
+                use_yaw = true;
+            }
+            break;
+        }
+
+        case AP_Follow::YAW_BEHAVE_NONE:
+        default:
+            // do nothing
+            break;
+
+    }
+
+    ModeTarLand::yaw_behaviour yaw_info;
+    yaw_info.use_yaw = use_yaw;
+    yaw_info.yaw_cd = yaw_cd;
+
+    return yaw_info;
+}
+
 #endif
