@@ -114,10 +114,11 @@ private:
     // index into serial_drivers table
     uint8_t _serial_num;
 
+    uint32_t _baudrate;
+
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
     uint8_t _receive_timestamp_idx;
-    uint32_t _baudrate;
 
     void _receive_timestamp_update(void);
 
