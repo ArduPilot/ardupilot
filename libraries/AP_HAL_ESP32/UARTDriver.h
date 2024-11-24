@@ -48,7 +48,6 @@ public:
     // disable TX/RX pins for unusued uart?
     void disable_rxtx(void) const override;
 
-    void _timer_tick(void) override;
     uint32_t txspace() override;
 
     uint32_t bw_in_bytes_per_second() const override
@@ -56,6 +55,7 @@ public:
         return 10*1024;
     }
 
+    void _timer_tick(void) override;
 
     // unused stuff from chibios - do we want it in the future?
     // struct SerialDef {
