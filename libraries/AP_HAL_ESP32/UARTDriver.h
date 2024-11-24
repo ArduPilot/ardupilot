@@ -42,8 +42,6 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(UARTDriver);
 
-    virtual ~UARTDriver() = default;
-
     void vprintf(const char *fmt, va_list ap) override;
 
     bool is_initialized() override;
