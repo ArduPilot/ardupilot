@@ -32,7 +32,8 @@ from pymavlink.rotmat import Vector3
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 270)
+# SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 270)
+SITL_START_LOCATION = mavutil.location(12.992006,80.236649,0,0)
 
 # Flight mode switch positions are set-up in arducopter.param to be
 #   switch 1 = Circle
@@ -12106,6 +12107,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ])
         return ret
 
+
+
     def tests(self):
         ret = []
         ret.extend(self.tests1a())
@@ -12175,3 +12178,17 @@ class AutoTestBattCAN(AutoTestCopter):
 
     def tests(self):
         return self.testcanbatt()
+
+class AutoTestCopterTestsLand(AutoTestCopter):
+
+    def test_flight(self):
+        '''doc string for landing the uav'''
+
+        self.progress("Success")
+    
+    def copter_tests_land(self):
+        ret = ([self.test_flight])
+        return ret
+
+    def tests(self):
+        return self.copter_tests_land()

@@ -24,6 +24,7 @@ import traceback
 import blimp
 import rover
 import arducopter
+import arducopter_target_landing
 import arduplane
 import ardusub
 import antennatracker
@@ -277,6 +278,8 @@ __bin_names = {
     "CopterTests2a": "arducopter",
     "CopterTests2b": "arducopter",
 
+    "CopterTestsLand": "arducopter",
+
     "Plane": "arduplane",
     "Rover": "ardurover",
     "Tracker": "antennatracker",
@@ -351,6 +354,7 @@ tester_class_map = {
     "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTestsLand": arducopter_target_landing.AutoTestCopterTargetLanding,
     "test.Plane": arduplane.AutoTestPlane,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
@@ -1111,6 +1115,8 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+
+        'test.CopterTestsLand',
 
         'clang-scan-build',
     ]
