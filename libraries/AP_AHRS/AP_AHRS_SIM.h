@@ -68,11 +68,11 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret) const override;
+    bool airspeed_EAS(float &airspeed_ret) const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
-    bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const override;
+    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector() override;
