@@ -172,7 +172,7 @@ float AP_L1_Control::turn_distance(float wp_radius) const
         turn_distance_m += lateral_shift_m;
     }
 
-    return turn_distance_m
+    return turn_distance_m;
 }
 
 /*
