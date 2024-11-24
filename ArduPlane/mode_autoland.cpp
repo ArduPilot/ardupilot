@@ -35,7 +35,22 @@ ModeAutoLand::ModeAutoLand() :
 
 bool ModeAutoLand::_enter()
 {
-    //is flying check here and DO_LAND_START check here
+    //must be flying to enter
+    if (!plane.is_flying()) { 
+        return false;
+    }
+   
+    //if do_land_start exists, jump to it
+    if( (plane.mission.contains_item(MAV_CMD_DO_LAND_START)) && (plane.arming.is_armed())) {
+        if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
+                    // switch to AUTO
+                    plane.mission.set_force_resume(true);
+                    if (plane.set_mode(plane.mode_auto, ModeReason::FIXED_WING_AUTOLAND)) {
+                        return true;
+                    }
+        }
+    }
+    //setup final approach waypoint
     plane.prev_WP_loc = plane.current_loc;
     const Location &home = ahrs.get_home();
     plane.set_target_altitude_current();
@@ -43,18 +58,45 @@ bool ModeAutoLand::_enter()
     uint16_t bearing_cd = wrap_360((plane.takeoff_state.takeoff_initial_direction + 180));
     plane.next_WP_loc.offset_bearing(bearing_cd, final_wp_dist);
     plane.next_WP_loc.alt = home.alt + final_wp_alt*100;
+    
+    // create a command to fly to final approach waypoint and start it
+    cmd.id = MAV_CMD_NAV_WAYPOINT;
+    cmd.content.location = plane.next_WP_loc;
+    plane.start_command(cmd);
+    land_started = false;
+    
     return true;
 }
 
 void ModeAutoLand::update()
 {
-    plane.set_target_altitude_location(plane.next_WP_loc);
     plane.calc_nav_roll();
     plane.calc_nav_pitch();
-    plane.calc_throttle();
+
+    if (plane.landing.is_throttle_suppressed()) {
+       // if landing is considered complete throttle is never allowed, regardless of landing type
+       SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+    } else {
+       plane.calc_throttle();
+    }
 }
 
 void ModeAutoLand::navigate()
 {    
-    plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+    // check to see if if we have reached final approach waypoint, switch to NAV_LAND command and start it once if so
+    if (!land_started){
+        if (plane.verify_nav_wp(cmd)){
+            const Location &home_loc = ahrs.get_home();
+            cmd.id = MAV_CMD_NAV_LAND;
+            cmd.content.location = home_loc;
+            land_started = true;
+            plane.prev_WP_loc = plane.current_loc;
+            plane.next_WP_loc = home_loc;
+            plane.start_command(cmd);
+        }
+        return;
+    //otherwise keep flying the current command   
+    } else {
+       plane.verify_command(cmd);
+    }
 }

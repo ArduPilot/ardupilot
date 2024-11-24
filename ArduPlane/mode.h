@@ -867,6 +867,8 @@ public:
 
 protected:
     bool _enter() override;
+    AP_Mission::Mission_Command cmd {};
+    bool land_started;
  
 
 private:
