@@ -142,7 +142,7 @@ private:
     // unused stuff from chibios - do we want it in the future?
     //const SerialDef &sdef;
     //static const SerialDef _serial_tab[];
-    static const UARTDesc uart_desc[];
+    static const UARTDesc _serial_tab[];
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
