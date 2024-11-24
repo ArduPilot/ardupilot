@@ -71,6 +71,31 @@ public:
     //     }
     // };
     //bool lock_port(uint32_t write_key, uint32_t read_key) override;
+
+    //! @todo enable wait_timeout override
+#if 0
+    bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
+#endif
+
+    //! @todo enable flow control
+#if 0
+    void set_flow_control(enum flow_control flow_control) override;
+    enum flow_control get_flow_control(void) override { return _flow_control; }
+#endif
+
+    //! @todo enable parity and stop bits
+#if 0
+    void configure_parity(uint8_t v) override;
+    void set_stop_bits(int n) override;
+
+    /*
+      software control of the CTS/RTS pins if available. Return false if
+      not available
+     */
+    bool set_RTS_pin(bool high) override;
+    bool set_CTS_pin(bool high) override;
+#endif
+
     /*
       return timestamp estimate in microseconds for when the start of
       a nbytes packet arrived on the uart. This should be treated as a
@@ -121,6 +146,38 @@ private:
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
     uint8_t _receive_timestamp_idx;
+
+    //! @todo enable flow control
+#if 0
+    // handling of flow control
+    enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
+    bool _rts_is_active;
+    uint32_t _last_write_completed_us;
+    uint32_t _first_write_started_us;
+    uint32_t _total_written;
+
+    // statistics
+    uint32_t _tx_stats_bytes;
+    uint32_t _rx_stats_bytes;
+
+    // we remember config options from set_options to apply on sdStart()
+    uint32_t _cr1_options;
+    uint32_t _cr2_options;
+    uint32_t _cr3_options;
+#endif
+    uint16_t _last_options;
+
+    //! @todo enable half-duplex control
+#if 0
+    // half duplex control. After writing we throw away bytes for 4 byte widths to
+    // prevent reading our own bytes back
+#if CH_CFG_USE_EVENTS == TRUE
+    bool half_duplex;
+    event_listener_t hd_listener;
+    eventflags_t hd_tx_active;
+    void half_duplex_setup_tx(void);
+#endif
+#endif
 
     void _receive_timestamp_update(void);
 
