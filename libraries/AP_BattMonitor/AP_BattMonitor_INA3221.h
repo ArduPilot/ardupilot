@@ -77,6 +77,7 @@ private:
     static struct AddressDriver {
         bool read_register(uint8_t addr, uint16_t &ret);
         bool write_register(uint8_t addr, uint16_t val);
+        bool write_config(void);
         void timer(void);
         void register_timer();
 
@@ -84,17 +85,26 @@ private:
         uint8_t bus;
         uint8_t address;
         uint8_t channel_mask;
+        uint8_t dev_channel_mask;
 
         struct StateList {
             struct StateList *next;
-            uint8_t channel;
-            AP_BattMonitor::BattMonitor_State *state;
             HAL_Semaphore sem;
+            uint8_t channel;
+
+            bool healthy;
+            float voltage;
+            float current_amps;
+            float delta_mah;
+            float delta_wh;
+            uint32_t last_time_micros;
         };
         StateList *statelist;
 
     } address_driver[HAL_BATTMON_INA3221_MAX_DEVICES];
     static uint8_t address_driver_count;
+
+    AddressDriver::StateList *address_driver_state;
 };
 
 #endif  // AP_BATTERY_INA3221_ENABLED
