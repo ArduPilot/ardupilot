@@ -45,11 +45,11 @@ public:
     bool is_initialized() override;
     bool tx_pending() override;
 
-    uint32_t txspace() override;
     // disable TX/RX pins for unusued uart?
     void disable_rxtx(void) const override;
 
     void _timer_tick(void) override;
+    uint32_t txspace() override;
 
     uint32_t bw_in_bytes_per_second() const override
     {
