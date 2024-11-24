@@ -67,6 +67,10 @@ public:
         uart_port_t port;
         gpio_num_t rx;
         gpio_num_t tx;
+        // available in chibios but not currently required for esp32
+        // uint8_t get_index(void) const {
+        //     return uint8_t(this - &_serial_tab[0]);
+        // }
     };
 
     //! @todo enable wait_timeout override
