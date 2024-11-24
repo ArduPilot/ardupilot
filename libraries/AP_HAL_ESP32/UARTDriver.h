@@ -50,10 +50,6 @@ public:
 
     uint32_t txspace() override;
 
-    uint32_t bw_in_bytes_per_second() const override
-    {
-        return 10*1024;
-    }
 
     void _timer_tick(void) override;
 
@@ -85,6 +81,11 @@ public:
       A return value of zero means the HAL does not support this API */
      
     uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
+
+    uint32_t bw_in_bytes_per_second() const override
+    {
+        return 10*1024;
+    }
 
     uint32_t get_baud_rate() const override { return _baudrate; }
 
