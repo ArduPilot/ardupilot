@@ -24,14 +24,7 @@
 #include "driver/gpio.h"
 #include "driver/uart.h"
 
-
-struct UARTDesc {
-    uart_port_t port;
-    gpio_num_t rx;
-    gpio_num_t tx;
-};
 #define UART_MAX_DRIVERS 11
-
 
 class ESP32::UARTDriver : public AP_HAL::UARTDriver
 {
@@ -70,7 +63,12 @@ public:
     //         return uint8_t(this - &_serial_tab[0]);
     //     }
     // };
-    //bool lock_port(uint32_t write_key, uint32_t read_key) override;
+
+    struct UARTDesc {
+        uart_port_t port;
+        gpio_num_t rx;
+        gpio_num_t tx;
+    };
 
     //! @todo enable wait_timeout override
 #if 0
@@ -119,6 +117,8 @@ public:
     void vprintf(const char *fmt, va_list ap) override;
 
 private:
+    const UARTDesc &sdef;
+
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
     const size_t RX_BUF_SIZE = 1024;
@@ -134,14 +134,15 @@ private:
     // table to find UARTDrivers from serial number, used for event handling
     static UARTDriver *serial_drivers[UART_MAX_DRIVERS];
 
-    // unused stuff from chibios - do we want it in the future?
-    //const SerialDef &sdef;
-    //static const SerialDef _serial_tab[];
-
     // index into serial_drivers table
     uint8_t _serial_num;
 
     uint32_t _baudrate;
+
+    // unused stuff from chibios - do we want it in the future?
+    //const SerialDef &sdef;
+    //static const SerialDef _serial_tab[];
+    static const UARTDesc uart_desc[];
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];
