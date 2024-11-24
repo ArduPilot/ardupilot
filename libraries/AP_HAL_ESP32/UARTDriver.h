@@ -49,6 +49,9 @@ public:
 
     uint32_t txspace() override;
 
+    // control optional features
+    bool set_options(uint16_t options) override;
+    uint16_t get_options(void) const override;
 
     void _timer_tick(void) override;
 

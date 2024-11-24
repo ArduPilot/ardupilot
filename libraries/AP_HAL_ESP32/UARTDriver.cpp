@@ -149,6 +149,18 @@ uint32_t UARTDriver::txspace()
 
 }
 
+// set optional features, return true on success
+bool UARTDriver::set_options(uint16_t options)
+{
+    return false;
+}
+
+// get optional features
+uint16_t UARTDriver::get_options(void) const
+{
+    return _last_options;
+}
+
 ssize_t IRAM_ATTR UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
     if (!_initialized) {
