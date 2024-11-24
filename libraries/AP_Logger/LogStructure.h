@@ -800,7 +800,7 @@ struct PACKED log_VER {
 // @Field: txp: transmitted packet count
 // @Field: rxp: received packet count
 // @Field: rxdp: perceived number of packets we never received
-// @Field: flags: compact representation of some stage of the channel
+// @Field: flags: compact representation of some state of the channel
 // @FieldBitmaskEnum: flags: GCS_MAVLINK::Flags
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
