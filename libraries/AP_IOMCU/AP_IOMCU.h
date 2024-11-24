@@ -335,6 +335,7 @@ private:
     uint32_t num_delayed;
     uint32_t last_iocmu_timestamp_ms;
     uint32_t read_status_errors;
+    uint32_t read_status_errors_since_last_success;
     uint32_t read_status_ok;
     uint32_t last_rc_protocols;
 
