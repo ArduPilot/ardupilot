@@ -135,13 +135,13 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
-    virtual bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
+    virtual bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
+    virtual bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
-        if (!airspeed_estimate(airspeed_ret)) {
+    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
+        if (!airspeed_EAS(airspeed_ret)) {
             return false;
         }
         airspeed_ret *= get_EAS2TAS();
@@ -156,6 +156,7 @@ public:
 
     // get apparent to true airspeed ratio
     static float get_EAS2TAS(void);
+    static float get_TAS2EAS(void) { return 1.0/get_EAS2TAS(); }
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
