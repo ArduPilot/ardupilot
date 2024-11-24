@@ -9,12 +9,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
-/// constructors
-Location::Location()
-{
-    zero();
-}
-
 const Location definitely_zero{};
 bool Location::is_zero(void) const
 {

@@ -353,7 +353,11 @@ void AP_Relay::init()
             continue;
         }
 
-        if (function == AP_Relay_Params::FUNCTION::RELAY) {
+        bool use_default_param = (function == AP_Relay_Params::FUNCTION::RELAY);
+#ifdef HAL_BUILD_AP_PERIPH
+        use_default_param |= (function >= AP_Relay_Params::FUNCTION::DroneCAN_HARDPOINT_0 && function <= AP_Relay_Params::FUNCTION::DroneCAN_HARDPOINT_15);
+#endif
+        if (use_default_param) {
             // relay by instance number, set the state to match our output
             const AP_Relay_Params::DefaultState default_state = _params[instance].default_state;
             if ((default_state == AP_Relay_Params::DefaultState::OFF) ||

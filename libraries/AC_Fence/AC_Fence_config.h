@@ -17,5 +17,5 @@
 // ArduPilot 4.7 stops compiling them in
 // ArduPilot 4.8 removes the code entirely
 #ifndef AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT HAL_GCS_ENABLED && AP_FENCE_ENABLED
+#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 0
 #endif

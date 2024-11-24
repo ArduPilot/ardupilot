@@ -185,7 +185,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def NeedEKFToArm(self):
         """Ensure the EKF must be healthy for the vehicle to arm."""
         self.progress("Ensuring we need EKF to be healthy to arm")
-        self.set_parameter("SIM_GPS_DISABLE", 1)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
         self.context_collect("STATUSTEXT")
         tstart = self.get_sim_time()
         success = False
@@ -201,7 +201,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 except AutoTestTimeoutException:
                     pass
 
-        self.set_parameter("SIM_GPS_DISABLE", 0)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
         self.wait_ready_to_arm()
 
     def fly_LOITER(self, num_circles=4):
@@ -2046,14 +2046,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.delay_sim_time(60)
             else:
                 self.delay_sim_time(20)
-            self.set_parameter("SIM_GPS_DISABLE", 1)
+            self.set_parameter("SIM_GPS1_ENABLE", 0)
             self.progress("Continue orbit without GPS")
             self.delay_sim_time(20)
             self.change_mode("RTL")
             self.wait_distance_to_home(100, 200, timeout=200)
             # go into LOITER to create additonal time for a GPS re-enable test
             self.change_mode("LOITER")
-            self.set_parameter("SIM_GPS_DISABLE", 0)
+            self.set_parameter("SIM_GPS1_ENABLE", 1)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
@@ -2064,9 +2064,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.delay_sim_time(20)
 
             self.set_parameter("AHRS_OPTIONS", 1)
-            self.set_parameter("SIM_GPS_JAM", 1)
+            self.set_parameter("SIM_GPS1_JAM", 1)
             self.delay_sim_time(10)
-            self.set_parameter("SIM_GPS_JAM", 0)
+            self.set_parameter("SIM_GPS1_JAM", 0)
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
@@ -3325,7 +3325,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "EK3_AFFINITY": 15, # enable affinity for all sensors
             "EK3_IMU_MASK": 3, # use only 2 IMUs
             "GPS2_TYPE": 1,
-            "SIM_GPS2_DISABLE": 0,
+            "SIM_GPS2_ENABLE": 1,
             "SIM_BARO_COUNT": 2,
             "SIM_BAR2_DISABLE": 0,
             "ARSPD2_TYPE": 2,
@@ -3400,9 +3400,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # noise on each axis
         def sim_gps_verr():
             self.set_parameters({
-                "SIM_GPS_VERR_X": self.get_parameter("SIM_GPS_VERR_X") + 2,
-                "SIM_GPS_VERR_Y": self.get_parameter("SIM_GPS_VERR_Y") + 2,
-                "SIM_GPS_VERR_Z": self.get_parameter("SIM_GPS_VERR_Z") + 2,
+                "SIM_GPS1_VERR_X": self.get_parameter("SIM_GPS1_VERR_X") + 2,
+                "SIM_GPS1_VERR_Y": self.get_parameter("SIM_GPS1_VERR_Y") + 2,
+                "SIM_GPS1_VERR_Z": self.get_parameter("SIM_GPS1_VERR_Z") + 2,
             })
         self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=sim_gps_verr, check_context=True)
         if self.lane_switches != [1, 0, 1]:
@@ -4831,6 +4831,34 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def TakeoffIdleThrottle(self):
+        '''Apply idle throttle before takeoff.'''
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "TKOFF_THR_IDLE": 20.0,
+            "TKOFF_THR_MINSPD": 3.0,
+        })
+        self.change_mode("TAKEOFF")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Ensure that the throttle rises to idle throttle.
+        expected_idle_throttle = 1000+10*self.get_parameter("TKOFF_THR_IDLE")
+        self.assert_servo_channel_range(3, expected_idle_throttle-10, expected_idle_throttle+10)
+
+        # Launch the catapult
+        self.set_servo(6, 1000)
+
+        self.delay_sim_time(5)
+        self.change_mode('RTL')
+
+        self.fly_home_land_and_disarm()
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -4842,8 +4870,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "EK3_POS_I_GATE": 0,
-            "SIM_GPS_HZ": 1,
-            "SIM_GPS_LAG_MS": 1000,
+            "SIM_GPS1_HZ": 1,
+            "SIM_GPS1_LAG_MS": 1000,
         })
         self.wait_statustext("DCM Active", check_context=True, timeout=60)
         self.wait_statustext("EKF3 Active", check_context=True)
@@ -5502,8 +5530,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def AltResetBadGPS(self):
         '''Tests the handling of poor GPS lock pre-arm alt resets'''
         self.set_parameters({
-            "SIM_GPS_GLITCH_Z": 0,
-            "SIM_GPS_ACC": 0.3,
+            "SIM_GPS1_GLTCH_Z": 0,
+            "SIM_GPS1_ACC": 0.3,
         })
         self.wait_ready_to_arm()
 
@@ -5513,8 +5541,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Bad relative alt %.1f" % relalt)
 
         self.progress("Setting low accuracy, glitching GPS")
-        self.set_parameter("SIM_GPS_ACC", 40)
-        self.set_parameter("SIM_GPS_GLITCH_Z", -47)
+        self.set_parameter("SIM_GPS1_ACC", 40)
+        self.set_parameter("SIM_GPS1_GLTCH_Z", -47)
 
         self.progress("Waiting 10s for height update")
         self.delay_sim_time(10)
@@ -6091,7 +6119,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff(50)
         self.change_mode('GUIDED')
         self.context_push()
-        self.set_parameter('SIM_GPS_DISABLE', 1)
+        self.set_parameter('SIM_GPS1_ENABLE', 0)
         self.delay_sim_time(30)
         self.set_attitude_target()
         self.context_pop()
@@ -6168,7 +6196,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def ForceArm(self):
         '''check force-arming functionality'''
-        self.set_parameter("SIM_GPS_DISABLE", 1)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
         # 21196 is the mavlink standard, 2989 is legacy
         for magic_value in 21196, 2989:
             self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK,
@@ -6389,6 +6417,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffTakeoff3,
             self.TakeoffTakeoff4,
             self.TakeoffGround,
+            self.TakeoffIdleThrottle,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,

@@ -3,6 +3,8 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <GCS_MAVLink/GCS_config.h>
 
+#define AP_SIM_MAX_GPS_SENSORS 4
+
 #ifndef HAL_SIM_ADSB_ENABLED
 #define HAL_SIM_ADSB_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif

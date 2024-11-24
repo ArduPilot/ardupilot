@@ -60,7 +60,7 @@ class AStyleChecker(object):
             self.progress("astyle check failed: (%s)" % (ret.stdout))
             self.retcode = 1
         if "Formatted" in ret.stdout:
-            self.progress("Files needing formatting found")
+            self.progress("Files needing formatting found.")
             print(ret.stdout)
             self.retcode = 1
 

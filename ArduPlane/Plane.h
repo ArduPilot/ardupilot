@@ -1159,7 +1159,7 @@ private:
     void servos_twin_engine_mix();
     void force_flare();
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
-    void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
+    void throttle_slew_limit();
     bool suppress_throttle(void);
     void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,

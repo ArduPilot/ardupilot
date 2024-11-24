@@ -630,10 +630,16 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 #endif
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
     MSG_GPS_RAW,
+#endif
+#if AP_GPS_GPS_RTK_SENDING_ENABLED
     MSG_GPS_RTK,
-#if GPS_MAX_RECEIVERS > 1
+#endif
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
     MSG_GPS2_RAW,
+#endif
+#if AP_GPS_GPS2_RTK_SENDING_ENABLED
     MSG_GPS2_RTK,
 #endif
     MSG_NAV_CONTROLLER_OUTPUT,
@@ -710,7 +716,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_VIBRATION,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
-    MSG_NEXT_PARAM
+    MSG_NEXT_PARAM,
+    MSG_AVAILABLE_MODES
 };
 static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
@@ -1539,3 +1546,99 @@ MAV_LANDED_STATE GCS_MAVLINK_Plane::landed_state() const
     return MAV_LANDED_STATE_ON_GROUND;
 }
 
+// Send the mode with the given index (not mode number!) return the total number of modes
+// Index starts at 1
+uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
+{
+    // Fixed wing modes
+    const Mode* fw_modes[] {
+        &plane.mode_manual,
+        &plane.mode_circle,
+        &plane.mode_stabilize,
+        &plane.mode_training,
+        &plane.mode_acro,
+        &plane.mode_fbwa,
+        &plane.mode_fbwb,
+        &plane.mode_cruise,
+        &plane.mode_autotune,
+        &plane.mode_auto,
+        &plane.mode_rtl,
+        &plane.mode_loiter,
+#if HAL_ADSB_ENABLED
+        &plane.mode_avoidADSB,
+#endif
+        &plane.mode_guided,
+        &plane.mode_initializing,
+        &plane.mode_takeoff,
+#if HAL_SOARING_ENABLED
+        &plane.mode_thermal,
+#endif
+    };
+
+    const uint8_t fw_mode_count = ARRAY_SIZE(fw_modes);
+
+    // Fixedwing modes are always present
+    uint8_t mode_count = fw_mode_count;
+
+#if HAL_QUADPLANE_ENABLED
+    // Quadplane modes
+    const Mode* q_modes[] {
+        &plane.mode_qstabilize,
+        &plane.mode_qhover,
+        &plane.mode_qloiter,
+        &plane.mode_qland,
+        &plane.mode_qrtl,
+        &plane.mode_qacro,
+        &plane.mode_loiter_qland,
+#if QAUTOTUNE_ENABLED
+        &plane.mode_qautotune,
+#endif
+    };
+
+    // Quadplane modes must be enabled
+    if (plane.quadplane.available()) {
+        mode_count += ARRAY_SIZE(q_modes);
+    }
+#endif // HAL_QUADPLANE_ENABLED
+
+
+    // Convert to zero indexed
+    const uint8_t index_zero = index - 1;
+    if (index_zero >= mode_count) {
+        // Mode does not exist!?
+        return mode_count;
+    }
+
+    // Ask the mode for its name and number
+    const char* name;
+    uint8_t mode_number;
+
+    if (index_zero < fw_mode_count) {
+        // A fixedwing mode
+        name = fw_modes[index_zero]->name();
+        mode_number = (uint8_t)fw_modes[index_zero]->mode_number();
+
+    } else {
+#if HAL_QUADPLANE_ENABLED
+        // A Quadplane mode
+        const uint8_t q_index = index_zero - fw_mode_count;
+        name = q_modes[q_index]->name();
+        mode_number = (uint8_t)q_modes[q_index]->mode_number();
+#else
+        // Should not endup here
+        return mode_count;
+#endif
+    }
+
+    mavlink_msg_available_modes_send(
+        chan,
+        mode_count,
+        index,
+        MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
+        mode_number,
+        0, // MAV_MODE_PROPERTY bitmask
+        name
+    );
+
+    return mode_count;
+}

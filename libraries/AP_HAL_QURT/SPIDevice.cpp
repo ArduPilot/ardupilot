@@ -67,6 +67,12 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         return transfer_fullduplex(send, (uint8_t*) send, send_len);
     }
 
+    // Special case handling. This can happen when a send buffer is specified
+    // even though we are doing only a read.
+    if (send == recv && send_len == recv_len) {
+        return transfer_fullduplex(send, recv, send_len);
+    }
+
     // This is a read transaction
     uint8_t buf[send_len+recv_len];
     if (send_len > 0) {
