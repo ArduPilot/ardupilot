@@ -91,7 +91,7 @@ def build(bld):
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Periph',
         ap_libraries= libraries,
-        use='dronecan',
+        use=['dronecan'],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
         ]
@@ -100,7 +100,7 @@ def build(bld):
     # build external libcanard library
     bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
               name='libcanard',
-              use='dronecan',
+              use=['dronecan'],
               target='libcanard')
 
     bld.ap_program(
