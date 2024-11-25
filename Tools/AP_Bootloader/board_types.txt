@@ -366,6 +366,9 @@ AP_HW_UAV-DEV-F9P-G4                 5223
 AP_HW_UAV-DEV-UM982-G4               5224
 AP_HW_UAV-DEV-M20D-G4                5225
 AP_HW_UAV-DEV-Sensorboard-G4         5226
+AP_HW_UAV-DEV-PWM-G4                 5227
+AP_HW_UAV-DEV-AUAV-H7                5228
+AP_HW_UAV-DEV-FC-H7                  5229
 
 # IDs 5240-5249 reserved for TM IT-Systemhaus
 AP_HW_TM-SYS-BeastFC                 5240
