@@ -90,6 +90,21 @@ def print_table(summary_data_list_second, summary_data_list_master):
                 print_data.append(col_data)
     print(tabulate(print_data, headers=["Binary Name", "Text [B]", "Data [B]", "BSS (B)",
                                         "Total Flash Change [B] (%)", "Flash Free After PR (B)"]))
+    # Get the GitHub Actions summary file path
+    summary_file = os.getenv('GITHUB_STEP_SUMMARY')
+    if summary_file:
+        # Append the output to the summary file
+        with open(summary_file, 'a') as f:
+            f.write("### Diff summary\n")
+            f.write(tabulate(print_data, headers=[
+                "Binary Name",
+                "Text [B]",
+                "Data [B]",
+                "BSS (B)",
+                "Total Flash Change [B] (%)",
+                "Flash Free After PR (B)"
+            ], tablefmt="github"))
+            f.write("\n")
 
 
 def extract_binaries_size(path):
