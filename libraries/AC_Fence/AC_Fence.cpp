@@ -250,16 +250,17 @@ uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_mask)
         enabled_fences &= ~fences;
     }
 
-    // fences that were manually changed are no longer eligible for auto-enablement or disablement
-    if (update_auto_mask) {
-        _auto_enable_mask &= ~fences;
-    }
-
     uint8_t fences_to_change = _enabled_fences ^ enabled_fences;
 
     if (!fences_to_change) {
         return 0;
     }
+
+    // fences that were manually changed are no longer eligible for auto-enablement or disablement
+    if (update_auto_mask) {
+        _auto_enable_mask &= ~fences_to_change;
+    }
+
 #if HAL_LOGGING_ENABLED
     AP::logger().Write_Event(value ? LogEvent::FENCE_ENABLE : LogEvent::FENCE_DISABLE);
     if (fences_to_change & AC_FENCE_TYPE_ALT_MAX) {
