@@ -4239,6 +4239,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
             self.wait_disarmed()
 
+    def AutoLandMode(self):
+        '''Test AUTOLAND mode'''
+        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,173"])
+        self.context_collect('STATUSTEXT')
+        self.takeoff(alt=80, mode='TAKEOFF')
+        self.wait_text("Autoland direction", check_context=True)
+        self.change_mode(26)
+        self.wait_disarmed(120)
+        self.progress("Check the landed heading matches takeoff")
+        self.wait_heading(173, accuracy=5, timeout=1)
+        loc = mavutil.location(-35.362938, 149.165085, 585, 173)
+        if self.get_distance(loc, self.mav.location()) > 35:
+            raise NotAchievedException("Did not land close to home")
+
     def RCDisableAirspeedUse(self):
         '''Test RC DisableAirspeedUse option'''
         self.set_parameter("RC9_OPTION", 106)
@@ -6607,6 +6621,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_AUX_FUNCTION,
             self.SmartBattery,
             self.FlyEachFrame,
+            self.AutoLandMode,
             self.RCDisableAirspeedUse,
             self.AHRS_ORIENTATION,
             self.AHRSTrim,
