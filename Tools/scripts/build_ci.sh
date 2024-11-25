@@ -62,7 +62,7 @@ function install_mavproxy() {
         popd
         mavproxy_installed=1
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
-        python3 -m pip uninstall -y pymavlink
+        python3 -m pip uninstall -y pymavlink --cache-dir /tmp/pip-cache
     fi
 }
 
