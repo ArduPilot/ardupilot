@@ -19,8 +19,13 @@ class AP_TopoLiftSinglePointEstimate : public AP_TopoLift {
     // Calculate the wind rate of topographic influenced lift at the current location.
     virtual bool calc_lift(const Location loc, float& lift) override;
 
+    // Calculate the wind rate of topographic influenced lift given the steady state environmental wind vector.
+    virtual bool calc_lift(const Location loc, float& lift, const Vector2f& env_wind);
+
     // Get the wind estimate at the current location.
     virtual bool get_wind_at_current_loc(Vector3f& wind) override;
+
+    bool get_terrain_grad(const Location loc, Vector2f& grad);
 
     // // Update state
     // virtual void update() override;
