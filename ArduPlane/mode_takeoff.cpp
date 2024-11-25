@@ -88,7 +88,7 @@ void ModeTakeoff::update()
         const float groundspeed = groundspeed2d.length();
 
         // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && groundspeed > 3) {
             if (altitude >= alt) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF alt - loitering");
                 plane.next_WP_loc = plane.current_loc;
