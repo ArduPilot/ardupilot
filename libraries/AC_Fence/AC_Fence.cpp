@@ -470,8 +470,20 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         return false;
     }
 
+    auto breached_fences = _breached_fences;
+    if (auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+        Location loc;
+        if (!AP::ahrs().get_location(loc)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
+            return false;
+        }
+        if (_poly_loader.breached(loc)) {
+            breached_fences |= AC_FENCE_TYPE_POLYGON;
+        }
+    }
+
     // check no limits are currently breached
-    if (_breached_fences) {
+    if (breached_fences) {
         char msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         ExpandingString e(msg, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
         AC_Fence::get_fence_names(_breached_fences, e);
