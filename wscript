@@ -80,6 +80,10 @@ Build.BuildContext.execute = ardupilotwaf.ap_autoconfigure(Build.BuildContext.ex
 Configure.ConfigurationContext.post_recurse = ardupilotwaf.ap_configure_post_recurse()
 
 
+# Get the GitHub Actions summary file path
+is_ci = os.getenv('CI')
+
+
 def _set_build_context_variant(board):
     for c in Context.classes:
         if not issubclass(c, Build.BuildContext):
@@ -484,6 +488,8 @@ def _collect_autoconfig_files(cfg):
                 cfg.files.append(p)
 
 def configure(cfg):
+    if is_ci:
+        print(f"::group::Waf Configure")
 	# we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
@@ -677,6 +683,8 @@ def configure(cfg):
 
     cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
+    if is_ci:
+        print("::endgroup::")
 
     if cfg.env.DEBUG and cfg.env.VS_LAUNCH:
         import vscode_helper
@@ -907,6 +915,8 @@ def _load_pre_build(bld):
         brd.pre_build(bld)    
 
 def build(bld):
+    if is_ci:
+        print(f"::group::Waf Build")
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
     bld.env.CXXDEPS = config_hash
@@ -946,6 +956,11 @@ def build(bld):
     _build_recursion(bld)
 
     _build_post_funs(bld)
+    if is_ci:
+        def print_ci_endgroup(bld):
+            print(f"::endgroup::")
+        bld.add_post_fun(print_ci_endgroup)
+
 
     if bld.env.DEBUG and bld.env.VS_LAUNCH:
         import vscode_helper
