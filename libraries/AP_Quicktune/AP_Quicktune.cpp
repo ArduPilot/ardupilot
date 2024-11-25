@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_Quicktune::var_info[] = {
     // @Description: Threshold for oscillation detection. A lower value will lead to a more conservative tune.
     // @Range: 1 10
     // @User: Standard
-    AP_GROUPINFO("OSC_SMAX", 5, AP_Quicktune, osc_smax, 5),
+    AP_GROUPINFO("OSC_SMAX", 5, AP_Quicktune, osc_smax, 4),
 
     // @Param: YAW_P_MAX
     // @DisplayName: Quicktune Yaw P max
@@ -122,10 +122,10 @@ const AP_Param::GroupInfo AP_Quicktune::var_info[] = {
 
     // @Param: ANGLE_MAX
     // @DisplayName: maximum angle error for tune abort
-    // @Description: If while tuning the angle error goes over this limit then the tune will aborts
+    // @Description: If while tuning the angle error goes over this limit then the tune will aborts to prevent a bad oscillation in the case of the tuning algorithm failing. If you get an error "Quicktune: attitude error ABORTING" and you think it is a false positive then you can either raise this parameter or you can try increasing the QWIK_DOUBLE_TIME to do the tune more slowly.
     // @Units: deg
     // @User: Standard
-    AP_GROUPINFO("ANGLE_MAX", 14, AP_Quicktune, angle_max, 15),
+    AP_GROUPINFO("ANGLE_MAX", 14, AP_Quicktune, angle_max, 10),
     
     AP_GROUPEND
 };
