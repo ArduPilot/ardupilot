@@ -1367,6 +1367,12 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPPTR(flightaxis_ptr, "RFL_", 5, SIM::ModelParm, FlightAxis),
 #endif
 
+#if AP_SIM_TETHER_ENABLED
+    // @Group: TETH_
+    // @Path: ./SIM_Tether.cpp
+    AP_SUBGROUPINFO(tether_sim, "TETH_", 6, SIM::ModelParm, TetherSim),
+#endif
+
     AP_GROUPEND
 };
     
