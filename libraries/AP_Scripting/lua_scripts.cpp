@@ -40,11 +40,12 @@ uint32_t lua_scripts::loaded_checksum;
 uint32_t lua_scripts::running_checksum;
 HAL_Semaphore lua_scripts::crc_sem;
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options)
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_Int8 &debug_options)
     : _vm_steps(vm_steps),
       _debug_options(debug_options)
 {
-    _heap.create(heap_size, 4);
+    const bool allow_heap_expansion = !option_is_set(AP_Scripting::DebugOption::DISABLE_HEAP_EXPANSION);
+    _heap.create(heap_size, 10, allow_heap_expansion, 20*1024);
 }
 
 lua_scripts::~lua_scripts() {
@@ -129,14 +130,14 @@ int lua_scripts::atpanic(lua_State *L) {
 // helper for print and log of runtime stats
 void lua_scripts::update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem)
 {
-    if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
+    if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
                                             (unsigned int)run_time,
                                             (int)total_mem,
                                             (int)run_mem);
     }
 #if HAL_LOGGING_ENABLED
-    if ((_debug_options.get() & uint8_t(DebugLevel::LOG_RUNTIME)) != 0) {
+    if (option_is_set(AP_Scripting::DebugOption::LOG_RUNTIME)) {
         struct log_Scripting pkt {
             LOG_PACKET_HEADER_INIT(LOG_SCRIPTING_MSG),
             time_us      : AP_HAL::micros64(),
@@ -295,7 +296,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         reschedule_script(script);
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
-        if ((_debug_options.get() & uint8_t(DebugLevel::SUPPRESS_SCRIPT_LOG)) == 0) {
+        if (!option_is_set(AP_Scripting::DebugOption::SUPPRESS_SCRIPT_LOG)) {
             AP::logger().log_file_content(filename);
         }
 #endif
@@ -539,6 +540,8 @@ void lua_scripts::run(void) {
     succeeded_initial_load = true;
 #endif // __clang_analyzer__
 
+    uint32_t expansion_size = 0;
+
     while (AP_Scripting::get_singleton()->should_run()) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
         if (lua_gettop(L) != 0) {
@@ -564,7 +567,7 @@ void lua_scripts::run(void) {
                 hal.scheduler->delay(scripts->next_run_ms - now_ms);
             }
 
-            if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
+            if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: Running %s", scripts->name);
             }
             // take a copy of the script name for the purposes of
@@ -600,10 +603,21 @@ void lua_scripts::run(void) {
             lua_gc(L, LUA_GCCOLLECT, 0);
 
         } else {
-            if ((_debug_options.get() & uint8_t(DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
+            if (option_is_set(AP_Scripting::DebugOption::NO_SCRIPTS_TO_RUN)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Lua: No scripts to run");
             }
             hal.scheduler->delay(1000);
+        }
+
+        /*
+          report a warning if SCR_HEAP_SIZE wasn't adequate and we
+          expanded at runtime, so the user can fix it for future
+          flights
+         */
+        const uint32_t new_expansion_size = _heap.get_expansion_size();
+        if (new_expansion_size > expansion_size) {
+            expansion_size = new_expansion_size;
+            set_and_print_new_error_message(MAV_SEVERITY_WARNING, "Required SCR_HEAP_SIZE over %u", unsigned(expansion_size));
         }
 
         // re-print the latest error message every 10 seconds 10 times

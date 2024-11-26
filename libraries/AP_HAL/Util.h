@@ -149,16 +149,15 @@ public:
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
 #if ENABLE_HEAP
-    // heap functions, note that a heap once alloc'd cannot be dealloc'd
-    virtual void *allocate_heap_memory(size_t size) = 0;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) = 0;
+    /*
+      heap functions used by non-scripting
+     */
 #if USE_LIBC_REALLOC
-    virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
+    virtual void *std_realloc(void *ptr, uint32_t new_size) { return realloc(ptr, new_size); }
 #else
-    virtual void *std_realloc(void *ptr, size_t new_size) = 0;
+    virtual void *std_realloc(void *ptr, uint32_t new_size) = 0;
 #endif // USE_LIBC_REALLOC
-#endif // ENABLE_HEAP
-
+#endif
 
     /**
        how much free memory do we have in bytes. If unknown return 4096

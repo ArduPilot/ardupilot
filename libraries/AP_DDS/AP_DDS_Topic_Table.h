@@ -42,12 +42,18 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     GEOPOSE_PUB,
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#ifdef AP_DDS_GOAL_PUB_ENABLED
+    GOAL_PUB,
+#endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
     CLOCK_PUB,
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
     GPS_GLOBAL_ORIGIN_PUB,
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+#if AP_DDS_STATUS_PUB_ENABLED
+    STATUS_PUB,
+#endif // AP_DDS_STATUS_PUB_ENABLED
 #if AP_DDS_JOY_SUB_ENABLED
     JOY_SUB,
 #endif // AP_DDS_JOY_SUB_ENABLED
@@ -232,6 +238,24 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_GOAL_PUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::GOAL_PUB),
+        .pub_id = to_underlying(TopicIndex::GOAL_PUB),
+        .sub_id = to_underlying(TopicIndex::GOAL_PUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GOAL_PUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GOAL_PUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataWriter,
+        .topic_name = "rt/ap/goal_lla",
+        .type_name = "geographic_msgs::msg::dds_::GeoPointStamped_",
+        .qos = {
+            .durability = UXR_DURABILITY_TRANSIENT_LOCAL,
+            .reliability = UXR_RELIABILITY_RELIABLE,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 1,
+        },
+    },
+#endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::CLOCK_PUB),
@@ -268,6 +292,24 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+#if AP_DDS_STATUS_PUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::STATUS_PUB),
+        .pub_id = to_underlying(TopicIndex::STATUS_PUB),
+        .sub_id = to_underlying(TopicIndex::STATUS_PUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::STATUS_PUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::STATUS_PUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataWriter,
+        .topic_name = "rt/ap/status",
+        .type_name = "ardupilot_msgs::msg::dds_::Status_",
+        .qos = {
+            .durability = UXR_DURABILITY_TRANSIENT_LOCAL,
+            .reliability = UXR_RELIABILITY_RELIABLE,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 1,
+        },
+    },
+#endif // AP_DDS_STATUS_PUB_ENABLED
 #if AP_DDS_JOY_SUB_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::JOY_SUB),

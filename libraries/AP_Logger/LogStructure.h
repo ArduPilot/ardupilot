@@ -556,6 +556,7 @@ struct PACKED log_Performance {
     uint32_t i2c_count;
     uint32_t i2c_isr_count;
     uint32_t extra_loop_us;
+    uint64_t rtc;
 };
 
 struct PACKED log_SRTL {
@@ -799,7 +800,7 @@ struct PACKED log_VER {
 // @Field: txp: transmitted packet count
 // @Field: rxp: received packet count
 // @Field: rxdp: perceived number of packets we never received
-// @Field: flags: compact representation of some stage of the channel
+// @Field: flags: compact representation of some state of the channel
 // @FieldBitmaskEnum: flags: GCS_MAVLINK::Flags
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
@@ -895,14 +896,15 @@ struct PACKED log_VER {
 // @Field: MaxT: Maximum loop time
 // @Field: Mem: Free memory available
 // @Field: Load: System processor load
-// @Field: IntE: Internal error mask; which internal errors have been detected
-// @FieldBitmaskEnum: IntE: AP_InternalError::error_t
+// @Field: InE: Internal error mask; which internal errors have been detected
+// @FieldBitmaskEnum: InE: AP_InternalError::error_t
 // @Field: ErrL: Internal error line number; last line number on which a internal error was detected
-// @Field: ErrC: Internal error count; how many internal errors have been detected
+// @Field: ErC: Internal error count; how many internal errors have been detected
 // @Field: SPIC: Number of SPI transactions processed
 // @Field: I2CC: Number of i2c transactions processed
 // @Field: I2CI: Number of i2c interrupts serviced
 // @Field: Ex: number of microseconds being added to each loop to address scheduler overruns
+// @Field: R: RTC time, time since Unix epoch
 
 // @LoggerMessage: POWR
 // @Description: System power information
@@ -1134,7 +1136,9 @@ struct PACKED log_VER {
 // @Description: Ardupilot version
 // @Field: TimeUS: Time since system startup
 // @Field: BT: Board type
+// @FieldValueEnum: BT: HAL_BOARD
 // @Field: BST: Board subtype
+// @FieldValueEnum: BST: HAL_BOARD_SUBTYPE
 // @Field: Maj: Major version number
 // @Field: Min: Minor version number
 // @Field: Pat: Patch number
@@ -1143,6 +1147,7 @@ struct PACKED log_VER {
 // @Field: FWS: Firmware version string
 // @Field: APJ: Board ID
 // @Field: BU: Build vehicle type
+// @FieldValueEnum: BU: APM_BUILD
 // @Field: FV: Filter version
 
 // @LoggerMessage: MOTB
@@ -1208,7 +1213,7 @@ LOG_STRUCTURE_FROM_MOUNT \
     LOG_STRUCTURE_FROM_BEACON                                       \
     LOG_STRUCTURE_FROM_PROXIMITY                                    \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHHIIHHIIIIII", "TimeUS,LR,NLon,NL,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "sz---b%------s", "F----0A------F" }, \
+      "PM",  "QHHHIIHHIIIIIIQ", "TimeUS,LR,NLon,NL,MaxT,Mem,Load,ErrL,InE,ErC,SPIC,I2CC,I2CI,Ex,R", "sz---b%------ss", "F----0A------FF" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
 LOG_STRUCTURE_FROM_AVOIDANCE \

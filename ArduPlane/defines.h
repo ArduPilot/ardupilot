@@ -64,18 +64,6 @@ enum class RtlAutoland {
 };
     
 
-enum ChannelMixing {
-    MIXING_DISABLED = 0,
-    MIXING_UPUP     = 1,
-    MIXING_UPDN     = 2,
-    MIXING_DNUP     = 3,
-    MIXING_DNDN     = 4,
-    MIXING_UPUP_SWP = 5,
-    MIXING_UPDN_SWP = 6,
-    MIXING_DNUP_SWP = 7,
-    MIXING_DNDN_SWP = 8,
-};
-
 // PID broadcast bitmask
 enum tuning_pid_bits {
     TUNING_BITS_ROLL  = (1 <<  0),

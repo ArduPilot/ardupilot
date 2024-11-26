@@ -43,6 +43,7 @@ enum ioevents {
     IOEVENT_SET_DSHOT_PERIOD,
     IOEVENT_SET_CHANNEL_MASK,
     IOEVENT_DSHOT,
+    IOEVENT_PROFILED,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -89,7 +90,9 @@ void AP_IOMCU::init(void)
         crc_is_ok = true;
     }
 #endif
-
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+    use_safety_as_led = boardconfig->use_safety_as_led();
+#endif
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_IOMCU::thread_main, void), "IOMCU",
                                       1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
         AP_HAL::panic("Unable to allocate IOMCU thread");
@@ -299,6 +302,16 @@ void AP_IOMCU::thread_main(void)
             }
         }
         mask &= ~EVENT_MASK(IOEVENT_DSHOT);
+
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+        if (mask & EVENT_MASK(IOEVENT_PROFILED)) {
+            if (!write_registers(PAGE_PROFILED, 0, sizeof(profiled)/sizeof(uint16_t), (const uint16_t*)&profiled)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_PROFILED);
+#endif
 
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
@@ -1208,7 +1221,7 @@ void AP_IOMCU::bind_dsm(uint8_t mode)
   setup for mixing. This allows fixed wing aircraft to fly in manual
   mode if the FMU dies
  */
-bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
+bool AP_IOMCU::setup_mixing(int8_t override_chan,
                             float mixing_gain, uint16_t manual_rc_mask)
 {
     if (!is_chibios_backend) {
@@ -1229,16 +1242,19 @@ bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
         MIX_UPDATE(mixing.servo_function[i], c->get_function());
         MIX_UPDATE(mixing.servo_reversed[i], c->get_reversed());
     }
-    // update RCMap
-    MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
-    MIX_UPDATE(mixing.rc_channel[1], rcmap->pitch());
-    MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
-    MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
+    auto &xrc = rc();
+    // note that if not all of these channels are specified correctly
+    // in parameters then these may be a "dummy" RC channel pointer.
+    // In that case c->ch() will be zero.
+    const RC_Channel *channels[] {
+        &xrc.get_roll_channel(),
+        &xrc.get_pitch_channel(),
+        &xrc.get_throttle_channel(),
+        &xrc.get_yaw_channel()
+    };
     for (uint8_t i=0; i<4; i++) {
-        const RC_Channel *c = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
-        if (!c) {
-            continue;
-        }
+        const auto *c = channels[i];
+        MIX_UPDATE(mixing.rc_channel[i], c->ch());
         MIX_UPDATE(mixing.rc_min[i], c->get_radio_min());
         MIX_UPDATE(mixing.rc_max[i], c->get_radio_max());
         MIX_UPDATE(mixing.rc_trim[i], c->get_radio_trim());
@@ -1436,6 +1452,23 @@ void AP_IOMCU::toggle_GPIO(uint8_t pin)
     trigger_event(IOEVENT_GPIO);
 }
 
+#if AP_IOMCU_PROFILED_SUPPORT_ENABLED
+// set profiled R G B values
+void AP_IOMCU::set_profiled(uint8_t r, uint8_t g, uint8_t b)
+{
+    if (!use_safety_as_led) {
+        return;
+    }
+    if (r == profiled.red && g == profiled.green && b == profiled.blue) {
+        return;
+    }
+    profiled.magic = PROFILED_ENABLE_MAGIC;
+    profiled.red = r;
+    profiled.green = g;
+    profiled.blue = b;
+    trigger_event(IOEVENT_PROFILED);
+}
+#endif
 
 namespace AP {
     AP_IOMCU *iomcu(void) {

@@ -209,6 +209,8 @@ nanosec: 729410000
 $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
+/ap/prearm_check
+/ap/experimental/takeoff
 ---
 ```
 
@@ -234,6 +236,8 @@ List the available services:
 $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
+/ap/prearm_check [std_srvs/srv/Trigger]
+/ap/experimental/takeoff [ardupilot_msgs/srv/Takeoff]
 ```
 
 Call the arm motors service:
@@ -254,6 +258,30 @@ requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
 
 response:
 ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
+```
+
+Call the prearm check service:
+
+```bash
+$ ros2 service call /ap/prearm_check std_srvs/srv/Trigger
+requester: making request: std_srvs.srv.Trigger_Request()
+
+response:
+std_srvs.srv.Trigger_Response(success=False, message='Vehicle is Not Armable')
+
+or
+
+std_srvs.srv.Trigger_Response(success=True, message='Vehicle is Armable')
+```
+
+Call the takeoff service:
+
+```bash
+$ ros2 service call /ap/experimental/takeoff ardupilot_msgs/srv/Takeoff "{alt: 10.5}"
+requester: making request: ardupilot_msgs.srv.Takeoff_Request(alt=10.5)
+
+response:
+ardupilot_msgs.srv.Takeoff_Response(status=True)
 ```
 
 ## Commanding using ROS 2 Topics
@@ -280,7 +308,7 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
-
+ 
 ## Contributing to `AP_DDS` library
 
 ### Adding DDS messages to Ardupilot
@@ -364,10 +392,10 @@ for additional details.
 ### Development Requirements
 
 Astyle is used to format the C++ code in AP_DDS. This is required for CI to pass the build.
-See [Tools/CodeStyle/ardupilot-astyle.sh](../../Tools/CodeStyle/ardupilot-astyle.sh).
+To run the automated formatter, run:
 
 ```bash
-./Tools/CodeStyle/ardupilot-astyle.sh libraries/AP_DDS/*.h libraries/AP_DDS/*.cpp
+./Tools/scripts/run_astyle.py
 ```
 
 Pre-commit is used for other things like formatting python and XML code.

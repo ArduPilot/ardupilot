@@ -185,12 +185,14 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // conditions.
     if (speedup > 1 && hal.scheduler->in_main_thread()) {
         while (true) {
-            const int queue_length = ((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length();
+            HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(0);
+            const int queue_length = uart->get_system_outqueue_length();
             // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
             if (queue_length < 1024) {
                 break;
             }
             _serial_0_outqueue_full_count++;
+            uart->handle_reading_from_device_to_readbuffer();
             usleep(1000);
         }
     }

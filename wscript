@@ -429,6 +429,11 @@ configuration in order to save typing.
                  default=0,
                  help='zero time on boot in microseconds')
 
+    g.add_option('--enable-iomcu-profiled-support',
+                    action='store_true',
+                    default=False,
+                    help='enable iomcu profiled support')
+
     g.add_option('--enable-new-checking',
         action='store_true',
         default=False,

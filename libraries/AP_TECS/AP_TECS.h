@@ -271,9 +271,6 @@ private:
     float _vel_dot;
     float _vel_dot_lpf;
 
-    // Equivalent airspeed
-    float _EAS;
-
     // True airspeed limits
     float _TASmax;
     float _TASmin;

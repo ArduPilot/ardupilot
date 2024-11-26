@@ -65,11 +65,22 @@ subprocess.run(["ccache", "-C", "-z"])
 build_board(boards[0])
 subprocess.run(["ccache", "-z"])
 build_board(boards[1])
-subprocess.run(["ccache", "-s"])
+result = subprocess.run(["ccache", "-s"], capture_output=True, text=True)
+print(result.stdout)
+
+# Get the GitHub Actions summary file path
+summary_file = os.getenv('GITHUB_STEP_SUMMARY')
 
 post = ccache_stats()
 hit_pct = 100 * post[0] / float(post[0]+post[1])
 print("ccache hit percentage: %.1f%%  %s" % (hit_pct, post))
+if summary_file:
+    # Append the output to the summary file
+    with open(summary_file, 'a') as f:
+        f.write(f"### ccache -s Output with {boards}\n")
+        f.write(f"```\n{result.stdout}\n```\n")
+        f.write(f"### ccache hit percentage (min {args.min_cache_pct})\n")
+        f.write("ccache hit percentage: %.1f%%  %s\n" % (hit_pct, post))
 if hit_pct < args.min_cache_pct:
     print("ccache hits too low, need %d%%" % args.min_cache_pct)
     sys.exit(1)

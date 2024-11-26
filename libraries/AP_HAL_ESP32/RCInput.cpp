@@ -12,13 +12,23 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <AP_Math/AP_Math.h>
+
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_HAL_ESP32.h"
 #include "RCInput.h"
 
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
+
+#include <AP_Math/AP_Math.h>
+
+#ifndef HAL_NO_UARTDRIVER
+#include <GCS_MAVLink/GCS.h>
+#endif
+
 using namespace ESP32;
+
+extern const AP_HAL::HAL& hal;
 
 void RCInput::init()
 {
@@ -31,8 +41,24 @@ void RCInput::init()
 
 #ifdef HAL_ESP32_RCIN
     sig_reader.init();
+    pulse_input_enabled = true;
 #endif
+
     _init = true;
+}
+
+/*
+  enable or disable pulse input for RC input. This is used to reduce
+  load when we are decoding R/C via a UART
+*/
+void RCInput::pulse_input_enable(bool enable)
+{
+    pulse_input_enabled = enable;
+#if HAL_ESP32_RCIN
+    if (!enable) {
+        sig_reader.disable();
+    }
+#endif
 }
 
 bool RCInput::new_input()
@@ -89,23 +115,29 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 
 void RCInput::_timer_tick(void)
 {
-#if AP_RCPROTOCOL_ENABLED
     if (!_init) {
         return;
     }
+#ifndef HAL_NO_UARTDRIVER
+    const char *rc_protocol = nullptr;
+    RCSource source = last_source;
+#endif
+
+#if AP_RCPROTOCOL_ENABLED
     AP_RCProtocol &rcprot = AP::RC();
 
 #ifdef HAL_ESP32_RCIN
-    uint32_t width_s0, width_s1;
-    while (sig_reader.read(width_s0, width_s1)) {
-        rcprot.process_pulse(width_s0, width_s1);
-
+    if (pulse_input_enabled) {
+        uint32_t width_s0, width_s1;
+        while (sig_reader.read(width_s0, width_s1)) {
+            rcprot.process_pulse(width_s0, width_s1);
+        }
     }
-
-#ifndef HAL_NO_UARTDRIVER
-    const char *rc_protocol = nullptr;
 #endif
 
+#endif  // AP_RCPROTOCOL_ENABLED
+
+#if AP_RCPROTOCOL_ENABLED
     if (rcprot.new_input()) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
@@ -113,18 +145,36 @@ void RCInput::_timer_tick(void)
         _num_channels = MIN(_num_channels, RC_INPUT_MAX_CHANNELS);
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
+        _rx_link_quality = rcprot.get_rx_link_quality();
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = rcprot.protocol_name();
+        source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
+        // printf("RCInput: decoding %s", last_protocol);
 #endif
     }
+#endif // AP_RCPROTOCOL_ENABLED
 
 #ifndef HAL_NO_UARTDRIVER
-    if (rc_protocol && rc_protocol != last_protocol) {
+    if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+        last_source = source;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%u)", last_protocol, unsigned(source));
     }
 #endif
 
+    // note, we rely on the vehicle code checking new_input()
+    // and a timeout for the last valid input to handle failsafe
+}
+
+/*
+  start a bind operation, if supported
+ */
+bool RCInput::rc_bind(int dsmMode)
+{
+#if AP_RCPROTOCOL_ENABLED
+    // ask AP_RCProtocol to start a bind
+    AP::RC().start_bind();
 #endif
-#endif // AP_RCPROTOCOL_ENABLED
+
+    return true;
 }
