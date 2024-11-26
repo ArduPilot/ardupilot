@@ -97,23 +97,26 @@ class Platform:
         Generates the platform trajectory based on previous step position and velocity
         """
 
-        x_prev = (prev_pos - self.origin)*111320*1e-7
+        x_prev = np.zeros((3,))
+        ddeg = prev_pos - self.origin
+        x_prev[0:2] = self.lat_lng_to_meters(dlat=ddeg[0], dlng=ddeg[1], lat=prev_pos[0])
+        x_prev[2] = prev_pos[2] - self.origin[2]
+
         x_curr = self.curvilinear_motion(np.hstack((x_prev, prev_vel)))
 
-        # x_curr[0:3] = x_curr[0:3] + self.position_error()
-
-        dx = x_curr[0:3]
-        x_curr[0:3] = (dx/111320)*1e7 + self.origin
+        ddeg = self.meters_to_lat_lng(dx=x_curr[0], dy=x_curr[1], lat=prev_pos[0])
+        x_curr[0:2] = ddeg + self.origin[0:2]
 
         return x_curr
     
-    def lat_lng_to_meters(self, dlat: float, dlng: float):
+    def lat_lng_to_meters(self, dlat: float, dlng: float, lat: float):
         """
         Converts the change in lat and lng into meters
 
         Args:
             dlat (degE7) - Change in latitude with respect to an origin
             dlng (degE7) - Change in longitude with respect to an origin
+            lat (degE7) - latitude of the point from which dlng is measured
         
         Return:
             dx and dy corresponding to dlat and dlng 
@@ -121,37 +124,67 @@ class Platform:
 
         scaling_factor = 2*np.pi*self.radius_earth/360
         dx = dlat*1e-7*scaling_factor
-        dy = dlng*1e-7*(np.cos(np.deg2rad(self.origin[0])))*scaling_factor
+        dy = dlng*1e-7*(np.cos(np.deg2rad(lat*1e-7)))*scaling_factor
 
         return np.array([dx, dy])
     
-    def meters_to_lat_lng(self, dx: float, dy: float):
+    def meters_to_lat_lng(self, dx: float, dy: float, lat:float):
         """
         Converts change in position to change in lat and lng
 
         Args:
-            dx - Change in x direction (along North) with respect to origin
-            dy - Change in y direction (along East) with respect to origin
+            dx (m) - Change in x direction (along North) with respect to origin
+            dy (m) - Change in y direction (along East) with respect to origin
+            lat (degE7) - latitude of the point from which dy is measured
 
         Results:
             dlat (degE7) and dlng (degE7) corresponding to dx and dy
         """
 
-        scaling_factor = 2*np.pi*self.radius_earth/360
-        dlat = dx*1e7/scaling_factor
-        dlng = dy*1e7/((np.cos(np.deg2rad(self.origin[0])))*scaling_factor)
+        dlat = self._dx_to_dlat(dx)
+        dlng = self._dy_to_dlng(dy, lat*1e-7)
 
         return np.array([dlat, dlng])
+    
+    def _dx_to_dlat(self, dx):
+        """
+        Converts change in x position to change in lat
+
+        Args:
+            dx - Change in x direction (along North) with respect to origin
+
+        Results:
+            dlat (degE7)
+        """
+        scaling_factor = 2*np.pi*self.radius_earth/360
+        dlat = dx*1e7/scaling_factor
+
+        return dlat
+    
+    def _dy_to_dlng(self, dy, lat):
+        """
+        Converts change in y position to change in lng
+
+        Args:
+            dy - Change in y direction (along East) with respect to origin
+
+        Results:
+            dlng (degE7)
+        """
+        scaling_factor = 2*np.pi*self.radius_earth/360
+        dlng = dy*1e7/((np.cos(np.deg2rad(lat)))*scaling_factor)
+
+        return dlng
 
     
-    def position_error(self, noise_info):
+    def position_error(self, noise_info, target_state):
 
         match(noise_info['type']):
             case 'Gaussian':
                 mu = noise_info['mu']
                 sigma = noise_info['sigma']
                 pos_error = sigma*np.random.randn(6,) + mu
-                pos_error[0:2] = self.meters_to_lat_lng(pos_error[0], pos_error[1])
+                pos_error[0:2] = self.meters_to_lat_lng(pos_error[0], pos_error[1], lat=target_state[0])
         
                 return pos_error
     
