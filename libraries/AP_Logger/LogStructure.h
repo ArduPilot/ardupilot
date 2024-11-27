@@ -800,7 +800,7 @@ struct PACKED log_VER {
 // @Field: txp: transmitted packet count
 // @Field: rxp: received packet count
 // @Field: rxdp: perceived number of packets we never received
-// @Field: flags: compact representation of some stage of the channel
+// @Field: flags: compact representation of some state of the channel
 // @FieldBitmaskEnum: flags: GCS_MAVLINK::Flags
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
@@ -897,7 +897,7 @@ struct PACKED log_VER {
 // @Field: Mem: Free memory available
 // @Field: Load: System processor load
 // @Field: InE: Internal error mask; which internal errors have been detected
-// @FieldBitmaskEnum: IntE: AP_InternalError::error_t
+// @FieldBitmaskEnum: InE: AP_InternalError::error_t
 // @Field: ErrL: Internal error line number; last line number on which a internal error was detected
 // @Field: ErC: Internal error count; how many internal errors have been detected
 // @Field: SPIC: Number of SPI transactions processed

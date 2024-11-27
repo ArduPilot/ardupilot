@@ -182,7 +182,7 @@ class LoggerDocco(object):
                 return
             # Make sure lengths match up
             if len(fmts) != len(self.fields_order):
-                print(f"Number of fmts don't match fields: msg={self.name} fmts={fmts} num_fields={len(self.fields_order)}")
+                print(f"Number of fmts don't match fields: msg={self.name} fmts={fmts} num_fields={len(self.fields_order)} {self.fields_order}")  # noqa:E501
                 return
             # Loop through the list
             for idx in range(0, len(fmts)):

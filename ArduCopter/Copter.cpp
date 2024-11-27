@@ -285,13 +285,9 @@ bool Copter::set_target_location(const Location& target_loc)
 
     return mode_guided.set_destination(target_loc);
 }
-#endif //MODE_GUIDED_ENABLED
-#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
-#if AP_SCRIPTING_ENABLED
-#if MODE_GUIDED_ENABLED
 // start takeoff to given altitude (for use by scripting)
-bool Copter::start_takeoff(float alt)
+bool Copter::start_takeoff(const float alt)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
@@ -304,7 +300,11 @@ bool Copter::start_takeoff(float alt)
     }
     return false;
 }
+#endif //MODE_GUIDED_ENABLED
+#endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
+#if AP_SCRIPTING_ENABLED
+#if MODE_GUIDED_ENABLED
 // set target position (for use by scripting)
 bool Copter::set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt)
 {
@@ -411,7 +411,55 @@ bool Copter::set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_
     mode_guided.set_angle(q, ang_vel_body, throttle, true);
     return true;
 }
-#endif
+
+// Register a custom mode with given number and names
+AP_Vehicle::custom_mode_state* Copter::register_custom_mode(const uint8_t num, const char* full_name, const char* short_name)
+{
+    const Mode::Number number = (Mode::Number)num;
+
+    // See if this mode has been registered already, if it has return the state for it
+    // This allows scripting restarts
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if (mode_guided_custom[i] == nullptr) {
+            break;
+        }
+        if ((mode_guided_custom[i]->mode_number() == number) &&
+            (strcmp(mode_guided_custom[i]->name(), full_name) == 0) &&
+            (strncmp(mode_guided_custom[i]->name4(), short_name, 4) == 0)) {
+            return &mode_guided_custom[i]->state;
+        }
+    }
+
+    // Number already registered to existing mode
+    if (mode_from_mode_num(number) != nullptr) {
+        return nullptr;
+    }
+
+    // Find free slot
+    for (uint8_t i = 0; i < ARRAY_SIZE(mode_guided_custom); i++) {
+        if (mode_guided_custom[i] == nullptr) {
+            // Duplicate strings so were not pointing to unknown memory
+            const char* full_name_copy = strdup(full_name);
+            const char* short_name_copy = strndup(short_name, 4);
+            if ((full_name_copy != nullptr) && (short_name_copy != nullptr)) {
+                mode_guided_custom[i] = NEW_NOTHROW ModeGuidedCustom(number, full_name_copy, short_name_copy);
+            }
+            if (mode_guided_custom[i] == nullptr) {
+                // Allocation failure
+                return nullptr;
+            }
+
+            // Registration sucsessful, notify the GCS that it should re-request the avalable modes
+            gcs().available_modes_changed();
+
+            return &mode_guided_custom[i]->state;
+        }
+    }
+
+    // No free slots
+    return nullptr;
+}
+#endif // MODE_GUIDED_ENABLED
 
 #if MODE_CIRCLE_ENABLED
 // circle mode controls
