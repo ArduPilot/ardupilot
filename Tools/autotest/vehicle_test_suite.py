@@ -1883,6 +1883,7 @@ class TestSuite(abc.ABC):
                  build_opts: dict | None = None,
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
+                 realflight_address=None,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -1958,6 +1959,7 @@ class TestSuite(abc.ABC):
         self.in_drain_mav = False
         self.tlog = None
         self.enable_fgview = enable_fgview
+        self.realflight_address = realflight_address or os.getenv("REALFLIGHT_IPADDR")
 
         self.rc_thread = None
         self.rc_thread_should_quit = False

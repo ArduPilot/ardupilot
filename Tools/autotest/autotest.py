@@ -528,6 +528,8 @@ def run_step(step):
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
+    if opts.realflight_address is not None:
+        fly_opts["realflight_address"] = opts.realflight_address
 
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
@@ -1027,6 +1029,9 @@ if __name__ == "__main__":
     group_sim.add_option("", "--replay",
                          action='store_true',
                          help="enable replay logging for tests")
+    group_sim.add_option("--realflight-address",
+                         default=None,
+                         help="IP address of RealFlight simulator")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
