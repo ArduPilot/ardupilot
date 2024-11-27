@@ -490,34 +490,41 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     _rate_gyro = gyro;
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro.x,  dt, _motors.limit.roll, _pd_scale.x) + _actuator_sysid.x);  //姿态控制pid
-    _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+    //_motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro.x,  dt, _motors.limit.roll, _pd_scale.x) + _actuator_sysid.x);  //姿态控制pid
+    //_motors.set_roll_ff(get_rate_roll_pid().get_ff());
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro.y,  dt, _motors.limit.pitch, _pd_scale.y) + _actuator_sysid.y); //姿态控制pid
-    _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+    //_motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro.y,  dt, _motors.limit.pitch, _pd_scale.y) + _actuator_sysid.y); //姿态控制pid
+    //_motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
-    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro.z,  dt, _motors.limit.yaw, _pd_scale.z) + _actuator_sysid.z);  //姿态控制pid  
-    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+    //_motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro.z,  dt, _motors.limit.yaw, _pd_scale.z) + _actuator_sysid.z);  //姿态控制pid  
+    //_motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
-    _pd_scale_used = _pd_scale;
+    //_pd_scale_used = _pd_scale;
+     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnnSO3控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
+    _R_body_to_neu_meas = _R_body_to_ned_meas;
+    //_R_body_to_neu_meas.a.z = -_R_body_to_ned_meas.a.z; // 转换为旋转矩阵测量值 body to NEU （翻转第三列）
+    //_R_body_to_neu_meas.b.z = -_R_body_to_ned_meas.b.z;
+    //_R_body_to_neu_meas.c.z = -_R_body_to_ned_meas.c.z;   
+   
+
+    Vector3f Md = _pdnn_att.update_all(_Rc, _R_body_to_neu_meas, gyro, dt); //pdnn几何姿态控制器，输出为3*1扭矩
+    float test_msg_3 = Md.x;
+    float test_msg_4 = Md.z;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    _motors.set_roll(Md.x/200.0f);  //发送控制力矩给Mixer
+    _motors.set_roll_ff(0.0f); //设置为无前馈
+    _motors.set_pitch(Md.y/200.0f);
+    _motors.set_pitch_ff(0.0f);
+    _motors.set_yaw(Md.z/200.0f);
+    _motors.set_yaw_ff(0.0f);
+
+    //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~
+    current_log_out_1 = get_log_out_1(test_msg_3, test_msg_4); //用于ROS2推力话题 
 
     control_monitor_update();
 
- //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnnSO3控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
-    _R_body_to_neu_meas = _R_body_to_ned_meas;
-    _R_body_to_neu_meas.a.z = -_R_body_to_ned_meas.a.z; // 转换为旋转矩阵测量值 body to NEU （翻转第三列）
-    _R_body_to_neu_meas.b.z = -_R_body_to_ned_meas.b.z;
-    _R_body_to_neu_meas.c.z = -_R_body_to_ned_meas.c.z;   
-   
-
-    Vector3f moment = _pdnn_att.update_all(_Rc, _R_body_to_neu_meas, gyro, dt); //pdnn几何姿态控制器，输出为3*1扭矩
-
-    float test_msg_3 = moment.x;
-    float test_msg_4 = moment.z;
-    //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~
-    current_log_out_1 = get_log_out_1(test_msg_3, test_msg_4); //用于ROS2推力话题 
-   
 }
 
 // reset the rate controller target loop updates //// 重置速率控制器目标环更新
