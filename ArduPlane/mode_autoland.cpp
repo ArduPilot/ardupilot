@@ -43,13 +43,14 @@ bool ModeAutoLand::_enter()
     //if do_land_start exists, jump to it
     if( (plane.mission.contains_item(MAV_CMD_DO_LAND_START)) && (plane.arming.is_armed())) {
         if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-                    // switch to AUTO
-                    plane.mission.set_force_resume(true);
-                    if (plane.set_mode(plane.mode_auto, ModeReason::FIXED_WING_AUTOLAND)) {
-                        return true;
-                    }
+            // switch to AUTO
+            plane.mission.set_force_resume(true);
+            if (plane.set_mode(plane.mode_auto, ModeReason::FIXED_WING_AUTOLAND)) {
+                 return true;
+            }
         }
     }
+
     //setup final approach waypoint
     plane.prev_WP_loc = plane.current_loc;
     const Location &home = ahrs.get_home();
