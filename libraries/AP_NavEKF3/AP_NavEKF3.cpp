@@ -2098,3 +2098,10 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
     }
     return nullptr;
 }
+
+// force GPS disable on EKF3 only
+void NavEKF3::force_gps_disable(bool gps_disable)
+{
+    AP::dal().log_event3(gps_disable?AP_DAL::Event::EK3GPSDisable:AP_DAL::Event::EK3GPSEnable);
+    _gps_disabled = gps_disable;
+}
