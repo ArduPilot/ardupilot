@@ -271,25 +271,9 @@ protected:
     // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
     virtual bool suppress_heartbeat() const { return false; }
 
-#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
-    // calculate the Location that the gimbal is pointing at
-    void calculate_poi();
-#endif
-
     // change to RC_TARGETTING mode if rc inputs have changed by more than the dead zone
     // should be called on every update
     void set_rctargeting_on_rcinput_change();
-
-    // get pilot input (in the range -1 to +1) received through RC
-    void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
-
-    // get angle or rate targets from pilot RC
-    // target_type will be either ANGLE or RATE, rpy will be the target angle in deg or rate in deg/s
-    void get_rc_target(MountTargetType& target_type, MountTarget& rpy) const;
-
-    // get angle targets (in radians) to a Location
-    // returns true on success, false on failure
-    bool get_angle_target_to_location(const Location &loc, MountTarget& angle_rad) const WARN_IF_UNUSED;
 
     // get angle targets (in radians) to ROI location
     // returns true on success, false on failure
@@ -319,7 +303,6 @@ protected:
     uint8_t     _instance;  // this instance's number
 
     MAV_MOUNT_MODE  _mode;          // current mode (see MAV_MOUNT_MODE enum)
-    bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
 
     // structure for MAVLink Targeting angle and rate targets
     struct {
@@ -327,6 +310,21 @@ protected:
         MountTarget angle_rad;      // angle target in radians
         MountTarget rate_rads;      // rate target in rad/s
     } mnt_target;
+
+private:
+
+    // get pilot input (in the range -1 to +1) received through RC
+    void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
+
+    // get angle or rate targets from pilot RC
+    // target_type will be either ANGLE or RATE, rpy will be the target angle in deg or rate in deg/s
+    void get_rc_target(MountTargetType& target_type, MountTarget& rpy) const;
+
+    bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
+
+    // get angle targets (in radians) to a Location
+    // returns true on success, false on failure
+    bool get_angle_target_to_location(const Location &loc, MountTarget& angle_rad) const WARN_IF_UNUSED;
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     struct {
@@ -337,6 +335,8 @@ protected:
         Location poi_loc;         // location of the POI
         Quaternion att_quat;      // attitude quaternion of the gimbal
     } poi_calculation;
+    // calculate the Location that the gimbal is pointing at
+    void calculate_poi();
 #endif
 
     Location _roi_target;           // roi target location
