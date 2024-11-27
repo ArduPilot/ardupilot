@@ -262,6 +262,8 @@ public:
         AUTOTUNE_TEST_GAINS = 180, // auto tune tuning switch to test or revert gains
 
 
+        GPS_DISABLE_EK3 =    190, // disable GPS only for EKF3
+
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
