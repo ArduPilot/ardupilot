@@ -168,8 +168,12 @@ FlightAxis::FlightAxis(const char *frame_str) :
     }
 
     const char *colon = strchr(frame_str, ':');
+    const char *env = getenv("REALFLIGHT_IPADDR");
     if (colon) {
         controller_ip = colon+1;
+    }
+    else if (env) {
+        controller_ip = env;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
         AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
