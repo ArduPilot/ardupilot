@@ -455,6 +455,11 @@ private:
     // enum for processing options
     enum class Option {
         JammingExpected     = (1<<0),
+        // 1 reserved for DisableRangeFusion
+        DisableSetLatLng    = (1<<2),
+        // 3 reserved for RangeToLocHgtOffset
+        // 4 reserved for LimitRngToLocUpdate
+        DisableGPSAtStartup = (1<<5),
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
