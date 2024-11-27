@@ -416,7 +416,7 @@ public:
 
     /// Other
 
-    /// get pid controllers 为封装外部提供访问位置控制中pid控制器的事实数据
+    /// get pid controllers 为封装外部提供访问位置控制中pid控制器的实时数据
     AC_P_2D& get_pos_xy_p() { return _p_pos_xy; }
     AC_P_1D& get_pos_z_p() { return _p_pos_z; }
     AC_PID_2D& get_vel_xy_pid() { return _pid_vel_xy; }
@@ -425,7 +425,7 @@ public:
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~添加pdnn的getter~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     AC_PDNN_3D& get_pos_pdnn() { return _pdnn_pos; }
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+  
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
     void set_externally_limited_xy() { _limit_vector.x = _accel_target.x; _limit_vector.y = _accel_target.y; }

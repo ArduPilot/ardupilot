@@ -785,11 +785,12 @@ void AC_PosControl::update_Rc()
         //计算_b_1c轴
         _b_1c = _b_3c.cross(_b_2c);
         //更新_Rc
-        _Rc.colx() = _b_1c;  // 设置 第一列为 _b_1c
-        _Rc.coly() = _b_2c;  // 设置 第二列为 _b_2c
-        _Rc.colz() = _b_3c;  // 设置 第三列为 _b_3c
+        _Rc.a.x = _b_1c.x; _Rc.a.y = _b_2c.x; _Rc.a.z = _b_3c.x; 
+        _Rc.b.x = _b_1c.y; _Rc.b.y = _b_2c.y; _Rc.b.z = _b_3c.y; 
+        _Rc.c.x = _b_1c.z; _Rc.c.y = _b_2c.z; _Rc.c.z = _b_3c.z; 
     }
 
+   _attitude_control.set_Rc(_Rc); //发送给姿态控制
    
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1112,19 +1113,22 @@ void AC_PosControl::update_z_controller()
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
     _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f
-    _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f，并将原本的NEU期望坐标，转换为NED
+    _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，转换为NED。（暂时不转换）
     
     _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
 
     _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
     _R_body_to_neu_meas = _R_body_to_ned_meas;
-    _R_body_to_neu_meas.colz() = -_R_body_to_ned_meas.colz();   // 转换为旋转矩阵测量值 body to NEU （翻转第三列）
+    //_R_body_to_neu_meas.a.z = _R_body_to_ned_meas.a.z; // 转换为旋转矩阵测量值 NEUbody to NEUearth 
+    //_R_body_to_neu_meas.b.z = _R_body_to_ned_meas.b.z; //注意这里容易有误区，ardupilot自带的_ahrs.get_rotation_body_to_ned()是将NEDbody转换到NEDearth
+    //_R_body_to_neu_meas.c.z = _R_body_to_ned_meas.c.z;  //所以，这里只要无人机和大地我们都采用NEU，这种情况下旋转矩阵和都是NED的情况下是不变的
     
     float fd;
-    fd = _U_x.dot(_R_body_to_neu_meas.colz());                  //f=U_x * Re3
-
-    float test_msg_1 = fd;
-    float test_msg_2 = fd; //memo这里用来测试转置效果
+    fd = _U_x.dot(_R_body_to_neu_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
+    float fd_nor;
+    fd_nor = fd/200.0f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
+    float test_msg_1 = _pos_desired.z;
+    float test_msg_2 = fd_nor; //memo这里用来测试转置效果
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1161,7 +1165,7 @@ void AC_PosControl::update_z_controller()
     // Actuator commands
 
     // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ); //将油门指令发送给姿态控制器
+    _attitude_control.set_throttle_out(fd_nor, false, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ); //将油门指令发送给姿态控制器，第二参数是是否开启角度增益补偿，几何控制取false
 
     // Check for vertical controller health
 

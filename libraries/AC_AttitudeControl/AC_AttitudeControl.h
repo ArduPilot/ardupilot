@@ -335,7 +335,11 @@ public:
     virtual void update_althold_lean_angle_max(float throttle_in) = 0;
 
     // Set output throttle
-    virtual void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) = 0;
+    virtual void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) = 0; //=0表示纯虚函数
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Rc stter纯虚函数~~~~~~~~~~~~~~~~~~~~
+    virtual void set_Rc(const Matrix3f& Rc) = 0; //=0表示纯虚函数，需要在所有派生类(AC_AttitudeContro_Sub)中添加对应实现
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // get throttle passed into attitude controller (i.e. throttle_in provided to set_throttle_out)
     float get_throttle_in() const { return _throttle_in; }

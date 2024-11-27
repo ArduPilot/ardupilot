@@ -70,6 +70,10 @@ public:
     // Set output throttle//设置油门输出，传入值是从AC_PosControl.cpp文件垂直控制中thr_out传入
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override; //override是一个标记符，用于表示继承
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Rc旋转矩阵传入~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    void set_Rc(const Matrix3f& Rc) override;  //接受从位置控制Ac_PosControl中传入的Rc，并存储到_Rc内部变量
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
 
@@ -155,6 +159,7 @@ protected:
         }
     };
 
+
  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~创建PDNN控制器对象~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     AC_PDNN_SO3      _pdnn_att;  //没有用到聚合初始化，所以需要在cpp的构造函数中初始化
 
@@ -166,6 +171,14 @@ protected:
 
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
+
+     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~声明内部成员变量~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Matrix3f    _Rc;      //解算后的期望旋转矩阵
+    Matrix3f    _R_body_to_ned_meas; //旋转矩阵测量值 body to NED
+    Matrix3f    _R_body_to_neu_meas; //旋转矩阵测量值 body to NEU
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 };
 
  ///~~~~~~~~~~~~~~~~~~~~~~~~~~~DIY New DDS Topic output get_log~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

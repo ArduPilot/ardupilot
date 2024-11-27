@@ -359,7 +359,7 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (apply_angle_boost) {
+    if (apply_angle_boost) { //判断是否开启角度增益补偿，几何控制不开启
         // Apply angle boost
         throttle_in = get_throttle_boosted(throttle_in);
     } else {
@@ -367,8 +367,14 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
         _angle_boost = 0.0f;
     }
     _motors.set_throttle(throttle_in);
-    _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
+    _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));//最大平均油门限制
 }
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~_Rc旋转矩阵传入~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void AC_AttitudeControl_Multi::set_Rc(const Matrix3f& Rc) {
+    _Rc = Rc;  // 将传递的目标旋转矩阵保存到姿态控制模块的内部变量
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 void AC_AttitudeControl_Multi::set_throttle_mix_max(float ratio) //设置油门与姿态控制之间的混合优先级（几何控制不需要）
 {
@@ -496,12 +502,22 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro, floa
     _pd_scale_used = _pd_scale;
 
     control_monitor_update();
-    
-    float test_msg_3 = _rate_gyro.z;
-    float test_msg_4 = expf(1.5f);
+
+ //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnnSO3控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
+    _R_body_to_neu_meas = _R_body_to_ned_meas;
+    _R_body_to_neu_meas.a.z = -_R_body_to_ned_meas.a.z; // 转换为旋转矩阵测量值 body to NEU （翻转第三列）
+    _R_body_to_neu_meas.b.z = -_R_body_to_ned_meas.b.z;
+    _R_body_to_neu_meas.c.z = -_R_body_to_ned_meas.c.z;   
+   
+
+    Vector3f moment = _pdnn_att.update_all(_Rc, _R_body_to_neu_meas, gyro, dt); //pdnn几何姿态控制器，输出为3*1扭矩
+
+    float test_msg_3 = moment.x;
+    float test_msg_4 = moment.z;
     //~~~~~~~~~~~~~~~~~~~测试ROS2 Topic~~~~~~~~~~~~~~~~~~~~~
     current_log_out_1 = get_log_out_1(test_msg_3, test_msg_4); //用于ROS2推力话题 
-    //_pdnn_att.upda
+   
 }
 
 // reset the rate controller target loop updates //// 重置速率控制器目标环更新
@@ -512,7 +528,7 @@ void AC_AttitudeControl_Multi::rate_controller_target_reset()
     _pd_scale = VECTORF_111;
 }
 
-// run the rate controller using the configured _dt and latest gyro //运行姿态控制器
+// run the rate controller using the configured _dt and latest gyro //姿态控制循环！！！！
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest = _ahrs.get_gyro_latest();

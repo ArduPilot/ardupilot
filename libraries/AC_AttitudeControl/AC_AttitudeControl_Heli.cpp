@@ -550,6 +550,12 @@ void AC_AttitudeControl_Heli::set_throttle_out(float throttle_in, bool apply_ang
     _motors.set_throttle(throttle_in);
 }
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~_Rc旋转矩阵传入~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void AC_AttitudeControl_Heli::set_Rc(const Matrix3f& Rc) {
+    _Rc = Rc;  // 将传递的目标旋转矩阵保存到姿态控制模块的内部变量
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // returns a throttle including compensation for roll/pitch angle
 // throttle value should be 0 ~ 1
 float AC_AttitudeControl_Heli::get_throttle_boosted(float throttle_in)
