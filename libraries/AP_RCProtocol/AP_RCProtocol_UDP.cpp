@@ -64,8 +64,8 @@ bool AP_RCProtocol_UDP::init()
 void AP_RCProtocol_UDP::update()
 {
 #if AP_RCPROTOCOL_FDM_ENABLED
-    // yield to the FDM backend if it is getting data
-    if (fdm_backend->active()) {
+    // yield to the FDM backend if it is active and getting data
+    if (protocol_enabled(AP_RCProtocol::FDM) && fdm_backend->active()) {
         return;
     }
 #endif
