@@ -778,12 +778,12 @@ void AC_PosControl::update_Rc()
    _last_update_Rc_ticks = AP::scheduler().ticks32(); //更新最后一次控制器调用时间，ticks32() 是一个方法，返回系统当前的32位时间戳，其返回值用于计算时间间隔dt_ticks
 //接下来计算b3c=fd/||fd||
     if (!_U_x.is_zero()){  //如果fd不是零向量，则归一化后作为b3轴
-        _b_3c = _U_x.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
+        _b_3c = -_U_x.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
         _b_1d = Vector3f(1.0f, 0.0f, 0.0f); //设置 期望的b1d轴
         //计算_b_2c轴
-        _b_2c = _b_1d.cross(_b_3c).normalized(); 
+        _b_2c = _b_3c.cross(_b_1d).normalized(); //NED是b3c X b1d后归一化
         //计算_b_1c轴
-        _b_1c = _b_3c.cross(_b_2c);
+        _b_1c = _b_2c.cross(_b_3c);  //NED是b2c X b3c, NEU是b3c X b2c
         //更新_Rc
         _Rc.a.x = _b_1c.x; _Rc.a.y = _b_2c.x; _Rc.a.z = _b_3c.x; 
         _Rc.b.x = _b_1c.y; _Rc.b.y = _b_2c.y; _Rc.b.z = _b_3c.y; 
@@ -1109,25 +1109,27 @@ void AC_PosControl::update_z_controller()
     _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    const Vector3f &pos_meas = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
+    const Vector3f &pos_meas_neu = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
+    Vector3f pos_meas_ned = pos_meas_neu;   
+    pos_meas_ned.z = -pos_meas_neu.z;                        //转化测量位置为ned 
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f
     _pos_desired_3f.x = _pos_desired.x;                      //转换数据类型为Vector3f
     _pos_desired_3f.y = _pos_desired.y;                      //转换数据类型为Vector3f
-    _pos_desired_3f.z = _pos_desired.z;                      //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，转换为NED。（暂时不转换）
+    _pos_desired_3f.z = -_pos_desired.z;                      //转换数据类型为Vector3f，并可以将原本的NEU期望坐标，改变正负转换为NED。这里给出的目标高度需要平滑
     
-    _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas, _dt); //调用pdnn控制器循环
+    _U_x = _pdnn_pos.update_all(_pos_desired_3f, pos_meas_ned, _dt); //调用pdnn控制器循环
 
     _R_body_to_ned_meas = _ahrs.get_rotation_body_to_ned(); //获取旋转矩阵测量值 body to NED，并传递给_R_body_to_ned_meas
-    _R_body_to_neu_meas = _R_body_to_ned_meas;
+    //_R_body_to_neu_meas = _R_body_to_ned_meas;
     //_R_body_to_neu_meas.a.z = _R_body_to_ned_meas.a.z; // 转换为旋转矩阵测量值 NEUbody to NEUearth 
     //_R_body_to_neu_meas.b.z = _R_body_to_ned_meas.b.z; //注意这里容易有误区，ardupilot自带的_ahrs.get_rotation_body_to_ned()是将NEDbody转换到NEDearth
     //_R_body_to_neu_meas.c.z = _R_body_to_ned_meas.c.z;  //所以，这里只要无人机和大地我们都采用NEU，这种情况下旋转矩阵和都是NED的情况下是不变的
     
     float fd;
-    fd = _U_x.dot(_R_body_to_neu_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
+    fd = -_U_x.dot(_R_body_to_ned_meas.colz());                  //colz是拷贝取值，fd=U_x * Re3
     float fd_nor;
     fd_nor = fd/200.0f;                                         // fd_nor = fd/f_max，除以预设的无人机最大推力进行归一化
-    float test_msg_1 = _pos_desired.z;
+    float test_msg_1 = -_pos_desired.z;
     float test_msg_2 = fd_nor; //memo这里用来测试转置效果
     current_DIYwrench = get_DIYwrench(test_msg_1, test_msg_2); //用于ROS2推力话题 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

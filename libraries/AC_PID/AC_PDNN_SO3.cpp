@@ -102,6 +102,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     
         //更新当前循环角速度误差_e_Omega ！！考虑加上滤波！！！！（暂时没加）
         _e_Omega = _Omega - _R.transposed() * _R_c * _Omega_c;
+        //_e_Omega = _Omega; //暂时第二项设置为0 
 
         //计算_Omega_c微分项，这里暂时不考虑滤波
         if (is_positive(dt)) { //检查时间步长是否有效
@@ -119,10 +120,14 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
     _pdnn_output_Omega.y = -_e_Omega.y * _kOmega;
     _pdnn_output_Omega.z = -_e_Omega.z * _kOmega_z;
     
-    //计算几何控制项，这里惯性张量暂且考虑为单位矩阵
-    _geomrtry_output = _Omega_hat * _R.transposed() * _R_c *  - _R.transposed() * _R_c * _dot_Omega_c;
+    //计算几何控制项，这里惯性张量
+    Matrix3f J;
+    J.a.x=0.001;J.a.y=0;     J.a.z=0;
+    J.b.x=0;      J.b.y=0.001;J.b.z=0;
+    J.c.x=0;      J.c.y=0;     J.c.z=0.005;
+    _geomrtry_output = J*(_Omega_hat * _R.transposed() * _R_c * _Omega_c  - _R.transposed() * _R_c * _dot_Omega_c);
 
-    //计算总输出
+    //计算总输出，每个方向上乘以惯性张量
     _pdnn_output.x = -_e_R.x * _kR - _e_Omega.x * _kOmega - _geomrtry_output.x; 
     _pdnn_output.y = -_e_R.y * _kR - _e_Omega.y * _kOmega - _geomrtry_output.y;
     _pdnn_output.z = -_e_R.z * _kR_z - _e_Omega.z * _kOmega_z - _geomrtry_output.z;
