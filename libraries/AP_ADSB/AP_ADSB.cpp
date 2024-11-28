@@ -172,7 +172,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: ADS-B Options
     // @Description: Options for emergency failsafe codes and device capabilities
-    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Sagetech MXS use External Config
+    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Sagetech MXS use External Config,4:Transmit in traditional Mode 3A/C only and inhibit Mode-S and ES (ADSB) transmissions
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
