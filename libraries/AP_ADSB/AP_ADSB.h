@@ -207,6 +207,8 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
+    static uint8_t convert_maxknots_to_enum(const float maxAircraftSpeed_knots);
+
     // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
     // stored on a GCS as a string field in different format, but then transmitted
     // over mavlink as a float which is always a decimal.
