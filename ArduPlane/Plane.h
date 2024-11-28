@@ -454,6 +454,9 @@ private:
         float throttle_lim_min;
         uint32_t throttle_max_timer_ms;
         // Good candidate for keeping the initial time for TKOFF_THR_MAX_T.
+
+        bool in_level_off_phase;
+        // The Flag to indicate the last phase of takeoff, the pitch level-off to neutral.
     } takeoff_state;
 
     // ground steering controller state

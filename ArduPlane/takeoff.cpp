@@ -208,7 +208,7 @@ void Plane::takeoff_calc_pitch(void)
     bool pitch_clipped_max = false;
 
     // If we're using an airspeed sensor, we consult TECS.
-    if (ahrs.using_airspeed_sensor()) {
+    if (ahrs.using_airspeed_sensor() || (takeoff_state.in_level_off_phase == true)) {
         calc_nav_pitch();
         // At any rate, we don't want to go lower than the minimum pitch bound.
         if (nav_pitch_cd < pitch_min_cd) {
@@ -279,7 +279,6 @@ void Plane::takeoff_calc_throttle() {
     // Set the minimum throttle limit.
     const bool use_throttle_range = (aparm.takeoff_options & (uint32_t)AP_FixedWing::TakeoffOption::THROTTLE_RANGE);
     if (!use_throttle_range // We don't want to employ a throttle range.
-        || !ahrs.using_airspeed_sensor() // We don't have an airspeed sensor.
         || below_lvl_alt // We are below TKOFF_LVL_ALT.
         ) { // Traditional takeoff throttle limit.
         takeoff_state.throttle_lim_min = takeoff_state.throttle_lim_max;
@@ -309,13 +308,17 @@ int16_t Plane::get_takeoff_pitch_min_cd(void)
 
         // are we entering the region where we want to start levelling off before we reach takeoff alt?
         if (auto_state.sink_rate < -0.1f) {
-            float sec_to_target = (remaining_height_to_target_cm * 0.01f) / (-auto_state.sink_rate);
+            float sec_to_target = (remaining_height_to_target_cm * 0.01f * 2.0f) / MIN(TECS_controller.get_max_climbrate(), -auto_state.sink_rate);
+            /* A linear decrease of pitch at level-off is also a linear decrease of climb-rate, thus the height gained is only half.
+             * Additionally, the climb-rate is limited by TECS value to keep external factors like wind influence at bay.
+             */
             if (sec_to_target > 0 &&
                 relative_alt_cm >= 1000 &&
                 sec_to_target <= g.takeoff_pitch_limit_reduction_sec) {
                 // make a note of that altitude to use it as a start height for scaling
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff level-off starting at %dm", int(remaining_height_to_target_cm/100));
                 auto_state.height_below_takeoff_to_level_off_cm = remaining_height_to_target_cm;
+                takeoff_state.in_level_off_phase = true;
             }
         }
     }
