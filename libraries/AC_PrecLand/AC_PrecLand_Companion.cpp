@@ -30,6 +30,12 @@ bool AC_PrecLand_Companion::get_los_body(Vector3f& ret) {
     return false;
 }
 
+// return true if there is a valid los measurement available
+uint8_t AC_PrecLand_Companion::get_frame()
+{
+    return _frame;
+}
+
 // returns system time in milliseconds of last los measurement
 uint32_t AC_PrecLand_Companion::los_meas_time_ms() {
     return _los_meas_time_ms;
@@ -52,7 +58,9 @@ void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, u
     _distance_to_target = packet.distance;
 
     if (packet.position_valid == 1) {
-        if (packet.frame == MAV_FRAME_BODY_FRD) {
+        _frame = packet.frame;
+        if (    (_frame == MAV_FRAME_BODY_FRD)
+             || (_frame == MAV_FRAME_LOCAL_NED)) {
             if (_distance_to_target > 0) {
                 _los_meas_body = Vector3f(packet.x, packet.y, packet.z);
                 _los_meas_body /= _distance_to_target;

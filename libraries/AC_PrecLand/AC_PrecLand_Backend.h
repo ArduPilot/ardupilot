@@ -33,6 +33,9 @@ public:
     // returns system time in milliseconds of last los measurement
     virtual uint32_t los_meas_time_ms() = 0;
 
+    // return mav frame, FRD by default
+    virtual uint8_t get_frame() { return MAV_FRAME_BODY_FRD; };
+
     // return true if there is a valid los measurement available
     virtual bool have_los_meas() = 0;
 

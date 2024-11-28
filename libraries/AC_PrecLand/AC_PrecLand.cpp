@@ -650,8 +650,20 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
 
         const bool target_vec_valid = target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
-        const Vector3f target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
-        const Vector3f approach_vector_NED = inertial_data_delayed->Tbn * _approach_vector_body;
+
+        // Check for FRD or NED frame of reference
+        Vector3f target_vec_unit_ned;
+        Vector3f approach_vector_NED;
+
+        if (_backend->get_frame() == MAV_FRAME_BODY_FRD) {
+            target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
+            approach_vector_NED = inertial_data_delayed->Tbn * _approach_vector_body;
+        }
+        else if (_backend->get_frame() == MAV_FRAME_LOCAL_NED) {
+            target_vec_unit_ned = target_vec_unit_body;
+            approach_vector_NED = _approach_vector_body;
+        }
+
         const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
             // distance to target and distance to target along approach vector

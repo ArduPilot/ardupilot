@@ -30,6 +30,9 @@ public:
     //  returns same as have_los_meas()
     bool get_los_body(Vector3f& ret) override;
 
+    // returns mavlink frame
+    uint8_t get_frame() override;
+
     // returns system time in milliseconds of last los measurement
     uint32_t los_meas_time_ms() override;
 
@@ -42,6 +45,7 @@ public:
     // parses a mavlink message from the companion computer
     void handle_msg(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
+
 private:
     float               _distance_to_target;    // distance from the camera to target in meters
 
@@ -49,6 +53,7 @@ private:
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
     bool                _wrong_frame_msg_sent;
+    uint8_t             _frame;             // frame parameter (FRD or NED)
 };
 
 
