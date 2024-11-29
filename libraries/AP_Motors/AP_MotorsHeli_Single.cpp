@@ -284,6 +284,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
     _collective_zero_thrust_deg.set(constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg));
 
     _collective_land_min_deg.set(constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg));
+    _collective_land_offset_deg.set(constrain_float(_collective_land_offset_deg, _collective_min_deg, _collective_max_deg));
 
     if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
         // calculate collective zero thrust point as a number from 0 to 1
@@ -291,6 +292,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
 
         // calculate collective land min point as a number from 0 to 1
         _collective_land_min_pct = (_collective_land_min_deg-_collective_min_deg)/(_collective_max_deg-_collective_min_deg);
+        _collective_land_offset_pct = _collective_land_offset_deg/(_collective_max_deg-_collective_min_deg);
     } else {
         _collective_zero_thrust_pct = 0.0f;
         _collective_land_min_pct = 0.0f;
@@ -388,13 +390,23 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct && !_main_rotor.in_autorotation()) {
+    if (_heliflags.land_complete && _heliflags.landing_collective && collective_out < _collective_land_min_pct + _collective_offset_landed) {
+        _collective_offset_landed += 0.0001 * (_collective_land_offset_pct - _collective_offset_landed);
+        collective_out = _collective_land_min_pct + _collective_offset_landed;
+        limit.throttle_lower = true;
+    } else if (_heliflags.landing_collective && collective_out < _collective_land_min_pct && !_main_rotor.in_autorotation()) {
         collective_out = _collective_land_min_pct;
         limit.throttle_lower = true;
+    } else {
+        _collective_offset_landed = 0.0;
     }
 
     // updates below land min collective flag
-    if (collective_out <= _collective_land_min_pct) {
+    float collective_land_min = _collective_land_min_pct;
+    if (_heliflags.land_complete && _heliflags.landing_collective) {
+        collective_land_min += _collective_offset_landed;
+    }
+    if (collective_out <= collective_land_min) {
         _heliflags.below_land_min_coll = true;
     } else {
         _heliflags.below_land_min_coll = false;
