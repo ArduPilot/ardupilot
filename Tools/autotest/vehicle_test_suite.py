@@ -4364,7 +4364,13 @@ class TestSuite(ABC):
 
     def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
-            got = getattr(m, fieldname)
+            if "[" in fieldname: # fieldname == "arrayname[index]"
+                assert fieldname[-1] == "]", fieldname
+                arrayname, index = fieldname.split("[", 1)
+                index = int(index[:-1])
+                got = getattr(m, arrayname)[index]
+            else:
+                got = getattr(m, fieldname)
 
             value_string = value
             got_string = got
