@@ -56,6 +56,14 @@ extern const AP_HAL::HAL& hal;
 #define HAL_LOGGER_ARM_PERSIST 15
 #endif
 
+#ifndef HAL_LOGGER_MIN_MB_FREE
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#define HAL_LOGGER_MIN_MB_FREE 1
+#else
+#define HAL_LOGGER_MIN_MB_FREE 500
+#endif
+#endif
+
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # if HAL_LOGGING_FILESYSTEM_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
@@ -137,7 +145,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Units: MB
     // @Range: 10 1000
     // @User: Standard
-    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
+    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, HAL_LOGGER_MIN_MB_FREE),
 
     // @Param: _FILE_RATEMAX
     // @DisplayName: Maximum logging rate for file backend
