@@ -779,7 +779,7 @@ void AC_PosControl::update_Rc()
 //接下来计算b3c=fd/||fd||
     if (!_U_x.is_zero()){  //如果fd不是零向量，则归一化后作为b3轴
         _b_3c = -_U_x.normalized(); //使用NEU体坐标系则与推力方向同向+，NED则反向-
-        _b_1d = Vector3f(1.0f, 0.0f, 0.0f); //设置 期望的b1d轴
+        _b_1d = Vector3f(sqrt(3.0f)/2.0f, -0.5f, 0.0f); //设置 期望的b1d轴
         //计算_b_2c轴
         _b_2c = _b_3c.cross(_b_1d).normalized(); //NED是b3c X b1d后归一化
         //计算_b_1c轴
@@ -1109,7 +1109,7 @@ void AC_PosControl::update_z_controller()
     _pos_desired.z = _pos_target.z - (_pos_offset.z + _pos_terrain); //重新计算期望位置
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~pdnn控制器~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    const Vector3f &pos_meas_neu = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。
+    const Vector3f &pos_meas_neu = _inav.get_position_neu_cm();  //通过 `inav` 系统获取无人机在北-东-上（NEU）坐标系中的位置，单位是厘米。mocap中这里考虑替换为mocap位置反馈
     Vector3f pos_meas_ned = pos_meas_neu;   
     pos_meas_ned.z = -pos_meas_neu.z;                        //转化测量位置为ned 
     Vector3f _pos_desired_3f;                                //转换数据类型为Vector3f

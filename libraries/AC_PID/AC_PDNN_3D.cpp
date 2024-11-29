@@ -72,6 +72,18 @@ Vector3f AC_PDNN_3D::update_all(const Vector3f &target, const Vector3f &measurem
     }
 
     _target = target; //_target 是一个私有成员变量，作为内部使用的值
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~Neural Networks~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //设置RBF网络中心 Setting the centers of RBF c=Matrix5*2
+    float c_1_1 = -1.0f; float c_1_2 = -0.5f; float c_1_3 = 0.0f; float c_1_4 = 0.5f; float c_1_5 = 1.0f; 
+    float c_2_1 = -1.0f; float c_2_2 = -0.5f; float c_2_3 = 0.0f; float c_2_4 = 0.5f; float c_2_5 = 1.0f; 
+    //设置RBF网络的宽度 Setting the width of the RBF network
+    float b_xy = 1.0f;  
+    float b_z = 2.0f;
+    
+
+
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~END~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     // reset input filter to value received //无人机重启pid时的初始化
     if (_reset_filter) {

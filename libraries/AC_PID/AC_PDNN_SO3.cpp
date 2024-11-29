@@ -89,7 +89,7 @@ Vector3f AC_PDNN_SO3::update_all(const Matrix3f &R_c, const Matrix3f &R, const V
 
         //计算_R_c微分项，这里暂时不考虑滤波
         if (is_positive(dt)) { //检查时间步长是否有效
-            _dot_R_c = (_R_c - _R_c_last) / dt;  //理论上应该可以实现逐元素求导
+            _dot_R_c = (_R_c - _R_c_last) / dt;  //理论上应该可以实现逐元素求导（考虑进行正交化或者转化为四元数后归一化！！！）
         }
         
         Vector3f _Omega_c_last{_Omega_c}; //将上一个循环的_Omega_c存储到一个临时变量 _Omegac_c_last 中
