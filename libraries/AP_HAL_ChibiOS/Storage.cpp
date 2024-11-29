@@ -42,7 +42,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_STORAGE_BACKUP_COUNT
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#define HAL_STORAGE_BACKUP_COUNT 0
+#else
 #define HAL_STORAGE_BACKUP_COUNT 100
+#endif
 #endif
 
 #define STORAGE_FLASH_RETRIES 5
