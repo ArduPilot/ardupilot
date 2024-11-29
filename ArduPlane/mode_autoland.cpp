@@ -73,7 +73,7 @@ void ModeAutoLand::update()
 {
     plane.calc_nav_roll();
     plane.calc_nav_pitch();
-
+    plane.set_offset_altitude_location(plane.prev_WP_loc, plane.next_WP_loc);
     if (plane.landing.is_throttle_suppressed()) {
        // if landing is considered complete throttle is never allowed, regardless of landing type
        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
@@ -93,6 +93,7 @@ void ModeAutoLand::navigate()
             land_started = true;
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = home_loc;
+            plane.set_offset_altitude_location(plane.prev_WP_loc, plane.next_WP_loc);
             plane.start_command(cmd);
         }
         return;
