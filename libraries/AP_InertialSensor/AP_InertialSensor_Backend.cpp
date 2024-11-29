@@ -55,6 +55,15 @@ void AP_InertialSensor_Backend::_set_gyro_oversampling(uint8_t instance, uint8_t
 }
 
 /*
+  while sensors are converging to get the true sample rate we re-init the notch filters.
+  stop doing this if the user arms
+ */
+bool AP_InertialSensor_Backend::sensors_converging() const
+{
+    return AP_HAL::millis64() < HAL_INS_CONVERGANCE_MS && !hal.util->get_soft_armed();
+}
+
+/*
   update the sensor rate for FIFO sensors
 
   FIFO sensors produce samples at a fixed rate, but the clock in the
