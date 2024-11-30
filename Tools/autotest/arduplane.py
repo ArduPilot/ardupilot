@@ -3696,20 +3696,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.change_altitude(cruise_alt, relative=True)
 
-        self.progress("Fly below floor and check for no breach")
-        self.change_altitude(25, relative=True)
+        self.progress("Fly below floor and check for breach")
+        self.set_rc(2, 2000)
+        self.wait_mode("RTL")
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Got (%s)" % str(m))
-        if (not (m.onboard_control_sensors_health & fence_bit)):
-            raise NotAchievedException("Fence Ceiling breached")
+        if (m.onboard_control_sensors_health & fence_bit):
+            raise NotAchievedException("Fence floor not breached")
 
-        self.progress("Fly above floor and check fence is not re-enabled")
+        self.change_mode("FBWA")
+
+        self.progress("Fly above floor and check fence is enabled")
         self.set_rc(3, 2000)
         self.change_altitude(75, relative=True)
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         self.progress("Got (%s)" % str(m))
-        if (m.onboard_control_sensors_enabled & fence_bit):
-            raise NotAchievedException("Fence Ceiling re-enabled")
+        if (not (m.onboard_control_sensors_enabled & fence_bit)):
+            raise NotAchievedException("Fence Floor not enabled")
 
         self.progress("Return to cruise alt")
         self.set_rc(3, 1500)
