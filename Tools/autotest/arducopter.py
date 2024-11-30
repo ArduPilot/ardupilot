@@ -6423,7 +6423,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_VIB_MOT_MULT": 0,
             "SIM_GYR1_RND": 5,
             "INS_HNTCH_ENABLE": 1,
-            #"INS_HNTCH_FREQ": 120,
             "INS_HNTCH_REF": 1.0,
             "INS_HNTCH_HMNCS": 1, # first and second harmonic
             "INS_HNTCH_ATT": 50,
