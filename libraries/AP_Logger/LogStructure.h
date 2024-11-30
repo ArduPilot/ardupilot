@@ -135,6 +135,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Camera/LogStructure.h>
 #include <AP_Mount/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
+#include <AP_CANManager/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
 #include <AP_Proximity/LogStructure.h>
@@ -1159,6 +1160,7 @@ LOG_STRUCTURE_FROM_GPS \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s-%", "F--", true  }, \
 LOG_STRUCTURE_FROM_BARO \
+LOG_STRUCTURE_FROM_CANMANAGER \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
@@ -1266,6 +1268,7 @@ enum LogMessages : uint8_t {
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
     LOG_IDS_FROM_BARO,
+    LOG_IDS_FROM_CANMANAGER,
     LOG_POWR_MSG,
     LOG_MCU_MSG,
     LOG_IDS_FROM_AHRS,
