@@ -6440,7 +6440,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SNOTCH2_FREQ": 240,
         })
 
-
         self.hover_and_check_matched_frequency_with_fft(dblevel=-15, minhz=20, maxhz=350, reverse=True, instance=2)
 
     def ThrottleGainBoost(self):
