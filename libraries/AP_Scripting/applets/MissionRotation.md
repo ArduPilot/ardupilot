@@ -4,7 +4,7 @@ This LUA script is an evolution on the MissionSelector.LUA.
 
 Allows you to select up to 10 missions, either while arming or in the unarmed state.
 
-Requires that an RC_xFUNCTION be set to 24 (Mission Reset).
+Requires that an RCx_OPTION be set to 24 (Mission Reset).
 
 The scripts should be installed in the SCRIPTS folder on the MicroSD, and the mission files in the root.
 
