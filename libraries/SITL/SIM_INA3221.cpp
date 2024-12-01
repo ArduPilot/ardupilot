@@ -82,8 +82,34 @@ int SITL::INA3221::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
     return -1;
 };
 
-static uint16_t convert_voltage(float voltage) {
-    return (voltage / 26) * 32768;
+static uint16_t convert_voltage(float voltage_v) {
+    // 8mV per count, register value is x8 (3 lowest bits not used)
+    float volt_counts = (voltage_v/8e-3)*8;
+    if (volt_counts < INT16_MIN) {
+        volt_counts = INT16_MIN;
+    } else if (volt_counts > INT16_MAX) {
+        volt_counts = INT16_MAX;
+    }
+
+    // register value is signed
+    return (uint16_t)((int16_t)volt_counts);
+}
+
+static uint16_t convert_current(float current_a) {
+    // V = IR
+    const float shunt_resistance_ohms = 0.001; // default value in driver
+    const float shunt_voltage = current_a*shunt_resistance_ohms;
+
+    // 40uV per count, register value is x8 (3 lowest bits not used)
+    float shunt_counts = (shunt_voltage/40e-6)*8;
+    if (shunt_counts < INT16_MIN) {
+        shunt_counts = INT16_MIN;
+    } else if (shunt_counts > INT16_MAX) {
+        shunt_counts = INT16_MAX;
+    }
+
+    // register value is signed
+    return (uint16_t)((int16_t)shunt_counts);
 }
 
 
@@ -107,37 +133,35 @@ void SITL::INA3221::update(const class Aircraft &aircraft)
         registers.byname.configuration.bits.mode &= ~0b011;
     }
 
-    // channel 2 gets the first simulated battery's voltage and current:
-    // see 8.6.6.2 on page 27 for the whole "40uV" thing
+    // channel 2 gets the first simulated battery's voltage and current, others are test values:
     if (registers.byname.configuration.bits.ch1_enable) {
+        // values close to chip limits (assuming 1mOhm current shunt)
         if (update_bus) {
-            float fakevoltage = 12.3;
-            registers.byname.Channel_1_Bus_Voltage = fakevoltage; // FIXME
+            registers.byname.Channel_1_Bus_Voltage = convert_voltage(25); // max of 26V
         }
         if (update_shunt) {
-            float fakecurrent = 7.6;
-            registers.byname.Channel_1_Shunt_Voltage = fakecurrent/0.56; // FIXME
+            registers.byname.Channel_1_Shunt_Voltage = convert_current(160); // max of 163.8A
         }
     }
 
     if (registers.byname.configuration.bits.ch2_enable) {
-        if (update_shunt) {
-            registers.byname.Channel_2_Shunt_Voltage = AP::sitl()->state.battery_current/26 * 32768; // FIXME
-        }
         if (update_bus) {
-            registers.byname.Channel_2_Bus_Voltage = AP::sitl()->state.battery_voltage/26 * 32768; // FIXME
+            registers.byname.Channel_2_Bus_Voltage = convert_voltage(AP::sitl()->state.battery_voltage);
+        }
+        if (update_shunt) {
+            registers.byname.Channel_2_Shunt_Voltage = convert_current(AP::sitl()->state.battery_current);
         }
     }
 
     if (registers.byname.configuration.bits.ch3_enable) {
+        // values different from above to test channel switching
         if (update_bus) {
-            registers.byname.Channel_3_Bus_Voltage = convert_voltage(3.1415);
+            registers.byname.Channel_3_Bus_Voltage = convert_voltage(3.14159);
         }
         if (update_shunt) {
-            registers.byname.Channel_3_Shunt_Voltage = 2.718/0.56;
+            registers.byname.Channel_3_Shunt_Voltage = convert_current(2.71828);
         }
     }
-
 }
 
 #endif  // AP_SIM_INA3221_ENABLED
