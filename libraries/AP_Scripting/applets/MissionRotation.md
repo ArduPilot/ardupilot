@@ -16,4 +16,6 @@ If the next mission file numerically does not exist load the next one, at the en
 
 If AUX is held at high state for more than three seconds the script will restart by loading mission0.txt.
 
+If a mission switch is attempted in AUTO flight mode, a warning “Could not clear current mission” will be shown and no operation will be performed.
+
 Provides for sending messages under any condition, load or error.
