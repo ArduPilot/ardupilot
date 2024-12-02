@@ -11,9 +11,8 @@ if not rc_switch then
 end
 
 local current_mission_index = 0
-local max_missions = 6  -- Aggiornato a 6 poiché hai fino a mission6.txt
+local max_missions = 9
 local high_timer = 0
-local latest_mission_loaded = -1  -- Track the last loaded mission
 
 local function read_mission(file_name)
     if vehicle:get_mode() == 3 then
@@ -79,14 +78,14 @@ if not read_mission("mission0.txt") then
 end
 
 local function load_next_mission()
+    if vehicle:get_mode() == 3 then
+        return
+    end
+
     current_mission_index = (current_mission_index + 1) % (max_missions + 1)
     local file_name = string.format("mission%d.txt", current_mission_index)
-
     if read_mission(file_name) then
-        if latest_mission_loaded ~= current_mission_index then
-            gcs:send_text(MAV_SEVERITY.WARNING, "Loaded mission: " .. file_name)
-            latest_mission_loaded = current_mission_index
-        end
+        gcs:send_text(MAV_SEVERITY.WARNING, "Loaded mission: " .. file_name)
     end
 end
 
@@ -106,11 +105,11 @@ function update()
         end
     else
         if high_timer > 0 and high_timer < 3 then
-            load_next_mission()  -- Load next mission if switched back before 3 seconds
+            load_next_mission()
         end
         high_timer = 0
     end
-    
+
     return update, 1000
 end
 
