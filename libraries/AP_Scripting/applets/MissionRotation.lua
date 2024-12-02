@@ -3,16 +3,15 @@
 -- Reset the mission0.txt if AUX is high for more than 3 seconds
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
-local rc_switch = rc:find_channel_for_option(24)  -- AUX FUNC switch for mission loading
+local rc_switch = rc:find_channel_for_option(24)
 if not rc_switch then
     gcs:send_text(MAV_SEVERITY.ERROR, "Mission Reset switch not assigned.")
     return
 end
 
-local last_sw_pos = -1  -- Track the last switch position
-local current_mission_index = 0  -- Start with mission0.txt
-local max_missions = 9  -- Maximum mission index (mission0.txt to mission9.txt)
-local high_timer = 0  -- Timer to track how long AUX stays high
+local current_mission_index = 0
+local max_missions = 9
+local high_timer = 0
 
 local function read_mission(file_name)
     local file = io.open(file_name, "r")
@@ -22,7 +21,6 @@ local function read_mission(file_name)
 
     local header = file:read('l')
     assert(string.find(header, 'QGC WPL 110') == 1, file_name .. ': incorrect format')
-
     assert(mission:clear(), 'Could not clear current mission')
 
     local item = mavlink_mission_item_int_t()
@@ -63,7 +61,6 @@ local function read_mission(file_name)
     end
 end
 
--- Ensure mission0.txt exists and load it; stop if not found
 if not read_mission("mission0.txt") then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "Critical error: mission0.txt not found, script stopped.")
     return
@@ -80,23 +77,22 @@ end
 function update()
     local sw_pos = rc_switch:get_aux_switch_pos()
 
-    if sw_pos == 2 then  -- AUX high position
+    if sw_pos == 2 then
         high_timer = high_timer + 1
-        if high_timer >= 3 then  -- 3 seconds elapsed
+        if high_timer >= 3 then
             current_mission_index = 0
             read_mission("mission0.txt")
             gcs:send_text(MAV_SEVERITY.WARNING, "Reset to mission0.txt")
-            high_timer = 0  -- Reset the timer after reset
+            high_timer = 0
         end
     else
         if high_timer > 0 and high_timer < 3 then
-            load_next_mission()  -- Load next mission only if held high for less than 3 seconds
+            load_next_mission()
         end
-        high_timer = 0  -- Reset timer when AUX is not high
+        high_timer = 0
     end
 
-    last_sw_pos = sw_pos
-    return update, 1000  -- Run every second
+    return update, 1000
 end
 
 gcs:send_text(MAV_SEVERITY.NOTICE, "MissionSelector loaded")
