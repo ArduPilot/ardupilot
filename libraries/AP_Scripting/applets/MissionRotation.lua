@@ -5,7 +5,7 @@
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local rc_switch = rc:find_channel_for_option(24)
 if not rc_switch then
-    gcs:send_text(MAV_SEVERITY.ERROR, "Mission Reset switch not assigned.")
+    gcs:send_text(MAV_SEVERITY.ERROR, "Mission Reset switch not assigned")
     return
 end
 
@@ -14,6 +14,11 @@ local max_missions = 9
 local high_timer = 0
 
 local function read_mission(file_name)
+    if vehicle:get_mode() == 10 then  -- 10 = AUTO mode
+        gcs:send_text(MAV_SEVERITY.ERROR, "Cannot load mission in AUTO mode")
+        return false
+    end
+
     local file = io.open(file_name, "r")
     if not file then
         return false
@@ -62,7 +67,7 @@ local function read_mission(file_name)
 end
 
 if not read_mission("mission0.txt") then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "Critical error: mission0.txt not found, script stopped.")
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "Critical error: mission0.txt not found, script stopped")
     return
 end
 
@@ -95,5 +100,5 @@ function update()
     return update, 1000
 end
 
-gcs:send_text(MAV_SEVERITY.NOTICE, "MissionSelector loaded")
+gcs:send_text(MAV_SEVERITY.NOTICE, "Mission Rotation loaded")
 return update, 1000
